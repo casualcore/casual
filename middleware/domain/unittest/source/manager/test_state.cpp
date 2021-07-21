@@ -8,6 +8,7 @@
 #include "common/unittest.h"
 
 #include "domain/manager/state.h"
+#include "domain/manager/state/order.h"
 #include "domain/manager/configuration.h"
 #include "domain/manager/transform.h"
 
@@ -146,7 +147,7 @@ domain:
             common::unittest::Trace trace;
             State state;
 
-            EXPECT_TRUE( state.bootorder().empty());
+            EXPECT_TRUE( state::order::boot( state).empty());
 
          }
 
@@ -165,7 +166,7 @@ domain:
 
 )" );
 
-            auto bootorder = state.bootorder();
+            auto bootorder = state::order::boot( state);
             auto& global = local::find_batch( state, bootorder, ".global");
 
             EXPECT_TRUE( global.executables.size() == 1) << CASUAL_NAMED_VALUE( global);
@@ -194,7 +195,7 @@ domain:
 )" );
 
 
-            auto bootorder = state.bootorder();
+            auto bootorder = state::order::boot( state);
 
             {
                auto& batch = local::find_batch( state, bootorder, ".global");
@@ -212,7 +213,7 @@ domain:
          {
             common::unittest::Trace trace;
 
-            state::Executable executable;
+            auto executable = state::Executable::create();
 
             EXPECT_TRUE( executable.spawnable().empty());
             EXPECT_TRUE( executable.shutdownable().empty());
@@ -222,7 +223,7 @@ domain:
          {
             common::unittest::Trace trace;
 
-            state::Executable executable;
+            auto executable = state::Executable::create();
             executable.instances.resize( 5);
 
             EXPECT_TRUE( executable.spawnable().size() == 5);
@@ -233,7 +234,7 @@ domain:
          {
             common::unittest::Trace trace;
 
-            state::Server server;
+            auto server = state::Server::create();
 
             EXPECT_TRUE( server.spawnable().empty());
             EXPECT_TRUE( server.shutdownable().empty());
@@ -243,7 +244,7 @@ domain:
          {
             common::unittest::Trace trace;
 
-            state::Server server;
+            auto server = state::Server::create();
             server.instances.resize( 5);
 
             EXPECT_TRUE( server.spawnable().size() == 5);

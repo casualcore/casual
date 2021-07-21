@@ -229,19 +229,18 @@ namespace casual
                      return [&state]( common::service::invoke::Parameter&& parameter)
                      {
                         auto protocol = serviceframework::service::protocol::deduce( std::move( parameter));
+                        auto updates = casual::configuration::model::transform( protocol.extract< casual::configuration::user::Domain>( "domain"));
 
-                        auto model = [&]()
+                        auto put_configuration = []( auto& state, auto& updates)
                         {
-                           casual::configuration::user::Domain domain;
-                           protocol >> CASUAL_NAMED_VALUE( domain);
-
-                           return casual::configuration::model::transform( std::move( domain));
-                        }();
-
+                           state.configuration.model = manager::configuration::get( state);
+                           return manager::configuration::put( state, std::move( updates));
+                        };
 
                         return serviceframework::service::user( 
                            std::move( protocol),
-                           [&](){ return casual::domain::manager::configuration::put( state, std::move( model));});
+                           put_configuration,
+                           state, updates);
                      };
                   }
                } // configuration

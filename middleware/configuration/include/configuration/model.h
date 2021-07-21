@@ -63,34 +63,42 @@ namespace casual::configuration
             inline auto tie() const { return std::tie( restart);}
          };
 
-         struct Executable : common::Compare< Executable>
+         namespace detail
          {
-            std::string alias;
-            std::filesystem::path path;
-            std::vector< std::string> arguments;
+            struct Entity : common::Compare< Entity>
+            {
+               std::string alias;
+               std::filesystem::path path;
+               std::vector< std::string> arguments;
 
-            platform::size::type instances = 1;
-            std::vector< std::string> memberships;
-            Environment environment;
+               platform::size::type instances = 1;
+               std::vector< std::string> memberships;
+               Environment environment;
 
-            Lifetime lifetime;
-            std::string note;
-            
-            CASUAL_CONST_CORRECT_SERIALIZE(
-               CASUAL_SERIALIZE( alias);
-               CASUAL_SERIALIZE( path);
-               CASUAL_SERIALIZE( arguments);
-               CASUAL_SERIALIZE( instances);
-               CASUAL_SERIALIZE( memberships);
-               CASUAL_SERIALIZE( environment);
-               CASUAL_SERIALIZE( lifetime);
-               CASUAL_SERIALIZE( note);
-            )
+               Lifetime lifetime;
+               std::string note;
+               
+               CASUAL_CONST_CORRECT_SERIALIZE(
+                  CASUAL_SERIALIZE( alias);
+                  CASUAL_SERIALIZE( path);
+                  CASUAL_SERIALIZE( arguments);
+                  CASUAL_SERIALIZE( instances);
+                  CASUAL_SERIALIZE( memberships);
+                  CASUAL_SERIALIZE( environment);
+                  CASUAL_SERIALIZE( lifetime);
+                  CASUAL_SERIALIZE( note);
+               )
 
-            inline auto tie() const { return std::tie( path, alias, note, arguments, instances, memberships, environment, lifetime);}
+               inline auto tie() const { return std::tie( path, alias, note, arguments, instances, memberships, environment, lifetime);}
+            };
+         } // detail
+
+         struct Executable : detail::Entity
+         {
+ 
          };
 
-         struct Server : Executable
+         struct Server : detail::Entity
          {
 
          };
@@ -635,6 +643,7 @@ namespace casual::configuration
       model::gateway::Model gateway;
 
       Model& operator += ( Model rhs);
+      inline friend Model operator + ( Model lhs, Model rhs) { lhs += rhs; return lhs;}
 
       CASUAL_CONST_CORRECT_SERIALIZE(
          CASUAL_SERIALIZE( domain);

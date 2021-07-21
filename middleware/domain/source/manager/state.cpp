@@ -4,11 +4,7 @@
 //! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-
-#include <utility>
-
 #include "domain/manager/state.h"
-#include "domain/manager/state/create.h"
 #include "domain/common.h"
 
 
@@ -16,6 +12,9 @@
 #include "common/algorithm/compare.h"
 #include "common/algorithm/sorted.h"
 #include "common/communication/instance.h"
+
+
+#include <utility>
 
 namespace casual
 {
@@ -295,20 +294,6 @@ namespace casual
          }
 
       } // state
-
-      std::vector< state::dependency::Group> State::bootorder() const
-      {
-         Trace trace{ "domain::manager::State::bootorder"};
-
-         return state::create::boot::order( *this);
-      }
-
-      std::vector< state::dependency::Group> State::shutdownorder() const
-      {
-         Trace trace{ "domain::manager::State::shutdownorder"};
-
-         return algorithm::reverse( bootorder());
-      }
 
 
       std::tuple< state::Server*, state::Executable*> State::remove( common::strong::process::id pid)

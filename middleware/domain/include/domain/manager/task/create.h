@@ -12,31 +12,27 @@
 
 namespace casual
 {
-   namespace domain
+   namespace domain::manager::task::create
    {
-      namespace manager
+      namespace scale
       {
-         namespace task
-         {
-            namespace create
-            {
-               namespace scale
-               {
-                  manager::Task boot( std::vector< state::dependency::Group> groups, common::strong::correlation::id correlation);
-                  manager::Task shutdown( std::vector< state::dependency::Group> groups);
+         manager::Task boot( std::vector< state::dependency::Group> groups, common::strong::correlation::id correlation);
+         manager::Task shutdown( std::vector< state::dependency::Group> groups);
 
-                  manager::Task aliases( std::string description, std::vector< state::dependency::Group> groups);
-                  manager::Task aliases( std::vector< state::dependency::Group> groups);
-                  
-               } // scale
+         manager::Task aliases( std::string description, std::vector< state::dependency::Group> groups);
+         manager::Task aliases( std::vector< state::dependency::Group> groups);
+         
+      } // scale
 
-               namespace restart
-               {
-                  manager::Task aliases( std::vector< state::dependency::Group> groups);
-               } // restart
+      namespace restart
+      {
+         manager::Task aliases( std::vector< state::dependency::Group> groups);
+      } // restart
 
-            } // create
-         } // task
-      } // manager
-   } // domain
+      namespace remove
+      {
+         manager::Task aliases( std::vector< state::dependency::Group> groups);
+      } // remove
+
+   } // domain::manager::task::create
 } // casual

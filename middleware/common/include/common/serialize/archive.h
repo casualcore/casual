@@ -68,7 +68,7 @@ namespace casual
 
 
          template< typename V>
-         Reader& operator >> ( V&& value)
+         [[maybe_unused]] Reader& operator >> ( V&& value)
          {
             serialize::value::read( *this, std::forward< V>( value), nullptr);
             return *this;
@@ -208,7 +208,7 @@ namespace casual
 
 
          template< typename V>
-         Writer& operator << ( V&& value)
+         [[maybe_unused]] Writer& operator << ( V&& value)
          {
             serialize::value::write( *this, std::forward< V>( value), nullptr);
             return *this;

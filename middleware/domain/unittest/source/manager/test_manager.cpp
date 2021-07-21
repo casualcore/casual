@@ -46,7 +46,7 @@ namespace casual
 
             namespace expected::size
             {
-               constexpr auto service = 3;
+               constexpr auto servers = 3;
             } // expected::size
 
 
@@ -286,13 +286,13 @@ domain:
 
             namespace predicate
             {
-               struct Manager
+               auto manager()
                {
-                  bool operator () ( const admin::model::Executable& value) const
+                  return []( const admin::model::Executable& value)
                   {
                      return value.alias == "casual-domain-manager";
-                  }
-               };
+                  };
+               }
 
             } // predicate
 
@@ -329,7 +329,7 @@ domain:
 
          auto state = local::call::state();
 
-         ASSERT_TRUE( state.servers.size() == local::expected::size::service) << CASUAL_NAMED_VALUE( state);
+         ASSERT_TRUE( state.servers.size() == local::expected::size::servers) << CASUAL_NAMED_VALUE( state);
          EXPECT_TRUE( state.servers.at( 0).instances.size() == 1) << CASUAL_NAMED_VALUE( state);
          ASSERT_TRUE( local::find::alias( state.executables, "sleep")) << CASUAL_NAMED_VALUE( state);
          EXPECT_TRUE( local::find::alias( state.executables, "sleep")->instances.size() == 5) << CASUAL_NAMED_VALUE( state);
@@ -897,7 +897,7 @@ domain:
          auto domain = local::domain( configuration);
 
          auto state = local::call::state();
-         state.executables = algorithm::trim( state.executables, algorithm::remove_if( state.executables, local::predicate::Manager{}));
+         state.executables = algorithm::trim( state.executables, algorithm::remove_if( state.executables, local::predicate::manager()));
 
 
          ASSERT_TRUE( state.executables.size() == 4 * 5) << CASUAL_NAMED_VALUE( state);
@@ -909,7 +909,7 @@ domain:
 
          state = local::call::state();
 
-         for( auto executable : algorithm::remove_if( state.executables, local::predicate::Manager{}))
+         for( auto executable : algorithm::remove_if( state.executables, local::predicate::manager()))
          {
             EXPECT_TRUE( executable.instances.size() == 10) << "executable.instances.size(): " << executable.instances.size();
          }
@@ -1364,6 +1364,186 @@ domain:
 
          EXPECT_TRUE( origin.domain == model.domain) << CASUAL_NAMED_VALUE( origin.domain) << "\n " << CASUAL_NAMED_VALUE( model.domain);
 
+      }
+
+      namespace local
+      {
+         namespace
+         {
+            namespace call
+            {
+               // post helper - post the wanted, we need to listen to events to know when it's done.
+               // @returns the new configuration model tranformed to internal model
+               template< typename T>
+               auto post( T&& wanted)
+               {
+                  std::vector< common::strong::correlation::id> tasks;
+
+                  auto condition = common::event::condition::compose(
+                     common::event::condition::prelude( [&]()
+                     {
+                        tasks = unittest::call< std::vector< common::strong::correlation::id>>( admin::service::name::configuration::post, wanted);
+                     }),
+                     common::event::condition::done( [&tasks](){ return tasks.empty();})
+                  );
+
+                  // listen for events
+                  common::event::listen( 
+                     condition,
+                     message::dispatch::handler( communication::ipc::inbound::device(),
+                        [&tasks]( message::event::Task& event)
+                        {
+                           log::line( verbose::log, "event: ", event);
+
+                           if( event.done())
+                              algorithm::trim( tasks, algorithm::remove( tasks, event.correlation));
+                        })
+                     );
+
+                  // return the new configuration model
+                  return casual::configuration::model::transform( unittest::call< casual::configuration::user::Domain>( admin::service::name::configuration::get));
+               }
+               
+            } // call
+         } // <unnamed>
+      } // local
+
+
+      TEST( domain_manager, configuration_post_add_modify)
+      {
+         common::unittest::Trace trace;
+
+         auto domain = local::domain( R"(
+domain:
+   name: post
+
+   groups:
+      -  name: A
+      -  name: B
+         dependencies: [ A]
+      -  name: C
+         dependencies: [ B]
+      -  name: Y
+         dependencies: [ A]
+
+   servers:
+      -  path: ./bin/test-simple-server
+         alias: simple-server
+         instances: 2
+         memberships: [ A]
+
+   executables:
+      -  alias: sleep
+         path: sleep
+         arguments: [60]
+         instances: 2
+         memberships: [ B]
+
+)");
+
+         auto wanted = local::configuration::load( R"(
+domain:
+   name: post
+
+   groups:
+      -  name: A
+      -  name: B
+         dependencies: [ A]
+      -  name: C
+         dependencies: [ X]
+      -  name: X
+         dependencies: [ B]
+
+   servers:
+      -  path: ./bin/test-simple-server
+         alias: simple-server
+         instances: 1
+         memberships: [ X]
+      -  path: ./bin/test-simple-server
+         alias: simple-server-added
+         instances: 1
+         memberships: [ X]
+
+   executables:
+      -  alias: sleep
+         path: sleep
+         arguments: [60]
+         instances: 2
+         memberships: [ X]
+      -  alias: sleep_add
+         path: sleep
+         arguments: [60]
+         instances: 1
+         memberships: [ B]
+
+)");
+
+         auto origin = casual::configuration::model::transform( unittest::call< casual::configuration::user::Domain>( admin::service::name::configuration::get));
+         EXPECT_TRUE( origin.domain != wanted.domain) << CASUAL_NAMED_VALUE( origin.domain) << "\n " << CASUAL_NAMED_VALUE( wanted.domain);
+
+         auto updated = local::call::post( casual::configuration::model::transform( wanted));
+         EXPECT_TRUE( updated.domain == wanted.domain) << CASUAL_NAMED_VALUE( updated.domain) << "\n " << CASUAL_NAMED_VALUE( wanted.domain);
+         
+      }
+
+      TEST( domain_manager, configuration_post_remove_modify)
+      {
+         common::unittest::Trace trace;
+
+         auto domain = local::domain( R"(
+domain:
+   name: post
+
+   groups:
+      -  name: A
+
+   servers:
+      -  path: ./bin/test-simple-server
+         alias: simple-server
+         instances: 2
+         memberships: [ A]
+
+   executables:
+      -  alias: sleep
+         path: sleep
+         arguments: [60]
+         instances: 2
+         memberships: [ A]
+
+)");
+
+
+         auto wanted = local::configuration::load( R"(
+domain:
+   name: post
+
+   groups:
+      -  name: A
+      -  name: B
+         dependencies: [ A]
+
+   servers:
+      -  path: ./bin/test-simple-server
+         alias: replaced-server
+         instances: 3
+         memberships: [ B]
+
+   executables:
+      -  alias: sleep
+         path: sleep
+         arguments: [60]
+         instances: 1
+         memberships: [ B]
+
+)");
+
+
+         auto origin = casual::configuration::model::transform( unittest::call< casual::configuration::user::Domain>( admin::service::name::configuration::get));
+         EXPECT_TRUE( origin.domain != wanted.domain) << CASUAL_NAMED_VALUE( origin.domain) << "\n " << CASUAL_NAMED_VALUE( wanted.domain);
+
+         auto updated = local::call::post( casual::configuration::model::transform( wanted));
+         EXPECT_TRUE( updated.domain == wanted.domain) << CASUAL_NAMED_VALUE( updated.domain) << "\n " << CASUAL_NAMED_VALUE( wanted.domain);
+         
       }
 
    } // domain::manager

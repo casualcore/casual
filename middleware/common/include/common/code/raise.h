@@ -16,30 +16,25 @@
 
 namespace casual
 {
-   namespace common
+   namespace common::code::raise
    {
-      namespace code
+      namespace detail::string
       {
-         namespace raise
+         //! composes a string from several parts, using the stream operator
+         template< typename... Parts>
+         inline std::string compose( Parts&&... parts)
          {
-            namespace detail::string
-            {
-               //! composes a string from several parts, using the stream operator
-               template< typename... Parts>
-               inline std::string compose( Parts&&... parts)
-               {
-                  std::ostringstream out;
-                  stream::write( out, std::forward< Parts>( parts)...);
-                  return std::move( out).str();
-               }
-            }
+            std::ostringstream out;
+            stream::write( out, std::forward< Parts>( parts)...);
+            return std::move( out).str();
+         }
+      } // detail::string
 
-            template< typename Code, typename... Ts>
-            [[noreturn]] void error( Code code, Ts&&... ts) noexcept( false)
-            {
-               throw std::system_error( std::error_code{ code}, detail::string::compose( std::forward< Ts>( ts)...));
-            }
-         } // raise
-      } // code
-   } // common
+      template< typename Code, typename... Ts>
+      [[noreturn]] void error( Code code, Ts&&... ts) noexcept( false)
+      {
+         throw std::system_error( std::error_code{ code}, detail::string::compose( std::forward< Ts>( ts)...));
+      }
+
+   } // common::code::raise
 } // casual

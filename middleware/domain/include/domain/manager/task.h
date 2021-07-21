@@ -239,7 +239,8 @@ namespace casual
 
             //! adds tasks to queue
             //! @{
-            task::id::type add( Task&& task);
+            task::id::type add( Task task);
+            std::vector< task::id::type> add( std::vector< Task> tasks);
             //! @}
 
             inline bool empty() const { return m_running.empty() && m_pending.empty();}
@@ -251,18 +252,18 @@ namespace casual
             void event( State& state, const E& event)
             {
                // second range holds tasks that are 'done'
-               auto split = common::algorithm::partition( m_running, [&event]( auto& task)
+               auto [ keep, done] = common::algorithm::partition( m_running, [&event]( auto& task)
                {
                   return ! task( event);
                });
 
                // we handle and remove the 'done' tasks
-               common::algorithm::for_each( std::get< 1>( split), [&]( auto& task)
+               common::algorithm::for_each( done, [&]( auto& task)
                {
-                  done( state, std::move( task));
+                  Queue::done( state, std::move( task));
                });
 
-               common::algorithm::trim( m_running, std::get< 0>( split));
+               common::algorithm::trim( m_running, keep);
             }
 
             //! @returns true any running task listen to this event message

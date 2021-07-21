@@ -54,9 +54,9 @@ namespace casual
 
             std::vector< id_type> dependencies;
 
-            friend bool operator == ( const Group& lhs, Group::id_type id) { return lhs.id == id;}
-            friend bool operator == ( Group::id_type id, const Group& rhs) { return id == rhs.id;}
-            friend bool operator == ( const Group& lhs, const std::string& name) { return lhs.name == name;}
+            inline friend bool operator == ( const Group& lhs, Group::id_type id) { return lhs.id == id;}
+            inline friend bool operator == ( Group::id_type id, const Group& rhs) { return id == rhs.id;}
+            inline friend bool operator == ( const Group& lhs, const std::string& name) { return lhs.name == name;}
 
             struct boot
             {
@@ -83,7 +83,11 @@ namespace casual
          {
             using id_type = ID;
 
-            id_type id = id_type::generate();
+            Process( id_type id)
+               : id{ id}
+            {}
+
+            id_type id;
 
             std::string alias;
             std::filesystem::path path;
@@ -107,6 +111,7 @@ namespace casual
             platform::size::type restarts = 0;
 
             inline friend bool operator < ( const Process& l, const Process& r) { return l.id < r.id;}
+            inline friend bool operator == ( const Process& lhs, const std::string& alias) { return lhs.alias == alias;}
 
             CASUAL_LOG_SERIALIZE(
                CASUAL_SERIALIZE( id);
@@ -168,6 +173,10 @@ namespace casual
 
          struct Executable : Process< strong::executable::id> 
          {
+            using Process< strong::executable::id>::Process;
+
+            static auto create() { return Executable{ strong::executable::id::generate()};};
+
             struct instance_policy
             {
                using handle_type = common::strong::process::id;
@@ -208,6 +217,10 @@ namespace casual
 
          struct Server : Process< strong::server::id>
          {
+            using Process< strong::server::id>::Process;
+
+            static auto create() { return Server{ strong::server::id::generate()};};
+
             struct instance_policy
             {
                using handle_type = common::process::Handle;
@@ -258,6 +271,8 @@ namespace casual
                std::string description;
                std::vector< Server::id_type> servers;
                std::vector< Executable::id_type> executables;
+
+               inline explicit operator bool() const noexcept { return ! servers.empty() || ! executables.empty();}
 
                CASUAL_LOG_SERIALIZE(
                   CASUAL_SERIALIZE( description);
@@ -388,9 +403,6 @@ namespace casual
          common::file::scoped::Path singleton_file;
 
 
-         std::vector< state::dependency::Group> bootorder() const;
-         std::vector< state::dependency::Group> shutdownorder() const;
-
          //! Cleans up an exit (server or executable).
          //!
          //! @param pid
@@ -404,8 +416,8 @@ namespace casual
             return variables( executable.environment.variables);
          }
 
-         state::Group& group( state::Group::id_type id);
-         const state::Group& group( state::Group::id_type id) const;
+         state::Group& group( strong::group::id id);
+         const state::Group& group( strong::group::id id) const;
 
          state::Server* server( common::strong::process::id pid) noexcept;
          const state::Server* server( common::strong::process::id pid) const noexcept;
@@ -413,10 +425,10 @@ namespace casual
          const state::Executable* executable( common::strong::process::id pid) const noexcept;
 
 
-         state::Server& entity( state::Server::id_type id);
-         const state::Server& entity( state::Server::id_type id) const;
-         state::Executable& entity( state::Executable::id_type id);
-         const state::Executable& entity( state::Executable::id_type id) const;
+         state::Server& entity( strong::server::id id);
+         const state::Server& entity( strong::server::id id) const;
+         state::Executable& entity( strong::executable::id id);
+         const state::Executable& entity( strong::executable::id id) const;
 
          struct Runnables
          {

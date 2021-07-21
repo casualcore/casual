@@ -7,14 +7,16 @@
 
 #include "domain/manager/configuration.h"
 #include "domain/manager/state.h"
-#include "domain/manager/state/create.h"
+#include "domain/manager/state/order.h"
 #include "domain/manager/transform.h"
 #include "domain/manager/task/create.h"
+#include "domain/manager/task/event.h"
 
 #include "configuration/message.h"
 
 #include "common/communication/ipc.h"
 #include "common/communication/instance.h"
+#include "common/algorithm/container.h"
 
 
 
@@ -27,49 +29,235 @@ namespace casual
       {
          namespace
          {
-
-            //! @return a tuple with intersected and complement of the configuration (compared to state)
-            auto interesection( casual::configuration::Model current, casual::configuration::Model wanted)
+            namespace detail
             {
-               casual::configuration::Model intersection;
-               casual::configuration::Model complement;
-
-               auto extract = []( auto& source, auto& lookup, auto predicate, auto& interesected, auto& complemented)
+               struct Change
                {
-                  auto split = algorithm::intersection( source, lookup, predicate);
-                  algorithm::move( std::get< 0>( split), interesected);
-                  algorithm::move( std::get< 1>( split), complemented);
+                  template< typename E>
+                  struct Entities
+                  {
+                     range::type_t< std::vector< E>> added;
+                     range::type_t< std::vector< E>> modified;
+                     range::type_t< std::vector< E>> removed;
+
+                     CASUAL_LOG_SERIALIZE(
+                        CASUAL_SERIALIZE( added);
+                        CASUAL_SERIALIZE( modified);
+                        CASUAL_SERIALIZE( removed);
+                     )
+                  };
+                  
+                  Entities< casual::configuration::model::domain::Group> groups;
+                  Entities< casual::configuration::model::domain::Server> servers;
+                  Entities< casual::configuration::model::domain::Executable> executables;
+
+                  CASUAL_LOG_SERIALIZE(
+                     CASUAL_SERIALIZE( groups);
+                     CASUAL_SERIALIZE( servers);
+                     CASUAL_SERIALIZE( executables);
+                  )
                };
 
-               auto alias_equal = []( auto& lhs, auto& rhs){ return lhs.alias == rhs.alias;};
+               auto change( casual::configuration::model::domain::Model& current, casual::configuration::model::domain::Model& wanted)
+               {
+                  Change result;
 
-               // take care of servers and executables
-               extract( wanted.domain.servers, current.domain.servers, alias_equal, intersection.domain.servers, complement.domain.servers);
-               extract( wanted.domain.executables, current.domain.executables, alias_equal, intersection.domain.executables, complement.domain.executables);
+                  auto set_change = []( auto& result, auto& wanted, auto& current, auto key)
+                  {
+                     auto differ = std::get< 1>( algorithm::intersection( wanted, current));
 
-               auto name_equal = []( auto& lhs, auto& rhs){ return lhs.name == rhs.name;};
+                     std::tie( result.modified, result.added) = algorithm::intersection( differ, current, key);
+                     result.removed = std::get< 1>( algorithm::intersection( current, wanted, key));
+                  };
 
-               extract( wanted.domain.groups, current.domain.groups, name_equal, intersection.domain.groups, complement.domain.groups);
+                  set_change( result.groups, wanted.groups, current.groups, []( auto& l, auto& r){ return l.name == r.name;});
+                  set_change( result.servers, wanted.servers, current.servers, []( auto& l, auto& r){ return l.alias == r.alias;});
+                  set_change( result.executables, wanted.executables, current.executables, []( auto& l, auto& r){ return l.alias == r.alias;});
 
-               return std::make_tuple( std::move( intersection), std::move( complement));
+                  return result;
+               }
+
+               namespace group
+               {
+                  auto remove( State& state)
+                  {
+                     return [&state]( auto& group)
+                     {
+                        if( auto found = algorithm::find( state.groups, group.name))
+                        {
+                           auto id = algorithm::extract( state.groups, std::begin( found)).id;
+
+                           auto remove_membership = [id]( auto& process)
+                           {
+                              algorithm::trim( process.memberships, algorithm::remove( process.memberships, id));
+                           };
+
+                           algorithm::for_each( state.servers, remove_membership);
+                           algorithm::for_each( state.executables, remove_membership);
+                           algorithm::for_each( state.groups, [id]( auto& group)
+                           {
+                              algorithm::trim( group.dependencies, algorithm::remove( group.dependencies, id));
+                           });
+                        }
+                     };
+                  }
+
+
+
+                  auto id( State& state)
+                  {
+                     return [&state]( auto& name) 
+                     {
+                        if( auto found = algorithm::find( state.groups, name))
+                           return found->id;
+
+                        code::raise::error( code::casual::invalid_configuration, "unresolved dependency to group '", name, "'" );
+                     };
+                  }
+
+                  auto transform( State& state)
+                  {
+                     return [&state]( auto& group)
+                     {
+                        manager::state::Group result{ group.name, { state.group_id.master}, group.note};
+                        result.dependencies = algorithm::transform( group.dependencies, group::id( state));
+                        return result;
+                     };
+                  }
+
+                  auto modify( State& state)
+                  {
+                     return [&state]( auto& group)
+                     {
+                        auto found = algorithm::find( state.groups, group.name);
+                        assert( found);
+
+                        found->dependencies = algorithm::transform( group.dependencies, group::id( state));
+                        found->note = group.note;
+                     };
+                  }
+
+               } // group
+
+               namespace entity
+               {
+                  manager::Task add( State& state, const Change& change)
+                  {
+                     auto servers = transform::alias( change.servers.added, state.groups);
+                     auto executables = transform::alias( change.executables.added, state.groups);
+
+                     auto get_id = []( auto& entity){ return entity.id;};
+                     state::dependency::Group group;
+                     group.servers = algorithm::transform( servers, get_id);
+                     group.executables = algorithm::transform( executables, get_id);
+
+                     algorithm::move( servers, std::back_inserter( state.servers));
+                     algorithm::move( executables, std::back_inserter( state.executables));
+
+                     return manager::task::create::scale::aliases( { std::move( group)});
+                  }
+
+                  manager::Task remove( State& state, const Change& change)
+                  {
+                     auto scale_and_get_id = []( auto& entities, auto& removed)
+                     { 
+                        return algorithm::transform( removed, [&]( auto& removed)
+                        {
+                           auto found = algorithm::find( entities, removed.alias);
+                           assert( found);
+
+                           found->scale( 0);
+                           return found->id;
+                        });
+                     };
+                     
+                     state::dependency::Group group;
+                     group.servers = scale_and_get_id( state.servers, change.servers.removed);
+                     group.executables = scale_and_get_id( state.executables, change.executables.removed);
+
+                     return manager::task::create::remove::aliases( { std::move( group)});
+                  }
+
+                  manager::Task modify( State& state, const Change& change)
+                  {
+                     Trace trace{ "domain::manager::configuration::local::detail::entity::modify"};
+
+                     auto modify_and_get_id = [&state]( auto& entities, auto& modified)
+                     { 
+                        using id_type = decltype( entities.front().id);
+
+                        return algorithm::accumulate( modified, std::vector< id_type>{}, [&]( auto result, auto& configuration)
+                        {
+                           if( auto found = algorithm::find( entities, configuration.alias))
+                           {
+                              transform::modify( configuration, *found, state.groups);
+                              result.push_back( found->id);
+                           }
+                           return result;
+                        });
+                     };
+                     
+                     state::dependency::Group group;
+                     group.servers = modify_and_get_id( state.servers, change.servers.modified);
+                     group.executables = modify_and_get_id( state.executables, change.executables.modified);
+
+                     return manager::task::create::scale::aliases( { std::move( group)});
+                  }
+
+                  
+               } // entity
+
+            } // detail
+
+            std::vector< manager::Task> domain( State& state, casual::configuration::model::domain::Model& wanted)
+            {
+               Trace trace{ "domain::manager::configuration::local::domain"};
+
+               auto change = detail::change( state.configuration.model.domain, wanted);
+               log::line( verbose::log, "change: ", change);
+  
+               // groups
+               {
+                  algorithm::for_each( change.groups.removed, detail::group::remove( state));
+                  algorithm::transform( change.groups.added, std::back_inserter( state.groups), detail::group::transform( state));
+                  algorithm::for_each( change.groups.modified, detail::group::modify( state));
+               }
+
+               return algorithm::container::emplace::initialize< std::vector< manager::Task>>( 
+                  detail::entity::add( state, change),
+                  detail::entity::remove( state, change),
+                  detail::entity::modify( state, change));
             }
 
-            namespace task
+            auto managers( const State& state, const casual::configuration::Model& wanted)
             {
-               auto complement( State& state, const casual::configuration::Model& model)
+               Trace trace{ "domain::manager::configuration::local::managers"};
+
+               std::vector< state::dependency::Group> groups;
+
+               auto add_singleton = [&]( auto& id, std::string descripton)
                {
-                  auto servers = transform::alias( model.domain.servers, state.groups);
-                  auto executables = transform::alias( model.domain.executables, state.groups);
+                  if( auto handle = state.singleton( id))
+                     if( auto server = state.server( handle.pid))
+                     {
+                        auto& group = groups.emplace_back();
+                        group.description = std::move( descripton);
+                        group.servers.push_back( server->id);
+                     }
+               };
 
-                  algorithm::append( servers, state.servers);
-                  algorithm::append( executables, state.executables);
+               // TODO the order?
+               if( state.configuration.model.service != wanted.service)
+                  add_singleton( communication::instance::identity::service::manager.id, "casual-service-manager");
+               if( state.configuration.model.queue != wanted.queue)
+                  add_singleton( communication::instance::identity::queue::manager.id, "casual-queue-manager");
+               if( state.configuration.model.transaction != wanted.transaction)
+                  add_singleton( communication::instance::identity::transaction::manager.id, "casual-transaction-manager");
+               if( state.configuration.model.gateway != wanted.gateway)
+                  add_singleton( communication::instance::identity::gateway::manager.id, "casual-gateway-manager");
 
-                  auto task = manager::task::create::scale::aliases( "model put", state::create::boot::order( state, servers, executables));
-
-                  // add, and possible start, the tasks
-                  return state.tasks.add( std::move( task));
-               }
-            } // task
+               return  manager::task::create::restart::aliases( std::move( groups));
+            }
 
          } // <unnamed>
       } // local
@@ -93,51 +281,40 @@ namespace casual
       {
          Trace trace{ "domain::manager::configuration::post"};
 
-         if( state.runlevel() > decltype( state.runlevel())::running)
-            return {};
-
-         std::vector< state::dependency::Group> groups;
-
-         auto add_singleton = [&]( auto& id, std::string descripton)
+         if( state.runlevel() != decltype( state.runlevel())::running)
          {
-            if( auto handle = state.singleton( id))
-               if( auto server = state.server( handle.pid))
-               {
-                  auto& group = groups.emplace_back();
-                  group.description = std::move( descripton);
-                  group.servers.push_back( server->id);
-               }
-         };
+            manager::task::event::dispatch( state, [&state]()
+            {
+               common::message::event::Error event{ process::handle()};
+               event.severity = decltype( event.severity)::warning;
+               event.code = code::casual::invalid_semantics;
+               event.message = string::compose( "domain-manager is not in a running runlevel ", state.runlevel());
+               return event;
+            });
 
-         // TODO the order?
-         if( state.configuration.model.service != wanted.service)
-            add_singleton( communication::instance::identity::service::manager.id, "casual-service-manager");
-         if( state.configuration.model.queue != wanted.queue)
-            add_singleton( communication::instance::identity::queue::manager.id, "casual-queue-manager");
-         if( state.configuration.model.transaction != wanted.transaction)
-            add_singleton( communication::instance::identity::transaction::manager.id, "casual-transaction-manager");
-         if( state.configuration.model.gateway != wanted.gateway)
-            add_singleton( communication::instance::identity::gateway::manager.id, "casual-gateway-manager");
+            return {};
+         }
 
+         auto tasks = local::domain( state, wanted.domain);
+            
+         tasks.push_back( local::managers( state, wanted));
+
+         log::line( verbose::log, "tasks: ", tasks);
          
          // we use the wanted as our new configuration when 'managers' ask for it.
          state.configuration.model = std::move( wanted);
          
-         return { state.tasks.add( manager::task::create::restart::aliases( std::move( groups)))};
+         return state.tasks.add( std::move( tasks));
       }
 
 
-      std::vector< common::strong::correlation::id> put( State& state, casual::configuration::Model wanted)
+      std::vector< common::strong::correlation::id> put( State& state, casual::configuration::Model updates)
       {
          Trace trace{ "domain::manager::configuration::put"};
-         log::line( verbose::log, "model: ", wanted);
+         log::line( verbose::log, "updates: ", updates);
 
-         auto interesection = local::interesection( transform::model( state), std::move( wanted));
-
-         log::line( verbose::log, "interesection: ", std::get< 0>( interesection));
-         log::line( verbose::log, "complement: ", std::get< 1>( interesection));
-
-         return { local::task::complement( state, std::get< 1>( interesection))};
+         // add the updates with current moedel to get 'wanted' and use post...
+         return configuration::post( state, state.configuration.model + std::move( updates));
       }
 
    } // domain::manager::configuration

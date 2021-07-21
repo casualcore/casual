@@ -7,6 +7,7 @@
 
 #include "domain/manager/handle.h"
 
+#include "domain/manager/state/order.h"
 #include "domain/manager/admin/server.h"
 #include "domain/manager/task/create.h"
 #include "domain/manager/task/event.h"
@@ -166,7 +167,7 @@ namespace casual
                   Trace trace{ "domain::manager::handle::mandatory::boot::core::prepare"};
 
                   {
-                     state::Server server;
+                     auto server = state::Server::create();
                      server.alias = "casual-domain-pending-message";
                      server.path = process::path().parent_path() / "casual-domain-pending-message";
                      server.scale( 1);
@@ -178,7 +179,7 @@ namespace casual
                   }
 
                   {
-                     state::Server server;
+                     auto server = state::Server::create();
                      server.alias = "casual-domain-discovery";
                      server.path = process::path().parent_path() / "casual-domain-discovery";
                      server.scale( 1);
@@ -199,7 +200,7 @@ namespace casual
                Trace trace{ "domain::manager::handle::mandatory::boot::prepare"};
 
                {
-                  state::Server manager;
+                  auto manager = state::Server::create();
                   manager.alias = "casual-service-manager";
                   manager.path = process::path().parent_path() / "casual-service-manager";
                   manager.scale( 1);
@@ -210,7 +211,7 @@ namespace casual
                }
 
                {
-                  state::Server tm;
+                  auto tm = state::Server::create();
                   tm.alias = "casual-transaction-manager";
                   tm.path = process::path().parent_path() / "casual-transaction-manager";
                   tm.scale( 1);
@@ -221,7 +222,7 @@ namespace casual
                }
 
                {
-                  state::Server queue;
+                  auto queue = state::Server::create();
                   queue.alias = "casual-queue-manager";
                   queue.path = process::path().parent_path() / "casual-queue-manager";
                   queue.scale( 1);
@@ -232,7 +233,7 @@ namespace casual
                }
 
                {
-                  state::Server gateway;
+                  auto gateway = state::Server::create();
                   gateway.alias = "casual-gateway-manager";
                   gateway.path = process::path().parent_path() / "casual-gateway-manager";
                   gateway.scale( 1);
@@ -259,7 +260,7 @@ namespace casual
             return event;
          });
 
-         state.tasks.add( manager::task::create::scale::boot( state.bootorder(), correlation));
+         state.tasks.add( manager::task::create::scale::boot( state::order::boot( state), correlation));
       }
 
       std::vector< common::strong::correlation::id> shutdown( State& state)
@@ -281,7 +282,7 @@ namespace casual
          // Make sure we exclude our self so we don't try to shutdown
          algorithm::for_each_if( state.servers, prepare_shutdown, [&state]( auto& entity){ return entity.id != state.manager_id;});
 
-         return { state.tasks.add( manager::task::create::scale::shutdown( state.shutdownorder()))};
+         return { state.tasks.add( manager::task::create::scale::shutdown( state::order::shutdown( state)))};
       }
 
 
@@ -423,7 +424,7 @@ namespace casual
             Trace trace{ "domain::manager::handle::restart::groups"};
             log::line( verbose::log, "names: ", names);
 
-            auto groups = state.shutdownorder();
+            auto groups = state::order::shutdown( state);
 
             auto filter_groups = []( auto groups, const std::vector< std::string>& names)
             {

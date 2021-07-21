@@ -30,55 +30,18 @@ namespace casual
       {
          namespace
          {
-            namespace verify
-            {
-
-               auto alias()
-               {
-                  return [ mapping = std::map< std::string, std::size_t>{}]( auto& process) mutable
-                  {
-                     if( process.alias.empty())
-                     {
-                        process.alias = process.path.filename();
-
-                        if( process.alias.empty())
-                           code::raise::error( code::casual::invalid_configuration, "executables has to have a path - process: ", process);
-                     }
-
-                     auto potentally_add_version = []( auto& mapping, auto& process)
-                     {
-                        auto count = ++mapping[ process.alias];
-
-                        if( count == 1)
-                           return false;
-
-                        process.alias = process.alias + "." + std::to_string( count);
-                        return true;
-                     };
-
-                     while( potentally_add_version( mapping, process))
-                        ; // no-op
-                  };
-               }
-
-            } // verify
-
 
             std::vector< manager::state::Group::id_type> membership( const std::vector< std::string>& members, const std::vector< manager::state::Group>& groups)
             {
-               std::vector< manager::state::Group::id_type> result;
-
-               for( auto& name : members)
+               return algorithm::accumulate( members, std::vector< manager::state::Group::id_type>{}, [&groups]( auto result, auto& member)
                {
-                  auto found = common::algorithm::find( groups, name);
-
-                  if( found)
+                  if( auto found = common::algorithm::find( groups, member))
                      result.push_back( found->id);
                   else
-                     code::raise::error( code::casual::invalid_configuration, "unresolved dependency to group '", name, "'" );
-               }
-
-               return result;
+                     code::raise::error( code::casual::invalid_configuration, "unresolved dependency to group '", member, "'" );
+                  
+                  return result;
+               });
             }
 
             auto group( manager::State& state)
@@ -100,45 +63,58 @@ namespace casual
                };
             }
 
+            template< typename C, typename T>
+            void modify( const C& value, T& target, const std::vector< manager::state::Group>& groups)
+            {
+               target.alias = value.alias;
+               target.arguments = value.arguments;
+               target.scale( value.instances);
+               target.note = value.note;
+               target.path = value.path;
+               target.restart = value.lifetime.restart;
+
+               target.environment.variables = value.environment.variables;
+
+               target.memberships = local::membership( value.memberships, groups);
+
+               // If empty, we make it member of '.global'
+               if( target.memberships.empty())
+                  target.memberships = local::membership( { ".global"}, groups);
+
+            }
+         } // <unnamed>
+      } // local
+
+      void modify( const casual::configuration::model::domain::Executable& source, manager::state::Executable& target, const std::vector< manager::state::Group>& groups)
+      {
+         local::modify( source, target, groups);
+      }
+
+      void modify( const casual::configuration::model::domain::Server& source, manager::state::Server& target, const std::vector< manager::state::Group>& groups)
+      {
+         local::modify( source, target, groups);
+      }
+
+      namespace local
+      {
+         namespace
+         {
 
             namespace transform
             {
                namespace detail
                {
-                  template< typename R, typename C>
-                  R transform( const C& value, const std::vector< manager::state::Group>& groups)
-                  {
-                     R result;
-
-                     result.alias = value.alias;
-                     result.arguments = value.arguments;
-                     result.instances.resize( value.instances);
-                     result.note = value.note;
-                     result.path = value.path;
-                     result.restart = value.lifetime.restart;
-
-                     result.environment.variables = value.environment.variables;
-
-                     result.memberships = local::membership( value.memberships, groups);
-
-                     // If empty, we make it member of '.global'
-                     if( result.memberships.empty())
-                        result.memberships = local::membership( { ".global"}, groups);
-
-
-                     return result;
-                  }
-
                   manager::state::Executable executable( const configuration::model::domain::Executable& value, const std::vector< manager::state::Group>& groups)
                   {
-                     return transform< manager::state::Executable>( value, groups);
+                     auto result = manager::state::Executable::create();
+                     local::modify( value, result, groups);
+                     return result;
                   }
 
                   manager::state::Server executable( const configuration::model::domain::Server& value, const std::vector< manager::state::Group>& groups)
                   {
-                     auto result = transform< manager::state::Server>( value, groups);
-
-
+                     auto result = manager::state::Server::create();
+                     local::modify( value, result, groups);
                      return result;
                   }
                   
@@ -318,8 +294,6 @@ namespace casual
       {
          Trace trace{ "domain::transform::state"};
          log::line( verbose::log, "configuration: ", model);
-
-
          
          // Set the domain
          common::domain::identity( common::domain::Identity{ environment::string( model.domain.name)});
@@ -388,7 +362,7 @@ namespace casual
             // make it symmetric
             {
 
-               manager::state::Server manager;
+               manager::state::Server manager{ strong::server::id::generate()};
                result.manager_id = manager.id;
                manager.alias = "casual-domain-manager";
                manager.path = "casual-domain-manager";
@@ -405,19 +379,14 @@ namespace casual
 
             algorithm::append( algorithm::transform( domain.servers, local::transform::executable( result.groups)), result.servers);
             algorithm::append( algorithm::transform( domain.executables, local::transform::executable( result.groups)), result.executables);
-
-            auto verify = local::verify::alias();
-
-            algorithm::for_each( result.servers, verify);
-            algorithm::for_each( result.executables, verify);
-
          }
 
          return result;
       }
 
+
       std::vector< manager::state::Executable> alias( 
-         const std::vector< configuration::model::domain::Executable>& values, 
+         detail::range::Executables values, 
          const std::vector< manager::state::Group>& groups)
       {
          Trace trace{ "domain::transform::alias"};
@@ -426,7 +395,7 @@ namespace casual
       }
 
       std::vector< manager::state::Server> alias( 
-         const std::vector< configuration::model::domain::Server>& values, 
+         detail::range::Servers values, 
          const std::vector< manager::state::Group>& groups)
       {
          Trace trace{ "domain::transform::alias"};

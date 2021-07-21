@@ -26,23 +26,6 @@ namespace casual
       {
          namespace task
          {
-            namespace local
-            {
-               namespace
-               {
-                  namespace property
-                  {
-                     auto sequential() 
-                     {
-                        return []( const Task& task)
-                        {
-                           return task.property().execution == Task::Property::Execution::sequential;
-                        };
-                     }
-                  } // property
-               } // <unnamed>
-            } // local
-
             Running::Running( State& state, Task&& task) 
                : Task{ std::move( task)}, m_callbacks( Task::operator()( state))
             {
@@ -104,6 +87,17 @@ namespace casual
                      };
                   } // has
 
+                  namespace property
+                  {
+                     auto sequential() 
+                     {
+                        return []( const Task& task)
+                        {
+                           return task.property().execution == Task::Property::Execution::sequential;
+                        };
+                     }
+                  } // property
+
                   namespace send
                   {
                      template< typename R> 
@@ -161,10 +155,7 @@ namespace casual
                // when we're 'idle'
                Queue::event( state, common::message::event::Idle{});
 
-               if( m_pending.empty())
-                  return;
-
-               if( m_running.empty() || algorithm::none_of( m_running, local::property::sequential()))
+               while( ! m_pending.empty() && algorithm::none_of( m_running, local::property::sequential()))
                {
                   auto task = std::move( m_pending.front());
                   m_pending.pop_front();
@@ -172,13 +163,21 @@ namespace casual
                }
             }
 
-            task::id::type Queue::add( Task&& task)
+            task::id::type Queue::add( Task task)
             {
                Trace trace{ "domain::manager::task::Queue::add"};
                log::line( verbose::log, "task: ", task);
 
                m_pending.push_back( std::move( task));
                return m_pending.back().context().id;
+            }
+
+            std::vector< task::id::type> Queue::add( std::vector< Task> tasks)
+            {
+               return algorithm::transform( tasks, [this]( auto& task)
+               {
+                  return add( std::move( task));
+               });
             }
 
 
@@ -209,7 +208,7 @@ namespace casual
 
             bool Queue::active( common::message::Type type) const
             {
-               return ! algorithm::find( m_running, type).empty();
+               return predicate::boolean( algorithm::find( m_running, type));
             }
 
             void Queue::start( State& state, Task&& task)

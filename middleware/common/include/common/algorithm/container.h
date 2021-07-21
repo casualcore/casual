@@ -32,25 +32,17 @@ namespace casual
       } // move
       namespace emplace
       {
-         namespace detail
+         template< typename C, typename... Ts>
+         decltype( auto) back( C&& container, Ts&&... ts)
          {
-            template< typename C> 
-            void back( C& container) {}
-
-            template< typename C, typename T, typename... Ts> 
-            void back( C& container, T&& t, Ts&&... ts)
-            {
-               container.emplace_back( std::forward< T>( t)); 
-               back( container, std::forward< Ts>( ts)...);
-            }
-         } // detail
+            ( container.emplace_back( std::forward< Ts>( ts)), ...);
+            return std::forward< C>( container);
+         }
 
          template< typename C, typename... Ts>
          C initialize( Ts&&... ts)
          {
-            C result;
-            detail::back( result, std::forward< Ts>( ts)...);
-            return result;
+            return emplace::back( C{}, std::forward< Ts>( ts)...);
          }
       } // emplace
    } // common::algorithm::container
