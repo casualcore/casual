@@ -138,7 +138,7 @@ namespace casual
          auto result = environment::string( "${FOO}${POOP}${BAR}", local);
 
          EXPECT_TRUE( result == "foopoopbar") << "result: " << result;
-      }      
+      }  
 
    } // common
 } // casual

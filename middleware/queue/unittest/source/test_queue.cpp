@@ -72,21 +72,21 @@ domain:
                count: 3
 
       groups:
-         - name: group_A
+         - name: A
            queuebase: ":memory:"
            queues:
-            -  name: queueA1
+            -  name: a1
                note: some note...
-            -  name: queueA2
-            -  name: queueA3
+            -  name: a2
+            -  name: a3
             -  name: delayed_100ms
                retry: { count: 10, delay: 100ms}
-         - name: group_B
+         - name: B
            queuebase: ":memory:"
            queues:
-            - name: queueB1
-            - name: queueB2
-            - name: queueB3
+            - name: b1
+            - name: b2
+            - name: b3
 
 )";
 
@@ -179,18 +179,18 @@ domain:
 
          auto default_retry = retry_predicate( 3, std::chrono::seconds{ 0});
 
-         EXPECT_TRUE( find_and_compare_queue( "queueA1", default_retry)) << CASUAL_NAMED_VALUE( state.queues);
-         EXPECT_TRUE( find_and_compare_queue( "queueA2", default_retry));
-         EXPECT_TRUE( find_and_compare_queue( "queueA3", default_retry));
+         EXPECT_TRUE( find_and_compare_queue( "a1", default_retry)) << CASUAL_NAMED_VALUE( state.queues);
+         EXPECT_TRUE( find_and_compare_queue( "a2", default_retry));
+         EXPECT_TRUE( find_and_compare_queue( "a3", default_retry));
          EXPECT_TRUE( find_and_compare_queue( "delayed_100ms", retry_predicate( 10, std::chrono::milliseconds{ 100})));
 
-         EXPECT_TRUE( find_and_compare_queue( "queueB1", default_retry)) << CASUAL_NAMED_VALUE( state.queues);
-         EXPECT_TRUE( find_and_compare_queue( "queueB2", default_retry));
-         EXPECT_TRUE( find_and_compare_queue( "queueB3", default_retry));
+         EXPECT_TRUE( find_and_compare_queue( "b1", default_retry)) << CASUAL_NAMED_VALUE( state.queues);
+         EXPECT_TRUE( find_and_compare_queue( "b2", default_retry));
+         EXPECT_TRUE( find_and_compare_queue( "b3", default_retry));
       }
 
 
-      TEST( casual_queue, lookup_request_queueA1__expect_existence)
+      TEST( casual_queue, lookup_request_a1__expect_existence)
       {
          common::unittest::Trace trace;
 
@@ -200,7 +200,7 @@ domain:
             // Send request
             ipc::message::lookup::Request request;
             request.process = common::process::handle();
-            request.name = "queueA1";
+            request.name = "a1";
 
             common::communication::device::blocking::send( 
                common::communication::instance::outbound::queue::manager::device(), 
@@ -253,8 +253,8 @@ domain:
          message.payload.type = common::buffer::type::binary();
          message.payload.data.assign( std::begin( payload), std::end( payload));
 
-         queue::enqueue( "queueA1", message);
-         auto messages = local::call::messages( "queueA1");
+         queue::enqueue( "a1", message);
+         auto messages = local::call::messages( "a1");
 
          EXPECT_TRUE( messages.size() == 1);
       }
@@ -267,8 +267,8 @@ domain:
 
          queue::Message message;
 
-         queue::enqueue( "queueA1", message);
-         auto messages = local::call::messages( "queueA1");
+         queue::enqueue( "a1", message);
+         auto messages = local::call::messages( "a1");
 
          EXPECT_TRUE( messages.size() == 1);
       }
@@ -287,10 +287,10 @@ domain:
             queue::Message message;
             message.payload.data.assign( std::begin( payload), std::end( payload));
 
-            queue::enqueue( "queueA1", message);
+            queue::enqueue( "a1", message);
          }
 
-         auto messages = local::call::messages( "queueA1");
+         auto messages = local::call::messages( "a1");
 
          EXPECT_TRUE( messages.size() == 5);
       }
@@ -319,27 +319,27 @@ domain:
          {
             message.attributes.available = now;
             message.attributes.properties = "poop";
-            message.attributes.reply = "queueA2";
+            message.attributes.reply = "a2";
             message.payload.type = common::buffer::type::binary();
             message.payload.data.assign( std::begin( payload), std::end( payload));
          }
 
-         auto id = queue::enqueue( "queueA1", message);
+         auto id = queue::enqueue( "a1", message);
 
-         auto information = queue::peek::information( "queueA1");
+         auto information = queue::peek::information( "a1");
 
          ASSERT_TRUE( information.size() == 1);
          auto& info = information.at( 0);
          EXPECT_TRUE( info.id == id);
          EXPECT_TRUE( local::compare( info.attributes.available, now));
          EXPECT_TRUE( info.attributes.properties == "poop") << "info: " << CASUAL_NAMED_VALUE( info);
-         EXPECT_TRUE( info.attributes.reply == "queueA2");
+         EXPECT_TRUE( info.attributes.reply == "a2");
          EXPECT_TRUE( info.payload.type == common::buffer::type::binary());
          EXPECT_TRUE( info.payload.size == common::range::size( payload));
 
          // message should still be there
          {
-            auto messages = queue::dequeue( "queueA1");
+            auto messages = queue::dequeue( "a1");
             EXPECT_TRUE( ! messages.empty());
             auto& message = messages.at( 0);
             EXPECT_TRUE( message.id == id);
@@ -362,30 +362,30 @@ domain:
             {
                message.attributes.available = now;
                message.attributes.properties = "poop";
-               message.attributes.reply = "queueA2";
+               message.attributes.reply = "a2";
                message.payload.type = common::buffer::type::binary();
                message.payload.data.assign( std::begin( payload), std::end( payload));
             }
 
-            return queue::enqueue( "queueA1", message);
+            return queue::enqueue( "a1", message);
          };
 
          auto id = enqueue();
 
-         auto messages = queue::peek::messages( "queueA1", { id});
+         auto messages = queue::peek::messages( "a1", { id});
 
          ASSERT_TRUE( messages.size() == 1);
          auto& message = messages.at( 0);
          EXPECT_TRUE( message.id == id) << "message: " << CASUAL_NAMED_VALUE( message);
          EXPECT_TRUE( local::compare( message.attributes.available, now));
          EXPECT_TRUE( message.attributes.properties == "poop");
-         EXPECT_TRUE( message.attributes.reply == "queueA2");
+         EXPECT_TRUE( message.attributes.reply == "a2");
          EXPECT_TRUE( message.payload.type == common::buffer::type::binary());
          EXPECT_TRUE( common::algorithm::equal( message.payload.data, payload));
 
          // message should still be there
          {
-            auto messages = queue::dequeue( "queueA1");
+            auto messages = queue::dequeue( "a1");
             EXPECT_TRUE( ! messages.empty());
             auto& message = messages.at( 0);
             EXPECT_TRUE( message.id == id);
@@ -406,29 +406,29 @@ domain:
             {
                message.attributes.available = now;
                message.attributes.properties = "poop";
-               message.attributes.reply = "queueA2";
+               message.attributes.reply = "a2";
             }
 
-            return queue::enqueue( "queueA1", message);
+            return queue::enqueue( "a1", message);
          };
 
          auto id = enqueue();
 
-         auto messages = queue::peek::messages( "queueA1", { id});
+         auto messages = queue::peek::messages( "a1", { id});
 
          ASSERT_TRUE( messages.size() == 1);
          auto& message = messages.at( 0);
          EXPECT_TRUE( message.id == id) << "message: " << CASUAL_NAMED_VALUE( message);
          EXPECT_TRUE( local::compare( message.attributes.available, now));
          EXPECT_TRUE( message.attributes.properties == "poop");
-         EXPECT_TRUE( message.attributes.reply == "queueA2");
+         EXPECT_TRUE( message.attributes.reply == "a2");
 
          const decltype( message.payload.data) empty{};
          EXPECT_TRUE( message.payload.data == empty);
 
          // message should still be there
          {
-            auto messages = queue::dequeue( "queueA1");
+            auto messages = queue::dequeue( "a1");
             EXPECT_TRUE( ! messages.empty());
             auto& message = messages.at( 0);
             EXPECT_TRUE( message.id == id);
@@ -474,17 +474,17 @@ domain:
             queue::Message message;
             {
                message.attributes.properties = "poop";
-               message.attributes.reply = "queueA2";
+               message.attributes.reply = "a2";
                message.payload.type = common::buffer::type::binary();
                message.payload.data.assign( std::begin( payload), std::end( payload));
             }
 
-            return queue::enqueue( "queueA1", message);
+            return queue::enqueue( "a1", message);
          };
 
          enqueue();
 
-         auto message = queue::dequeue( "queueA1");
+         auto message = queue::dequeue( "a1");
 
          ASSERT_TRUE( message.size() == 1);
          EXPECT_TRUE( common::algorithm::equal( message.at( 0).payload.data, payload));
@@ -505,16 +505,16 @@ domain:
             queue::Message message;
             {
                message.attributes.properties = "poop";
-               message.attributes.reply = "queueA2";
+               message.attributes.reply = "a2";
                message.attributes.available = available;
                message.payload.type = common::buffer::type::binary();
                message.payload.data.assign( std::begin( payload), std::end( payload));
             }
 
-            queue::enqueue( "queueA1", message);
+            queue::enqueue( "a1", message);
          }
 
-         auto message = queue::blocking::dequeue( "queueA1");
+         auto message = queue::blocking::dequeue( "a1");
          
          // we expect that at least 100ms has passed
          EXPECT_TRUE( platform::time::clock::type::now() > available);
@@ -598,10 +598,10 @@ domain:
          common::communication::ipc::inbound::Device ipc3;
          common::communication::ipc::inbound::Device ipc4;
 
-         local::blocking::dequeue( ipc1, "queueA1");
-         local::blocking::dequeue( ipc2, "queueA1");
-         local::blocking::dequeue( ipc3, "queueA1");
-         local::blocking::dequeue( ipc4, "queueA1");
+         local::blocking::dequeue( ipc1, "a1");
+         local::blocking::dequeue( ipc2, "a1");
+         local::blocking::dequeue( ipc3, "a1");
+         local::blocking::dequeue( ipc4, "a1");
 
          const std::string payload{ "some message"};
 
@@ -609,12 +609,12 @@ domain:
             queue::Message message;
             {
                message.attributes.properties = "poop";
-               message.attributes.reply = "queueA2";
+               message.attributes.reply = "a2";
                message.payload.type = common::buffer::type::binary();
                message.payload.data.assign( std::begin( payload), std::end( payload));
             }
 
-            return queue::enqueue( "queueA1", message);
+            return queue::enqueue( "a1", message);
          };
 
          enqueue();
@@ -667,7 +667,7 @@ domain:
    
    servers:
       - path: bin/casual-queue-forward-queue
-        arguments: [ --forward, queueA3, queueB3]
+        arguments: [ --forward, a3, b3]
         memberships: [ forward]
 )";   
 
@@ -680,10 +680,10 @@ domain:
             queue::Message message;
             message.payload.data.assign( std::begin( payload), std::end( payload));
 
-            queue::enqueue( "queueA3", message);
+            queue::enqueue( "a3", message);
          }
 
-         auto message = queue::blocking::dequeue( "queueB3");
+         auto message = queue::blocking::dequeue( "b3");
 
          EXPECT_TRUE( common::algorithm::equal( message.payload.data, payload));
       }
@@ -700,14 +700,14 @@ domain:
          message.payload.type = common::buffer::type::binary();
          message.payload.data.assign( std::begin( payload), std::end( payload));
 
-         queue::enqueue( "queueA1", message);
-         auto messages = local::call::messages( "queueA1");
+         queue::enqueue( "a1", message);
+         auto messages = local::call::messages( "a1");
 
          ASSERT_TRUE( messages.size() == 1);
-         auto removed = queue::messages::remove( "queueA1", { messages.front().id});
+         auto removed = queue::messages::remove( "a1", { messages.front().id});
          EXPECT_TRUE( messages.front().id == removed.at( 0));
 
-         EXPECT_TRUE( local::call::messages( "queueA1").empty());
+         EXPECT_TRUE( local::call::messages( "a1").empty());
       }
 
       TEST( casual_queue, enqueue_5___clear_queue___expect_0_message_in_queue)
@@ -724,19 +724,19 @@ domain:
 
             common::algorithm::for_n< 5>( [&]()
             {
-               queue::enqueue( "queueA1", message);
+               queue::enqueue( "a1", message);
             });
          }
 
-         auto messages = local::call::messages( "queueA1");
+         auto messages = local::call::messages( "a1");
          EXPECT_TRUE( messages.size() == 5);
 
-         auto cleared = queue::clear::queue( { "queueA1"});
+         auto cleared = queue::clear::queue( { "a1"});
          ASSERT_TRUE( cleared.size() == 1);
-         EXPECT_TRUE( cleared.at( 0).queue == "queueA1");
+         EXPECT_TRUE( cleared.at( 0).queue == "a1");
          EXPECT_TRUE( cleared.at( 0).count == 5);
 
-         EXPECT_TRUE( local::call::messages( "queueA1").empty());
+         EXPECT_TRUE( local::call::messages( "a1").empty());
       }
 
       TEST( casual_queue, configure_with_enviornment_variables)
@@ -809,7 +809,7 @@ domain:
             message.payload.data = common::unittest::random::binary( 43);
          }
 
-         auto id = queue::enqueue( "queueA1", message);
+         auto id = queue::enqueue( "a1", message);
          EXPECT_TRUE( id) << "id: " << id;
 
          {
@@ -832,7 +832,7 @@ domain:
 
          EXPECT_CODE( 
          {  
-            queue::blocking::dequeue( "queueA1");
+            queue::blocking::dequeue( "a1");
          }, queue::code::no_message);
 
          // expect shutdown to 'stay'
@@ -854,7 +854,7 @@ domain:
                message.payload.type = common::buffer::type::binary();
                message.payload.data = common::unittest::random::binary( 43);
             }
-            queue::enqueue( "queueA1", message);
+            queue::enqueue( "a1", message);
          }
 
          auto& inbound = common::communication::ipc::inbound::device();
@@ -864,7 +864,7 @@ domain:
 
          EXPECT_NO_THROW(
          {  
-            queue::blocking::dequeue( "queueA1");
+            queue::blocking::dequeue( "a1");
          });
 
          // expect shutdown to 'stay'
@@ -884,7 +884,7 @@ domain:
 domain: 
    queue:
       groups:
-         -  alias: "group_A"
+         -  alias: "A"
             queuebase: ".casual/zombies.db"
 
             queues:
@@ -896,7 +896,7 @@ domain:
 domain: 
    queue:
       groups:
-         -  alias: "group_A"
+         -  alias: "A"
             queuebase: ".casual/zombies.db"
             queues:
                - name: queue_A

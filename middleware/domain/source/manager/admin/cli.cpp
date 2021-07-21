@@ -11,6 +11,8 @@
 #include "domain/common.h"
 
 #include "configuration/model.h"
+#include "configuration/model/load.h"
+#include "configuration/model/transform.h"
 
 #include "common/event/listen.h"
 #include "common/message/handle.h"
@@ -23,6 +25,7 @@
 #include "common/communication/instance.h"
 #include "common/serialize/create.h"
 #include "common/chronology.h"
+#include "common/result.h"
 
 #include "serviceframework/service/protocol/call.h"
 #include "serviceframework/log.h"
@@ -66,6 +69,37 @@ namespace casual
                   );
                };
 
+               // generalization of the event handling
+               template< typename I, typename... Args>
+               void invoke( I&& invocable, Args&&... arguments)
+               {
+                  // if no-block we don't mess with events
+                  if( ! terminal::output::directive().block())
+                  {
+                     invocable( std::forward< Args>( arguments)...);
+                     return;
+                  }
+
+                  decltype( invocable( std::forward< Args>( arguments)...)) tasks;
+
+                  auto condition = common::event::condition::compose(
+                     common::event::condition::prelude( [&]()
+                     {
+                        tasks = invocable( std::forward< Args>( arguments)...);
+                     }),
+                     common::event::condition::done( [&tasks]()
+                     { 
+                        return tasks.empty();
+                     })
+                  );
+
+                  // listen for events
+                  common::event::listen( 
+                     condition,
+                     local::event::handler( tasks));
+               }
+               
+
             } // event
 
             namespace call
@@ -74,12 +108,7 @@ namespace casual
                admin::model::State state()
                {
                   serviceframework::service::protocol::binary::Call call;
-                  auto reply = call( admin::service::name::state);
-
-                  admin::model::State result;
-                  reply >> CASUAL_NAMED_VALUE( result);
-
-                  return result;
+                  return call( admin::service::name::state).extract< admin::model::State>();
                }
 
                namespace scale
@@ -87,14 +116,8 @@ namespace casual
                   auto aliases( const std::vector< admin::model::scale::Alias>& aliases)
                   {
                      serviceframework::service::protocol::binary::Call call;
-                     call << CASUAL_NAMED_VALUE( aliases);
-
-                     auto reply = call( admin::service::name::scale::aliases);
-
-                     std::vector< common::strong::correlation::id> result;
-                     reply >> CASUAL_NAMED_VALUE( result);
-
-                     return result;
+                     auto reply = call( admin::service::name::scale::aliases, aliases);
+                     return reply.extract< std::vector< common::strong::correlation::id>>();
                   }
                } // scale
 
@@ -103,27 +126,15 @@ namespace casual
                   auto aliases( const std::vector< admin::model::restart::Alias>& aliases)
                   {
                      serviceframework::service::protocol::binary::Call call;
-                     call << CASUAL_NAMED_VALUE( aliases);
-
-                     auto reply = call( admin::service::name::restart::aliases);
-
-                     std::vector< common::strong::correlation::id> result;
-                     reply >> CASUAL_NAMED_VALUE( result);
-
-                     return result;
+                     auto reply = call( admin::service::name::restart::aliases, aliases);
+                     return reply.extract< std::vector< common::strong::correlation::id>>();
                   }
 
                   auto groups( const std::vector< admin::model::restart::Group>& groups)
                   {
                      serviceframework::service::protocol::binary::Call call;
-                     call << CASUAL_NAMED_VALUE( groups);
-
-                     auto reply = call( admin::service::name::restart::groups);
-
-                     std::vector< common::strong::correlation::id> result;
-                     reply >> CASUAL_NAMED_VALUE( result);
-
-                     return result;
+                     auto reply = call( admin::service::name::restart::groups, groups);
+                     return reply.extract< std::vector< common::strong::correlation::id>>();
                   }
                   
                } // restart
@@ -163,11 +174,7 @@ namespace casual
                auto shutdown()
                {
                   serviceframework::service::protocol::binary::Call call;
-                  auto reply = call( admin::service::name::shutdown);
-
-                  std::vector< common::strong::correlation::id> result;
-                  reply >> CASUAL_NAMED_VALUE( result);
-                  return result;
+                  return call( admin::service::name::shutdown).extract< std::vector< common::strong::correlation::id>>();
                }
 
                namespace environment
@@ -175,13 +182,7 @@ namespace casual
                   auto set( const admin::model::set::Environment& environment)
                   {
                      serviceframework::service::protocol::binary::Call call;
-                     call << CASUAL_NAMED_VALUE( environment);
-
-                     auto reply = call( admin::service::name::environment::set);
-                     std::vector< std::string> result;
-                     reply >> CASUAL_NAMED_VALUE( result);
-
-                     return result;
+                     return call( admin::service::name::environment::set, environment).extract< std::vector< std::string>>();
                   }
                } // environment
 
@@ -189,35 +190,21 @@ namespace casual
                {
                   auto get()
                   {
-                     Trace trace{ "domain::manager::local::call::configuration::get"};
+                     serviceframework::service::protocol::binary::Call call;
+                     return call( admin::service::name::configuration::get).extract< casual::configuration::user::Domain>();
+                  }
 
-                     auto reply = []()
-                     {  
-                        Trace trace{ "domain::manager::local::call::configuration::get call"};
-                        serviceframework::service::protocol::binary::Call call;
-                        return call( admin::service::name::configuration::get);
-                     }();
-                     
-
-                     casual::configuration::user::Domain result;
-                     reply >> CASUAL_NAMED_VALUE( result);
-                     common::log::line( casual::domain::log, "result: ", result);
-                     return result;
+                  auto post( const casual::configuration::user::Domain& domain)
+                  {
+                     serviceframework::service::protocol::binary::Call call;
+                     return call( admin::service::name::configuration::post, domain).extract< std::vector< common::strong::correlation::id>>();
                   }
 
                   auto put( const casual::configuration::user::Domain& domain)
                   {
-                     auto reply = [&]()
-                     {
-                        serviceframework::service::protocol::binary::Call call;
-                        call << CASUAL_NAMED_VALUE( domain);
-                        return call( admin::service::name::configuration::put);
-                     }();
-                     
-                     std::vector< common::strong::correlation::id> result;
-                     reply >> CASUAL_NAMED_VALUE( result);
-                     common::log::line( casual::domain::log, "result: ", result);
-                     return result;
+                     serviceframework::service::protocol::binary::Call call;
+                     return call( admin::service::name::configuration::put, domain).extract< std::vector< common::strong::correlation::id>>();
+
                   }
                } // configuration
             } // call
@@ -305,9 +292,9 @@ namespace casual
                } // equal
             } // predicate
 
-            namespace action
+            namespace fetch
             {
-               auto fetch_aliases()
+               auto aliases()
                {
                   auto state = call::state();
 
@@ -322,7 +309,7 @@ namespace casual
                   return aliases;
                };
 
-               auto fetch_groups()
+               auto groups()
                {
                   auto state = call::state();
                   
@@ -331,6 +318,12 @@ namespace casual
                      return std::move( group.name);
                   });
                };
+               
+            } // fetch
+
+            namespace action
+            {
+
 
                namespace list
                {
@@ -501,126 +494,6 @@ namespace casual
                   } // instances
                } // list
 
-               namespace detail
-               {
-                  // generalization of the event handling 
-                  auto invoke = []( auto&& invocable, auto&& argument)
-                  {
-                     // if no-block we don't mess with events
-                     if( ! terminal::output::directive().block())
-                     {
-                        invocable( argument);
-                        return;
-                     }
-
-                     decltype( invocable( argument)) tasks;
-
-                     auto condition = common::event::condition::compose(
-                        common::event::condition::prelude( [&]()
-                        {
-                           tasks = invocable( argument);
-                        }),
-                        common::event::condition::done( [&tasks]()
-                        { 
-                           return tasks.empty();
-                        })
-                     );
-
-                     // listen for events
-                     common::event::listen( 
-                        condition,
-                        local::event::handler( tasks));
-                  };
-                  
-               } // detail 
-
-               namespace scale
-               {
-                  namespace aliases
-                  {
-                     void invoke( const std::vector< std::tuple< std::string, int>>& values)
-                     {   
-                        auto transform = []( auto& value){
-                           admin::model::scale::Alias result;
-                           result.name = std::get< 0>( value);
-                           result.instances = std::get< 1>( value);
-                           return result;
-                        };
-
-                        detail::invoke( call::scale::aliases, common::algorithm::transform( values, transform));
-                     }
-                  
-                     auto completion = []( auto values, bool help) -> std::vector< std::string>
-                     {
-                        if( help)
-                           return { "<alias>", "<#>"};
-                        
-                        if( values.size() % 2 == 0)
-                           return fetch_aliases();
-                        else
-                           return { "<value>"};
-                     };
-
-                     constexpr auto description = R"(scale instances for the provided aliases
-)";
-                  } // aliases
-
-               } // scale
-
-               namespace restart
-               {
-                  namespace aliases
-                  {
-                     void invoke( std::vector< std::string> values)
-                     {
-                        auto transform = []( auto& value){
-                           return admin::model::restart::Alias{ std::move( value)};
-                        };
-
-                        detail::invoke( call::restart::aliases, common::algorithm::transform( values, transform));
-                     }
-
-                     auto completion = []( auto values, bool help) -> std::vector< std::string>
-                     {
-                        if( help)
-                           return { "<alias>"};
-                        
-                        return fetch_aliases();
-                     };
-
-                     constexpr auto description = R"(restart instances for the given aliases
-
-note: some aliases are unrestartable
-)";
-                  } // restart
-                  
-                  namespace groups
-                  {
-                     void invoke( std::vector< std::string> values)
-                     {
-                        auto transform = []( auto& value){
-                           return admin::model::restart::Group{ std::move( value)};
-                        };
-
-                        detail::invoke( call::restart::groups, common::algorithm::transform( values, transform));
-                     }
-
-                     auto completion = []( auto values, bool help) -> std::vector< std::string>
-                     {
-                        if( help)
-                           return { "<group>"};
-                        
-                        return fetch_groups();
-                     };
-
-                     constexpr auto description = R"(restart all instances for aliases that are members of the provided groups
-
-if no groups are provided, all groups are restated.
-
-note: some aliases are unrestartable
-)";
-                  } // restart
-               } // restart
 
 
                namespace environment
@@ -658,7 +531,7 @@ note: some aliases are unrestartable
                         {
                            case 0: return list_environment();
                            case 1: return { "<value>"};
-                           default: return fetch_aliases();
+                           default: return fetch::aliases();
                         }
                      };
 
@@ -670,117 +543,6 @@ for all servers and executables
 
                   } // set
                } // environment 
-
-               namespace boot
-               {
-                  void invoke( const std::vector< std::string>& pattern)
-                  {
-                     if( ! terminal::output::directive().block())
-                     {
-                        call::boot( pattern);
-                        return;
-                     }
-
-                     std::vector< common::strong::correlation::id> tasks;
-
-                     auto condition = common::event::condition::compose(
-                        common::event::condition::prelude( [&]()
-                        {
-                           tasks = call::boot( pattern);
-                        }),
-                        common::event::condition::done( [&tasks]()
-                        { 
-                           return tasks.empty();
-                        })
-                     );
-
-                     // listen for events
-                     common::event::only::unsubscribe::listen( 
-                        condition,
-                        local::event::handler( tasks));
-                  }
-
-                  auto complete() 
-                  {
-                     return []( auto values, auto help) -> std::vector< std::string>
-                     {
-                        if( help)
-                           return { "<files>"};
-
-                        return { "<value>"};
-                     };
-                  }
-
-                  constexpr auto descripton = R"(boot domain
-)";
-                  
-               } // boot
-               
-               namespace shutdown
-               {
-                  void invoke()
-                  {
-                     if( ! terminal::output::directive().block())
-                     {
-                        call::shutdown();
-                        return;
-                     }
-
-                     std::vector< common::strong::correlation::id> tasks;
-
-                     auto condition = common::event::condition::compose(
-                        common::event::condition::prelude( [&]()
-                        {
-                           tasks = call::shutdown();
-                        }),
-                        common::event::condition::done( [&tasks]()
-                        { 
-                           return tasks.empty();
-                        })
-                     );
-
-                     // listen for events
-                     common::event::listen( 
-                        condition,
-                        local::event::handler( tasks));
-                  }
-
-                  constexpr auto descripton = R"(shutdown domain
-)";
-
-               } // shutdown
-
-               namespace configuration
-               {
-                  void get( const std::optional< std::string>& format)
-                  {
-                     auto domain = call::configuration::get();
-                     auto archive = common::serialize::create::writer::from( format.value_or( ""));
-                     archive << CASUAL_NAMED_VALUE( domain);
-                     archive.consume( std::cout);
-                  }
-
-                  namespace put
-                  {
-                     void invoke( const std::string& format)
-                     {
-                        casual::configuration::user::Domain domain;
-                        auto archive = common::serialize::create::reader::consumed::from( format, std::cin);
-                        archive >> CASUAL_NAMED_VALUE( domain);
-
-                        auto tasks = call::configuration::put( domain); 
-                        common::log::line( casual::domain::log, "tasks: ", tasks);
-                     }
-
-                     constexpr auto description = R"(reads configuration from stdin and update the domain
-
-The semantics are similar to http PUT:
-* every key that is found is treated as an update of that _entity_
-* every key that is NOT found is treated as a new _entity_ and added to the current state 
-)";    
-                  } // put
-
-               } // configuration
 
 
                void state( const std::optional< std::string>& format)
@@ -994,6 +756,326 @@ note: not all options has legend, use 'auto complete' to find out which legends 
 
             } // action
 
+            namespace option
+            {
+               auto format_list = []( auto, bool){ return std::vector< std::string>{ "json", "yaml", "xml", "ini"};};
+
+               auto boot()
+               {
+                  auto invoke = []( const std::vector< std::string>& patterns)
+                  {
+                     if( ! terminal::output::directive().block())
+                     {
+                        call::boot( patterns);
+                        return;
+                     }
+
+                     std::vector< common::strong::correlation::id> tasks;
+
+                     auto condition = common::event::condition::compose(
+                        common::event::condition::prelude( [&]()
+                        {
+                           tasks = call::boot( patterns);
+                        }),
+                        common::event::condition::done( [&tasks]()
+                        { 
+                           return tasks.empty();
+                        })
+                     );
+
+                     // listen for events
+                     common::event::only::unsubscribe::listen( 
+                        condition,
+                        local::event::handler( tasks));
+                  };
+
+                  auto completion = []( auto values, auto help) -> std::vector< std::string>
+                  {
+                     if( help)
+                        return { "<glob patterns>"};
+
+                     return { "<value>"};
+                  };
+                  
+
+                  constexpr auto description = R"(boot domain
+
+With supplied configuration files, in the form of glob patterns.
+)";
+
+                  return argument::Option{
+                     std::move( invoke), 
+                     std::move( completion), 
+                     { "-b", "--boot"},
+                     description};
+                  
+               } // boot
+
+               auto shutdown()
+               {
+                  auto invoke = []()
+                  {
+                     event::invoke( &call::shutdown);
+                  };
+
+                  constexpr auto description = R"(shutdown domain
+)";
+
+                  return argument::Option{
+                     std::move( invoke),
+                     { "-s", "--shutdown"},
+                     description};
+
+               } // shutdown
+
+               namespace scale
+               {
+                  auto aliases()
+                  {
+                     auto invoke = []( const std::vector< std::tuple< std::string, int>>& values)
+                     {   
+                        auto transform = []( auto& value){
+                           admin::model::scale::Alias result;
+                           result.name = std::get< 0>( value);
+                           result.instances = std::get< 1>( value);
+                           return result;
+                        };
+
+                        event::invoke( call::scale::aliases, common::algorithm::transform( values, transform));
+                     };
+                  
+                     auto completion = []( auto values, bool help) -> std::vector< std::string>
+                     {
+                        if( help)
+                           return { "<alias>", "<#>"};
+                        
+                        if( values.size() % 2 == 0)
+                           return fetch::aliases();
+                        else
+                           return { "<value>"};
+                     };
+
+                     constexpr auto description = R"(scale instances for the provided aliases
+)";
+                     return argument::Option{
+                        argument::option::one::many( std::move( invoke)), 
+                        std::move( completion), 
+                        argument::option::keys( { "-sa", "--scale-aliases"}, { "-si", "--scale-instances"}),
+                        description};
+
+                  } // aliases
+
+               } // scale
+
+
+               namespace restart
+               {
+                  auto aliases()
+                  {
+                     auto invoke = []( std::vector< std::string> values)
+                     {
+                        auto transform = []( auto& value){
+                           return admin::model::restart::Alias{ std::move( value)};
+                        };
+
+                        event::invoke( call::restart::aliases, common::algorithm::transform( values, transform));
+                     };
+
+                     auto completion = []( auto values, bool help) -> std::vector< std::string>
+                     {
+                        if( help)
+                           return { "<alias>"};
+                        
+                        return fetch::aliases();
+                     };
+
+                     constexpr auto description = R"(restart instances for the given aliases
+
+note: some aliases are unrestartable
+)";
+                     return argument::Option{
+                        argument::option::one::many( std::move( invoke)), 
+                        std::move( completion), 
+                        argument::option::keys( { "-ra", "--restart-aliases"}, { "-ri", "--restart-instances"}),
+                        description};
+
+                  } // restart
+                  
+                  auto groups()
+                  {
+                     auto invoke = []( std::vector< std::string> values)
+                     {
+                        auto transform = []( auto& value){
+                           return admin::model::restart::Group{ std::move( value)};
+                        };
+
+                        event::invoke( call::restart::groups, common::algorithm::transform( values, transform));
+                     };
+
+                     auto completion = []( auto values, bool help) -> std::vector< std::string>
+                     {
+                        if( help)
+                           return { "<group>"};
+                        
+                        return fetch::groups();
+                     };
+
+
+                     constexpr auto description = R"(restart all instances for aliases that are members of the provided groups
+
+if no groups are provided, all groups are restated.
+
+note: some aliases are unrestartable
+)";
+
+                     return argument::Option{
+                        std::move( invoke), 
+                        std::move( completion), 
+                        { "-rg", "--restart-groups"},
+                        description};
+                  } // restart
+               } // restart
+
+               namespace configuration
+               {
+                  auto get()
+                  {
+                     auto invoke = []( const std::optional< std::string>& format)
+                     {
+                        auto domain = call::configuration::get();
+                        auto archive = common::serialize::create::writer::from( format.value_or( "yaml"));
+                        archive << CASUAL_NAMED_VALUE( domain);
+                        archive.consume( std::cout);
+                     };
+
+                     return argument::Option{ 
+                        std::move( invoke), 
+                        format_list, 
+                        { "--configuration-get"}, 
+                        "get current configuration"};
+                  }
+
+                  auto post()
+                  {
+                     auto invoke = []( const std::string& format)
+                     {
+                        casual::configuration::user::Domain domain;
+                        auto archive = common::serialize::create::reader::consumed::from( format, std::cin);
+                        archive >> CASUAL_NAMED_VALUE( domain);
+
+                        event::invoke( call::configuration::post, domain);
+                     };
+
+                     constexpr auto description = R"(reads configuration from stdin and replaces the domain configuration
+
+casual will try to conform to the new configuration as smooth as possible. Although, there could be some "noise"
+depending on what parts are updated.
+)";
+
+                     return argument::Option{ 
+                        std::move( invoke), 
+                        format_list, 
+                        { "--configuration-post"}, 
+                        description};    
+                  }
+
+
+                  auto edit()
+                  {
+                     auto invoke = []( const std::optional< std::string>& format)
+                     {                        
+                        auto get_editor_path = []() -> std::filesystem::path
+                        {
+                           return environment::variable::get( environment::variable::name::terminal::editor, 
+                             environment::variable::get( "VISUAL", 
+                                environment::variable::get( "EDITOR", "vi")));
+                        };
+
+                        auto current = call::configuration::get();
+
+                        auto get_configuration_file = []( auto& domain, auto format)
+                        {
+                           file::Output file{ file::temporary( format)};
+                           file::scoped::Path scoped{ file.path()};
+                           
+                           auto archive = common::serialize::create::writer::from( format);
+                           archive << CASUAL_NAMED_VALUE( domain);
+                           archive.consume( file);
+
+                           return scoped;
+                        };
+
+                        auto start_editor = []( auto editor, const auto& file)
+                        {
+                           const auto command = string::compose( editor, ' ', file);
+                           log::line( verbose::log, "command: ", command);
+                           
+                           posix::result( ::system( command.data()));
+                        };
+
+
+                        auto file = get_configuration_file( current, format.value_or( "yaml"));
+
+                        start_editor( get_editor_path(), file);
+
+                        auto wanted = casual::configuration::model::load( { file});
+
+                        if( wanted == casual::configuration::model::transform( current))
+                        {
+                           log::line( std::clog, "no configuration changes detected");
+                           return;
+                        }
+
+                        event::invoke( call::configuration::post, casual::configuration::model::transform( wanted));
+                     };
+
+                     constexpr auto description = R"(get current configuration, starts an editor, on quit the edited configuration is posted.
+
+The editor is deduced from the following environment variables, in this order:
+  * CASUAL_TERMINAL_EDITOR
+  * VISUAL
+  * EDITOR
+
+If none is set, `vi` is used.
+
+If no changes are detected, no update will take place.
+)";
+
+                     return argument::Option{ 
+                        std::move( invoke), 
+                        format_list, 
+                        { "--configuration-edit"}, 
+                        description};    
+                  }
+
+                  auto put()
+                  {
+                     auto invoke = []( const std::string& format)
+                     {
+                        casual::configuration::user::Domain domain;
+                        auto archive = common::serialize::create::reader::consumed::from( format, std::cin);
+                        archive >> CASUAL_NAMED_VALUE( domain);
+
+                        event::invoke( call::configuration::put, domain);
+                     };
+
+                     constexpr auto description = R"(reads configuration from stdin and adds or updates parts
+
+The semantics are similar to http PUT:
+* every key that is found is treated as an update of that _entity_
+* every key that is NOT found is treated as a new _entity_ and added to the current state 
+)";
+
+                     return argument::Option{ 
+                        std::move( invoke), 
+                        format_list, 
+                        { "--configuration-put"}, 
+                        description};    
+                  }
+
+               } // configuration
+            } // option
+
          } // <unnamed>
       } // local
 
@@ -1003,27 +1085,23 @@ note: not all options has legend, use 'auto complete' to find out which legends 
          argument::Group options()
          {
             auto state_format = []( auto, bool){ return std::vector< std::string>{ "json", "yaml", "xml", "ini"};};
-            auto configuration_format = state_format;
 
             return argument::Group{ [](){}, { "domain"}, "local casual domain related administration",
                argument::Option( &local::action::list::servers::invoke, { "-ls", "--list-servers"}, local::action::list::servers::description),
                argument::Option( &local::action::list::executables::invoke, { "-le", "--list-executables"}, local::action::list::executables::description),
-               argument::Option( argument::option::one::many( &local::action::scale::aliases::invoke), 
-                  local::action::scale::aliases::completion, 
-                  argument::option::keys( { "-sa", "--scale-aliases"}, { "-si", "--scale-instances"}), local::action::scale::aliases::description),
-               argument::Option( argument::option::one::many( &local::action::restart::aliases::invoke), 
-                  local::action::restart::aliases::completion, 
-                  argument::option::keys( { "-ra", "--restart-aliases"}, { "-ri", "--restart-instances"}), local::action::restart::aliases::description),
-               argument::Option( &local::action::restart::groups::invoke, 
-                  local::action::restart::groups::completion, 
-                  { "-rg", "--restart-groups"}, local::action::restart::groups::description),
+               local::option::scale::aliases(),
+               local::option::restart::aliases(),
+               local::option::restart::groups(),
                argument::Option( &local::action::list::instances::server::invoke, { "-lis", "--list-instances-server"}, local::action::list::instances::server::description),
                argument::Option( &local::action::list::instances::executable::invoke, { "-lie", "--list-instances-executable"}, local::action::list::instances::executable::description),
-               argument::Option( &local::action::shutdown::invoke, { "-s", "--shutdown"}, local::action::shutdown::descripton),
-               argument::Option( &local::action::boot::invoke, local::action::boot::complete(), { "-b", "--boot"}, local::action::boot::descripton),
+               local::option::boot(),
+               local::option::shutdown(),
                argument::Option( &local::action::environment::set::call, local::action::environment::set::complete, { "--set-environment"}, local::action::environment::set::description)( argument::cardinality::any{}),
-               argument::Option( &local::action::configuration::get, configuration_format, { "--configuration-get"}, "get configuration (as provided format)"),
-               argument::Option( &local::action::configuration::put::invoke, configuration_format, { "--configuration-put"}, local::action::configuration::put::description),
+               local::option::configuration::get(),
+               local::option::configuration::post(),
+               local::option::configuration::edit(),
+               local::option::configuration::put(),
+            
                argument::Option( argument::option::one::many( &local::action::ping::invoke), local::action::ping::complete(), { "--ping"}, local::action::ping::description),
                argument::Option( &local::action::global::state::invoke, local::action::global::state::complete(), { "--instance-global-state"}, local::action::global::state::description),
                argument::Option( &local::action::legend::invoke, local::action::legend::complete(), { "--legend"}, local::action::legend::description),

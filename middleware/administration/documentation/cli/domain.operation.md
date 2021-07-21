@@ -40,11 +40,13 @@ host# casual --help domain
       -lie, --list-instances-executable [0..1]
             list all running executable instances
 
+      -b, --boot [0..1]  (<glob patterns>) [0..*]
+            boot domain
+            
+            With supplied configuration files, in the form of glob patterns.
+
       -s, --shutdown [0..1]
             shutdown domain
-
-      -b, --boot [0..1]  (<files>) [0..*]
-            boot domain
 
       --set-environment [0..*]  (<variable>, <value>, [<alias>*]) [2..*]
             set an environment variable for explicit aliases
@@ -54,10 +56,28 @@ host# casual --help domain
                                  
 
       --configuration-get [0..1]  (json, yaml, xml, ini) [0..1]
-            get configuration (as provided format)
+            get current configuration
+
+      --configuration-post [0..1]  (json, yaml, xml, ini) [1]
+            reads configuration from stdin and replaces the domain configuration
+            
+            casual will try to conform to the new configuration as smooth as possible. Although, there could be some "noise"
+            depending on what parts are updated.
+
+      --configuration-edit [0..1]  (json, yaml, xml, ini) [0..1]
+            get current configuration, starts an editor, on quit the edited configuration is posted.
+            
+            The editor is deduced from the following environment variables, in this order:
+              * CASUAL_TERMINAL_EDITOR
+              * VISUAL
+              * EDITOR
+            
+            If none is set, `vi` is used.
+            
+            If no changes are detected, no update will take place.
 
       --configuration-put [0..1]  (json, yaml, xml, ini) [1]
-            reads configuration from stdin and update the domain
+            reads configuration from stdin and adds or updates parts
             
             The semantics are similar to http PUT:
             * every key that is found is treated as an update of that _entity_

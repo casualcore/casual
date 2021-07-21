@@ -179,6 +179,46 @@ domain:
          EXPECT_TRUE( origin.service == model.service) << CASUAL_NAMED_VALUE( origin.service) << '\n' << CASUAL_NAMED_VALUE( model.service);
       }
 
+      TEST( service_manager, configuration_post)
+      {
+         common::unittest::Trace trace;
+
+         auto domain = local::domain( R"(
+domain:
+   services:
+      -  name: a
+         routes: [ b, c, d]
+         execution:
+            timeout: 
+               duration: 10ms
+               contract: kill
+
+)");
+
+
+         auto wanted = local::configuration::load( local::configuration::base, R"(
+domain:
+   services:
+      -  name: b
+         routes: [ x, y, z]
+         execution:
+            timeout: 
+               duration: 20ms
+               contract: linger
+
+)");
+
+         // make sure the wanted differs (otherwise we're not testing anyting...)
+         ASSERT_TRUE( wanted.service != casual::configuration::model::transform( casual::domain::manager::unittest::configuration::get()).service);
+
+         // post the wanted model (in transformed user representation)
+         auto updated = casual::configuration::model::transform( 
+            casual::domain::manager::unittest::configuration::post( casual::configuration::model::transform( wanted)));
+
+         EXPECT_TRUE( wanted.service == updated.service) << CASUAL_NAMED_VALUE( wanted.service) << '\n' << CASUAL_NAMED_VALUE( updated.service);
+
+      }
+
 
       namespace local
       {

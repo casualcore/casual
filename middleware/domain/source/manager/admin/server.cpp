@@ -119,9 +119,7 @@ namespace casual
                      return [&state]( common::service::invoke::Parameter&& parameter)
                      {
                         auto protocol = serviceframework::service::protocol::deduce( std::move( parameter));
-
-                        std::vector< model::scale::Alias> aliases;
-                        protocol >> CASUAL_NAMED_VALUE( aliases);
+                        auto aliases = protocol.extract< std::vector< model::scale::Alias>>( "aliases");
 
                         return serviceframework::service::user( std::move( protocol), &handle::scale::aliases, state, std::move( aliases));
                      };
@@ -136,9 +134,7 @@ namespace casual
                      return [&state]( common::service::invoke::Parameter&& parameter)
                      {
                         auto protocol = serviceframework::service::protocol::deduce( std::move( parameter));
-                        
-                        std::vector< model::restart::Alias> aliases;
-                        protocol >> CASUAL_NAMED_VALUE( aliases);
+                        auto aliases = protocol.extract< std::vector< model::restart::Alias>>( "aliases");
 
                         return serviceframework::service::user( std::move( protocol), &local::restart::aliases, state, std::move( aliases));
                      };
@@ -149,9 +145,7 @@ namespace casual
                      return [&state]( common::service::invoke::Parameter&& parameter)
                      {
                         auto protocol = serviceframework::service::protocol::deduce( std::move( parameter));
-                        
-                        std::vector< model::restart::Group> groups;
-                        protocol >> CASUAL_NAMED_VALUE( groups);
+                        auto groups = protocol.extract< std::vector< model::restart::Group>>( "groups");
 
                         return serviceframework::service::user( std::move( protocol), &local::restart::groups, state, std::move( groups));
                      };
@@ -198,22 +192,35 @@ namespace casual
                      {
                         auto get_configuration = []( auto& state)
                         {
-                           auto futures = algorithm::transform( state.configuration.suppliers, []( auto& process)
-                           {
-                              return communication::device::async::call( process.ipc, casual::configuration::message::Request{ common::process::handle()});
-                           });
-
-                           return casual::configuration::model::transform( 
-                              algorithm::accumulate( futures, casual::domain::manager::configuration::get( state), []( auto model, auto& future)
-                              {
-                                 return model += std::move( future.get( communication::ipc::inbound::device()).model);
-                              }));
+                           return casual::configuration::model::transform( manager::configuration::get( state));
                         };
 
                         return serviceframework::service::user( 
                            serviceframework::service::protocol::deduce( std::move( parameter)),
                            get_configuration,
                            state);
+                     };
+                  }
+
+                  auto post( manager::State& state)
+                  {
+                     return [&state]( common::service::invoke::Parameter&& parameter)
+                     {
+                        Trace trace{ "domain::manager::admin::local::service::configuration::post"};
+
+                        auto protocol = serviceframework::service::protocol::deduce( std::move( parameter));
+                        auto wanted = casual::configuration::model::transform( protocol.extract< casual::configuration::user::Domain>( "domain"));
+
+                        auto post_configuration = []( auto& state, auto& wanted)
+                        {
+                           state.configuration.model = manager::configuration::get( state);
+                           return manager::configuration::post( state, std::move( wanted));
+                        };
+
+                        return serviceframework::service::user( 
+                           std::move( protocol),
+                           post_configuration,
+                           state, wanted);
                      };
                   }
 
@@ -273,6 +280,11 @@ namespace casual
                },
                { service::name::configuration::get,
                      local::service::configuration::get( state),
+                     common::service::transaction::Type::none,
+                     common::service::category::admin
+               },
+               { service::name::configuration::post,
+                     local::service::configuration::post( state),
                      common::service::transaction::Type::none,
                      common::service::category::admin
                },

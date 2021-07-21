@@ -42,7 +42,7 @@ namespace casual
                   {
                      manager::handle::process::exit( exit);
                   });
-               }); 
+               });
 
                // Set environment variable so children can find us easy
                common::environment::variable::process::set(

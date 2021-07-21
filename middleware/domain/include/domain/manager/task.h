@@ -14,290 +14,287 @@
 #include "common/pimpl.h"
 #include "common/strong/id.h"
 #include "common/message/event.h"
+#include "common/functional.h"
 
 #include <queue>
 #include <memory>
 
 namespace casual
 {
-   namespace domain
+   namespace domain::manager
    {
-      namespace manager
+
+      struct State;
+
+      namespace task
       {
-         struct State;
-
-         namespace task
+         namespace id
          {
-            namespace id
-            {
-               using type = common::strong::correlation::id;
-            } // id
+            using type = common::strong::correlation::id;
+         } // id
 
-            struct Context
+         struct Context
+         {
+            task::id::type id;
+            std::string descripton;
+
+            CASUAL_LOG_SERIALIZE({
+               CASUAL_SERIALIZE( id);
+               CASUAL_SERIALIZE( descripton);
+            })
+         };
+
+         namespace message
+         {
+            namespace domain
             {
-               task::id::type id;
-               std::string descripton;
+               using base_information= common::message::basic_request< common::message::Type::event_domain_information>;
+               struct Information : base_information
+               {
+                  using base_information::base_information;
+
+                  common::domain::Identity domain;
+
+                  CASUAL_CONST_CORRECT_SERIALIZE({
+                     base_information::serialize( archive);
+                     CASUAL_SERIALIZE( domain);
+                  })
+               };
+            } // domain
+         } // message
+
+         namespace event
+         {
+            struct Callback
+            {
+               template< typename C>
+               Callback( C callback)
+                  : Callback{ model< C>( std::move( callback))} {}
+
+               template< typename M>
+               bool operator () ( const M& message)
+               {
+                  assert( m_type == common::message::type( message));
+                  return m_callback( &message);
+               }
+
+               auto type() const { return m_type;}
+
+               inline friend bool operator == ( const Callback& lhs, common::message::Type rhs) { return lhs.type() == rhs;}
 
                CASUAL_LOG_SERIALIZE({
-                  CASUAL_SERIALIZE( id);
-                  CASUAL_SERIALIZE( descripton);
+                  CASUAL_SERIALIZE_NAME( type(), "type");
                })
-            };
+               
+            private:
 
-            namespace message
-            {
-               namespace domain
+               using function_type = common::unique_function< bool( const void* memory)>;
+
+               template< typename I> 
+               struct model
                {
-                  using base_information= common::message::basic_request< common::message::Type::event_domain_information>;
-                  struct Information : base_information
+                  model( I invocable) : invocable{ std::move( invocable)} {}
+
+                  using traits_type = common::traits::function< I>;
+                  static constexpr auto valid_signature = traits_type::arguments() == 1;
+                  static_assert( valid_signature, "signature has to be callback::Result( const <message>&)");
+                  
+                  using message_type = common::traits::remove_cvref_t< typename traits_type:: template argument< 0>::type>;
+
+                  bool operator () ( const void* memory)
                   {
-                     using base_information::base_information;
-
-                     common::domain::Identity domain;
-
-                     CASUAL_CONST_CORRECT_SERIALIZE({
-                        base_information::serialize( archive);
-                        CASUAL_SERIALIZE( domain);
-                     })
-                  };
-               } // domain
-            } // message
-
-            namespace event
-            {
-               struct Callback
-               {
-                  template< typename C>
-                  Callback( C&& callback)
-                     : Callback{ std::make_unique< model< C>>( std::forward< C>( callback))} {}
-
-                  template< typename M>
-                  bool operator () ( const M& message) const 
-                  {
-                     assert( m_type == common::message::type( message));
-                     return m_concept->dispatch( &message);
+                     auto& message = *static_cast< const message_type*>( memory);
+                     return invocable( message);
                   }
 
-                  auto type() const { return m_type;}
-
-                  inline friend bool operator == ( const Callback& lhs, common::message::Type rhs) { return lhs.type() == rhs;}
-
-                  CASUAL_LOG_SERIALIZE({
-                     CASUAL_SERIALIZE_NAME( type(), "type");
-                  })
-                  
-               private:
-                  template< typename Model>
-                  Callback( std::unique_ptr< Model>&& model)
-                     : m_type{ Model::message_type::type()}, m_concept{ std::move( model)} {}
-                  
-                  struct concept 
-                  {
-                     virtual ~concept() = default;
-                     virtual bool dispatch( const void* memory) = 0;
-                  };
-
-                  template< typename I> 
-                  struct model : concept
-                  {
-                     model( I invocable) : invocable{ std::move( invocable)} {}
-
-                     using traits_type = common::traits::function< I>;
-                     static constexpr auto valid_signature = traits_type::arguments() == 1;
-                     static_assert( valid_signature, "signature has to be callback::Result( const <message>&)");
-                     
-                     using message_type = common::traits::remove_cvref_t< typename traits_type:: template argument< 0>::type>;
-
-                     bool dispatch( const void* memory) override
-                     {
-                        auto& message = *static_cast< const message_type*>( memory);
-                        return invocable( message);
-                     }
-
-                     I invocable;
-                  };
-
-                  common::message::Type m_type;
-                  std::unique_ptr< concept> m_concept;
+                  I invocable;
                };
 
-            } // event
-            
-         } // task
+               template< typename I>
+               Callback( model< I> callback)
+                  : m_type{ model< I>::message_type::type()}, m_callback{ std::move( callback)} {}
 
-         struct Task
-         {
-            struct Property
-            {
-               enum class Execution : short
-               {
-                  concurrent,
-                  sequential
-               };
-               friend std::ostream& operator << ( std::ostream& out, Execution value);
-
-               enum class Completion : short
-               {
-                  //! has to run regardless
-                  mandatory,
-                  //! non started can be removed
-                  removable, 
-                  //! can be removed and started will be aborted.
-                  abortable
-               };
-               friend std::ostream& operator << ( std::ostream& out, Completion value);
-
-               Execution execution = Execution::sequential;
-               Completion completion = Completion::mandatory;
-
-               friend std::ostream& operator << ( std::ostream& out, Property value);
+               common::message::Type m_type;
+               function_type m_callback;
             };
 
-            template< typename T>
-            explicit Task( task::id::type id, std::string description, T&& task, Property property) 
-               : m_context{ std::move( id), std::move( description)},
-               m_task{ std::forward< T>( task)},
-               m_property( property)
+         } // event
+         
+      } // task
+
+      struct Task
+      {
+         struct Property
+         {
+            enum class Execution : short
             {
-               common::log::line( verbose::log, "task created: ", *this);
+               concurrent,
+               sequential
+            };
+            friend std::ostream& operator << ( std::ostream& out, Execution value);
+
+            enum class Completion : short
+            {
+               //! has to run regardless
+               mandatory,
+               //! non started can be removed
+               removable, 
+               //! can be removed and started will be aborted.
+               abortable
+            };
+            friend std::ostream& operator << ( std::ostream& out, Completion value);
+
+            Execution execution = Execution::sequential;
+            Completion completion = Completion::mandatory;
+
+            friend std::ostream& operator << ( std::ostream& out, Property value);
+         };
+
+         template< typename T>
+         explicit Task( task::id::type id, std::string description, T&& task, Property property) 
+            : m_context{ std::move( id), std::move( description)},
+            m_task{ std::forward< T>( task)},
+            m_property( property)
+         {
+            common::log::line( verbose::log, "task created: ", *this);
+         }
+
+         template< typename T>
+         explicit Task( std::string description, T&& task, Property property) 
+            : Task{ task::id::type::emplace( common::uuid::make()), 
+               std::move( description), std::forward< T>( task), property}
+         {}
+
+         
+         Task( Task&&) = default; // noexcept is deduced
+         Task& operator = ( Task&&) = default; // noexcept is deduced
+
+         inline auto& context() const { return m_context;}
+         inline auto property() const { return m_property;}
+
+         inline std::vector< task::event::Callback> operator() ( State& state) { return m_task( state, context());}
+
+         inline friend bool operator == ( const Task& lhs, task::id::type rhs) { return lhs.m_context.id == rhs;}
+         inline friend bool operator != ( const Task& lhs, task::id::type rhs) { return ! ( lhs.m_context.id == rhs);}
+
+
+         CASUAL_LOG_SERIALIZE({
+            CASUAL_SERIALIZE_NAME( m_context, "context");
+            CASUAL_SERIALIZE_NAME( m_property, "property");
+         })
+
+      private:
+
+         using task_function_type = common::unique_function< std::vector< task::event::Callback>( State&, const task::Context&)>;
+
+         task::Context m_context;
+         task_function_type m_task;
+         Property m_property;
+      };
+
+      namespace task
+      {
+         //! running task
+         struct Running : Task
+         {
+            //! construct and start the running task
+            Running( State& state, Task&& task);
+
+            template< typename M>
+            bool operator () ( const M& message) 
+            {
+               Trace trace{ "domain::manager::task::Running::operator()"};
+               common::log::line( verbose::log, "running: ", *this);
+
+               if( auto found = common::algorithm::find( m_callbacks, common::message::type( message)))
+               {
+                  common::log::line( verbose::log, "callback: ", *found, " - message: ", message);
+                  return common::range::front( found)( message);
+               }
+
+               return false;
             }
 
-            template< typename T>
-            explicit Task( std::string description, T&& task, Property property) 
-               : Task{ task::id::type::emplace( common::uuid::make()), 
-                  std::move( description), std::forward< T>( task), property}
-            {}
+            auto empty() const { return m_callbacks.empty();}
 
-            
-            Task( Task&&) = default; // noexcept is deduced
-            Task& operator = ( Task&&) = default; // noexcept is deduced
+            friend bool operator == ( const Running& lhs, common::message::Type rhs);
 
-            inline auto& context() const { return m_context;}
-            inline auto property() const { return m_property;}
+            CASUAL_LOG_SERIALIZE({
+               Task::serialize( archive);
+               CASUAL_SERIALIZE_NAME( m_callbacks, "callbacks");
+            })
 
-            inline std::vector< task::event::Callback> operator() ( State& state) { return m_task( state, context());}
+            //! base class has done it's thing, make sure we don't "start again"
+            std::vector< task::event::Callback> operator() ( State& state) = delete;
 
-            inline friend bool operator == ( const Task& lhs, task::id::type rhs) { return lhs.m_context.id == rhs;}
-            inline friend bool operator != ( const Task& lhs, task::id::type rhs) { return ! ( lhs.m_context.id == rhs);}
+         private:
+            std::vector< task::event::Callback> m_callbacks;
+         };
+
+
+         struct Queue
+         {
+            //! start pending tasks if possible.
+            void idle( State& state);
+
+            //! adds tasks to queue
+            //! @{
+            task::id::type add( Task&& task);
+            //! @}
+
+            inline bool empty() const { return m_running.empty() && m_pending.empty();}
+
+            //! dispatch event to event callbacks
+            //! @attention this can/should only be called from within a message
+            //! handler, to mitigate possible recursive callback invocations. 
+            template< typename E>
+            void event( State& state, const E& event)
+            {
+               // second range holds tasks that are 'done'
+               auto split = common::algorithm::partition( m_running, [&event]( auto& task)
+               {
+                  return ! task( event);
+               });
+
+               // we handle and remove the 'done' tasks
+               common::algorithm::for_each( std::get< 1>( split), [&]( auto& task)
+               {
+                  done( state, std::move( task));
+               });
+
+               common::algorithm::trim( m_running, std::get< 0>( split));
+            }
+
+            //! @returns true any running task listen to this event message
+            bool active( common::message::Type type) const;
+
+            //! aborts all abortable tasks, regardless if they're running or not.
+            void abort( State& state);
+
+            //! removes all abortable task
+            void remove( State& state);
+
+            inline const auto& running() const { return m_running;}
+            inline const auto& pending() const { return m_pending;}
 
 
             CASUAL_LOG_SERIALIZE({
-               CASUAL_SERIALIZE_NAME( m_context, "context");
-               CASUAL_SERIALIZE_NAME( m_property, "property");
+               CASUAL_SERIALIZE_NAME( m_running, "running");
+               CASUAL_SERIALIZE_NAME( m_pending, "pending");
             })
 
          private:
-
-            using task_function_type = common::unique_function< std::vector< task::event::Callback>( State&, const task::Context&)>;
-
-            task::Context m_context;
-            task_function_type m_task;
-            Property m_property;
+            void start( State& state, Task&& task);
+            void done( State& state, Task&& task);
+            
+            std::vector< task::Running> m_running;
+            std::deque< Task> m_pending;
+            
          };
 
-         namespace task
-         {
-            //! running task
-            struct Running : Task
-            {
-               //! construct and start the running task
-               Running( State& state, Task&& task);
+      } // task
 
-               template< typename M>
-               bool operator () ( const M& message) 
-               {
-                  Trace trace{ "domain::manager::task::Running::operator()"};
-                  common::log::line( verbose::log, "running: ", *this);
-
-                  if( auto found = common::algorithm::find( m_callbacks, common::message::type( message)))
-                  {
-                     common::log::line( verbose::log, "callback: ", *found, " - message: ", message);
-                     return common::range::front( found)( message);
-                  }
-
-                  return false;
-               }
-
-               auto empty() const { return m_callbacks.empty();}
-
-               friend bool operator == ( const Running& lhs, common::message::Type rhs);
-
-               CASUAL_LOG_SERIALIZE({
-                  Task::serialize( archive);
-                  CASUAL_SERIALIZE_NAME( m_callbacks, "callbacks");
-               })
-
-               //! base class has done it's thing, make sure we don't "start again"
-               std::vector< task::event::Callback> operator() ( State& state) = delete;
-
-            private:
-               std::vector< task::event::Callback> m_callbacks;
-            };
-
-
-            struct Queue
-            {
-               //! start pending tasks if possible.
-               void idle( State& state);
-
-               //! adds tasks to queue
-               //! @{
-               task::id::type add( Task&& task);
-               //! @}
-
-               inline bool empty() const { return m_running.empty() && m_pending.empty();}
-
-               //! dispatch event to event callbacks
-               //! @attention this can/should only be called from within a message
-               //! handler, to mitigate possible recursive callback invocations. 
-               template< typename E>
-               void event( State& state, const E& event)
-               {
-                  // second range holds tasks that are 'done'
-                  auto split = common::algorithm::partition( m_running, [&event]( auto& task)
-                  {
-                     return ! task( event);
-                  });
-
-                  // we handle and remove the 'done' tasks
-                  common::algorithm::for_each( std::get< 1>( split), [&]( auto& task)
-                  {
-                     done( state, std::move( task));
-                  });
-
-                  common::algorithm::trim( m_running, std::get< 0>( split));
-               }
-
-               //! @returns true any running task listen to this event message
-               bool active( common::message::Type type) const;
-
-               //! aborts all abortable tasks, regardless if they're running or not.
-               void abort( State& state);
-
-               //! removes all abortable task
-               void remove( State& state);
-
-               inline const auto& running() const { return m_running;}
-               inline const auto& pending() const { return m_pending;}
-
-
-               CASUAL_LOG_SERIALIZE({
-                  CASUAL_SERIALIZE_NAME( m_running, "running");
-                  CASUAL_SERIALIZE_NAME( m_pending, "pending");
-               })
-
-            private:
-               void start( State& state, Task&& task);
-               void done( State& state, Task&& task);
-               
-               std::vector< task::Running> m_running;
-               std::deque< Task> m_pending;
-               
-            };
-
-         } // task
-      } // manager
-   } // domain
+   } // domain::manager
 } // casual
 
 

@@ -110,23 +110,15 @@ resources:
 
             } // configuration
 
-            namespace detail
-            {
-               struct Domain
-               {
-                  decltype( common::environment::variable::scoped::set( "", std::string{})) environment;
-                  common::file::scoped::Path resource;
-                  casual::domain::manager::unittest::Process process;  
-               };
-            } // detail
-
             template< typename... C>
             auto domain( common::file::scoped::Path resource, C&&... configurations) 
             {
-               return detail::Domain{ 
-                  common::environment::variable::scoped::set( "CASUAL_RESOURCE_CONFIGURATION_FILE", resource.string()),
+               auto scoped = common::environment::variable::scoped::set( common::environment::variable::name::resource::configuration, resource.string());
+               auto process = casual::domain::manager::unittest::process( configuration::servers, std::forward< C>( configurations)...);
+
+               return std::make_tuple( 
                   std::move( resource),
-                  casual::domain::manager::unittest::process( configuration::servers, std::forward< C>( configurations)...)};
+                  std::move( process));
             }
 
             template< typename... C>
@@ -338,6 +330,58 @@ domain:
 
       }
 
+      TEST( transaction_manager, configuration_post)
+      {
+         common::unittest::Trace trace;
+
+         auto domain = local::domain( R"(
+domain:
+   name: post
+
+   transaction:
+      log: ':memory:'
+      resources:
+         - key: rm-mockup
+           name: a
+           instances: 1
+           openinfo: "openinfo a"
+           note: a
+         - key: rm-mockup
+           name: b
+           instances: 2
+           openinfo: "openinfo b"
+           note: b
+)");
+         
+         auto wanted = local::configuration::load( local::configuration::servers, R"(
+domain:
+   name: post
+
+   transaction:
+      log: ':memory:'
+      resources:
+         - key: rm-mockup
+           name: x
+           instances: 3
+           openinfo: "openinfo x"
+           note: a
+         - key: rm-mockup
+           name: y
+           instances: 1
+           openinfo: "openinfo y"
+           note: b
+)");
+
+         // make sure the wanted differs (otherwise we're not testing anyting...)
+         ASSERT_TRUE( wanted.transaction != casual::configuration::model::transform( casual::domain::manager::unittest::configuration::get()).transaction);
+
+         // post the wanted model (in transformed user representation)
+         auto updated = casual::configuration::model::transform( 
+            casual::domain::manager::unittest::configuration::post( casual::configuration::model::transform( wanted)));
+
+         EXPECT_TRUE( wanted.transaction == updated.transaction) << CASUAL_NAMED_VALUE( wanted.transaction) << '\n' << CASUAL_NAMED_VALUE( updated.transaction);
+
+      }
       
 
 
@@ -363,6 +407,9 @@ domain:
 
          auto domain = local::domain( local::configuration::base);
 
+         common::log::line( verbose::log, "domain: ", domain);
+
+
          EXPECT_TRUE( local::begin() == common::code::tx::ok);
          EXPECT_TRUE( local::commit() == common::code::tx::ok);
 
@@ -370,12 +417,8 @@ domain:
          EXPECT_TRUE( state.transactions.empty());
 
          for( auto& resource : state.resources)
-         {
             for( auto& instance : resource.instances)
-            {
                EXPECT_TRUE( instance.metrics.resource.count == 0);
-            }
-         }
       }
 
 

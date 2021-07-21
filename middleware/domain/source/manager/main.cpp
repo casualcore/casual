@@ -72,7 +72,7 @@ namespace casual
 
                auto state =  configuration::load( settings.configuration);
                state.bare = settings.bare;
-               state.singelton = common::domain::singleton::create( common::process::handle(), common::domain::identity());
+               state.singleton_file = common::domain::singleton::create( common::process::handle(), common::domain::identity());
 
                state.parent.ipc = settings.parent.ipc;
                state.parent.correlation = settings.parent.correlation;

@@ -38,7 +38,6 @@ namespace casual
 {
    namespace common
    {
-
       namespace transaction
       {
          using xid_type = XID;
@@ -176,35 +175,27 @@ namespace casual
          } // id
       } // transaction
 
-      namespace serialize
+      namespace serialize::customize::composit
       {
-         namespace customize
+         //! specialization for XID
+         template< typename A>
+         struct Value< XID, A>
          {
-            namespace composit
+            template< typename V>  
+            static void serialize( A& archive, V&& xid)
             {
-               //! specialization for XID
-               //! @{
-               template< typename A>
-               struct Value< XID, A>
-               {
-                  template< typename V>  
-                  static void serialize( A& archive, V&& xid)
-                  {
-                     CASUAL_SERIALIZE_NAME( xid.formatID, "formatID");
+               CASUAL_SERIALIZE_NAME( xid.formatID, "formatID");
 
-                     if( ! transaction::id::null( xid))
-                     {
-                        CASUAL_SERIALIZE_NAME( xid.gtrid_length, "gtrid_length");
-                        CASUAL_SERIALIZE_NAME( xid.bqual_length, "bqual_length");
-                        CASUAL_SERIALIZE_NAME( transaction::id::range::data( xid), "data");
-                     }
-                  }
-               };
-               //! @}
-            } // composit
-            
-         } // customize
-      } // serialize
+               if( ! transaction::id::null( xid))
+               {
+                  CASUAL_SERIALIZE_NAME( xid.gtrid_length, "gtrid_length");
+                  CASUAL_SERIALIZE_NAME( xid.bqual_length, "bqual_length");
+                  CASUAL_SERIALIZE_NAME( transaction::id::range::data( xid), "data");
+               }
+            }
+         };
+
+      } // serialize::customize::composit
 
    } // common
 } // casual

@@ -284,7 +284,6 @@ domain:
 
             void activate()
             {
-               environment::variable::set( "CASUAL_HOME", local::repository::root() + "/test/home");
                environment::variable::set( "CASUAL_DOMAIN_HOME", home);
                
                if( callback)

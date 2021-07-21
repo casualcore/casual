@@ -388,10 +388,9 @@ namespace casual
 
          } configuration;
 
-
-
          //! the 'singleton' file for the domain
-         common::file::scoped::Path singelton;
+         common::file::scoped::Path singleton_file;
+
 
          std::vector< state::dependency::Group> bootorder() const;
          std::vector< state::dependency::Group> shutdownorder() const;

@@ -786,6 +786,18 @@ namespace casual
                      }
                   } // lookup
 
+
+
+                  namespace send
+                  {
+                     auto reply = []( State& state, auto directive, const auto& message)
+                     {
+                        auto reply = common::message::reverse::type( message);
+                        reply.directive = directive;
+                        manager::ipc::send( state, message.process, reply);
+                     };
+                  } // send
+
                   template< typename M>
                   void connect( State& state, const M& message)
                   {
@@ -794,11 +806,8 @@ namespace casual
                         server->connect( message.process);
                         log::line( log, "added process: ", message.process, " to ", *server);
                      }
-                     else 
-                     {
-                        // we assume it's a grandchild
+                     else // we assume it's a grandchild
                         state.grandchildren.push_back( message.process);
-                     }
 
                      algorithm::trim( state.pending.lookup, algorithm::remove_if( state.pending.lookup, process::detail::lookup::request( state)));
 
@@ -806,15 +815,12 @@ namespace casual
                      state.tasks.event( state, message);
                   }
 
-               } // detail
 
-               namespace singleton
-               {
-                  namespace detail
+                  namespace singleton
                   {
                      void service( State& state, const common::process::Handle& process)
                      {
-                        Trace trace{ "domain::manager::handle::local::singleton::service"};
+                        Trace trace{ "domain::manager::handle::local::process::detail::singleton::service"};
                         
                         auto transform_service = []( const auto& s)
                         {
@@ -832,36 +838,22 @@ namespace casual
                         manager::ipc::send( state, process, message);
                      }
 
-                  } // detail
-
-                  auto connect( State& state)
-                  {
-                     return [&state]( const common::message::domain::process::singleton::connect::Request& message)
+                     //! @returns true if it's a singleton process that tries to connect and this function takes
+                     //! responsibility for all the connnetion actions
+                     bool connect( State& state, const common::message::domain::process::connect::Request& message)
                      {
-                        Trace trace{ "domain::manager::handle::local::process::singleton::connect"};
-                        common::log::line( verbose::log, "message: ", message);
+                        Trace trace{ "domain::manager::handle::local::process::detail::singleton::connect"};
+
+                        if( ! message.singleton)
+                           return false; // not a singleton
 
                         using Directive = decltype( common::message::reverse::type( message).directive);
 
-                        auto send_reply = [&]( Directive directive)
-                        {
-                           auto reply = common::message::reverse::type( message);
-                           reply.directive = directive;
-                           manager::ipc::send( state, message.process, reply);
-                        };
-
-                        if( state.runlevel > decltype( state.runlevel())::running)
-                        {
-                           log::line( log::category::information, "refuse connect for pid: ", message.process.pid, " - runlevel: ", state.runlevel);
-                           send_reply( Directive::shutdown);
-                           return;
-                        }
-
-                        if( auto found = algorithm::find( state.singletons, message.identification))
+                        if( auto found = algorithm::find( state.singletons, message.singleton.identification))
                         {
                            // A "singleton" is trying to connect, while we already have one connected
 
-                           log::line( log::category::error, "only one instance is allowed for ", message.identification);
+                           log::line( log::category::error, "only one instance is allowed for ", message.singleton.identification);
 
                            // Adjust configured instances to correspond to reality...
 
@@ -877,39 +869,44 @@ namespace casual
                            }
                            
                            // deny startup
-                           send_reply( Directive::singleton);
+                           send::reply( state, Directive::denied, message);
 
                            manager::task::event::dispatch( state, [&message]()
                            {
                               common::message::event::Error event;
                               event.severity = decltype( event.severity)::warning;
-                              event.message = string::compose( "server connect - only one instance is allowed for ", message.identification);
+                              event.message = string::compose( "server connect - only one instance is allowed for ", message.singleton.identification);
                               return event;
                            });
 
                            // early exit
-                           return;
+                           return true;
                         }
 
-                        state.singletons[ message.identification] = message.process;
+                        state.singletons[ message.singleton.identification] = message.process;
 
                         // possible set environment-state so new spawned processes can use it directly
-                        if( ! message.environment.empty())
-                           environment::variable::process::set( message.environment, message.process);
+                        if( ! message.singleton.environment.empty())
+                           environment::variable::process::set( message.singleton.environment, message.process);
 
-                        state.whitelisted.push_back( message.process.pid);
+                        if( message.whitelist)
+                           state.whitelisted.push_back( message.process.pid);
 
                         // if ervice-manager, we need to interact.
-                        if( message.identification == communication::instance::identity::service::manager.id)
-                           detail::service( state, message.process);
+                        if( message.singleton.identification == communication::instance::identity::service::manager.id)
+                           singleton::service( state, message.process);
 
                         process::detail::connect( state, message);
 
                         // 'allow' the 'singleton' to start
-                        send_reply( Directive::start);
-                     };
-                  }
-               } // singleton
+                        send::reply( state, Directive::approved, message);
+
+                        return true;
+
+                     }
+                  } // singleton
+
+               } // detail
 
                auto connect( State& state)
                {
@@ -920,27 +917,23 @@ namespace casual
 
                      using Directive = decltype( common::message::reverse::type( message).directive);
 
-                     auto send_reply = [&]( Directive directive)
-                     {
-                        auto reply = common::message::reverse::type( message);
-                        reply.directive = directive;
-                        manager::ipc::send( state, message.process, reply);
-                     };
-
                      if( state.runlevel > decltype( state.runlevel())::running)
                      {
                         log::line( log::category::information, "refuse connect for pid: ", message.process.pid, " - runlevel: ", state.runlevel);
-                        send_reply( Directive::shutdown);
+                        detail::send::reply( state, Directive::denied, message);
                         return;
                      }
 
+                     if( detail::singleton::connect( state, message))
+                        return; // singleton, and handled.
+                 
                      if( message.whitelist)
                         state.whitelisted.push_back( message.process.pid);
 
                      detail::connect( state, message);
                      
                      // alllow the server to start.
-                     send_reply( Directive::start);
+                     detail::send::reply( state, Directive::approved, message);
                   };
                }
 
@@ -1050,7 +1043,6 @@ namespace casual
             handle::local::event::task( state),
             handle::local::event::sub::task( state),
             handle::local::event::discoverable::available( state),
-            handle::local::process::singleton::connect( state),
             handle::local::process::connect( state),
             handle::local::process::lookup( state),
             handle::local::configuration::request( state),

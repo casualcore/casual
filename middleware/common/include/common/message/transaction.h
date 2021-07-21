@@ -14,6 +14,7 @@
 #include "common/code/xa.h"
 #include "common/code/tx.h"
 #include "common/flag/xa.h"
+#include "common/process.h"
 
 
 namespace casual

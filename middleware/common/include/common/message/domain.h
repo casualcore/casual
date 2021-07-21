@@ -50,57 +50,20 @@ namespace casual
 
          namespace process
          {
-            namespace singleton::connect
+            struct Singleton
             {
-               using base_request = message::basic_request< Type::domain_process_singleton_connect_request>;
-               struct Request : base_request
-               {
-                  using base_request::base_request;
+               Uuid identification;
+               std::string environment;
 
-                  Uuid identification;
-                  std::string environment;
+               //! @returns true if state is "set", false otherwise.
+               inline explicit operator bool() const noexcept { return predicate::boolean( identification);} 
 
-                  CASUAL_CONST_CORRECT_SERIALIZE(
-                     base_request::serialize( archive);
-                     CASUAL_SERIALIZE( identification);
-                     CASUAL_SERIALIZE( environment);
-                  )
-               };
+               CASUAL_CONST_CORRECT_SERIALIZE(
+                  CASUAL_SERIALIZE( identification);
+                  CASUAL_SERIALIZE( environment);
+               )
+            };
 
-               namespace reply
-               {
-                  enum class Directive : short
-                  {
-                     start,
-                     singleton,
-                     shutdown
-                  };
-
-                  inline std::ostream& operator << ( std::ostream& out, Directive value)
-                  {
-                     switch( value)
-                     {
-                        case Directive::start: return out << "start";
-                        case Directive::singleton: return out << "singleton";
-                        case Directive::shutdown: return out << "shutdown";
-                     }
-                     return out << "unknown";
-                  }
-               } // reply
-
-               using base_reply =  message::basic_message< Type::domain_process_singleton_connect_reply>;
-               struct Reply : base_reply
-               {
-                  using base_reply::base_reply;
-
-                  reply::Directive directive{};
-
-                  CASUAL_CONST_CORRECT_SERIALIZE(
-                     base_reply::serialize( archive);
-                     CASUAL_SERIALIZE( directive);
-                  )
-               };
-            } // singleton::connect
 
             namespace connect
             {
@@ -110,10 +73,12 @@ namespace casual
                   using base_request::base_request;
 
                   bool whitelist = false;
+                  process::Singleton singleton;
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
                      base_request::serialize( archive);
                      CASUAL_SERIALIZE( whitelist);
+                     CASUAL_SERIALIZE( singleton);
                   )
                };
 
@@ -121,16 +86,16 @@ namespace casual
                {
                   enum class Directive : short
                   {
-                     start,
-                     shutdown
+                     approved,
+                     denied
                   };
 
                   inline std::ostream& operator << ( std::ostream& out, Directive value)
                   {
                      switch( value)
                      {
-                        case Directive::start: return out << "start";
-                        case Directive::shutdown: return out << "shutdown";
+                        case Directive::approved: return out << "approved";
+                        case Directive::denied: return out << "denied";
                      }
                      return out << "unknown";
                   }
@@ -293,9 +258,6 @@ namespace casual
       {
          template<>
          struct type_traits< domain::process::lookup::Request> : detail::type< domain::process::lookup::Reply> {};
-
-         template<>
-         struct type_traits< domain::process::singleton::connect::Request> : detail::type< domain::process::singleton::connect::Reply> {};
 
          template<>
          struct type_traits< domain::process::connect::Request> : detail::type< domain::process::connect::Reply> {};

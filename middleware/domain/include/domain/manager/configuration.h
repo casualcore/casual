@@ -15,25 +15,20 @@
 
 namespace casual
 {
-   namespace domain
+   namespace domain::manager::configuration
    {
-      namespace manager
-      {
-         namespace configuration
-         {
+      
+      //! @returns the total state of all managers.
+      casual::configuration::Model get( const State& state);
 
-            //! extract and transforms the current state to a 'the configuration model'
-            casual::configuration::Model get( const State& state);
+      //! @pre state.configuration.model is set to the current aggregated configuration model.
+      std::vector< common::strong::correlation::id> post( State& state, casual::configuration::Model wanted);
 
-            //auto replace( casual::configuration::domain::Manager configuration);
+      //! if element(s) _keys_ is found, there will be an update, otherwise the element(s) will be added
+      //! @return id's of tasks that fullfills the 'put'
+      std::vector< common::strong::correlation::id> put( State& state, casual::configuration::Model model);
 
-            //! if element(s) _keys_ is found, there will be an update, otherwise the element(s) will be added
-            //! @return id's of tasks that fullfills the 'put'
-            std::vector< common::strong::correlation::id> put( State& state, casual::configuration::Model model);
-
-         } // configuration
-      } // manager
-   } // domain
+   } // domain::manager::configuration
 } // casual
 
 

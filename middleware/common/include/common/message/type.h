@@ -46,9 +46,6 @@ namespace casual
          domain_process_connect_request = DOMAIN_BASE,
          domain_process_connect_reply,
 
-         domain_process_singleton_connect_request,
-         domain_process_singleton_connect_reply,
-
          domain_process_prepare_shutdown_request,
          domain_process_prepare_shutdown_reply,
 
@@ -354,11 +351,10 @@ namespace casual
 
 
          CASUAL_CONST_CORRECT_SERIALIZE(
-         {
             // correlation is part of ipc::message::Complete, and is
             // handled by the ipc-abstraction (marshaled 'on the side')
             CASUAL_SERIALIZE( execution);
-         })
+         )
       };
 
 
@@ -375,10 +371,9 @@ namespace casual
          platform::time::point::type end;
 
          CASUAL_CONST_CORRECT_SERIALIZE(
-         {
             CASUAL_SERIALIZE( start);
             CASUAL_SERIALIZE( end);
-         })
+         )
       };
 
       // Below, some basic message related types that is used by others
@@ -395,10 +390,9 @@ namespace casual
          friend bool operator == ( strong::process::id lhs, const basic_request& rhs) { return rhs == lhs;}
 
          CASUAL_CONST_CORRECT_SERIALIZE(
-         {
             basic_message< type>::serialize( archive);
             CASUAL_SERIALIZE( process);
-         })
+         )
 
       };
 

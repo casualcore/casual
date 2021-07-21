@@ -31,12 +31,11 @@ namespace casual
             } // standard
          } // descriptor
 
-         class Input : public std::ifstream
+         struct Input : std::ifstream
          {
-         public:
             Input( std::filesystem::path path, std::ios_base::openmode mode = std::ios_base::in);
 
-            const std::filesystem::path& path() const  { return m_path;} 
+            const std::filesystem::path& path() const  { return m_path;}
 
             inline friend std::ostream& operator << ( std::ostream& out, const Input& value) { return out << value.m_path;}
 
@@ -44,12 +43,11 @@ namespace casual
             std::filesystem::path m_path;
          };
 
-         class Output : public std::ofstream
+         struct Output : std::ofstream
          {
-         public:
             Output( std::filesystem::path path, std::ios_base::openmode mode = std::ios_base::out);
 
-            const std::filesystem::path& path() const  { return m_path;} 
+            const std::filesystem::path& path() const  { return m_path;}
 
             inline friend std::ostream& operator << ( std::ostream& out, const Output& value) { return out << value.m_path;}
 
@@ -64,11 +62,8 @@ namespace casual
 
          namespace scoped
          {
-
-            class Path : public std::filesystem::path
-            {
-            public:
-               
+            struct Path : std::filesystem::path
+            {  
                using std::filesystem::path::path;
 
                Path( const Path&) = delete;
@@ -108,6 +103,9 @@ namespace casual
             bool execution( const std::filesystem::path& path);
 
          } // permission
+
+         //! @returns a temporary path with the provided extension
+         std::filesystem::path temporary( std::string_view extension);
       } // file
 
       namespace directory

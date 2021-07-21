@@ -257,13 +257,18 @@ namespace casual
                {
                   struct Attributes : traits::uncopyable
                   {
-                     Attributes()
+                     Attributes( short flags)
                      {
+                        Trace trace{ "process::local::spawn::Attributes::Attributes"};
+
                         check_error( posix_spawnattr_init( &m_attributes), "posix_spawnattr_init");
 
-                        // We try to eliminate signals to propagate to children by it self...
-                        // we don't need to set groupid with posix_spawnattr_setpgroup since the default is 0.
-                        check_error( posix_spawnattr_setflags( &m_attributes, POSIX_SPAWN_SETPGROUP), "posix_spawnattr_setflags");
+                        check_error( posix_spawnattr_setflags( &m_attributes, flags | POSIX_SPAWN_SETSIGMASK), "posix_spawnattr_setflags");
+
+                        // we never want (?) any signal to be masked in the child
+                        const auto unmask = signal::Set{};
+                        check_error( posix_spawnattr_setsigmask( &m_attributes, &unmask.set), "posix_spawnattr_setsigmask");
+
                      }
 
                      ~Attributes()
@@ -271,11 +276,11 @@ namespace casual
                         posix_spawnattr_destroy( &m_attributes);
                      }
 
-                     posix_spawnattr_t* get() { return &m_attributes;}
+                     const posix_spawnattr_t* get() const noexcept { return &m_attributes;}
 
                   private:
 
-                     void check_error( int result, const char* message)
+                     void check_error( int result, const char* message) const
                      {
                         if( result == 0)
                            return;
@@ -286,8 +291,62 @@ namespace casual
 
                      posix_spawnattr_t m_attributes;
                   };
-               } // spawn
 
+                  strong::process::id invoke(
+                     std::string path,
+                     const Attributes& attributes,
+                     std::vector< std::string> arguments,
+                     std::vector< environment::Variable> environment)
+                  {
+                     Trace trace{ "process::local::spawn::invoke"};
+
+                     // We need to expand environment and arguments
+                     environment::normalize( environment, environment);
+                     environment::normalize( path, environment);
+                     environment::normalize( arguments, environment);
+                     
+                     // check if path exist and process has permission to execute it.
+                     // could still go wrong, since we don't know if the path will actually execute,
+                     // but we'll probably get rid of most of the errors (due to bad configuration and such)
+                     if( ! file::permission::execution( path))
+                        code::raise::error( code::casual::invalid_path, "spawn failed - path: ", path);
+
+                     log::line( log::debug, "process::spawn ", path, ' ', arguments);
+                     log::line( verbose::log, "environment: ", environment);
+
+                     // Append current, if not "overridden"
+                     environment = local::current::copy::environment( std::move( environment));
+
+                     auto pid = [&]()
+                     {
+                        // prepare c-style arguments and environment
+                        auto c_arguments = local::C::arguments( path, arguments);
+                        auto c_environment = local::C::environment( environment);
+
+                        platform::process::native::type native_pid{};
+
+                        auto status = posix_spawnp(
+                           &native_pid,
+                           path.c_str(),
+                           nullptr,
+                           attributes.get(),
+                           const_cast< char* const*>( c_arguments.data()),
+                           const_cast< char* const*>( c_environment.data()));
+
+                        if( status != 0)
+                           code::raise::error( code::casual::invalid_path, "spawn failed - path: ", path, " system: ", static_cast< std::errc>( status));
+                     
+                        return strong::process::id{ native_pid};
+                     }();
+                     
+                     // we sleep without handling signals
+                     std::this_thread::sleep_for( 200us);
+
+                     log::line( log::debug, "process::spawned pid: ", pid );
+
+                     return pid;
+                  }
+               } // spawn
             } // <unnamed>
          } // local
 
@@ -299,81 +358,12 @@ namespace casual
          {
             Trace trace{ "process::spawn"};
 
-            // We need to expand environment and arguments
-            environment::normalize( environment, environment);
-            environment::normalize( path, environment);
-            environment::normalize( arguments, environment);
-            
+            // We try to eliminate signals to propagate to children by it self...
+            // we don't need to set groupid with posix_spawnattr_setpgroup since the default is 0.
+            local::spawn::Attributes attributes{ POSIX_SPAWN_SETPGROUP};
 
-            // check if path exist and process has permission to execute it.
-            // could still go wrong, since we don't know if the path will actually execute,
-            // but we'll probably get rid of most of the errors (due to bad configuration and such)
-            if( ! file::permission::execution( path))
-               code::raise::error( code::casual::invalid_path, "spawn failed - path: ", path);
+            return local::spawn::invoke( std::move( path), attributes, std::move( arguments), std::move( environment));
 
-            log::line( log::debug, "process::spawn ", path, ' ', arguments);
-            log::line( verbose::log, "environment: ", environment);
-
-            // Append current, if not "overridden"
-            environment = local::current::copy::environment( std::move( environment));
-
-            auto pid = [&](){
-               local::spawn::Attributes attributes;
-
-               // prepare c-style arguments and environment
-               auto c_arguments = local::C::arguments( path, arguments);
-               auto c_environment = local::C::environment( environment);
-
-               platform::process::native::type native_pid{};
-
-               // make sure we don't block interupt and terminate
-               signal::thread::scope::Unblock unblock{ signal::Set{ code::signal::interrupt, code::signal::terminate}};
-
-               auto status = posix_spawnp(
-                  &native_pid,
-                  path.c_str(),
-                  nullptr,
-                  attributes.get(),
-                  const_cast< char* const*>( c_arguments.data()),
-                  const_cast< char* const*>( c_environment.data()));
-
-               if( status != 0)
-                  code::raise::error( code::casual::invalid_path, "spawn failed - path: ", path, " system: ", static_cast< std::errc>( status));
-            
-               return strong::process::id{ native_pid};
-            }();
-
-            // We try to minimize the glitch where the spawned process does not
-            // get signals for a short period of time. We need to block so we don't
-            // get child-terminate signals (or other signals for that matter...)
-            signal::thread::scope::Block block;
-
-            process::sleep( 200us);
-
-            log::line( log::debug, "process::spawned pid: ", pid );
-
-            //
-            // Try to figure out if the process started correctly..
-            //
-            /* We can't really do this, since we mess up the semantics for the caller
-
-            {
-               auto deaths = lifetime::wait( { pid}, 1us);
-
-               if( ! deaths.empty() && deaths.front().reason != lifetime::Exit::Reason::exited)
-               {
-                  auto& reason = deaths.front();
-
-                  throw exception::system::invalid::Argument( "spawn failed", CASUAL_NIP( path),
-                        exception::make_nip( "arguments", range::make( arguments)),
-                        exception::make_nip( "environment", range::make( environment)),
-                        CASUAL_NIP( reason));
-               }
-            }
-            */
-            // TODO: try something else to detect if the process started correct or not.
-
-            return pid;
          }
 
          strong::process::id spawn( std::string path, std::vector< std::string> arguments)
@@ -457,9 +447,8 @@ namespace casual
                      return false;
                   };
 
-                  while( loop());
-
-                  //log::debug << "wait exit: " << exit << '\n';
+                  while( loop())
+                     ; // no-op
 
                   return exit;
                }
@@ -635,6 +624,10 @@ namespace casual
 
       Process::Process() = default;
 
+      Process::Process( strong::process::id pid)
+         : process::Handle{ pid}
+      {}
+
       Process::Process( const std::filesystem::path& path, std::vector< std::string> arguments)
          : process::Handle{ process::spawn( path, std::move( arguments))}
       {
@@ -657,9 +650,8 @@ namespace casual
       }
 
       Process::Process( Process&& other) noexcept
-      {
-         pid = std::exchange( other.pid, {});
-      }
+         : Handle{ std::exchange( other.pid, {})}
+      {}
 
       Process& Process::operator = ( Process&& other) noexcept
       {
@@ -679,6 +671,7 @@ namespace casual
       {
          Handle::operator = ( {});
       }
+
 
    } // common
 } // casual

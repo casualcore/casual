@@ -501,8 +501,7 @@ namespace casual
 
       common::process::Handle State::singleton( const common::Uuid& id) const noexcept
       {
-         auto found = algorithm::find( singletons, id);
-         if( found)
+         if( auto found = algorithm::find( singletons, id))
             return found->second;
          return {};
       }

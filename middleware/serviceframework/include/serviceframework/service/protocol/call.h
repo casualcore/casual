@@ -20,9 +20,8 @@ namespace casual
          namespace detail
          {
             template< typename Result, typename Policy>
-            class basic_result : public Result
+            struct basic_result : Result
             {
-            public:
                using result_type = Result;
                using policy_type = Policy;
 
@@ -72,20 +71,35 @@ namespace casual
                   return *this;
                }
 
-               result_type operator () ( const std::string& service)
+               //! calls the `service` with 0..* arguments. If the first argument is `service::call::Flags` it will 
+               //! be used as flags to the call, and not part of the payload.
+               //! @returns the result...
+               template< typename... Args>
+               auto operator () ( const std::string& service, Args&&... args)
                {
-                  m_input.archive.consume( m_payload.memory);
-                  return { service::call::invoke( service, m_payload)};
-               }
-
-               result_type operator () ( const std::string& service, Flags flags)
-               {
-                  m_input.archive.consume( m_payload.memory);
-                  return { service::call::invoke( service, m_payload, flags)};
+                  return call( service, common::traits::priority::tag< 1>{}, std::forward< Args>( args)...);
                }
 
 
             private:
+               template< typename Arg, typename... Args>
+               auto call( const std::string& service, common::traits::priority::tag< 1>, Arg flags, Args&&... args)
+                  -> decltype( result_type{ service::call::invoke( service, std::declval< service::payload_type&>(), flags)})
+               {
+                  ( ( m_input.archive << std::forward< Args>( args)), ...);
+                  m_input.archive.consume( m_payload.memory);
+                  return result_type{ service::call::invoke( service, m_payload, flags)};
+               }
+
+               template< typename... Args>
+               auto call( const std::string& service, common::traits::priority::tag< 0>, Args&&... args)
+                  -> decltype( result_type{ service::call::invoke( service, std::declval< service::payload_type&>())})
+               {
+                  ( ( m_input.archive << std::forward< Args>( args)), ...);
+                  m_input.archive.consume( m_payload.memory);
+                  return { service::call::invoke( service, m_payload)};
+               }
+
                service::payload_type m_payload;
                input_policy m_input;
 

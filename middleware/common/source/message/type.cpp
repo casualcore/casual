@@ -25,8 +25,6 @@ namespace casual
             case Type::process_lookup_reply: return out << "process_lookup_reply";
             case Type::domain_process_connect_request: return out << "domain_process_connect_request";
             case Type::domain_process_connect_reply: return out << "domain_process_connect_reply";
-            case Type::domain_process_singleton_connect_request: return out << "domain_process_singleton_connect_request";
-            case Type::domain_process_singleton_connect_reply: return out << "domain_process_singleton_connect_reply";
             case Type::domain_process_prepare_shutdown_request: return out << "domain_process_prepare_shutdown_request";
             case Type::domain_process_prepare_shutdown_reply: return out << "domain_process_prepare_shutdown_reply";
             case Type::domain_manager_shutdown_request: return out << "domain_manager_shutdown_request";

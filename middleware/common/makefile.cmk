@@ -230,6 +230,7 @@ unittest_objectfiles = [
     make.Compile( 'unittest/source/test_environment.cpp'),
     make.Compile( 'unittest/source/environment/test_variable.cpp'),
     make.Compile( 'unittest/source/environment/test_string.cpp'),
+    make.Compile( 'unittest/source/environment/test_scoped.cpp'),
     
     make.Compile( 'unittest/source/network/test_byteorder.cpp'),
     

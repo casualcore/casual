@@ -45,6 +45,7 @@ namespace casual
                   {
                      constexpr auto get = ".casual/domain/configuration/get";
                      constexpr auto put = ".casual/domain/configuration/put";
+                     constexpr auto post = ".casual/domain/configuration/post";
                   } // configuration
 
                   namespace environment

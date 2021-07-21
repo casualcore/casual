@@ -5,6 +5,7 @@
 //!
 
 #include "common/unittest.h"
+#include "common/unittest/file.h"
 
 #define CASUAL_NO_XATMI_UNDEFINE
 
@@ -12,6 +13,7 @@
 
 #include "common/communication/instance.h"
 #include "common/transaction/context.h"
+#include "common/environment/scoped.h"
 #include "common/unittest/rm.h"
 
 #include "tx.h"
@@ -28,10 +30,9 @@ namespace casual
          {
             namespace
             {
-               auto domain( std::string_view configuration)
+               namespace configuration
                {
-                  return casual::domain::manager::unittest::Process{{
-R"(
+                  constexpr auto servers = R"(
 domain:
    name: test-default-domain
 
@@ -55,8 +56,28 @@ domain:
         memberships: [ example]
       - path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-server
         memberships: [ example]
-)", configuration}};
-            
+)";
+
+                  constexpr auto resources = R"(
+resources:
+  - key: rm-mockup
+    server: bin/rm-proxy-casual-mockup
+    xa_struct_name: casual_mockup_xa_switch_static
+    libraries:
+      - casual-mockup-rm
+)";
+                  
+               } // configuration
+
+               template< typename... C>
+               auto domain( C&&... configurations) 
+               {
+                  auto resource = common::unittest::file::temporary::content( ".yaml", configuration::resources);
+
+                  return std::make_tuple( 
+                     common::environment::variable::scoped::set( common::environment::variable::name::resource::configuration, resource.string()),
+                     std::move( resource),
+                     casual::domain::manager::unittest::process( configuration::servers, std::forward< C>( configurations)...));
                }
 
 
@@ -78,18 +99,6 @@ domain:
                   return ids.empty() ? strong::resource::id{} : ids.front();
                }
 
-               constexpr auto configuration = R"(
-domain: 
-   name: dynamic-rm
-
-   transaction:
-      resources:
-         - key: rm-mockup
-           name: rm-mockup-dynamic
-           openinfo:
-
-)";
-
                transaction::resource::Link link()
                {
                   return { "rm-mockup", "rm-mockup-dynamic", &casual_mockup_xa_switch_dynamic};
@@ -109,8 +118,20 @@ domain:
          {
             unittest::Trace trace;
             local::Clear clear;
+   
+            constexpr auto configuration = R"(
+domain: 
+   name: dynamic-rm
 
-            auto domain = local::domain( local::configuration);
+   transaction:
+      resources:
+         - key: rm-mockup
+           name: rm-mockup-dynamic
+           openinfo:
+
+)";
+
+            auto domain = local::domain( configuration);
             transaction::context().configure( { local::link()});
 
             EXPECT_TRUE( local::id() == strong::resource::id{ 1}) << "local::id(): " << local::id(); 
@@ -121,7 +142,19 @@ domain:
             unittest::Trace trace;
             local::Clear clear;
 
-            auto domain = local::domain( local::configuration);
+            constexpr auto configuration = R"(
+domain: 
+   name: dynamic-rm
+
+   transaction:
+      resources:
+         - key: rm-mockup
+           name: rm-mockup-dynamic
+           openinfo:
+
+)";
+
+            auto domain = local::domain( configuration);
             transaction::context().configure( { local::link()});
 
             EXPECT_TRUE( tx_begin() == TX_OK);
@@ -140,7 +173,19 @@ domain:
             unittest::Trace trace;
             local::Clear clear;
 
-            auto domain = local::domain( local::configuration);
+            constexpr auto configuration = R"(
+domain: 
+   name: dynamic-rm
+
+   transaction:
+      resources:
+         - key: rm-mockup
+           name: rm-mockup-dynamic
+           openinfo:
+
+)";
+
+            auto domain = local::domain( configuration);
             transaction::context().configure( { local::link()});
 
             auto id = local::id();

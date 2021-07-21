@@ -208,6 +208,57 @@ domain:
 
       }
 
+      TEST( gateway_manager, configuration_post)
+      {
+         common::unittest::Trace trace;
+
+         auto domain = local::domain( R"(
+domain: 
+   name: post
+   gateway:
+      inbound:
+         groups:
+            -  alias: inbound-1
+               note: xxx
+               connections: 
+                  -  address: 127.0.0.1:6669
+                     note: yyy
+      outbound:
+         groups: 
+            -  alias: outbound-1
+               connections:
+                  -  address: 127.0.0.1:6669
+)");
+
+         auto wanted = local::configuration::load( local::configuration::servers, R"(
+domain: 
+   name: post
+   gateway:
+      inbound:
+         groups:
+            -  alias: A
+               note: yyy
+               connections: 
+                  -  address: 127.0.0.1:7001
+                     note: yyy
+      outbound:
+         groups: 
+            -  alias: B
+               connections:
+                  -  address: 127.0.0.1:7001
+)");
+
+         // make sure the wanted differs (otherwise we're not testing anyting...)
+         ASSERT_TRUE( wanted.gateway != casual::configuration::model::transform( casual::domain::manager::unittest::configuration::get()).gateway);
+
+         // post the wanted model (in transformed user representation)
+         auto updated = casual::configuration::model::transform( 
+            casual::domain::manager::unittest::configuration::post( casual::configuration::model::transform( wanted)));
+
+         EXPECT_TRUE( wanted.gateway == updated.gateway) << CASUAL_NAMED_VALUE( wanted.gateway) << '\n' << CASUAL_NAMED_VALUE( updated.gateway);
+
+      }
+
       TEST( gateway_manager, listen_on_127_0_0_1__6666__outbound__127_0_0_1__6666__expect_connection)
       {
          common::unittest::Trace trace;

@@ -15,6 +15,7 @@
 #include "configuration/model/transform.h"
 
 #include "common/environment.h"
+#include "common/environment/scoped.h"
 
 namespace casual
 {
@@ -42,6 +43,15 @@ domain:
 )";
 
 
+               constexpr auto resources = R"(
+resources:
+  - key: rm-mockup
+    server: bin/rm-proxy-casual-mockup
+    xa_struct_name: casual_mockup_xa_switch_static
+    libraries:
+      - casual-mockup-rm
+)";
+
 
                template< typename... C>
                auto load( C&&... contents)
@@ -55,9 +65,19 @@ domain:
             } // configuration
 
             template< typename... C>
+            auto domain( common::file::scoped::Path resource, C&&... configurations) 
+            {
+               auto scoped = common::environment::variable::scoped::set( common::environment::variable::name::resource::configuration, resource.string());
+               auto process = casual::domain::manager::unittest::process( configuration::servers, std::forward< C>( configurations)...);
+               return std::make_tuple( 
+                  std::move( resource),
+                  std::move( process));
+            }
+
+            template< typename... C>
             auto domain( C&&... configurations)
             {
-               return casual::domain::manager::unittest::process( local::configuration::servers, std::forward< C>( configurations)...);
+               return domain( common::unittest::file::temporary::content( ".yaml", configuration::resources), std::forward< C>( configurations)...);
             }
 
             namespace validate
@@ -65,19 +85,6 @@ domain:
                template< typename... C>
                void configuration( C&&... configurations)
                {
-                  constexpr auto resources = R"(
-resources:
-
-  - key: rm-mockup   
-    server: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/transaction/bin/rm-proxy-casual-mockup"
-    xa_struct_name: casual_mockup_xa_switch_static
-    libraries:
-       - casual-mockup-rm
-)";
-                  // create the "resource property file"
-                  static const auto resource_file = common::unittest::file::temporary::content( ".yaml", resources);
-
-                  common::environment::variable::set( "CASUAL_RESOURCE_CONFIGURATION_FILE", resource_file.string());
 
                   auto domain = local::domain( std::forward< C>( configurations)...);
 
@@ -158,7 +165,7 @@ domain:
                count: 3
 
       groups:
-         - name: A
+         - alias: A
            queuebase: ":memory:"
            queues:
             -  name: a1
@@ -167,7 +174,7 @@ domain:
             -  name: a3
             -  name: delayed_100ms
                retry: { count: 10, delay: 100ms}
-         - name: B
+         - alias: B
            queuebase: ":memory:"
            queues:
             - name: b1

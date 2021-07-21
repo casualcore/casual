@@ -165,6 +165,8 @@ namespace casual
             std::vector< std::string> arguments,
             std::vector< environment::Variable> environment);
 
+
+
          //! Spawn a new application that path describes, and wait until it exit. That is
          //!  - spawn
          //!  - wait
@@ -274,6 +276,7 @@ namespace casual
       struct Process : process::Handle
       {
          Process();
+         Process( strong::process::id pid);
          Process( const std::filesystem::path& path, std::vector< std::string> arguments);
          Process( const std::filesystem::path& path);
          ~Process();
@@ -288,6 +291,7 @@ namespace casual
          //! only (?) usefull when detected that the actual child process has died.
          void clear();
       };
+
    } // common
 } // casual
 

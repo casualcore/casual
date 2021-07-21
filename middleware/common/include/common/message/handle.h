@@ -15,69 +15,59 @@
 
 namespace casual
 {
-   namespace common
+   namespace common::message::handle
    {
-      namespace message
+
+      //! Replies to a ping message
+      struct Ping
       {
-         namespace handle
+         void operator () ( const server::ping::Request& message);
+      };
+
+      //! @throws exception::casual::Shutdown if message::shutdown::Request is dispatched
+      struct Shutdown
+      {
+         void operator () ( const message::shutdown::Request& message);
+      };
+
+      namespace global
+      {
+         //! gather _global state_ from the process and reply the information to caller
+         struct State 
          {
+            void operator () ( const message::domain::instance::global::state::Request& message);
+         };
+      } // global
 
-            //! Replies to a ping message
-            struct Ping
-            {
-               void operator () ( const server::ping::Request& message);
-            };
+      
+      template< typename Device> 
+      auto defaults( Device&& device)
+      {
+         return dispatch::handler( device, 
+            handle::Ping{},
+            handle::Shutdown{},
+            handle::global::State{});
+      }
 
-            //! @throws exception::casual::Shutdown if message::shutdown::Request is dispatched
-            struct Shutdown
-            {
-               void operator () ( const message::shutdown::Request& message);
-            };
+      //! Handles and discard a given message type
+      template< typename Message> 
+      auto discard()
+      {
+         return []( const Message& message)
+         {
+            log::line( log::debug, "discard message: ", message);
+         };
+      }
 
-            namespace global
-            {
-               //! gather _global state_ from the process and reply the information to caller
-               struct State 
-               {
-                  void operator () ( const message::domain::instance::global::state::Request& message);
-               };
-            } // global
+      //! Dispatch and assigns a given message
+      template< typename M>
+      auto assign( M& target)
+      {
+         return [&target]( M& message)
+         {
+            target = message;
+         };
+      }
 
-            
-            
-
-            template< typename Device> 
-            auto defaults( Device&& device)
-            {
-               return dispatch::handler( device, 
-                  handle::Ping{},
-                  handle::Shutdown{},
-                  handle::global::State{});
-            }
-            
-            
-
-            //! Handles and discard a given message type
-            template< typename Message> 
-            auto discard()
-            {
-               return []( Message& message)
-               {
-                  log::line( log::debug, "discard message: ", message);
-               };
-            }
-
-            //! Dispatch and assigns a given message
-            template< typename M>
-            auto assign( M& target)
-            {
-               return [&target]( M& message)
-               {
-                  target = message;
-               };
-            }
-
-         } // handle
-      } // message
-   } // common
+   } // common::message::handle
 } // casual

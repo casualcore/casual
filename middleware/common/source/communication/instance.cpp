@@ -98,7 +98,7 @@ namespace casual
 
                auto directive = communication::ipc::call( outbound::domain::manager::device(), message).directive;
 
-               if( directive != decltype( directive)::start)
+               if( directive != decltype( directive)::approved)
                   code::raise::error( code::casual::shutdown, "domain-manager denied startup - directive: ", directive, " - action: terminate");
             }
 
@@ -131,9 +131,10 @@ namespace casual
          {
             Trace trace{ "communication::instance::whitelist::connect identity"};
 
-            common::message::domain::process::singleton::connect::Request request{ process};
-            request.identification = identity.id;
-            request.environment = identity.environment;
+            common::message::domain::process::connect::Request request{ process};
+            request.whitelist = true;
+            request.singleton.identification = identity.id;
+            request.singleton.environment = identity.environment;
 
             local::connect( request);
          }

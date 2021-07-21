@@ -88,7 +88,7 @@ namespace casual
             {
                return std::exchange( *this, {});
             }
-
+            
             std::ostream& operator << ( std::ostream& out, const Path& value)
             {
                //
@@ -145,6 +145,11 @@ namespace casual
                return ( fs::status( path).permissions() & fs::perms::owner_exec) != fs::perms::none;
             }
          } // permission
+
+         std::filesystem::path temporary( std::string_view extension)
+         {
+            return directory::temporary() / string::compose( uuid::make(), '.', extension); 
+         }
 
       } // file
 

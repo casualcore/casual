@@ -245,7 +245,6 @@ namespace casual
 
                   
                   CASUAL_LOG_SERIALIZE(
-                  {
                      CASUAL_SERIALIZE( domain);
                      CASUAL_SERIALIZE( detail);
                      CASUAL_SERIALIZE( tmp);
@@ -253,7 +252,7 @@ namespace casual
                      CASUAL_SERIALIZE( log);
                      CASUAL_SERIALIZE( ipc);
                      CASUAL_SERIALIZE( singleton);
-                  })
+                  )
 
                private:
 
@@ -278,11 +277,6 @@ namespace casual
                   Paths paths;
                } // global
                
-
-               Paths& paths() 
-               {
-                  return global::paths;
-               }
             } // <unnamed>
          } // local
 
@@ -291,7 +285,7 @@ namespace casual
          {
             const std::filesystem::path& domain()
             {
-               return local::paths().domain;
+               return local::global::paths.domain;
             }
 
             const std::filesystem::path& temporary()
@@ -302,7 +296,7 @@ namespace casual
 
             const std::filesystem::path& casual()
             {
-               return local::paths().casual;
+               return local::global::paths.casual;
             }
          } // directory
 
@@ -310,7 +304,7 @@ namespace casual
          {
             const std::filesystem::path& path()
             {
-               return local::paths().log;
+               return local::global::paths.log;
             }
          } // log
 
@@ -318,7 +312,7 @@ namespace casual
          {
             const std::filesystem::path& directory()
             {
-                return local::paths().ipc;
+                return local::global::paths.ipc;
             }
          } // transient
 
@@ -328,7 +322,7 @@ namespace casual
             {
                const std::filesystem::path& file()
                { 
-                  return local::paths().singleton;
+                  return local::global::paths.singleton;
                }
             } // singleton
          } // domain
@@ -336,9 +330,9 @@ namespace casual
 
          void reset()
          {
-            local::paths() = local::Paths{};
+            local::global::paths = local::Paths{};
 
-            common::log::line( common::verbose::log, "paths: ", local::paths());
+            common::log::line( common::verbose::log, "paths: ", local::global::paths);
          }
       } // environment
    } // common

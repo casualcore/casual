@@ -77,7 +77,7 @@ namespace casual
             {
 
                template< typename A>
-               auto get( std::string_view name, A&& alternative, traits::priority::tag< 2>)
+               auto get( std::string_view name, A alternative, traits::priority::tag< 2>)
                   -> std::enable_if_t< std::is_convertible_v< A, std::string>, std::string>
                {
                   if( variable::exists( name))
@@ -240,6 +240,7 @@ namespace casual
                   constexpr auto porcelain = "CASUAL_TERMINAL_PORCELAIN";
                   constexpr auto block = "CASUAL_TERMINAL_BLOCK";
                   constexpr auto verbose = "CASUAL_TERMINAL_VERBOSE";
+                  constexpr auto editor = "CASUAL_TERMINAL_EDITOR";
                } // log
 
             } // name

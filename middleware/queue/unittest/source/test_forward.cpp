@@ -250,6 +250,37 @@ domain:
 
       }
 
+
+      TEST( casual_queue_forward, configuration_post)
+      {
+         common::unittest::Trace trace;
+
+         constexpr auto extra = R"(
+domain:
+   queue:
+      groups:
+         -  alias: extra
+            queues:
+               -  name: x1
+               -  name: x2
+               -  name: x3
+)";
+
+         auto domain = local::domain();
+
+         auto wanted = local::configuration::load( local::configuration::servers, local::configuration::queue, extra);
+
+         // make sure the wanted differs (otherwise we're not testing anyting...)
+         ASSERT_TRUE( wanted.queue != casual::configuration::model::transform( casual::domain::manager::unittest::configuration::get()).queue);
+
+         // post the wanted model (in transformed user representation)
+         auto updated = casual::configuration::model::transform( 
+            casual::domain::manager::unittest::configuration::post( casual::configuration::model::transform( wanted)));
+
+         EXPECT_TRUE( wanted.queue == updated.queue) << CASUAL_NAMED_VALUE( wanted.queue) << '\n' << CASUAL_NAMED_VALUE( updated.queue);
+
+      }
+
       TEST( casual_queue_forward, state)
       {
          common::unittest::Trace trace;
