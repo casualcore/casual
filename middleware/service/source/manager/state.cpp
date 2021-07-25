@@ -6,7 +6,6 @@
 
 
 #include "service/manager/state.h"
-#include "service/transform.h"
 #include "service/common.h"
 
 #include "common/server/service.h"
@@ -112,6 +111,13 @@ namespace casual
                   m_services.erase( std::begin( found));
             }
 
+            void Sequential::remove( const state::Service* service, state::Service* replacement)
+            {
+               algorithm::trim( m_services, algorithm::remove( m_services, service));
+               if( m_service && m_service == service)
+                  m_service = replacement;
+            }
+
             std::ostream& operator << ( std::ostream& out, Sequential::State value)
             {
                switch( value)
@@ -140,6 +146,12 @@ namespace casual
                return {};
             }
 
+            void Instances::remove( const state::Service* service, state::Service* replacement)
+            {
+               for( auto& instance : sequential)
+                  instance.get().remove( service, replacement);
+            }
+
             void Metric::update( const common::message::event::service::Metric& metric)
             {
                invoked += metric.duration();
@@ -148,6 +160,16 @@ namespace casual
                   pending += metric.pending;
                
                last = metric.end;
+            }
+
+            Metric& operator += ( Metric& lhs, const Metric& rhs)
+            {
+               lhs.last = std::max( lhs.last, rhs.last);
+               lhs.invoked += rhs.invoked;
+               lhs.pending += rhs.pending; 
+               lhs.remote += rhs.remote;
+
+               return lhs;
             }
 
             namespace pending
@@ -420,14 +442,7 @@ namespace casual
             void restrict_add_services( const State& state, M& advertise)
             {
                if( auto found = algorithm::find( state.restrictions, advertise.alias))
-               {
-                  auto& restricted = found->second;
-
-                  algorithm::trim( advertise.services.add, algorithm::filter( advertise.services.add, [&restricted]( auto& service)
-                  {
-                     return predicate::boolean( algorithm::find( restricted, service.name));
-                  }));
-               }
+                  algorithm::trim( advertise.services.add, std::get< 0>( algorithm::intersection( advertise.services.add, found->services)));
             }
 
          } // <unnamed>

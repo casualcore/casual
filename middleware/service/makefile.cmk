@@ -34,7 +34,8 @@ logic_archive = make.LinkArchive( 'bin/casual-service-logic',
    [
    make.Compile( 'source/manager/handle.cpp'),
    make.Compile( 'source/manager/state.cpp'),
-   make.Compile( 'source/transform.cpp'),
+   make.Compile( 'source/manager/transform.cpp'),
+   make.Compile( 'source/manager/configuration.cpp'),
    make.Compile( 'source/common.cpp'),
    make.Compile( 'source/manager/admin/server.cpp'),
    ])

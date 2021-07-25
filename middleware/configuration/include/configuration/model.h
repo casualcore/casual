@@ -155,6 +155,8 @@ namespace casual::configuration
             std::optional< platform::time::unit> duration;
             Contract contract = Contract::linger;
 
+            inline explicit operator bool() const noexcept { return duration.has_value();}
+
             CASUAL_CONST_CORRECT_SERIALIZE(
                CASUAL_SERIALIZE( duration);
                CASUAL_SERIALIZE( contract);
@@ -169,7 +171,7 @@ namespace casual::configuration
             std::vector< std::string> routes;
             service::Timeout timeout;
 
-            inline friend bool operator == ( const Service& lhs, const std::string& name) { return lhs.name == name;} 
+            inline friend bool operator == ( const Service& lhs, const std::string& name) { return lhs.name == name;}
 
             CASUAL_CONST_CORRECT_SERIALIZE(
                CASUAL_SERIALIZE( name);

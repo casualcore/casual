@@ -13,6 +13,7 @@
 #include "domain/manager/task/event.h"
 
 #include "configuration/message.h"
+#include "configuration/model/change.h"
 
 #include "common/communication/ipc.h"
 #include "common/communication/instance.h"
@@ -33,23 +34,13 @@ namespace casual
             {
                struct Change
                {
-                  template< typename E>
-                  struct Entities
-                  {
-                     range::type_t< std::vector< E>> added;
-                     range::type_t< std::vector< E>> modified;
-                     range::type_t< std::vector< E>> removed;
 
-                     CASUAL_LOG_SERIALIZE(
-                        CASUAL_SERIALIZE( added);
-                        CASUAL_SERIALIZE( modified);
-                        CASUAL_SERIALIZE( removed);
-                     )
-                  };
+                  template< typename T>
+                  using Entity = casual::configuration::model::change::Result< range::type_t< std::vector< T>>>;
                   
-                  Entities< casual::configuration::model::domain::Group> groups;
-                  Entities< casual::configuration::model::domain::Server> servers;
-                  Entities< casual::configuration::model::domain::Executable> executables;
+                  Entity< casual::configuration::model::domain::Group> groups;
+                  Entity< casual::configuration::model::domain::Server> servers;
+                  Entity< casual::configuration::model::domain::Executable> executables;
 
                   CASUAL_LOG_SERIALIZE(
                      CASUAL_SERIALIZE( groups);
@@ -62,17 +53,9 @@ namespace casual
                {
                   Change result;
 
-                  auto set_change = []( auto& result, auto& wanted, auto& current, auto key)
-                  {
-                     auto differ = std::get< 1>( algorithm::intersection( wanted, current));
-
-                     std::tie( result.modified, result.added) = algorithm::intersection( differ, current, key);
-                     result.removed = std::get< 1>( algorithm::intersection( current, wanted, key));
-                  };
-
-                  set_change( result.groups, wanted.groups, current.groups, []( auto& l, auto& r){ return l.name == r.name;});
-                  set_change( result.servers, wanted.servers, current.servers, []( auto& l, auto& r){ return l.alias == r.alias;});
-                  set_change( result.executables, wanted.executables, current.executables, []( auto& l, auto& r){ return l.alias == r.alias;});
+                  result.groups = casual::configuration::model::change::calculate( current.groups, wanted.groups, []( auto& l, auto& r){ return l.name == r.name;});
+                  result.servers = casual::configuration::model::change::calculate( current.servers, wanted.servers, []( auto& l, auto& r){ return l.alias == r.alias;});
+                  result.executables = casual::configuration::model::change::calculate( current.executables, wanted.executables, []( auto& l, auto& r){ return l.alias == r.alias;});
 
                   return result;
                }
@@ -233,30 +216,41 @@ namespace casual
             {
                Trace trace{ "domain::manager::configuration::local::managers"};
 
-               std::vector< state::dependency::Group> groups;
+               std::vector< manager::Task> result;
 
-               auto add_singleton = [&]( auto& id, std::string descripton)
                {
-                  if( auto handle = state.singleton( id))
-                     if( auto server = state.server( handle.pid))
-                     {
-                        auto& group = groups.emplace_back();
-                        group.description = std::move( descripton);
-                        group.servers.push_back( server->id);
-                     }
-               };
+                  if( auto handle = state.singleton( communication::instance::identity::service::manager.id))
+                     result.push_back( manager::task::create::configuration::managers::update( wanted, { handle}));
+               }
 
-               // TODO the order?
-               if( state.configuration.model.service != wanted.service)
-                  add_singleton( communication::instance::identity::service::manager.id, "casual-service-manager");
-               if( state.configuration.model.queue != wanted.queue)
-                  add_singleton( communication::instance::identity::queue::manager.id, "casual-queue-manager");
-               if( state.configuration.model.transaction != wanted.transaction)
-                  add_singleton( communication::instance::identity::transaction::manager.id, "casual-transaction-manager");
-               if( state.configuration.model.gateway != wanted.gateway)
-                  add_singleton( communication::instance::identity::gateway::manager.id, "casual-gateway-manager");
+               // restarts
+               {
+                  std::vector< state::dependency::Group> groups;
 
-               return  manager::task::create::restart::aliases( std::move( groups));
+                  auto add_singleton = [&]( auto& id, std::string descripton)
+                  {
+                     if( auto handle = state.singleton( id))
+                        if( auto server = state.server( handle.pid))
+                        {
+                           auto& group = groups.emplace_back();
+                           group.description = std::move( descripton);
+                           group.servers.push_back( server->id);
+                        }
+                  };
+
+                  // TODO the order?
+
+                  if( state.configuration.model.queue != wanted.queue)
+                     add_singleton( communication::instance::identity::queue::manager.id, "casual-queue-manager");
+                  if( state.configuration.model.transaction != wanted.transaction)
+                     add_singleton( communication::instance::identity::transaction::manager.id, "casual-transaction-manager");
+                  if( state.configuration.model.gateway != wanted.gateway)
+                     add_singleton( communication::instance::identity::gateway::manager.id, "casual-gateway-manager");
+
+                  result.push_back( manager::task::create::restart::aliases( std::move( groups)));
+               }
+
+               return result;
             }
 
          } // <unnamed>
@@ -295,9 +289,8 @@ namespace casual
             return {};
          }
 
-         auto tasks = local::domain( state, wanted.domain);
-            
-         tasks.push_back( local::managers( state, wanted));
+         auto tasks = local::managers( state, wanted);
+         algorithm::move( local::domain( state, wanted.domain), std::back_inserter( tasks));
 
          log::line( verbose::log, "tasks: ", tasks);
          

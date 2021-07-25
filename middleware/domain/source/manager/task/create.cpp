@@ -6,9 +6,12 @@
 
 #include "domain/manager/task/create.h"
 #include "domain/manager/task/event.h"
+#include "domain/manager/ipc.h"
 
 #include "domain/manager/handle.h"
 #include "domain/common.h"
+
+#include "configuration/message.h"
 
 #include "common/algorithm/compare.h"
 #include "common/algorithm/container.h"
@@ -569,6 +572,67 @@ namespace casual
             }};
          }
       } // remove
+
+      namespace configuration::managers
+      {
+         struct Correlation
+         {
+            strong::correlation::id id;
+            process::Handle process;
+
+            friend bool operator == ( const Correlation& lhs, const strong::correlation::id& rhs) { return lhs.id == rhs;}
+            friend bool operator == ( const Correlation& lhs, strong::process::id rhs) { return lhs.process == rhs;}
+         };
+
+         manager::Task update( casual::configuration::Model wanted, const std::vector< process::Handle>& destinations)
+         {
+            casual::configuration::message::update::Request request{ process::handle()};
+            request.model = std::move( wanted);
+
+            auto correlations = algorithm::transform( destinations, []( auto& process)
+            {
+               Correlation result;
+               result.process = process;
+               return result;
+            });
+
+            auto invoke = [request = std::move( request), correlations = std::move( correlations)]( State& state, const manager::task::Context& context) mutable 
+               -> std::vector< manager::task::event::Callback>
+            {
+               Trace trace{ "domain::manager::task::create::configuration::managers::update task start"};
+
+               algorithm::remove_if( correlations, [&request]( auto& correlation)
+               {
+                  if( ( correlation.id = communication::device::blocking::send( correlation.process.ipc, request)))
+                     return false;
+                  return true;
+               });
+
+               if( correlations.empty())
+                  return {};
+
+               return create::local::callbacks( 
+                  [&correlations]( const casual::configuration::message::update::Reply& message)
+                  {
+                     algorithm::trim( correlations, algorithm::remove( correlations, message.correlation));
+                     return correlations.empty();
+                  },
+                  [&correlations]( const common::message::event::process::Exit& message)
+                  {
+                     algorithm::trim( correlations, algorithm::remove( correlations, message.state.pid));
+                     return correlations.empty();
+                  }
+               );
+            };
+
+            return manager::Task{ "managers configuration update", std::move( invoke),
+            {
+               Task::Property::Execution::sequential,
+               Task::Property::Completion::mandatory
+            }};
+
+         }
+      } // configuration::managers
 
    } // domain::manager::task::create
 } // casual

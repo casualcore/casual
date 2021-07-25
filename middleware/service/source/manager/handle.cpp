@@ -7,7 +7,8 @@
 
 #include "service/manager/handle.h"
 #include "service/manager/admin/server.h"
-#include "service/transform.h"
+#include "service/manager/transform.h"
+#include "service/manager/configuration.h"
 #include "service/common.h"
 
 #include "common/server/lifetime.h"
@@ -25,6 +26,7 @@
 #include "common/communication/instance.h"
 
 #include "configuration/message.h"
+#include "configuration/model/change.h"
 
 #include "domain/pending/message/send.h"
 #include "domain/discovery/api.h"
@@ -147,6 +149,7 @@ namespace casual
                environment::normalize( model);
 
                state.timeout = model.service.timeout;
+               state.restrictions = model.service.restrictions;
 
                auto add_service = [&]( auto& service)
                {
@@ -169,10 +172,6 @@ namespace casual
                };
 
                algorithm::for_each( model.service.services, add_service);
-
-               // accumulate restriction information
-               for( auto& restriction : model.service.restrictions)
-                  state.restrictions.emplace( restriction.alias, restriction.services);
 
                log::line( verbose::log, "state: ", state);
 
@@ -906,17 +905,18 @@ namespace casual
                {
                   namespace update
                   {
+
                      auto request( State& state)
                      {
-                        return []( casual::configuration::message::update::Request& message)
+                        return [&state]( casual::configuration::message::update::Request& message)
                         {
                            Trace trace{ "service::manager::handle::local::configuration::update::request"};
                            log::line( verbose::log, "message: ", message);
 
+                           manager::configuration::conform( state, transform::configuration( state), std::move( message.model.service));
 
                            auto reply = message::reverse::type( message);
                            eventually::send( message.process, reply);
-
                         };
                      }
                   } // update

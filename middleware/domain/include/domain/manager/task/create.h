@@ -34,5 +34,10 @@ namespace casual
          manager::Task aliases( std::vector< state::dependency::Group> groups);
       } // remove
 
+      namespace configuration::managers
+      {
+         manager::Task update( casual::configuration::Model wanted, const std::vector< common::process::Handle>& destinations);
+      } // configuration::managers
+
    } // domain::manager::task::create
 } // casual

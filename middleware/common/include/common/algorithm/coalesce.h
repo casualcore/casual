@@ -16,17 +16,19 @@ namespace casual
       {
          namespace coalesce
          {
-            template< typename T>
-            auto empty( T&& value, traits::priority::tag< 2>) -> decltype( value == nullptr)
-            { return value == nullptr;}
+
 
             template< typename T>
-            auto empty( T&& value, traits::priority::tag< 1>) -> decltype( value.empty()) 
+            auto empty( T&& value, traits::priority::tag< 2>) -> decltype( value.empty()) 
             { return value.empty();}
 
             template< typename T>
-            auto empty( T&& value, traits::priority::tag< 0>) -> decltype( ! value.has_value()) 
+            auto empty( T&& value, traits::priority::tag< 1>) -> decltype( ! value.has_value()) 
             { return ! value.has_value();}
+
+            template< typename T>
+            auto empty( T&& value, traits::priority::tag< 0>) -> decltype( value == nullptr)
+            { return value == nullptr;}
 
             template< typename T>
             decltype( auto) implementation( T&& value)

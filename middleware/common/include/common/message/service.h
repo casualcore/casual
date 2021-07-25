@@ -61,6 +61,8 @@ namespace casual
             common::service::transaction::Type transaction = common::service::transaction::Type::automatic;
             service::Type type = service::Type::sequential;
 
+            inline friend bool operator == ( const Base& lhs, const std::string& rhs) { return lhs.name == rhs;}
+
             CASUAL_CONST_CORRECT_SERIALIZE(
                CASUAL_SERIALIZE( name);
                CASUAL_SERIALIZE( category);

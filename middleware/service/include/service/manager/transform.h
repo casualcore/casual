@@ -13,19 +13,17 @@
 
 #include "configuration/model.h"
 
-#include "common/message/transaction.h"
-
 
 namespace casual
 {
-   namespace service::transform
+   namespace service::manager::transform
    {
 
       manager::admin::model::State state( const manager::State& state);
 
-      configuration::model::service::Model configuration( const manager::State& state);
+      casual::configuration::model::service::Model configuration( const manager::State& state);
 
-   } // service::transform
+   } // service::manager::transform
 } // casual
 
 

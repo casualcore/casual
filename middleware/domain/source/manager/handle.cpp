@@ -967,6 +967,22 @@ namespace casual
                   };
                }
 
+               namespace update
+               {
+                  auto reply( State& state)
+                  {
+                     return [&state]( const casual::configuration::message::update::Reply& message)
+                     {
+                        Trace trace{ "domain::manager::handle::configuration::update::reply"};
+                        common::log::line( verbose::log, "message: ", message);
+
+                        state.tasks.event( state, message);
+
+                     };
+
+                  }
+               } // update
+
                namespace supplier
                {
                   auto registration( State& state)
@@ -1047,6 +1063,7 @@ namespace casual
             handle::local::process::connect( state),
             handle::local::process::lookup( state),
             handle::local::configuration::request( state),
+            handle::local::configuration::update::reply( state),
             handle::local::configuration::supplier::registration( state),
             handle::local::server::Handle{
                manager::admin::services( state),

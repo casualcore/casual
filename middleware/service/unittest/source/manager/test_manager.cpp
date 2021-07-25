@@ -193,6 +193,13 @@ domain:
                duration: 10ms
                contract: kill
 
+      -  name: modify
+         routes: [ x, y]
+         execution:
+            timeout: 
+               duration: 10ms
+               contract: kill
+
 )");
 
 
@@ -201,6 +208,13 @@ domain:
    services:
       -  name: b
          routes: [ x, y, z]
+         execution:
+            timeout: 
+               duration: 20ms
+               contract: linger
+
+      -  name: modify
+         routes: [ x, z]
          execution:
             timeout: 
                duration: 20ms

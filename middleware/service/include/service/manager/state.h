@@ -99,6 +99,8 @@ namespace casual
 
                void add( state::Service& service);
                void remove( const std::string& service);
+               //! removes service from associated 
+               void remove( const state::Service* service, state::Service* replacement);
 
                //! @returns and consumes associated caller to the correlation. 'empty' caller if not found.
                inline instance::Caller consume( const common::strong::correlation::id& correlation)
@@ -286,6 +288,9 @@ namespace casual
                //! @returns and consumes associated caller to the correlation. 'empty' caller if not found.
                state::instance::Caller consume( const common::strong::correlation::id& correlation);
 
+               //! removes service from associated 
+               void remove( const state::Service* service, state::Service* replacement);
+
                inline void partition() { common::algorithm::sort( concurrent);}
 
                CASUAL_LOG_SERIALIZE(
@@ -309,6 +314,8 @@ namespace casual
                inline void reset() { *this = Metric{};}
                void update( const common::message::event::service::Metric& metric);
 
+               friend Metric& operator += ( Metric& lhs, const Metric& rhs);
+
                CASUAL_LOG_SERIALIZE(
                   CASUAL_SERIALIZE( invoked);
                   CASUAL_SERIALIZE( pending);
@@ -324,7 +331,7 @@ namespace casual
             // state
             service::Instances instances;
             common::message::service::call::Service information;
-            configuration::model::service::Timeout timeout;
+            casual::configuration::model::service::Timeout timeout;
             service::Metric metric;
 
             void remove( common::strong::process::id instance);
@@ -423,7 +430,7 @@ namespace casual
 
          common::Process forward;
 
-         configuration::model::service::Timeout timeout;
+         casual::configuration::model::service::Timeout timeout;
 
          //! holds all the routes, for services that has routes
          std::map< std::string, std::vector< std::string>> routes;
@@ -431,7 +438,7 @@ namespace casual
          std::map< std::string, std::string> reverse_routes;
 
          //! holds all alias restrictions.
-         std::map< std::string, std::vector< std::string>> restrictions;
+         std::vector< casual::configuration::model::service::Restriction> restrictions;
 
          //! @returns true if we're ready to shutdown
          bool done() const noexcept;

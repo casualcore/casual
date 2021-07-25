@@ -6,80 +6,70 @@
 
 
 #include "service/manager/admin/server.h"
-#include "service/transform.h"
-
+#include "service/manager/transform.h"
 
 #include "common/algorithm.h"
 
 #include "serviceframework/service/protocol.h"
 
 
-
 namespace casual
 {
-   namespace service
+   namespace service::manager::admin
    {
-      namespace manager
+      namespace local
       {
-         namespace admin
+         namespace
          {
-            namespace local
+            common::service::invoke::Result state( common::service::invoke::Parameter&& parameter, manager::State& state)
             {
-               namespace
+               auto protocol = serviceframework::service::protocol::deduce( std::move( parameter));
+
+               auto result = serviceframework::service::user( protocol, &transform::state, state);
+
+               protocol << CASUAL_NAMED_VALUE( result);
+
+               return protocol.finalize();
+            }
+
+            namespace metric
+            {
+               common::service::invoke::Result reset( common::service::invoke::Parameter&& parameter, manager::State& state)
                {
+                  auto protocol = serviceframework::service::protocol::deduce( std::move( parameter));
 
-                  common::service::invoke::Result state( common::service::invoke::Parameter&& parameter, manager::State& state)
-                  {
-                     auto protocol = serviceframework::service::protocol::deduce( std::move( parameter));
+                  std::vector< std::string> services;
+                  protocol >> CASUAL_NAMED_VALUE( services);
 
-                     auto result = serviceframework::service::user( protocol, &transform::state, state);
+                  auto result = serviceframework::service::user( protocol, &manager::State::metric_reset, state, std::move( services));
 
-                     protocol << CASUAL_NAMED_VALUE( result);
+                  protocol << CASUAL_NAMED_VALUE( result);
 
-                     return protocol.finalize();
-                  }
-
-                  namespace metric
-                  {
-
-                     common::service::invoke::Result reset( common::service::invoke::Parameter&& parameter, manager::State& state)
-                     {
-                        auto protocol = serviceframework::service::protocol::deduce( std::move( parameter));
-
-                        std::vector< std::string> services;
-                        protocol >> CASUAL_NAMED_VALUE( services);
-
-                        auto result = serviceframework::service::user( protocol, &manager::State::metric_reset, state, std::move( services));
-
-                        protocol << CASUAL_NAMED_VALUE( result);
-
-                        return protocol.finalize();
-                     }
-
-                  } // metric
-
+                  return protocol.finalize();
                }
-            }
 
-            common::server::Arguments services( manager::State& state)
-            {
-               return { {
-                     { service::name::state(),
-                        std::bind( &local::state, std::placeholders::_1, std::ref( state)),
-                        common::service::transaction::Type::none,
-                        common::service::category::admin
-                     },
-                     { service::name::metric::reset(),
-                        std::bind( &local::metric::reset, std::placeholders::_1, std::ref( state)),
-                        common::service::transaction::Type::none,
-                        common::service::category::admin
-                     }
-               }};
-            }
+            } // metric
 
-         } // admin
-      } // manager
-   } // service
+         } // <unnamed>
+      } // local
+
+      common::server::Arguments services( manager::State& state)
+      {
+         return { {
+               { service::name::state(),
+                  std::bind( &local::state, std::placeholders::_1, std::ref( state)),
+                  common::service::transaction::Type::none,
+                  common::service::category::admin
+               },
+               { service::name::metric::reset(),
+                  std::bind( &local::metric::reset, std::placeholders::_1, std::ref( state)),
+                  common::service::transaction::Type::none,
+                  common::service::category::admin
+               }
+         }};
+      }
+
+   } // service::manager::admin
 } // casual
 
 
