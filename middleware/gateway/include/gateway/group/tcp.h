@@ -64,7 +64,7 @@ namespace casual
             auto extract( common::strong::process::id pid)
             {
                if( auto found = common::algorithm::find( m_connectors, pid))
-                  return common::algorithm::extract( m_connectors, std::begin( found));
+                  return common::algorithm::container::extract( m_connectors, std::begin( found));
 
                common::code::raise::error( common::code::casual::invalid_semantics, "failed to correlate pending connector for pid: ", pid);
             }
@@ -78,7 +78,7 @@ namespace casual
 
                if( auto found = common::algorithm::find( m_connectors, exit.pid))
                {
-                  auto connector = common::algorithm::extract( m_connectors, std::begin( found));
+                  auto connector = common::algorithm::container::extract( m_connectors, std::begin( found));
                   // we 'clear' the connector to not send unnecessary signals.
                   connector.process.clear();
                }
@@ -264,7 +264,7 @@ namespace casual
             directive.read.remove( descriptor);
             common::algorithm::trim( m_connections, common::algorithm::remove( m_connections, descriptor));
             if( auto found = common::algorithm::find( m_information, descriptor))
-               return common::algorithm::extract( m_information, std::begin( found)).configuration;
+               return common::algorithm::container::extract( m_information, std::begin( found)).configuration;
             
             return {};
          }

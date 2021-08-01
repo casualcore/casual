@@ -8,7 +8,7 @@
 
 #include "common/message/type.h"
 
-#include "common/algorithm.h"
+#include "common/algorithm/container.h"
 #include "common/code/raise.h"
 #include "common/code/casual.h"
 
@@ -47,7 +47,7 @@ namespace casual
          Point consume( const common::strong::correlation::id& correlation)
          {
             if( auto found = common::algorithm::find( m_points, correlation))
-               return common::algorithm::extract( m_points, std::begin( found));
+               return common::algorithm::container::extract( m_points, std::begin( found));
 
             return Point{};
          }
@@ -57,7 +57,7 @@ namespace casual
          {
             auto consume = std::get< 1>( common::algorithm::partition( m_points, common::predicate::negate( common::predicate::value::equal( connection))));
 
-            return common::algorithm::extract( m_points, consume);
+            return common::algorithm::container::extract( m_points, consume);
          }
 
          //! consumes and @returns all 'points'

@@ -109,7 +109,7 @@ namespace casual
 
                         // We consume the request regardless
 
-                        auto request = algorithm::extract( state.pending, std::begin( found));
+                        auto request = algorithm::container::extract( state.pending, std::begin( found));
                         request.service = message.service;
 
                         if( message.state == decltype( message.state)::absent)

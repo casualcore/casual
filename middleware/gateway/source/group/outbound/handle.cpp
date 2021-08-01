@@ -862,7 +862,7 @@ namespace casual
 
          std::vector< configuration::model::gateway::outbound::Connection> result;
 
-         for( auto descriptor : algorithm::extract( state.disconnecting, algorithm::filter( state.disconnecting, no_pending)))
+         for( auto descriptor : algorithm::container::extract( state.disconnecting, algorithm::filter( state.disconnecting, no_pending)))
             if( auto configuration = handle::connection::lost( state, descriptor))
                result.push_back( std::move( configuration.value()));
 

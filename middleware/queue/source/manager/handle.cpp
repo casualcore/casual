@@ -427,7 +427,7 @@ namespace casual
                            // context is direct  (and the lookup did not find what the caller wants, via check::pending::lookups)
                            if( auto found = algorithm::find( state.pending.lookups, message.correlation); found && found->context == decltype( found->context)::direct)
                            {
-                              auto pending = algorithm::extract( state.pending.lookups, std::begin( found));
+                              auto pending = algorithm::container::extract( state.pending.lookups, std::begin( found));
                               auto reply = common::message::reverse::type( pending);
                               communication::device::blocking::optional::send( pending.process.ipc, reply);
                            }

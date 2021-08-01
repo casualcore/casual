@@ -642,7 +642,7 @@ namespace casual
 
                            // extract the corresponding pending lookups and 'emulate' new lookups, if any.
                            {
-                              auto lookups = algorithm::extract( 
+                              auto lookups = algorithm::container::extract( 
                                  state.pending.lookups, 
                                  std::get< 0>( algorithm::intersection( state.pending.lookups, services)));
 
@@ -804,7 +804,7 @@ namespace casual
 
                            if( auto found = algorithm::find( state.pending.lookups, message.correlation))
                            {
-                              auto pending = algorithm::extract( state.pending.lookups, std::begin( found));
+                              auto pending = algorithm::container::extract( state.pending.lookups, std::begin( found));
 
                               auto service = state.service( pending.request.requested);
 
@@ -884,7 +884,7 @@ namespace casual
                         {
                            log::line( verbose::log, "found pendig: ", *found);
 
-                           auto pending = algorithm::extract( state.pending.lookups, std::begin( found));
+                           auto pending = algorithm::container::extract( state.pending.lookups, std::begin( found));
 
                            // We now know that there are one idle server that has advertised the
                            // requested service (we've just marked it as idle...).

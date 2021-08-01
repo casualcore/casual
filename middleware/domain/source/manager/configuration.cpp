@@ -85,7 +85,7 @@ namespace casual
                      {
                         if( auto found = algorithm::find( state.groups, group.name))
                         {
-                           auto id = algorithm::extract( state.groups, std::begin( found)).id;
+                           auto id = algorithm::container::extract( state.groups, std::begin( found)).id;
 
                            auto remove_membership = [id]( auto& process)
                            {

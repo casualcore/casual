@@ -174,7 +174,7 @@ namespace casual
                   auto found = common::algorithm::find( pending, correlation);
                   assert( found);
 
-                  return algorithm::extract( pending, std::begin( found));
+                  return algorithm::container::extract( pending, std::begin( found));
                }
             } // pending
 
@@ -522,7 +522,7 @@ namespace casual
                         {
                            if( auto found = algorithm::find( state.pending.dequeues, message.correlation))
                            {
-                              auto pending = algorithm::extract( state.pending.dequeues, std::begin( found));
+                              auto pending = algorithm::container::extract( state.pending.dequeues, std::begin( found));
 
                               state.forward_apply( pending.id, []( auto& forward)
                               {

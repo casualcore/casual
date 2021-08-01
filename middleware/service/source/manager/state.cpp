@@ -201,7 +201,7 @@ namespace casual
                   });
 
                   Deadline::Expired result;
-                  result.entries = algorithm::extract( m_entries, range::make( std::begin( m_entries), pivot));
+                  result.entries = algorithm::container::extract( m_entries, range::make( std::begin( m_entries), pivot));
 
                   if( ! m_entries.empty())
                      result.deadline = m_entries.front().when;
@@ -456,7 +456,7 @@ namespace casual
             if( auto found = common::algorithm::find( instances.sequential, process.pid))
             {
                algorithm::append_unique( found->second.detach(), std::get< 0>( result));
-               std::get< 1>( result).push_back( algorithm::extract( instances.sequential, std::begin( found)).second);
+               std::get< 1>( result).push_back( algorithm::container::extract( instances.sequential, std::begin( found)).second);
                return true;
             }
             else if( common::algorithm::find( instances.concurrent, process.pid))
@@ -518,7 +518,7 @@ namespace casual
             };
 
             if( auto found = algorithm::find_if( pending.lookups, requested_service))
-               return { algorithm::extract( pending.lookups, std::begin( found))};
+               return { algorithm::container::extract( pending.lookups, std::begin( found))};
          }
 
          return {};

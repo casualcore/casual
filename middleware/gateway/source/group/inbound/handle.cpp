@@ -548,7 +548,7 @@ namespace casual
             auto result = state.external.remove( state.directive, descriptor);
 
             // find possible pending 'lookup' requests
-            auto lost = algorithm::extract( state.correlations, algorithm::filter( state.correlations, predicate::value::equal( descriptor)));
+            auto lost = algorithm::container::extract( state.correlations, algorithm::filter( state.correlations, predicate::value::equal( descriptor)));
             log::line( verbose::log, "lost: ", lost);
 
             auto pending = state.pending.requests.consume( algorithm::transform( lost, []( auto& lost){ return lost.correlation;}));
@@ -618,7 +618,7 @@ namespace casual
 
             auto& pending = state.pending.disconnects;
 
-            auto done = algorithm::extract( pending, algorithm::filter( pending, connection_done));
+            auto done = algorithm::container::extract( pending, algorithm::filter( pending, connection_done));
 
             for( auto descriptor : done)
                handle::connection::lost( state, descriptor);

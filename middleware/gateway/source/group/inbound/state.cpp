@@ -32,7 +32,7 @@ namespace casual
             {
                if( auto found = common::algorithm::find( m_services, correlation))
                {
-                  auto message = algorithm::extract( m_services, std::begin( found));
+                  auto message = algorithm::container::extract( m_services, std::begin( found));
                   m_size -= Requests::size( message);
                   message.pending = lookup.pending;
 
@@ -49,7 +49,7 @@ namespace casual
             {
                if( auto found = algorithm::find( m_complete, correlation))
                {
-                  auto result = algorithm::extract( m_complete, std::begin( found));
+                  auto result = algorithm::container::extract( m_complete, std::begin( found));
                   m_size -= result.payload.size();
 
                   return result;
@@ -66,8 +66,8 @@ namespace casual
                };
 
                return {
-                  algorithm::extract( m_services, algorithm::filter( m_services, has_correlation)),
-                  algorithm::extract( m_complete, algorithm::filter( m_complete, has_correlation)),
+                  algorithm::container::extract( m_services, algorithm::filter( m_services, has_correlation)),
+                  algorithm::container::extract( m_complete, algorithm::filter( m_complete, has_correlation)),
                };
             }     
          } // pending
@@ -80,7 +80,7 @@ namespace casual
       {
          if( auto found = algorithm::find( correlations, correlation))
          {
-            auto descriptor = algorithm::extract( correlations, std::begin( found)).descriptor;
+            auto descriptor = algorithm::container::extract( correlations, std::begin( found)).descriptor;
             
             if( auto connector = algorithm::find( external.connections(), descriptor))
                return connector.data();

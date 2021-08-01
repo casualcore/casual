@@ -15,6 +15,7 @@
 #include "common/signal.h"
 #include "common/predicate.h"
 #include "common/traits.h"
+#include "common/algorithm/container.h"
 
 #include "common/code/casual.h"
 
@@ -111,7 +112,7 @@ namespace casual
             auto is_complete = []( auto& message){ return message.complete();};
 
             if( auto found = algorithm::find_if( m_cache, is_complete))
-               return algorithm::extract( m_cache, std::begin( found));
+               return algorithm::container::extract( m_cache, std::begin( found));
 
             return {};
          }
@@ -189,7 +190,7 @@ namespace casual
                         std::forward< Predicate>( predicate)));
 
             if( found)
-               return algorithm::extract( m_cache, std::begin( found));
+               return algorithm::container::extract( m_cache, std::begin( found));
 
             return {};
          }
