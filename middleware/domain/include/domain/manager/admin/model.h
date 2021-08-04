@@ -13,6 +13,7 @@
 #include "configuration/user/environment.h"
 
 #include "common/domain.h"
+#include "common/build.h"
 
 namespace casual
 {
@@ -23,28 +24,6 @@ namespace casual
       {
          using id_type = platform::size::type;
          using size_type = platform::size::type;
-
-         struct Version
-         {
-            std::string casual;
-            std::string compiler;
-
-            struct
-            {
-               std::vector< size_type> protocols;
-
-               CASUAL_CONST_CORRECT_SERIALIZE(
-                  CASUAL_SERIALIZE( protocols);
-               )
-            } gateway;
-
-            CASUAL_CONST_CORRECT_SERIALIZE(
-               CASUAL_SERIALIZE( casual);
-               CASUAL_SERIALIZE( compiler);
-               CASUAL_SERIALIZE( gateway);
-            )
-
-         };
 
          struct Group
          {
@@ -217,7 +196,7 @@ namespace casual
          struct State
          {
             state::Runlevel runlevel = state::Runlevel::startup;
-            model::Version version; 
+            common::build::Version version; 
             common::domain::Identity identity;
             std::vector< model::Group> groups;
             std::vector< model::Executable> executables;

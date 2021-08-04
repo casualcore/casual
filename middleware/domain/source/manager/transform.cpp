@@ -17,6 +17,8 @@
 #include "common/algorithm/compare.h"
 #include "common/array.h"
 
+#include "common/build.h"
+
 
 namespace casual
 {
@@ -275,25 +277,6 @@ namespace casual
                   return result;
                }
 
-               // TODO maintenance: This should perhaps be in a more central place?
-               auto version()
-               {
-                  manager::admin::model::Version result;
-
-                  // casual version
-#ifdef CASUAL_MAKE_BUILD_VERSION
-                  result.casual = CASUAL_MAKE_BUILD_VERSION;
-#endif 
-                  // compiler version
-#ifdef __clang_version__
-                  result.compiler = string::compose( "clang: ", __clang_version__);
-#elif __GNUC__
-                  result.compiler = string::compose( "g++: ", __GNUC__, '.', __GNUC_MINOR__, '.', __GNUC_PATCHLEVEL__);
-#endif
-
-                  return result;
-               }
-
             } // model
 
          } // <unnamed>
@@ -320,7 +303,7 @@ namespace casual
 
          result.runlevel = transform_runlevel( state.runlevel());
 
-         result.version = local::model::version();
+         result.version = build::version();
          result.identity = common::domain::identity();
 
          result.groups = algorithm::transform( state.groups, local::model::group());

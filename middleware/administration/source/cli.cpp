@@ -12,6 +12,7 @@
 #include "common/strong/id.h"
 #include "common/message/internal.h"
 #include "common/communication/instance.h"
+#include "common/build.h"
 
 #include "domain/manager/admin/cli.h"
 #include "domain/discovery/admin/cli.h"
@@ -120,6 +121,28 @@ valid directives:
 
             } // information
 
+            namespace version
+            {
+               auto options()
+               {
+                  auto invoke = []()
+                  {
+                     build::Version build_version = build::version();
+
+                     std::vector< std::tuple< std::string, std::string>> version{
+                        { "Casual", build_version.casual},
+                        { "Commit", build_version.commit}
+                     };
+
+                     terminal::formatter::key::value().print( std::cout, version);
+                  };
+                  return common::argument::Option{
+                     std::move( invoke),
+                     { "--version"},
+                     "display version information"};
+               }
+            } // version
+
             namespace internal
             {
                auto options()
@@ -197,6 +220,7 @@ Where <option> is one of the listed below
                cli.configuration.options(),
                common::terminal::output::directive().options(),
                local::internal::options(),
+               local::version::options(),
             };
          }
       };
