@@ -6,11 +6,16 @@ This document defines all environment variables that in some way affect operatio
 
 ## paths
 
-name                                 | default                            | description  
--------------------------------------|------------------------------------|------------------------------------------------
-`CASUAL_HOME`                        | **has to be set**                  | where `casual` is installed
-`CASUAL_DOMAIN_HOME`                 | **has to be set**                  | points to _home_ of current `casual domain`. 
-`CASUAL_LOG_PATH`                    | `$CASUAL_DOMAIN_HOME/casual.log`   | where to write logs
+name                                 | default                                     | description  
+-------------------------------------|---------------------------------------------|------------------------------------------------
+`CASUAL_HOME`                        | **has to be set**                           | where `casual` is installed
+`CASUAL_DOMAIN_HOME`                 | **has to be set**                           | points to _home_ of current `casual domain`. 
+`CASUAL_LOG_PATH`                    | `$CASUAL_DOMAIN_HOME/casual.log`            | where to write logs
+`CASUAL_TRANSIENT_DIRECTORY`         | `[$TMPDIR|$TEMP|$TMP]/.casual`              | where transient files are stored
+`CASUAL_PERSISTENT_DIRECTORY`        | `$CASUAL_DOMAIN_HOME/.casual`               | where persistent files are stored
+`CASUAL_IPC_DIRECTORY`               | `$CASUAL_TRANSIENT_DIRECTORY/ipc`           | where ipc files are stored
+`CASUAL_TRANSACTION_DIRECTORY`       | `$CASUAL_PERSISTENT_DIRECTORY/transaction`  | where transaction database files are stored
+`CASUAL_QUEUE_DIRECTORY`             | `$CASUAL_PERSISTENT_DIRECTORY/queue`        | where queue database files are stored (if not stated in configuration)
 `CASUAL_RESOURCE_CONFIGURATION_FILE` | `$CASUAL_HOME/configuration/resources.yaml` | resource configuration
 
 ## directives

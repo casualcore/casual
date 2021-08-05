@@ -166,12 +166,8 @@ namespace casual
 
             namespace name
             {
-               //! variable name representing casual home. Where casual is installed
-               constexpr auto home = "CASUAL_HOME";
-
                namespace domain
                {
-                  constexpr auto home = "CASUAL_DOMAIN_HOME";
                   constexpr auto id = "CASUAL_DOMAIN_ID";
                   constexpr auto name = "CASUAL_DOMAIN_NAME";
                } // domain
@@ -194,11 +190,25 @@ namespace casual
                } // log
 
                
-               namespace ipc
+               namespace directory
                {
-                  //! where to hold transient files, such as named-pipes.
-                  constexpr auto directory = "CASUAL_IPC_DIRECTORY";
-               } // transient
+                  //! variable name representing casual home. Where casual is installed
+                  constexpr auto install = "CASUAL_HOME";
+
+                  constexpr auto domain = "CASUAL_DOMAIN_HOME";
+
+                  //! where to store ipc files
+                  constexpr auto ipc = "CASUAL_IPC_DIRECTORY";
+
+                  //! where to store transaction (TLOG) database files
+                  constexpr auto transaction = "CASUAL_TRANSACTION_DIRECTORY";
+
+                  //! where to store queue database files
+                  constexpr auto queue = "CASUAL_QUEUE_DIRECTORY";
+
+                  constexpr auto transient = "CASUAL_TRANSIENT_DIRECTORY";
+                  constexpr auto persistent = "CASUAL_PERSISTENT_DIRECTORY";
+               } // directory
                
 
                //! the name of the environment variables that holds ipc queue id:s
@@ -255,19 +265,21 @@ namespace casual
             const std::filesystem::path& domain();
 
             //! @return Where casual is installed
-            const std::filesystem::path& casual();
-         }
+            const std::filesystem::path& install();
+
+            //! where to hold ipc files
+            const std::filesystem::path& ipc();
+
+            //! where to hold queue database files
+            const std::filesystem::path& queue();
+
+            //! where to hold transaction database files
+            const std::filesystem::path& transaction();
+         } // directory
 
          namespace log
          {
             const std::filesystem::path& path();
-         } // log
-
-         namespace ipc
-         {
-            //! where to hold ipc files, such as named-pipes.
-            //! default: /<tmp>/casual/ipc
-            const std::filesystem::path& directory();
          } // log
 
          namespace domain

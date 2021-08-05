@@ -22,6 +22,8 @@
 #include "common/signal/timer.h"
 #include "common/event/send.h"
 
+#include "common/environment.h"
+
 #include "common/communication/instance.h"
 
 #include "domain/pending/message/send.h"
@@ -588,6 +590,26 @@ namespace casual
                         }
                         );
                      }
+
+                     auto queuebase( const queue::ipc::message::group::configuration::update::Request& message)
+                     {
+                        if( ! message.model.queuebase.empty())
+                           return group::Queuebase{ message.model.queuebase};
+                        
+                        auto name = message.model.alias + ".qb";
+                        auto file = common::environment::directory::queue() / name;
+
+                        // TODO: remove this in 2.0 (that exist to be backward compatible)
+                        {
+                           auto old = common::environment::directory::domain() / "queue" / "groups" / name;
+
+                           if( std::filesystem::exists( old) && ! std::filesystem::equivalent( old, file))
+                              std::filesystem::rename( old, file);
+                        }
+
+                        return group::Queuebase{ file};
+                     }
+
                   } // detail
 
                   auto request( State& state)
@@ -597,8 +619,9 @@ namespace casual
                         Trace trace{ "queue::handle::local::configuration::update::request"};
                         log::line( verbose::log, "message: ", message);
 
+                        // this can't be updated if once set (yet)
                         if( ! state.queuebase)
-                           state.queuebase = group::Queuebase{ message.model.queuebase};
+                           state.queuebase = detail::queuebase( message);
 
                         // we persist and start a 'local transaction'
                         state.queuebase.persist();

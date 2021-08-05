@@ -24,7 +24,15 @@ namespace casual
          {
             auto initialize_log = []( auto&& configuration)
             {
-               std::string file = environment::directory::domain() / "transaction" / "log.db";
+               std::string file = environment::directory::transaction() / "log.db";
+
+               // TODO: remove this in 2.0 (that exist to be backward compatible)
+               {
+                  std::string old = environment::directory::domain() / "transaction" / "log.db";                  
+                  if( std::filesystem::exists( old) && ! std::filesystem::equivalent( old, file))
+                     std::filesystem::rename( old, file);
+               }
+
                return common::environment::string( common::algorithm::coalesce(
                   std::move( configuration), 
                   std::move( file)));

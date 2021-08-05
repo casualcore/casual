@@ -172,7 +172,7 @@ namespace casual
                      // add "known" dependencies
                      common::algorithm::append_unique_value( "casual-xatmi", settings.directive.libraries);
 
-                        if( common::environment::variable::exists( common::environment::variable::name::home))
+                        if( common::environment::variable::exists( common::environment::variable::name::directory::install))
                         {
                            auto append = []( const auto& path, auto& target)
                            {
@@ -181,7 +181,7 @@ namespace casual
                            };
 
                            std::filesystem::path home =
-                              common::environment::variable::get( common::environment::variable::name::home);
+                              common::environment::variable::get( common::environment::variable::name::directory::install);
 
                            append( home / "include", settings.directive.paths.include);
                            append( home / "lib", settings.directive.paths.library);

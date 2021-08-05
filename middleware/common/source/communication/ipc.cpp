@@ -83,7 +83,7 @@ namespace casual
 
       Address::Address( strong::ipc::id ipc)
       {
-         const auto path = ( environment::ipc::directory() / uuid::string( ipc.value())).string();
+         const auto path = ( environment::directory::ipc() / uuid::string( ipc.value())).string();
 
          if( path.size() > ( sizeof( m_native.sun_path) - 1))
             code::raise::error( code::casual::invalid_path, "transient directory path too long");

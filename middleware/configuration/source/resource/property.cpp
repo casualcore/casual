@@ -77,7 +77,7 @@ namespace casual
             if( ! file.empty())
                return get( file);
 
-            std::string base = common::environment::directory::casual() / "configuration" / "resources";
+            std::string base = common::environment::directory::install() / "configuration" / "resources";
 
             return local::get( {
                base + ".yaml",
