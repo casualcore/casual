@@ -3,7 +3,7 @@
 # Usage: python install_nginx.py
 #
 
-import urllib2
+import urllib.request
 import os
 import tarfile
 import subprocess
@@ -21,10 +21,9 @@ BASENAME=os.path.splitext(os.path.splitext(FILENAME)[0])[0]
 
 if not os.path.exists(TMP + BASENAME):
 	print("Fetching: " + URL + FILENAME)
-	response = urllib2.urlopen(URL + FILENAME)
-
-	with open(TMP + FILENAME, "wb") as f:
-		f.write(response.read())
+	with urllib.request.urlopen( URL + FILENAME) as response:
+		with open(TMP + FILENAME, "wb") as f:
+			f.write(response.read())
 	
 	archive = tarfile.open(TMP + FILENAME, "r:gz")
 	archive.extractall(TMP)
