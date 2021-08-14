@@ -153,7 +153,9 @@ namespace casual
                {
                   Socket socket()
                   {
-                     return Socket{ strong::socket::id{ posix::result( ::socket(AF_UNIX, SOCK_DGRAM, 0))}};
+                     auto result = Socket{ strong::socket::id{ posix::result( ::socket(AF_UNIX, SOCK_DGRAM, 0))}};
+                     result.set( socket::option::File::close_in_child);
+                     return result;
                   }
                } // domain
             } // create

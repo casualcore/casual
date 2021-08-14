@@ -36,9 +36,9 @@
 #include <unistd.h>
 #include <sys/wait.h>
 #include <csignal>
-//#include <fcntl.h>
 
-#include <spawn.h>
+
+
 
 
 #ifdef __APPLE__
@@ -46,6 +46,12 @@
 #else
    #include <unistd.h>
 #endif
+
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE  // POSIX_SPAWN_SETSID needs _GNU_SOURCE to be defined.
+#endif
+#include <spawn.h>
+
 
 namespace casual
 {

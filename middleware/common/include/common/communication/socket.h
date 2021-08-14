@@ -58,6 +58,7 @@ namespace casual
                enum class File 
                {
                   no_block = O_NONBLOCK,
+                  close_in_child = FD_CLOEXEC,
                };
 
             } // option
