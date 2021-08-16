@@ -1,125 +1,121 @@
 #include "helper.h"
+#include "http/call.h"
 #include <string>
 #include <vector>
 
-class HelperLocationContext
+class HelperDataImpl
 {
 public:
    int x;
 };
 
-class HelperContext
+class HelperRequestDataImpl
 {
 public:
-   int state;
-   int number_of_calls;
-   int number_of_receives;
+   HelperDataImpl *helperDataImpl = nullptr;
+   casual::plugin::call::Context *user_data;
    std::string service;
-   std::vector< char> input;
-   std::vector< char> output;
+   std::vector<char> input;
+   std::vector<char> output;
    std::string content_type;
 };
 
-static_assert( sizeof( HelperLocationContext) <= sizeof( helper_location_ctx_t::memory), "sizeof ( helper_location_ctx_t::memory ) must be equal or greater than sizeof (helper_location_ctx_t::memory)" );
-static_assert( sizeof( HelperContext) <= sizeof( helper_ctx_t::memory), "sizeof ( helper_ctx_t::memory ) must be equal or greater than sizeof (helper_ctx_t::memory)" );
 
-extern int helper_init( helper_location_ctx_t *ctx)
+extern int helper_init(helper_data_t *helper_data)
 {
-   HelperLocationContext *context = reinterpret_cast< HelperLocationContext*>( ctx->pImpl);
-   if ( context != nullptr)
-   {
-      return HELPER_ERROR;
-   }
-
-   context = new( ctx->memory) HelperLocationContext;
-   ctx->pImpl = context;
+   HelperDataImpl *helperDataImpl = new HelperDataImpl;
+   helper_data->pImpl = helperDataImpl;
    return HELPER_SUCCESS;
 }
 
-extern void helper_exit( helper_location_ctx_t *ctx)
+extern void helper_exit(helper_data_t *helper_data)
 {
-   HelperLocationContext *context = reinterpret_cast< HelperLocationContext*>( ctx->pImpl);
-   if ( context != nullptr)
-   {
-      context->~HelperLocationContext();
-   }
+   HelperDataImpl *helperDataImpl = reinterpret_cast<HelperDataImpl*>(helper_data->pImpl);
+   delete helperDataImpl;
 }
 
-extern int helper_call( helper_ctx_t *ctx)
+
+extern int helper_call(helper_data_t *helper_data, helper_request_data_t *helper_request_data)
 {
-   if ( ctx->pImpl == nullptr)
+   HelperRequestDataImpl *helperRequestDataImpl = nullptr;
+   if (helper_request_data->pImpl == nullptr)
    {
-      ctx->pImpl = new( ctx->memory) HelperContext;
+      helperRequestDataImpl = new HelperRequestDataImpl;
+      helper_request_data->pImpl = helperRequestDataImpl;
    }
-   HelperContext *context = reinterpret_cast< HelperContext*>( ctx->pImpl);
-   if ( context == nullptr)
+   else
+   {
+      helperRequestDataImpl = reinterpret_cast<HelperRequestDataImpl*>(helper_request_data->pImpl);
+   }
+   if (helperRequestDataImpl->helperDataImpl == nullptr)
+   {
+      HelperDataImpl *helperDataImpl = reinterpret_cast<HelperDataImpl*>(helper_data->pImpl);
+      helperRequestDataImpl->helperDataImpl = helperDataImpl;
+   }
+
+   casual::plugin::call::Arguments arguments{};
+   arguments.service = helper_request_data->service;
+   arguments.payload.header = helper_request_data.headers;
+   arguments.payload.body = helperRequestDataImpl->input;
+   helperRequestDataImpl->user_data = new casual::plugin::call::Context{ std::move(arguments)};
+
+   return HELPER_SUCCESS;
+}
+
+
+extern int helper_receive(helper_data_t *helper_data, helper_request_data_t *helper_request_data)
+{
+   HelperRequestDataImpl *helperRequestDataImpl = reinterpret_cast<HelperRequestDataImpl*>(helper_request_data->pImpl);
+   if (helperRequestDataImpl == nullptr)
    {
       return HELPER_ERROR;
    }
+   
+   // HelperDataImpl *helperDataImpl = reinterpret_cast<HelperDataImpl*>(helper_data->pImpl);
 
-   if ( ++context->number_of_calls < 3)
+   std::optional<casual::plugin::call::Reply> reply;
+   if (!(reply = helperRequestDataImpl->user_data->receive()))
    {
       return HELPER_AGAIN;
    }
    else
    {
+      // set output data
+
+      helperRequestDataImpl->output = reply.payload.body; // copy to storage tied to request
+
+      helper_request_data->content = helperRequestDataImpl->output.data();
+      helper_request_data->content_length = helperRequestDataImpl->output.size();
+
+      helperRequestDataImpl->content_type = "plain/text"; // data must be stored somewhere
+      helper_request_data->content_type.data = (char*)helperRequestDataImpl->content_type.data();
+      helper_request_data->content_type.len = helperRequestDataImpl->content_type.size();
+
+      helper_request_data->response_status = 200;
+
       return HELPER_SUCCESS;
    }
 }
 
-extern int helper_receive( helper_ctx_t *ctx)
+extern void helper_cleanup(helper_request_data_t *helper_request_data)
 {
-    HelperContext *context = reinterpret_cast< HelperContext*>( ctx->pImpl);
-    if ( context == nullptr)
-    {
-        return HELPER_ERROR;
-    }
-
-    if ( ++context->number_of_receives < 3)
-    {
-        return HELPER_AGAIN;
-    }
-
-   auto &data = context->output;
-
-   // create response data...
-   // char message[] = "response data";
-   // data.insert( std::begin( data), &message[ 0], &message[ 0] + sizeof message - 1);
-   data.insert( std::begin( data), std::begin( context->input), std::end( context->input)); // echo
-
-   ctx->content = data.data();
-   ctx->content_length = data.size();
-
-   context->content_type = "plain/text";
-   ctx->content_type.data = (char*)context->content_type.data();
-   ctx->content_type.len = context->content_type.size();
-
-   ctx->response_status = 200;
-
-   return HELPER_SUCCESS;
-}
-
-extern void helper_cleanup( helper_ctx_t *ctx)
-{
-   HelperContext *context = reinterpret_cast< HelperContext*>( ctx->pImpl);
-   if ( context != nullptr)
+   HelperRequestDataImpl *helperRequestDataImpl = reinterpret_cast<HelperRequestDataImpl*>(helper_request_data->pImpl);
+   if (helperRequestDataImpl != nullptr)
    {
-      context->~HelperContext();
+      delete helperRequestDataImpl->user_data;
+      delete helperRequestDataImpl;
    }
 }
 
-extern int helper_push_buffer( helper_ctx_t *ctx, const char *data, const char *end)
+extern int helper_push_buffer(helper_request_data_t *helper_request_data, const char *data, const char *end)
 {
-   if ( ctx->pImpl == nullptr)
+   HelperRequestDataImpl *helperRequestDataImpl = nullptr;
+   if (helper_request_data->pImpl == nullptr)
    {
-      ctx->pImpl = new( ctx->memory) HelperContext;
-   }
-   HelperContext *context = reinterpret_cast< HelperContext*>( ctx->pImpl);
-   if ( context == nullptr)
-   {
-      return HELPER_ERROR;
+      helperRequestDataImpl = new HelperRequestDataImpl;
+      helper_request_data->pImpl = helperRequestDataImpl;
    }
 
-   context->input.insert( std::end( context->input), data, end);
+   helperRequestDataImpl->input.insert(std::end(helperRequestDataImpl->input), data, end);
    return HELPER_SUCCESS;
 }

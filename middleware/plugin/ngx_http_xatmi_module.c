@@ -7,6 +7,10 @@
 
 // ----[ MODULE SET-UP ]-------------------------------------------------------
 
+static ngx_int_t ngx_http_xatmi_init_process(ngx_cycle_t *cycle);
+static void ngx_http_xatmi_exit_process(ngx_cycle_t *cycle);
+static char* ngx_http_xatmi_init_main_conf(ngx_conf_t *cf, void *conf);
+static void* ngx_http_xatmi_create_main_conf(ngx_conf_t *conf);
 static void* ngx_http_xatmi_create_loc_conf(ngx_conf_t *cf);
 static char* ngx_http_xatmi_merge_loc_conf(ngx_conf_t *cf, void *parent, void *child);
 static char* ngx_http_xatmi_proxy_pass_setup(ngx_conf_t *cf, ngx_command_t *cmd, void *conf);
@@ -15,6 +19,10 @@ static void ngx_http_xatmi_request_data_handler(ngx_http_request_t *r);
 static void timer_handler(ngx_event_t *ev);
 
 
+typedef struct ngx_http_xatmi_main_conf
+{
+    helper_data_t helper_data;
+} ngx_http_xatmi_main_conf_t;
 // 
 // LOCATION CONFIGURATION DATA
 // ---------------------------
@@ -24,9 +32,8 @@ static void timer_handler(ngx_event_t *ev);
 typedef struct ngx_http_xatmi_loc_conf
 {
     ngx_str_t name;
-    int initialized;
-    helper_location_ctx_t ctx;
-} ngx_http_xatmi_loc_conf_t;
+} ngx_http_xatmi_loc_
+
 
 //
 // MODULE CONFIGURATION CALLBACKS
@@ -71,8 +78,8 @@ ngx_http_xatmi_module_ctx =
 {
     NULL, // preconfiguration
     NULL, // postconfiguration
-    NULL, // create main configuration
-    NULL, // init main configuration
+    ngx_http_xatmi_create_main_conf, // create main configuration
+    ngx_http_xatmi_init_main_conf, // init main configuration
     NULL, // create server configuration
     NULL, // merge server configuration
     ngx_http_xatmi_create_loc_conf, // allocates and initializes location-scope struct
@@ -94,18 +101,72 @@ ngx_http_xatmi_module =
     NGX_HTTP_MODULE,             // module type is HTTP
     NULL,        // init master
     NULL,        // init module
-    NULL,        // init process
+    ngx_http_xatmi_init_process, // init process
     NULL,        // init thread
     NULL,        // exit thread
-    NULL,        // exit process
+    ngx_http_xatmi_exit_process, // exit process
     NULL,        // exit master
     NGX_MODULE_V1_PADDING
 };
 
+// 
+// INITIALIZE WORKER
+// -----------------
+// 
+// 
+static ngx_int_t
+ngx_http_xatmi_init_process(ngx_cycle_t *cycle)
+{
+    ngx_log_error(NGX_LOG_INFO, cycle->log, 0, "plugin: %s; ngx_worker=%d (pid=%d)", __FUNCTION__, ngx_worker, ngx_pid);
 
-static char* plugin_init(ngx_conf_t *cf, ngx_http_xatmi_loc_conf_t *location_conf);
-static void plugin_exit(void *conf);
+    ngx_http_xatmi_main_conf_t *main_conf = ngx_http_cycle_get_module_main_conf(cycle, ngx_http_xatmi_module);
+    if (!main_conf)
+    {
+        ngx_log_error(NGX_LOG_ERR, cycle->log, 0, "plugin: main_conf == NULL");
+        return NGX_ERROR;
+    }
+    if (helper_init(&main_conf->helper_data) != HELPER_SUCCESS)
+    {
+        ngx_log_error(NGX_LOG_ERR, cycle->log, 0, "plugin: helper_init != HELPER_SUCCESS");
+        return NGX_ERROR;
+    }
+    return NGX_OK;
+}
 
+// 
+// EXIT WORKER
+// -----------
+// 
+// 
+static void
+ngx_http_xatmi_exit_process(ngx_cycle_t *cycle)
+{
+    // ngx_log_debug0(NGX_LOG_DEBUG_HTTP, cycle->log, 0, "perl term");
+    ngx_log_error(NGX_LOG_INFO, cycle->log, 0, "plugin: %s; ngx_worker=%d (pid=%d)", __FUNCTION__, ngx_worker, ngx_pid);
+
+    ngx_http_xatmi_main_conf_t *main_conf = ngx_http_cycle_get_module_main_conf(cycle, ngx_http_xatmi_module);
+    helper_exit(&main_conf->helper_data);
+}
+
+static void*
+ngx_http_xatmi_create_main_conf(ngx_conf_t *cf)
+{
+    ngx_conf_log_error(NGX_LOG_INFO, cf, 0,"plugin: %s", __FUNCTION__);
+    ngx_http_xatmi_main_conf_t *main_conf = ngx_pcalloc(cf->pool, sizeof(ngx_http_xatmi_main_conf_t));
+    if (main_conf != NULL)
+    {
+        main_conf->modules = NGX_CONF_UNSET_PTR;
+    }
+
+    return main_conf;
+}
+static char*
+ngx_http_xatmi_init_main_conf(ngx_conf_t *cf, void *conf)
+{
+    ngx_conf_log_error(NGX_LOG_INFO, cf, 0,"plugin: %s", __FUNCTION__);
+    ngx_http_xatmi_main_conf_t *main_conf = conf;
+    return NGX_CONF_OK;
+}
 
 // 
 // CONFIGURATION INIT
@@ -115,7 +176,7 @@ static void plugin_exit(void *conf);
 static void*
 ngx_http_xatmi_create_loc_conf(ngx_conf_t *cf)
 {
-    ngx_conf_log_error(NGX_LOG_WARN, cf, 0, "plugin: %s", __FUNCTION__);
+    ngx_conf_log_error(NGX_LOG_INFO, cf, 0, "plugin: %s", __FUNCTION__);
 
     // allocates and initializes location-scope struct
     ngx_http_xatmi_loc_conf_t *location_conf = ngx_pcalloc(cf->pool, sizeof(ngx_http_xatmi_loc_conf_t));
@@ -135,7 +196,7 @@ ngx_http_xatmi_create_loc_conf(ngx_conf_t *cf)
 static char*
 ngx_http_xatmi_merge_loc_conf(ngx_conf_t *cf, void *parent, void *child)
 {
-    ngx_conf_log_error(NGX_LOG_WARN, cf, 0, "plugin: %s", __FUNCTION__);
+    ngx_conf_log_error(NGX_LOG_INFO, cf, 0, "plugin: %s", __FUNCTION__);
 
     ngx_http_xatmi_loc_conf_t *prev = parent;
     ngx_http_xatmi_loc_conf_t *conf = child;
@@ -153,16 +214,10 @@ ngx_http_xatmi_merge_loc_conf(ngx_conf_t *cf, void *parent, void *child)
 static char*
 ngx_http_xatmi_proxy_pass_setup(ngx_conf_t *cf, ngx_command_t *cmd, /*ngx_http_xatmi_loc_conf_t*/ void *conf)
 {
-    ngx_conf_log_error(NGX_LOG_WARN, cf, 0, "plugin: %s", __FUNCTION__);
+    ngx_conf_log_error(NGX_LOG_INFO, cf, 0, "plugin: %s", __FUNCTION__);
 
     ngx_http_core_loc_conf_t *http_loc_conf = ngx_http_conf_get_module_loc_conf(cf, ngx_http_core_module);
     http_loc_conf->handler = ngx_http_xatmi_request_handler; // sets HTTP request handler
-
-    ngx_http_xatmi_loc_conf_t *location_conf = conf;
-    if (!location_conf->initialized)
-    {
-        return plugin_init(cf, location_conf);
-    }
     return NGX_CONF_OK;
 }
 
@@ -176,18 +231,10 @@ ngx_http_xatmi_proxy_pass_setup(ngx_conf_t *cf, ngx_command_t *cmd, /*ngx_http_x
 //
 typedef struct ngx_http_xatmi_ctx
 {
-    helper_ctx_t ctx;
+    helper_request_data_t helper_request_data;
     ngx_http_request_t *r;
-    ssize_t content_length;
-   //  ngx_str_t service;
-    int response_status;
     ngx_event_t timer;
-    int state;
-    int last_buffer;
-    ngx_str_t content_type;
-    u_char *data;
     int number_of_calls;
-    int buffer_count;
 } ngx_http_xatmi_ctx_t;
 
 static ngx_int_t process_request_parameters(ngx_http_request_t *r, ngx_http_xatmi_ctx_t *request_context);
@@ -205,7 +252,7 @@ static void plugin_cleanup(void *data);
 static ngx_int_t
 ngx_http_xatmi_request_handler(ngx_http_request_t *r)
 {
-    ngx_log_error(NGX_LOG_NOTICE, r->connection->log, 0, "plugin: %s", __FUNCTION__);
+    ngx_log_error(NGX_LOG_INFO, r->connection->log, 0, "plugin: %s", __FUNCTION__);
     if (!(r->method & (NGX_HTTP_GET|NGX_HTTP_POST)))
     {
         return NGX_HTTP_NOT_ALLOWED; // or NGX_DECLINED
@@ -244,13 +291,13 @@ ngx_http_xatmi_request_handler(ngx_http_request_t *r)
 static void
 ngx_http_xatmi_request_data_handler(ngx_http_request_t *r)
 {
-    ngx_log_error(NGX_LOG_NOTICE, r->connection->log, 0, "plugin: %s", __FUNCTION__);
+    ngx_log_error(NGX_LOG_INFO, r->connection->log, 0, "plugin: %s", __FUNCTION__);
 
     ngx_http_xatmi_ctx_t *request_context = ngx_http_get_module_ctx(r, ngx_http_xatmi_module);
 
-    if (request_context->content_length)
+    if (request_context->helper_request_data.content_length)
     {
-        ngx_log_error(NGX_LOG_NOTICE, r->connection->log, 0, "plugin: ngx_http_xatmi_request_data_handler called twice");
+        ngx_log_error(NGX_LOG_INFO, r->connection->log, 0, "plugin: ngx_http_xatmi_request_data_handler called twice");
     }
 
     if (r->request_body->bufs == NULL)
@@ -264,7 +311,7 @@ ngx_http_xatmi_request_data_handler(ngx_http_request_t *r)
     for (ngx_chain_t *cl = r->request_body->bufs; cl; cl = cl->next)
     {
         ngx_str_t str = {ngx_buf_size(cl->buf), cl->buf->pos};
-        ngx_log_error(NGX_LOG_NOTICE, request_context->r->connection->log, 0, "plugin: buffer = '[%V]'", &str);
+        ngx_log_error(NGX_LOG_INFO, request_context->r->connection->log, 0, "plugin: buffer = '[%V]'", &str);
 
         off_t buffer_size = ngx_buf_size(cl->buf);
         if (cl->buf->in_file || cl->buf->temp_file) // if buffered in file, read entire file into a buffer
@@ -280,14 +327,14 @@ ngx_http_xatmi_request_data_handler(ngx_http_request_t *r)
             buf->last = buf->pos + bytes_read;
         }
         last_buffer = cl->buf->last_buf;
-        int ret = helper_push_buffer(&request_context->ctx, (char*)cl->buf->pos, (char*)cl->buf->last);
+        int ret = helper_push_buffer(&request_context->helper_request_data, (char*)cl->buf->pos, (char*)cl->buf->last);
         if (ret != HELPER_SUCCESS)
         {
             ngx_log_error(NGX_LOG_ERR, r->connection->log, 0, "plugin: helper_push_buffer -> %d", ret);
             ngx_http_finalize_request(r, NGX_HTTP_INTERNAL_SERVER_ERROR);
             return;
         }
-        request_context->content_length += buffer_size;
+        request_context->helper_request_data.content_length += buffer_size;
     }
 
     if (last_buffer)
@@ -313,7 +360,7 @@ ngx_http_xatmi_request_data_handler(ngx_http_request_t *r)
         }
         else if (ret == NGX_OK) // response available immediately (response data is set in buffer chain)
         {
-            ngx_log_error(NGX_LOG_NOTICE, r->connection->log, 0, "plugin: plugin_call() => \"response available immediately\"");
+            ngx_log_error(NGX_LOG_INFO, r->connection->log, 0, "plugin: plugin_call() => \"response available immediately\"");
             ngx_http_finalize_request(r, send_response(r, request_context));
         }
         else // NGX_ERROR
@@ -329,30 +376,16 @@ timer_handler(ngx_event_t *ev)
 {
     ngx_http_xatmi_ctx_t *request_context = ev->data;
     ngx_http_request_t *r = request_context->r;
-    ngx_log_error(NGX_LOG_NOTICE, r->connection->log, 0, "plugin: %s", __FUNCTION__);
+    ngx_log_error(NGX_LOG_INFO, r->connection->log, 0, "plugin: %s", __FUNCTION__);
 
-    ngx_int_t ret = NGX_ERROR;
-    if (request_context->state == 0)
-    {
-        ret = plugin_call(request_context);
-        if (ret == NGX_OK)
-        {
-            request_context->state += 1;
-            ret = plugin_receive(request_context);
-        }
-    }
-    else
-    {
-        ret = plugin_receive(request_context);
-    }
-
+    ngx_int_t ret = plugin_receive(request_context);
     if (ret == NGX_AGAIN)
     {
         request_context->number_of_calls += 1;
         request_context->timer.data = request_context;
         request_context->timer.handler = timer_handler;
         request_context->timer.log = r->connection->log;
-        ngx_add_timer(&request_context->timer, /*msec*/10);
+        ngx_add_timer(&request_context->timer, /*msec*/10); // NOTE: should be based on number_of_calls
     }
     else if (ret == NGX_ERROR)
     {
@@ -372,7 +405,7 @@ timer_handler(ngx_event_t *ev)
 static ngx_int_t
 send_response(ngx_http_request_t *r, ngx_http_xatmi_ctx_t *request_context)
 {
-    ngx_log_error(NGX_LOG_NOTICE, r->connection->log, 0, "plugin: %s", __FUNCTION__);
+    ngx_log_error(NGX_LOG_INFO, r->connection->log, 0, "plugin: %s", __FUNCTION__);
 
     // send in single buffer; it could chunk instead
     ngx_chain_t *chain = ngx_alloc_chain_link(r->pool);
@@ -387,28 +420,28 @@ send_response(ngx_http_request_t *r, ngx_http_xatmi_ctx_t *request_context)
     
     // set up the chain with the response in a single buffer
     // ngx_memcpy(buf->pos, request_context->data, request_context->content_length);
-    buf->pos = (u_char*)request_context->ctx.content;
-    buf->last = buf->pos + request_context->ctx.content_length;
+    buf->pos = (u_char*)request_context->helper_request_data.content;
+    buf->last = buf->pos + request_context->helper_request_data.content_length;
     buf->last_in_chain = 1;
     buf->last_buf = 1;
     buf->temporary = 1;
     chain->buf = buf;
     chain->next = NULL;
 
-    ngx_str_t str = {request_context->ctx.content_length, buf->pos};
-    ngx_log_error(NGX_LOG_NOTICE, r->connection->log, 0, "plugin: sending buffer = '%V'", &str);
-    ngx_log_error(NGX_LOG_NOTICE, r->connection->log, 0, "plugin: request_context->content_length == %i", request_context->ctx.content_length);
+    ngx_str_t str = {request_context->helper_request_data.content_length, buf->pos};
+    ngx_log_error(NGX_LOG_INFO, r->connection->log, 0, "plugin: sending buffer = '%V'", &str);
+    ngx_log_error(NGX_LOG_INFO, r->connection->log, 0, "plugin: request_context->helper_request_data.content_length == %i", request_context->helper_request_data.content_length);
 
-    r->headers_out.status = request_context->ctx.response_status;
-    r->headers_out.content_length_n = request_context->ctx.content_length;
-    r->headers_out.content_type.data = (u_char*)request_context->ctx.content_type.data;
-    r->headers_out.content_type.len = request_context->ctx.content_type.len;
+    r->headers_out.status = request_context->helper_request_data.response_status;
+    r->headers_out.content_length_n = request_context->helper_request_data.content_length;
+    r->headers_out.content_type.data = (u_char*)request_context->helper_request_data.content_type.data;
+    r->headers_out.content_type.len = request_context->helper_request_data.content_type.len;
     if (ngx_http_send_header(r) != NGX_OK)
     {
         ngx_log_error(NGX_LOG_ERR, r->connection->log, 0, "plugin: ngx_http_send_header(r) != NGX_OK");
         return NGX_HTTP_INTERNAL_SERVER_ERROR;
     }
-    if (!request_context->ctx.content_type.data || request_context->ctx.content_length > 0)
+    if (!request_context->helper_request_data.content_type.data || request_context->helper_request_data.content_length > 0)
     {
         if (ngx_http_output_filter(r, chain) != NGX_OK)
         {
@@ -418,7 +451,7 @@ send_response(ngx_http_request_t *r, ngx_http_xatmi_ctx_t *request_context)
     }
     else
     {
-        ngx_log_error(NGX_LOG_NOTICE, r->connection->log, 0, "plugin: no body to send");
+        ngx_log_error(NGX_LOG_INFO, r->connection->log, 0, "plugin: no body to send");
     }
     return r->headers_out.status;
 }
@@ -431,13 +464,13 @@ send_response(ngx_http_request_t *r, ngx_http_xatmi_ctx_t *request_context)
 static ngx_int_t
 process_request_parameters(ngx_http_request_t *r, ngx_http_xatmi_ctx_t *request_context)
 {
-    ngx_log_error(NGX_LOG_NOTICE, r->connection->log, 0, "plugin: url = '%V'", &r->unparsed_uri);
+    ngx_log_error(NGX_LOG_INFO, r->connection->log, 0, "plugin: url = '%V'", &r->unparsed_uri);
 
     if (r->headers_in.content_type)
     {
-        ngx_log_error(NGX_LOG_NOTICE, r->connection->log, 0, "plugin: content-type = '%V'", &r->headers_in.content_type->value);
-        request_context->content_type.data = r->headers_in.content_type->value.data;
-        request_context->content_type.len = r->headers_in.content_type->value.len;
+        ngx_log_error(NGX_LOG_INFO, r->connection->log, 0, "plugin: content-type = '%V'", &r->headers_in.content_type->value);
+        request_context->helper_request_data.content_type.data = r->headers_in.content_type->value.data;
+        request_context->helper_request_data.content_type.len = r->headers_in.content_type->value.len;
     }
 
     return NGX_OK;
@@ -447,53 +480,18 @@ process_request_parameters(ngx_http_request_t *r, ngx_http_xatmi_ctx_t *request_
 
 // ----[ BACK-END INTERFACE CALLS ]-------------------------------------------------------
 
-static char* plugin_init(ngx_conf_t *cf, ngx_http_xatmi_loc_conf_t *location_conf)
-{
-    ngx_conf_log_error(NGX_LOG_WARN, cf, 0, "plugin: %s", __FUNCTION__);
-
-    location_conf->initialized = 1;
-
-    if (helper_init(&location_conf->ctx) != HELPER_SUCCESS)
-    {
-        ngx_conf_log_error(NGX_LOG_EMERG, cf, 0, "helper_init != 0");
-        return NGX_CONF_ERROR;
-    }
-
-    ngx_pool_cleanup_t *cln = ngx_pool_cleanup_add(cf->pool, 0);
-    if (cln != NULL)
-    {
-        cln->handler = plugin_exit;
-        cln->data = location_conf;
-    }
-    else
-    {
-        ngx_conf_log_error(NGX_LOG_EMERG, cf, 0, "ngx_pool_cleanup_add -> NULL");
-        plugin_exit(location_conf);
-        return NGX_CONF_ERROR;
-    }
-
-    return NGX_CONF_OK;
-}
-
-static void plugin_exit(void *conf)
-{
-    ngx_http_xatmi_loc_conf_t *location_conf = conf;
-    helper_exit(&location_conf->ctx);
-}
-
-
 static ngx_int_t plugin_call(ngx_http_xatmi_ctx_t *request_context)
 {
-    switch (helper_call(&request_context->ctx))
+    switch (helper_call(&request_context->helper_request_data))
     {
         case HELPER_SUCCESS:
         {
             return NGX_OK;
         } break;
-        case HELPER_AGAIN:
-        {
-            return NGX_AGAIN;
-        } break;
+        // case HELPER_AGAIN:
+        // {
+        //     return NGX_AGAIN;
+        // } break;
         default:
         {
             return NGX_ERROR;
@@ -504,7 +502,7 @@ static ngx_int_t plugin_call(ngx_http_xatmi_ctx_t *request_context)
 
 static ngx_int_t plugin_receive(ngx_http_xatmi_ctx_t *request_context)
 {
-    switch (helper_receive(&request_context->ctx))
+    switch (helper_receive(&request_context->helper_request_data))
     {
         case HELPER_SUCCESS:
         {
@@ -523,7 +521,7 @@ static ngx_int_t plugin_receive(ngx_http_xatmi_ctx_t *request_context)
 
 // static ngx_int_t plugin_cancel(ngx_http_xatmi_ctx_t *request_context)
 // {
-
+// 
 // }
 
 // 
@@ -535,7 +533,7 @@ static void
 plugin_cleanup(void *data)
 {
     ngx_http_xatmi_ctx_t *request_context = data;
-    ngx_log_error(NGX_LOG_NOTICE, request_context->r->connection->log, 0, "plugin: %s", __FUNCTION__);
+    ngx_log_error(NGX_LOG_INFO, request_context->r->connection->log, 0, "plugin: %s", __FUNCTION__);
 
-    helper_cleanup(&request_context->ctx);
+    helper_cleanup(&request_context->helper_request_data);
 }
