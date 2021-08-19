@@ -372,6 +372,7 @@ namespace casual
             task::message::domain::Information,
             common::message::event::process::Spawn,
             common::message::event::process::Exit,
+            common::message::event::process::Configured,
             common::message::event::process::Assassination,
             common::message::event::Task,
             common::message::event::sub::Task,

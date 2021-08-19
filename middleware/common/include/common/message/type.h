@@ -122,6 +122,8 @@ namespace casual
          event_error,
 
          event_process_spawn,
+         // sent when a 'process' is done with configuration of it self.
+         event_process_configured,
          event_process_exit,
          event_process_assassination_contract,
 

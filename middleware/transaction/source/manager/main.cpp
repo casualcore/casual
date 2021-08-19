@@ -101,11 +101,11 @@ namespace casual
                   // prepare message dispatch handlers...
                auto handler = handle::handlers( state);
 
-               // Connect to domain
-               communication::instance::whitelist::connect( communication::instance::identity::transaction::manager);
-
                // we can supply configuration
                casual::domain::configuration::supplier::registration();
+
+               // Connect to domain
+               communication::instance::whitelist::connect( communication::instance::identity::transaction::manager);
 
                log::line( common::log::category::information, "casual-transaction-manager is on-line");
                log::line( verbose::log, "state: ", state);

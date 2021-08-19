@@ -168,6 +168,22 @@ namespace casual
                )
             };
 
+            using base_configured = basic_event< Type::event_process_configured>;
+            struct Configured : base_configured
+            {
+               using base_configured::base_configured;
+
+               std::string alias;
+               std::string path;
+
+               CASUAL_CONST_CORRECT_SERIALIZE(
+                  base_configured::serialize( archive);
+                  CASUAL_SERIALIZE( alias);
+                  CASUAL_SERIALIZE( path);
+               )
+            };
+
+
 
          } // process
 

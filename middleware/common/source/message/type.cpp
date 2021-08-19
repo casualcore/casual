@@ -72,6 +72,7 @@ namespace casual
             case Type::event_error: return out << "event_error";
             case Type::event_process_spawn: return out << "event_process_spawn";
             case Type::event_process_exit: return out << "event_process_exit";
+            case Type::event_process_configured: return out << "event_process_configured";
             case Type::event_process_assassination_contract: return out << "event_process_assassination_contract";
             case Type::event_discoverable_avaliable: return out << "event_discoverable_avaliable";
             case Type::event_domain_information: return out << "event_domain_information";
