@@ -22,20 +22,30 @@ namespace casual
       {
          namespace
          {
-            auto initialize_log = []( auto&& configuration)
+            template< typename T>
+            std::filesystem::path initialize_log( T configuration)
             {
-               std::string file = environment::directory::transaction() / "log.db";
+               if( ! configuration.empty())
+                  return common::environment::expand( std::move( configuration));
+
+               auto file = environment::directory::transaction() / "log.db";
 
                // TODO: remove this in 2.0 (that exist to be backward compatible)
                {
-                  std::string old = environment::directory::domain() / "transaction" / "log.db";                  
+                  // if the wanted path exists, we can't overwrite with the old
+                  if( std::filesystem::exists( file))
+                     return file;
+
+                  std::string old = environment::directory::domain() / "transaction" / "log.db";
                   if( std::filesystem::exists( old) && ! std::filesystem::equivalent( old, file))
+                  {
                      std::filesystem::rename( old, file);
+                     event::notification::send( "transaction log file moved: ", old, " -> ", file);
+                     log::line( log::category::warning, "transaction log file moved: ", old, " -> ", file);
+                  }
                }
 
-               return common::environment::string( common::algorithm::coalesce(
-                  std::move( configuration), 
-                  std::move( file)));
+               return file;
             };
 
 
@@ -60,7 +70,7 @@ namespace casual
                   if( common::algorithm::find( properties, r.key))
                      return true;
                   
-                  common::event::error::send( code::casual::invalid_argument, event::error::Severity::fatal, "failed to correlate resource key: '", r.key, "'");
+                  common::event::error::fatal::send( code::casual::invalid_argument, "failed to correlate resource key: '", r.key, "'");
                   return false;   
                };
 
@@ -84,13 +94,13 @@ namespace casual
 
          State state;
 
-         state.persistent.log = decltype( state.persistent.log){ local::initialize_log( model.log)};
+         state.persistent.log = decltype( state.persistent.log){ local::initialize_log( std::move( model.log))};
 
          for( auto& property : properties)
          {
             auto [ pair, emplaced] = state.resource.properties.emplace( property.key, std::move( property));
             if( ! emplaced)
-               event::error::raise( code::casual::invalid_configuration, event::error::Severity::fatal, "multiple keys in resource config: ", pair->first);
+               event::error::fatal::raise( code::casual::invalid_configuration, "multiple keys in resource config: ", pair->first);
          }
 
          state.resources = local::resources( model.resources, state.resource.properties);

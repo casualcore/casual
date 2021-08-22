@@ -44,11 +44,11 @@ namespace casual
                auto handler( std::vector< common::strong::correlation::id>& tasks) 
                {
                   return message::dispatch::handler( communication::ipc::inbound::device(),
-                     []( message::event::process::Spawn& event)
+                     []( const message::event::process::Spawn& event)
                      {
                         message::event::terminal::print( std::cout, event);
                      },
-                     []( message::event::process::Exit& event)
+                     []( const message::event::process::Exit& event)
                      {
                         message::event::terminal::print( std::cout, event);
                      },
@@ -58,13 +58,17 @@ namespace casual
                         if( event.done())
                            algorithm::trim( tasks, algorithm::remove( tasks, event.correlation));
                      },
-                     []( message::event::sub::Task& event)
+                     []( const message::event::sub::Task& event)
                      {
                         message::event::terminal::print( std::cout, event);
                      },
-                     []( message::event::Error& event)
+                     []( const message::event::Error& event)
                      {
                         message::event::terminal::print( std::cerr, event);
+                     },
+                     []( const message::event::Notification& event)
+                     {
+                        message::event::terminal::print( std::cout, event);
                      }
                   );
                };

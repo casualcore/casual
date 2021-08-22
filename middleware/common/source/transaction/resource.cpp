@@ -9,7 +9,7 @@
 
 #include "common/transaction/resource.h"
 #include "common/transaction/id.h"
-#include "common/environment/string.h"
+#include "common/environment/expand.h"
 
 #include "common/log/category.h"
 #include "common/flag.h"
@@ -100,7 +100,7 @@ namespace casual
          {
             log::line( log::category::transaction, "open resource: ", m_id, " openinfo: ", m_openinfo, " flags: ", flags);
 
-            auto info = common::environment::string( m_openinfo);
+            auto info = common::environment::expand( m_openinfo);
 
             auto result = local::convert( m_xa->xa_open_entry( info.c_str(), m_id.value(), flags.underlaying()));
 
@@ -115,7 +115,7 @@ namespace casual
          {
             log::line( log::category::transaction, "close resource: ", m_id, " closeinfo: ", m_closeinfo, " flags: ", flags);
 
-            auto info = common::environment::string( m_closeinfo);
+            auto info = common::environment::expand( m_closeinfo);
 
             auto result = local::convert( m_xa->xa_close_entry( info.c_str(), m_id.value(), flags.underlaying()));
 

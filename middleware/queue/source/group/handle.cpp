@@ -601,13 +601,21 @@ namespace casual
 
                         // TODO: remove this in 2.0 (that exist to be backward compatible)
                         {
+                           // if the wanted path exists, we can't overwrite with the old
+                           if( std::filesystem::exists( file))
+                              return group::Queuebase{ std::move( file)};
+
                            auto old = common::environment::directory::domain() / "queue" / "groups" / name;
 
                            if( std::filesystem::exists( old) && ! std::filesystem::equivalent( old, file))
+                           {
                               std::filesystem::rename( old, file);
+                              event::notification::send( "queuebase file moved: ", old, " -> ", file);
+                              log::line( log::category::warning, "queuebase file moved: ", old, " -> ", file);
+                           }
                         }
 
-                        return group::Queuebase{ file};
+                        return group::Queuebase{ std::move( file)};
                      }
 
                   } // detail

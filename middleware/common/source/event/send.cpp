@@ -28,29 +28,26 @@ namespace casual
             communication::device::blocking::optional::send( communication::instance::outbound::domain::manager::device(), complete);
          }
 
-         void send( std::error_code code, Severity severity, std::string message)
+         namespace error
          {
-            Trace trace{ "common::domain::event::error::send"};
-
-            auto stream = []( auto severity) -> std::ostream&
+            void send( std::error_code code, Severity severity, std::string message)
             {
-               if( severity == Severity::warning)
-                  return log::category::warning;
-               return log::category::error;
-            };
+               Trace trace{ "common::domain::event::detail::error::send"};
 
-            log::line( stream( severity), code, ' ', message);
+               log::line( log::category::error, code, ' ', message);
 
-            // We block all signals but SIG_INT
-            signal::thread::scope::Mask block{ signal::set::filled( code::signal::interrupt)};
+               // We block all signals but SIG_INT
+               signal::thread::scope::Mask block{ signal::set::filled( code::signal::interrupt)};
 
-            message::event::Error error{ process::handle()};
-            error.code = code;
-            error.message = std::move( message);
-            error.severity = severity;
+               message::event::Error error{ process::handle()};
+               error.code = code;
+               error.message = std::move( message);
+               error.severity = severity;
 
-            communication::device::blocking::send( communication::instance::outbound::domain::manager::device(), error);
-         }
+               communication::device::blocking::send( communication::instance::outbound::domain::manager::device(), error);
+            }
+         } // error
+
       } // detail
 
    } // common::event

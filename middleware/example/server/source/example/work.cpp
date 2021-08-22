@@ -12,7 +12,7 @@
 #include "common/log/category.h"
 #include "common/exception/guard.h"
 #include "common/argument.h"
-#include "common/environment/string.h"
+#include "common/environment/expand.h"
 #include "common/chronology.h"
 #include "common/domain.h"
 
@@ -53,7 +53,7 @@ namespace casual
                {
                   return [&time]( std::string value)
                   {
-                     time = common::chronology::from::string( common::environment::string( value));
+                     time = common::chronology::from::string( common::environment::expand( value));
                   };
                };
 

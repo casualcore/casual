@@ -7,7 +7,7 @@
 
 #include "configuration/user/environment.h"
 
-#include "common/environment/string.h"
+#include "common/environment/expand.h"
 #include "common/environment.h"
 #include "common/algorithm.h"
 #include "common/file.h"
@@ -47,7 +47,7 @@ namespace casual
                      {
                         for( auto& file : environment.files.value())
                         {
-                           auto path = common::environment::string( file);
+                           auto path = common::environment::expand( file);
 
                            if( ! common::algorithm::find( paths, path))
                            {

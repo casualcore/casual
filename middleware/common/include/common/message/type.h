@@ -120,6 +120,7 @@ namespace casual
          event_task = EVENT_DOMAIN_BASE,
          event_sub_task,
          event_error,
+         event_notification,
 
          event_process_spawn,
          // sent when a 'process' is done with configuration of it self.

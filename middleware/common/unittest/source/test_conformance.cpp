@@ -95,6 +95,12 @@ namespace casual
          EXPECT_TRUE( value == 1);
       }
       
+      TEST( common_conformance, filesystem_path__environment_expansion)
+      {
+         auto path = std::filesystem::path{ "${FOO}/${BAR}"};
+         auto range = range::make( path);
+         EXPECT_TRUE( range.size() == 2);
+      }
 
       TEST( common_conformance, struct_with_pod_attributes__is_pod)
       {

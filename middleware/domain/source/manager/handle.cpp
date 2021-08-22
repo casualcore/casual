@@ -665,13 +665,9 @@ namespace casual
                   return [&state]( common::message::event::Error& message)
                   {
                      Trace trace{ "domain::manager::handle::event::error"};
-
                      log::line( verbose::log, "message: ", message);
 
-                     manager::task::event::dispatch( state, [&message]()
-                     {
-                        return message;
-                     });
+                     manager::task::event::dispatch( state, [&message](){ return message;});
 
                      if( message.severity == decltype( message.severity)::fatal && state.runlevel == state::Runlevel::startup)
                      {
@@ -680,6 +676,17 @@ namespace casual
                         handle::shutdown( state);
                      }
 
+                  };
+               }
+
+               auto notification( State& state)
+               {
+                  return [&state]( common::message::event::Notification& message)
+                  {
+                     Trace trace{ "domain::manager::handle::event::notification"};
+                     log::line( verbose::log, "message: ", message);
+
+                     manager::task::event::dispatch( state, [&message](){ return message;});
                   };
                }
 
@@ -875,7 +882,7 @@ namespace casual
                            manager::task::event::dispatch( state, [&message]()
                            {
                               common::message::event::Error event;
-                              event.severity = decltype( event.severity)::warning;
+                              event.code = common::code::casual::invalid_semantics;
                               event.message = string::compose( "server connect - only one instance is allowed for ", message.singleton.identification);
                               return event;
                            });
@@ -1057,6 +1064,7 @@ namespace casual
             handle::local::event::subscription::begin( state),
             handle::local::event::subscription::end( state),
             handle::local::event::error( state),
+            handle::local::event::notification( state),
             handle::local::event::task( state),
             handle::local::event::sub::task( state),
             handle::local::event::discoverable::available( state),

@@ -37,9 +37,8 @@ namespace casual
                   using Enum = Error::Severity;
                   case Enum::fatal: return out << "fatal";
                   case Enum::error: return out << "error";
-                  case Enum::warning: return out << "warning";
                }
-               return out << "unknown";
+               return out << "<unknown>";
             }
 
             namespace task
@@ -89,14 +88,19 @@ namespace casual
                      switch( event.severity)
                      {
                         using Enum = decltype( event.severity);
-                        case Enum::warning : return common::terminal::color::value::green;
-                        case Enum::error : return common::terminal::color::value::magenta;
-                        default: return common::terminal::color::value::red;
+                        case Enum::fatal: return common::terminal::color::value::red;
+                        case Enum::error: return common::terminal::color::value::red;
                      }
+                     return common::terminal::color::value::red;
                   };
 
                   common::stream::write( out, event::local::sub::indentation, severity_color(), event.severity,  ' ', event.code, ": ", common::terminal::color::value::no_color);
                   return  out << common::terminal::color::white << event.message << '\n'; 
+               }
+
+               std::ostream& print( std::ostream& out, const Notification& event)
+               {
+                  return common::stream::write( out, event::local::sub::indentation, common::terminal::color::value::white, "information: ", event.message, common::terminal::color::value::no_color);
                }
 
                std::ostream& print( std::ostream& out, const process::Spawn& event)

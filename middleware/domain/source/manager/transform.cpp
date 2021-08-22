@@ -9,7 +9,7 @@
 #include "domain/manager/task.h"
 
 #include "common/domain.h"
-#include "common/environment/string.h"
+#include "common/environment/expand.h"
 
 #include "common/code/raise.h"
 #include "common/code/casual.h"
@@ -296,7 +296,7 @@ namespace casual
          log::line( verbose::log, "configuration: ", model);
          
          // Set the domain
-         common::domain::identity( common::domain::Identity{ environment::string( model.domain.name)});
+         common::domain::identity( common::domain::Identity{ environment::expand( model.domain.name)});
          manager::State result;
 
          result.configuration.model = std::move( model);

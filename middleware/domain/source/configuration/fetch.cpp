@@ -26,7 +26,7 @@ namespace casual
 
          return environment::normalize( communication::ipc::call( 
             communication::instance::outbound::domain::manager::device(),
-            casual::configuration::message::Request{ process::handle()})).model;
+            casual::configuration::message::Request{ process::handle()}).model);
 
       }
 

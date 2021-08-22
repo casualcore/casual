@@ -63,7 +63,6 @@ namespace casual
             {
                fatal, // shutting down
                error, // keep going
-               warning
             };
 
             friend std::ostream& operator << ( std::ostream& out, Severity value);
@@ -77,6 +76,19 @@ namespace casual
                CASUAL_SERIALIZE( code);
                CASUAL_SERIALIZE( message);
                CASUAL_SERIALIZE( severity);
+            )
+         };
+
+         using base_notification = basic_event< Type::event_notification>;
+         struct Notification : base_notification
+         {
+            using base_notification::base_notification;
+            
+            std::string message;
+            
+            CASUAL_CONST_CORRECT_SERIALIZE(
+               base_notification::serialize( archive);
+               CASUAL_SERIALIZE( message);
             )
          };
 
@@ -280,6 +292,7 @@ namespace casual
          namespace terminal
          {
             std::ostream& print( std::ostream& out, const Error& event);
+            std::ostream& print( std::ostream& out, const Notification& event);
             std::ostream& print( std::ostream& out, const process::Spawn& event);
             std::ostream& print( std::ostream& out, const process::Exit& event);
 

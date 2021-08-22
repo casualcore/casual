@@ -280,7 +280,6 @@ namespace casual
             manager::task::event::dispatch( state, [&state]()
             {
                common::message::event::Error event{ process::handle()};
-               event.severity = decltype( event.severity)::warning;
                event.code = code::casual::invalid_semantics;
                event.message = string::compose( "domain-manager is not in a running runlevel ", state.runlevel());
                return event;

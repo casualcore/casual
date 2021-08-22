@@ -25,8 +25,12 @@ namespace casual
          
          void send( communication::ipc::message::Complete&& message);
 
-         using Severity = message::event::Error::Severity;
-         void send( std::error_code code, Severity severity, std::string message);
+         namespace error
+         {
+            using Severity = message::event::Error::Severity;
+            void send( std::error_code code, Severity severity, std::string message);            
+         } // error
+
       } // detail
 
       template< typename Event>
@@ -36,36 +40,41 @@ namespace casual
          detail::send( serialize::native::complete< communication::ipc::message::Complete>( std::forward< Event>( event)));
       }
 
+      namespace notification
+      {
+         template< typename... Ts>
+         auto send( Ts&&... ts)
+         {
+            message::event::Notification event{ process::handle()};
+            event.message = string::compose( std::forward< Ts>( ts)...);
+            event::send( event);
+         }
+         
+      } // notification
+
       namespace error
       {
-         using Severity = message::event::Error::Severity;
-
-         //! Sends an error event to domain manager, that will forward the event
-         //! to possible listeners
-         template< typename Code, typename... Ts>
-         void send( Code code, Severity severity, Ts&&... ts)
-         {
-            detail::send( code, severity, string::compose( std::forward< Ts>( ts)...));
-         }
 
          //! Sends an error event (with severity error) to domain manager, that will forward the event
          //! to possible listeners
          template< typename Code, typename... Ts>
          auto send( Code code, Ts&&... ts)
          {
-            detail::send( code, Severity::error, string::compose( std::forward< Ts>( ts)...));
+            detail::error::send( code, detail::error::Severity::error, string::compose( std::forward< Ts>( ts)...));
          }
 
-         //! Sends an error event to domain manager, that will forward the event
-         //! to possible listeners
-         //! then: raise the code
-         template< typename Code, typename... Ts>
-         void raise( Code code, Severity severity, Ts&&... ts)
+         namespace fatal
          {
-            auto message = string::compose( std::forward< Ts>( ts)...);
-            detail::send( code, severity, message);
-            code::raise::error( code, message);
-         }
+            //! Sends an error event (with severity fatal) to domain manager, that will forward the event
+            //! to possible listeners, and shutdown the domain!
+            template< typename Code, typename... Ts>
+            auto send( Code code, Ts&&... ts)
+            {
+               detail::error::send( code, detail::error::Severity::fatal, string::compose( std::forward< Ts>( ts)...));
+            }
+            
+         } // fatal
+
 
          //! Sends an error event (with severity error) to domain manager, that will forward the event
          //! to possible listeners
@@ -74,9 +83,24 @@ namespace casual
          [[noreturn]] void raise( Code code, Ts&&... ts)
          {
             auto message = string::compose( std::forward< Ts>( ts)...);
-            detail::send( code, Severity::error, message);
+            detail::error::send( code, detail::error::Severity::error, message);
             code::raise::error( code, message);
          }
+
+         namespace fatal
+         {
+            //! Sends an error event (with severity fatal) to domain manager, that will forward the event
+            //! to possible listeners, and shutdown the domain!
+            //! then: raise the code
+            template< typename Code, typename... Ts>
+            [[noreturn]] void raise( Code code, Ts&&... ts)
+            {
+               auto message = string::compose( std::forward< Ts>( ts)...);
+               detail::error::send( code, detail::error::Severity::fatal, message);
+               code::raise::error( code, message);
+            }
+            
+         } // fatal
 
 
       } // error
@@ -94,7 +118,7 @@ namespace casual
             catch( ...)
             {
                auto error = exception::capture();
-               event::error::send( error.code(), event::error::Severity::fatal);
+               event::error::fatal::send( error.code(), error.what());
                throw error;
             }
          }

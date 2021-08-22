@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include "common/environment/string.h"
+#include "common/environment/expand.h"
 
 #include "common/serialize/archive/type.h"
 #include "common/serialize/value.h"
@@ -70,7 +70,7 @@ namespace casual
             {
                std::string operator () ( std::string& value) const 
                {
-                  return environment::string( std::move( value));
+                  return environment::expand( std::move( value));
                }
             };
 
@@ -81,7 +81,7 @@ namespace casual
 
                std::string operator () ( std::string& value) const 
                {
-                  return environment::string( std::move( value), m_local);
+                  return environment::expand( std::move( value), m_local);
                }
 
                const std::vector< environment::Variable>& m_local;
@@ -93,7 +93,7 @@ namespace casual
 
       //! normalizes `value` with regards to environment variables
       //!
-      //! in essence, traverse the type and apply environment::string to all
+      //! in essence, traverse the type and apply environment::expand to all
       //! found strings in the datastructure
       //!
       //! @returns the `value` (depending on invocation, either rvalue or lvalue)
@@ -108,7 +108,7 @@ namespace casual
       //! if the variable is found in `local` it's used, otherwise ask the 
       //! real environment.
       //!
-      //! in essence, traverse the type and apply environment::string to all
+      //! in essence, traverse the type and apply environment::expand to all
       //! found strings in the datastructure
       //!
       //! @returns the `value` (depending on invocation, either rvalue or lvalue)
@@ -125,7 +125,7 @@ namespace casual
          algorithm::for_each( value, [&local]( auto& value)
          {
             // we copy
-            value = environment::string( value, local);
+            value = environment::expand( value, local);
          });
       }
       

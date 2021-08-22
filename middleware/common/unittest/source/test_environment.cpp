@@ -9,7 +9,7 @@
 #include "common/unittest.h"
 
 #include "common/environment.h"
-#include "common/environment/string.h"
+#include "common/environment/expand.h"
 
 
 namespace casual
@@ -20,7 +20,7 @@ namespace casual
       {
          common::unittest::Trace trace;
 
-         EXPECT_TRUE( environment::string( "test/a/b/c") == "test/a/b/c");
+         EXPECT_TRUE( environment::expand( "test/a/b/c") == "test/a/b/c");
       }
 
 
@@ -32,7 +32,7 @@ namespace casual
 
          auto home = environment::variable::get( "HOME");
 
-         auto result =  environment::string( "${HOME}/a/b/c");
+         auto result =  environment::expand( "${HOME}/a/b/c");
 
          EXPECT_TRUE( result == home + "/a/b/c") << "result: " << result;
       }
@@ -45,7 +45,7 @@ namespace casual
 
          auto home = environment::variable::get( "HOME");
 
-         auto result =  environment::string( "a/b/c/${HOME}/a/b/c");
+         auto result =  environment::expand( "a/b/c/${HOME}/a/b/c");
 
          EXPECT_TRUE( result == "a/b/c/" + home + "/a/b/c") << "result: " << result;
       }
@@ -58,7 +58,7 @@ namespace casual
 
          auto home = environment::variable::get( "HOME");
 
-         auto result =  environment::string( "${HOME}/a/b/c");
+         auto result =  environment::expand( "${HOME}/a/b/c");
 
          EXPECT_TRUE( result == home + "/a/b/c") << "result: " << result;
       }
@@ -67,7 +67,7 @@ namespace casual
       {
          common::unittest::Trace trace;
 
-         EXPECT_TRUE( environment::string( "${HOME/a/b/c") == "${HOME/a/b/c");
+         EXPECT_TRUE( environment::expand( "${HOME/a/b/c") == "${HOME/a/b/c");
       }
 
       TEST( common_environment, process___expect_serialized)
@@ -88,7 +88,7 @@ namespace casual
 
          environment::variable::set( "CASUAL_HOME", "test");
 
-         auto result =  environment::string( "main.cpp -I${CASUAL_HOME}/include");
+         auto result =  environment::expand( "main.cpp -I${CASUAL_HOME}/include");
 
          EXPECT_TRUE( result == "main.cpp -Itest/include") << "result: " << result;
       }
@@ -99,7 +99,7 @@ namespace casual
 
          environment::variable::set( "CASUAL_HOME", "test");
 
-         auto result =  environment::string( "-I${CASUAL_HOME}/include");
+         auto result =  environment::expand( "-I${CASUAL_HOME}/include");
 
          EXPECT_TRUE( result == "-Itest/include") << "result: " << result;
       }
@@ -110,7 +110,7 @@ namespace casual
 
          std::vector< environment::Variable> local{ { "FOO=foo"}, {"BAR=bar"}};
 
-         auto result = environment::string( "${FOO}${BAR}", local);
+         auto result = environment::expand( "${FOO}${BAR}", local);
 
          EXPECT_TRUE( result == "foobar") << "result: " << result;
       }
@@ -121,7 +121,7 @@ namespace casual
 
          std::vector< environment::Variable> local{ { "FOO=foo"}, {"BAR=bar"}};
 
-         auto result = environment::string( "a${FOO}b${BAR}c", local);
+         auto result = environment::expand( "a${FOO}b${BAR}c", local);
 
          EXPECT_TRUE( result == "afoobbarc") << "result: " << result;
       }
@@ -135,7 +135,7 @@ namespace casual
          std::vector< environment::Variable> local{ { "FOO=foo"}, {"BAR=bar"}};
 
       
-         auto result = environment::string( "${FOO}${POOP}${BAR}", local);
+         auto result = environment::expand( "${FOO}${POOP}${BAR}", local);
 
          EXPECT_TRUE( result == "foopoopbar") << "result: " << result;
       }  

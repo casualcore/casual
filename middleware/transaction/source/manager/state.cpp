@@ -13,7 +13,7 @@
 
 #include "common/algorithm.h"
 #include "common/environment.h"
-#include "common/environment/string.h"
+#include "common/environment/expand.h"
 #include "common/event/send.h"
 
 #include "common/code/raise.h"

@@ -139,7 +139,7 @@ namespace casual
                {
                   common::log::line( common::log::category::verbose::error, "version: ", version);
 
-                  common::event::error::raise(  code::casual::invalid_version, common::event::error::Severity::fatal,
+                  common::event::error::fatal::raise( code::casual::invalid_version,
                      "please remove or convert '", connection.file(), "' using casual-queue-upgrade");
                }
 
@@ -180,8 +180,8 @@ namespace casual
       } // queuebase
 
 
-      Queuebase::Queuebase( const std::filesystem::path& database) 
-         : m_connection{ database}
+      Queuebase::Queuebase( std::filesystem::path database) 
+         : m_connection{ std::move( database)}
       {
          Trace trace{ "queue::group::Queuebase::Queuebase"};
 

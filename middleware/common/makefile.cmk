@@ -121,7 +121,7 @@ casual_common_objectfiles = [
     make.Compile( 'source/exception/guard.cpp'),
 
     make.Compile( 'source/environment.cpp'),
-    make.Compile( 'source/environment/string.cpp'),
+    make.Compile( 'source/environment/expand.cpp'),
 
     make.Compile( 'source/uuid.cpp'),
     make.Compile( 'source/file.cpp'),

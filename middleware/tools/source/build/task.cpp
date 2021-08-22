@@ -8,7 +8,7 @@
 #include "tools/common.h"
 
 #include "common/algorithm.h"
-#include "common/environment/string.h"
+#include "common/environment/expand.h"
 #include "common/process.h"
 
 #include "common/code/raise.h"
@@ -94,7 +94,7 @@ namespace casual
 
             // Make sure we resolve environment stuff
             for( auto& argument : arguments)
-               argument = common::environment::string( std::move( argument));
+               argument = common::environment::expand( std::move( argument));
 
             if( directive.verbose)
                log::line( std::clog, directive.compiler, " ", common::string::join( arguments, " "));

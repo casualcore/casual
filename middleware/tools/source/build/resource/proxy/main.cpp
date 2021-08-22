@@ -8,7 +8,7 @@
 
 #include "common/argument.h"
 #include "common/environment.h"
-#include "common/environment/string.h"
+#include "common/environment/expand.h"
 #include "common/file.h"
 #include "common/uuid.h"
 #include "common/string.h"
@@ -144,17 +144,17 @@ int main( int argc, char** argv)
 
                         for( auto& include_path : resource.paths.include)
                         {
-                           arguments.emplace_back( "-I" + common::environment::string( include_path));
+                           arguments.emplace_back( "-I" + common::environment::expand( include_path));
                         }
                         // Add casual-paths, that we know will be needed
-                        arguments.emplace_back( common::environment::string( "-I${CASUAL_HOME}/include"));
+                        arguments.emplace_back( common::environment::expand( "-I${CASUAL_HOME}/include"));
 
                         for( auto& lib_path : resource.paths.library)
                         {
-                           arguments.emplace_back( "-L" + common::environment::string( lib_path));
+                           arguments.emplace_back( "-L" + common::environment::expand( lib_path));
                         }
                         // Add casual-paths, that we know will be needed
-                        arguments.emplace_back( common::environment::string( "-L${CASUAL_HOME}/lib"));
+                        arguments.emplace_back( common::environment::expand( "-L${CASUAL_HOME}/lib"));
 
 
                         for( auto& lib : resource.libraries)

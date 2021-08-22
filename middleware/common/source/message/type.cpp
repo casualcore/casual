@@ -70,6 +70,7 @@ namespace casual
             case Type::event_task: return out << "event_task";
             case Type::event_sub_task: return out << "event_sub_task";
             case Type::event_error: return out << "event_error";
+            case Type::event_notification: return out << "event_notification";
             case Type::event_process_spawn: return out << "event_process_spawn";
             case Type::event_process_exit: return out << "event_process_exit";
             case Type::event_process_configured: return out << "event_process_configured";
