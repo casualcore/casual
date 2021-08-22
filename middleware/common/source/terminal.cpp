@@ -46,11 +46,6 @@ namespace casual
                      }
                   }
 
-                  namespace global
-                  {
-                     Directive& directive = Directive::instance();
-                  } // global
-
                } // <unnamed>
             } // local
 
@@ -79,12 +74,21 @@ namespace casual
                   return string::compose( message, " (default: ", std::boolalpha, value, ')');
                };
 
+               auto set_porcelain = [&porcelain = this->m_porcelain]( bool value)
+               {
+                  porcelain = value;
+                  
+                  // if user has set porcelain we "remove" locale formatting
+                  if( porcelain)
+                     std::locale::global( std::locale::classic());
+               };
+
                return argument::Option( std::tie( m_color), trinary_completer, { "--color"}, default_description( "set/unset color - if auto, colors are used if tty is bound to stdout", m_color))
                   + argument::Option( std::tie( m_header), trinary_completer, { "--header"}, default_description( "set/unset header - if auto, headers are used if tty is bound to stdout", m_header))
                   + argument::Option( std::tie( m_precision), { "--precision"}, default_description( "set number of decimal points used for output", m_precision))
                   + argument::Option( std::tie( m_block), bool_completer, { "--block"}, default_description( "set/unset blocking - if false return control to user as soon as possible", m_block))
                   + argument::Option( std::tie( m_verbose), bool_completer, { "--verbose"}, default_description( "verbose output", m_verbose))
-                  + argument::Option( std::tie( m_porcelain), bool_completer, { "--porcelain"}, default_description( "easy to parse output format", m_porcelain));
+                  + argument::Option( set_porcelain, bool_completer, { "--porcelain"}, default_description( "easy to parse output format", m_porcelain));
             }
 
 
@@ -102,7 +106,9 @@ namespace casual
                   m_verbose{ local::get( environment::variable::name::terminal::verbose, false)},
                   m_precision{ local::get( environment::variable::name::terminal::precision, 3)}
             {
-
+               // make sure we respect users locale
+               if( ! m_porcelain)
+                  std::locale::global( std::locale(""));
             }
 
             void Directive::plain()
@@ -114,7 +120,7 @@ namespace casual
 
             Directive& directive() 
             { 
-               return local::global::directive;
+               return Directive::instance();
             }
 
 
