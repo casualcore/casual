@@ -58,17 +58,17 @@ namespace casual
                   const auto offset = std::abs( time.tm_gmtoff);
 
                   // 2021-08-22T14:43:14.367989+02:00  32B
-                  std::array< char, 33> buffer;
+                  std::array< char, 33> buffer{};
                   
                   // TODO c++20 use std::format instead!
-                  std::snprintf( buffer.data(), buffer.size(), "%.4i-%.2i-%.2iT%.2i:%.2i:%.2i.%.6lld%c%.2ld:%.2ld",
+                  std::snprintf( buffer.data(), buffer.size(), "%.4i-%.2i-%.2iT%.2i:%.2i:%.2i.%.6ld%c%.2ld:%.2ld",
                      time.tm_year + 1900,
                      time.tm_mon + 1,
                      time.tm_mday,
                      time.tm_hour,
                      time.tm_min,
                      time.tm_sec,
-                     fraction.count(),
+                     static_cast< long>( fraction.count()),
                      ( time.tm_gmtoff < 0 ? '-' : '+'),
                      // get the 'hour' part
                      offset / 3600,
