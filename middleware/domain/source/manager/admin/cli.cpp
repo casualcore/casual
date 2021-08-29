@@ -1074,6 +1074,65 @@ The semantics are similar to http PUT:
                   }
 
                } // configuration
+
+               namespace log
+               {
+                  struct Type : common::compare::Order< Type>
+                  {
+                     Type( strong::process::id pid, std::string alias, std::string path) : pid{ pid}, alias{ std::move( alias)}, path{ std::move( path)} {}
+
+                     strong::process::id pid;
+                     std::string alias;
+                     std::string path;
+
+                     auto tie() const noexcept { return std::tie( alias, pid);}
+                  };
+
+                  auto reopen()
+                  {
+                     auto invoke = []()
+                     {
+                        auto state = call::state();
+
+                        algorithm::for_each( state.servers, []( auto& server){
+                           algorithm::for_each( server.instances, []( auto& instance){
+                              common::signal::send( instance.handle.pid, code::signal::hangup);
+                           });
+                        });
+
+                        auto instances = algorithm::accumulate( state.executables, std::vector< Type>{}, []( auto result, auto& executable)
+                        {
+                           for( auto& instance : executable.instances)
+                              result.emplace_back( Type{ instance.handle, executable.alias, executable.path});
+                        
+                           return result;
+                        });
+
+                        algorithm::sort( instances);
+
+                        auto create_formatter = []()
+                        {
+                           auto format_pid = []( auto& i) { return i.pid;};
+                           auto format_alias = []( auto& i) { return i.alias;};
+                           auto format_path = []( auto& i) { return i.path;};
+
+                           return terminal::format::formatter< Type>::construct(
+                              terminal::format::column( "pid", format_pid, terminal::color::white, terminal::format::Align::right),
+                              terminal::format::column( "alias", format_alias, terminal::color::cyan, terminal::format::Align::left),
+                              terminal::format::column( "path", format_path, terminal::color::blue, terminal::format::Align::left)
+                           );
+                        };
+
+                        create_formatter().print( std::cout, instances);
+                     };
+
+                     return argument::Option{
+                        std::move( invoke),
+                        { "--log-reopen"},
+                        "reopen casual.log by sending SIGHUP to all servers, and outputs all running executables"
+                     };
+                  }
+               } // log
             } // option
 
          } // <unnamed>
@@ -1107,6 +1166,8 @@ The semantics are similar to http PUT:
                argument::Option( &local::action::legend::invoke, local::action::legend::complete(), { "--legend"}, local::action::legend::description),
                argument::Option( &local::action::information::invoke, { "--information"}, local::action::information::description),
                argument::Option( &local::action::state, state_format, { "--state"}, "domain state (as provided format)"),
+
+               local::option::log::reopen(),
             };
          }
       };
