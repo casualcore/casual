@@ -12,8 +12,8 @@ import casual.make.tools.executor as executor
 import casual.make.platform.common as common
 
 import importlib
-compiler_handler = state.settings.compiler_handler()
-selector = importlib.import_module( compiler_handler)
+compiler_handler_module = state.settings.compiler_handler_module()
+selector = importlib.import_module( compiler_handler_module)
 
 def BUILD_SERVER():
    return "casual-build-server"
