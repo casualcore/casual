@@ -59,6 +59,12 @@ namespace casual
 
                   // 2021-08-22T14:43:14.367989+02:00  32B
                   std::array< char, 33> buffer{};
+
+#ifndef __clang__
+// g++ 10.x bug?          
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat-truncation"
+#endif
                   
                   // TODO c++20 use std::format instead!
                   std::snprintf( buffer.data(), buffer.size(), "%.4i-%.2i-%.2iT%.2i:%.2i:%.2i.%.6ld%c%.2ld:%.2ld",
@@ -75,6 +81,10 @@ namespace casual
                      // get the 'minute' part
                      offset % 3600
                   );
+
+#ifndef __clang__
+#pragma GCC diagnostic pop
+#endif
 
                   out.write( buffer.data(), buffer.size() - 1);
                }
@@ -234,7 +244,7 @@ namespace casual
             delimiter = local::stream< std::chrono::seconds>( out, duration, std::chrono::minutes{ 1}, delimiter);
             delimiter = local::stream< std::chrono::milliseconds>( out, duration, std::chrono::seconds{ 1}, delimiter);
             delimiter = local::stream< std::chrono::microseconds>( out, duration, std::chrono::milliseconds{ 1}, delimiter);
-            delimiter = local::stream< std::chrono::nanoseconds>( out, duration, std::chrono::microseconds{ 1}, delimiter);
+            local::stream< std::chrono::nanoseconds>( out, duration, std::chrono::microseconds{ 1}, delimiter);
 
             
             return std::move( out).str();

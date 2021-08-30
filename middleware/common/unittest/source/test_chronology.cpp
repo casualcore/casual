@@ -87,6 +87,15 @@ namespace casual
             EXPECT_TRUE( to::string( std::chrono::seconds( 3600 + 120 + 12)) == "1h + 2min + 12s") << to::string( std::chrono::seconds( 3600 + 120 + 12));
          }
 
+         TEST( common_chronology, to_string_42ns)
+         {
+            unittest::Trace trace;
+
+            auto duration = std::chrono::nanoseconds{ 42}; 
+
+            EXPECT_TRUE( to::string( duration) == "42ns") << to::string( duration);
+         }
+
          TEST( common_chronology, to_string__2h_40min_1ns)
          {
             unittest::Trace trace;
