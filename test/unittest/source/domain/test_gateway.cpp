@@ -1240,7 +1240,15 @@ domain:
          
          local::Manager a{ { local::configuration::base, A}};
 
-         local::state::gateway::until( local::state::gateway::predicate::outbound::connected());
+         auto ready_predicate = []( auto& state)
+         {
+            if( auto found = algorithm::find( state.services, "casual/example/domain/name"))
+               return found->connections.size() == 3;
+
+            return false;
+         };
+
+         local::state::gateway::until( ready_predicate);
 
          std::map< std::string, int> domains;
 
