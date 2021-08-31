@@ -251,9 +251,16 @@ domain:
          // make sure the wanted differs (otherwise we're not testing anyting...)
          ASSERT_TRUE( wanted.gateway != casual::configuration::model::transform( casual::domain::manager::unittest::configuration::get()).gateway);
 
-         // post the wanted model (in transformed user representation)
-         auto updated = casual::configuration::model::transform( 
-            casual::domain::manager::unittest::configuration::post( casual::configuration::model::transform( wanted)));
+         // post the wanted model (with transformed user representation)
+         casual::domain::manager::unittest::configuration::post( casual::configuration::model::transform( wanted));
+         
+         // wait for the connections to establish again
+         auto state = local::call::state( []( auto& state)
+         {
+            return state.connections.size() == 2;
+         });
+
+         auto updated = casual::configuration::model::transform( casual::domain::manager::unittest::configuration::get());
 
          EXPECT_TRUE( wanted.gateway == updated.gateway) << CASUAL_NAMED_VALUE( wanted.gateway) << '\n' << CASUAL_NAMED_VALUE( updated.gateway);
 
