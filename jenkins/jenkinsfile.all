@@ -166,8 +166,8 @@ rm -rf $CASUAL_REPOSITORY_ROOT/middleware/.casual/unittest/.singleton/.domain-si
 
 cd $CASUAL_REPOSITORY_ROOT && \
       casual-make --stat --no-colors clean && \
-      casual-make --stat --quiet --no-colors -a --use-valgrind compile && \
-      casual-make --stat --no-colors -a --use-valgrind link && \
+      casual-make --stat --quiet --no-colors compile && \
+      casual-make --stat --no-colors link && \
       casual-make --no-colors test --gtest_color=no --gtest_output='xml:report.xml' && \
       mkdir -p $CASUAL_REPOSITORY_ROOT/coverage && \
       casual-make --no-colors clean && \
