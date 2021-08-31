@@ -105,6 +105,9 @@ namespace casual
          {
             pid = process::spawn( "sleep", { "3600"});
          }
+
+         // TODO posix_spawn seems to have a _setup period_ when signals is "lost" - we mitigate this by sleeping a while...
+         std::this_thread::sleep_for( std::chrono::milliseconds{ 100});
         
          auto terminated = process::lifetime::terminate( pids, std::chrono::seconds( 5));
 
