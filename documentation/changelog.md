@@ -3,6 +3,54 @@ This is the changelog for `casual` and all changes are listed in this document.
 
 ## [Unreleased]
 
+## [1.5.0] - 2021-09-01
+### Added
+- configuration - runtime configuration _stage 1_ 
+  - cli for _get, post, put_, and _edit_ which spawns an editor and when the configuration is _saved_ 
+    `casual` tries to conform to the (possible) new configuration.
+  - **attention:** under (heavy) load there might be some noise still, we aim to fix this in _stage 2_
+- cli - version information without a domain running
+- cli - added value `auto` to option `--header`. With `auto`, headers are **only** used if tty is bound to stdout
+- gateway - handle queue- and service information in connection state viewable in cli
+- xatmi - extended - function to browse instance services
+- cli - made sure wrong written cli command doesn't gives error in log
+- queue - handle zombie queues - queues that are not configured anymore, but still exists in the _queuebase_
+- discovery - gateway inbound discovery forward
+- discovery - central 'agent' for handling discoveries
+
+### Changed
+- transcoding - platform-independent third-party-header-only-lib for base64-transcoding
+- paths - using std filesystem
+  - **attention:** this might change semantics which _temporary path_ is used.
+  - https://en.cppreference.com/w/cpp/filesystem/temp_directory_path
+  - _On POSIX systems, the path may be the one specified in the environment variables_
+      _TMPDIR, TMP, TEMP, TEMPDIR, and, if none of them are specified, the path "/tmp" is returned_
+- python binding - upgraded to python3
+
+
+### Fixes
+- serialize - some simplifications - std::filesystem::path logs correctly
+- common - 'helper' for `directory::create` to handle corner cases with links
+- log - made the reopen on SIGHUP more robust
+- common - less semi confusing logging
+- xatmi - placed definition of functions where they should be to avoid confusion
+- cygwin compatibility
+- build - calculate version from tags -> more robust version sequences
+
+### Internal
+- configuration - better model - all managers supply their configuration
+- unittest - more deterministic unittests
+- common - algorithm clean up - moved some stuff to separate headers
+- build - improved and fixed some build related stuff - simplification
+- maintenance - simplify traits - some improvements in algorithm
+- signal - simplified signal to only have one handler for a given signal at a given time
+- build - fixed problem with linking on Ubuntu
+- build - turning archive to a shared library to avoid ODR
+- common - strong::Type - made a strong::Type that replaces "value::id" and "value::optional"
+- common - error handling and log fixes
+- build - casual-make - use new build system
+
+
 ## [1.4.20] - 2021-06-15
 ### Fixes
 - queue - improved performance while dequeuing messages
