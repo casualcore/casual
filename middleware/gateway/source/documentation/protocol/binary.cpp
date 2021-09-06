@@ -25,41 +25,58 @@ namespace casual
 
    namespace gateway::documentation::protocol
    {
-
       namespace local
       {
          namespace
          {
             template< typename M, typename E>
-            auto file( M&& message, const std::string& base, E&& extension)
+            auto file( M&& message, std::filesystem::path base, E&& extension)
             {
-               return std::ofstream{ common::string::compose( 
-                  base,
+               auto information = common::string::compose( 
                   '.', gateway::message::domain::protocol::Version::version_1,
-                  '.', common::message::type( message), 
-                  '.', extension), std::ios::binary | std::ios::trunc};
+                  '.', cast::underlying( common::message::type( message)),
+                  '.', extension);
+
+               return std::ofstream{ base += information, std::ios::binary | std::ios::trunc};
             }
 
             using complete_type = communication::tcp::message::Complete;
 
             namespace generator
             {
-               auto binary = []( auto&& message, const std::string& base)
+               auto binary = []( auto&& message, const std::filesystem::path& base)
                {
                   auto file = local::file( message, base, "bin");
 
-                  auto complete = common::serialize::native::complete< complete_type>( message);
+                  auto complete = serialize::native::complete< complete_type>( message);
 
                   auto header = complete.header();
                   file.write( reinterpret_cast< const char*>( &header), communication::tcp::message::header::size);
                   file.write( complete.payload.data(), complete.payload.size());
                };
 
+               //! Local 'wrapper' writer to enable _network normalizing_, so we only serialize the
+               //! properties that are transported over the wire.
+               struct Writer : serialize::Writer
+               {
+                  using is_network_normalizing = void; // this is what trigger the 'specialization'
+                  Writer( serialize::Writer writer) : serialize::Writer{ std::move( writer)} {}
+
+                  //! we need to implement operator << so this type is returned, hence, we keep the
+                  //! is_network_normalizing throughout the serialization.
+                  template< typename V>
+                  Writer& operator << ( V&& value)
+                  {
+                     serialize::value::write( *this, std::forward< V>( value), nullptr);
+                     return *this;
+                  }
+               };
+
                auto descriptive = []( auto format)
                {
-                  return [format]( auto&& message, const std::string& base)
+                  return [format]( auto&& message, const std::filesystem::path& base)
                   {
-                     auto archive = common::serialize::create::writer::from( format);
+                     generator::Writer archive{ serialize::create::writer::from( format)};
                      archive << CASUAL_NAMED_VALUE( message);
                      auto file = local::file( message, base, format);
                      archive.consume( file);
@@ -69,33 +86,33 @@ namespace casual
 
 
             template< typename G>
-            void generate( G&& generator, const std::string& basename)
+            void generate( G&& generator, const std::filesystem::path& basename)
             {
-               generator( example::message< gateway::message::domain::connect::Request>(), basename + "message.gateway.domain.connect.Request");
-               generator( example::message< gateway::message::domain::connect::Reply>(), basename + "message.gateway.domain.connect.Reply");
-               generator( example::message< gateway::message::domain::discovery::Request>(), basename + "message.gateway.domain.discovery.Request");
-               generator( example::message< gateway::message::domain::discovery::Reply>(), basename + "message.gateway.domain.discovery.Reply");
-               generator( example::message< common::message::service::call::callee::Request>(), basename + "message.service.call.Request");
-               generator( example::message< common::message::service::call::Reply>(), basename + "message.service.call.Reply");
-               generator( example::message< common::message::conversation::connect::callee::Request>(), basename + "message.conversation.connect.Request");
-               generator( example::message< common::message::conversation::connect::Reply>(), basename + "message.conversation.connect.Reply");
-               generator( example::message< common::message::conversation::callee::Send>(), basename + "message.conversation.Send");
-               generator( example::message< common::message::conversation::Disconnect>(), basename + "message.conversation.Disconnect");
-               generator( example::message< queue::ipc::message::group::enqueue::Request>(), basename + "message.queue.enqueue.Request");
-               generator( example::message< queue::ipc::message::group::enqueue::Reply>(), basename + "message.queue.enqueue.Reply");
-               generator( example::message< queue::ipc::message::group::dequeue::Request>(), basename + "message.queue.dequeue.Request");
-               generator( example::message< queue::ipc::message::group::dequeue::Reply>(), basename + "message.queue.dequeue.Reply");
-               generator( example::message< common::message::transaction::resource::prepare::Request>(), basename + "message.transaction.resource.prepare.Request");
-               generator( example::message< common::message::transaction::resource::prepare::Reply>(), basename + "message.transaction.resource.prepare.Reply");
-               generator( example::message< common::message::transaction::resource::commit::Request>(), basename + "message.transaction.resource.commit.Request");
-               generator( example::message< common::message::transaction::resource::commit::Reply>(), basename + "message.transaction.resource.commit.Reply");
-               generator( example::message< common::message::transaction::resource::rollback::Request>(), basename + "message.transaction.resource.rollback.Request");
-               generator( example::message< common::message::transaction::resource::rollback::Reply>(), basename + "message.transaction.resource.rollback.Reply");
+               generator( example::message< gateway::message::domain::connect::Request>(), basename / "message.gateway.domain.connect.Request");
+               generator( example::message< gateway::message::domain::connect::Reply>(), basename / "message.gateway.domain.connect.Reply");
+               generator( example::message< gateway::message::domain::discovery::Request>(), basename / "message.gateway.domain.discovery.Request");
+               generator( example::message< gateway::message::domain::discovery::Reply>(), basename / "message.gateway.domain.discovery.Reply");
+               generator( example::message< common::message::service::call::callee::Request>(), basename / "message.service.call.Request");
+               generator( example::message< common::message::service::call::Reply>(), basename / "message.service.call.Reply");
+               generator( example::message< common::message::conversation::connect::callee::Request>(), basename / "message.conversation.connect.Request");
+               generator( example::message< common::message::conversation::connect::Reply>(), basename / "message.conversation.connect.Reply");
+               generator( example::message< common::message::conversation::callee::Send>(), basename / "message.conversation.Send");
+               generator( example::message< common::message::conversation::Disconnect>(), basename / "message.conversation.Disconnect");
+               generator( example::message< queue::ipc::message::group::enqueue::Request>(), basename / "message.queue.enqueue.Request");
+               generator( example::message< queue::ipc::message::group::enqueue::Reply>(), basename / "message.queue.enqueue.Reply");
+               generator( example::message< queue::ipc::message::group::dequeue::Request>(), basename / "message.queue.dequeue.Request");
+               generator( example::message< queue::ipc::message::group::dequeue::Reply>(), basename / "message.queue.dequeue.Reply");
+               generator( example::message< common::message::transaction::resource::prepare::Request>(), basename / "message.transaction.resource.prepare.Request");
+               generator( example::message< common::message::transaction::resource::prepare::Reply>(), basename / "message.transaction.resource.prepare.Reply");
+               generator( example::message< common::message::transaction::resource::commit::Request>(), basename / "message.transaction.resource.commit.Request");
+               generator( example::message< common::message::transaction::resource::commit::Reply>(), basename / "message.transaction.resource.commit.Reply");
+               generator( example::message< common::message::transaction::resource::rollback::Request>(), basename / "message.transaction.resource.rollback.Request");
+               generator( example::message< common::message::transaction::resource::rollback::Reply>(), basename / "message.transaction.resource.rollback.Reply");
             }
 
             void main(int argc, char **argv)
             {
-               std::string basename;
+               std::filesystem::path basename;
                std::string format;
 
                {
@@ -113,9 +130,6 @@ descriptive: [<base-path>/]<message-name>.<protocol-version>.<message-type-id>.<
                   }( argc, argv);
                }
 
-               if( ! basename.empty() && common::range::back( basename) != '/')
-                  basename.push_back( '/');
-
                // generate the binary blobs   
                generate( generator::binary, basename);
 
@@ -125,13 +139,14 @@ descriptive: [<base-path>/]<message-name>.<protocol-version>.<message-type-id>.<
             }
          } // <unnamed>
       } // local
+   } // gateway::documentation::protocol
 
-   } // gateway
+
 } // casual
 
 int main(int argc, char **argv)
 {
-   return casual::common::exception::main::log::guard( [&]()
+   return casual::common::exception::main::cli::guard( [&]()
    {
       casual::gateway::documentation::protocol::local::main( argc, argv);
    });

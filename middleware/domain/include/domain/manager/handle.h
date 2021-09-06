@@ -11,13 +11,11 @@
 #include "domain/manager/state.h"
 #include "domain/manager/ipc.h"
 #include "domain/manager/task.h"
-#include "domain/manager/task/event.h"
 #include "domain/manager/admin/model.h"
 
 #include "common/message/type.h"
 #include "common/message/domain.h"
 #include "common/message/dispatch.h"
-
 
 
 namespace casual
