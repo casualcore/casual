@@ -111,5 +111,11 @@ namespace casual
          using id = strong::Type< Uuid, tag>;
       } // execution
 
+      namespace domain
+      {
+         struct tag{};
+         using id = strong::Type< Uuid, tag>;
+      } // domain
+
    } // common::strong
 } // casual

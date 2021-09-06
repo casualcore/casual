@@ -136,7 +136,7 @@ namespace casual
 
 int main( int argc, char** argv)
 {
-   return casual::common::exception::main::log::guard( [=]()
+   return casual::common::exception::main::fatal::guard( [=]()
    {
       casual::transaction::manager::local::main( argc, argv);
    });

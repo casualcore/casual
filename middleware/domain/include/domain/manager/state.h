@@ -289,20 +289,6 @@ namespace casual
             bool singleton( common::strong::process::id pid);
          } // is
 
-
-         struct Parent
-         {
-            common::strong::ipc::id ipc;
-            common::strong::correlation::id correlation;
-
-            inline explicit operator bool() const noexcept { return common::predicate::boolean( ipc);}
-
-            CASUAL_LOG_SERIALIZE(
-               CASUAL_SERIALIZE( ipc);
-               CASUAL_SERIALIZE( correlation);
-            )
-         };
-
          enum class Runlevel : short
          {
             startup,
@@ -383,9 +369,6 @@ namespace casual
 
          std::vector< common::strong::process::id> whitelisted;
 
-         state::Parent parent;
-
-
          struct
          {
             //! this domain's original configuration model.
@@ -460,7 +443,6 @@ namespace casual
             CASUAL_SERIALIZE( executables);
             CASUAL_SERIALIZE( group_id);
             CASUAL_SERIALIZE( whitelisted);
-            CASUAL_SERIALIZE( parent);
             CASUAL_SERIALIZE( configuration);
             CASUAL_SERIALIZE( bare);
          )

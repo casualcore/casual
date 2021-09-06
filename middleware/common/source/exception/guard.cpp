@@ -6,63 +6,22 @@
 
 #include "common/exception/guard.h"
 
+#include "common/event/send.h"
+#include "common/terminal.h"
+
 #include <iostream>
 
 namespace casual
 {
-   namespace common
+   namespace common::exception
    {
-      namespace exception
+      namespace main
       {
-         namespace main
+         namespace log
          {
-            namespace log
+            namespace detail
             {
-               namespace detail
-               {
-                  int void_return( common::function< void()> callable)
-                  {
-                     try 
-                     {
-                        callable();
-                     }
-                     catch( ...)
-                     {
-                        const auto error = exception::capture();
-                        if( error.code() != code::casual::shutdown)
-                        {
-                           common::log::line( common::log::category::error, error);
-                           return error.code().value();
-                        }
-                     }
-
-                     return 0;
-                  }
-
-                  int int_return( common::function< int()> callable)
-                  {
-                     try 
-                     {
-                        callable();
-                     }
-                     catch( ...)
-                     {
-                        const auto error = exception::capture();
-                        if( error.code() != code::casual::shutdown)
-                        {
-                           common::log::line( common::log::category::error, error);
-                           return error.code().value();
-                        }
-                     }
-
-                     return 0;
-                  }
-               } // detail
-            } // log
-
-            namespace cli
-            {
-               int guard( common::function< void()> callable)
+               int void_return( common::function< void()> callable)
                {
                   try 
                   {
@@ -73,28 +32,90 @@ namespace casual
                      const auto error = exception::capture();
                      if( error.code() != code::casual::shutdown)
                      {
-                        common::log::line( std::cerr, error);
+                        common::log::line( common::log::category::error, error);
                         return error.code().value();
                      }
                   }
 
                   return 0;
                }
-            } // cli
-         } // main
-         
-         void guard( common::function< void()> callable)
+
+               int int_return( common::function< int()> callable)
+               {
+                  try 
+                  {
+                     callable();
+                  }
+                  catch( ...)
+                  {
+                     const auto error = exception::capture();
+                     if( error.code() != code::casual::shutdown)
+                     {
+                        common::log::line( common::log::category::error, error);
+                        return error.code().value();
+                     }
+                  }
+
+                  return 0;
+               }
+            } // detail
+         } // log
+
+         namespace fatal
          {
-            try 
+            int guard( common::function< void()> callable)
             {
-               callable();
+               try 
+               {
+                  callable();
+                  return 0;
+               }
+               catch( ...)
+               {
+                  const auto error = exception::capture();
+                  if( error.code() == code::casual::shutdown)
+                     return 0;
+
+                  event::error::fatal::send( error.code(), error.what());
+                  return error.code().value();
+               }
             }
-            catch( ...)
+         } // fatal
+
+         namespace cli
+         {
+            int guard( common::function< void()> callable)
             {
-               log::line( log::category::error, exception::capture());
+               try 
+               {
+                  callable();
+               }
+               catch( ...)
+               {
+                  const auto error = exception::capture();
+                  if( error.code() != code::casual::shutdown)
+                  {
+                     common::log::line( std::cerr, terminal::color::value::red, error.code(), terminal::color::value::no_color, " ", error.what());
+                     return error.code().value();
+                  }
+               }
+
+               return 0;
             }
+         } // cli
+      } // main
+      
+      void guard( common::function< void()> callable)
+      {
+         try 
+         {
+            callable();
          }
-         
-      } // exception
-   } // common
+         catch( ...)
+         {
+            log::line( log::category::error, exception::capture());
+         }
+      }
+      
+   } // common::exception
 } // casual

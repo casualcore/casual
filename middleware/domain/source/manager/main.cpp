@@ -8,6 +8,7 @@
 #include "domain/manager/state.h"
 #include "domain/manager/handle.h"
 #include "domain/manager/transform.h"
+#include "domain/manager/task/event.h"
 #include "domain/common.h"
 
 #include "configuration/model/load.h"
@@ -49,49 +50,43 @@ namespace casual
                )
             };
 
-            namespace configuration
-            {
-               auto load( const std::vector< std::string>& patterns)
-               {
-                  const auto files = common::file::find( patterns);
-
-                  auto state = transform::model( casual::configuration::model::load( files));
-
-                  //state.bare = settings.bare;
-
-                  log::line( log::category::information, "used configuration: ", files, " from patterns: ", patterns);
-
-                  return state;
-               }
-            } // configuration
 
             auto initialize( Settings settings)
             {
                Trace trace{ "domain::manager::local::initialize"};
                log::line( verbose::log, "settings: ", settings);
 
-               auto state =  configuration::load( settings.configuration);
-               state.bare = settings.bare;
-               state.singleton_file = common::domain::singleton::create( common::process::handle(), common::domain::identity());
+               const auto files = common::file::find( settings.configuration);
+               log::line( log::category::information, "configuration files used: ", files);
 
-               state.parent.ipc = settings.parent.ipc;
-               state.parent.correlation = settings.parent.correlation;
+               auto state = transform::model( casual::configuration::model::load( files));
+
 
                //! if we've got a parent, we make sure it gets events.
-               if( state.parent)
+               if( settings.parent.ipc)
                {
                   common::message::event::subscription::Begin request;
-                  request.process.ipc = state.parent.ipc;
+                  request.process.ipc = settings.parent.ipc;
                   state.event.subscription( request);
                }
+
+               state.bare = settings.bare;
+               state.singleton_file = common::domain::singleton::create();
+
+               manager::task::event::dispatch( state, [&]()
+               {
+                  common::message::event::Notification event{ process::handle()};
+                  event.correlation = settings.parent.correlation;
+                  event.message = string::compose( "configuration files used: ", files);
+                  return event;
+               });
+
          
                // make sure we handle death of our children
                signal::callback::registration< code::signal::child>( []()
                {
-                  algorithm::for_each( process::lifetime::ended(), []( auto& exit)
-                  {
+                  for( auto& exit : process::lifetime::ended())
                      manager::handle::event::process::exit( exit);
-                  });
                });
 
                // make sure we're whitelisted from assassinations
@@ -106,6 +101,10 @@ namespace casual
 
                if( ! state.bare)
                   handle::mandatory::boot::prepare( state);
+
+               
+               // begin the boot procedure...
+               handle::boot( state, settings.parent.correlation);
 
                return state;
             }
@@ -153,13 +152,10 @@ namespace casual
             }
 
 
-
             void start( State state)
             {
                Trace trace{ "domain::manager::local::start"};
                log::line( verbose::log, "state: ", state);
-
-               handle::boot( state, state.parent.correlation);
 
                auto handler = handle::create( state);
 

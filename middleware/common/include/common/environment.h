@@ -166,11 +166,6 @@ namespace casual
 
             namespace name
             {
-               namespace domain
-               {
-                  constexpr auto id = "CASUAL_DOMAIN_ID";
-                  constexpr auto name = "CASUAL_DOMAIN_NAME";
-               } // domain
 
                namespace resource
                {

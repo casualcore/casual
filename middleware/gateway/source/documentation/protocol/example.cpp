@@ -91,7 +91,7 @@ namespace casual
          {
             local::set_general( message);
 
-            message.domain.id = 0x315dacc6182e4c12bf9877efa924cb86_uuid;
+            message.domain.id = common::strong::domain::id{ 0x315dacc6182e4c12bf9877efa924cb86_uuid};
             message.domain.name = "domain A";
             message.versions = { gateway::message::domain::protocol::Version::version_1};
          }
@@ -100,7 +100,7 @@ namespace casual
          {
             local::set_general( message);
 
-            message.domain.id = 0x315dacc6182e4c12bf9877efa924cb86_uuid;
+            message.domain.id = common::strong::domain::id{ 0x315dacc6182e4c12bf9877efa924cb86_uuid};
             message.domain.name = "domain A";
             message.version = gateway::message::domain::protocol::Version::version_1;
          }
@@ -119,7 +119,7 @@ namespace casual
          {
             local::set_general( message);
 
-            message.domain.id = 0x315dacc6182e4c12bf9877efa924cb86_uuid;
+            message.domain.id = common::strong::domain::id{ 0x315dacc6182e4c12bf9877efa924cb86_uuid};
             message.domain.name = "domain A";
 
             message.content.services = { "service1", "service2", "service3"};
@@ -130,7 +130,7 @@ namespace casual
          {
             local::set_general( message);
 
-            message.domain.id = common::Uuid{ "e2f6b7c37f734a0982a0ab1581b21fa5"};
+            message.domain.id = common::strong::domain::id{ 0xe2f6b7c37f734a0982a0ab1581b21fa5_uuid};
             message.domain.name = "domain B";
 
             message.content.services = {

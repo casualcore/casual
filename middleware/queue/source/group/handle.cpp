@@ -607,10 +607,10 @@ namespace casual
 
                            auto old = common::environment::directory::domain() / "queue" / "groups" / name;
 
-                           if( std::filesystem::exists( old) && ! std::filesystem::equivalent( old, file))
+                           if( std::filesystem::exists( old))
                            {
                               std::filesystem::rename( old, file);
-                              event::notification::send( "queuebase file moved: ", old, " -> ", file);
+                              event::notification::send( "queuebase file moved: ", std::filesystem::relative( old), " -> ", std::filesystem::relative( file));
                               log::line( log::category::warning, "queuebase file moved: ", old, " -> ", file);
                            }
                         }

@@ -53,11 +53,14 @@ namespace casual
 
             namespace format
             {
-               struct Resource
+               struct Resource : common::compare::Order< Resource>
                {
+                  Resource( std::string resource, std::string name, common::strong::domain::id id, std::string peer)
+                     : resource{ std::move( resource)}, name{ std::move( name)}, id{ id}, peer{ std::move( peer)} {}
+
                   std::string resource;
                   std::string name;
-                  common::Uuid id;
+                  common::strong::domain::id id;
                   std::string peer;
 
                   inline auto tie() const noexcept { return std::tie( resource, name, id, peer);}
@@ -105,7 +108,7 @@ namespace casual
                   auto format_domain_id = []( auto& value) -> std::string
                   {
                      if( value.remote.id) 
-                        return transcode::hex::encode( value.remote.id.get());
+                        return uuid::string( value.remote.id.value());
                      return "-";
                   };
 
@@ -189,7 +192,7 @@ namespace casual
                   auto format_domain_id = []( auto& value) -> std::string
                   {
                      if( value.id) 
-                        return transcode::hex::encode( value.id.get());
+                        return uuid::string( value.id.value());
                      return "-";
                   };
                   auto format_resource_name = []( auto& value)
@@ -391,7 +394,7 @@ namespace casual
 
                   namespace resource
                   {
-                     auto process( std::vector< format::Resource>& resource_table, manager::admin::model::v2::State&& state)
+                     auto process( std::vector< format::Resource>& resource_table, const manager::admin::model::State& state)
                      {
                         return [ &resource_table, &state]( const auto& resource_entry)
                         {
@@ -427,9 +430,9 @@ namespace casual
 
                            std::vector< format::Resource> service_table;
 
-                           common::algorithm::for_each( state.services, process( service_table, std::move( state)));
+                           common::algorithm::for_each( state.services, process( service_table, state));
 
-                           format::resource::services().print( std::cout, service_table);
+                           format::resource::services().print( std::cout, algorithm::sort( service_table));
                         };
 
                         return argument::Option{ 
@@ -448,9 +451,9 @@ namespace casual
 
                            std::vector< format::Resource> queue_table;
 
-                           common::algorithm::for_each( state.queues, process( queue_table, std::move( state)));
+                           common::algorithm::for_each( state.queues, process( queue_table, state));
 
-                           format::resource::queues().print( std::cout, queue_table);
+                           format::resource::queues().print( std::cout, algorithm::sort( queue_table));
                         };
 
                         return argument::Option{ 

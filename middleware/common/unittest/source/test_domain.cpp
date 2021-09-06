@@ -27,7 +27,7 @@ namespace casual
 
 
          EXPECT_NO_THROW(
-            domain::singleton::create( process::handle(), domain::identity());
+            domain::singleton::create();
          );
       }
 
@@ -40,9 +40,9 @@ namespace casual
          environment::reset();
 
          EXPECT_CODE(
-            auto path = domain::singleton::create( process::handle(), domain::identity());
+            auto path = domain::singleton::create();
 
-            domain::singleton::create( process::handle(), domain::identity());
+            domain::singleton::create();
 
          , code::casual::domain_running);
       }

@@ -17,81 +17,84 @@
 
 namespace casual
 {
-   namespace common
+   namespace common::exception
    {
-      namespace exception
+      namespace main
       {
-         namespace main
+         namespace log
          {
-            namespace log
+            namespace detail
             {
-               namespace detail
-               {
-                  int void_return( common::function< void()> callable);
-                  int int_return( common::function< int()> callable);
-               }
-               
-               template< typename C>
-               int guard( C&& callable)
-               {
-                  if constexpr( std::is_same_v< decltype( callable()), void>)
-                     return detail::void_return( std::forward< C>( callable));
-                  else
-                     return detail::int_return( std::forward< C>( callable));
-               }
-            } // log
-
-            namespace cli
-            {
-               int guard( common::function< void()> callable);
-            } // cli
-         } // main
-
-         namespace detail
-         {
-            template< typename F, typename B> 
-            auto guard( F&& callable, B&& fallback, traits::priority::tag< 1>) 
-               -> decltype( common::traits::convertable::type( callable(), std::forward< B>( fallback)))
-            {
-               try 
-               {
-                  return callable();
-               }
-               catch( ...)
-               {
-                  log::line( log::category::error, exception::capture());
-               }
-               return std::forward< B>( fallback);
-            }
-
-            template< typename F, typename B> 
-            auto guard( F&& callable, B&& fallback, traits::priority::tag< 0>) 
-               -> decltype( common::traits::convertable::type( callable(), fallback()))
-            {
-               try 
-               {
-                  return callable();
-               }
-               catch( ...)
-               {
-                  log::line( log::category::error, exception::capture());
-               }
-               return fallback();
+               int void_return( common::function< void()> callable);
+               int int_return( common::function< int()> callable);
             }
             
-         } // detail
+            template< typename C>
+            int guard( C&& callable)
+            {
+               if constexpr( std::is_same_v< decltype( callable()), void>)
+                  return detail::void_return( std::forward< C>( callable));
+               else
+                  return detail::int_return( std::forward< C>( callable));
+            }
+         } // log
 
-         template< typename F, typename B> 
-         auto guard( F&& callable, B&& fallback) 
-            -> decltype( detail::guard( std::forward< F>( callable), std::forward< B>( fallback), traits::priority::tag< 1>{}))
+         namespace fatal
          {
-            return detail::guard( std::forward< F>( callable), std::forward< B>( fallback), traits::priority::tag< 1>{});
+            //! if an exception is captured, a fatal event is sent.
+            int guard( common::function< void()> callable);
+         } // fatal
+
+         namespace cli
+         {
+            int guard( common::function< void()> callable);
+         } // cli
+      } // main
+
+      namespace detail
+      {
+         template< typename F, typename B> 
+         auto guard( F&& callable, B&& fallback, traits::priority::tag< 1>) 
+            -> decltype( common::traits::convertable::type( callable(), std::forward< B>( fallback)))
+         {
+            try 
+            {
+               return callable();
+            }
+            catch( ...)
+            {
+               log::line( log::category::error, exception::capture());
+            }
+            return std::forward< B>( fallback);
          }
 
-         void guard( common::function< void()> callable);
+         template< typename F, typename B> 
+         auto guard( F&& callable, B&& fallback, traits::priority::tag< 0>) 
+            -> decltype( common::traits::convertable::type( callable(), fallback()))
+         {
+            try 
+            {
+               return callable();
+            }
+            catch( ...)
+            {
+               log::line( log::category::error, exception::capture());
+            }
+            return fallback();
+         }
+         
+      } // detail
 
-      } // exception
-   } // common
+      template< typename F, typename B> 
+      auto guard( F&& callable, B&& fallback) 
+         -> decltype( detail::guard( std::forward< F>( callable), std::forward< B>( fallback), traits::priority::tag< 1>{}))
+      {
+         return detail::guard( std::forward< F>( callable), std::forward< B>( fallback), traits::priority::tag< 1>{});
+      }
+
+      void guard( common::function< void()> callable);
+
+   } // common::exception
 } // casual
 
 

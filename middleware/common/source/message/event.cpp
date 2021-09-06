@@ -100,7 +100,7 @@ namespace casual
 
                std::ostream& print( std::ostream& out, const Notification& event)
                {
-                  return common::stream::write( out, event::local::sub::indentation, common::terminal::color::value::white, "information: ", event.message, common::terminal::color::value::no_color);
+                  return common::stream::write( out, common::terminal::color::value::cyan, "information: ", common::terminal::color::value::white, event.message, common::terminal::color::value::no_color, '\n');
                }
 
                std::ostream& print( std::ostream& out, const process::Spawn& event)

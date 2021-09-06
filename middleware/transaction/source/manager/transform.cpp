@@ -25,6 +25,8 @@ namespace casual
             template< typename T>
             std::filesystem::path initialize_log( T configuration)
             {
+               Trace trace{ "transaction::manager::transfrom::local::initialize_log"};
+
                if( ! configuration.empty())
                   return common::environment::expand( std::move( configuration));
 
@@ -36,11 +38,11 @@ namespace casual
                   if( std::filesystem::exists( file))
                      return file;
 
-                  std::string old = environment::directory::domain() / "transaction" / "log.db";
-                  if( std::filesystem::exists( old) && ! std::filesystem::equivalent( old, file))
+                  auto old = environment::directory::domain() / "transaction" / "log.db";
+                  if( std::filesystem::exists( old))
                   {
                      std::filesystem::rename( old, file);
-                     event::notification::send( "transaction log file moved: ", old, " -> ", file);
+                     event::notification::send( "transaction log file moved: ", std::filesystem::relative( old), " -> ", std::filesystem::relative( file));
                      log::line( log::category::warning, "transaction log file moved: ", old, " -> ", file);
                   }
                }
@@ -51,7 +53,7 @@ namespace casual
 
             auto resources = []( auto&& resources, const auto& properties)
             {
-               Trace trace{ "transaction::manager::state::local::configure::resources"};
+               Trace trace{ "transaction::manager::transform::local::resources"};
 
                auto transform_resource = []( const auto& configuration)
                {
