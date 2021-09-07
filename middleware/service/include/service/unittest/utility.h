@@ -7,6 +7,7 @@
 #pragma once
 
 #include "common/message/service.h"
+#include "service/manager/admin/model.h"
 
 #include <string>
 #include <vector>
@@ -20,6 +21,8 @@ namespace casual
 
       //! unadvertise `service` to service-manager as current process
       void unadvertise( std::vector< std::string> services);
+
+      manager::admin::model::State state();
 
       namespace send
       {

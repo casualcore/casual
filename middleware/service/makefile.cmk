@@ -121,7 +121,8 @@ service_unittest = make.LinkLibrary( 'bin/casual-service-unittest',
         make.Compile( 'source/unittest/utility.cpp'),
     ],
     [ 
-        'casual-common', 
+        'casual-common',
+        'casual-serviceframework',
     ])
 
  

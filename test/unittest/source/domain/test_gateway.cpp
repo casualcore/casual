@@ -21,6 +21,7 @@
 
 #include "service/manager/admin/server.h"
 #include "service/manager/admin/model.h"
+#include "service/unittest/utility.h"
 
 #include "queue/api/queue.h"
 
@@ -109,14 +110,21 @@ domain:
                   namespace predicate::outbound
                   {
                      // returns a predicate that checks if all out-connections has a 'remote id'
-                     auto connected()
+                     auto connected( platform::size::type count = 0) 
                      {
-                        return []( auto& state)
+                        return [count]( auto& state)
                         {
-                           return algorithm::all_of( state.connections, []( auto& connection)
+                           auto outbound_connected = []( auto& connection)
                            {
                               return connection.bound != decltype( connection.bound)::out || connection.remote.id;
-                           }); 
+                           };
+
+                           if( count == 0)
+                              return algorithm::all_of( state.connections, outbound_connected);
+                           else
+                              return algorithm::count_if( state.connections, outbound_connected) == count;
+
+                           
                         };
                      };
 
@@ -388,6 +396,144 @@ domain:
             EXPECT_TRUE( message.payload.data == payload);
          }
          
+      }
+
+      TEST( test_domain_gateway, domain_A_to_B_to_C__expect_B_hops_1___C_hops_2)
+      {
+         common::unittest::Trace trace;
+
+         // sink child signals 
+         signal::callback::registration< code::signal::child>( [](){});
+
+         auto c = local::example::domain( "C", "7002");
+         auto b = local::Manager{ { local::configuration::base, R"(
+domain: 
+   name: B
+
+   servers:
+      - path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-server"
+        memberships: [ user]
+   gateway:
+      inbound:
+         groups:
+            -  connections: 
+               -  address: 127.0.0.1:7001
+                  discovery:
+                     forward: true
+      outbound:
+         groups:
+            -  connections:
+               -  address: 127.0.0.1:7002
+
+)"}}; 
+         
+         local::state::gateway::until( local::state::gateway::predicate::outbound::connected());
+         
+         auto a = local::Manager{ { local::configuration::base, R"(
+domain: 
+   name: A
+  
+   gateway:
+      outbound:
+         groups:
+            -  connections:
+                  -  address: 127.0.0.1:7001
+)"}};
+
+
+         local::state::gateway::until( local::state::gateway::predicate::outbound::connected());
+
+         // call the two domain services to get discovery
+         local::call( "casual/example/domain/echo/B", 0);
+         local::call( "casual/example/domain/echo/C", 0);
+
+         // check the hops...
+         auto state = casual::service::unittest::state();
+
+         {
+            auto found = algorithm::find( state.services, "casual/example/domain/echo/B");
+            ASSERT_TRUE( found);
+            EXPECT_TRUE( found->instances.sequential.empty());
+            EXPECT_TRUE( found->instances.concurrent.at( 0).hops == 1) << CASUAL_NAMED_VALUE( found->instances.concurrent.at( 0));
+         }
+
+         {
+            auto found = algorithm::find( state.services, "casual/example/domain/echo/C");
+            ASSERT_TRUE( found);
+            EXPECT_TRUE( found->instances.sequential.empty());
+            EXPECT_TRUE( found->instances.concurrent.at( 0).hops == 2) << CASUAL_NAMED_VALUE( found->instances.concurrent.at( 0));
+         }
+         
+      }
+
+      TEST( test_domain_gateway, domain_A_to_B_C_D__D_to__E__expect_call_to_only_B_C___shutdown_B_C__exepct_call_to_D_forward_to_E)
+      {
+         common::unittest::Trace trace;
+
+         // sink child signals 
+         signal::callback::registration< code::signal::child>( [](){});
+
+         auto e = local::example::domain( "E", "7001");
+         auto d = local::Manager{ { local::configuration::base, R"(
+domain: 
+   name: D
+   gateway:
+      inbound:
+         groups:
+            -  connections: 
+               -  address: 127.0.0.1:7002
+                  discovery:
+                     forward: true
+      outbound:
+         groups:
+            -  connections:
+               -  address: 127.0.0.1:7001
+
+)"}}; 
+         local::state::gateway::until( local::state::gateway::predicate::outbound::connected());
+
+         auto c = local::example::domain( "C", "7003");
+         auto b = local::example::domain( "B", "7004");
+
+         
+         
+         
+         auto a = local::Manager{ { local::configuration::base, R"(
+domain: 
+   name: A
+  
+   gateway:
+      outbound:
+         groups:
+            -  connections:
+                  -  address: 127.0.0.1:7002
+                  -  address: 127.0.0.1:7003
+                  -  address: 127.0.0.1:7004
+)"}};
+
+
+         local::state::gateway::until( local::state::gateway::predicate::outbound::connected());
+
+         // we expect to reach only  B C 
+         algorithm::for_n< 10>([]()
+         {
+            auto buffer = local::call( "casual/example/domain/name");
+            EXPECT_TRUE( algorithm::compare::any( std::string_view{ buffer.get()}, "B", "C"));
+         });
+
+         local::sink( std::move( c));
+         local::sink( std::move( b));
+
+         // wait until we only have one outbound connected (D)
+         local::state::gateway::until( local::state::gateway::predicate::outbound::connected( 1));
+
+         // we expect all calls to reach E (via D)
+         algorithm::for_n< 10>([]()
+         {
+            auto buffer = local::call( "casual/example/domain/name");
+            EXPECT_TRUE( std::string_view{ buffer.get()} == "E");
+         });
+
       }
 
       TEST( test_domain_gateway, domain_A_to__B_C_D__outbound_separated_groups___expect_prio_B)

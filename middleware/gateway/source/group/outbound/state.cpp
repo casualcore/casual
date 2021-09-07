@@ -7,6 +7,7 @@
 #include "gateway/group/outbound/state.h"
 
 #include "common/predicate.h"
+#include "common/algorithm/sorted.h"
 
 namespace casual
 {
@@ -53,7 +54,7 @@ namespace casual
             namespace lookup
             {
 
-               state::Lookup::Mapping& transaction( std::vector< state::Lookup::Mapping>& transactions, const transaction::ID& internal)
+               state::lookup::Mapping& transaction( std::vector< state::lookup::Mapping>& transactions, const transaction::ID& internal)
                {
                   if( auto mapping = algorithm::find_if( transactions, predicate::is_internal( internal)))
                      return *mapping;
@@ -64,7 +65,7 @@ namespace casual
                template< typename R>
                state::Lookup::Result resource( 
                   R& resources, 
-                  std::vector< state::Lookup::Mapping>& transactions, 
+                  std::vector< state::lookup::Mapping>& transactions, 
                   const std::string& key, 
                   const common::transaction::ID& internal)
                {
@@ -77,8 +78,11 @@ namespace casual
 
                   auto get_next_connection = []( auto& connections)
                   {
-                     auto result = range::front( connections);
-                     algorithm::rotate( connections, std::begin( connections) + 1);
+                     // TODO maintainence - do we gain anything to have a pre constructed range with lowest hops?
+                     auto hops_less = []( auto& l, auto& r){ return l.hops < r.hops;};
+                     auto range = std::get< 0>( algorithm::sorted::upper_bound( connections, range::front( connections), hops_less));
+                     auto result = range->id;
+                     algorithm::rotate( range, std::begin( range) + 1);
                      return result;
                   };
 
@@ -100,18 +104,27 @@ namespace casual
 
             namespace add
             {
-               template< typename R>
-               auto resource( common::strong::file::descriptor::id descriptor, R& resources, std::vector< std::string> keys) 
+               template< typename R, typename A>
+               auto resource( common::strong::file::descriptor::id descriptor, R& resources, A added) 
                {
-                  algorithm::trim( keys, algorithm::remove_if( keys, [descriptor, &resources]( auto& key)
+                  return algorithm::accumulate( added, std::vector< std::string>{}, [descriptor, &resources]( auto result, auto& add)
                   {
-                     auto& connections = resources[ key];
-                     connections.push_back( descriptor);
+                     auto& connections = resources[ add.name];
 
-                     return range::size( connections) > 1;
-                  }));
+                     // _sorted insert:
+                     {
+                        auto hops_less = []( auto& l, auto& r){ return l.hops < r.hops;};
 
-                  return keys;
+                        auto connection = state::lookup::resource::Connection{ descriptor, add.hops};
+                        auto point = std::begin( std::get< 1>( algorithm::sorted::upper_bound( connections, connection, hops_less)));
+                        connections.insert( point, std::move( connection));
+                     }
+
+                     if( range::size( connections) == 1)
+                        result.push_back( std::move( add.name));
+                     
+                     return result;
+                  });
                }
                
             } // add
@@ -173,26 +186,30 @@ namespace casual
             }
             return out << "<unknown>";
          }
-
-         const Lookup::Mapping::External& Lookup::Mapping::branch( common::strong::file::descriptor::id connection)
+         
+         namespace lookup
          {
-            return externals.emplace_back( connection, transaction::id::branch( internal));
-         }
+            const Mapping::External& Mapping::branch( common::strong::file::descriptor::id connection)
+            {
+               return externals.emplace_back( connection, transaction::id::branch( internal));
+            }
+            
+         } // lookup
 
 
          Lookup::Result Lookup::service( const std::string& service, const common::transaction::ID& trid)
          {
-            return local::lookup::resource( services, transactions, service, trid);
+            return local::lookup::resource( m_services, m_transactions, service, trid);
          }
 
          Lookup::Result Lookup::queue( const std::string& queue, const common::transaction::ID& trid)
          {
-            return local::lookup::resource( queues, transactions, queue, trid);
+            return local::lookup::resource( m_queues, m_transactions, queue, trid);
          }
 
          const common::transaction::ID& Lookup::external( const common::transaction::ID& internal, common::strong::file::descriptor::id connection) const
          {
-            if( auto found = algorithm::find_if( transactions, local::predicate::is_internal( internal)))
+            if( auto found = algorithm::find_if( m_transactions, local::predicate::is_internal( internal)))
             {
                if( auto external = algorithm::find( found->externals, connection))
                   return external->trid;
@@ -203,7 +220,7 @@ namespace casual
 
          const common::transaction::ID& Lookup::internal( const common::transaction::ID& external) const
          {
-            if( auto found = algorithm::find_if( transactions, local::predicate::is_external( external)))
+            if( auto found = algorithm::find_if( m_transactions, local::predicate::is_external( external)))
                return found->internal;
 
             return local::global::trid;
@@ -211,7 +228,7 @@ namespace casual
 
          common::strong::file::descriptor::id Lookup::connection( const common::transaction::ID& external) const
          {
-            auto global = algorithm::find_if( transactions, local::predicate::is_global( external));
+            auto global = algorithm::find_if( m_transactions, local::predicate::is_global( external));
 
             while( global)
             {
@@ -224,48 +241,48 @@ namespace casual
             return {};
          }
 
-         Lookup::Resources Lookup::resources() const
+         lookup::Resources Lookup::resources() const
          {
             return {
-               algorithm::transform( services, predicate::adapter::first()),
-               algorithm::transform( queues, predicate::adapter::first())
+               algorithm::transform( m_services, predicate::adapter::first()),
+               algorithm::transform( m_queues, predicate::adapter::first())
             };
          }
 
 
-         Lookup::Resources Lookup::add( 
+         lookup::Resources Lookup::add( 
             common::strong::file::descriptor::id descriptor, 
-            std::vector< std::string> services, 
-            std::vector< std::string> queues)
+            std::vector< lookup::Resource> services, 
+            std::vector< lookup::Resource> queues)
          {
             return {
-               local::add::resource( descriptor, Lookup::services, std::move( services)),
-               local::add::resource( descriptor, Lookup::queues, std::move( queues))
+               local::add::resource( descriptor, Lookup::m_services, std::move( services)),
+               local::add::resource( descriptor, Lookup::m_queues, std::move( queues))
             };
          }
 
-         Lookup::Resources Lookup::remove( common::strong::file::descriptor::id descriptor)
+         lookup::Resources Lookup::remove( common::strong::file::descriptor::id descriptor)
          {
             return {
-               local::remove::connection( descriptor, services),
-               local::remove::connection( descriptor, queues)
+               local::remove::connection( descriptor, m_services),
+               local::remove::connection( descriptor, m_queues)
             };
          }
 
-         Lookup::Resources Lookup::remove( common::strong::file::descriptor::id descriptor, std::vector< std::string> services, std::vector< std::string> queues)
+         lookup::Resources Lookup::remove( common::strong::file::descriptor::id descriptor, std::vector< std::string> services, std::vector< std::string> queues)
          {
             return {
-               local::remove::connection( descriptor, Lookup::services, services),
-               local::remove::connection( descriptor, Lookup::queues, queues)
+               local::remove::connection( descriptor, Lookup::m_services, services),
+               local::remove::connection( descriptor, Lookup::m_queues, queues)
             };
          }
 
-         Lookup::Resources Lookup::clear()
+         lookup::Resources Lookup::clear()
          {
             auto result = resources();
 
-            services.clear();
-            queues.clear();
+            m_services.clear();
+            m_queues.clear();
 
             return result;
          }  
@@ -283,8 +300,8 @@ namespace casual
                return transaction.externals.empty();
             };
 
-            if( auto found = algorithm::find_if( transactions, remove_external))
-               transactions.erase( std::begin( found));
+            if( auto found = algorithm::find_if( m_transactions, remove_external))
+               m_transactions.erase( std::begin( found));
             else
                log::line( log::category::error, code::casual::invalid_semantics, " failed to correlate the external trid: ", external, " - action: ignore");
          }

@@ -263,12 +263,11 @@ namespace casual
 
                               auto advertise_connection = [&state]( auto& reply, auto connection)
                               {
-                                 auto get_name = []( auto& resource){ return resource.name;};
 
                                  auto advertise = state.lookup.add( 
                                     connection, 
-                                    algorithm::transform( reply.content.services, get_name), 
-                                    algorithm::transform( reply.content.queues, get_name));
+                                    algorithm::transform( reply.content.services, []( auto& service){ return state::lookup::Resource{ service.name, service.property.hops};}), 
+                                    algorithm::transform( reply.content.queues, []( auto& service){ return state::lookup::Resource{ service.name, 1};}));
 
 
                                  auto equal_name = []( auto& lhs, auto& rhs){ return lhs.name == rhs;};
@@ -710,10 +709,14 @@ namespace casual
                   {
                      auto reply( State& state)
                      {
-                        return [&state]( gateway::message::domain::discovery::Reply& message)
+                        return [&state]( gateway::message::domain::discovery::Reply&& message)
                         {
                            Trace trace{ "gateway::group::outbound::handle::local::external::domain::discover::reply"};
                            log::line( verbose::log, "message: ", message);
+
+                           // increase hops for all services.
+                           for( auto& service : message.content.services)
+                              ++service.property.hops;
 
                            state.coordinate.discovery( std::move( message));                         
                         };
@@ -778,7 +781,7 @@ namespace casual
          };
       }
 
-      void unadvertise( state::Lookup::Resources resources)
+      void unadvertise( state::lookup::Resources resources)
       {
          Trace trace{ "gateway::group::outbound::handle::unadvertise"};
          log::line( verbose::log, "resources: ", resources);

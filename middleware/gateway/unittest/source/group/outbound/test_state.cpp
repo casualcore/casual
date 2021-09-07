@@ -25,17 +25,17 @@ namespace casual
             {
                state::Lookup lookup;
 
-               lookup.add( fd( 10), { "a", "b" }, { "a", "b"});
-               lookup.add( fd( 20), { "a", "b" }, { "a", "b"});
-               lookup.add( fd( 30), { "a", "b" }, { "a", "b"});
+               lookup.add( fd( 10), { { "a", 0}, { "b", 0}}, { { "a", 0}, {"b", 0}});
+               lookup.add( fd( 20), { { "a", 0}, { "b", 0} }, { { "a", 0}, { "b", 0}});
+               lookup.add( fd( 30), { { "a", 0}, { "b", 0} }, { { "a", 0}, { "b", 0}});
 
-               lookup.add( fd( 100), { "a", "c"}, {});
-               lookup.add( fd( 101), { "a", "c"}, {});
+               lookup.add( fd( 100), { { "a", 0}, { "c", 0}}, {});
+               lookup.add( fd( 101), { { "a", 0}, { "c", 0}}, {});
 
-               lookup.add( fd( 110), { "b", "d"}, {});
-               lookup.add( fd( 111), { "b", "d"}, {});
+               lookup.add( fd( 110), { { "b", 0}, { "d", 0}}, {});
+               lookup.add( fd( 111), { { "b", 0}, { "d", 0}}, {});
 
-               lookup.add( fd( 120), { "x"}, {});
+               lookup.add( fd( 120), { { "x", 0}}, {});
 
 
                return lookup;
@@ -61,7 +61,7 @@ namespace casual
       {
          state::Lookup lookup;
 
-         auto advertise = lookup.add( strong::file::descriptor::id{ 9}, { "a", "b" }, { "a", "b"});
+         auto advertise = lookup.add( strong::file::descriptor::id{ 9}, { { "a", 0}, { "b", 0} }, { { "a", 0}, { "b", 0}});
 
          EXPECT_TRUE(( advertise.services == std::vector< std::string>{ "a", "b"})) << CASUAL_NAMED_VALUE( advertise.services);
          EXPECT_TRUE(( advertise.queues == std::vector< std::string>{ "a", "b"})) << CASUAL_NAMED_VALUE( advertise.queues);
@@ -76,7 +76,7 @@ namespace casual
          EXPECT_TRUE( transaction::id::null( result.trid));
          EXPECT_TRUE( ! involved);
 
-         EXPECT_TRUE( local::get_connection( lookup, "a") == local::fd( 20));
+         EXPECT_TRUE( local::get_connection( lookup, "a") == local::fd( 20)) << CASUAL_NAMED_VALUE( lookup);
          EXPECT_TRUE( local::get_connection( lookup, "a") == local::fd( 30));
          EXPECT_TRUE( local::get_connection( lookup, "a") == local::fd( 100));
          EXPECT_TRUE( local::get_connection( lookup, "a") == local::fd( 101));

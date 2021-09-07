@@ -40,14 +40,13 @@ namespace casual
 
          std::ostream& operator << ( std::ostream& out, Runlevel value);
 
-         struct Lookup
+         namespace lookup
          {
             struct Mapping
             {
                inline Mapping( const common::transaction::ID& internal)
                   : internal{ internal} {}
 
-               
                struct External
                {
                   External() = default;
@@ -77,22 +76,31 @@ namespace casual
                )
             };
 
-            std::unordered_map< std::string, std::vector< common::strong::file::descriptor::id>> services;
-            std::vector< Mapping> transactions;
-            std::unordered_map< std::string, std::vector< common::strong::file::descriptor::id>> queues;
+            namespace resource
+            {
+               struct Connection
+               {
+                  inline Connection( common::strong::file::descriptor::id id, platform::size::type hops) : id{ id}, hops{ hops} {}
 
-            using Result = std::tuple< Mapping::External, bool>;
+                  common::strong::file::descriptor::id id;
+                  platform::size::type hops{};
 
-            Result service( const std::string& service, const common::transaction::ID& trid);
-            Result queue( const std::string& queue, const common::transaction::ID& trid);
+                  // conversion operator to pretend to be a pure "id"
+                  inline operator common::strong::file::descriptor::id() const noexcept { return id;}
 
-            
-            const common::transaction::ID& external( const common::transaction::ID& internal, common::strong::file::descriptor::id connection) const;
-            const common::transaction::ID& internal( const common::transaction::ID& external) const;
+                  CASUAL_LOG_SERIALIZE( 
+                     CASUAL_SERIALIZE( id);
+                     CASUAL_SERIALIZE( hops);
+                  )
+               };
+            } // resource
 
-            //! @returns the associated connection from the external branch
-            common::strong::file::descriptor::id connection( const common::transaction::ID& external) const;
 
+            struct Resource
+            {
+               std::string name;
+               platform::size::type hops;
+            };
 
             struct Resources
             {
@@ -106,31 +114,58 @@ namespace casual
                   CASUAL_SERIALIZE( queues);
                )
             };
+            
+         } // lookup
+
+         struct Lookup
+         {
+
+            using Result = std::tuple< lookup::Mapping::External, bool>;
+
+            Result service( const std::string& service, const common::transaction::ID& trid);
+            Result queue( const std::string& queue, const common::transaction::ID& trid);
+
+            
+            const common::transaction::ID& external( const common::transaction::ID& internal, common::strong::file::descriptor::id connection) const;
+            const common::transaction::ID& internal( const common::transaction::ID& external) const;
+
+            //! @returns the associated connection from the external branch
+            common::strong::file::descriptor::id connection( const common::transaction::ID& external) const;
 
             //! @returns all lookup resources
-            Resources resources() const;
+            lookup::Resources resources() const;
 
 
-            Resources add( common::strong::file::descriptor::id descriptor, std::vector< std::string> services, std::vector< std::string> queues);
+            lookup::Resources add( common::strong::file::descriptor::id descriptor, std::vector< lookup::Resource> services, std::vector< lookup::Resource> queues);
 
             //! removes the connection and @return the resources that should be un-advertised 
-            Resources remove( common::strong::file::descriptor::id descriptor);
+            lookup::Resources remove( common::strong::file::descriptor::id descriptor);
 
             //! remove the connection for the provided services and queues, @returns all that needs to be un-advertised.
-            Resources remove( common::strong::file::descriptor::id descriptor, std::vector< std::string> services, std::vector< std::string> queues);
+            lookup::Resources remove( common::strong::file::descriptor::id descriptor, std::vector< std::string> services, std::vector< std::string> queues);
 
             //! clears all 'resources' but keep the transaction mapping (if there are messages in flight).
             //! @returns all resources that should be unadvertised
-            Resources clear();
+            lookup::Resources clear();
             
             //! removes the "mapping", based on the external (branched) trid.
             void remove( const common::transaction::ID& external);
 
             CASUAL_LOG_SERIALIZE( 
-               CASUAL_SERIALIZE( services);
-               CASUAL_SERIALIZE( transactions);
-               CASUAL_SERIALIZE( queues);
+               CASUAL_SERIALIZE_NAME( m_services, "services");
+               CASUAL_SERIALIZE_NAME( m_transactions, "transactions");
+               CASUAL_SERIALIZE_NAME( m_queues, "queues");
             )
+
+            inline auto& services() const noexcept { return m_services;}
+            inline auto& transactions() const noexcept { return m_transactions;}
+            inline auto& queues() const noexcept { return m_queues;}
+
+         private:
+
+            std::unordered_map< std::string, std::vector< lookup::resource::Connection>> m_services;
+            std::vector< lookup::Mapping> m_transactions;
+            std::unordered_map< std::string, std::vector< lookup::resource::Connection>> m_queues;
          };
 
       } // state
@@ -232,8 +267,8 @@ namespace casual
                return typename decltype(reply.state.correlation.services)::value_type{ name, identifiers};
             };
 
-            common::algorithm::transform( lookup.services, reply.state.correlation.services, transform);
-            common::algorithm::transform( lookup.queues, reply.state.correlation.queues, transform);
+            common::algorithm::transform( lookup.services(), reply.state.correlation.services, transform);
+            common::algorithm::transform( lookup.queues(), reply.state.correlation.queues, transform);
 
             // pending
             {

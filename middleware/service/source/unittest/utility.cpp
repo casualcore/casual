@@ -5,9 +5,12 @@
 //!
 
 #include "service/unittest/utility.h"
+#include "service/manager/admin/server.h"
 
 #include "common/communication/instance.h"
 #include "common/instance.h"
+
+#include "serviceframework/service/protocol/call.h"
 
 namespace casual
 {
@@ -43,6 +46,15 @@ namespace casual
          message.alias = instance::alias();
          message.services.remove = std::move( services);
          communication::device::blocking::send( local::ipc::manager(), message);
+      }
+
+      manager::admin::model::State state()
+      {
+         serviceframework::service::protocol::binary::Call call;
+
+         auto reply = call( manager::admin::service::name::state());
+
+         return reply.extract< manager::admin::model::State>();
       }
 
       namespace send

@@ -23,7 +23,7 @@ namespace casual
       external_handler external( State& state);
       
 
-      void unadvertise( state::Lookup::Resources keys);
+      void unadvertise( state::lookup::Resources keys);
 
       namespace connection
       {
