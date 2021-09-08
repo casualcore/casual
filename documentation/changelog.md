@@ -3,6 +3,9 @@ This is the changelog for `casual` and all changes are listed in this document.
 
 ## [Unreleased]
 
+### Fixes
+- xatmi - support for conversations (primarely targeting COBOL)
+
 ## [1.5.2] - 2021-09-17
 
 ### Fixes

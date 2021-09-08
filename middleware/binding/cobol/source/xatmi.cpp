@@ -11,11 +11,13 @@
 */
 
 #include "cobol/xatmi.h"
+#include "casual/xatmi.h"
+#include "casual/xatmi/cobol.h"
 
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-#include <xatmi.h>
+
 
 /*
  * Internal support functions

@@ -44,13 +44,6 @@ extern int casual_service_advertise( const char* svcname, void(*func)(TPSVCINFO 
 extern int casual_service_unadvertise( const char* svcname);
 
 
-// COBOL api support (really internal routines. Hide them?)
-extern int casual_tpsvcinfo_cobol_support(const TPSVCINFO** tpsvcinfo,
-                                          const char** buffer_type,
-                                          const char** buffer_subtype);
-// TPRETURN 
-extern void casual_normal_service_return( int rval, long rcode, char* data, long len, long flags);
-
 #ifdef __cplusplus
 }
 #endif

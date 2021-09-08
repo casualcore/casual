@@ -57,25 +57,6 @@ extern const char* tperrnostring( int error);
 extern int tpsvrinit( int argc, char** argv);
 extern void tpsvrdone();
 
-// TODO cobol - move to own header
-// COBOL Support
-// This part ought to be in an internal header file. It is 
-// special routines to support the COBOL api. It would
-// be cleaner to not expose theese routines, but will try
-// this first while prototyping.
-// (The routines would then not need to be extern "C".)
-
-// A function that returns a pointer to a copy of the
-// arguments to the "in progress" service call, to allow
-// the COBOL api TPSVCSTART routine to find the input
-// to the service.  
-extern int tpsvcinfo_cobol_support( const TPSVCINFO**,
-                                    const char** buffer_type,
-                                    const char** buffer_subtype);
-
-// Variant of tpreturn() that returns instead of doing longjmp().
-// Needed by COBOL api.
-extern void tpreturn_cobol_support( int rval, long rcode, char* data, long len, long flags);
 
 #ifdef __cplusplus
 }
