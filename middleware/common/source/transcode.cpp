@@ -91,8 +91,8 @@ namespace casual
                class converter
                {
                public:
-                  converter( const std::string& source, const std::string& target)
-                     : m_descriptor( iconv_open( target.c_str(), source.c_str()))
+                  converter( std::string_view source, std::string_view target)
+                     : m_descriptor( iconv_open( target.data(), source.data()))
                   {
                      if( m_descriptor == reinterpret_cast< iconv_t>( -1))
                         code::raise::error( code::casual::failed_transcoding, "iconv_open - errc: ", code::system::last::error());
@@ -139,23 +139,18 @@ namespace casual
                   const iconv_t m_descriptor;
                };
 
-               struct locale
+               namespace locale::name
                {
-                  std::string language;
-                  std::string territory;
-                  std::string codeset;
-                  std::string modifier;
-               };
+                  constexpr auto utf8 = std::string_view{ "UTF-8"};
+                  constexpr auto current = std::string_view{ ""};
+                  
+               } // locale::name
 
             } // <unnamed>
          } // local
 
          namespace utf8
          {
-            const std::string cUTF8( "UTF-8");
-            const std::string cCurrent( "");
-
-            //
             // Make sure this is done once
             //
             // If "" is used as codeset to iconv, it shall choose the current
@@ -164,29 +159,23 @@ namespace casual
             //
             // Perhaps we need to call std::setlocale() each time just in case
             //
-            //[[maybe_unused]] const auto once = std::setlocale( LC_CTYPE, "");
-#ifdef __GNUC__
-            __attribute__((__unused__)) const auto once = std::setlocale( LC_CTYPE, "");
-#else
-            const auto once = std::setlocale( LC_CTYPE, "");
-#endif
+            [[maybe_unused]] const auto once = std::setlocale( LC_CTYPE, local::locale::name::current.data());
+
             std::string encode( const std::string& value)
             {
-               //return encode( value, local::info().codeset);
-               return encode( value, cCurrent);
+               return encode( value, local::locale::name::current);
             }
 
             std::string decode( const std::string& value)
             {
-               //return decode( value, local::info().codeset);
-               return decode( value, cCurrent);
+               return decode( value, local::locale::name::current);
             }
 
-            bool exist( const std::string& codeset)
+            bool exist( std::string_view codeset)
             {
                try
                {
-                  local::converter{ codeset, cCurrent};
+                  local::converter{ codeset, local::locale::name::current};
                }
                catch( ...)
                {
@@ -199,14 +188,14 @@ namespace casual
                return true;
             }
 
-            std::string encode( const std::string& value, const std::string& codeset)
+            std::string encode( const std::string& value, std::string_view codeset)
             {
-               return local::converter( codeset, cUTF8).transcode( value);
+               return local::converter( codeset, local::locale::name::utf8).transcode( value);
             }
 
-            std::string decode( const std::string& value, const std::string& codeset)
+            std::string decode( const std::string& value, std::string_view codeset)
             {
-               return local::converter( cUTF8, codeset).transcode( value);
+               return local::converter( local::locale::name::utf8, codeset).transcode( value);
             }
 
          } // utf8

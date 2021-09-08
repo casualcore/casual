@@ -143,7 +143,7 @@ namespace casual
             //!
             //! @throw exception::limit::Memory on resource failures
             //! @throw exception::Casual on other failures
-            bool exist( const std::string& codeset);
+            bool exist( std::string_view codeset);
 
             //! @param value String encoded in provided codeset
             //! @param codeset String-encoding
@@ -153,7 +153,7 @@ namespace casual
             //! @throw exception::limit::Memory on resource failures
             //! @throw exception::system::invalid::Argument for bad input
             //! @throw exception::Casual on other failures
-            std::string encode( const std::string& value, const std::string& codeset);
+            std::string encode( const std::string& value, std::string_view codeset);
 
             //! @param value The UTF-8 encoded string
             //! @param codeset Encoding for result
@@ -163,7 +163,7 @@ namespace casual
             //! @throw exception::limit::Memory on resource failures
             //! @throw exception::system::invalid::Argument for bad input
             //! @throw exception::Casual on other failures
-            std::string decode( const std::string& value, const std::string& codeset);
+            std::string decode( const std::string& value, std::string_view codeset);
 
          } // utf8
 
