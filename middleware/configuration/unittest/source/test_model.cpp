@@ -34,6 +34,16 @@ namespace casual
                auto path = unittest::file::temporary::content( ".yaml", std::move( content));
                return configuration::model::load( { path});
             };
+
+            template< typename... C>
+            auto load( C&&... contents)
+            {
+               auto files = common::unittest::file::temporary::contents( ".yaml", std::forward< C>( contents)...);
+
+               auto get_path = []( auto& file){ return static_cast< std::filesystem::path>( file);};
+
+               return casual::configuration::model::load( common::algorithm::transform( files, get_path));
+            }
          } // <unnamed>
       } // local
 
@@ -117,6 +127,65 @@ domain:
             EXPECT_TRUE( restriction.alias == "c");
             EXPECT_TRUE(( restriction.services == std::vector< std::string>{ "c1", "c2"}));
          }
+      }
+
+      TEST( configuration_model_transform, gateway)
+      {
+         common::unittest::Trace trace;
+
+         auto model = local::load( R"(
+domain:
+  gateway:
+    outbound:
+      groups:
+         -  connections:
+               - address: "a.se:9981"
+         -  alias: foo
+            connections:
+               -  address: x.se:7000
+    reverse:
+      inbound:
+        groups:
+         -  connections:
+               -  address: b.se:9980
+         )",
+         R"(
+domain:
+  gateway:
+    outbound:
+      groups:
+         -  connections:
+               -  address: c.se:9981
+               -  address: d.se:9981
+         -  alias: foo # append to foo in previous file
+            connections:
+               -  address: y.se:7000
+   
+         )");
+
+         ASSERT_TRUE( model.gateway.outbound.groups.size() == 3);
+         {
+            auto& group = model.gateway.outbound.groups.at( 0);
+            EXPECT_TRUE( group.alias == "outbound");
+            ASSERT_TRUE( group.connections.size() == 1);
+            EXPECT_TRUE( group.connections.at( 0).address == "a.se:9981");
+         }
+         {
+            auto& group = model.gateway.outbound.groups.at( 1);
+            EXPECT_TRUE( group.alias == "foo");
+            // expect connections from both files...
+            ASSERT_TRUE( group.connections.size() == 2) << CASUAL_NAMED_VALUE( model.gateway);
+            EXPECT_TRUE( group.connections.at( 0).address == "x.se:7000");
+            EXPECT_TRUE( group.connections.at( 1).address == "y.se:7000");
+         }
+         {
+            auto& group = model.gateway.outbound.groups.at( 2);
+            EXPECT_TRUE( group.alias == "outbound.2");
+            ASSERT_TRUE( group.connections.size() == 2) << CASUAL_NAMED_VALUE( model.gateway);
+            EXPECT_TRUE( group.connections.at( 0).address == "c.se:9981");
+            EXPECT_TRUE( group.connections.at( 1).address == "d.se:9981");
+         }
+
       }
 
       TEST( configuration_model_transform, transaction)

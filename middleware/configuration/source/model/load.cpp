@@ -51,7 +51,7 @@ namespace casual
             Trace trace{ "configuration::model::load"};
             log::line( verbose::log, "files: ", files);
 
-            auto model = algorithm::accumulate( files, Model{}, &local::load);
+            auto model = normalize( algorithm::accumulate( files, Model{}, &local::load));
 
             log::line( verbose::log, "model: ", model);
 

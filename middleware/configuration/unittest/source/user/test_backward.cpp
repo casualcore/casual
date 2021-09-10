@@ -70,7 +70,7 @@ gateway:
 
 )";
 
-         auto user = model::transform( unittest::serialize::create::value< user::Domain>( "yaml", user_yaml));
+         auto user = normalize( model::transform( unittest::serialize::create::value< user::Domain>( "yaml", user_yaml)));
 
          auto model = unittest::serialize::create::value< configuration::Model>( "yaml", model_yaml);
 

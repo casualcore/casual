@@ -3,6 +3,9 @@ This is the changelog for `casual` and all changes are listed in this document.
 
 ## [Unreleased]
 
+- configuration - fix bug with empty aliases for gateway
+- configuration - fixed bug when 'update' an _alias key_ 'entity'. We moved from the one we supposed to add to...
+
 ## [1.5.1] - 2021-09-08
 
 ### Fixes

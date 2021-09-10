@@ -5,6 +5,7 @@
 //!
 
 #include "configuration/model.h"
+#include "configuration/common.h"
 
 #include "casual/assert.h"
 
@@ -31,6 +32,9 @@ namespace casual
                      {
                         return []( auto& l, auto& r)
                         {
+                           if( l.alias.empty() && r.alias.empty())
+                              return false;
+
                            return l.alias == r.alias;
                         };
                      }
@@ -39,6 +43,8 @@ namespace casual
                      {
                         return []( auto& l, auto& r)
                         {
+                           if( l.name.empty() && r.name.empty())
+                              return false;
                            return l.name == r.name;
                         };
                      }
@@ -55,7 +61,7 @@ namespace casual
                         auto predicate = [compare, &value]( auto& target){ return compare( target, value);};
 
                         if( auto found = algorithm::find_if( target, predicate))
-                           value += std::move( *found);
+                           *found += std::move( value);
                         else 
                            target.push_back( std::move( value));
                      }
@@ -69,7 +75,7 @@ namespace casual
                         auto predicate = [compare, &value]( auto& target){ return compare( target, value);};
 
                         if( auto found = algorithm::find_if( target, predicate))
-                           value = std::move( *found);
+                           *found = std::move( value);
                         else 
                            target.push_back( std::move( value));
                      }
@@ -246,6 +252,74 @@ namespace casual
          } // gateway
 
       } // model
+
+      Model normalize( Model model)
+      {
+         Trace trace{ "configuration::normalize"};
+         alias::normalize::State state;
+                  
+         {
+            auto normalizer = alias::normalize::mutator( state, []( auto& value){ return value.path.filename();});
+            algorithm::for_each( model.domain.executables, normalizer);
+            algorithm::for_each( model.domain.servers, normalizer);
+         }
+
+         {
+            state.count = {};
+            auto forward_alias = alias::normalize::mutator( state, []( auto&){ return "forwrad";});
+
+            algorithm::for_each( model.queue.forward.groups, [&forward_alias, &state]( auto& group)
+            {
+               forward_alias( group);
+               
+               // normalize the forwards
+               auto normalizer = alias::normalize::mutator( state, []( auto& value){ return value.source;});
+               algorithm::for_each( group.services, normalizer);
+               algorithm::for_each( group.queues, normalizer);
+            });;
+         }
+
+         {
+            state.count = {};
+            
+            {
+               auto normalizer = alias::normalize::mutator( state, []( auto& value)
+               { 
+                  if( value.connect == decltype( value.connect)::reversed)
+                     return "reverse.inbound";
+                  return "inbound";
+               
+               });
+               algorithm::for_each( model.gateway.inbound.groups, normalizer);
+            }
+
+            {
+               auto normalizer = alias::normalize::mutator( state, []( auto& value)
+               { 
+                  if( value.connect == decltype( value.connect)::reversed)
+                     return "reverse.outbound";
+                  return "outbound";
+               
+               });
+               algorithm::for_each( model.gateway.outbound.groups, normalizer);
+            }
+         }
+
+         // take care of alias placeholder mappings...
+         {
+            auto resolve_placeholders = [&state]( auto& value)
+            {
+               if( alias::is::placeholder( value.alias))
+                  value.alias = state.placeholders.at( value.alias);
+            };
+
+            algorithm::for_each( model.service.restrictions, resolve_placeholders);
+            algorithm::for_each( model.transaction.mappings, resolve_placeholders);
+         }
+
+         return model;
+      }
+      
 
       Model& Model::operator += ( Model rhs)
       {

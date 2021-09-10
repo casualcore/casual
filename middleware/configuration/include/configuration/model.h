@@ -647,6 +647,8 @@ namespace casual::configuration
       Model& operator += ( Model rhs);
       inline friend Model operator + ( Model lhs, Model rhs) { lhs += rhs; return lhs;}
 
+      friend Model normalize( Model model);
+
       CASUAL_CONST_CORRECT_SERIALIZE(
          CASUAL_SERIALIZE( domain);
          CASUAL_SERIALIZE( transaction);
@@ -656,7 +658,8 @@ namespace casual::configuration
       )
 
       inline auto tie() const { return std::tie( domain, transaction, service, queue, gateway);}
-
    };
+
+
 
 } // casual::configuration

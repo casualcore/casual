@@ -31,111 +31,6 @@ namespace casual
                return {};
             }
 
-            namespace normalize
-            {
-               struct State
-               {
-                  std::map< std::string, platform::size::type> count;
-                  std::map< std::string, std::string> placeholders;
-               };
-
-               template< typename P>
-               auto mutator( State& state, P&& prospect)
-               {
-                  return [ &state, prospect = std::forward< P>( prospect)]( auto& value)
-                  {
-                     std::string placeholder;
-
-                     if( value.alias.empty())
-                        value.alias = prospect( value);
-                     else if( alias::is::placeholder( value.alias))
-                        placeholder = std::exchange( value.alias, prospect( value));
-                        
-                     auto potentally_add_index = []( auto& state, auto& alias)
-                     {
-                        auto count = ++state.count[ alias];
-
-                        if( count == 1)
-                           return false;
-
-                        alias = string::compose( alias, ".", count);
-                        return true;
-                     };
-
-                     while( potentally_add_index( state, value.alias))
-                        ; // no-op
-
-                     if( ! placeholder.empty())
-                        state.placeholders.emplace( placeholder, value.alias);
-                  };
-               }
-
-               void aliases( configuration::Model& model)
-               {
-                  State state;
-                  
-                  {
-                     auto normalizer = normalize::mutator( state, []( auto& value){ return value.path.filename();});
-                     algorithm::for_each( model.domain.executables, normalizer);
-                     algorithm::for_each( model.domain.servers, normalizer);
-                  }
-
-                  {
-                     state.count = {};
-                     auto forward_alias = normalize::mutator( state, []( auto&){ return "forwrad";});
-
-                     algorithm::for_each( model.queue.forward.groups, [&forward_alias, &state]( auto& group)
-                     {
-                        forward_alias( group);
-                        
-                        // normalize the forwards
-                        auto normalizer = normalize::mutator( state, []( auto& value){ return value.source;});
-                        algorithm::for_each( group.services, normalizer);
-                        algorithm::for_each( group.queues, normalizer);
-                     });;
-                  }
-
-                  {
-                     state.count = {};
-                     
-                     {
-                        auto normalizer = normalize::mutator( state, []( auto& value)
-                        { 
-                           if( value.connect == decltype( value.connect)::reversed)
-                              return "reverse.inbound";
-                           return "inbound";
-                        
-                        });
-                        algorithm::for_each( model.gateway.inbound.groups, normalizer);
-                     }
-
-                     {
-                        auto normalizer = normalize::mutator( state, []( auto& value)
-                        { 
-                           if( value.connect == decltype( value.connect)::reversed)
-                              return "reverse.outbound";
-                           return "outbound";
-                        
-                        });
-                        algorithm::for_each( model.gateway.outbound.groups, normalizer);
-                     }
-                  }
-
-                  // take care of alias placeholder mappings...
-                  {
-                     auto resolve_placeholders = [&state]( auto& value)
-                     {
-                        if( alias::is::placeholder( value.alias))
-                           value.alias = state.placeholders.at( value.alias);
-                     };
-
-                     algorithm::for_each( model.service.restrictions, resolve_placeholders);
-                     algorithm::for_each( model.transaction.mappings, resolve_placeholders);
-                  }
-               }
-
-            } // normalize
-
             auto environment( const user::Environment& environment)
             {
                domain::Environment result;
@@ -950,7 +845,7 @@ namespace casual
          Trace trace{ "configuration::model::transform domain"};
 
          // make sure we normalize alias placeholders and such..
-         domain.normalize();
+         domain = normalize( std::move( domain));
 
          configuration::Model result;
          result.domain = local::domain( domain);
@@ -958,9 +853,6 @@ namespace casual
          result.transaction = local::transaction( domain);
          result.gateway = local::gateway( domain);
          result.queue = local::queue( domain);
-
-         // make sure to normalize all aliases
-         local::normalize::aliases( result);
 
          log::line( verbose::log, "result: ", result);
 

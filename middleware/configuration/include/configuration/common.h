@@ -11,6 +11,8 @@
 #include "common/log/stream.h"
 #include "common/log/trace.h"
 
+#include "common/string.h"
+
 namespace casual
 {
    namespace configuration
@@ -29,6 +31,47 @@ namespace casual
          {
             bool placeholder( const std::string& alias);
          } // is
+
+         namespace normalize
+         {
+            struct State
+            {
+               std::map< std::string, platform::size::type> count;
+               std::map< std::string, std::string> placeholders;
+            };
+
+            template< typename P>
+            auto mutator( State& state, P&& prospect)
+            {
+               return [ &state, prospect = std::forward< P>( prospect)]( auto& value)
+               {
+                  std::string placeholder;
+
+                  if( value.alias.empty())
+                     value.alias = prospect( value);
+                  else if( alias::is::placeholder( value.alias))
+                     placeholder = std::exchange( value.alias, prospect( value));
+                     
+                  auto potentally_add_index = []( auto& state, auto& alias)
+                  {
+                     auto count = ++state.count[ alias];
+
+                     if( count == 1)
+                        return false;
+
+                     alias = common::string::compose( alias, ".", count);
+                     return true;
+                  };
+
+                  while( potentally_add_index( state, value.alias))
+                     ; // no-op
+
+                  if( ! placeholder.empty())
+                     state.placeholders.emplace( placeholder, value.alias);
+               };
+            }
+         } // normalize
+
       } // alias
 
 

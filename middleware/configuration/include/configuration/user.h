@@ -290,7 +290,7 @@ namespace casual
 
 
             //! normalizes the 'manager', mostly to set default values
-            void normalize();
+            friend Manager normalize( Manager manager);
 
             CASUAL_CONST_CORRECT_SERIALIZE(
                CASUAL_SERIALIZE_NAME( defaults, "default");
@@ -386,7 +386,7 @@ namespace casual
 
 
             //! normalizes the 'inbound', mostly to set default values
-            void normalize();
+            friend Inbound normalize( Inbound inbound);
 
             CASUAL_CONST_CORRECT_SERIALIZE(
                CASUAL_SERIALIZE_NAME( defaults, "default");
@@ -431,8 +431,7 @@ namespace casual
          {
             std::vector< outbound::Group> groups;
 
-
-            void normalize();
+            friend Outbound normalize( Outbound outbound);
 
             CASUAL_CONST_CORRECT_SERIALIZE(
                CASUAL_SERIALIZE( groups);
@@ -551,7 +550,7 @@ namespace casual
 
 
             //! normalizes the 'manager', mostly to set default values
-            void normalize();
+            friend Manager normalize( Manager manager);
 
             CASUAL_CONST_CORRECT_SERIALIZE(
                CASUAL_SERIALIZE_NAME( defaults, "default");
@@ -767,7 +766,7 @@ namespace casual
 
 
             //! normalizes the 'forward', mostly to set default values
-            void normalize();
+            friend Forward normalize( Forward forward);
 
             CASUAL_CONST_CORRECT_SERIALIZE(
                CASUAL_SERIALIZE_NAME( defaults, "default");
@@ -796,7 +795,7 @@ namespace casual
 
 
             //! normalizes the 'manager', mostly to set default values
-            void normalize();
+            friend Manager normalize( Manager manager);
 
             CASUAL_CONST_CORRECT_SERIALIZE(
                CASUAL_SERIALIZE( note);
@@ -852,7 +851,7 @@ namespace casual
          std::optional< queue::Manager> queue;
 
          //! normalizes the 'manager', mostly to set default values
-         void normalize();
+         friend Domain normalize( Domain domain);
 
          CASUAL_CONST_CORRECT_SERIALIZE(
             CASUAL_SERIALIZE( name);

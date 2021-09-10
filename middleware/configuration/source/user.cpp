@@ -33,7 +33,18 @@ namespace casual
                      code::raise::error( code::casual::invalid_configuration, role, " has to have a value");
                }
 
-            } // validate   
+            } // validate
+
+            namespace alias
+            {
+               auto placeholder = []( auto& entity)
+               {
+                  if( ! entity.alias || entity.alias.value().empty())
+                     entity.alias = configuration::alias::generate::placeholder();
+               };
+            } // alias
+
+
 
          } // <unnamed>
       } // local
@@ -41,110 +52,108 @@ namespace casual
 
       namespace transaction
       {
-         void Manager::normalize()
+         Manager normalize( Manager manager)
          {
-            if( ! defaults)
-               return;
+            if( ! manager.defaults)
+               return manager;
 
-            auto update_resource = [&defaults = defaults.value().resource]( auto& resource)
+            auto update_resource = [&defaults = manager.defaults.value().resource]( auto& resource)
             {
                resource.key = algorithm::coalesce( resource.key, defaults.key);
                resource.instances = algorithm::coalesce( resource.instances, defaults.instances);
             };
 
-            algorithm::for_each( resources, update_resource);
+            algorithm::for_each( manager.resources, update_resource);
+
+            return manager;
          }
       } // transaction
 
       namespace gateway
       {
 
-         void Inbound::normalize()
+         Inbound normalize( Inbound inbound)
          {
             Trace trace{ "configuration::user::gateway::Inbound::normalize"};
 
-            auto local_default = defaults.value_or( inbound::Default{});
+            auto local_default = inbound.defaults.value_or( inbound::Default{});
 
             // connections
             {
                auto default_connection = local_default.connection.value_or( inbound::Default::Connection{});
-               for( auto& group : groups)
-               {
-                  algorithm::for_each( group.connections, [&default_connection]( auto& connection)
+               for( auto& group : inbound.groups)
+                  for( auto& connection : group.connections)
                   {
                      connection.discovery = algorithm::coalesce( connection.discovery, default_connection.discovery);
                      local::validate::not_empty( connection.address, "inbound.groups[].address");
-                  });
-               }
+                  };
+               
             }
 
             if( local_default.limit)
             {
                auto limit = local_default.limit.value();
 
-               for( auto& group : groups)
-               {
+               for( auto& group : inbound.groups)
                   if( group.limit)
                   {
                      group.limit.value().size = algorithm::coalesce( group.limit.value().size, limit.size);
                      group.limit.value().messages = algorithm::coalesce( group.limit.value().messages, limit.messages);
                   }
-               }
             }
+            return inbound;
          }
 
-         void Outbound::normalize()
+         Outbound normalize( Outbound outbound)
          {
             Trace trace{ "configuration::user::gateway::Outbound::normalize"};
 
-            for( auto& group : groups)
-            {
-               algorithm::for_each( group.connections, []( auto& connection)
-               {
+            for( auto& group : outbound.groups)
+               for( auto& connection : group.connections)
                   local::validate::not_empty( connection.address, "outbound.groups[].address");
-               });
-            }
+
+            return outbound;
          }
 
-         void Manager::normalize()
+         Manager normalize( Manager manager)
          {
-            if( inbound)
-               inbound.value().normalize();
+            if( manager.inbound)
+               manager.inbound = normalize( std::move( manager.inbound.value()));
 
-            if( outbound)
-               outbound.value().normalize();
+            if( manager.outbound)
+               manager.outbound = normalize( std::move( manager.outbound.value()));
 
-            if( reverse)
+            if( manager.reverse)
             {
-               if( reverse.value().inbound)
-                  reverse.value().inbound.value().normalize();
-               if( reverse.value().outbound)
-                  reverse.value().outbound.value().normalize();
+               if( manager.reverse.value().inbound)
+                  manager.reverse.value().inbound = normalize( std::move( manager.reverse.value().inbound.value()));
+               if( manager.reverse.value().outbound)
+                  manager.reverse.value().outbound = normalize( std::move( manager.reverse.value().outbound.value()));
             }
 
             // the rest is deprecated...
-            if( ! defaults)
-               return;
+            if( ! manager.defaults)
+               return manager;
 
             // TODO deprecated remove on 2.0
-            if( defaults.value().connection && connections)
+            if( manager.defaults.value().connection && manager.connections)
             {
                log::line( log::category::warning, code::casual::invalid_configuration, " domain.gateway.default.connection is deprecated - there is no replacement");
 
-               auto update_connection = [&defaults = defaults.value().connection.value()]( auto& connection)
+               auto update_connection = [&defaults = manager.defaults.value().connection.value()]( auto& connection)
                {
                   connection.address = algorithm::coalesce( connection.address, defaults.address);
                   connection.restart = connection.restart.value_or( defaults.restart);
                };
-               algorithm::for_each( connections.value(), update_connection);
+               algorithm::for_each( manager.connections.value(), update_connection);
             }
 
             // TODO deprecated remove on 2.0
-            if( defaults.value().listener && listeners)
+            if( manager.defaults.value().listener && manager.listeners)
             {
                log::line( log::category::warning, code::casual::invalid_configuration, " domain.gateway.default.listener is deprecated - use domain.gateway.inbound.default");
 
-               auto update_listener = [&defaults = defaults.value().listener.value()]( auto& listener)
+               auto update_listener = [&defaults = manager.defaults.value().listener.value()]( auto& listener)
                {
                   if( ! listener.limit)
                   {
@@ -155,8 +164,10 @@ namespace casual
                   limit.size = algorithm::coalesce( limit.size, defaults.limit.size);
                   limit.messages = algorithm::coalesce( limit.messages, defaults.limit.messages);
                };
-               algorithm::for_each( listeners.value(), update_listener);
+               algorithm::for_each( manager.listeners.value(), update_listener);
             }
+
+            return manager;
 
          }
 
@@ -164,12 +175,12 @@ namespace casual
 
       namespace queue
       {
-         void Forward::normalize()
+         Forward normalize( Forward forward)
          {
-            if( ! defaults || ! groups)
-               return;
+            if( ! forward.defaults || ! forward.groups)
+               return forward;
 
-            auto& forward_default = defaults.value();
+            auto& forward_default = forward.defaults.value();
 
             auto normalize = [&]( auto& group)
             {
@@ -198,10 +209,12 @@ namespace casual
                }
             };
 
-            algorithm::for_each( groups.value(), normalize);
+            algorithm::for_each( forward.groups.value(), normalize);
+
+            return forward;
          }
 
-         void Manager::normalize()
+         Manager normalize( Manager manager)
          {
             auto normalize_queue_retry = []( auto& queue)
             {
@@ -217,16 +230,16 @@ namespace casual
             };
 
             // normalize defaults
-            if( defaults)
+            if( manager.defaults)
             {
                // queue
-               if( defaults.value().queue)
-                  normalize_queue_retry( defaults.value().queue.value());
+               if( manager.defaults.value().queue)
+                  normalize_queue_retry( manager.defaults.value().queue.value());
             }
             
 
             // normalize groups
-            if( groups)
+            if( manager.groups)
             {
                auto normalize = [&]( auto& group)
                {
@@ -242,63 +255,58 @@ namespace casual
                      normalize_queue_retry( queue);
 
                      // should we complement retry with defaults?
-                     if( defaults && defaults.value().queue)
+                     if( manager.defaults && manager.defaults.value().queue)
                      {
-                        if( queue.retry && defaults.value().queue.value().retry)
+                        if( queue.retry && manager.defaults.value().queue.value().retry)
                         {
-                           queue.retry.value().count = algorithm::coalesce( std::move( queue.retry.value().count), defaults.value().queue.value().retry.value().count);
-                           queue.retry.value().delay = algorithm::coalesce( std::move( queue.retry.value().delay), defaults.value().queue.value().retry.value().delay);
+                           queue.retry.value().count = algorithm::coalesce( std::move( queue.retry.value().count), manager.defaults.value().queue.value().retry.value().count);
+                           queue.retry.value().delay = algorithm::coalesce( std::move( queue.retry.value().delay), manager.defaults.value().queue.value().retry.value().delay);
                         }
                         else
-                           queue.retry = algorithm::coalesce( std::move( queue.retry), defaults.value().queue.value().retry);
+                           queue.retry = algorithm::coalesce( std::move( queue.retry), manager.defaults.value().queue.value().retry);
                      }
                   });
                   
                };
                
-               algorithm::for_each( groups.value(), normalize);
+               algorithm::for_each( manager.groups.value(), normalize);
             }
 
             // normalize service forward
-            if( forward)
-               forward.value().normalize();
+            if( manager.forward)
+               manager.forward = normalize( std::move( manager.forward.value()));
+
+            return manager;
 
          }
       } // queue
 
-      void Domain::normalize()
+      Domain normalize( Domain domain)
       {
          Trace trace{ "configuration::user::Domain::normalize"};
 
+         algorithm::for_each( domain.executables, local::alias::placeholder);
+         algorithm::for_each( domain.servers, local::alias::placeholder);
 
-         auto alias_placeholder = []( auto& entity)
-         {
-            if( ! entity.alias || entity.alias.value().empty())
-               entity.alias = alias::generate::placeholder();
-         };
-
-         algorithm::for_each( executables, alias_placeholder);
-         algorithm::for_each( servers, alias_placeholder);
-
-         auto normalize = []( auto& manager)
+         auto apply_normalize = []( auto& manager)
          {
             if( manager)
-               manager.value().normalize();
+               manager = normalize( std::move( manager.value()));
          };
 
-         normalize( transaction);
-         normalize( gateway);
-         normalize( queue);
+         apply_normalize( domain.transaction);
+         apply_normalize( domain.gateway);
+         apply_normalize( domain.queue);
 
          // validate? - no, we don't 'validate' user model
 
-         if( ! defaults)
-            return; // nothing to normalize
+         if( ! domain.defaults)
+            return domain; // nothing to normalize
 
-         if( defaults.value().environment)
+         if( domain.defaults.value().environment)
          {
             log::line( log::category::warning, "configuration - domain.default.environment is deprecated - use domain.environment instead");
-            environment = algorithm::coalesce( std::move( environment), std::move( defaults.value().environment));
+            domain.environment = algorithm::coalesce( std::move( domain.environment), std::move( domain.defaults.value().environment));
          }
 
          
@@ -314,15 +322,15 @@ namespace casual
             algorithm::for_each( entities, normalize_entity);
          };
 
-         if( defaults.value().server)
-            normalize_entities( servers, defaults.value().server.value());
+         if( domain.defaults.value().server)
+            normalize_entities( domain.servers, domain.defaults.value().server.value());
 
-         if( defaults.value().executable)
-            normalize_entities( executables, defaults.value().executable.value());
+         if( domain.defaults.value().executable)
+            normalize_entities( domain.executables, domain.defaults.value().executable.value());
 
-         if( defaults.value().service)
+         if( domain.defaults.value().service)
          {
-            auto normalize_service = [&defaults = defaults.value().service.value()]( auto& service)
+            auto normalize_service = [&defaults = domain.defaults.value().service.value()]( auto& service)
             {
                if( defaults.timeout)
                   service.timeout = service.timeout.value_or( defaults.timeout.value());
@@ -349,9 +357,10 @@ namespace casual
                }
                
             };
-            algorithm::for_each( services, normalize_service);
+            algorithm::for_each( domain.services, normalize_service);
          }
 
+         return domain;
       }
 
    } // configuration::user

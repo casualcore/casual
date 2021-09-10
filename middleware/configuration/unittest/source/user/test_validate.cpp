@@ -31,9 +31,8 @@ namespace casual
                auto archive = common::serialize::create::reader::consumed::from( stream);
                archive >> CASUAL_NAMED_VALUE( domain);
                archive.validate();
-               domain.normalize();
 
-               return domain;
+               return normalize( std::move( domain));
             };
 
             namespace invalid::configuration

@@ -200,6 +200,9 @@ domain:
 
          auto domain = local::domain();
 
+         // wait for the 'bounds' to be connected...
+         local::call::state( local::predicate::outbound::connected( 1));
+
          auto origin = local::configuration::load( local::configuration::servers, local::configuration::gateway);
 
          auto model = casual::configuration::model::transform( casual::domain::manager::unittest::configuration::get());
@@ -230,6 +233,9 @@ domain:
                   -  address: 127.0.0.1:6669
 )");
 
+         // wait for the 'bounds' to be connected...
+         local::call::state( local::predicate::outbound::connected( 1));
+
          auto wanted = local::configuration::load( local::configuration::servers, R"(
 domain: 
    name: post
@@ -255,10 +261,7 @@ domain:
          casual::domain::manager::unittest::configuration::post( casual::configuration::model::transform( wanted));
          
          // wait for the connections to establish again
-         auto state = local::call::state( []( auto& state)
-         {
-            return state.connections.size() == 2;
-         });
+         local::call::state( local::predicate::outbound::connected( 1));
 
          auto updated = casual::configuration::model::transform( casual::domain::manager::unittest::configuration::get());
 
