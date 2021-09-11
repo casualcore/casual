@@ -3,16 +3,15 @@ This is the changelog for `casual` and all changes are listed in this document.
 
 ## [Unreleased]
 
-- configuration - fix bug with empty aliases for gateway
-- configuration - fixed bug when 'update' an _alias key_ 'entity'. We moved from the one we supposed to add to...
-
-## [1.5.1] - 2021-09-08
+## [1.5.1] - 2021-09-11
 
 ### Fixes
 - gateway - respect hops - round-robin on the partition with smallest hops
 - gateway - fix interdomain protocol example tool
 - paths - made sure we do not use std::filesystem::equivalent with non existing file
 - cli - improved (subjectively) event::Notification print out (new for 1.5)
+- configuration - fix bug with empty aliases for gateway
+- configuration - fixed bug when 'update' an _alias key_ 'entity'. We moved from the one we supposed to add to...
 
 ## [1.5.0] - 2021-09-01
 ### Added
