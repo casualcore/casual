@@ -13,6 +13,7 @@
 
 #include <vector>
 #include <string>
+#include <optional>
 #include <filesystem>
 
 namespace casual::configuration
