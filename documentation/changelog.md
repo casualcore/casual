@@ -3,6 +3,11 @@ This is the changelog for `casual` and all changes are listed in this document.
 
 ## [Unreleased]
 
+## [1.5.2] - 2021-09-15
+
+### Fixes
+- domain - fixed so order of groups (configuration) can be arbitrary, regardless of dependencies.
+
 ## [1.5.1] - 2021-09-11
 
 ### Fixes

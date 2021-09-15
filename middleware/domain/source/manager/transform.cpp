@@ -19,6 +19,8 @@
 
 #include "common/build.h"
 
+#include "casual/assert.h"
+
 
 namespace casual
 {
@@ -31,36 +33,35 @@ namespace casual
          namespace
          {
 
-            std::vector< manager::state::Group::id_type> membership( const std::vector< std::string>& members, const std::vector< manager::state::Group>& groups)
+            auto membership( const std::vector< std::string>& members, const std::vector< manager::state::Group>& groups)
             {
                return algorithm::accumulate( members, std::vector< manager::state::Group::id_type>{}, [&groups]( auto result, auto& member)
                {
                   if( auto found = common::algorithm::find( groups, member))
                      result.push_back( found->id);
                   else
-                     code::raise::error( code::casual::invalid_configuration, "unresolved dependency to group '", member, "'" );
+                     code::raise::error( code::casual::invalid_configuration, "unresolved dependency to group '", member, "' - dependency to non existing group?" );
                   
                   return result;
                });
             }
 
-            auto group( manager::State& state)
+            template< typename Groups>
+            void groups( const manager::State& state, Groups&& source, std::vector< manager::state::Group>& target)
             {
-               return [&state]( auto& group)
+               // 'two phase' - we add all groups, and then take care of dependencies. Hence, we don't rely on order...
+               algorithm::transform( source, std::back_inserter( target), [master = state.group_id.master]( auto& group)
                {
-                  auto transform_id = [&state]( auto& name) 
-                  {
-                     if( auto found = algorithm::find( state.groups, name))
-                        return found->id;
+                  return manager::state::Group{ group.name, { master}, group.note};
+               });
 
-                     code::raise::error( code::casual::invalid_configuration, "unresolved dependency to group '", name, "'" );
-                  };
-
-                  manager::state::Group result{ group.name, { state.group_id.master}, group.note};
-                  result.dependencies = algorithm::transform( group.dependencies, transform_id);
-
-                  return result;
-               };
+               // take care of dependencies
+               for( auto& group : source)
+               {
+                  auto found = algorithm::find( target, group.name);
+                  casual::assertion( found, "failed to lookup group ", group.name);
+                  found->dependencies = local::membership( group.dependencies, target);
+               }
             }
 
             template< typename C, typename T>
@@ -330,16 +331,15 @@ namespace casual
             // We need to remove any of the reserved groups (that we created above), either because
             // the user has used one of the reserved names, or we're reading from a persistent stored
             // configuration
-            const std::vector< std::string> reserved{
-               ".casual.domain", ".casual.master", ".casual.transaction", ".casual.queue", ".global", ".casual.gateway"};
+            constexpr auto reserved = common::array::make( 
+               std::string_view{ ".casual.domain"}, ".casual.master", ".casual.transaction", ".casual.queue", ".global", ".casual.gateway");
 
             auto groups = common::algorithm::remove_if( domain.groups, [&reserved]( const auto& g)
             {
                return common::algorithm::find( reserved, g.name);
             });
 
-            // We transform user defined groups
-            algorithm::transform( groups, result.groups, local::group( result));
+            local::groups( result, groups, result.groups);
          }
 
          {

@@ -299,16 +299,6 @@ namespace casual
          return state.tasks.add( std::move( tasks));
       }
 
-
-      std::vector< common::strong::correlation::id> put( State& state, casual::configuration::Model updates)
-      {
-         Trace trace{ "domain::manager::configuration::put"};
-         log::line( verbose::log, "updates: ", updates);
-
-         // add the updates with current moedel to get 'wanted' and use post...
-         return configuration::post( state, state.configuration.model + std::move( updates));
-      }
-
    } // domain::manager::configuration
 
 } // casual
