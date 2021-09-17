@@ -7,6 +7,7 @@
 #pragma once
 
 #include "common/communication/ipc.h"
+#include "common/communication/ipc/flush/send.h"
 #include "common/communication/instance.h"
 #include "common/communication/select.h"
 
@@ -31,37 +32,8 @@ namespace casual
 
       namespace flush
       {
-         template< typename D, typename M>
-         auto send( D&& destination, M&& message)
-         {
-            auto result = common::communication::device::non::blocking::send( destination, message);
-            while( ! result)
-            {
-               ipc::inbound().flush();
-               result = common::communication::device::non::blocking::send( destination, message);
-            }
-            return result;
-         }
+         using namespace common::communication::ipc::flush;
 
-         namespace optional
-         {
-            template< typename D, typename M>
-            auto send( D&& destination, M&& message) -> decltype( flush::send( destination, std::forward< M>( message)))
-            {
-               try 
-               {
-                  return flush::send( destination, std::forward< M>( message));
-               }
-               catch( ...)
-               {
-                  if( common::exception::capture().code() != common::code::casual::communication_unavailable)
-                     throw;
-
-                  common::log::line( common::communication::log, common::code::casual::communication_unavailable, " failed to send message - action: ignore");
-                  return {};
-               }
-            }
-         } // optional
       } // flush
 
       namespace dispatch

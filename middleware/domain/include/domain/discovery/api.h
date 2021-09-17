@@ -15,9 +15,13 @@ namespace casual
    namespace domain::discovery
    {
       namespace inbound
-      {
+      {  
+         //! register for discovery (to answer an outbound discvery)
+         //! @attention will _flush::send_ using ipc::inbound::device()
+         //! @{
          void registration();
          void registration( const common::process::Handle& process);
+         //! @}
 
       } // inbound
 
@@ -29,13 +33,19 @@ namespace casual
       //! that will "ask" all regestrated _inbounds_, and possible outbounds, and accumulate one reply.
       //! @returns the correlation id.
       //! @attention reply will be sent to the process in the request.
+      //! @attention will _flush::send_ using ipc::inbound::device()
       correlation_type request( const Request& request);
       
       namespace outbound
       {
          using Directive = message::discovery::outbound::Registration::Directive;
+
+         //! register for discovery (can send discovery to others)
+         //! @attention will _flush::send_ using ipc::inbound::device()
+         //! @{
          void registration( Directive directive = Directive::regular);
          void registration( const common::process::Handle& process, Directive directive = Directive::regular);
+         //! @}
 
          using Request = message::discovery::outbound::Request;
          using Reply = message::discovery::outbound::Reply;
@@ -44,17 +54,15 @@ namespace casual
          //! that will "ask" all regestrated _outbounds_, and accumulate one reply.
          //! @returns the correlation id.
          //! @attention reply will be sent to the process in the request.
+         //! @attention will _flush::send_ using ipc::inbound::device()
          correlation_type request( const Request& request);
-
-         namespace blocking
-         {
-            void request( const Request& request);
-         } // blocking
 
       } // outbound
 
       namespace rediscovery
       {
+         //! register for rediscovery
+         //! @attention will _flush::send_ using ipc::inbound::device()
          void registration();
 
          using Request = message::discovery::rediscovery::Request;

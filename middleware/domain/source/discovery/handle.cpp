@@ -14,6 +14,7 @@
 #include "common/event/listen.h"
 #include "common/algorithm.h"
 #include "common/event/send.h"
+#include "common/communication/ipc/flush/send.h"
 
 namespace casual
 {
@@ -65,7 +66,7 @@ namespace casual
 
                      auto result = algorithm::accumulate( range, state.coordinate.discovery.empty_pendings(), [&message]( auto result, const auto& point)
                      {
-                        if( auto correlation = communication::device::blocking::optional::send( point.process.ipc, message))
+                        if( auto correlation = communication::ipc::flush::optional::send( point.process.ipc, message))
                            result.emplace_back( correlation, point.process.pid);
 
                         return result;
@@ -151,7 +152,7 @@ namespace casual
                      if( state.runlevel > decltype( state.runlevel())::running)
                      {
                         // we don't take any more request.
-                        communication::device::blocking::optional::send( message.process.ipc, common::message::reverse::type( message));
+                        communication::ipc::flush::optional::send( message.process.ipc, common::message::reverse::type( message));
                         return;
                      }
 
@@ -172,7 +173,7 @@ namespace casual
                         message::discovery::outbound::Reply message;
                         message.correlation = destination.correlation;
 
-                        communication::device::blocking::optional::send( destination.ipc, message);
+                        communication::ipc::flush::optional::send( destination.ipc, message);
                      });
                   };
                }
@@ -189,7 +190,7 @@ namespace casual
                   if( state.runlevel > decltype( state.runlevel())::running)
                   {
                      // we don't take any more request.
-                     communication::device::blocking::optional::send( message.process.ipc, common::message::reverse::type( message));
+                     communication::ipc::flush::optional::send( message.process.ipc, common::message::reverse::type( message));
                      return;
                   }
 
@@ -216,7 +217,7 @@ namespace casual
                         }
                         local::detail::normalize::content( message.content);
 
-                        communication::device::blocking::optional::send( destination.ipc, message);
+                        communication::ipc::flush::optional::send( destination.ipc, message);
                      });
                   };
 
@@ -252,7 +253,7 @@ namespace casual
                      if( state.runlevel > decltype( state.runlevel())::running)
                      {
                         // we don't take any more request.
-                        communication::device::blocking::optional::send( message.process.ipc, common::message::reverse::type( message));
+                        communication::ipc::flush::optional::send( message.process.ipc, common::message::reverse::type( message));
                         return;
                      }
 
@@ -261,7 +262,7 @@ namespace casual
 
                      auto pending = algorithm::accumulate( state.agents.rediscovers(), state.coordinate.rediscovery.empty_pendings(), [&message]( auto result, const auto& point)
                      {
-                        if( auto correlation = communication::device::blocking::optional::send( point.process.ipc, message))
+                        if( auto correlation = communication::ipc::flush::optional::send( point.process.ipc, message))
                            result.emplace_back( correlation, point.process.pid);
 
                         return result;
@@ -274,7 +275,7 @@ namespace casual
 
                         message::discovery::rediscovery::Reply message;
                         message.correlation = destination.correlation;
-                        communication::device::blocking::optional::send( destination.ipc, message);
+                        communication::ipc::flush::optional::send( destination.ipc, message);
                      });
                   };
                }
