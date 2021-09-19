@@ -10,6 +10,7 @@
 #include "domain/message/discovery.h"
 
 #include "common/communication/instance.h"
+#include "common/communication/ipc/flush/send.h"
 
 namespace casual
 {
@@ -38,7 +39,7 @@ namespace casual
          {
             Trace trace{ "domain::discovery::inbound::registration"};
             message::discovery::inbound::Registration message{ process};
-            communication::device::blocking::optional::send( local::instance::device(), message);
+            communication::ipc::flush::optional::send( local::instance::device(), message);
          }
 
          void registration()
@@ -52,7 +53,7 @@ namespace casual
       correlation_type request( const Request& request)
       {
          Trace trace{ "domain::discovery::request"};
-         return communication::device::blocking::optional::send( local::instance::device(), request);
+         return communication::ipc::flush::optional::send( local::instance::device(), request);
       }
 
       namespace outbound
@@ -62,7 +63,7 @@ namespace casual
             Trace trace{ "domain::discovery::outbound::registration"};
             message::discovery::outbound::Registration message{ process};
             message.directive = directive;
-            communication::device::blocking::optional::send( local::instance::device(), message);
+            communication::ipc::flush::optional::send( local::instance::device(), message);
          } 
 
          void registration( Directive directive)
@@ -73,23 +74,8 @@ namespace casual
          correlation_type request( const Request& request)
          {
             Trace trace{ "domain::discovery::outbound::request"};
-            return communication::device::blocking::optional::send( local::instance::device(), request);
+            return communication::ipc::flush::optional::send( local::instance::device(), request);
          }
-
-
-         namespace blocking
-         {
-            void request( const Request& request)
-            {
-               Trace trace{ "domain::discovery::outbound::blocking::request"};
-               
-               if( auto correlation = outbound::request( request))
-               {
-                  Reply reply;
-                  communication::device::blocking::receive( communication::ipc::inbound::device(), reply, correlation);
-               }
-            }
-         } // blocking
 
       } // outbound
 
@@ -100,7 +86,7 @@ namespace casual
          {
             Trace trace{ "domain::discovery::rediscovery::request"};
             message::discovery::rediscovery::Request message{ process::handle()};
-            return communication::device::blocking::optional::send( local::instance::device(), message);
+            return communication::ipc::flush::optional::send( local::instance::device(), message);
          }
 
          namespace blocking

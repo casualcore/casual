@@ -25,10 +25,6 @@ namespace casual
       //! @return id's of tasks that tries to get to the wanted state
       std::vector< common::strong::correlation::id> post( State& state, casual::configuration::Model wanted);
 
-      //! if element(s) _keys_ is found, there will be an update, otherwise the element(s) will be added
-      //! @pre state.configuration.model is set to the current aggregated configuration model.
-      //! @return id's of tasks that tries to get to the wanted state
-      std::vector< common::strong::correlation::id> put( State& state, casual::configuration::Model updates);
 
    } // domain::manager::configuration
 } // casual

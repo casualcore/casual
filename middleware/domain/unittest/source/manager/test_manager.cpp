@@ -215,6 +215,29 @@ domain:
       }
 
 
+      TEST( domain_manager, unordered_depdendent_groups)
+      {
+         common::unittest::Trace trace;
+
+         constexpr auto configuration{ R"(
+domain:
+   name: groups
+   groups:
+      -  name: A
+         dependencies: [ C]
+      -  name: C
+   executables:
+      -  path: a360ec9bec0b4e5fae131c0e7ad931f4-non-existent
+         instances: 1
+         memberships: [ A]
+)"};
+
+         EXPECT_NO_THROW( {
+            auto domain = local::domain( configuration);
+         });
+      }
+
+
 
       namespace local
       {
@@ -1418,13 +1441,13 @@ domain:
    name: post
 
    groups:
-      -  name: A
       -  name: B
          dependencies: [ A]
       -  name: C
          dependencies: [ B]
       -  name: Y
          dependencies: [ A]
+      -  name: A
 
    servers:
       -  path: ./bin/test-simple-server
@@ -1446,11 +1469,11 @@ domain:
    name: post
 
    groups:
-      -  name: A
       -  name: B
          dependencies: [ A]
       -  name: C
          dependencies: [ X]
+      -  name: A
       -  name: X
          dependencies: [ B]
 

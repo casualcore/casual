@@ -11,8 +11,11 @@
 #include "serviceframework/service/protocol/call.h"
 #include "service/manager/admin/server.h"
 
+#include "common/communication/ipc.h"
+
 namespace casual
 {
+   using namespace common;
    namespace gateway::unittest
    {
       using namespace common::unittest;
@@ -22,7 +25,11 @@ namespace casual
          casual::domain::discovery::outbound::Request request{ common::process::handle()};
          request.content.services = std::move( services);
          request.content.queues = std::move( queues);
-         casual::domain::discovery::outbound::blocking::request( request);
+         if( auto correlation = casual::domain::discovery::outbound::request( request))
+         {
+            casual::domain::discovery::outbound::Reply reply;
+            common::communication::device::blocking::receive( common::communication::ipc::inbound::device(), reply, correlation);
+         }
       }
 
       namespace service

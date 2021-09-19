@@ -3,6 +3,12 @@ This is the changelog for `casual` and all changes are listed in this document.
 
 ## [Unreleased]
 
+## [1.5.2] - 2021-09-17
+
+### Fixes
+- domain - fixed so order of groups (configuration) can be arbitrary, regardless of dependencies.
+- discovery - made sure we _flush send_ to mitigate deadlocks when interacting with `casual-domain-discovery`
+
 ## [1.5.1] - 2021-09-11
 
 ### Fixes
