@@ -15,6 +15,7 @@
 #include "common/communication/device.h"
 #include "common/communication/instance.h"
 #include "common/message/handle.h"
+#include "common/message/internal.h"
 #include "common/event/listen.h"
 
 
@@ -486,6 +487,7 @@ namespace casual
       {
          return {
             common::message::handle::defaults( communication::ipc::inbound::device()),
+            common::message::internal::dump::state::handle( state),
 
             // service
             local::internal::service::lookup::reply( state),
@@ -510,7 +512,6 @@ namespace casual
 
             // events
             local::internal::event::process::exit( state),
-
          };
       }
 

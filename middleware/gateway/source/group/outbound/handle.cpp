@@ -16,6 +16,7 @@
 
 #include "common/communication/instance.h"
 #include "common/message/handle.h"
+#include "common/message/internal.h"
 #include "common/event/send.h"
 #include "common/instance.h"
 
@@ -735,6 +736,7 @@ namespace casual
       {
          return {
             common::message::handle::defaults( ipc::inbound()),
+            common::message::internal::dump::state::handle( state),
 
             local::internal::domain::connected( state),
 
