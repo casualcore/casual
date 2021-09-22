@@ -30,34 +30,26 @@ namespace casual
             {
                namespace
                {
-                  Model get( Model current, const std::filesystem::path& name)
+                  Model load( Model current, const std::filesystem::path& name)
                   {
-                     Trace trace{ "http::outbound::configuration::local::get"};
+                     Trace trace{ "http::outbound::configuration::local::load"};
 
                      common::log::line( verbose::log, "file: ", name);
 
                      // Create the reader and deserialize configuration
-                     Model http;
+                     Model model;
                      common::file::Input file{ name};
                      auto reader = common::serialize::create::reader::consumed::from( file);
                      
-                     reader >> CASUAL_NAMED_VALUE( http);
+                     reader >> CASUAL_NAMED_VALUE_NAME( model, "http");
                      reader.validate();
+                     common::environment::normalize( model);
 
-                     common::log::line( verbose::log, "http: ", http);
+                     common::log::line( verbose::log, "model: ", model);
 
-                     return current + http;
+                     return current + model;
                   }
 
-                  Model accumulate( const std::vector< std::filesystem::path>& paths)
-                  {
-                     auto result = common::algorithm::accumulate( paths, Model{}, &local::get);
-
-                     // normalize environment stuff
-                     common::environment::normalize( result);
-
-                     return result;
-                  }
                } // <unnamed>
             } // local
 
@@ -76,32 +68,25 @@ namespace casual
                return lhs;
             }
 
-            Model get( const std::filesystem::path& path)
-            {
-               Trace trace{ "http::outbound::configuration::get"};
-               return local::accumulate( { path});
+
+
+            Model load( const std::vector< std::filesystem::path>& paths)
+            {  
+               return common::algorithm::accumulate( paths, Model{}, &local::load);
             }
 
-            Model get( const std::vector< std::filesystem::path>& paths)
+            Model load( const std::filesystem::path& path)
             {
-               Trace trace{ "http::outbound::configuration::get"};
-               return local::accumulate( paths);
+               return local::load( {}, path);
             }
 
-            Model get( const std::string& pattern)
-            {
-               Trace trace{ "http::outbound::configuration::get"};
-               common::log::line( verbose::log, "pattern: ", pattern);
 
-               return local::accumulate( common::file::find( pattern));
-            }
-
-            Model get( const std::vector< std::string>& patterns)
+            Model load( const std::vector< std::string>& patterns)
             {
-               Trace trace{ "http::outbound::configuration::get"};
+               Trace trace{ "http::outbound::configuration::load"};
                common::log::line( verbose::log, "patterns: ", patterns);
 
-               return local::accumulate( common::file::find( patterns));
+               return load( common::file::find( patterns));
             }
 
          } // configuration

@@ -5,34 +5,118 @@
 //!
 
 
-#include "http/outbound/manager.h"
+#include "http/outbound/state.h"
+#include "http/outbound/configuration.h"
+#include "http/outbound/transform.h"
+#include "http/outbound/handle.h"
+#include "http/outbound/request.h"
 
+#include "common/instance.h"
+#include "common/communication/device.h"
+#include "common/communication/instance.h"
 #include "common/argument.h"
 #include "common/exception/guard.h"
+#include "common/serialize/macro.h"
 
 namespace casual
 {
-   namespace http
-   {
-      namespace outbound
-      {
-         void main( int argc, char **argv)
-         {
-            manager::Settings settings;
-            {
-               using namespace casual::common::argument;
-               Parse parse{ "http outbound",
-                  Option( std::tie( settings.configurations), option::keys( { "--configuration"}, { "--configuration-files"}), "configuration files")
-               };
+   using namespace common;
 
-               parse( argc, argv);
+   namespace http::outbound
+   {
+      namespace local
+      {
+         namespace
+         {
+            struct Settings
+            {
+               std::vector< std::string> configurations;
+
+               CASUAL_LOG_SERIALIZE(
+                  CASUAL_SERIALIZE( configurations);
+               )
+            };
+
+            auto initialize( Settings settings)
+            {
+               Trace trace{ "http::outbound::local::initialize"};
+
+               auto state = transform::configuration( configuration::load( settings.configurations));
+
+               // advertise
+               {
+                  common::message::service::concurrent::Advertise message{ process::handle()};
+                  message.alias = instance::alias();
+
+                  // highest possible order
+                  message.order = std::numeric_limits< std::decay_t< decltype( message.order)>>::max();
+
+                  algorithm::transform( state.lookup, message.services.add, []( auto& l){
+                     message::service::concurrent::advertise::Service service;
+                     service.category = "http";
+                     service.name = l.first;
+                     service.transaction = service::transaction::Type::none;
+                     return service;
+                  });
+
+                  log::line( verbose::log, "advertise: ", message);
+
+                  communication::device::blocking::send( communication::instance::outbound::service::manager::device(), message);
+               }
+
+               // connect to domain
+               common::communication::instance::whitelist::connect();
+
+               return state;
             }
 
-            Manager manager{ std::move( settings)};
-            manager.run();
-         }
-      } // outbound
-   } // http
+            void run( State state)
+            {
+               Trace trace{ "http::outbound::local::run"};
+
+               auto internal = [dispatch = handle::internal::create( state)]( auto policy) mutable
+               {
+                  dispatch( communication::ipc::inbound::device().next( policy));
+               };
+
+               // callback that is called if curl has stuff ready
+               auto external = handle::external::reply( state);
+
+               while( true)
+               {
+                  if( state.pending.requests)
+                  {
+                     log::line( verbose::log, "state.pending.requests.size(): ", state.pending.requests.size());
+                     request::blocking::dispath( state, internal, external);
+                  }
+                  else
+                  {
+                     // we've got no pending request, we only have to listen to inbound
+                     internal( communication::device::policy::blocking( communication::ipc::inbound::device()));
+                  } 
+               }
+            }
+
+            void main( int argc, char **argv)
+            {
+               Trace trace{ "http::outbound::local::main"};
+
+               Settings settings;
+
+               argument::Parse{ "http outbound",
+                  argument::Option( std::tie( settings.configurations), argument::option::keys( { "--configuration"}, { "--configuration-files"}), "configuration glob patterns")
+               }( argc, argv);
+
+               log::line( verbose::log, "settings: ", settings);
+
+               run( initialize( std::move( settings)));
+            }
+            
+         } // <unnamed>
+      } // local
+
+
+   } // http::outbound
 
 } // casual
 
@@ -40,7 +124,7 @@ int main( int argc, char **argv)
 {
    return casual::common::exception::main::log::guard( [=]()
    {
-      casual::http::outbound::main( argc, argv);
+      casual::http::outbound::local::main( argc, argv);
    });
 
 }

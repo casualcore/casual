@@ -38,10 +38,9 @@ common_archive = make.LinkArchive( 'bin/casual-http-common',
 common_outbound_archive = make.LinkArchive( 'bin/casual-http-outbound-common',
     [
        make.Compile( 'source/outbound/configuration.cpp'),
-       make.Compile( 'source/outbound/curl.cpp'),
        make.Compile( 'source/outbound/transform.cpp'),
        make.Compile( 'source/outbound/state.cpp'),
-       make.Compile( 'source/outbound/request.cpp'),
+       
      ])
 
 common_inbound_library = make.LinkLibrary( 'bin/casual-http-inbound-common',
@@ -60,7 +59,9 @@ install_lib.append( common_inbound_library)
 target = make.LinkExecutable( 'bin/casual-http-outbound',
    [
       make.Compile( 'source/outbound/main.cpp'),
-      make.Compile( 'source/outbound/manager.cpp'),
+      make.Compile( 'source/outbound/handle.cpp'),
+      make.Compile( 'source/outbound/request.cpp'),
+      make.Compile( 'source/outbound/curl.cpp'),
    ],
    [ 
       common_outbound_archive,
