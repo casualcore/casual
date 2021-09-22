@@ -787,6 +787,8 @@ domain:
          groups:
             -  connections:
                   -  address: 127.0.0.1:7001
+                     discovery:
+                        forward: true
 
       outbound:
          groups:
@@ -857,6 +859,8 @@ domain:
          groups:
             -  connections:
                   -  address: 127.0.0.1:7001
+                     discovery:
+                        forward: true
 
       reverse:
          outbound:
@@ -940,6 +944,8 @@ domain:
          groups:
             -  connections:
                   -  address: 127.0.0.1:7001
+                     discovery:
+                        forward: true
 
       outbound:
          groups:

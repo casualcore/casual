@@ -756,38 +756,25 @@ namespace casual
                            Trace trace{ "service::manager::handle::domain::discover::Request"};
                            common::log::line( verbose::log, "message: ", message);
 
-                           auto reply = common::message::reverse::type( message);
-
-                           reply.process = common::process::handle();
+                           auto reply = common::message::reverse::type( message, common::process::handle());
                            reply.domain = common::domain::identity();
-
-                           auto known_services = [&]( auto& name)
+                           
+                           reply.content.services = algorithm::accumulate( message.content.services, decltype( reply.content.services){}, [&state]( auto result, auto& name)
                            {
                               auto service = state.service( name);
 
-                              // We don't allow other domains to access or know about our
-                              // admin services.
-                              if( service && service->information.category != common::service::category::admin)
+                              // * We only answer with sequential (local) services
+                              // * We don't allow other domains to access or know about our admin services.
+                              if( service && ! service->instances.sequential.empty() && service->information.category != common::service::category::admin)
                               {
-                                 if( ! service->instances.sequential.empty())
-                                 {
-                                    reply.content.services.emplace_back(
-                                          name,
-                                          service->information.category,
-                                          service->information.transaction);
-                                 }
-                                 else if( ! service->instances.concurrent.empty())
-                                 {
-                                    reply.content.services.emplace_back(
-                                          name,
-                                          service->information.category,
-                                          service->information.transaction,
-                                          service->instances.concurrent.front().property);
-                                 }
+                                 result.emplace_back(
+                                    name,
+                                    service->information.category,
+                                    service->information.transaction);
                               }
-                           };
 
-                           algorithm::for_each( message.content.services, known_services);
+                              return result;
+                           });
 
                            communication::device::blocking::send( message.process.ipc, reply);
                         };
