@@ -3,8 +3,15 @@ This is the changelog for `casual` and all changes are listed in this document.
 
 ## [Unreleased]
 
+## [1.5.3] - 2021-09-22
+
 ### Fixes
 - xatmi - support for conversations (primarely targeting COBOL)
+- gateway - fixed so outbound holds unique connections per service
+- discovery - service-manager only replies with _local_ services
+   - **attention** if the intention is that a domain should expose services that the domain has
+     found in other domains (not _local_), the domains inbound connections should have the directive
+     `discovery.forward = true` set. This also applies to `http` exposed services (since they're not local)
 
 ## [1.5.2] - 2021-09-17
 
