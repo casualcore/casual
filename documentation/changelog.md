@@ -6,6 +6,7 @@ This is the changelog for `casual` and all changes are listed in this document.
 ## [1.5.3] - 2021-09-22
 
 ### Fixes
+- http - outbound handle discovery (_http-services_ are treated _external_ as they should)
 - xatmi - support for conversations (primarely targeting COBOL)
 - gateway - fixed so outbound holds unique connections per service
 - discovery - service-manager only replies with _local_ services
@@ -36,6 +37,10 @@ This is the changelog for `casual` and all changes are listed in this document.
     `casual` tries to conform to the (possible) new configuration.
   - **attention:** under (heavy) load there might be some noise still, we aim to fix this in _stage 2_
 - cli - version information without a domain running
+- cli - added option to reopen _casual.log_. 
+   Prints information of all processes that `casual` are not sure can handle a `SIGHUP`, hence it easier for users
+   to _automate_ log-rotation.
+- cli - make `casual` cli user 'locale' aware, to play nicer with `unix` tools, such as `sort`
 - cli - added value `auto` to option `--header`. With `auto`, headers are **only** used if tty is bound to stdout
 - gateway - handle queue- and service information in connection state viewable in cli
 - xatmi - extended - function to browse instance services

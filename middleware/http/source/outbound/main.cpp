@@ -11,6 +11,8 @@
 #include "http/outbound/handle.h"
 #include "http/outbound/request.h"
 
+#include "domain/discovery/api.h"
+
 #include "common/instance.h"
 #include "common/communication/device.h"
 #include "common/communication/instance.h"
@@ -63,6 +65,9 @@ namespace casual
 
                   communication::device::blocking::send( communication::instance::outbound::service::manager::device(), message);
                }
+
+               // register to answer outbound discoveries .
+               casual::domain::discovery::outbound::registration();
 
                // connect to domain
                common::communication::instance::whitelist::connect();

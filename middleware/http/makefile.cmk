@@ -40,8 +40,9 @@ common_outbound_archive = make.LinkArchive( 'bin/casual-http-outbound-common',
        make.Compile( 'source/outbound/configuration.cpp'),
        make.Compile( 'source/outbound/transform.cpp'),
        make.Compile( 'source/outbound/state.cpp'),
-       
-     ])
+       make.Compile( 'source/outbound/request.cpp'),
+       make.Compile( 'source/outbound/curl.cpp'),
+    ])
 
 common_inbound_library = make.LinkLibrary( 'bin/casual-http-inbound-common',
    [
@@ -60,12 +61,11 @@ target = make.LinkExecutable( 'bin/casual-http-outbound',
    [
       make.Compile( 'source/outbound/main.cpp'),
       make.Compile( 'source/outbound/handle.cpp'),
-      make.Compile( 'source/outbound/request.cpp'),
-      make.Compile( 'source/outbound/curl.cpp'),
    ],
    [ 
       common_outbound_archive,
       common_archive,
+      'casual-domain-discovery',
       'casual-common', 
       'curl'
    ])
@@ -87,6 +87,7 @@ make.LinkUnittest( 'unittest/bin/test-http',
       'casual-domain-unittest',
       'casual-unittest',
       'casual-xatmi',
+      'casual-domain-discovery',
       'curl'
    ])  
    

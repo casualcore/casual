@@ -9,6 +9,8 @@
 #include "http/outbound/request.h"
 #include "http/common.h"
 
+#include "domain/message/discovery.h"
+
 #include "common/communication/instance.h"
 #include "common/message/handle.h"
 
@@ -29,7 +31,7 @@ namespace casual
                   {
                      return [&state]( message::service::call::callee::Request& message)
                      {
-                        Trace trace{ "http::outbound::manager::local::handle::service::call::Request"};
+                        Trace trace{ "http::outbound::handle::local::service::call::request"};
                         log::line( verbose::log, "message: ", message);
 
                         auto send_error_reply = []( auto& message, auto code)
@@ -81,6 +83,36 @@ namespace casual
                   }
                } // service::call
 
+               namespace discovery
+               {
+                  auto request( const State& state)
+                  {
+                     return [&state]( casual::domain::message::discovery::Request& message)
+                     {
+                        Trace trace{ "http::outbound::handle::local::discovery::request"};
+                        log::line( verbose::log, "message: ", message);
+
+                        auto reply = common::message::reverse::type( message, process::handle());
+                        reply.domain = state.identity;
+
+                        reply.content.services = algorithm::transform( state.lookup, []( auto& pair)
+                        {
+                           auto result = casual::domain::message::discovery::reply::Service{
+                              std::get< 0>( pair),
+                              "http",
+                              common::service::transaction::Type::none};
+
+                           result.property.hops = 1;
+                           result.property.type = decltype( result.property.type)::configured;
+
+                           return result;
+                        });                     
+
+                        communication::device::blocking::optional::send( message.process.ipc, reply);
+                     };
+                  }
+               } // discovery
+
             } // <unnamed>
          } // local
 
@@ -91,7 +123,8 @@ namespace casual
             auto& device = communication::ipc::inbound::device();
             return message::dispatch::handler( device,
                message::handle::defaults( device),
-               local::service::call::request( state));
+               local::service::call::request( state),
+               local::discovery::request( state));
          }
       } // internal
 

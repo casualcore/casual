@@ -16,6 +16,7 @@
 #include "common/pimpl.h"
 #include "common/message/service.h"
 #include "common/message/pending.h"
+#include "common/domain.h"
 
 #include <string>
 #include <memory>
@@ -204,6 +205,8 @@ namespace casual
          private:
             common::message::event::service::Calls m_message;
          } metric;
+
+         common::domain::Identity identity{ "http"};
 
       };
    } // http::outbound
