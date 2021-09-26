@@ -1,9 +1,9 @@
-ngx_module_name=ngx_http_xatmi_module
+ngx_module_name=ngx_http_casual_module
 ngx_module_type=HTTP
 ngx_module_srcs="$ngx_addon_dir/$ngx_module_name.c"
-ngx_module_deps="$ngx_addon_dir/helper.h"
+ngx_module_deps="$ngx_addon_dir/casual_glue.h"
 ngx_module_incs="$ngx_addon_dir"
-ngx_module_libs="-L$ngx_addon_dir/bin -lhelper"
+ngx_module_libs="-L$ngx_addon_dir/bin -lcasual_glue"
 
 . auto/module
 
