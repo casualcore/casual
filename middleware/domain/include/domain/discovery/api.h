@@ -14,16 +14,16 @@ namespace casual
 {
    namespace domain::discovery
    {
-      namespace inbound
+      namespace internal
       {  
-         //! register for discovery (to answer an outbound discvery)
+         //! register for discovery (to expose internal/local services/queueues)
          //! @attention will _flush::send_ using ipc::inbound::device()
          //! @{
          void registration();
          void registration( const common::process::Handle& process);
          //! @}
 
-      } // inbound
+      } // internal
 
       using Request = message::discovery::Request;
       using Reply = message::discovery::Reply;
@@ -36,9 +36,9 @@ namespace casual
       //! @attention will _flush::send_ using ipc::inbound::device()
       correlation_type request( const Request& request);
       
-      namespace outbound
+      namespace external
       {
-         using Directive = message::discovery::outbound::Registration::Directive;
+         using Directive = message::discovery::external::Registration::Directive;
 
          //! register for discovery (can send discovery to others)
          //! @attention will _flush::send_ using ipc::inbound::device()
@@ -47,17 +47,17 @@ namespace casual
          void registration( const common::process::Handle& process, Directive directive = Directive::regular);
          //! @}
 
-         using Request = message::discovery::outbound::Request;
-         using Reply = message::discovery::outbound::Reply;
+         using Request = message::discovery::external::Request;
+         using Reply = message::discovery::external::Reply;
 
-         //! sends an outbound discovery request to casual-domain-discovery, 
-         //! that will "ask" all regestrated _outbounds_, and accumulate one reply.
+         //! sends an external discovery request to casual-domain-discovery, 
+         //! that will "ask" all regestrated _externals_, and accumulate one reply.
          //! @returns the correlation id.
          //! @attention reply will be sent to the process in the request.
          //! @attention will _flush::send_ using ipc::inbound::device()
          correlation_type request( const Request& request);
 
-      } // outbound
+      } // external
 
       namespace rediscovery
       {

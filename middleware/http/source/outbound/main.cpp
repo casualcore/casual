@@ -66,8 +66,8 @@ namespace casual
                   communication::device::blocking::send( communication::instance::outbound::service::manager::device(), message);
                }
 
-               // register to answer outbound discoveries .
-               casual::domain::discovery::outbound::registration();
+               // register to answer external discoveries.
+               casual::domain::discovery::external::registration();
 
                // connect to domain
                common::communication::instance::whitelist::connect();

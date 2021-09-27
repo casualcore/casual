@@ -378,6 +378,26 @@ namespace casual
 
                         };
                      }
+                     
+                     namespace advertised
+                     {
+                        //! reply with what we got...
+                        auto request( const State& state)
+                        {
+                           return [&state]( const casual::domain::message::discovery::external::advertised::Request& message)
+                           {
+                              Trace trace{ "http::outbound::handle::local::discovery::advertised::request"};
+                              log::line( verbose::log, "message: ", message);
+
+                              auto reply = common::message::reverse::type( message, common::process::handle());
+                              reply.content.services = algorithm::transform( state.lookup.services(), predicate::adapter::first());
+                              reply.content.queues = algorithm::transform( state.lookup.queues(), predicate::adapter::first());
+
+                              communication::device::blocking::optional::send( message.process.ipc, reply);
+                           };
+                        }
+                     } // advertised
+
                   } // discovery
 
                   namespace rediscover
@@ -476,7 +496,7 @@ namespace casual
                            }
 
                            // register to domain discovery
-                           casual::domain::discovery::outbound::registration( common::process::handle());                           
+                           casual::domain::discovery::external::registration( common::process::handle());                           
 
                            log::line( verbose::log, "information: ", *information);
                         }
@@ -755,6 +775,7 @@ namespace casual
 
             // discover
             local::internal::domain::discovery::request( state),
+            local::internal::domain::discovery::advertised::request( state),
             local::internal::domain::rediscover::request( state),
 
             local::internal::process::exit( state),

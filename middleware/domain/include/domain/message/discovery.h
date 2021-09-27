@@ -17,16 +17,10 @@ namespace casual
    namespace domain::message::discovery
    {
 
-      namespace inbound
+      namespace internal
       {
-         using Registration = common::message::basic_request< common::message::Type::domain_discovery_inbound_registration>;
-      }
-
-      namespace outbound
-      {
-         
-      }
-
+         using Registration = common::message::basic_request< common::message::Type::domain_discovery_internal_registration>;
+      } // internal
 
       namespace request
       {
@@ -50,6 +44,13 @@ namespace casual
          {
             std::vector< std::string> services;
             std::vector< std::string> queues;
+
+            inline Content& operator += ( Content rhs)
+            {
+               common::algorithm::append_unique( std::move( rhs.services), services);
+               common::algorithm::append_unique( std::move( rhs.queues), queues);
+               return *this;
+            };
 
             CASUAL_CONST_CORRECT_SERIALIZE(
                CASUAL_SERIALIZE( services);
@@ -134,9 +135,9 @@ namespace casual
       };
 
 
-      namespace outbound
+      namespace external
       {
-         using base_registration = common::message::basic_request< common::message::Type::domain_discovery_outbound_registration>;
+         using base_registration = common::message::basic_request< common::message::Type::domain_discovery_external_registration>;
          struct Registration : base_registration
          {
             using base_registration::base_registration;
@@ -156,7 +157,7 @@ namespace casual
          };
 
 
-         using base_request = common::message::basic_request< common::message::Type::domain_discovery_outbound_request>;
+         using base_request = common::message::basic_request< common::message::Type::domain_discovery_external_request>;
          struct Request : base_request
          {
             using base_request::base_request;
@@ -169,39 +170,47 @@ namespace casual
             )
          };
 
-         namespace reply
-         {
-            struct Outbound
-            {
-               common::process::Handle process;
-               discovery::reply::Content content;
 
-               CASUAL_CONST_CORRECT_SERIALIZE(
-                  CASUAL_SERIALIZE( process);
-                  CASUAL_SERIALIZE( content);
-               )
-            };
-         }
-
-         using base_reply = common::message::basic_message< common::message::Type::domain_discovery_outbound_reply>;
+         using base_reply = common::message::basic_message< common::message::Type::domain_discovery_external_reply>;
          struct Reply : base_reply
          {
             using base_reply::base_reply;
 
-            //std::vector< reply::Outbound> outbounds;
-
             CASUAL_CONST_CORRECT_SERIALIZE(
                base_reply::serialize( archive);
-               //CASUAL_SERIALIZE( outbounds);
             )
          };
+
+         namespace advertised
+         {
+            using Request = common::message::basic_request< common::message::Type::domain_discovery_external_advertised_request>;
+
+            using base_reply = common::message::basic_request< common::message::Type::domain_discovery_external_advertised_reply>;
+
+            using Content = discovery::request::Content;
+
+            //! Contains what externals has advertised
+            struct Reply : base_reply
+            {
+               using base_reply::base_reply;
+
+               Content content;
+
+               CASUAL_CONST_CORRECT_SERIALIZE(
+                  base_reply::serialize( archive);
+                  CASUAL_SERIALIZE( content);
+               )
+            };
+
+            
+         } // advertised
          
-      } // outbound
+      } // external
 
       namespace rediscovery
       {
-         using Request = common::message::basic_request< common::message::Type::domain_discovery_rediscovery_request>;
-         using Reply = common::message::basic_message< common::message::Type::domain_discovery_rediscovery_reply>;
+         using Request = common::message::basic_request< common::message::Type::domain_discovery_external_rediscovery_request>;
+         using Reply = common::message::basic_message< common::message::Type::domain_discovery_external_rediscovery_reply>;
       } // rediscovery
 
    } // domain::message::discovery 
@@ -212,7 +221,10 @@ namespace casual
       struct type_traits< casual::domain::message::discovery::Request> : detail::type< casual::domain::message::discovery::Reply> {};
 
       template<>
-      struct type_traits< casual::domain::message::discovery::outbound::Request> : detail::type< casual::domain::message::discovery::outbound::Reply> {};
+      struct type_traits< casual::domain::message::discovery::external::Request> : detail::type< casual::domain::message::discovery::external::Reply> {};
+
+      template<>
+      struct type_traits< casual::domain::message::discovery::external::advertised::Request> : detail::type< casual::domain::message::discovery::external::advertised::Reply> {};
 
       template<>
       struct type_traits< casual::domain::message::discovery::rediscovery::Request> : detail::type< casual::domain::message::discovery::rediscovery::Reply> {};

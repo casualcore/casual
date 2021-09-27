@@ -85,6 +85,7 @@ namespace casual
 
                namespace discovery
                {
+                  //! reply with the intersection of requested and what we got...
                   auto request( const State& state)
                   {
                      return [&state]( casual::domain::message::discovery::Request& message)
@@ -95,22 +96,39 @@ namespace casual
                         auto reply = common::message::reverse::type( message, process::handle());
                         reply.domain = state.identity;
 
-                        reply.content.services = algorithm::transform( state.lookup, []( auto& pair)
+                        reply.content.services = algorithm::accumulate( message.content.services, decltype( reply.content.services){}, [&state]( auto result, auto& name)
                         {
-                           auto result = casual::domain::message::discovery::reply::Service{
-                              std::get< 0>( pair),
-                              "http",
-                              common::service::transaction::Type::none};
-
-                           result.property.hops = 1;
-                           result.property.type = decltype( result.property.type)::configured;
+                           if( algorithm::find( state.lookup, name))
+                           {
+                              auto& service = result.emplace_back( name, "http", common::service::transaction::Type::none);
+                              service.property.hops = 1;
+                              service.property.type = decltype( service.property.type)::configured;
+                           }
 
                            return result;
-                        });                     
+                        });                   
 
                         communication::device::blocking::optional::send( message.process.ipc, reply);
                      };
                   }
+
+                  namespace advertised
+                  {
+                     //! reply with what we got...
+                     auto request( const State& state)
+                     {
+                        return [&state]( const casual::domain::message::discovery::external::advertised::Request& message)
+                        {
+                           Trace trace{ "http::outbound::handle::local::discovery::advertised::request"};
+                           log::line( verbose::log, "message: ", message);
+
+                           auto reply = common::message::reverse::type( message, process::handle());
+                           reply.content.services = algorithm::transform( state.lookup, predicate::adapter::first());
+
+                           communication::device::blocking::optional::send( message.process.ipc, reply);
+                        };
+                     }
+                  } // advertised
                } // discovery
 
             } // <unnamed>
@@ -124,7 +142,8 @@ namespace casual
             return message::dispatch::handler( device,
                message::handle::defaults( device),
                local::service::call::request( state),
-               local::discovery::request( state));
+               local::discovery::request( state),
+               local::discovery::advertised::request( state));
          }
       } // internal
 

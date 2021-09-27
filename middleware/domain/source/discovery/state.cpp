@@ -23,62 +23,69 @@ namespace casual
             return out << "<unknown>";
          }
 
-         std::ostream& operator << ( std::ostream& out, Agent::Bound value)
+         namespace agent
          {
-            return out << "bla";
-         }
+            std::ostream& operator << ( std::ostream& out, Bound value)
+            {
+               switch( value)
+               {
+                  case Bound::internal: return out << "internal";
+                  case Bound::external: return out << "external";
+                  case Bound::external_rediscover: return out << "external_rediscover";
+               }
+               return out << "<unknown>";
+            }            
+         } // agent
+
             
-         void Agents::registration( const message::discovery::inbound::Registration& message)
+         void Agents::registration( const message::discovery::internal::Registration& message)
          {
             // we only add 'new' processes
             if( algorithm::find( m_agents, message.process))
                return;
 
-            m_agents.push_back( Agent{ Agent::Bound::inbound, message.process});
+            m_agents.emplace_back( agent::Bound::internal, message.process);
             algorithm::sort( m_agents);
          }
 
-         void Agents::registration( const message::discovery::outbound::Registration& message)
+         void Agents::registration( const message::discovery::external::Registration& message)
          {
             // we only add 'new' processes
             if( algorithm::find( m_agents, message.process))
                return;
 
             if( message.directive == decltype( message.directive)::rediscovery)
-                m_agents.push_back( Agent{ Agent::Bound::outbound_rediscover, message.process});
+                m_agents.emplace_back( agent::Bound::external_rediscover, message.process);
             else 
-               m_agents.push_back( Agent{ Agent::Bound::outbound, message.process});
+               m_agents.emplace_back( agent::Bound::external, message.process);
             algorithm::sort( m_agents);
          }
 
-         Agents::const_range_type Agents::inbounds() const
+         Agents::const_range_type Agents::internal() const
          {
             return range::make( 
                std::begin( m_agents),
-               std::begin( algorithm::find( m_agents, Agent::Bound::outbound)));
+               std::begin( algorithm::find( m_agents, agent::Bound::external)));
          }
 
-         Agents::const_range_type Agents::outbounds() const
+         Agents::const_range_type Agents::external() const
          {
             return range::make( 
-               std::begin( algorithm::find( m_agents, Agent::Bound::outbound)),
+               std::begin( algorithm::find( m_agents, agent::Bound::external)),
                std::end( m_agents));
          }
 
-         Agents::const_range_type Agents::rediscovers() const
+         Agents::const_range_type Agents::rediscover() const
          {
             return range::make( 
-               std::begin( algorithm::find( m_agents, Agent::Bound::outbound_rediscover)),
+               std::begin( algorithm::find( m_agents, agent::Bound::external_rediscover)),
                std::end( m_agents));
          }
 
 
          void Agents::remove( common::strong::process::id pid)
          {
-            common::algorithm::trim( m_agents, common::algorithm::remove_if( m_agents, [pid]( auto& point)
-            {
-               return point.process == pid;
-            }));
+            common::algorithm::trim( m_agents, common::algorithm::remove( m_agents, pid));
          }
 
 

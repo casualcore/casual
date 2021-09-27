@@ -22,12 +22,12 @@ namespace casual
 
       void discover( std::vector< std::string> services, std::vector< std::string> queues)
       {
-         casual::domain::discovery::outbound::Request request{ common::process::handle()};
+         casual::domain::discovery::external::Request request{ common::process::handle()};
          request.content.services = std::move( services);
          request.content.queues = std::move( queues);
-         if( auto correlation = casual::domain::discovery::outbound::request( request))
+         if( auto correlation = casual::domain::discovery::external::request( request))
          {
-            casual::domain::discovery::outbound::Reply reply;
+            casual::domain::discovery::external::Reply reply;
             common::communication::device::blocking::receive( common::communication::ipc::inbound::device(), reply, correlation);
          }
       }

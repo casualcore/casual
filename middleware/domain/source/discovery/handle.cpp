@@ -111,27 +111,27 @@ namespace casual
 
             } // detail
 
-            namespace inbound
+            namespace internal
             {
                auto registration( State& state)
                {
-                  return [&state]( const message::discovery::inbound::Registration& message)
+                  return [&state]( const message::discovery::internal::Registration& message)
                   {
-                     Trace trace{ "discovery::handle::local::inbound::registration"};
+                     Trace trace{ "discovery::handle::local::internal::registration"};
                      log::line( verbose::log, "message: ", message);
 
                      state.agents.registration( message);
                   };
                }
-            } // inbound
+            } // internal
 
-            namespace outbound
+            namespace external
             {
                auto registration( State& state)
                {
-                  return [&state]( const message::discovery::outbound::Registration& message)
+                  return [&state]( const message::discovery::external::Registration& message)
                   {
-                     Trace trace{ "discovery::handle::local::outbound::registration"};
+                     Trace trace{ "discovery::handle::local::external::registration"};
                      log::line( verbose::log, "message: ", message);
 
                      state.agents.registration( message);
@@ -144,9 +144,9 @@ namespace casual
 
                auto request( State& state)
                {
-                  return [&state]( message::discovery::outbound::Request&& message)
+                  return [&state]( message::discovery::external::Request&& message)
                   {
-                     Trace trace{ "discovery::handle::local::outbound::request"};
+                     Trace trace{ "discovery::handle::local::external::request"};
                      log::line( verbose::log, "message: ", message);
 
                      if( state.runlevel > decltype( state.runlevel())::running)
@@ -162,15 +162,19 @@ namespace casual
                      message::discovery::Request request{ process::handle()};
                      request.content = std::move( message.content);
 
-                     // send request to all outbounds, if any.
-                     auto pending = detail::send::requests( state, state.agents.outbounds(), request);
+                     // send request to all externals, if any.
+                     auto pending = detail::send::requests( state, state.agents.external(), request);
 
                      // note: everything captured needs to by value (besides State if used)
                      state.coordinate.discovery( std::move( pending), [destination]( auto replies, auto failed)
                      {
-                        Trace trace{ "discovery::handle::local::outbound::request coordinate"};
+                        Trace trace{ "discovery::handle::local::external::request coordinate"};
+                        
+                        // we could be the sender, if so, discard the reply.
+                        if( destination.ipc == common::process::handle().ipc)
+                           return;
 
-                        message::discovery::outbound::Reply message;
+                        message::discovery::external::Reply message;
                         message.correlation = destination.correlation;
 
                         communication::ipc::flush::optional::send( destination.ipc, message);
@@ -178,7 +182,24 @@ namespace casual
                   };
                }
 
-            } // outbound
+               namespace advertised
+               {
+                  // message::discovery::external::advertised::Reply
+
+                  auto reply( State& state)
+                  {
+                     return [&state]( message::discovery::external::advertised::Reply&& message)
+                     {
+                        Trace trace{ "discovery::handle::local::external::advertised::reply"};
+                        log::line( verbose::log, "message: ", message);
+
+                        state.coordinate.advertised( std::move( message));
+                     };
+                  }
+                  
+               } // advertised
+
+            } // external
 
             auto request( State& state)
             {
@@ -225,7 +246,7 @@ namespace casual
                   if( message.directive == decltype( message.directive)::forward)
                      handle_request( state, state.agents.all(), message);
                   else
-                     handle_request( state, state.agents.inbounds(), message);
+                     handle_request( state, state.agents.internal(), message);
                };
             }
 
@@ -260,7 +281,7 @@ namespace casual
                      // mutate the message and extract 'reply destination', and set our self as receiver
                      auto destination = local::extract::destination( message);
 
-                     auto pending = algorithm::accumulate( state.agents.rediscovers(), state.coordinate.rediscovery.empty_pendings(), [&message]( auto result, const auto& point)
+                     auto pending = algorithm::accumulate( state.agents.rediscover(), state.coordinate.rediscovery.empty_pendings(), [&message]( auto result, const auto& point)
                      {
                         if( auto correlation = communication::ipc::flush::optional::send( point.process.ipc, message))
                            result.emplace_back( correlation, point.process.pid);
@@ -293,22 +314,68 @@ namespace casual
                
             } // rediscovery
 
-            namespace event::process
+            namespace event
             {
-               auto exit( State& state)
+               namespace process
                {
-                  return [&state]( const common::message::event::process::Exit& event)
+                  
+                  auto exit( State& state)
                   {
-                     Trace trace{ "discovery::handle::local::event::process::exit"};
-                     log::line( verbose::log, "event: ", event);
+                     return [&state]( const common::message::event::process::Exit& event)
+                     {
+                        Trace trace{ "discovery::handle::local::event::process::exit"};
+                        log::line( verbose::log, "event: ", event);
 
-                     state.agents.remove( event.state.pid);
-                     state.coordinate.discovery.failed( event.state.pid);
-                     state.coordinate.rediscovery.failed( event.state.pid);
-                  };
-               }
+                        state.agents.remove( event.state.pid);
+                        state.coordinate.discovery.failed( event.state.pid);
+                        state.coordinate.rediscovery.failed( event.state.pid);
+                     };
+                  }
+               } // process
 
-            } // event::process
+               namespace discoverable
+               {
+                  auto available( State& state)
+                  {
+                     return [&state]( const common::message::event::discoverable::Avaliable& event)
+                     {
+                        Trace trace{ "queue::manager::handle::local::event::discoverable::available"};
+                        common::log::line( verbose::log, "event: ", event);
+
+                        // we know there's a new _discoverable_ available.
+                        // collect all known advertised external services/queues, and when we get'em
+                        // we discover these
+
+                        auto pending = algorithm::accumulate( state.agents.external(), state.coordinate.advertised.empty_pendings(), []( auto result, const auto& point)
+                        {   
+                           if( auto correlation = communication::ipc::flush::optional::send( point.process.ipc, message::discovery::external::advertised::Request{ common::process::handle()}))
+                              result.emplace_back( correlation, point.process.pid);
+
+                           return result;
+                        });
+
+                        // note: everything captured needs to by value (besides State if used)
+                        state.coordinate.advertised( std::move( pending), [&state]( auto replies, auto failed)
+                        {
+                           Trace trace{ "queue::manager::handle::local::event::discoverable::available replied"};
+
+                           message::discovery::external::Request request{ common::process::handle()};
+                           request.content = algorithm::accumulate( replies, message::discovery::request::Content{}, []( auto result, auto& reply)
+                           {
+                              return result += std::move( reply.content);
+                           });
+
+                           common::log::line( verbose::log, "request: ", request);
+
+                           // we use the regular external handler to send and coordinate external::Request.
+                           local::external::request( state)( std::move( request));
+                        });
+                     };
+                  }
+                  
+               } // discoverable
+
+            } // event
 
             namespace shutdown
             {
@@ -331,10 +398,13 @@ namespace casual
       {
          return {
             common::message::handle::defaults( common::communication::ipc::inbound::device()),
-            common::event::listener( local::event::process::exit( state)),
-            local::outbound::registration( state),
-            local::outbound::request( state),
-            local::inbound::registration( state),
+            common::event::listener( 
+               local::event::process::exit( state),
+               local::event::discoverable::available( state)),
+            local::external::registration( state),
+            local::external::request( state),
+            local::external::advertised::reply( state),
+            local::internal::registration( state),
             local::request( state),
             local::reply( state),
             local::rediscovery::request( state),

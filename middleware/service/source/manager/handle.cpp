@@ -126,13 +126,13 @@ namespace casual
                   {
                      Trace trace{ "service::manager::handle::local::discovery::send"};
 
-                     casual::domain::message::discovery::outbound::Request request{ common::process::handle()};
+                     casual::domain::message::discovery::external::Request request{ common::process::handle()};
                      request.correlation = correlation;
                      request.content.services = std::move( services);
 
                      log::line( verbose::log, "request: ", request);
 
-                     return casual::domain::discovery::outbound::request( std::move( request));
+                     return casual::domain::discovery::external::request( std::move( request));
                   }
                }
 
@@ -783,7 +783,7 @@ namespace casual
                      auto reply( State& state)
                      {
 
-                        return [&state]( casual::domain::message::discovery::outbound::Reply& message)
+                        return [&state]( casual::domain::message::discovery::external::Reply& message)
                         {
                            Trace trace{ "service::manager::handle::gateway::discover::Reply"};
                            common::log::line( verbose::log, "message: ", message);

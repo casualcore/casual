@@ -23,11 +23,11 @@ namespace casual
 
          manager::unittest::Process manager;
 
-         auto correlation = discovery::outbound::request( message::discovery::outbound::Request{ process::handle()});
+         auto correlation = discovery::external::request( message::discovery::external::Request{ process::handle()});
 
          // wait for the reply
          {
-            message::discovery::outbound::Reply reply;
+            message::discovery::external::Reply reply;
             communication::device::blocking::receive( communication::ipc::inbound::device(), reply);
             EXPECT_TRUE( reply.correlation == correlation);
          }
@@ -57,9 +57,9 @@ namespace casual
          manager::unittest::Process manager;
 
          // we register our self
-         discovery::outbound::registration();
+         discovery::external::registration();
 
-         auto correlation = discovery::outbound::request( message::discovery::outbound::Request{ process::handle()});
+         auto correlation = discovery::external::request( message::discovery::external::Request{ process::handle()});
 
          // wait for the request, and send reply reply
          {
@@ -71,7 +71,7 @@ namespace casual
 
          // wait for the reply
          {
-            message::discovery::outbound::Reply reply;
+            message::discovery::external::Reply reply;
             communication::device::blocking::receive( communication::ipc::inbound::device(), reply);
             EXPECT_TRUE( reply.correlation == correlation);
          }
@@ -84,7 +84,7 @@ namespace casual
          manager::unittest::Process manager;
 
          // we register our self
-         discovery::inbound::registration();
+         discovery::internal::registration();
 
          auto correlation = discovery::request( message::discovery::Request{ process::handle()});
 
@@ -112,11 +112,11 @@ namespace casual
          manager::unittest::Process manager;
 
          // we register our self
-         discovery::outbound::registration();
+         discovery::external::registration();
          // we fake our next registration...
-         discovery::outbound::registration( process::Handle{ strong::process::id{ process::id().value() + 1}, process::handle().ipc});
+         discovery::external::registration( process::Handle{ strong::process::id{ process::id().value() + 1}, process::handle().ipc});
 
-         auto correlation = discovery::outbound::request( message::discovery::outbound::Request{ process::handle()});
+         auto correlation = discovery::external::request( message::discovery::external::Request{ process::handle()});
 
          auto handle_request = []()
          {
@@ -132,7 +132,7 @@ namespace casual
 
          // wait for the reply
          {
-            message::discovery::outbound::Reply reply;
+            message::discovery::external::Reply reply;
             communication::device::blocking::receive( communication::ipc::inbound::device(), reply);
             EXPECT_TRUE( reply.correlation == correlation);
          }
@@ -145,9 +145,9 @@ namespace casual
          manager::unittest::Process manager;
 
          // we register our self
-         discovery::outbound::registration();
+         discovery::external::registration();
          // we fake our next registration...
-         discovery::inbound::registration( process::Handle{ strong::process::id{ process::id().value() + 1}, process::handle().ipc});
+         discovery::internal::registration( process::Handle{ strong::process::id{ process::id().value() + 1}, process::handle().ipc});
 
          auto correlation = discovery::request( [](){
             message::discovery::Request request{ process::handle()};
@@ -186,11 +186,11 @@ namespace casual
          manager::unittest::Process manager;
 
          // we register our self
-         discovery::outbound::registration( discovery::outbound::Directive::rediscovery);
+         discovery::external::registration( discovery::external::Directive::rediscovery);
          // we fake our next registration...
-         discovery::outbound::registration( 
+         discovery::external::registration( 
             process::Handle{ strong::process::id{ process::id().value() + 1}, process::handle().ipc}, 
-            discovery::outbound::Directive::rediscovery);
+            discovery::external::Directive::rediscovery);
 
          auto correlation = discovery::rediscovery::request();
 

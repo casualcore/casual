@@ -28,22 +28,30 @@ namespace casual
          };
          std::ostream& operator << ( std::ostream& out, Runlevel value);
 
-         //! represent an instance that can discover
-         struct Agent
+         namespace agent
          {
             enum struct Bound : short
             {
-               inbound,
-               outbound,
-               outbound_rediscover,
+               internal,
+               external,
+               external_rediscover,
             };
-            friend std::ostream& operator << ( std::ostream& out, Bound value);
+            std::ostream& operator << ( std::ostream& out, Bound value);
 
-            Bound bound{};
+         } // agent
+
+         //! represent an instance that can discover
+         struct Agent
+         {
+            Agent( agent::Bound bound, const common::process::Handle& process)
+               : bound{ bound}, process{ process} {}
+
+            agent::Bound bound{};
             common::process::Handle process;
 
-            inline friend bool operator == ( const Agent& lhs, Bound rhs) { return lhs.bound == rhs;}
+            inline friend bool operator == ( const Agent& lhs, agent::Bound rhs) { return lhs.bound == rhs;}
             inline friend bool operator == ( const Agent& lhs, const common::process::Handle& rhs) { return lhs.process == rhs;}
+            inline friend bool operator == ( const Agent& lhs, common::strong::process::id rhs) { return lhs.process.pid == rhs;}
 
             inline friend bool operator < ( const Agent& lhs, const Agent& rhs) { return lhs.bound < rhs.bound;}
 
@@ -58,12 +66,12 @@ namespace casual
          {
             using const_range_type = common::range::const_type_t< std::vector< state::Agent>>;
             
-            void registration( const message::discovery::inbound::Registration& message);
-            void registration( const message::discovery::outbound::Registration& message);
+            void registration( const message::discovery::internal::Registration& message);
+            void registration( const message::discovery::external::Registration& message);
 
-            const_range_type inbounds() const;
-            const_range_type outbounds() const;
-            const_range_type rediscovers() const;
+            const_range_type internal() const;
+            const_range_type external() const;
+            const_range_type rediscover() const;
 
             inline auto& all() const { return m_agents;}
 
@@ -86,10 +94,12 @@ namespace casual
          {
             common::message::coordinate::fan::Out< message::discovery::Reply, common::strong::process::id> discovery;
             common::message::coordinate::fan::Out< message::discovery::rediscovery::Reply, common::strong::process::id> rediscovery;
+            common::message::coordinate::fan::Out< message::discovery::external::advertised::Reply, common::strong::process::id> advertised;
 
             CASUAL_LOG_SERIALIZE(
                CASUAL_SERIALIZE( discovery);
                CASUAL_SERIALIZE( rediscovery);
+               CASUAL_SERIALIZE( advertised);
             )
 
          } coordinate;

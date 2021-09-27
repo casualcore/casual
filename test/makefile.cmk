@@ -56,6 +56,7 @@ unittest_object = [
     make.Compile( 'unittest/source/domain/test_transaction.cpp'),
     make.Compile( 'unittest/source/domain/test_gateway.cpp'),
     make.Compile( 'unittest/source/domain/gateway/test_reverse.cpp'),
+    make.Compile( 'unittest/source/domain/gateway/test_discovery.cpp'),
     make.Compile( 'unittest/source/domain/test_service.cpp'),
     make.Compile( 'unittest/source/domain/test_assassinate.cpp'),
     
