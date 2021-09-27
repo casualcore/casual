@@ -3,7 +3,7 @@
 domain:
 
   # name of this domain
-  name: md-medium-domainA
+  name: md-domainA
 
   servers:
         

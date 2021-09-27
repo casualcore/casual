@@ -1,9 +1,9 @@
 
-# minimal single domain example
+# single domain example
 
 ## prerequisites
 
-See [domain example]( ../../readme.md)
+See [domain example]( ../readme.md)
 
 
 ## create domain
@@ -16,7 +16,7 @@ Copy the domain setup from the example:
 
 ```bash
 >$ cd <your domain directory>
->$ cp -r $CASAUL_HOME/example/domain/minimal/* .
+>$ cp -r $CASAUL_HOME/documentation/example/domain/single/* .
 ```
 
 Edit `domain.env` so it corresponds to your setup.

@@ -76,36 +76,6 @@ make.LinkArchive( 'executable/bin/dummy',
 # Install
 make.Install( install_bin, dsl.paths().install + '/example/bin')
 
-# domain examples
-make.Install( [ 'domain/readme.md'], dsl.paths().install + '/example/domain')
-
-# single domain minimal example
-make.Install( [ 'domain/single/minimal/readme.md', 'domain/single/minimal/domain.env'], dsl.paths().install + '/example/domain/single/minimal')
-make.Install( [ 'domain/single/minimal/configuration/domain.yaml'], dsl.paths().install + '/example/domain/single/minimal/configuration')
-
-# multi domian minimal example
-make.Install( [ 'domain/multiple/minimal/readme.md'], dsl.paths().install + '/example/domain/multiple/minimal')
-
-make.Install( [ 'domain/multiple/minimal/domain1/domain.env'], dsl.paths().install + '/example/domain/multiple/minimal/domain1')
-make.Install( [ 'domain/multiple/minimal/domain1/configuration/domain.yaml'], dsl.paths().install + '/example/domain/multiple/minimal/domain1/configuration')
-
-make.Install( [ 'domain/multiple/minimal/domain2/domain.env'], dsl.paths().install + '/example/domain/multiple/minimal/domain2')
-make.Install( [ 'domain/multiple/minimal/domain2/configuration/domain.yaml'], dsl.paths().install + '/example/domain/multiple/minimal/domain2/configuration')
-
-
-# multi domian medium example
-make.Install( [ 'domain/multiple/medium/readme.md'], dsl.paths().install + '/example/domain/multiple/medium')
-make.Install( [ 'domain/multiple/medium/diagram/scenario.svg', 'domain/multiple/medium/diagram/scenario.uml'], dsl.paths().install + '/example/domain/multiple/medium/diagram')
-
-make.Install( [ 'domain/multiple/medium/domainA/domain.env'], dsl.paths().install + '/example/domain/multiple/medium/domainA')
-make.Install( [ 'domain/multiple/medium/domainA/configuration/domain.yaml'], dsl.paths().install + '/example/domain/multiple/medium/domainA/configuration')
-
-make.Install( [ 'domain/multiple/medium/domainB/domain.env'], dsl.paths().install + '/example/domain/multiple/medium/domainB')
-make.Install( [ 'domain/multiple/medium/domainB/configuration/domain.yaml'], dsl.paths().install + '/example/domain/multiple/medium/domainB/configuration')
-
-
-
-
 
 
 

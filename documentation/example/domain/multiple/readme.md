@@ -1,5 +1,5 @@
 
-# medium multiple domain example
+# multiple domain example
 
 ## objective
 
@@ -23,7 +23,7 @@ A simplified sequence diagram on what's going on (discovery and transaction rela
 
 ## prerequisites
 
-See [domain example]( ../../readme.md)
+See [domain example]( ../readme.md)
 
 
 ## create domains
@@ -35,21 +35,21 @@ Create a directory where you want your domains to "live".
 The following will be used in this example.
 
 ```bash
->$ mkdir -p $HOME/casual/example/domain/multiple/medium
+>$ mkdir -p $HOME/casual/example/domain/multiple
 ```
     
 Copy the domains setup from the example:
 
 ```bash
->$ cp -r $CASUAL_HOME/example/domain/multiple/medium/* $HOME/casual/example/domain/multiple/medium/
+>$ cp -r $CASUAL_HOME/documentation/example/domain/multiple/* $HOME/casual/example/domain/multiple/
 ```
 
 ### configuration
 
 Each domain has it's configuration in `$CASUAL_DOMAIN_HOME/configuration/domain.yaml`. In our example these will be located at:
 
-* `$HOME/casual/example/domain/multiple/medium/domainA/configuration/domain.yaml`
-* `$HOME/casual/example/domain/multiple/medium/domainB/configuration/domain.yaml`
+* `$HOME/casual/example/domain/multiple/domainA/configuration/domain.yaml`
+* `$HOME/casual/example/domain/multiple/domainB/configuration/domain.yaml`
 
 _The environment variable_ `CASUAL_DOMAIN_HOME` _is the only thing that dictates which domain you're using and working with_
 
@@ -75,7 +75,7 @@ Make sure the required environment settings are sourced.
 *You only have to do this once.*
  
 ```bash
-domainA>$ cd $HOME/casual/example/domain/multiple/medium/domainA
+domainA>$ cd $HOME/casual/example/domain/multiple/domainA
 domainA>$ source domain.env
 ```
 
@@ -95,7 +95,7 @@ In the terminal for domainB.
 ### prepare
 
 ```bash
-domainB>$ cd $HOME/casual/example/domain/multiple/medium/domainB
+domainB>$ cd $HOME/casual/example/domain/multiple/domainB
 domainB>$ source domain.env
 ```
 ### boot
@@ -122,8 +122,8 @@ List connections:
 domainA>$ casual gateway --list-connections
 name               id                                bound  pid    ipc                               runlevel  local            peer           
 -----------------  --------------------------------  -----  -----  --------------------------------  --------  ---------------  ---------------
-md-medium-domainB  0f8a801678b84bc8b068ba94f9de9a08  out    44779  e83f4bb1d45647c6b15d2623ead42242  online    127.0.0.1:59981  127.0.0.1:7772 
-md-medium-domainB  0f8a801678b84bc8b068ba94f9de9a08  in     44793  e3c61a13d97444f5bcc9b5b2de9dcfcf  online    127.0.0.1:7771   127.0.0.1:59980
+md-domainB  0f8a801678b84bc8b068ba94f9de9a08  out    44779  e83f4bb1d45647c6b15d2623ead42242  online    127.0.0.1:59981  127.0.0.1:7772 
+md-domainB  0f8a801678b84bc8b068ba94f9de9a08  in     44793  e3c61a13d97444f5bcc9b5b2de9dcfcf  online    127.0.0.1:7771   127.0.0.1:59980
 ```
 
 We have one inbound and one outbound connection to `domainB`.
@@ -173,8 +173,8 @@ List connections:
 domainB>$ casual gateway --list-connections 
 name               id                                bound  pid    ipc                               runlevel  local            peer           
 -----------------  --------------------------------  -----  -----  --------------------------------  --------  ---------------  ---------------
-md-medium-domainA  473c23883eac40d0867170cb2fa49830  out    44960  026a2c488d6b4a3d90106cee04f3783a  online    127.0.0.1:60018  127.0.0.1:7771 
-md-medium-domainA  473c23883eac40d0867170cb2fa49830  in     44975  64e60b840a8b4e41a10cec6f14a07707  online    127.0.0.1:7772   127.0.0.1:60017
+md-domainA  473c23883eac40d0867170cb2fa49830  out    44960  026a2c488d6b4a3d90106cee04f3783a  online    127.0.0.1:60018  127.0.0.1:7771 
+md-domainA  473c23883eac40d0867170cb2fa49830  in     44975  64e60b840a8b4e41a10cec6f14a07707  online    127.0.0.1:7772   127.0.0.1:60017
 ```
 
 We have one inbound and one outbound connection to `domainA`.

@@ -3,7 +3,7 @@
 domain:
 
   # name of this domain
-  name: multiple-domain-example-domain1
+  name: single-example
       
   servers: 
          
@@ -16,13 +16,5 @@ domain:
       note: Arbitary information of this server
       
 
-  #
-  # gateway configuration
-  #
-  gateway:
-    listeners:
-      # which adress this domain should listen on
-      - address: 127.0.0.1:7771
-  
 
 

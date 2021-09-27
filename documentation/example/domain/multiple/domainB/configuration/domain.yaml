@@ -3,7 +3,7 @@
 domain:
 
   # name of this domain
-  name: md-medium-domainB
+  name: md-domainB
 
   servers: 
       # forward from queueB1 to service 'casual/example/echo' (in
