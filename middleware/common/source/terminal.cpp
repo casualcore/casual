@@ -106,9 +106,18 @@ namespace casual
                   m_verbose{ local::get( environment::variable::name::terminal::verbose, false)},
                   m_precision{ local::get( environment::variable::name::terminal::precision, 3)}
             {
-               // make sure we respect users locale
                if( ! m_porcelain)
-                  std::locale::global( std::locale(""));
+               {
+                  try
+                  {
+                     // attempt to respect users locale
+                     std::locale::global( std::locale{ ""});
+                  }
+                  catch(const std::runtime_error&)
+                  {
+                     // not all systems/libraries supports getting current runtime locale
+                  }
+               }
             }
 
             void Directive::plain()
