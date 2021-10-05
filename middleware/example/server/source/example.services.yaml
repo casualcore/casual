@@ -69,3 +69,12 @@ server:
 
     - name: casual/example/terminate
       function: casual_example_terminate
+
+    - name: casual/example/conversation2
+      function: casual_example_conversation2
+      transaction: join
+
+    - name: casual/example/conversation2_auto
+      function: casual_example_conversation2
+      transaction: auto
+      

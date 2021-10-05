@@ -312,7 +312,27 @@ domain:
          tpfree( buffer);
 
          EXPECT_TRUE( tx_rollback() == TX_OK);
+      }
 
+      // Test disabled for now. There seems to be a somewhat generic "bug"
+      // in casual related to reporting an error because of
+      // illegal flags. Discovered while adding tests for conversational.
+      // Added this test for ordinary tpcall services, and the same
+      // problem appears. Invalid flags should give TPEINVAL, but gives
+      // TPESYSTEM. Possibly related to the exception raised in Flags::convert().
+      TEST( casual_xatmi, DISABLED_tpcall_service_echo_invalid_flag__expect_TPEINVAL)
+      {
+         common::unittest::Trace trace;
+
+         auto domain = local::domain();
+
+         auto buffer = local::allocate( 128);
+         auto len = tptypes( buffer, nullptr, nullptr);
+
+         EXPECT_TRUE( tpcall( "casual/example/echo", buffer, 128, &buffer, &len, 0) == -1);
+         EXPECT_TRUE( tperrno == TPEINVAL) << "tperrno: " << tperrnostring( tperrno);
+
+         tpfree( buffer);
       }
 
       TEST( casual_xatmi, no_trid__tpcall_service_forward_echo__auto_tran____expect_TPESVCERR)

@@ -61,7 +61,7 @@ unittest_object = [
     make.Compile( 'unittest/source/domain/test_assassinate.cpp'),
     
     # disabled... Need a total rework of conversation (and service call/callee also)
-    # Compile( 'unittest/source/domain/xatmi/test_conversation.cpp'),
+    make.Compile( 'unittest/source/domain/xatmi/test_conversation.cpp'),
 ]
 
 # only build http test cases if the enviornment is set up
