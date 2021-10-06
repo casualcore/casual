@@ -22,9 +22,9 @@
 
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <fcntl.h>
 
 #include <utility>
+#include <filesystem>
 
 
 namespace casual
@@ -80,10 +80,24 @@ namespace casual
 
       Handle::~Handle() = default;
 
-
-      Address::Address( strong::ipc::id ipc)
+      namespace local
       {
-         const auto path = ( environment::directory::ipc() / uuid::string( ipc.value())).string();
+         namespace create
+         {
+            namespace 
+            {
+               auto path( strong::ipc::id id)
+               {
+                  return environment::directory::ipc() / uuid::string( id.value());
+               }
+            } // 
+         } // create
+      } // local
+
+
+      Address::Address( strong::ipc::id id)
+      {
+         const auto path = local::create::path( id).string();
 
          if( path.size() > ( sizeof( m_native.sun_path) - 1))
             code::raise::error( code::casual::invalid_path, "transient directory path too long");
@@ -490,18 +504,17 @@ namespace casual
 
       } // outbound
 
-
       bool exists( strong::ipc::id id)
       {
-         const Address address{ id};
-         return ::access( address.native().sun_path, F_OK) != -1; 
+         std::error_code code{};
+         return std::filesystem::exists( local::create::path( id), code);
       }
 
 
       bool remove( strong::ipc::id id)
       {
-         Address address{ id};
-         return ::unlink( address.native().sun_path) != -1;
+         std::error_code code{};
+         return std::filesystem::remove( local::create::path( id), code);
       }
 
       bool remove( const process::Handle& owner)
