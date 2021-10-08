@@ -891,6 +891,30 @@ namespace casual
 
             auto transform_rmid = []( auto& resource){ return resource.id();};
 
+            struct Result
+            {
+               transaction::Resource* resource{};
+               code::xa code = code::xa::ok;
+            };
+
+            auto check_results = [&transaction]( auto results)
+            {
+               auto [ failed, succeeded] = algorithm::partition( results, []( auto& result){ return result.code != code::xa::ok;});
+
+               if( ! failed)
+                  return;
+
+               auto xa_end = [&transaction]( auto& result)
+               {
+                  result.resource->end( transaction.trid, flag::xa::Flag::no_flags);
+               };
+
+               // xa_end on the succeeded.
+               algorithm::for_each( succeeded, xa_end);
+
+               code::raise::error( range::front( failed).code, "resource start failed: ", algorithm::transform( failed, []( auto& f){ return f.code;}));
+            };
+
             auto start_functor = [&]( auto& involved)
             {
                return [&trid = transaction.trid, flags = flags, &involved]( auto& resource)
@@ -903,16 +927,18 @@ namespace casual
                      return flags;
                   };
 
-                  resource.start( trid, deduce_flag( resource.id(), flags, involved)); 
+                  return Result{ &resource, resource.start( trid, deduce_flag( resource.id(), flags, involved))}; 
                };
             };
+
+            
 
             if( transaction.local())
             {
                log::line( log::category::transaction, "local transaction: ", transaction, " - flags: ", flags);
                
                // local transaction, we don't need to corralate with TM
-               algorithm::for_each( m_resources.fixed, start_functor( transaction.involved()));
+               check_results( algorithm::transform( m_resources.fixed, start_functor( transaction.involved())));
             }
             else 
             {
@@ -922,7 +948,7 @@ namespace casual
                auto involved = local::resource::involved( transaction.trid, 
                   algorithm::transform( m_resources.fixed, transform_rmid));
 
-               algorithm::for_each( m_resources.fixed, start_functor( involved));
+               check_results( algorithm::transform( m_resources.fixed, start_functor( involved)));
             }
 
             // involve all static resources

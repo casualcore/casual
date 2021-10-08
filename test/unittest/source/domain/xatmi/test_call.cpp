@@ -17,8 +17,9 @@
 
 #include "common/message/transaction.h"
 #include "common/transaction/id.h"
-
+#include "common/environment/scoped.h"
 #include "common/execute.h"
+#include "common/unittest/file.h"
 
 
 #include "casual/xatmi.h"
@@ -38,12 +39,42 @@ namespace casual
       {
          namespace
          {
+            namespace configuration
+            {
+               constexpr auto resource = R"(
+resources:
+  - key: rm-mockup
+    server: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/transaction/bin/rm-proxy-casual-mockup
+    xa_struct_name: casual_mockup_xa_switch_static
+    libraries:
+      - casual-mockup-rm
+)";
+            }
+
+            template< typename... C>
+            auto domain( common::file::scoped::Path resource, C&&... configurations) 
+            {
+               auto scoped = common::environment::variable::scoped::set( common::environment::variable::name::resource::configuration, resource.string());
+               auto process = casual::domain::manager::unittest::process( std::forward< C>( configurations)...);
+
+               return std::make_tuple( 
+                  std::move( resource),
+                  std::move( process));
+            }
+
             auto domain()
             {
-               return casual::domain::manager::unittest::Process{{
-R"(
+               return domain( common::unittest::file::temporary::content( ".yaml", configuration::resource), R"(
 domain:
    name: test-default-domain
+
+   transaction:
+      log: ":memory:"
+      resources:
+         - key: rm-mockup
+           name: example-resource-server
+           instances: 1
+           openinfo: "${CASUAL_UNITTEST_OPEN_INFO}"
 
    groups: 
       - name: base
@@ -65,8 +96,9 @@ domain:
         memberships: [ example]
       - path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-server
         memberships: [ example]
-)"
-               }};
+      - path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-resource-server
+        memberships: [ example]
+)");
             }
 
          } // <unnamed>
@@ -259,6 +291,28 @@ domain:
          EXPECT_TRUE( tpcall( "casual/example/echo", buffer, 128, &buffer, &len, 0) == 0) << "tperrno: " << tperrnostring( tperrno);
 
          tpfree( buffer);
+      }
+
+      TEST( casual_xatmi, tpcall_service_resource_echo__rm_xa_start_gives_XA_RBROLLBACK__expect_TPESVCERR)
+      {
+         common::unittest::Trace trace;
+
+         // we set unittest environment variable to set "error"
+         auto scope = common::environment::variable::scoped::set( "CASUAL_UNITTEST_OPEN_INFO", common::string::compose( "--start ", XA_RBROLLBACK));
+
+         auto domain = local::domain();
+
+         ASSERT_TRUE( tx_begin() == TX_OK);
+
+         auto buffer = local::allocate( 128);
+         auto len = tptypes( buffer, nullptr, nullptr);
+
+         EXPECT_TRUE( tpcall( "casual/example/resource/echo", buffer, 128, &buffer, &len, 0) == -1);
+         EXPECT_TRUE( tperrno == TPESVCERR) << "tperrno: " << tperrnostring( tperrno);
+         tpfree( buffer);
+
+         EXPECT_TRUE( tx_rollback() == TX_OK);
+
       }
 
       TEST( casual_xatmi, no_trid__tpcall_service_forward_echo__auto_tran____expect_TPESVCERR)
