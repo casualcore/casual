@@ -31,6 +31,7 @@ lib_configuration = make.LinkLibrary( 'bin/casual-configuration',
         make.Compile( 'source/user/environment.cpp'),
         make.Compile( 'source/model/transform.cpp'),
         make.Compile( 'source/model/load.cpp'),
+        make.Compile( 'source/model/validate.cpp'),
         
         make.Compile( 'source/build/server.cpp'),
         make.Compile( 'source/build/executable.cpp'),
@@ -76,6 +77,7 @@ make.LinkUnittest( 'bin/test-casual-configuration',
         make.Compile( 'unittest/source/user/test_validate.cpp'),
 
         make.Compile( 'unittest/source/user/test_backward.cpp'),
+        make.Compile( 'unittest/source/model/test_validate.cpp'),
    ],
    [ 
        example_archive, 

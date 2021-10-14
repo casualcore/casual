@@ -1175,6 +1175,9 @@ casual queue --clear a b c)"
                         {
                            auto aliases = algorithm::transform( values, []( auto& value)
                            {
+                              if( std::get< 1>( value) < 0)
+                                 code::raise::error( code::casual::invalid_argument, "number of instances cannot be negative");
+                                    
                               manager::admin::model::scale::Alias result;
                               result.name = std::move( std::get< 0>( value));
                               result.instances = std::get< 1>( value);

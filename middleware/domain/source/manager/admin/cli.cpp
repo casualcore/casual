@@ -839,6 +839,9 @@ With supplied configuration files, in the form of glob patterns.
                      auto invoke = []( const std::vector< std::tuple< std::string, int>>& values)
                      {   
                         auto transform = []( auto& value){
+                           if( std::get< 1>( value) < 0)
+                              code::raise::error( code::casual::invalid_argument, "number of instances cannot be negative");
+                              
                            admin::model::scale::Alias result;
                            result.name = std::get< 0>( value);
                            result.instances = std::get< 1>( value);
