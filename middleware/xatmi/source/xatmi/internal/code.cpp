@@ -24,6 +24,9 @@ namespace casual
                if( common::code::is::category< common::code::xatmi>( code))
                   return static_cast< common::code::xatmi>( code.value());
 
+               if( code == common::code::casual::invalid_argument)
+                  return common::code::xatmi::argument;
+
                return common::code::xatmi::system;
             }
 

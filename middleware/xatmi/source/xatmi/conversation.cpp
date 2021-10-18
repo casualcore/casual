@@ -110,7 +110,7 @@ int tpsend( int id, const char* idata, long ilen, long flags, long* event)
    });
 }
 
-int tprecv( int id, char ** odata, long *olen, long bitmask, long* event)
+int tprecv( int id, char ** odata, long *olen, long flags, long* event)
 {
    return local::conversation::wrap( *event, [&](){
 
@@ -125,7 +125,7 @@ int tprecv( int id, char ** odata, long *olen, long bitmask, long* event)
          Flag::signal_restart
       };
 
-      auto flag = valid_flags.convert( bitmask);
+      auto flag = valid_flags.convert( flags);
 
       auto result = casual::common::service::conversation::context().receive(
             id,
