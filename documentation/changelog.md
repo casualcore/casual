@@ -3,12 +3,13 @@ This is the changelog for `casual` and all changes are listed in this document.
 
 ## [Unreleased]
 
-## [1.5.4] - 2021-10-20
+## [1.5.4] - 2021-10-23
 
 ### Fixes
 - transaction - if rm:s report error during xa_start - reply with TPESVCERR
 - configuration|cli - validate - only positive integers for instances
 - cli - version information, lowercase key names, compiler version
+- queue - support queue-peek in c-api
 
 ## [1.5.3] - 2021-09-22
 

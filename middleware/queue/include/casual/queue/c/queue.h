@@ -111,6 +111,17 @@ extern int casual_queue_enqueue( const char* queue, const casual_message_descrip
 extern casual_message_descriptor_t casual_queue_dequeue( const char* queue, casual_selector_descriptor_t selector);
 
 
+/* tries to peek on a message from the given queue
+   @param queue the queue to dequeue from
+   @param selector a descriptor to a previously created selector, or `CASUAL_QUEUE_NO_SELECTOR` if no selector.
+   @returns descriptor to the messages, or -1 if there where some errors (including CASUAL_QE_NO_MESSAGE)
+
+   @attention it's the caller responsibility to call `casual_queue_message_delete` on the returned message descriptor
+     and call `tpfree` on the buffer associated with the descriptor
+ */
+extern casual_message_descriptor_t casual_queue_peek( const char* queue, casual_selector_descriptor_t selector);
+
+
 #ifdef __cplusplus
 }
 #endif
