@@ -43,6 +43,7 @@ extern int casual_service_advertise( const char* svcname, void(*func)(TPSVCINFO 
 // tpunadvertise
 extern int casual_service_unadvertise( const char* svcname);
 
+
 #ifdef __cplusplus
 }
 #endif

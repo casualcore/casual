@@ -45,3 +45,15 @@ bin/
 
 /Default/
 /Release/
+
+#
+# Tag files produced by Global
+#
+GPATH
+GRTAGS
+GSYMS
+GTAGS
+#
+# Visual code workspace
+#
+*.code-workspace

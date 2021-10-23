@@ -11,14 +11,9 @@
 
 namespace casual
 {
-   namespace http
+   namespace http::outbound::transform
    {
-      namespace outbound
-      {
-         namespace transform
-         {
-            State configuration( configuration::Model model);
-         } // transform
-      } // outbound
-   } // http
+      State configuration( configuration::Model model);
+
+   } // http::outbound::transform
 } // casual

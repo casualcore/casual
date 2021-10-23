@@ -30,7 +30,11 @@ namespace casual
       {
          namespace
          {
-            using Manager = casual::domain::manager::unittest::Process;
+            template< typename... C>
+            auto manager( C&&... configurations)
+            {
+               return casual::domain::manager::unittest::process( std::forward< C>( configurations)...);
+            }
 
             namespace call
             {
@@ -119,6 +123,22 @@ domain:
 
             } // configuration
             
+            namespace wait::until::connected
+            {
+               // tool to make sure we're connected to the previous domain, since the 'timing' is not
+               // deterministisc
+               auto to( std::string_view remote)
+               {
+                  auto state = local::state::gateway::until( [remote]( auto& state)
+                  {
+                     return predicate::boolean( algorithm::find_if( state.connections, [remote]( auto& connection)
+                     {
+                        return connection.remote.name == remote;
+                     })); 
+                  });
+               };
+            } // wait::until::connected
+
          } // <unnamed>
       } // local
       
@@ -168,24 +188,12 @@ domain:
                -  address: 127.0.0.1:7720
 )";
 
-         // tool to make sure we're connected to the previous domain, since the 'timing' is not
-         // deterministisc
-         auto connected_to = []( auto remote)
-         {
-            auto state = local::state::gateway::until( [remote]( auto& state)
-            {
-               return predicate::boolean( algorithm::find_if( state.connections, [remote]( auto& connection)
-               {
-                  return connection.remote.name == remote;
-               })); 
-            });
-         };
 
-         local::Manager c{ { local::configuration::base, C}};
-         local::Manager b{ { local::configuration::base, B}};
-         connected_to( "C");
-         local::Manager a{ { local::configuration::base, A}};
-         connected_to( "B");
+         auto c = local::manager( local::configuration::base, C);
+         auto b = local::manager( local::configuration::base, B);
+         local::wait::until::connected::to( "C");
+         auto a = local::manager( local::configuration::base, A);
+         local::wait::until::connected::to( "B");
 
          {
             auto buffer = local::allocate( 128);
@@ -242,24 +250,12 @@ domain:
                -  address: 127.0.0.1:7720
 )";
 
-         // tool to make sure we're connected to the previous domain, since the 'timing' is not
-         // deterministisc
-         auto connected_to = []( auto remote)
-         {
-            auto state = local::state::gateway::until( [remote]( auto& state)
-            {
-               return predicate::boolean( algorithm::find_if( state.connections, [remote]( auto& connection)
-               {
-                  return connection.remote.name == remote;
-               })); 
-            });
-         };
 
-         local::Manager c{ { local::configuration::base, C}};
-         local::Manager b{ { local::configuration::base, B}};
-         connected_to( "C");
-         local::Manager a{ { local::configuration::base, A}};
-         connected_to( "B");
+         auto c = local::manager( local::configuration::base, C);
+         auto b = local::manager( local::configuration::base, B);
+         local::wait::until::connected::to( "C");
+         auto a = local::manager( local::configuration::base, A);
+         local::wait::until::connected::to( "B");
 
          {
             auto buffer = local::allocate( 128);
@@ -269,6 +265,94 @@ domain:
             EXPECT_TRUE( tperrno == TPENOENT) << "tperrno: " << tperrnostring( tperrno);
 
             tpfree( buffer);
+         }
+      }
+
+      TEST( test_domain_gateway_discovery, A_to_B_C__C_is_down__expect_B___boot_C__expect_discovery_to_C__alternate_between_B_and_C)
+      {
+         common::unittest::Trace trace;
+
+         constexpr auto C = R"(
+domain: 
+   name: C
+
+   servers:
+      - path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-server"
+        memberships: [ user]
+   gateway:
+      inbound:
+         groups:
+            -  connections:
+               -  address: 127.0.0.1:7001
+)";
+
+         constexpr auto B = R"(
+domain: 
+   name: B
+
+   servers:
+      - path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-server"
+        memberships: [ user]
+   gateway:
+      inbound:
+         groups:
+            -  connections:
+               -  address: 127.0.0.1:7002
+)";
+
+         constexpr auto A = R"(
+domain: 
+   name: A
+
+   gateway:
+      outbound:
+         groups:
+            -  connections:
+               -  address: 127.0.0.1:7001
+               -  address: 127.0.0.1:7002
+)";
+
+
+         
+         auto b = local::manager( local::configuration::base, B);
+         auto a = local::manager( local::configuration::base, A);
+         local::wait::until::connected::to( "B");
+
+         auto call_domain_name = []()
+         {
+            auto buffer = local::allocate( 128);
+            auto len = tptypes( buffer, nullptr, nullptr);
+            std::string result;
+
+            if( tpcall( "casual/example/domain/name", buffer, 128, &buffer, &len, 0) != -1)
+               result = buffer;
+            
+            tpfree( buffer);
+            return result;
+         };
+
+         algorithm::for_n< 10>( [&call_domain_name]()
+         {
+            EXPECT_TRUE( call_domain_name() == "B");
+         });
+
+         auto c = local::manager( local::configuration::base, C);
+
+         // make sure we're _in_ domain A
+         a.activate();
+         local::wait::until::connected::to( "C");
+
+         {
+            std::map< std::string, int> domain_count;
+
+            algorithm::for_n< 20>( [&]()
+            {
+               domain_count[ call_domain_name()]++;
+            });
+
+            ASSERT_TRUE( domain_count.size() == 2) << CASUAL_NAMED_VALUE( domain_count);
+            EXPECT_TRUE( domain_count.at( "B") > 0);
+            EXPECT_TRUE( domain_count.at( "C") > 0);
          }
       }
 

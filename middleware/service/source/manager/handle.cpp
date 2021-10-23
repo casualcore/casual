@@ -126,13 +126,13 @@ namespace casual
                   {
                      Trace trace{ "service::manager::handle::local::discovery::send"};
 
-                     casual::domain::message::discovery::outbound::Request request{ common::process::handle()};
+                     casual::domain::message::discovery::external::Request request{ common::process::handle()};
                      request.correlation = correlation;
                      request.content.services = std::move( services);
 
                      log::line( verbose::log, "request: ", request);
 
-                     return casual::domain::discovery::outbound::request( std::move( request));
+                     return casual::domain::discovery::external::request( std::move( request));
                   }
                }
 
@@ -756,38 +756,25 @@ namespace casual
                            Trace trace{ "service::manager::handle::domain::discover::Request"};
                            common::log::line( verbose::log, "message: ", message);
 
-                           auto reply = common::message::reverse::type( message);
-
-                           reply.process = common::process::handle();
+                           auto reply = common::message::reverse::type( message, common::process::handle());
                            reply.domain = common::domain::identity();
-
-                           auto known_services = [&]( auto& name)
+                           
+                           reply.content.services = algorithm::accumulate( message.content.services, decltype( reply.content.services){}, [&state]( auto result, auto& name)
                            {
                               auto service = state.service( name);
 
-                              // We don't allow other domains to access or know about our
-                              // admin services.
-                              if( service && service->information.category != common::service::category::admin)
+                              // * We only answer with sequential (local) services
+                              // * We don't allow other domains to access or know about our admin services.
+                              if( service && ! service->instances.sequential.empty() && service->information.category != common::service::category::admin)
                               {
-                                 if( ! service->instances.sequential.empty())
-                                 {
-                                    reply.content.services.emplace_back(
-                                          name,
-                                          service->information.category,
-                                          service->information.transaction);
-                                 }
-                                 else if( ! service->instances.concurrent.empty())
-                                 {
-                                    reply.content.services.emplace_back(
-                                          name,
-                                          service->information.category,
-                                          service->information.transaction,
-                                          service->instances.concurrent.front().property);
-                                 }
+                                 result.emplace_back(
+                                    name,
+                                    service->information.category,
+                                    service->information.transaction);
                               }
-                           };
 
-                           algorithm::for_each( message.content.services, known_services);
+                              return result;
+                           });
 
                            communication::device::blocking::send( message.process.ipc, reply);
                         };
@@ -796,7 +783,7 @@ namespace casual
                      auto reply( State& state)
                      {
 
-                        return [&state]( casual::domain::message::discovery::outbound::Reply& message)
+                        return [&state]( casual::domain::message::discovery::external::Reply& message)
                         {
                            Trace trace{ "service::manager::handle::gateway::discover::Reply"};
                            common::log::line( verbose::log, "message: ", message);

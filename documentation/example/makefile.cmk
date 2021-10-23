@@ -1,0 +1,23 @@
+import casual.make.api as make
+import casual.middleware.make.api as dsl
+
+
+# Install
+
+# domain examples
+make.Install( [ 'domain/readme.md'], dsl.paths().install + '/documentation/example/domain')
+
+# single domain example
+make.Install( [ 'domain/single/readme.md', 'domain/single/domain.env'], dsl.paths().install + '/documentation/example/domain/single')
+make.Install( [ 'domain/single/configuration/domain.yaml'], dsl.paths().install + '/documentation/example/domain/single/configuration')
+
+# multi domain example
+make.Install( [ 'domain/multiple/readme.md'], dsl.paths().install + '/documentation/example/domain/multiple')
+make.Install( [ 'domain/multiple/diagram/scenario.svg', 'domain/multiple/diagram/scenario.uml'], dsl.paths().install + '/documentation/example/domain/multiple/diagram')
+
+make.Install( [ 'domain/multiple/domainA/domain.env'], dsl.paths().install + '/documentation/example/domain/multiple/domainA')
+make.Install( [ 'domain/multiple/domainA/configuration/domain.yaml'], dsl.paths().install + '/documentation/example/domain/multiple/domainA/configuration')
+
+make.Install( [ 'domain/multiple/domainB/domain.env'], dsl.paths().install + '/documentation/example/domain/multiple/domainB')
+make.Install( [ 'domain/multiple/domainB/configuration/domain.yaml'], dsl.paths().install + '/documentation/example/domain/multiple/domainB/configuration')
+

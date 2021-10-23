@@ -18,7 +18,8 @@
 #include "common/code/xatmi.h"
 #include "common/code/casual.h"
 
-
+#include "casual/xatmi/flag.h" 
+#include "common/transaction/context.h"
 
 namespace casual
 {
@@ -80,7 +81,50 @@ namespace casual
 
                         result.len = argument.payload.memory.size();
                         result.cd = argument.descriptor;
-                        result.flags = argument.flags.underlaying();
+                        // argument.flags is the flags sepcified by the caller. This
+                        // is not directly usable as the flags when invoking the
+                        // service. 
+                        // Legal flags on service call are:
+                        // * TPCONV, should be set for a conversational service.
+                        // * TPTRAN, should be set if a transaction is active
+                        // * TPNOREPLY, should be set if caller is not
+                        //   expecting a reply      
+                        // * TPSENDONLY, conversational service and service
+                        //   has control of conversation and can call tpsend().
+                        // * TPRECVONLY, conversational service and caller has
+                        //   control of conversation and can call tpsend(),
+                        //   service shall call tprecv().
+                        // The following code relies on the caller specified flags
+                        // being in argument.flags!
+                        // experimental code!...
+                        //result.flags = argument.flags.underlaying();
+                        casual::common::flag::xatmi::Flags tmp_flags;
+                        if (result.cd != 0) { //assumes cd == 0 for request/response service
+                          tmp_flags |= common::flag::xatmi::Flag::conversation;
+                        }
+
+                        if (casual::common::transaction::Context::instance().info(0)) { 
+                           tmp_flags |= common::flag::xatmi::Flag::in_transaction;
+                        }
+                        if (argument.flags.exist(casual::common::service::invoke::Parameter::Flag::no_reply))  {
+                           tmp_flags |= common::flag::xatmi::Flag::no_reply;
+                        }
+                        // in a tpconnect() one of {TPSENDONLY, TPRECVONLY} is
+                        // required, so we can use the caller flags to set
+                        // corresponding service flags.
+                        // An alternative is to use duplex in the conversation
+                        // context. This might be more "robust" in case
+                        // menaing/encoding of flags in the connect message
+                        // changes. What end has control of the conversation
+                        // must be communicated in some fashion.
+                        if (tmp_flags.exist(casual::common::flag::xatmi::Flag::conversation)) {
+                           if (argument.flags.exist(casual::common::service::invoke::Parameter::Flag::send_only)) {
+                              tmp_flags |= common::flag::xatmi::Flag::receive_only;
+                           } else {
+                               tmp_flags |= common::flag::xatmi::Flag::send_only;
+                           }
+                        }
+                        result.flags = tmp_flags.underlaying();
 
                         // This is the only place where we use adopt
                         result.data = buffer::pool::Holder::instance().adopt( std::move( argument.payload));
@@ -140,7 +184,18 @@ namespace casual
                               invoke( argument);
                               
                               // User service returned, not by tpreturn.
-                              code::raise::error( code::xatmi::service_error, "service did not call tpreturn - ", argument.service.name);
+                              // We will get here when COBOL Api  TPRETURN is called
+                              // followed by COBOL program returning to its caller (=us! Possibly 
+                              // thru intervening Cobol runtime stuff.) In that case this may be 
+                              // a normal path instead of an error. We need to check if TPRETURN
+                              // has been called, and pick upp the response it saved in context.
+                              // This means doing the "same" as in the c_return case below.
+                              if (state.TPRETURN_called) {
+                                 log::line( log::debug, "user called TPRETURN");
+                                 return transform::result( state.jump);
+                              } else {
+                                 code::raise::error( code::xatmi::service_error, "service did not call tpreturn - ", argument.service.name);
+                              }
                            }
                            case state::Jump::Location::c_forward:
                            {
@@ -163,8 +218,35 @@ namespace casual
 
                      void invoke( service::invoke::Parameter& argument)
                      {
+                        auto& state = server::context().state();
+
+                        // Type of buffer needed by Cobol API TPSVCSTART(), so save information.
+                        // dismantle() returns a tuple with two "range".
+                        // This seems to do what we want. (Could save "combined" type in state
+                        // instead... Then split it in TPSVCSTART when/if needed. Might be nicer)
+                        // casual::common::string has a split that returns a vector<string>. Would perhaps
+                        // be nicer to use that. More "natural" than to use the ranges currently returned
+                        // by dismantle()... Should dismantle() return vector<string> instead? 
+                        auto split_type=casual::common::buffer::type::dismantle(argument.payload.type);
+                        state.buffer_type=std::string {std::begin(std::get<0>(split_type)), std::end(std::get<0>(split_type))};
+                        state.buffer_subtype=std::string {std::begin(std::get<1>(split_type)), std::end(std::get<1>(split_type))};
+                        // Note that saving buffer tpe information need to be done before
+                        // transform::information() below. The transform  "move" data from
+                        // argument and looses the buffer type information.
+
                         // Also takes care of buffer to pool
                         TPSVCINFO information = transform::information( argument);
+
+                        // save service argument for possible use from Cobol api TPSVCSTART
+                        state.information.argument = information;
+
+                        // Initialize flag for detecting service normal "return" after a call
+                        // to TPRETURN, i.e. The COBOL api method of returning service data
+                        // before a normal return. The C api tpreturn() saves the service data
+                        // and uses a long_jump. When using the C api a normal return is an error,
+                        // but it is "normal" when the Cobol API is used, as long as the Cobol
+                        // API TPRETURN has been called to supply the service "result".  
+                        state.TPRETURN_called = false;
 
                         try
                         {

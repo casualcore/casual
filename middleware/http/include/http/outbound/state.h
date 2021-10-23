@@ -16,6 +16,7 @@
 #include "common/pimpl.h"
 #include "common/message/service.h"
 #include "common/message/pending.h"
+#include "common/domain.h"
 
 #include <string>
 #include <memory>
@@ -27,187 +28,186 @@
 
 namespace casual
 {
-   namespace http
+   namespace http::outbound
    {
-      namespace outbound
+      namespace state
       {
-         namespace state
+      
+         struct Node
          {
-         
-            struct Node
-            {
-               std::string url;
-               std::shared_ptr< const common::service::header::Fields> headers;
-               bool discard_transaction = false;
-               
-               CASUAL_LOG_SERIALIZE(
-               { 
-                  CASUAL_SERIALIZE( url);
-                  CASUAL_SERIALIZE( headers);
-                  CASUAL_SERIALIZE( discard_transaction);
-               })
-            };
+            std::string url;
+            std::shared_ptr< const common::service::header::Fields> headers;
+            bool discard_transaction = false;
+            
+            CASUAL_LOG_SERIALIZE(
+            { 
+               CASUAL_SERIALIZE( url);
+               CASUAL_SERIALIZE( headers);
+               CASUAL_SERIALIZE( discard_transaction);
+            })
+         };
 
 
-            namespace pending
+         namespace pending
+         {
+            struct Request 
             {
-               struct Request 
+               Request();
+
+               struct State
                {
-                  Request();
+                  common::buffer::Payload payload;
+                  platform::size::type offset = 0;
+                  common::process::Handle destination;
+                  common::strong::correlation::id correlation;
+                  common::strong::execution::id execution;
+                  platform::time::point::type start = platform::time::point::limit::zero();
+                  std::string service;
+                  std::string parent;
+                  common::transaction::ID trid;
 
-                  struct State
+                  struct Header
                   {
-                     common::buffer::Payload payload;
-                     platform::size::type offset = 0;
-                     common::process::Handle destination;
-                     common::strong::correlation::id correlation;
-                     common::strong::execution::id execution;
-                     platform::time::point::type start = platform::time::point::limit::zero();
-                     std::string service;
-                     std::string parent;
-                     common::transaction::ID trid;
-
-                     struct Header
+                     //! Take care of adding headers the curl way for the request.
+                     struct Request
                      {
-                        //! Take care of adding headers the curl way for the request.
-                        struct Request
-                        {
-                           void add( const common::service::header::Fields& header);
-                           void add( const std::string& value);
-                           
-                           inline auto native() { return m_header.get();}
-                           inline explicit operator bool () const { return static_cast< bool>( m_header);}
-                        private:
-                           curl::type::header_list m_header{ nullptr};
-                        } request;
+                        void add( const common::service::header::Fields& header);
+                        void add( const std::string& value);
+                        
+                        inline auto native() { return m_header.get();}
+                        inline explicit operator bool () const { return static_cast< bool>( m_header);}
+                     private:
+                        curl::type::header_list m_header{ nullptr};
+                     } request;
 
-                        //! holds the reply headers, when the call is done
-                        common::service::header::Fields reply;
+                     //! holds the reply headers, when the call is done
+                     common::service::header::Fields reply;
 
-                        CASUAL_LOG_SERIALIZE(
-                        { 
-                           CASUAL_SERIALIZE( reply);
-                        })   
-
-                     } header;
-
-                     inline auto range() noexcept { return common::range::make( std::begin( payload.memory) + offset, std::end( payload.memory));}
-                     inline void clear() noexcept
-                     { 
-                        payload.memory.clear();
-                        offset = 0;
-                     }
-                     
                      CASUAL_LOG_SERIALIZE(
                      { 
-                        CASUAL_SERIALIZE( payload);
-                        CASUAL_SERIALIZE( offset);
-                        CASUAL_SERIALIZE( destination);
-                        CASUAL_SERIALIZE( correlation);
-                        CASUAL_SERIALIZE( execution);
-                        CASUAL_SERIALIZE( start);
-                        CASUAL_SERIALIZE( service);
-                        CASUAL_SERIALIZE( parent);
-                        CASUAL_SERIALIZE( trid);
-                        CASUAL_SERIALIZE( header);
-                     })                     
-                  };
+                        CASUAL_SERIALIZE( reply);
+                     })   
 
-                  inline const curl::type::easy& easy() const { return m_easy;}
+                  } header;
 
-                  //! @return state that is _stable_ in memory, hence it's address will never change 
-                  State& state() { return *m_state;} 
-                  const State& state() const { return *m_state;} 
-
+                  inline auto range() noexcept { return common::range::make( std::begin( payload.memory) + offset, std::end( payload.memory));}
+                  inline void clear() noexcept
+                  { 
+                     payload.memory.clear();
+                     offset = 0;
+                  }
                   
-                  inline friend bool operator == ( const Request& lhs, curl::type::native::easy rhs) { return lhs.m_easy.get() == rhs;}
-
                   CASUAL_LOG_SERIALIZE(
                   { 
-                     CASUAL_SERIALIZE_NAME( m_easy, "easy");
-                     CASUAL_SERIALIZE_NAME( state(), "state");
-                  })
-
-               private:
-                  curl::type::easy m_easy;
-                  common::move::basic_pimpl< State> m_state;
+                     CASUAL_SERIALIZE( payload);
+                     CASUAL_SERIALIZE( offset);
+                     CASUAL_SERIALIZE( destination);
+                     CASUAL_SERIALIZE( correlation);
+                     CASUAL_SERIALIZE( execution);
+                     CASUAL_SERIALIZE( start);
+                     CASUAL_SERIALIZE( service);
+                     CASUAL_SERIALIZE( parent);
+                     CASUAL_SERIALIZE( trid);
+                     CASUAL_SERIALIZE( header);
+                  })                     
                };
-               static_assert( common::traits::is_nothrow_movable< Request>::value, "not movable");
-               static_assert( ! common::traits::is::copyable_v< Request>, "not movable");
 
+               inline const curl::type::easy& easy() const { return m_easy;}
 
+               //! @return state that is _stable_ in memory, hence it's address will never change 
+               State& state() { return *m_state;} 
+               const State& state() const { return *m_state;} 
 
-            } // pending
+               
+               inline friend bool operator == ( const Request& lhs, curl::type::native::easy rhs) { return lhs.m_easy.get() == rhs;}
 
-            struct Pending
-            {
-               Pending();
-               ~Pending() noexcept;
-
-               Pending( Pending&&) noexcept = default;
-               Pending& operator = ( Pending&&) noexcept = default;
-
-               void add( pending::Request&& request);
-               pending::Request extract( curl::type::native::easy easy);
-
-               inline const curl::type::multi& multi() const { return m_multi;}
-
-
-               inline auto begin() const { return std::begin( m_pending);}
-               inline auto end() const { return std::end( m_pending);}
-               inline auto empty() const { return m_pending.empty();}
-               explicit operator bool () const { return ! empty();}
-               inline platform::size::type size() const { return m_pending.size();}
-               inline auto capacity() const { return m_pending.capacity();}
+               CASUAL_LOG_SERIALIZE(
+               { 
+                  CASUAL_SERIALIZE_NAME( m_easy, "easy");
+                  CASUAL_SERIALIZE_NAME( state(), "state");
+               })
 
             private:
-               std::vector< state::pending::Request> m_pending;
-               curl::type::multi m_multi;
+               curl::type::easy m_easy;
+               common::move::basic_pimpl< State> m_state;
             };
-            
-         } // state
+            static_assert( common::traits::is_nothrow_movable< Request>::value, "not movable");
+            static_assert( ! common::traits::is::copyable_v< Request>, "not movable");
 
-         struct State 
+
+
+         } // pending
+
+         struct Pending
          {
-            State();
+            Pending();
+            ~Pending() noexcept;
 
-            struct
-            {
-               state::Pending requests;
-            } pending;
+            Pending( Pending&&) noexcept = default;
+            Pending& operator = ( Pending&&) noexcept = default;
 
-            struct 
-            {
-               curl::type::wait_descriptor* first() { return &m_wait;}
-               auto size() { return 1;}
+            void add( pending::Request&& request);
+            pending::Request extract( curl::type::native::easy easy);
 
-               bool pending() const { return m_wait.revents & CURL_WAIT_POLLIN;}
+            inline const curl::type::multi& multi() const { return m_multi;}
 
-               void clear() { m_wait.revents = {};}
-            private:
-               friend State;
 
-               curl::type::wait_descriptor m_wait{};
+            inline auto begin() const { return std::begin( m_pending);}
+            inline auto end() const { return std::end( m_pending);}
+            inline auto empty() const { return m_pending.empty();}
+            explicit operator bool () const { return ! empty();}
+            inline platform::size::type size() const { return m_pending.size();}
+            inline auto capacity() const { return m_pending.capacity();}
 
-            } inbound;
-
-            std::unordered_map< std::string, state::Node> lookup;
-
-            struct Metric 
-            {
-               void add( const state::pending::Request& request, common::message::service::Code code);
-
-               explicit operator bool () const noexcept;
-
-               void clear();
-
-               inline auto& message() const { return m_message;}
-
-            private:
-               common::message::event::service::Calls m_message;
-            } metric;
-
+         private:
+            std::vector< state::pending::Request> m_pending;
+            curl::type::multi m_multi;
          };
-      } // outbound
-   } // http
+         
+      } // state
+
+      struct State 
+      {
+         State();
+
+         struct
+         {
+            state::Pending requests;
+         } pending;
+
+         struct 
+         {
+            curl::type::wait_descriptor* first() { return &m_wait;}
+            auto size() { return 1;}
+
+            bool pending() const { return m_wait.revents & CURL_WAIT_POLLIN;}
+
+            void clear() { m_wait.revents = {};}
+         private:
+            friend State;
+
+            curl::type::wait_descriptor m_wait{};
+
+         } inbound;
+
+         std::unordered_map< std::string, state::Node> lookup;
+
+         struct Metric 
+         {
+            void add( const state::pending::Request& request, common::message::service::Code code);
+
+            explicit operator bool () const noexcept;
+
+            void clear();
+
+            inline auto& message() const { return m_message;}
+
+         private:
+            common::message::event::service::Calls m_message;
+         } metric;
+
+         common::domain::Identity identity{ "http"};
+
+      };
+   } // http::outbound
 } // casual

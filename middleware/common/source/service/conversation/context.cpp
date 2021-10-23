@@ -350,7 +350,17 @@ namespace casual
                else
                {
                   unreserve.release();
+                  // check if conversation shall change direction (duplex)
+                  // and if so update descriptor.
+                  constexpr Events sendonly_events{Event::send_only};
+                  if( result.event & sendonly_events)
+                  {
+                     descriptor.duplex =
+                        common::service::conversation::state::descriptor::Information::Duplex::send;
+                  }
                }
+
+
 
 
                return result;

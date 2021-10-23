@@ -194,6 +194,7 @@ void casual_service_return( const int rval, const long rcode, char* const data, 
    });
 }
 
+
 int casual_service_advertise( const char* service, void (*function)( TPSVCINFO *))
 {
    return casual::xatmi::internal::error::wrap( [&](){
@@ -207,3 +208,5 @@ int casual_service_unadvertise( const char* const service)
       casual::common::server::context().unadvertise( service);
    });
 }
+
+

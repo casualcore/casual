@@ -78,7 +78,7 @@ namespace casual
                   common::communication::instance::whitelist::connect( common::communication::instance::identity::queue::manager);
 
                   // register that we can answer discovery questions.
-                  casual::domain::discovery::inbound::registration();
+                  casual::domain::discovery::internal::registration();
                }  
             } // wait
 

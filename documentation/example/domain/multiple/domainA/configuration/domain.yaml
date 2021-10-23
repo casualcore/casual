@@ -1,0 +1,42 @@
+
+
+domain:
+
+  # name of this domain
+  name: md-domainA
+
+  servers:
+        
+    # advertises casual/example/echo and casual/example/rollback
+    - path: ${CASUAL_HOME}/example/bin/casual-example-server
+      instances: 1 # how many instances should be started
+
+    # forward from queueA1  to service 'casual/example/rollback'
+    # which will result in the message will end up on error queue
+    - path: casual-queue-forward-service
+      instances: 1
+      arguments: [ --forward, queueA1, casual/example/rollback]
+
+  #
+  # Queue configuration
+  #
+  queue:
+
+    groups:
+      - name: domain-A
+        queuebase: queue/domainA.db
+        queues:
+          - name: queueA1
+
+
+  #
+  # gateway configuration
+  #
+  gateway:
+    listeners:
+      # which address this domain should listen on
+      - address: 127.0.0.1:7771
+
+    connections:
+      # We connect to domainB
+      - address: 127.0.0.1:7772

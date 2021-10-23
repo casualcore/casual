@@ -18,6 +18,8 @@
 #include "common/log/category.h"
 #include "common/code/casual.h"
 #include "common/code/category.h"
+#include "common/buffer/type.h"
+#include "common/buffer/pool.h"
 
 namespace casual
 {
@@ -284,6 +286,38 @@ namespace casual
                return local::message::global::cache.add( std::move( message.front())).id.value();
             }
 
+            auto peek( const char* queue, selector::descriptor::id selector)
+            {
+               auto information = []( auto queue, auto selector)
+               {
+                  if( selector)
+                     return queue::peek::information( queue, selector::global::cache.get( selector).value);
+                  else
+                     return queue::peek::information( queue);
+               }( queue, selector);
+
+               if( information.empty())
+                  queue::raise( queue::code::no_message);
+
+               auto message = peek::messages( queue, { information.front().id});
+               if( message.empty())
+                  queue::raise( queue::code::no_message);
+
+               xatmi::Message result;
+               {
+                  result.id = std::move( message.front().id);
+                  result.attributes = std::move( message.front().attributes);
+
+                  common::buffer::Payload payload;
+                  payload.type = std::move( message.front().payload.type);
+                  payload.memory = std::move( message.front().payload.data);
+
+                  std::tie( result.payload.buffer, result.payload.size) =
+                        common::buffer::pool::Holder::instance().insert( std::move( payload));
+               }
+               return local::message::global::cache.add( std::move( result)).id.value();
+            }
+
          } // <unnamed>
       } // local         
    } // queue
@@ -376,6 +410,11 @@ extern "C"
    casual_message_descriptor_t casual_queue_dequeue( const char* queue, casual_selector_descriptor_t selector)
    {
       return local::wrap( local::dequeue, -1l, queue, local::selector::descriptor::id{ selector});
+   }
+
+   casual_message_descriptor_t casual_queue_peek( const char* queue, casual_selector_descriptor_t selector)
+   {
+      return local::wrap( local::peek, -1l, queue, local::selector::descriptor::id{ selector});
    }
 
 } // extern C

@@ -67,6 +67,32 @@ namespace casual
          EXPECT_TRUE(( advertise.queues == std::vector< std::string>{ "a", "b"})) << CASUAL_NAMED_VALUE( advertise.queues);
       }
 
+      TEST( gateway_outbound_state, lookup_add__add_same_again___expect_only_1)
+      {
+         state::Lookup lookup;
+
+         lookup.add( strong::file::descriptor::id{ 9}, { { "a", 0}}, {});
+         ASSERT_TRUE( lookup.services().size() == 1);
+         EXPECT_TRUE( lookup.services().at( "a").size() == 1);
+         lookup.add( strong::file::descriptor::id{ 9}, { { "a", 0}}, {});
+         ASSERT_TRUE( lookup.services().size() == 1);
+         EXPECT_TRUE( lookup.services().at( "a").size() == 1);
+      }
+
+      TEST( gateway_outbound_state, lookup_add_a_2_hops_add_a_1_hops___expect_only_1_with_1_hops)
+      {
+         state::Lookup lookup;
+
+         lookup.add( strong::file::descriptor::id{ 9}, { { "a", 2}}, {});
+         ASSERT_TRUE( lookup.services().size() == 1);
+         ASSERT_TRUE( lookup.services().at( "a").size() == 1);
+         EXPECT_TRUE( lookup.services().at( "a").front().hops == 2);
+         lookup.add( strong::file::descriptor::id{ 9}, { { "a", 1}}, {});
+         ASSERT_TRUE( lookup.services().size() == 1);
+         ASSERT_TRUE( lookup.services().at( "a").size() == 1);
+         EXPECT_TRUE( lookup.services().at( "a").front().hops == 1);
+      }
+
       TEST( gateway_outbound_state, lookup_service_a__nil_xic__expect_round_robin)
       {
          auto lookup = local::lookup();

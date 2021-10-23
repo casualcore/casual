@@ -42,7 +42,8 @@ install_copy = [
    'copy/TPSVCRET.cpy',
    'copy/TPTYPE.cpy',
    'copy/TXINFDEF.cpy',
-   'copy/TXSTATUS.cpy'
+   'copy/TXSTATUS.cpy',
+   'copy/TPRETURN.cpy'
 ]
 
 

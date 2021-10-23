@@ -6,6 +6,7 @@
 
 #include "configuration/model/load.h"
 #include "configuration/model/transform.h"
+#include "configuration/model/validate.h"
 #include "configuration/model.h"
 #include "configuration/user.h"
 #include "configuration/common.h"
@@ -52,6 +53,8 @@ namespace casual
             log::line( verbose::log, "files: ", files);
 
             auto model = normalize( algorithm::accumulate( files, Model{}, &local::load));
+
+            validate( model);
 
             log::line( verbose::log, "model: ", model);
 

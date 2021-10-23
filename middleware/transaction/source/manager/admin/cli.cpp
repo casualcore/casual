@@ -372,6 +372,9 @@ namespace casual
                               [](  std::vector< std::tuple< std::string, int>> values)
                               {
                                  auto resources = call::scale::instances( common::algorithm::transform( values, []( auto& value){
+                                    if( std::get< 1>( value) < 0)
+                                       code::raise::error( code::casual::invalid_argument, "number of instances cannot be negative");
+                                    
                                     admin::model::scale::Instances instance;
                                     instance.name = std::get< 0>( value);
                                     instance.instances = std::get< 1>( value);

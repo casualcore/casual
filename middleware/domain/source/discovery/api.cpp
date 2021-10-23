@@ -33,12 +33,12 @@ namespace casual
          } // <unnamed>
       } // local
 
-      namespace inbound
+      namespace internal
       {
          void registration( const common::process::Handle& process)
          {
-            Trace trace{ "domain::discovery::inbound::registration"};
-            message::discovery::inbound::Registration message{ process};
+            Trace trace{ "domain::discovery::internal::registration"};
+            message::discovery::internal::Registration message{ process};
             communication::ipc::flush::optional::send( local::instance::device(), message);
          }
 
@@ -48,7 +48,7 @@ namespace casual
          }
 
 
-      } // inbound
+      } // internal
       
       correlation_type request( const Request& request)
       {
@@ -56,12 +56,12 @@ namespace casual
          return communication::ipc::flush::optional::send( local::instance::device(), request);
       }
 
-      namespace outbound
+      namespace external
       {
          void registration( const common::process::Handle& process, Directive directive)
          {
-            Trace trace{ "domain::discovery::outbound::registration"};
-            message::discovery::outbound::Registration message{ process};
+            Trace trace{ "domain::discovery::external::registration"};
+            message::discovery::external::Registration message{ process};
             message.directive = directive;
             communication::ipc::flush::optional::send( local::instance::device(), message);
          } 
@@ -73,11 +73,11 @@ namespace casual
 
          correlation_type request( const Request& request)
          {
-            Trace trace{ "domain::discovery::outbound::request"};
+            Trace trace{ "domain::discovery::external::request"};
             return communication::ipc::flush::optional::send( local::instance::device(), request);
          }
 
-      } // outbound
+      } // external
 
       namespace rediscovery
       {

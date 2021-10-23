@@ -190,17 +190,15 @@ namespace casual
             {
                namespace service
                {
-
-                  struct Property : common::Compare< Property>
+                  namespace property
                   {
-
                      enum class Type : short
                      {
                         configured,
                         discovered,
                      };
 
-                     inline friend std::ostream& operator << ( std::ostream& out, Type value)
+                     inline std::ostream& operator << ( std::ostream& out, Type value)
                      {
                         switch( value)
                         {
@@ -209,9 +207,12 @@ namespace casual
                         }
                         return out << "<unknown>";
                      }
+                  } // property
 
+                  struct Property : common::Compare< Property>
+                  {
                      platform::size::type hops = 0;
-                     Type type = Type::discovered;
+                     property::Type type = property::Type::discovered;
 
                      inline auto tie() const { return std::tie( type, hops);}
 

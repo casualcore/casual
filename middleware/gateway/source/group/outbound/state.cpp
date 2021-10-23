@@ -111,16 +111,30 @@ namespace casual
                   {
                      auto& connections = resources[ add.name];
 
-                     // _sorted insert:
+                     // find the current lowest _hops_ for the service|queue, if any.
+                     auto lowest_hops = [&connections]()
                      {
-                        auto hops_less = []( auto& l, auto& r){ return l.hops < r.hops;};
+                        if( connections.empty())
+                           return std::numeric_limits< platform::size::type>::max();
+                        return connections.front().hops;
+                     }();
 
-                        auto connection = state::lookup::resource::Connection{ descriptor, add.hops};
-                        auto point = std::begin( std::get< 1>( algorithm::sorted::upper_bound( connections, connection, hops_less)));
-                        connections.insert( point, std::move( connection));
+                     if( auto found = algorithm::find( connections, descriptor))
+                     {
+                        if( add.hops != found->hops)
+                           found->hops = add.hops;
+                     }
+                     else
+                     {
+                        connections.push_back( state::lookup::resource::Connection{ descriptor, add.hops});
                      }
 
-                     if( range::size( connections) == 1)
+                     auto hops_less = []( auto& l, auto& r){ return l.hops < r.hops;};
+                     algorithm::stable_sort( connections, hops_less);
+
+                     // If the _hops_ has changed, we add service for (re-)advertise, so service-manager
+                     // gets to know the new hops.
+                     if( connections.front().hops != lowest_hops)
                         result.push_back( std::move( add.name));
                      
                      return result;

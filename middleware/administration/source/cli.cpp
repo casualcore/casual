@@ -130,8 +130,9 @@ valid directives:
                      build::Version build_version = build::version();
 
                      std::vector< std::tuple< std::string, std::string>> version{
-                        { "Casual", build_version.casual},
-                        { "Commit", build_version.commit}
+                        { "casual", build_version.casual},
+                        { "commit", build_version.commit},
+                        { "compiler", build_version.compiler}
                      };
 
                      terminal::formatter::key::value().print( std::cout, version);

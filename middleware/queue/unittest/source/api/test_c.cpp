@@ -171,6 +171,72 @@ domain:
 
       }
 
+      TEST( casual_queue_c_api, enqueue_peek_dequeue_message)
+      {
+         common::unittest::Trace trace;
+
+         local::Domain domain;
+
+         auto buffer = local::buffer::allocate();
+
+         auto message  = casual_queue_message_create( { buffer.get(), buffer.size()});
+
+         EXPECT_TRUE( casual_queue_enqueue( "A1", message) != -1) << "casual_qerrno: " << casual_qerrno;
+
+         // use common::Uuid for simplicity
+         common::Uuid id;
+         EXPECT_TRUE( casual_queue_message_get_id( message, &id.get()) != -1);
+         EXPECT_TRUE( ! id.empty());
+         EXPECT_TRUE( casual_queue_message_delete( message) != -1);
+
+         {
+            message = casual_queue_peek( "A1", CASUAL_QUEUE_NO_SELECTOR);
+            EXPECT_TRUE( message >= 0);
+
+            casual_buffer_t result_buffer{};
+            ASSERT_TRUE( casual_queue_message_get_buffer( message, &result_buffer) != -1);
+
+            // so we delete the allocated buffer
+            auto deleter = local::buffer::Type{ result_buffer.data};
+
+            auto expected = common::range::make( buffer.get(), buffer.size());
+            auto result = common::range::make( result_buffer.data, result_buffer.size);
+
+            EXPECT_TRUE( common::algorithm::equal( expected, result));
+
+            // make sure it's the same message (id)
+            common::Uuid result_id;
+            EXPECT_TRUE( casual_queue_message_get_id( message, &result_id.get()) != -1);
+
+            EXPECT_EQ( id, result_id);
+            EXPECT_TRUE( casual_queue_message_delete( message) != -1);
+         }
+         {
+            // make sure message still exists
+            message = casual_queue_dequeue( "A1", CASUAL_QUEUE_NO_SELECTOR);
+            EXPECT_TRUE( message >= 0);
+
+            casual_buffer_t result_buffer{};
+            ASSERT_TRUE( casual_queue_message_get_buffer( message, &result_buffer) != -1);
+
+            // so we delete the allocated buffer
+            auto deleter = local::buffer::Type{ result_buffer.data};
+
+            auto expected = common::range::make( buffer.get(), buffer.size());
+            auto result = common::range::make( result_buffer.data, result_buffer.size);
+
+            EXPECT_TRUE( common::algorithm::equal( expected, result));
+
+            // make sure it's the same message (id)
+            common::Uuid result_id;
+            EXPECT_TRUE( casual_queue_message_get_id( message, &result_id.get()) != -1);
+
+            EXPECT_TRUE( id == result_id);
+         }
+
+      }
+
+
 
       TEST( casual_queue_c_api, enqueue_dequeue_message__properties)
       {
@@ -208,6 +274,57 @@ domain:
 
          }
       }
+
+      TEST( casual_queue_c_api, enqueue_peek_dequeue_message__properties)
+      {
+         common::unittest::Trace trace;
+
+         local::Domain domain;
+
+         // enqueue
+         {
+            auto buffer = local::buffer::allocate();
+
+            auto message  = casual_queue_message_create( { buffer.get(), buffer.size()});
+
+            // enqueue one message without properties
+            EXPECT_TRUE( casual_queue_enqueue( "A1", message) != -1) << "casual_qerrno: " << casual_qerrno;
+
+            // One with properties, to select on further down
+            ASSERT_TRUE( casual_queue_message_attribute_set_properties( message, "foo") != -1);
+
+            EXPECT_TRUE( casual_queue_enqueue( "A1", message) != -1) << "casual_qerrno: " << casual_qerrno;
+            EXPECT_TRUE( casual_queue_message_delete( message) != -1);
+         }
+
+         // peek
+         {
+            auto selector = casual_queue_selector_create();
+            EXPECT_TRUE( casual_queue_selector_set_properties( selector, "foo") != -1);
+
+            auto message = casual_queue_peek( "A1", selector);
+            EXPECT_TRUE( message >= 0);
+
+            ASSERT_TRUE( casual_queue_message_attribute_get_properties( message) == std::string{ "foo"});
+
+            EXPECT_TRUE( casual_queue_selector_delete( selector) != -1);
+            EXPECT_TRUE( casual_queue_message_delete( message) != -1);
+
+         }
+
+         // dequeue
+         {
+            auto selector = casual_queue_selector_create();
+            EXPECT_TRUE( casual_queue_selector_set_properties( selector, "foo") != -1);
+
+            auto message = casual_queue_dequeue( "A1", selector);
+            EXPECT_TRUE( message >= 0);
+
+            ASSERT_TRUE( casual_queue_message_attribute_get_properties( message) == std::string{ "foo"});
+
+            EXPECT_TRUE( casual_queue_selector_delete( selector) != -1);
+            EXPECT_TRUE( casual_queue_message_delete( message) != -1);
+         }
+      }
    } // queue
-   
 } // casual

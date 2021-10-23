@@ -107,4 +107,3 @@ void tpsvrdone()
    casual::xatmi::internal::error::clear();
    tx_close();
 }
-

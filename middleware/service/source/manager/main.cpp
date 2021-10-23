@@ -111,7 +111,7 @@ namespace casual
                auto handler = manager::handler( state);
 
                // register that we can answer discovery questions.
-               casual::domain::discovery::inbound::registration();
+               casual::domain::discovery::internal::registration();
 
                // Connect to domain
                communication::instance::whitelist::connect( communication::instance::identity::service::manager);

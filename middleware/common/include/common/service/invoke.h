@@ -35,10 +35,23 @@ namespace casual
             {
                enum class Flag : long
                {
+                  // What flags need to be defined here? What are these flags representing?
+                  // The type is used (at least) for "argument.flags" when invoking
+                  // a service. At least "now" the value in argument.flags is the caller
+                  // supplied flags (in for examle a tpconnect or tpcall). When invoking a
+                  // service the caller TPNOREPLY is of interest. Also TPSENDONLY
+                  // and/or TPRECVONLY for conversational services.
+                  // The need for no_transaction is questionable. The caller TPNOTRAN
+                  // flag controls if the caller transaction is passed on to the service
+                  // or not. If the called service has a transaction active is another
+                  // matter. A new transaction can be started even when the callers
+                  // transaction was not passed on (e.g. auto). 
                   no_transaction = cast::underlying( flag::xatmi::Flag::no_transaction),
                   send_only = cast::underlying( flag::xatmi::Flag::send_only),
                   receive_only = cast::underlying( flag::xatmi::Flag::receive_only),
                   no_time = cast::underlying( flag::xatmi::Flag::no_time),
+                  // added:
+                  no_reply = cast::underlying( flag::xatmi::Flag::no_reply),
                };
                using Flags = common::Flags< Flag>;
 

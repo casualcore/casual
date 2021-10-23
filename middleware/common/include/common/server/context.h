@@ -17,6 +17,11 @@
 
 #include "casual/xatmi/defines.h"
 
+// for definition of Service::Invoke::Parameter. Needed to save 
+// the TPSVCINFO for possible retrieval by TPSVCSTART in Cobol 
+// API. 
+#include "common/service/invoke.h"
+
 
 #include <unordered_map>
 #include <functional>
@@ -63,12 +68,49 @@ namespace casual
 
                friend std::ostream& operator << ( std::ostream& out, const Jump& value);
             };
+
+            struct Parameter
+            {
+            //XXX   service::invoke::Parameter argument;
+            TPSVCINFO argument;
+            };
+
+
          } // state
 
          struct State
          {
             state::Jump jump;
+            // saved copy of service routine argument. Needed to support TPSVCSTART
+            // that retrieves this information in a "callback" from the service. Part
+            // of Cobol api support. 
+            state::Parameter information;
+            // The Cobol API TPSVCSTART also need the buffer type and subtype
+            // so we save them also... 
+            std::string buffer_type;
+            std::string buffer_subtype;
 
+            // The C api returns to casual via a long_jump in "tpreturn", while
+            // the COBOL api uses a normal return after calling TPRETURN.
+            // Casual does not know if a service uses the COBOL api or the
+            // C api. To allow casual to detect that TPRETURN was called
+            // before a normal return this flag will be set to false 
+            // invocation of a service. It will be set to true if/when
+            // the service return data is set via TPRETURN and
+            // Context::normal_return(). It is left unchanged in
+            // Context::jump_return().
+            // NOTE: In theory a sequence 
+            //   call TPRETURN
+            //   call tpreturn (without a "return" after the call to TPRETURN)
+            // is possible. I have ignored this for now. It is an illegal
+            // sequence and is very unliklely as the Cobol COPY that calls TPRETURN
+            // includes an EXIT PROGRAM statement.
+            // If it should happen the jump_return will overwrite the information
+            // saved by TPRETURN, leading to a resource leak.
+            //
+            // NOTE: Should perhaps be renamed to "service_normal_return" or something
+            // something like that. It is set to true by Context::normal_return()...  
+            bool TPRETURN_called;
 
             State() = default;
 
@@ -91,6 +133,9 @@ namespace casual
 
             //! Being called from tpreturn
             void jump_return( flag::xatmi::Return rval, long rcode, char* data, long len);
+
+            //! Being called from TPRETURN (via ...)
+            void normal_return( flag::xatmi::Return rval, long rcode, char* data, long len);
 
             //! called from extern casual_service_forward
             void forward( const char* service, char* data, long size);
