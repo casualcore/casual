@@ -7,6 +7,7 @@
 
 #include "queue/manager/state.h"
 #include "queue/common/log.h"
+#include "queue/common/queue.h"
 
 #include "common/algorithm.h"
 
@@ -111,9 +112,14 @@ namespace casual
       {
          Trace trace{ "queue::manager::State::update"};
 
+         // we only get queue::ipc::message::Advertise from _outbounds_, never
+         // from this domains queue-groups. Hence, the advertised queues are
+         // remote queues.
+
          if( message.reset)
             remove_queues( message.process.pid);
-
+         
+         // outbound order is zero-based, we add 1 to give it lower prio.
          auto order = message.order + 1;
 
          // make sure we've got the instance
@@ -124,8 +130,8 @@ namespace casual
          {
             auto& instances = queues[ queue.name];
 
-            // outbound order is zero-based, we add 1 to distinguish local from remote
-            instances.emplace_back( message.process, common::strong::queue::id{}, order);
+            
+            instances.emplace_back( message.process, queue::remote::queue::id, order);
 
             // Make sure we prioritize local queue
             common::algorithm::stable_sort( instances);

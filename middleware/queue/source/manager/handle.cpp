@@ -392,7 +392,7 @@ namespace casual
                   {
                      auto request( State& state)
                      {
-                        return [&state]( casual::domain::message::discovery::Request& message)
+                        return [&state]( casual::domain::message::discovery::Request&& message)
                         {
                            Trace trace{ "queue::manager::handle::local::domain::discover::request"};
                            common::log::line( verbose::log, "message: ", message);
@@ -402,11 +402,21 @@ namespace casual
                            reply.process = common::process::handle();
                            reply.domain = common::domain::identity();
 
-                           for( auto& queue : message.content.queues)
+                           auto is_relevant = [&state, directive = message.directive]( auto& name)
                            {
-                              if( common::algorithm::find( state.queues, queue))
-                                 reply.content.queues.emplace_back( queue);
-                           }
+                              if( auto found = algorithm::find( state.queues, name))
+                              {
+                                 if( directive == decltype( directive)::forward)
+                                    return ! found->second.empty();
+
+                                 return algorithm::any_of( found->second, []( auto& instance){ return ! instance.remote();});
+                              }
+                              return false;
+                           };
+
+
+                           for( auto& queue : algorithm::filter( message.content.queues, is_relevant))
+                              reply.content.queues.emplace_back( std::move( queue));
 
                            common::log::line( verbose::log, "reply: ", reply);
 

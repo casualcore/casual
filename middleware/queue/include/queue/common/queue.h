@@ -16,6 +16,11 @@ namespace casual
 {
    namespace queue
    {
+      namespace remote::queue
+      {
+         constexpr auto id = common::strong::queue::id{ -1L};
+      } // remote::queue
+
       struct Lookup
       {
          explicit Lookup( std::string queue);
