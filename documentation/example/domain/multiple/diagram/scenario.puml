@@ -1,28 +1,27 @@
-@startuml
+@startuml scenario
 
 title casual medium multiple domain example
 
-box "domainA" #LightBlue
+box "domain A" #LightBlue
    actor "You" as AA
-   participant "Server A" as SA
-   participant "service-forward" as SFA
-   participant "casual-queue" as QA
+   participant "queue" as QA
+   participant "queue-forward" as QFA
+   participant "example-server" as SA
    participant "gateway" as GA
 end box
 
-box "domainB"
+box "domain B"
    participant "gateway" as GB 
-   participant "casual-queue" as QB
-   participant "service-forward" as SFB
+   participant "queue" as QB
    participant "queue-forward" as QFB
 end box
 
 activate AA
 
 group #eeeeee in transaction 
-AA -> GA: enqueue to **queueB1**
+AA -> GA: **enqueue to b1**
 GA -> GB:
-GB -> QB: enqueue to **queueB1**
+GB -> QB: **enqueue to b1**
 activate QB
 QB -> GB: message id
 deactivate QB
@@ -32,26 +31,26 @@ deactivate AA
 end
 
 group #eeeeee in transaction
-QB -> SFB: dequeue B1
-activate SFB
-SFB -> GB: call **casual/example/echo**
+QB -> QFB: **dequeue b1**
+activate QFB
+QFB -> GB: call **casual/example/echo**
 GB -> GA:
 GA -> SA: call **casual/example/echo**
 activate SA
 SA -> GA: reply 
 deactivate SA
 GA -> GB
-GB -> SFB: echo reply
-SFB -> QB: enqueue B2
-deactivate SFB
+GB -> QFB: echo reply
+QFB -> QB: **enqueue b2**
+deactivate QFB
 end
 
 group #eeeeee in transaction
-QB -> QFB: dequeue B2
+QB -> QFB: **dequeue b2**
 activate QFB
-QFB -> GB: enqueue **queueA1**
+QFB -> GB: **enqueue a1**
 GB -> GA
-GA -> QA: enqueue **queueA1**
+GA -> QA: **enqueue a1**
 activate QA
 QA -> GA
 deactivate QA
@@ -63,20 +62,20 @@ end
 
 group #eeeeee in transaction
 
-QA -> SFA: dequeue A1
-activate SFA
-SFA -> SA: call **casual/example/rollback**
+QA -> QFA: **dequeue a1**
+activate QFA
+QFA -> SA: call **casual/example/rollback**
 activate SA
-SA -> SFA: reply **TPFAIL**
+SA -> QFA: reply **TPFAIL**
 note right 
    This will rollback the dequeue 
    and move the message to 
-   queueA1.error
+   a1.error
 end note
 
 deactivate SA
 
-deactivate SFA
+deactivate QFA
 
 end
 

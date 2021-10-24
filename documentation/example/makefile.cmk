@@ -13,11 +13,11 @@ make.Install( [ 'domain/single/configuration/domain.yaml'], dsl.paths().install 
 
 # multi domain example
 make.Install( [ 'domain/multiple/readme.md'], dsl.paths().install + '/documentation/example/domain/multiple')
-make.Install( [ 'domain/multiple/diagram/scenario.svg', 'domain/multiple/diagram/scenario.uml'], dsl.paths().install + '/documentation/example/domain/multiple/diagram')
+make.Install( [ 'domain/multiple/diagram/scenario.svg', 'domain/multiple/diagram/scenario.puml'], dsl.paths().install + '/documentation/example/domain/multiple/diagram')
 
-make.Install( [ 'domain/multiple/domainA/domain.env'], dsl.paths().install + '/documentation/example/domain/multiple/domainA')
-make.Install( [ 'domain/multiple/domainA/configuration/domain.yaml'], dsl.paths().install + '/documentation/example/domain/multiple/domainA/configuration')
+make.Install( [ 'domain/multiple/A/domain.env'], dsl.paths().install + '/documentation/example/domain/multiple/A')
+make.Install( [ 'domain/multiple/A/configuration/domain.yaml'], dsl.paths().install + '/documentation/example/domain/multiple/A/configuration')
 
-make.Install( [ 'domain/multiple/domainB/domain.env'], dsl.paths().install + '/documentation/example/domain/multiple/domainB')
-make.Install( [ 'domain/multiple/domainB/configuration/domain.yaml'], dsl.paths().install + '/documentation/example/domain/multiple/domainB/configuration')
+make.Install( [ 'domain/multiple/B/domain.env'], dsl.paths().install + '/documentation/example/domain/multiple/B')
+make.Install( [ 'domain/multiple/B/configuration/domain.yaml'], dsl.paths().install + '/documentation/example/domain/multiple/B/configuration')
 

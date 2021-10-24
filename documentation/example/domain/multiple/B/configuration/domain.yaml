@@ -1,0 +1,44 @@
+domain:
+  name: B
+  
+  queue:
+    groups:
+      - alias: B
+        queues:
+          - name: b1
+          - name: b2
+          - name: b3
+
+    forward:
+      groups:
+        - alias: forward-B
+          services:
+            - note: dequeue b1 -> call casual/example/echo -> enqueue reply to b2
+              source: b1
+              instances: 1
+              target:
+                service: casual/example/echo
+              reply:
+                queue: b2
+          queues:
+            - note: dequeue b2 -> enqueue a1 (other domain)
+              source: b2
+              instances: 1
+              target:
+                queue: a1
+
+  gateway:
+    inbound:
+      groups:
+        - alias: inbound
+          note: listener for A
+          connections:
+            - address: 127.0.0.1:7772
+
+    outbound:
+      groups:
+        - alias: outbound
+          note: connect to A
+          connections:
+            - address: 127.0.0.1:7771
+            
