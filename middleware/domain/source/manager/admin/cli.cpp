@@ -1020,6 +1020,8 @@ depending on what parts are updated.
                            posix::result( ::system( command.data()));
                         };
 
+                        // sink child signal from _editor_
+                        signal::callback::registration< code::signal::child>( [](){});
 
                         auto file = get_configuration_file( current, format.value_or( "yaml"));
 
