@@ -71,10 +71,15 @@ namespace casual
 
                      auto& descriptor = common::service::conversation::Context::instance().descriptors().reserve( message.correlation);
                      result.descriptor = descriptor.descriptor;
+                     // The descriptor may be a reused descriptor, so everything must be filled in.
                      descriptor.route = message.recording;
                      if (message.flags.exist(casual::common::flag::service::conversation::connect::Flag::receive_only))
                      { // caller (klient) specified receive only, so we have control of conversation
                         descriptor.duplex = common::service::conversation::state::descriptor::Information::Duplex::send;
+                     }
+                     else
+                     {
+                        descriptor.duplex = common::service::conversation::state::descriptor::Information::Duplex::receive;
                      }
 
                      return result;

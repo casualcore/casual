@@ -98,9 +98,20 @@ namespace casual
 
                   // Prepare the descriptor
                   {
-                     // moved descriptor setup to common/source/server/gandle/service.cpp.
-                     // creating it here AND there with reserve caused two descriptors
-                     // to be allocated.
+                     // moved descriptor setup to common/source/server/handle/service.cpp.
+                     // Doing it here AND there with reserve() caused two descriptors
+                     // to be allocated. Could be avoided if reserve() checked for existing descriptor
+                     // with matching message.correlation.
+                     // The reserved descriptor need to be "unreserved"
+                     // when the service returns (usually tpreturn()). To do it here would be
+                     // "structurally" clean if the descriptor also was reserved here.
+                     // Now the descriptor is reserved and initialized in
+                     // service::call that ultimately does it in
+                     // server::handle::service::transform::parameter( message::conversation::connect::callee::Request& message)
+                     // i.e. even deeper down. For now I have added code to service::call that
+                     // retrieves the descriptor number reserved by transform::parameter() and
+                     // unreserves it on return from the service.
+
                      //auto& descriptor = common::service::conversation::context().descriptors().reserve( message.correlation);
                      //descriptor.route = message.recording;
                      //if (message.flags.exist(casual::common::flag::service::conversation::connect::Flag::receive_only))

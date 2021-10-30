@@ -22,10 +22,9 @@
 
 // debugging/workaround for hang on domain shutdown
 #include "common/process.h"
-
-
-// include code to sleep a short time at end of testcase 
-// before shutting down domain
+// define to include code to sleep a short time at end of testcase 
+// before shutting down domain. Problem does not occur in all
+// environments! Something depends on timing.
 //# define HANG_WORKAROUND 1
 // debugging end
 
@@ -71,13 +70,15 @@ domain:
                struct Result
                {
                   long event{};
+                  int retval{};
                   int error{};
                   long user{};
 
-                  explicit operator bool() const noexcept { return event == 0 && error == 0;}
+                  explicit operator bool() const noexcept { return retval != -1 && event == 0 && error == 0;}
 
                   CASUAL_LOG_SERIALIZE(
                      CASUAL_SERIALIZE( event);
+                     CASUAL_SERIALIZE( retval);
                      CASUAL_SERIALIZE( error);
                      CASUAL_SERIALIZE( user);
                   )
@@ -97,7 +98,7 @@ domain:
                   // We do not check send_event. Value is only defined 
                   // when tpsend failed return value -1 and tperrno=TPEEVENT
                   // and that is not expected.
-                  tpsend( descriptor, buffer.data, buffer.size, flags, &result.event);
+                  result.retval = tpsend( descriptor, buffer.data, buffer.size, flags, &result.event);
                   result.error = tperrno;
                   result.user = tpurcode;
 
@@ -126,12 +127,16 @@ domain:
 
                   auto buffer = test::unittest::xatmi::buffer::x_octet{};
 
-                  tprecv( descriptor, &buffer.data, &buffer.size, flags, &result.event);
+                  result.retval = tprecv( descriptor, &buffer.data, &buffer.size, flags, &result.event);
                   result.error = tperrno;
                   result.user = tpurcode;
                   
-                  if( result.error != -1 || algorithm::compare::any( result.event, TPEV_SVCFAIL, TPEV_SVCSUCC, TPEV_SENDONLY))
+                  if ( result.retval != -1 || // =no error or event from tprecv or
+                      (result.retval == -1 && result.error == TPEEVENT && // "error" and event with possible data
+                       algorithm::compare::any( result.event, TPEV_SVCFAIL, TPEV_SVCSUCC, TPEV_SENDONLY)))
+                  {
                      algorithm::copy( buffer, result.payload);
+                  }
 
                   return result;
                }
@@ -142,16 +147,29 @@ domain:
             {
                struct Result
                {
-                  int descriptor = -1;
+                  int descriptor = -1; // return value from tpconnect, -1 on error
                   int error{};
-                  long user{};
+                 //long user{};
 
-                  explicit operator bool() const noexcept { return descriptor >= 0;}
+                  // Should this be "descriptor > 0" or ">= 0" in the case of
+                  // Casual? Should descriptor == 0 ever occur with casual?
+                  // tpconnect returns -1 on error and other values are 
+                  // "success". Is 0 expected to occur? XATMI only say 
+                  // that tpconnect return -1 on error. A literal
+                  // interpretation of the tpconnect description is that
+                  // all values != -1 are possible descriptors. Using negative 
+                  // descriptor number values would be confusing! Using 0
+                  // as a descriptor number is also potentially confusing, but
+                  // not as bad as negative values. Seems as if the first descriptor
+                  // number actually returned by casual is 1.
+                  //
+                  //explicit operator bool() const noexcept { return descriptor >= 0;}
+                  explicit operator bool() const noexcept { return descriptor > 0;}
 
                   CASUAL_LOG_SERIALIZE(
                      CASUAL_SERIALIZE( descriptor);
                      CASUAL_SERIALIZE( error);
-                     CASUAL_SERIALIZE( user);
+                     //CASUAL_SERIALIZE( user);
                   )
                };
                
@@ -165,7 +183,7 @@ domain:
 
                   result.descriptor = tpconnect( service.data(), buffer.data, buffer.size, flags);
                   result.error = tperrno;
-                  result.user = tpurcode;
+                  //result.user = tpurcode;
 
                   return result;
                }
@@ -242,7 +260,7 @@ domain:
          unittest::Trace trace;
 
          // TPCONV is a flag that is input( !) to a called service, set for conversational.
-         // Not alloed in tpconnect.
+         // Not allowed in tpconnect.
          EXPECT_TRUE( tpconnect( "casual/example/conversation", nullptr, 0, TPCONV) == -1);
          EXPECT_TRUE( tperrno == TPEINVAL) << "tperrno: " << tperrnostring( tperrno);
       }
@@ -315,13 +333,13 @@ domain:
 #endif
       }
 
-      TEST( casual_xatmi_conversation, connect__TPRECVONLY__conversation2_auto_service)
+      TEST( casual_xatmi_conversation, connect__TPRECVONLY__conversation_recv_send_auto_service)
       {
          unittest::Trace trace;
 
          auto domain = local::domain();
 
-         // This calls the conversation2_auto service. This test:
+         // This calls the conversation_recv_send_auto service. This test:
          // * has no started transaction
          // * send no data in the connect
          // * connnects with TPRECVONLY ( i.e. hands over control to service)
@@ -331,10 +349,10 @@ domain:
          // * expects the data to contain the flags set when the service was invoked.
          //   In this test TPCONV|TPSENDONLY|TPTRAN ( =0x00000c10).
          //
-         // "conversation2_auto" has the same code as "conversation2" but is
+         // "conversation_recv_send_auto" has the same code as "conversation_recv_send" but is
          // defined with "transaction: auto", so service should have an active
          // transaction without tx_begin() here. 
-         auto descriptor = tpconnect( "casual/example/conversation2_auto", nullptr, 0, TPRECVONLY);
+         auto descriptor = tpconnect( "casual/example/conversation_recv_send_auto", nullptr, 0, TPRECVONLY);
          ASSERT_TRUE( descriptor != -1);
          ASSERT_TRUE( tperrno == 0);
 
@@ -351,13 +369,13 @@ domain:
 #endif
       }
 
-      TEST( casual_xatmi_conversation, connect__TPRECVONLY__conversation2_service)
+      TEST( casual_xatmi_conversation, connect__TPRECVONLY__conversation_recv_send_service)
       {
          unittest::Trace trace;
 
          auto domain = local::domain();
 
-         // This calls the conversation2 service. This test:
+         // This calls the conversation_recv_send service. This test:
          // * has no started transaction
          // * send no data in the connect
          // * connnects with TPRECVONLY ( i.e. hands over control to service)
@@ -367,10 +385,10 @@ domain:
          // * expects the data to contain the flags set when the service was invoked.
          //   In this test TPCONV|TPSENDONLY ( =0x00000c00).
          //
-         // "conversation2_auto" has the same code as "conversation2" but is
+         // "conversation_recv_send_auto" has the same code as "conversation_recv_send" but is
          // defined with "transaction: join", so service will NOT have an active
          // transaction as we do not start one before connecting.
-         auto descriptor = tpconnect( "casual/example/conversation2", nullptr, 0, TPRECVONLY);
+         auto descriptor = tpconnect( "casual/example/conversation_recv_send", nullptr, 0, TPRECVONLY);
          EXPECT_TRUE( descriptor != -1);
          EXPECT_TRUE( tperrno == 0);
 
@@ -389,7 +407,7 @@ domain:
 
       }
 
-      TEST( casual_xatmi_conversation, connect__TX_TPRECVONLY__conversational2_service)
+      TEST( casual_xatmi_conversation, connect__TX_TPRECVONLY__conversation_recv_send_service)
       {
          unittest::Trace trace;
 
@@ -406,13 +424,13 @@ domain:
          //   invoked. In this case TPVONV|TPSENDONLY|TPTRAN ( =0x00000c10)
          //   The service has "transaction: join" 
          //
-         // "conversation2" terminates the service with tpreturn and a response
+         // "conversation_recv_send" terminates the service with tpreturn and a response
          // with the invocationa flags when it gets control of the conversation.
          // ( the service will also echo all data it receives before
          //  getting control with a tpsend before the tpreturn. In this test there
          // is no data in the connect and therefore no tpsend is done by the service)
          EXPECT_TRUE( tx_begin() == TX_OK);
-         auto descriptor = tpconnect( "casual/example/conversation2", nullptr, 0, TPRECVONLY);
+         auto descriptor = tpconnect( "casual/example/conversation_recv_send", nullptr, 0, TPRECVONLY);
          EXPECT_TRUE( descriptor != -1);
          EXPECT_TRUE( tperrno == 0) << "tperrno:" << tperrnostring( tperrno);
 
@@ -428,7 +446,7 @@ domain:
 #endif
       }
 
-      TEST( casual_xatmi_conversation, connect__TX_TPRECVONLY_TPNOTRAN__conversational2_service)
+      TEST( casual_xatmi_conversation, connect__TX_TPRECVONLY_TPNOTRAN__conversation_recv_send_service)
       {
          unittest::Trace trace;
 
@@ -447,7 +465,7 @@ domain:
          // * expects the data to contain the flags set when the service was invoked
          //   In thuis case TPCONV|TPSENDONLY ( TPTRAN not set)
          EXPECT_TRUE( tx_begin() == TX_OK);
-         auto descriptor = tpconnect( "casual/example/conversation2", nullptr, 0, TPRECVONLY|TPNOTRAN);
+         auto descriptor = tpconnect( "casual/example/conversation_recv_send", nullptr, 0, TPRECVONLY|TPNOTRAN);
          EXPECT_TRUE( descriptor != -1);
          EXPECT_TRUE( tperrno == 0);
 
@@ -464,7 +482,7 @@ domain:
 #endif
       }
 
-      TEST( casual_xatmi_conversation, connect_with_data__TX_TPRECVONLY__conversational2_service)
+      TEST( casual_xatmi_conversation, connect_with_data__TX_TPRECVONLY__conversation_recv_send_service)
       {
          unittest::Trace trace;
 
@@ -487,7 +505,7 @@ domain:
          const std::string_view connect_string{ "data in connect"};
          EXPECT_TRUE( tx_begin() == TX_OK);
 
-         auto connection = local::connect::invoke( "casual/example/conversation2", connect_string, TPRECVONLY);
+         auto connection = local::connect::invoke( "casual/example/conversation_recv_send", connect_string, TPRECVONLY);
 
          EXPECT_TRUE( connection) << CASUAL_NAMED_VALUE( connection);
          EXPECT_TRUE( connection.error == 0) << CASUAL_NAMED_VALUE( connection);
@@ -507,6 +525,9 @@ domain:
          }
          // This receive is expected to get the result from the tpreturn()
          auto result = local::receive::invoke( connection.descriptor, TPSIGRSTRT);
+         EXPECT_TRUE( result.retval == -1) << CASUAL_NAMED_VALUE(result);
+         EXPECT_TRUE( result.error == TPEEVENT) << CASUAL_NAMED_VALUE(result);
+         EXPECT_TRUE( result.event == TPEV_SVCSUCC) << CASUAL_NAMED_VALUE(result);
          EXPECT_TRUE( result.payload == "Flags: 0x00000c10") << CASUAL_NAMED_VALUE( result);
 
 
@@ -519,7 +540,7 @@ domain:
 #endif
       }
 
-      TEST( casual_xatmi_conversation, connect_tpsend__TX_TPRECVONLY__conversational2_service)
+      TEST( casual_xatmi_conversation, connect_tpsend__TX_TPRECVONLY__conversation_recv_send_service)
       {
          unittest::Trace trace;
 
@@ -545,7 +566,7 @@ domain:
 
          EXPECT_TRUE( tx_begin() == TX_OK);
 
-         auto connection = local::connect::invoke( "casual/example/conversation2", connect_string, TPSENDONLY);
+         auto connection = local::connect::invoke( "casual/example/conversation_recv_send", connect_string, TPSENDONLY);
          EXPECT_TRUE( connection) << CASUAL_NAMED_VALUE( connection);
          EXPECT_TRUE( connection.error == 0) << CASUAL_NAMED_VALUE( connection);
 
@@ -574,6 +595,9 @@ domain:
          }
          // This receive is expected to get the result from the tpreturn()
          auto result = local::receive::invoke( connection.descriptor, TPSIGRSTRT);
+         EXPECT_TRUE( result.retval == -1) << CASUAL_NAMED_VALUE( result);
+         EXPECT_TRUE( result.error == TPEEVENT) << CASUAL_NAMED_VALUE( result);
+         EXPECT_TRUE( result.event == TPEV_SVCSUCC) << CASUAL_NAMED_VALUE( result);
          EXPECT_TRUE( result.payload == "Flags: 0x00001410") << CASUAL_NAMED_VALUE( result);
 
          EXPECT_TRUE( tx_rollback() == TX_OK);
@@ -585,7 +609,7 @@ domain:
 #endif
       }
 
-      TEST( casual_xatmi_conversation, connect_tpsend_tpsend__TX_TPRECVONLY__conversational2_service)
+      TEST( casual_xatmi_conversation, connect_tpsend_tpsend__TX_TPRECVONLY__conversation_recv_send_service)
       {
          unittest::Trace trace;
 
@@ -611,7 +635,7 @@ domain:
 
          EXPECT_TRUE( tx_begin() == TX_OK);
 
-         auto connection = local::connect::invoke( "casual/example/conversation2", connect_string, TPSENDONLY);
+         auto connection = local::connect::invoke( "casual/example/conversation_recv_send", connect_string, TPSENDONLY);
          EXPECT_TRUE( connection) << CASUAL_NAMED_VALUE( connection);
          EXPECT_TRUE( connection.error == 0) << CASUAL_NAMED_VALUE( connection);
 
@@ -649,6 +673,9 @@ domain:
          }
          // This receive is expected to get the result from the tpreturn()
          auto result = local::receive::invoke( connection.descriptor, TPSIGRSTRT);
+         EXPECT_TRUE( result.retval == -1) << CASUAL_NAMED_VALUE( result);
+         EXPECT_TRUE( result.error == TPEEVENT) << CASUAL_NAMED_VALUE( result);
+         EXPECT_TRUE( result.event == TPEV_SVCSUCC) << CASUAL_NAMED_VALUE( result);
          EXPECT_TRUE( result.payload == "Flags: 0x00001410") << CASUAL_NAMED_VALUE( result);
 
          EXPECT_TRUE( tx_rollback() == TX_OK);
@@ -656,12 +683,15 @@ domain:
          EXPECT_TRUE( tpdiscon( connection.descriptor) == -1);
 
 #ifdef HANG_WORKAROUND
-         common::process::sleep( 500ms);
+         common::process::sleep( 200ms);
 #endif
       }
 
-      TEST( casual_xatmi_conversation, do_10_connect_tpsend__TX_TPRECVONLY__conversational2_service)
+      TEST( casual_xatmi_conversation, do_10_connect_tpsend__TX_TPRECVONLY__conversation_recv_send_service)
       {
+         // This test verifies that a service can be called multiple times.
+         // In this test case the service calls are "independent" from a transaction
+         // point of view.
          unittest::Trace trace;
 
          // helper that executes a conversational session that:
@@ -679,18 +709,26 @@ domain:
          //   indicating service completion with success
          // * expects the data to contain the flags passed when the service
          //   was invoked. In this case TPCONV|TPRECVONLY|TPTRAN ( ==0x1410).
+         // * rollbacks the transaction
          //
-         // Used in test cases that do this once or multiple times against
-         // the same domain 
+         // Used in a test cases that do this multiple times against
+         // the same domain. 
          auto connect_send = []()
          {
             std::string connect_string {"data in connect. "};
 
             EXPECT_TRUE( tx_begin() == TX_OK);
 
-            auto connection = local::connect::invoke( "casual/example/conversation2", connect_string, TPSENDONLY);
+            auto connection = local::connect::invoke( "casual/example/conversation_recv_send", connect_string, TPSENDONLY);
             EXPECT_TRUE( connection) << CASUAL_NAMED_VALUE( connection);
             EXPECT_TRUE( connection.error == 0) << CASUAL_NAMED_VALUE( connection);
+            // Expect descriptor to be #1. Other numbers probably mean that there is a
+            // resource leak and that descriptors are not freed and reused. XATMI
+            // does not say anything about the value of the descriptor, but the
+            // way things should work in Casual this should be true. For
+            // descriptor to be anything != 1 multiple active conversations
+            // at the same time are needed.
+            EXPECT_TRUE( connection.descriptor == 1) << CASUAL_NAMED_VALUE(connection);
 
             std::string sent_data = connect_string;
 
@@ -713,8 +751,10 @@ domain:
             }
 
             // This receive is expected to get the result from the tpreturn()
-            // This receive is expected to get the result of a tpreturn
             auto result = local::receive::invoke( connection.descriptor, TPSIGRSTRT);
+            EXPECT_TRUE( result.retval == -1) << CASUAL_NAMED_VALUE( result);
+            EXPECT_TRUE( result.error == TPEEVENT) << CASUAL_NAMED_VALUE( result);
+            EXPECT_TRUE( result.event == TPEV_SVCSUCC) << CASUAL_NAMED_VALUE( result);
             EXPECT_TRUE( result.payload == "Flags: 0x00001410") << CASUAL_NAMED_VALUE( result);
 
             EXPECT_TRUE( tx_rollback() == TX_OK);
@@ -732,9 +772,30 @@ domain:
          });
 
 #ifdef HANG_WORKAROUND
-         common::process::sleep( 500ms);
+         common::process::sleep( 200ms);
 #endif
       }
+      // More test cases to consider/TBD:
+      // * Multiple concurrent conversations
+      // * disconnect? (no well designed application should
+      //   use disconnect! At least in my opinion...)
+      // * Conversational service that return failure
+      // * conversatiomnal service that in turn uses tpcall/tpconnect
+      // * failures in such services.
+      //
+      // Additional aspects to verify:
+      // * Are transactions committed and rolled back properly.
+      // * Service transaction modes (auto, join, none, atomic).
+      // * Check descriptor number in service? (At one time had a server side
+      //   leak of descriptors that only showed up in casual log on server
+      //   shutdown. Could handle this by returning service side descriptor
+      //   in the same way as service side flags.)
+      //
+      // IFF we implement a mechanism for test cases to tell the service what
+      // to do we could in principle tell it what to check also!
+      // But a "general language" maybe a bit of overkill... 
+      // Note that a test case with multiple concurrent conversations requires
+      // multiple server instances. 
 /* */
 
    } // xatmi

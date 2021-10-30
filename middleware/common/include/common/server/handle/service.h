@@ -10,6 +10,7 @@
 
 
 #include "common/server/context.h"
+#include "common/service/conversation/context.h"
 
 #include "common/buffer/transport.h"
 #include "common/execution.h"
@@ -23,7 +24,6 @@
 
 #include "common/message/service.h"
 #include "common/message/conversation.h"
-
 
 namespace casual
 {
@@ -99,6 +99,20 @@ namespace casual
          });
 
          auto parameter = transform::parameter( message);
+         // transform::parameter( message) may have reserved a descriptor that we need to
+         // unreserve! Occurs when message is of type
+         // message::conversation::connect::callee::Request, i.e a connect to a conversational
+         // service.
+         auto descriptor = parameter.descriptor;
+         auto execute_unreserve_descriptor = execute::scope( [&]()
+         {
+            if( descriptor)
+            {
+               // unreserve descriptor (!=0 only for conversational )
+               common::service::conversation::Context::instance().descriptors().unreserve(descriptor);
+            }
+         });
+
 
          // If something goes wrong, make sure to rollback before reply with error.
          // this will execute before execute_reply
@@ -191,6 +205,7 @@ namespace casual
 
          execute_transaction();
          execute_reply();
+         execute_unreserve_descriptor();
       }
 
 

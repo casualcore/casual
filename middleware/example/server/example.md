@@ -75,7 +75,7 @@ The service just calls `std::terminate`, and the server, well, _terminates_
 Useful in test-/explore-cases to see what happens when a server _crashes_, what 
 happens with possible transactions and so on. 
 
-## casual/example/conversation2
+## casual/example/conversation_recv_send
 Conversational service that takes data in connect 
 and any it gets via tprecv, concatenates them and send
 with tpsend. Then does a tpreply with a 
@@ -85,6 +85,6 @@ of the conversation to the service.
 Useful to check flags passed to service and experiment with a simple
 conversational service implementing an "echo style" service. 
 
-## casual/example/conversation2_auto
+## casual/example/conversation_recv_send_auto
 Same code as casual/example/conversation2 but defined with
 "transaction: auto" instead of "transaction: join".
