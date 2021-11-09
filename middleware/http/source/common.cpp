@@ -79,6 +79,7 @@ namespace casual
                   using code::xatmi;
                   switch( code)
                   {
+                     case xatmi::absent: return "nil";
                      case xatmi::ok: return "OK";
                      case xatmi::descriptor: return "TPEBADDESC";
                      case xatmi::no_message: return "TPEBLOCK";

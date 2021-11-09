@@ -62,10 +62,10 @@ namespace casual
             case Type::service_reply: return out << "service_reply";
             case Type::service_acknowledge: return out << "service_acknowledge";
             case Type::service_concurrent_advertise: return out << "service_concurrent_advertise";
-            case Type::service_conversation_connect_request: return out << "service_conversation_connect_request";
-            case Type::service_conversation_connect_reply: return out << "service_conversation_connect_reply";
-            case Type::service_conversation_send: return out << "service_conversation_send";
-            case Type::service_conversation_disconnect: return out << "service_conversation_disconnect";
+            case Type::conversation_connect_request: return out << "conversation_connect_request";
+            case Type::conversation_connect_reply: return out << "conversation_connect_reply";
+            case Type::conversation_send: return out << "conversation_send";
+            case Type::conversation_disconnect: return out << "conversation_disconnect";
             case Type::event_subscription_begin: return out << "event_subscription_begin";
             case Type::event_subscription_end: return out << "event_subscription_end";
             case Type::event_idle: return out << "event_idle";

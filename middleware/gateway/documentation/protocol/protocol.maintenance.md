@@ -46,12 +46,9 @@ header.size        | uint64         |            8 | the size of the payload tha
 
 Messages that are used to set up a connection
 
-
-### gateway::message::domain::connect::Request
+### gateway_domain_connect_request - **#7200**
 
 Connection requests from another domain that wants to connect
-
-message type: **7200**
 
 role name                 | network type   | network size | description                                            
 ------------------------- | -------------- | ------------ | -------------------------------------------------------
@@ -61,12 +58,9 @@ domain.name.size          | uint64         |            8 | size of the outbound
 domain.name.data          | dynamic string |       [0..*] | dynamic byte array with the outbound domain name       
 protocol.versions.size    | uint64         |            8 | number of protocol versions outbound domain can 'speak'
 protocol.versions.element | uint64         |            8 | a protocol version                                     
-
-### gateway::message::domain::connect::Reply
+### gateway_domain_connect_reply - **#7201**
 
 Connection reply
-
-message type: **7201**
 
 role name        | network type   | network size | description                                                       
 ---------------- | -------------- | ------------ | ------------------------------------------------------------------
@@ -80,12 +74,9 @@ protocol.version | uint64         |            8 | the chosen protocol version t
 
 ### domain discovery 
 
-
-#### message::gateway::domain::discover::Request
+#### domain_discovery_request - **#7300**
 
 Sent to and received from other domains when one domain wants to discover information abut the other.
-
-message type: **7300**
 
 role name                     | network type   | network size | description                                                  
 ----------------------------- | -------------- | ------------ | -------------------------------------------------------------
@@ -99,12 +90,9 @@ content.services.element.data | dynamic string |       [0..*] | dynamic byte arr
 content.queues.size           | uint64         |            8 | number of requested queues to follow (an array of queues)    
 content.queues.element.size   | uint64         |            8 | size of the current queue name                               
 content.queues.element.data   | dynamic string |       [0..*] | dynamic byte array of the current queue name                 
-
-#### message::gateway::domain::discover::Reply
+#### domain_discovery_reply - **#7301**
 
 Sent to and received from other domains when one domain wants to discover information abut the other.
-
-message type: **7301**
 
 role name                                 | network type   | network size | description                                                     
 ----------------------------------------- | -------------- | ------------ | ----------------------------------------------------------------
@@ -129,12 +117,9 @@ content.queues.element.retries            | uint64         |            8 | how 
 
 ### Service call 
 
-
-#### message::service::call::Request
+#### service_call - **#3100**
 
 Sent to and received from other domains when one domain wants call a service in the other domain
-
-message type: **3100**
 
 role name                | network type   | network size | description                                                        
 ------------------------ | -------------- | ------------ | -------------------------------------------------------------------
@@ -153,12 +138,9 @@ buffer.type.size         | uint64         |            8 | buffer type name size
 buffer.type.data         | dynamic string |       [0..*] | byte array with buffer type in the form 'type/subtype'             
 buffer.memory.size       | uint64         |            8 | buffer payload size (could be very big)                            
 buffer.memory.data       | dynamic binary |       [0..*] | buffer payload data (with the size of buffer.payload.size)         
-
-#### message::service::call::Reply
+#### service_reply - **#3101**
 
 Reply to call request
-
-message type: **3101**
 
 role name                    | network type   | network size | description                                                                   
 ---------------------------- | -------------- | ------------ | ------------------------------------------------------------------------------
@@ -179,12 +161,9 @@ buffer.memory.data           | dynamic binary |       [0..*] | buffer payload da
 
 ### Resource prepare
 
-
-#### message::transaction::resource::prepare::Request
+#### transaction_resource_prepare_request
 
 Sent to and received from other domains when one domain wants to prepare a transaction. 
-
-message type: **5201**
 
 role name        | network type   | network size | description                                                        
 ---------------- | -------------- | ------------ | -------------------------------------------------------------------
@@ -195,12 +174,9 @@ xid.bqual_length | uint64         |            8 | length of the transaction bra
 xid.data         | (fixed) binary |           32 | byte array with the size of gtrid_length + bqual_length (max 128)  
 resource         | uint32         |            4 | RM id of the resource - has to correlate with the reply            
 flags            | uint64         |            8 | XA flags to be forward to the resource                             
-
-#### message::transaction::resource::prepare::Reply
+#### transaction_resource_prepare_reply
 
 Sent to and received from other domains when one domain wants to prepare a transaction. 
-
-message type: **5202**
 
 role name        | network type   | network size | description                                                        
 ---------------- | -------------- | ------------ | -------------------------------------------------------------------
@@ -214,12 +190,9 @@ state            | uint32         |            4 | The state of the operation - 
 
 ### Resource commit
 
-
-#### message::transaction::resource::commit::Request
+#### transaction_resource_commit_request
 
 Sent to and received from other domains when one domain wants to commit an already prepared transaction.
-
-message type: **5203**
 
 role name        | network type   | network size | description                                                        
 ---------------- | -------------- | ------------ | -------------------------------------------------------------------
@@ -230,12 +203,9 @@ xid.bqual_length | uint64         |            8 | length of the transaction bra
 xid.data         | (fixed) binary |           32 | byte array with the size of gtrid_length + bqual_length (max 128)  
 resource         | uint32         |            4 | RM id of the resource - has to correlate with the reply            
 flags            | uint64         |            8 | XA flags to be forward to the resource                             
-
-#### message::transaction::resource::commit::Reply
+#### transaction_resource_commit_reply
 
 Reply to a commit request. 
-
-message type: **5204**
 
 role name        | network type   | network size | description                                                        
 ---------------- | -------------- | ------------ | -------------------------------------------------------------------
@@ -249,13 +219,10 @@ state            | uint32         |            4 | The state of the operation - 
 
 ### Resource rollback
 
-
-#### message::transaction::resource::rollback::Request
+#### transaction_resource_rollback_request
 
 Sent to and received from other domains when one domain wants to rollback an already prepared transaction.
 That is, when one or more resources has failed to prepare.
-
-message type: **5205**
 
 role name        | network type   | network size | description                                                        
 ---------------- | -------------- | ------------ | -------------------------------------------------------------------
@@ -266,12 +233,9 @@ xid.bqual_length | uint64         |            8 | length of the transaction bra
 xid.data         | (fixed) binary |           32 | byte array with the size of gtrid_length + bqual_length (max 128)  
 resource         | uint32         |            4 | RM id of the resource - has to correlate with the reply            
 flags            | uint64         |            8 | XA flags to be forward to the resource                             
-
-#### message::transaction::resource::rollback::Reply
+#### transaction_resource_rollback_reply
 
 Reply to a rollback request. 
-
-message type: **5206**
 
 role name        | network type   | network size | description                                                        
 ---------------- | -------------- | ------------ | -------------------------------------------------------------------
@@ -287,12 +251,9 @@ state            | uint32         |            4 | The state of the operation - 
 
 ### enqueue 
 
-
-#### message::queue::enqueue::Request
+#### queue_group_enqueue_request - **#6100**
 
 Represent enqueue request.
-
-message type: **6100**
 
 role name               | network type   | network size | description                                                        
 ----------------------- | -------------- | ------------ | -------------------------------------------------------------------
@@ -313,25 +274,20 @@ message.type.size       | uint64         |            8 | length of the type str
 message.type.data       | dynamic string |       [0..*] | data of the type string                                            
 message.payload.size    | uint64         |            8 | size of the payload                                                
 message.payload.data    | dynamic binary |       [0..*] | data of the payload                                                
-
-#### message::queue::enqueue::Reply
+#### queue_group_enqueue_reply - **#6101**
 
 Represent enqueue reply.
-
-message type: **6101**
 
 role name | network type   | network size | description                                       
 --------- | -------------- | ------------ | --------------------------------------------------
 execution | (fixed) binary |           16 | uuid of the current execution context (breadcrumb)
 id        | (fixed) binary |           16 | id of the enqueued message                        
 
-### dequeue 
+### dequeue
 
-#### message::queue::dequeue::Request
+#### queue_group_dequeue_request - **#6200**
 
 Represent dequeue request.
-
-message type: **6200**
 
 role name                | network type   | network size | description                                                        
 ------------------------ | -------------- | ------------ | -------------------------------------------------------------------
@@ -346,12 +302,9 @@ selector.properties.size | uint64         |            8 | size of the selector 
 selector.properties.data | dynamic string |       [0..*] | data of the selector properties (ignored if empty)                 
 selector.id              | (fixed) binary |           16 | selector uuid (ignored if 'empty'                                  
 block                    | uint8          |            1 | dictates if this is a blocking call or not                         
-
-#### message::queue::dequeue::Reply
+#### queue_group_dequeue_reply - **#6201**
 
 Represent dequeue reply.
-
-message type: **6201**
 
 role name                       | network type   | network size | description                                               
 ------------------------------- | -------------- | ------------ | ----------------------------------------------------------
@@ -374,79 +327,58 @@ message.element.timestamp       | uint64         |            8 | when the messa
 
 ### connect 
 
-
-#### message::conversation::connect::Request
+#### conversation_connect_request - **#3210**
 
 Sent to establish a conversation
 
-message type: **3200**
-
-role name                       | network type   | network size | description                                                        
-------------------------------- | -------------- | ------------ | -------------------------------------------------------------------
-execution                       | (fixed) binary |           16 | uuid of the current execution context (breadcrumb)                 
-service.name.size               | uint64         |            8 | size of the service name                                           
-service.name.data               | dynamic string |       [0..*] | data of the service name                                           
-service.timeout.duration        | uint64         |            8 | timeout (in ns                                                     
-parent.size                     | uint64         |            8 | size of the parent service name (the caller)                       
-parent.data                     | dynamic string |       [0..*] | data of the parent service name (the caller)                       
-xid.formatID                    | uint64         |            8 | xid format type. if 0 no more information of the xid is transported
-xid.gtrid_length                | uint64         |            8 | length of the transaction gtrid part                               
-xid.bqual_length                | uint64         |            8 | length of the transaction branch part                              
-xid.data                        | (fixed) binary |           32 | byte array with the size of gtrid_length + bqual_length (max 128)  
-flags                           | uint64         |            8 | xatmi flag                                                         
-recording.nodes.size            | uint64         |            8 | size of the recording of 'passed nodes'                            
-recording.nodes.element.address | (fixed) binary |           16 | 'address' of a node'                                               
-buffer.type.size                | uint64         |            8 | buffer type name size                                              
-buffer.type.data                | dynamic string |       [0..*] | byte array with buffer type in the form 'type/subtype'             
-buffer.memory.size              | uint64         |            8 | buffer payload size (could be very big)                            
-buffer.memory.data              | dynamic binary |       [0..*] | buffer payload data (with the size of buffer.payload.size)         
-
-#### message::conversation::connect::Reply
+role name                | network type   | network size | description                                                        
+------------------------ | -------------- | ------------ | -------------------------------------------------------------------
+execution                | (fixed) binary |           16 | uuid of the current execution context (breadcrumb)                 
+service.name.size        | uint64         |            8 | size of the service name                                           
+service.name.data        | dynamic string |       [0..*] | data of the service name                                           
+service.timeout.duration | uint64         |            8 | timeout (in ns                                                     
+parent.size              | uint64         |            8 | size of the parent service name (the caller)                       
+parent.data              | dynamic string |       [0..*] | data of the parent service name (the caller)                       
+xid.formatID             | uint64         |            8 | xid format type. if 0 no more information of the xid is transported
+xid.gtrid_length         | uint64         |            8 | length of the transaction gtrid part                               
+xid.bqual_length         | uint64         |            8 | length of the transaction branch part                              
+xid.data                 | (fixed) binary |           32 | byte array with the size of gtrid_length + bqual_length (max 128)  
+duplex                   | uint16         |            2 | in what duplex the callee shall enter (receive:1, send:0)          
+buffer.type.size         | uint64         |            8 | buffer type name size                                              
+buffer.type.data         | dynamic string |       [0..*] | byte array with buffer type in the form 'type/subtype'             
+buffer.memory.size       | uint64         |            8 | buffer payload size (could be very big)                            
+buffer.memory.data       | dynamic binary |       [0..*] | buffer payload data (with the size of buffer.payload.size)         
+#### conversation_connect_reply - **#3211**
 
 Reply for a conversation
 
-message type: **3201**
-
-role name                       | network type   | network size | description                                       
-------------------------------- | -------------- | ------------ | --------------------------------------------------
-execution                       | (fixed) binary |           16 | uuid of the current execution context (breadcrumb)
-route.nodes.size                | uint64         |            8 | size of the established route                     
-route.nodes.element.address     | (fixed) binary |           16 | 'address' of a 'node' in the route                
-recording.nodes.size            | uint64         |            8 | size of the recording of 'passed nodes'           
-recording.nodes.element.address | (fixed) binary |           16 | 'address' of a node'                              
-code.result                     | uint32         |            4 | result code of the connection attempt             
+role name   | network type   | network size | description                                       
+----------- | -------------- | ------------ | --------------------------------------------------
+execution   | (fixed) binary |           16 | uuid of the current execution context (breadcrumb)
+code.result | uint32         |            4 | result code of the connection attempt             
 
 ### send
-
-#### message::conversation::Send
+#### conversation_send - **#3212**
 
 Represent a message sent 'over' an established connection
 
-message type: **3202**
-
-role name                   | network type   | network size | description                                               
---------------------------- | -------------- | ------------ | ----------------------------------------------------------
-execution                   | (fixed) binary |           16 | uuid of the current execution context (breadcrumb)        
-route.nodes.size            | uint64         |            8 | size of the established route                             
-route.nodes.element.address | (fixed) binary |           16 | 'address' of a 'node' in the route                        
-events                      | uint64         |            8 | events                                                    
-code.result                 | uint32         |            4 | status of the connection                                  
-buffer.type.size            | uint64         |            8 | buffer type name size                                     
-buffer.type.data            | dynamic string |       [0..*] | byte array with buffer type in the form 'type/subtype'    
-buffer.memory.size          | uint64         |            8 | buffer payload size (could be very big)                   
-buffer.memory.data          | dynamic binary |       [0..*] | buffer payload data (with the size of buffer.payload.size)
+role name          | network type   | network size | description                                               
+------------------ | -------------- | ------------ | ----------------------------------------------------------
+execution          | (fixed) binary |           16 | uuid of the current execution context (breadcrumb)        
+duplex             | uint16         |            2 | in what duplex the callee shall enter (receive:1, send:0) 
+code.result        | uint32         |            4 | status of the connection                                  
+code.user          | uint64         |            8 | user code, if callee did a tpreturn and supplied user-code
+buffer.type.size   | uint64         |            8 | buffer type name size                                     
+buffer.type.data   | dynamic string |       [0..*] | byte array with buffer type in the form 'type/subtype'    
+buffer.memory.size | uint64         |            8 | buffer payload size (could be very big)                   
+buffer.memory.data | dynamic binary |       [0..*] | buffer payload data (with the size of buffer.payload.size)
 
 ### disconnect
 
-#### message::conversation::Disconnect
+#### conversation_disconnect - **#3213**
 
 Sent to abruptly disconnect the conversation
 
-message type: **3203**
-
-role name                   | network type   | network size | description                                       
---------------------------- | -------------- | ------------ | --------------------------------------------------
-execution                   | (fixed) binary |           16 | uuid of the current execution context (breadcrumb)
-route.nodes.size            | uint64         |            8 | size of the established route                     
-route.nodes.element.address | (fixed) binary |           16 | 'address' of a 'node' in the route                
-events                      | uint64         |            8 | events                                            
+role name | network type   | network size | description                                       
+--------- | -------------- | ------------ | --------------------------------------------------
+execution | (fixed) binary |           16 | uuid of the current execution context (breadcrumb)

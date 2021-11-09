@@ -63,6 +63,11 @@ namespace casual
                {
                   common::Flags< Event> event;
                   common::buffer::Payload buffer;
+
+                  CASUAL_LOG_SERIALIZE(
+                     CASUAL_SERIALIZE( event);
+                     CASUAL_SERIALIZE( buffer);
+                  )
                };
             } // receive
 
@@ -72,15 +77,15 @@ namespace casual
                static Context& instance();
                ~Context();
 
-               descriptor::type connect( const std::string& service, common::buffer::payload::Send buffer, connect::Flags flags);
+               strong::conversation::descriptor::id connect( const std::string& service, common::buffer::payload::Send buffer, connect::Flags flags);
 
-               common::Flags< Event> send( descriptor::type descriptor, common::buffer::payload::Send&& buffer, common::Flags< send::Flag> flags);
+               common::Flags< Event> send( strong::conversation::descriptor::id descriptor, common::buffer::payload::Send&& buffer, common::Flags< send::Flag> flags);
 
-               receive::Result receive( descriptor::type descriptor, common::Flags< receive::Flag> flags);
+               receive::Result receive( strong::conversation::descriptor::id descriptor, common::Flags< receive::Flag> flags);
 
-               void disconnect( descriptor::type descriptor);
+               void disconnect( strong::conversation::descriptor::id descriptor);
 
-               inline State::holder_type& descriptors() { return m_state.descriptors;}
+               inline auto& descriptors() { return m_state.descriptors;}
 
                bool pending() const;
 

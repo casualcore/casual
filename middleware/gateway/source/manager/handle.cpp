@@ -199,7 +199,7 @@ namespace casual
                         {
                            if( state.runlevel == decltype( state.runlevel())::running)
                            {
-                              log::line( log::category::error, code::casual::invalid_semantics, ' ', information,  
+                              log::line( log::category::error, code::casual::invalid_semantics, ' ', information, ' ',
                                  message.state.reason, " - pid: ", message.state.pid, " alias: ", group.configuration.alias, " - action: restart");
 
                               group.process = {};

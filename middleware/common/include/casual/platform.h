@@ -414,6 +414,7 @@ namespace casual
       {
          //! Call-descriptor type
          using type = int;
+         constexpr type invalid = -1;
       } // descriptor
 
    } // platform

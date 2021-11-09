@@ -91,49 +91,82 @@ namespace casual
                {
                   namespace lookup
                   {
-                     auto reply( State& state)
+                     namespace detail
                      {
-                        return [&state]( common::message::service::lookup::Reply& message)
+                        template< typename R, typename E>
+                        void reply( State& state, R&& request, common::message::service::lookup::Reply& lookup, E send_error)
                         {
-                           Trace trace{ "gateway::group::inbound::handle::local::internal::call::lookup::reply"};
-                           common::log::line( verbose::log, "message: ", message);
-
-                           auto send_error_reply = [&state, &message]( auto code)
-                           {
-                              common::message::service::call::Reply reply;
-                              reply.correlation = message.correlation;
-                              reply.code.result = code;
-                              tcp::send( state, reply);
-                           };
-
-                           auto request = state.pending.requests.consume( message.correlation, message);
                            
-
-                           switch( message.state)
+                           switch( lookup.state)
                            {
-                              using Enum = decltype( message.state);
+                              using Enum = decltype( lookup.state);
                               case Enum::idle:
                               {
-                                 if( ! ipc::flush::optional::send( message.process.ipc, request))
+                                 if( ! ipc::flush::optional::send( lookup.process.ipc, request))
                                  {
-                                    log::line( common::log::category::error, common::code::xatmi::service_error, " server: ", message.process, " has been terminated during interdomain call - action: reply with: ", common::code::xatmi::service_error);
-                                    send_error_reply( common::code::xatmi::service_error);
+                                    log::line( common::log::category::error, common::code::xatmi::service_error, " server: ", lookup.process, " has been terminated during interdomain call - action: reply with: ", common::code::xatmi::service_error);
+                                    send_error( state, lookup, common::code::xatmi::service_error);
                                  }
                                  break;
                               }
                               case Enum::absent:
                               {
-                                 log::line( common::log::category::error, common::code::xatmi::no_entry, " service: ", message.service, " is not handled by this domain (any more) - action: reply with: ", common::code::xatmi::no_entry);
-                                 send_error_reply( common::code::xatmi::no_entry);
+                                 log::line( common::log::category::error, common::code::xatmi::no_entry, " service: ", lookup.service, " is not handled by this domain (any more) - action: reply with: ", common::code::xatmi::no_entry);
+                                 send_error( state, lookup, common::code::xatmi::no_entry);
                                  break;
                               }
                               default:
                               {
-                                 log::line( common::log::category::error, common::code::xatmi::system, " unexpected state on lookup reply: ", message, " - action: reply with: ", common::code::xatmi::service_error);
-                                 send_error_reply( common::code::xatmi::system);
+                                 log::line( common::log::category::error, common::code::xatmi::system, " unexpected state on lookup reply: ", lookup, " - action: reply with: ", common::code::xatmi::service_error);
+                                 send_error( state, lookup, common::code::xatmi::system);
                                  break;
                               }
                            }
+
+                        }
+                     } // detail
+
+                     auto reply( State& state)
+                     {
+                        return [&state]( common::message::service::lookup::Reply& lookup)
+                        {
+                           Trace trace{ "gateway::group::inbound::handle::local::internal::call::lookup::reply"};
+                           common::log::line( verbose::log, "message: ", lookup);
+
+                           auto request = state.pending.requests.consume( lookup.correlation, lookup);
+
+                           switch( common::message::type( request))
+                           {
+                              using Type = decltype( common::message::type( request));
+
+                              case Type::service_call:
+
+                                 detail::reply( state, request, lookup, []( auto& state, auto& lookup, auto code)
+                                 {
+                                    common::message::service::call::Reply reply;
+                                    reply.correlation = lookup.correlation;
+                                    reply.code.result = code;
+                                    tcp::send( state, reply);
+                                 });
+
+                                 break;
+
+                              case Type::conversation_connect_request:
+                                 
+                                 detail::reply( state, request, lookup, []( auto& state, auto& lookup, auto code)
+                                 {
+                                    common::message::conversation::connect::Reply reply;
+                                    reply.correlation = lookup.correlation;
+                                    reply.code.result = code;
+                                    tcp::send( state, reply);
+                                 });
+                                 break;
+
+                              default:
+                                 log::line( log::category::error, code::casual::internal_unexpected_value, " message type: ", common::message::type( request), " - action: discard");
+
+                           }
+
                         };  
                      }
 
@@ -145,6 +178,53 @@ namespace casual
                   } // call
 
                } // service
+
+               namespace conversation
+               {
+                  namespace connect
+                  {
+                     auto reply( State& state)
+                     {
+                        return [&state]( common::message::conversation::connect::Reply& message)
+                        {
+                           Trace trace{ "gateway::group::inbound::handle::local::internal::conversation::connect::reply"};
+                           common::log::line( verbose::log, "message: ", message);
+
+                           // we consume the correlation to connection, and add a conversation specific "route"
+                           if( auto descriptor = tcp::send( state, message))
+                           {
+                              state.conversations.push_back( state::Conversation{ message.correlation, descriptor, message.process});
+                              common::log::line( verbose::log, "state.conversations: ", state.conversations);
+                           }
+                        };
+                     }
+                     
+                  } // connect
+
+                  auto send( State& state)
+                  {
+                     return [&state]( common::message::conversation::callee::Send& message)
+                     {
+                        Trace trace{ "gateway::group::inbound::handle::local::internal::conversation::send"};
+                        common::log::line( verbose::log, "message: ", message);
+
+                        if( auto found = algorithm::find( state.conversations, message.correlation))
+                        {
+                           if( auto connection = state.external.connection( found->descriptor))
+                              connection->send( state.directive, message);
+                           
+                           // if the `send` has event that indicate that it will end the conversation - we remove our "route" state
+                           // for the connection
+                           if( message.code.result != decltype( message.code.result)::absent)
+                              state.conversations.erase( std::begin( found));
+                        }
+                        else
+                           common::log::line( common::log::category::error, "(internal) failed to correlate conversation: ", message.correlation);
+
+                     };
+                  }
+                  
+               } // conversation
 
                namespace queue
                {
@@ -309,6 +389,33 @@ namespace casual
 
                namespace service
                {
+                  namespace detail
+                  {
+                     template< typename M>
+                     auto lookup( State& state, M&& message)
+                     {
+                        Trace trace{ "gateway::group::inbound::handle::local::external::service::detail::lookup"};
+                        common::log::line( verbose::log, "message: ", message);
+
+                        // Change 'sender' so we get the reply
+                        message.process = common::process::handle();
+
+                        // Prepare lookup
+                        common::message::service::lookup::Request request{ common::process::handle()};
+                        {
+                           request.correlation = message.correlation;
+                           request.requested = message.service.name;
+                           request.context = decltype( request.context)::no_busy_intermediate;
+                        }
+
+                        // Add message to pending
+                        state.pending.requests.add( std::move( message));
+
+                        // Send lookup
+                        ipc::flush::send( ipc::manager::service(), request); 
+
+                     }
+                  } // detail
                   namespace call
                   {
                      auto request( State& state)
@@ -316,29 +423,62 @@ namespace casual
                         return [&state]( common::message::service::call::callee::Request& message)
                         {
                            Trace trace{ "gateway::group::inbound::handle::local::external::service::call::request"};
-                           common::log::line( verbose::log, "message: ", message);
-
-                           // Change 'sender' so we get the reply
-                           message.process = common::process::handle();
-
-                           // Prepare lookup
-                           common::message::service::lookup::Request request;
-                           {
-                              request.correlation = message.correlation;
-                              request.requested = message.service.name;
-                              request.context = decltype( request.context)::no_busy_intermediate;
-                              request.process = common::process::handle();
-                           }
-
-                           // Add message to buffer
-                           state.pending.requests.add( std::move( message));
-
-                           // Send lookup
-                           ipc::flush::send( ipc::manager::service(), request);  
+                           
+                           detail::lookup( state, message);
                         };
                      }
                   } // call
                } // service
+
+               namespace conversation
+               {
+                  namespace connect
+                  {
+                     auto request( State& state)
+                     {
+                        return [&state]( common::message::conversation::connect::callee::Request& message)
+                        {
+                           Trace trace{ "gateway::group::inbound::handle::local::external::conversation::connect::request"};
+
+                           service::detail::lookup( state, message);
+                        };
+                     }
+                     
+                  } // connect
+
+                  auto disconnect( State& state)
+                  {
+                     return [&state]( common::message::conversation::Disconnect& message)
+                     {
+                        Trace trace{ "gateway::group::inbound::handle::local::external::conversation::disconnect"};
+                        common::log::line( verbose::log, "message: ", message);
+
+                        if( auto found = algorithm::find( state.conversations, message.correlation))
+                        {
+                           ipc::flush::send( found->process.ipc, message);
+
+                           // we're done with this connection, regardless of what callee thinks...
+                           state.conversations.erase( std::begin( found));
+                        }
+                     };
+                  }
+
+                  auto send( State& state)
+                  {
+                     return [&state]( common::message::conversation::callee::Send& message)
+                     {
+                        Trace trace{ "gateway::group::inbound::handle::local::external::conversation::send"};
+                        common::log::line( verbose::log, "message: ", message);
+
+                        if( auto found = algorithm::find( state.conversations, message.correlation))
+                           ipc::flush::send( found->process.ipc, message);
+                        else
+                           common::log::line( common::log::category::error, "(external) failed to correlate conversation: ", message.correlation);
+                     };
+                  }
+                  
+               } // conversation
+
 
                namespace queue
                {
@@ -379,7 +519,6 @@ namespace casual
                         return [&state]( casual::queue::ipc::message::group::enqueue::Request& message)
                         {
                            Trace trace{ "gateway::group::inbound::handle::local::external::queue::enqueue::Request"};
-
                            common::log::line( verbose::log, "message: ", message);
 
                            // Send lookup
@@ -483,15 +622,24 @@ namespace casual
 
          } // <unnamed>
       } // local
+
       internal_handler internal( State& state)
       {
          return {
             common::message::handle::defaults( communication::ipc::inbound::device()),
             common::message::internal::dump::state::handle( state),
 
-            // service
+            // lookup
             local::internal::service::lookup::reply( state),
+            
+            // service
             local::internal::service::call::reply( state),
+
+            // conversation
+            local::internal::conversation::connect::reply( state),
+            local::internal::conversation::send( state),
+
+
 
             // queue
             local::internal::queue::lookup::reply( state),
@@ -523,6 +671,11 @@ namespace casual
 
             // service call
             local::external::service::call::request( state),
+
+            // conversation
+            local::external::conversation::connect::request( state),
+            local::external::conversation::disconnect( state),
+            local::external::conversation::send( state),
 
             // queue
             local::external::queue::enqueue::request( state),

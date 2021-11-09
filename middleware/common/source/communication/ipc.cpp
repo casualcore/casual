@@ -308,6 +308,7 @@ namespace casual
                         [&]( auto& complete)
                         {
                            return ! complete.complete() 
+                              && transport.type() == complete.type()
                               && transport.message.header.correlation == complete.correlation();
                         });
 
@@ -372,7 +373,8 @@ namespace casual
                      auto found = algorithm::find_if( cache,
                            [&]( auto& complete)
                            {
-                              return ! complete.complete() 
+                              return ! complete.complete()
+                                 && transport.type() == complete.type()
                                  && transport.message.header.correlation == complete.correlation();
                            });
 

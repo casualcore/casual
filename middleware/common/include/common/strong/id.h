@@ -117,5 +117,15 @@ namespace casual
          using id = strong::Type< Uuid, tag>;
       } // domain
 
+      namespace conversation
+      {
+         namespace descriptor
+         {
+            struct tag{};
+            using id = detail::integral::Type< platform::descriptor::type , tag, platform::descriptor::invalid>;
+         } // descriptor
+
+      } // conversation
+
    } // common::strong
 } // casual

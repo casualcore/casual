@@ -42,6 +42,13 @@ namespace casual
          {
             return common::predicate::boolean( common::algorithm::find( m_points, correlation));
          }
+
+
+         auto remove( const common::strong::correlation::id& correlation) noexcept
+         {
+            if( auto found = common::algorithm::find( m_points, correlation))
+               m_points.erase( std::begin( found));
+         }
          
          //! consumes and @returns the point - 'empty' point if not found 
          Point consume( const common::strong::correlation::id& correlation)
@@ -66,7 +73,7 @@ namespace casual
             return std::exchange( m_points, {});
          }
 
-         auto associated( common::strong::file::descriptor::id connection) const
+         auto associated( common::strong::file::descriptor::id connection) const noexcept
          {
             return common::predicate::boolean( common::algorithm::find( m_points, connection));
          }

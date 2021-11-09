@@ -10,6 +10,8 @@
 
 #include "common/unittest.h"
 
+#include "test/unittest/gateway.h"
+
 #include "domain/manager/unittest/process.h"
 #include "domain/manager/admin/cli.h"
 
@@ -67,88 +69,11 @@ domain:
                
             } // configuration
 
-            namespace state
-            {
-               template< typename P, typename F>
-               auto until( P&& predicate, F&& fetch)
-               {
-                  auto state = fetch();
-
-                  auto count = 500;
-
-                  while( ! predicate( state) && count-- > 0)
-                  {
-                     process::sleep( std::chrono::milliseconds{ 2});
-                     state = fetch();
-                  }
-
-                  return state;
-               }
-
-               namespace gateway
-               {
-                  auto call()
-                  {
-                     serviceframework::service::protocol::binary::Call call;
-                     auto reply = call( casual::gateway::manager::admin::service::name::state);
-
-                     casual::gateway::manager::admin::model::State result;
-                     reply >> CASUAL_NAMED_VALUE( result);
-
-                     return result;
-                  }
-
-                  template< typename P>
-                  auto until( P&& predicate)
-                  {
-                     return state::until( std::forward< P>( predicate), []()
-                     {
-                        return state::gateway::call();
-                     });
-                  }
-
-                  namespace predicate::outbound
-                  {
-                     // returns a predicate that checks if all out-connections has a 'remote id'
-                     auto connected( platform::size::type count = 0) 
-                     {
-                        return [count]( auto& state)
-                        {
-                           auto outbound_connected = []( auto& connection)
-                           {
-                              return connection.bound != decltype( connection.bound)::out || connection.remote.id;
-                           };
-
-                           if( count == 0)
-                              return algorithm::all_of( state.connections, outbound_connected);
-                           else
-                              return algorithm::count_if( state.connections, outbound_connected) == count;
-
-                           
-                        };
-                     };
-
-                     // returns a predicate that checks if all out-connections has NOT a 'remote id'
-                     auto disconnected()
-                     {
-                        return []( auto& state)
-                        {
-                           return algorithm::all_of( state.connections, []( auto& connection)
-                           {
-                              return connection.bound != decltype( connection.bound)::out || ! connection.remote.id;
-                           }); 
-                        };
-                     };
-                  } // predicate::outbound
-
-               } // gateway
-
-            } // state
 
             auto allocate( platform::size::type size = 128)
             {
                auto buffer = tpalloc( X_OCTET, nullptr, size);
-               unittest::random::range( range::make( buffer, size));
+               common::unittest::random::range( range::make( buffer, size));
                return buffer;
             }
 
@@ -374,7 +299,7 @@ domain:
          local::Manager b{ { local::configuration::base, B}};
          EXPECT_TRUE( communication::instance::ping( b.handle().ipc) == b.handle());
 
-         auto payload = unittest::random::binary( 1024);
+         auto payload = common::unittest::random::binary( 1024);
          {
             queue::Message message;
             message.payload.type = common::buffer::type::json();
@@ -427,7 +352,7 @@ domain:
 
 )"}}; 
          
-         local::state::gateway::until( local::state::gateway::predicate::outbound::connected());
+         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
          
          auto a = local::Manager{ { local::configuration::base, R"(
 domain: 
@@ -441,7 +366,7 @@ domain:
 )"}};
 
 
-         local::state::gateway::until( local::state::gateway::predicate::outbound::connected());
+         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
 
          // call the two domain services to get discovery
          local::call( "casual/example/domain/echo/B", 0);
@@ -490,7 +415,7 @@ domain:
                -  address: 127.0.0.1:7001
 
 )"}}; 
-         local::state::gateway::until( local::state::gateway::predicate::outbound::connected());
+         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
 
          auto c = local::example::domain( "C", "7003");
          auto b = local::example::domain( "B", "7004");
@@ -512,7 +437,7 @@ domain:
 )"}};
 
 
-         local::state::gateway::until( local::state::gateway::predicate::outbound::connected());
+         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
 
          // we expect to reach only  B C 
          algorithm::for_n< 10>([]()
@@ -525,7 +450,7 @@ domain:
          local::sink( std::move( b));
 
          // wait until we only have one outbound connected (D)
-         local::state::gateway::until( local::state::gateway::predicate::outbound::connected( 1));
+         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected( 1));
 
          // we expect all calls to reach E (via D)
          algorithm::for_n< 10>([]()
@@ -571,7 +496,7 @@ domain:
 
          local::Manager a{ { local::configuration::base, A}};
 
-         local::state::gateway::until( local::state::gateway::predicate::outbound::connected());
+         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
 
          // we might get to the "wrong" domain until all services are advertised.
          EXPECT_TRUE( local::domain::name( "B", 1000));
@@ -619,7 +544,7 @@ domain:
 
          local::Manager a{ { local::configuration::base, A}};
 
-         local::state::gateway::until( local::state::gateway::predicate::outbound::connected());
+         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
 
          // we might get to the "wrong" domain until all services are advertised.
          EXPECT_TRUE( local::domain::name( "B", 1000));
@@ -657,9 +582,9 @@ domain:
 
          local::Manager a{ { local::configuration::base, A}};
 
-         local::state::gateway::until( local::state::gateway::predicate::outbound::connected());
+         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
 
-         const auto binary = unittest::random::binary( 3 * platform::ipc::transport::size);
+         const auto binary = common::unittest::random::binary( 3 * platform::ipc::transport::size);
 
          algorithm::for_n< 10>( [&binary]()
          {
@@ -700,9 +625,9 @@ domain:
 
          local::Manager a{ { local::configuration::base, A}};
 
-         local::state::gateway::until( local::state::gateway::predicate::outbound::connected());
+         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
 
-         const auto binary = unittest::random::binary( platform::ipc::transport::size);
+         const auto binary = common::unittest::random::binary( platform::ipc::transport::size);
 
          ASSERT_TRUE( tx_begin() == TX_OK);
 
@@ -742,9 +667,9 @@ domain:
 
          local::Manager a{ { local::configuration::base, A}};
 
-         local::state::gateway::until( local::state::gateway::predicate::outbound::connected());
+         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
 
-         const auto binary = unittest::random::binary( platform::ipc::transport::size);
+         const auto binary = common::unittest::random::binary( platform::ipc::transport::size);
 
          ASSERT_TRUE( tx_begin() == TX_OK);
 
@@ -801,7 +726,7 @@ domain:
 
 
          local::Manager b{ { local::configuration::base, B}};
-         local::state::gateway::until( local::state::gateway::predicate::outbound::connected());
+         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
 
          constexpr auto A = R"(
 domain:
@@ -816,9 +741,9 @@ domain:
 
 
          local::Manager a{ { local::configuration::base, A}};
-         local::state::gateway::until( local::state::gateway::predicate::outbound::connected());
+         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
 
-         const auto binary = unittest::random::binary( platform::ipc::transport::size);
+         const auto binary = common::unittest::random::binary( platform::ipc::transport::size);
 
          ASSERT_TRUE( tx_begin() == TX_OK);
 
@@ -892,9 +817,9 @@ domain:
 
 
          local::Manager a{ { local::configuration::base, A}};
-         local::state::gateway::until( local::state::gateway::predicate::outbound::connected());
+         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
 
-         const auto binary = unittest::random::binary( platform::ipc::transport::size);
+         const auto binary = common::unittest::random::binary( platform::ipc::transport::size);
 
          ASSERT_TRUE( tx_begin() == TX_OK);
 
@@ -958,7 +883,7 @@ domain:
 
 
          local::Manager b{ { local::configuration::base, B}};
-         local::state::gateway::until( local::state::gateway::predicate::outbound::connected());
+         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
 
          constexpr auto A = R"(
 domain:
@@ -973,9 +898,9 @@ domain:
 
 
          local::Manager a{ { local::configuration::base, A}};
-         local::state::gateway::until( local::state::gateway::predicate::outbound::connected());
+         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
 
-         const auto binary = unittest::random::binary( platform::ipc::transport::size);
+         const auto binary = common::unittest::random::binary( platform::ipc::transport::size);
 
          ASSERT_TRUE( tx_begin() == TX_OK);
 
@@ -1000,7 +925,7 @@ domain:
             c.activate();
 
             // the outbound in C might not have been able to connect to A yet, wait for it.
-            local::state::gateway::until( local::state::gateway::predicate::outbound::connected());
+            test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
 
             auto buffer = local::call( "casual/example/domain/echo/D", binary);
             auto size = local::size( buffer);
@@ -1055,9 +980,9 @@ domain:
 
          local::Manager a{ { local::configuration::base, A}};
 
-         local::state::gateway::until( local::state::gateway::predicate::outbound::connected());
+         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
 
-         const auto binary = unittest::random::binary( 2048);
+         const auto binary = common::unittest::random::binary( 2048);
 
          auto descriptors = algorithm::generate_n< 7>( [&binary]()
          {
@@ -1128,9 +1053,9 @@ domain:
 
          local::Manager a{ { local::configuration::base, A}};
 
-         local::state::gateway::until( local::state::gateway::predicate::outbound::connected());
+         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
 
-         const auto binary = unittest::random::binary( 2048);
+         const auto binary = common::unittest::random::binary( 2048);
 
          auto descriptors = algorithm::generate_n< 5>( [&binary]()
          {
@@ -1212,7 +1137,7 @@ domain:
 )"}};
 
 
-         local::state::gateway::until( local::state::gateway::predicate::outbound::connected());
+         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
          
          // jump in to B
          b.activate();
@@ -1262,7 +1187,7 @@ domain:
 
          local::Manager a{ { local::configuration::base, A}};
 
-         local::state::gateway::until( local::state::gateway::predicate::outbound::connected());
+         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
 
          // we might get to the "wrong" domain until all services are advertised.
          EXPECT_TRUE( local::domain::name( "B", 1000));
@@ -1322,7 +1247,7 @@ domain:
 
          local::Manager a{ { local::configuration::base, A}};
 
-         local::state::gateway::until( local::state::gateway::predicate::outbound::connected());
+         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
 
          // we might get to C until all services are advertised.
          EXPECT_TRUE( local::domain::name( "B", 1000));
@@ -1349,7 +1274,7 @@ domain:
          a.activate();
 
          // we need to wait for all to be connected...
-         local::state::gateway::until( local::state::gateway::predicate::outbound::connected());
+         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
          
          // we expect to get to B agin
          EXPECT_TRUE( local::domain::name( "B", 1000));
@@ -1402,7 +1327,7 @@ domain:
             return false;
          };
 
-         local::state::gateway::until( ready_predicate);
+         test::unittest::gateway::state::until( ready_predicate);
 
          std::map< std::string, int> domains;
 
@@ -1461,7 +1386,7 @@ domain:
          auto b = create_domain( B);
          auto a = create_domain( A);
 
-         local::state::gateway::until( local::state::gateway::predicate::outbound::connected());
+         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
 
          local::call( "casual/example/echo", 0);
 
@@ -1469,8 +1394,8 @@ domain:
 
          // "shutdown" B
          local::sink( std::move( b));
-
-         local::state::gateway::until( local::state::gateway::predicate::outbound::disconnected());
+         
+         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::disconnected());
 
          log::line( verbose::log, "after shutdown of B");
 
@@ -1482,7 +1407,7 @@ domain:
          b = create_domain( B);
          a.activate();
 
-         local::state::gateway::until( local::state::gateway::predicate::outbound::connected());
+         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
 
          log::line( verbose::log, "after boot of B");
 
@@ -1541,7 +1466,7 @@ domain:
          auto b = create_domain( B);
          auto a = create_domain( A);
 
-         local::state::gateway::until( local::state::gateway::predicate::outbound::connected());
+         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
 
          local::call( "a", 0);
          
@@ -1595,7 +1520,7 @@ domain:
          auto b = create_domain( B);
          auto a = create_domain( A);
 
-         local::state::gateway::until( local::state::gateway::predicate::outbound::connected());
+         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
 
          local::call( "foo", 0);
 
@@ -1603,7 +1528,7 @@ domain:
 
          // "shutdown" B
          local::sink( std::move( b));
-         local::state::gateway::until( local::state::gateway::predicate::outbound::disconnected());
+         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::disconnected());
 
          log::line( verbose::log, "after shutdown of B");
 
@@ -1615,7 +1540,7 @@ domain:
          b = create_domain( B);
          a.activate();
 
-         local::state::gateway::until( local::state::gateway::predicate::outbound::connected());
+         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
 
          log::line( verbose::log, "after boot of B");
          
@@ -1671,7 +1596,7 @@ domain:
          auto b = create_domain( B);
          auto a = create_domain( A);
 
-         local::state::gateway::until( local::state::gateway::predicate::outbound::connected());
+         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
 
          local::call( "foo", 0);
 
@@ -1679,7 +1604,7 @@ domain:
 
          // "shutdown" B
          local::sink( std::move( b));
-         local::state::gateway::until( local::state::gateway::predicate::outbound::disconnected());
+         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::disconnected());
 
          log::line( verbose::log, "after shutdown of B");
 
@@ -1691,7 +1616,7 @@ domain:
          b = create_domain( B);
          a.activate();
 
-         local::state::gateway::until( local::state::gateway::predicate::outbound::connected());
+         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
 
          log::line( verbose::log, "after boot of B");
          
@@ -1703,7 +1628,7 @@ domain:
       //! put in this TU to enable all helpers to check state
       TEST( test_domain_assassinate, interdomain_call__timeout_1ms__call)
       {
-         unittest::Trace trace;
+         common::unittest::Trace trace;
 
          constexpr auto base_configuration = R"(
 domain: 
@@ -1761,7 +1686,7 @@ domain:
          local::Manager a{ { base_configuration, A}};
          local::Manager b{ { base_configuration, B}};
 
-         local::state::gateway::until( local::state::gateway::predicate::outbound::connected());
+         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
 
          auto start = platform::time::clock::type::now();
 

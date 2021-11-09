@@ -80,51 +80,8 @@ namespace casual
                         algorithm::copy_max( argument.service.name, range::make( result.name));
 
                         result.len = argument.payload.memory.size();
-                        result.cd = argument.descriptor;
-                        // argument.flags is the flags sepcified by the caller. This
-                        // is not directly usable as the flags when invoking the
-                        // service. 
-                        // Legal flags on service call are:
-                        // * TPCONV, should be set for a conversational service.
-                        // * TPTRAN, should be set if a transaction is active
-                        // * TPNOREPLY, should be set if caller is not
-                        //   expecting a reply      
-                        // * TPSENDONLY, conversational service and service
-                        //   has control of conversation and can call tpsend().
-                        // * TPRECVONLY, conversational service and caller has
-                        //   control of conversation and can call tpsend(),
-                        //   service shall call tprecv().
-                        // The following code relies on the caller specified flags
-                        // being in argument.flags!
-                        // experimental code!...
-                        //result.flags = argument.flags.underlaying();
-                        casual::common::flag::xatmi::Flags tmp_flags;
-                        if (result.cd != 0) { //assumes cd == 0 for request/response service
-                          tmp_flags |= common::flag::xatmi::Flag::conversation;
-                        }
-
-                        if (casual::common::transaction::Context::instance().info(0)) { 
-                           tmp_flags |= common::flag::xatmi::Flag::in_transaction;
-                        }
-                        if (argument.flags.exist(casual::common::service::invoke::Parameter::Flag::no_reply))  {
-                           tmp_flags |= common::flag::xatmi::Flag::no_reply;
-                        }
-                        // in a tpconnect() one of {TPSENDONLY, TPRECVONLY} is
-                        // required, so we can use the caller flags to set
-                        // corresponding service flags.
-                        // An alternative is to use duplex in the conversation
-                        // context. This might be more "robust" in case
-                        // menaing/encoding of flags in the connect message
-                        // changes. What end has control of the conversation
-                        // must be communicated in some fashion.
-                        if (tmp_flags.exist(casual::common::flag::xatmi::Flag::conversation)) {
-                           if (argument.flags.exist(casual::common::service::invoke::Parameter::Flag::send_only)) {
-                              tmp_flags |= common::flag::xatmi::Flag::receive_only;
-                           } else {
-                               tmp_flags |= common::flag::xatmi::Flag::send_only;
-                           }
-                        }
-                        result.flags = tmp_flags.underlaying();
+                        result.cd = argument.descriptor.value();
+                        result.flags = argument.flags.underlaying();
 
                         // This is the only place where we use adopt
                         result.data = buffer::pool::Holder::instance().adopt( std::move( argument.payload));

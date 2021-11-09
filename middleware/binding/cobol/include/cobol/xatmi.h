@@ -61,7 +61,6 @@ struct DATA_REC_s {
  *     88 TPEV-SVCSUCC              VALUE 5.
  *  05 APPL-RETURN-CODE     PIC S9(9) COMP-5.
 */
-#define TPOK 0
 #define TPESVCFAIL 11
 struct TPSTATUS_REC_s {
   int32_t TP_STATUS;

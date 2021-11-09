@@ -206,7 +206,10 @@ namespace casual
                            try
                            {
                               if( auto correlation = handler( connection->next()))
-                                 state.correlations.emplace_back( std::move( correlation), descriptor);
+                              {
+                                 if( ! algorithm::find( state.correlations, correlation))
+                                    state.correlations.emplace_back( std::move( correlation), descriptor);
+                              }
                            }
                            catch( ...)
                            {

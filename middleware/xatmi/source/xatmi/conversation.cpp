@@ -38,7 +38,7 @@ int tpconnect( const char* svc, const char* idata, long ilen, long flags)
       return casual::common::service::conversation::context().connect(
             svc,
             buffer,
-            valid_flags.convert( flags));
+            valid_flags.convert( flags)).value();
 
    }
    catch( ...)
@@ -90,8 +90,8 @@ namespace local
 
 int tpsend( int id, const char* idata, long ilen, long flags, long* event)
 {
-   return local::conversation::wrap( *event, [&](){
-
+   return local::conversation::wrap( *event, [&]()
+   {
       auto buffer = casual::common::buffer::pool::Holder::instance().get( idata, ilen);
 
       using Flag = casual::common::service::conversation::send::Flag;
@@ -103,7 +103,7 @@ int tpsend( int id, const char* idata, long ilen, long flags, long* event)
          Flag::signal_restart};
 
       return casual::common::service::conversation::context().send(
-            id,
+            casual::common::strong::conversation::descriptor::id{ id},
             std::move( buffer),
             valid_flags.convert( flags));
 
@@ -128,7 +128,7 @@ int tprecv( int id, char ** odata, long *olen, long flags, long* event)
       auto flag = valid_flags.convert( flags);
 
       auto result = casual::common::service::conversation::context().receive(
-            id,
+            casual::common::strong::conversation::descriptor::id{ id},
             flag);
 
       if( ( flag & Flag::no_change) && buffer.payload().type != result.buffer.type)
@@ -145,6 +145,6 @@ int tprecv( int id, char ** odata, long *olen, long flags, long* event)
 int tpdiscon( int id)
 {
    return casual::xatmi::internal::error::wrap( [&](){
-      casual::common::service::conversation::context().disconnect( id);
+      casual::common::service::conversation::context().disconnect( casual::common::strong::conversation::descriptor::id{ id});
    });
 }

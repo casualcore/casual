@@ -49,12 +49,11 @@ namespace casual
                friend bool operator == ( const basic_information& d, descriptor::type cd) { return cd == d.descriptor;}
 
                CASUAL_LOG_SERIALIZE(
-               {
                   CASUAL_SERIALIZE( active);
                   CASUAL_SERIALIZE( descriptor);
                   CASUAL_SERIALIZE( correlation);
                   Information::serialize( archive);
-               })
+               )
 
             };
 
@@ -75,15 +74,12 @@ namespace casual
 
                bool active() const
                {
-                  return ! algorithm::find_if( m_descriptors, []( const auto& d){
-                     return d.active;
-                  }).empty();
+                  return algorithm::any_of( m_descriptors, []( auto& descriptor){ return descriptor.active;});
                }
 
                CASUAL_LOG_SERIALIZE(
-               {
                   CASUAL_SERIALIZE_NAME( m_descriptors, "descriptors");
-               })
+               )
 
 
             private:
@@ -94,7 +90,6 @@ namespace casual
                   if( found)
                   {
                      found->active = true;
-                     //found->timeout.timeout = std::chrono::microseconds{ 0};
                      return *found;
                   }
                   else

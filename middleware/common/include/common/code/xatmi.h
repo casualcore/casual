@@ -21,7 +21,8 @@ namespace casual
       {
          enum class xatmi : int
          {
-            ok = 0,
+            absent = -1,
+            ok = TPOK,
             descriptor = TPEBADDESC,
             no_message = TPEBLOCK,
             argument = TPEINVAL,

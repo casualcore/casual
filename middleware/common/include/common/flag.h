@@ -58,7 +58,12 @@ namespace casual
       template< typename E>
       struct Flags
       {
+         
          using enum_type = E;
+
+         //! just a helper to easier deduce the enum-type
+         constexpr static auto type() noexcept { return enum_type{};}
+
          static_assert( std::is_enum< enum_type>::value, "E has to be of enum type");
 
          using underlaying_type = typename std::underlying_type< enum_type>::type;
@@ -110,6 +115,8 @@ namespace casual
 
          constexpr friend bool operator == ( Flags lhs, Flags rhs) { return lhs.m_flags == rhs.m_flags;}
          constexpr friend bool operator != ( Flags lhs, Flags rhs) { return ! ( lhs == rhs);}
+
+         constexpr friend bool operator == ( Flags lhs, enum_type rhs) { return lhs.exist( rhs);}
 
          constexpr friend Flags operator - ( Flags lhs, Flags rhs) { return Flags{ lhs.m_flags & ~rhs.m_flags};}
          constexpr friend Flags& operator -= ( Flags& lhs, Flags rhs) { lhs.m_flags &= ~rhs.m_flags; return lhs;}
