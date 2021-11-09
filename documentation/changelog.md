@@ -3,6 +3,15 @@ This is the changelog for `casual` and all changes are listed in this document.
 
 ## [Unreleased]
 
+## [1.5.5] - 2021-11-09
+
+### Fixes
+- xatmi - conversation - major refactoring
+- xatmi - fix leak of descriptors for conversational services.
+- cli - configuration edit - made sure we sink the SIGCHILD signal from the spawned editor
+- documentation - fixed the example configuration files
+- queue - forward to remote queues did not work correctly
+
 ## [1.5.4] - 2021-10-23
 
 ### Fixes
