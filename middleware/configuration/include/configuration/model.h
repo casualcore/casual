@@ -135,7 +135,7 @@ namespace casual::configuration
          struct Restriction : common::Compare< Restriction>
          {
             std::string alias;
-            //! allowed services. If empty all advertised services are allowed for the alias
+            //! a set of regex, to match for allowed services. If empty all advertised services are allowed for the alias
             std::vector< std::string> services;
 
             inline friend bool operator == ( const Restriction& lhs, const std::string& alias) { return lhs.alias == alias;} 

@@ -57,7 +57,7 @@ alias          | the logical (unique) name of the server. If not provided basena
 arguments      | arguments to `tpsvrinit` during startup.
 instances      | number of instances to start of the server.
 memberships    | which groups are the server member of (dictates order, and possible resource association)
-restrictions   | service restrictions, if provided the intersection of _restrictions_ and advertised services are actually advertised.
+restrictions   | regex pattern, if provided only the services that matches at least one of the patterns are actually advertised.
 resources      | explicit resource associations (transaction.resources.name)
 
 
@@ -210,7 +210,9 @@ domain:
       instances: 1
       restart: false
     service:
-      timeout: "90s"
+      execution:
+        timeout:
+          duration: "90s"
   environment:
     variables:
       - key: "SOME_VARIABLE"
@@ -253,13 +255,13 @@ domain:
       dependencies:
         - "customer-group"
   servers:
-    - path: "customer-server-1"
+    - path: "/some/path/customer-server-1"
       memberships:
         - "customer-group"
-    - path: "customer-server-2"
+    - path: "/some/path/customer-server-2"
       memberships:
         - "customer-group"
-    - path: "sales-server"
+    - path: "/some/path/sales-server"
       alias: "sales-pre"
       note: "the only services that will be advertised are 'preSalesSaveService' and 'preSalesGetService'"
       instances: 10
@@ -268,7 +270,7 @@ domain:
       restrictions:
         - "preSalesSaveService"
         - "preSalesGetService"
-    - path: "sales-server"
+    - path: "/some/path/sales-server"
       alias: "sales-post"
       note: "the only services that will be advertised are 'postSalesSaveService' and 'postSalesGetService'"
       memberships:
@@ -276,7 +278,7 @@ domain:
       restrictions:
         - "postSalesSaveService"
         - "postSalesGetService"
-    - path: "sales-broker"
+    - path: "/some/path/sales-broker"
       memberships:
         - "sales-group"
       environment:
@@ -286,7 +288,7 @@ domain:
       resources:
         - "event-queue"
   executables:
-    - path: "mq-server"
+    - path: "/some/path/mq-server"
       arguments:
         - "--configuration"
         - "/path/to/configuration"
@@ -294,12 +296,16 @@ domain:
         - "common-group"
   services:
     - name: "postSalesSaveService"
-      timeout: "2h"
+      execution:
+        timeout:
+          duration: "2h"
       routes:
         - "postSalesSaveService"
         - "sales/post/save"
     - name: "postSalesGetService"
-      timeout: "130ms"
+      execution:
+        timeout:
+          duration: "130ms"
   gateway:
     inbound:
       default:
@@ -400,12 +406,12 @@ domain:
             retry:
               count: 20
             note: "after 20 rollbacked dequeues, message is moved to b2.error. retry.delay is 'inherited' from default, if any"
-      - queuebase: ":memory:"
+      - alias: "C"
+        queuebase: ":memory:"
         note: "group is an in-memory queue, hence no persistence"
         queues:
           - name: "c1"
           - name: "c2"
-        name: "C"
     forward:
       default:
         service:
@@ -453,7 +459,11 @@ domain:
                 "restart": false
             },
             "service": {
-                "timeout": "90s"
+                "execution": {
+                    "timeout": {
+                        "duration": "90s"
+                    }
+                }
             }
         },
         "environment": {
@@ -526,19 +536,19 @@ domain:
         ],
         "servers": [
             {
-                "path": "customer-server-1",
+                "path": "/some/path/customer-server-1",
                 "memberships": [
                     "customer-group"
                 ]
             },
             {
-                "path": "customer-server-2",
+                "path": "/some/path/customer-server-2",
                 "memberships": [
                     "customer-group"
                 ]
             },
             {
-                "path": "sales-server",
+                "path": "/some/path/sales-server",
                 "alias": "sales-pre",
                 "note": "the only services that will be advertised are 'preSalesSaveService' and 'preSalesGetService'",
                 "instances": 10,
@@ -551,7 +561,7 @@ domain:
                 ]
             },
             {
-                "path": "sales-server",
+                "path": "/some/path/sales-server",
                 "alias": "sales-post",
                 "note": "the only services that will be advertised are 'postSalesSaveService' and 'postSalesGetService'",
                 "memberships": [
@@ -563,7 +573,7 @@ domain:
                 ]
             },
             {
-                "path": "sales-broker",
+                "path": "/some/path/sales-broker",
                 "memberships": [
                     "sales-group"
                 ],
@@ -582,7 +592,7 @@ domain:
         ],
         "executables": [
             {
-                "path": "mq-server",
+                "path": "/some/path/mq-server",
                 "arguments": [
                     "--configuration",
                     "/path/to/configuration"
@@ -595,7 +605,11 @@ domain:
         "services": [
             {
                 "name": "postSalesSaveService",
-                "timeout": "2h",
+                "execution": {
+                    "timeout": {
+                        "duration": "2h"
+                    }
+                },
                 "routes": [
                     "postSalesSaveService",
                     "sales/post/save"
@@ -603,7 +617,11 @@ domain:
             },
             {
                 "name": "postSalesGetService",
-                "timeout": "130ms"
+                "execution": {
+                    "timeout": {
+                        "duration": "130ms"
+                    }
+                }
             }
         ],
         "gateway": {
@@ -796,6 +814,7 @@ domain:
                     ]
                 },
                 {
+                    "alias": "C",
                     "queuebase": ":memory:",
                     "note": "group is an in-memory queue, hence no persistence",
                     "queues": [
@@ -805,8 +824,7 @@ domain:
                         {
                             "name": "c2"
                         }
-                    ],
-                    "name": "C"
+                    ]
                 }
             ],
             "forward": {
@@ -883,7 +901,11 @@ instances=1
 restart=true
 
 [domain.default.service]
-timeout=90s
+
+[domain.default.service.execution]
+
+[domain.default.service.execution.timeout]
+duration=90s
 
 [domain.environment]
 
@@ -899,7 +921,7 @@ value=some value
 arguments=--configuration
 arguments=/path/to/configuration
 memberships=common-group
-path=mq-server
+path=/some/path/mq-server
 
 [domain.gateway]
 
@@ -1119,7 +1141,7 @@ note=after 20 rollbacked dequeues, message is moved to b2.error. retry.delay is 
 count=20
 
 [domain.queue.groups]
-name=C
+alias=C
 note=group is an in-memory queue, hence no persistence
 queuebase=:memory:
 
@@ -1131,18 +1153,18 @@ name=c2
 
 [domain.servers]
 memberships=customer-group
-path=customer-server-1
+path=/some/path/customer-server-1
 
 [domain.servers]
 memberships=customer-group
-path=customer-server-2
+path=/some/path/customer-server-2
 
 [domain.servers]
 alias=sales-pre
 instances=10
 memberships=sales-group
 note=the only services that will be advertised are 'preSalesSaveService' and 'preSalesGetService'
-path=sales-server
+path=/some/path/sales-server
 restrictions=preSalesSaveService
 restrictions=preSalesGetService
 
@@ -1150,13 +1172,13 @@ restrictions=preSalesGetService
 alias=sales-post
 memberships=sales-group
 note=the only services that will be advertised are 'postSalesSaveService' and 'postSalesGetService'
-path=sales-server
+path=/some/path/sales-server
 restrictions=postSalesSaveService
 restrictions=postSalesGetService
 
 [domain.servers]
 memberships=sales-group
-path=sales-broker
+path=/some/path/sales-broker
 resources=event-queue
 
 [domain.servers.environment]
@@ -1169,11 +1191,19 @@ value=556
 name=postSalesSaveService
 routes=postSalesSaveService
 routes=sales/post/save
-timeout=2h
+
+[domain.services.execution]
+
+[domain.services.execution.timeout]
+duration=2h
 
 [domain.services]
 name=postSalesGetService
-timeout=130ms
+
+[domain.services.execution]
+
+[domain.services.execution.timeout]
+duration=130ms
 
 [domain.transaction]
 log=/some/fast/disk/domain.A42/transaction.log
@@ -1218,7 +1248,11 @@ openinfo=some-mq-specific-stuff
    <restart>false</restart>
   </executable>
   <service>
-   <timeout>90s</timeout>
+   <execution>
+    <timeout>
+     <duration>90s</duration>
+    </timeout>
+   </execution>
   </service>
  </default>
  <environment>
@@ -1291,19 +1325,19 @@ openinfo=some-mq-specific-stuff
  </groups>
  <servers>
   <element>
-   <path>customer-server-1</path>
+   <path>/some/path/customer-server-1</path>
    <memberships>
     <element>customer-group</element>
    </memberships>
   </element>
   <element>
-   <path>customer-server-2</path>
+   <path>/some/path/customer-server-2</path>
    <memberships>
     <element>customer-group</element>
    </memberships>
   </element>
   <element>
-   <path>sales-server</path>
+   <path>/some/path/sales-server</path>
    <alias>sales-pre</alias>
    <note>the only services that will be advertised are 'preSalesSaveService' and 'preSalesGetService'</note>
    <instances>10</instances>
@@ -1316,7 +1350,7 @@ openinfo=some-mq-specific-stuff
    </restrictions>
   </element>
   <element>
-   <path>sales-server</path>
+   <path>/some/path/sales-server</path>
    <alias>sales-post</alias>
    <note>the only services that will be advertised are 'postSalesSaveService' and 'postSalesGetService'</note>
    <memberships>
@@ -1328,7 +1362,7 @@ openinfo=some-mq-specific-stuff
    </restrictions>
   </element>
   <element>
-   <path>sales-broker</path>
+   <path>/some/path/sales-broker</path>
    <memberships>
     <element>sales-group</element>
    </memberships>
@@ -1347,7 +1381,7 @@ openinfo=some-mq-specific-stuff
  </servers>
  <executables>
   <element>
-   <path>mq-server</path>
+   <path>/some/path/mq-server</path>
    <arguments>
     <element>--configuration</element>
     <element>/path/to/configuration</element>
@@ -1360,7 +1394,11 @@ openinfo=some-mq-specific-stuff
  <services>
   <element>
    <name>postSalesSaveService</name>
-   <timeout>2h</timeout>
+   <execution>
+    <timeout>
+     <duration>2h</duration>
+    </timeout>
+   </execution>
    <routes>
     <element>postSalesSaveService</element>
     <element>sales/post/save</element>
@@ -1368,7 +1406,11 @@ openinfo=some-mq-specific-stuff
   </element>
   <element>
    <name>postSalesGetService</name>
-   <timeout>130ms</timeout>
+   <execution>
+    <timeout>
+     <duration>130ms</duration>
+    </timeout>
+   </execution>
   </element>
  </services>
  <gateway>
@@ -1562,6 +1604,7 @@ openinfo=some-mq-specific-stuff
     </queues>
    </element>
    <element>
+    <alias>C</alias>
     <queuebase>:memory:</queuebase>
     <note>group is an in-memory queue, hence no persistence</note>
     <queues>
@@ -1572,7 +1615,6 @@ openinfo=some-mq-specific-stuff
       <name>c2</name>
      </element>
     </queues>
-    <name>C</name>
    </element>
   </groups>
   <forward>

@@ -3,6 +3,10 @@ This is the changelog for `casual` and all changes are listed in this document.
 
 ## [Unreleased]
 
+### Changed
+- service - (configuration for) service restrictions for servers are now treated as regex
+   - If set, only services that matches at least one regex are advertised.
+
 ## [1.5.5] - 2021-11-09
 
 ### Fixes

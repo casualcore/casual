@@ -133,7 +133,7 @@ alias          | the logical (unique) name of the server. If not provided basena
 arguments      | arguments to `tpsvrinit` during startup.
 instances      | number of instances to start of the server.
 memberships    | which groups are the server member of (dictates order, and possible resource association)
-restrictions   | service restrictions, if provided the intersection of _restrictions_ and advertised services are actually advertised.
+restrictions   | regex pattern, if provided only the services that matches at least one of the patterns are actually advertised.
 resources      | explicit resource associations (transaction.resources.name)
 
 
