@@ -20,7 +20,6 @@
 
 #include "common/serialize/native/complete.h"
 
-#include "configuration/resource/property.h"
 #include "configuration/model.h"
 
 #include <map>
@@ -404,7 +403,7 @@ namespace casual
          {
             State() = default;
             State( configuration::model::transaction::Model configuration,
-               std::vector< configuration::resource::Property> properties);
+               configuration::model::system::Model system);
 
             State( State&&) = default;
             State& operator = ( State&&) = default;
@@ -440,15 +439,16 @@ namespace casual
 
             } pending;
 
+
             struct
             {
-               std::map< std::string, configuration::resource::Property> properties;
+               configuration::model::system::Model configuration;
 
                CASUAL_LOG_SERIALIZE(
-                  CASUAL_SERIALIZE( properties);
+                  CASUAL_SERIALIZE( configuration);
                )
-
-            } resource;
+            } system;
+            
 
             struct 
             {
@@ -498,7 +498,7 @@ namespace casual
                CASUAL_SERIALIZE( resources);
                CASUAL_SERIALIZE( externals);
                CASUAL_SERIALIZE( persistent);
-               CASUAL_SERIALIZE( resource);
+               CASUAL_SERIALIZE( system);
                CASUAL_SERIALIZE( alias);
             )
          };

@@ -13,15 +13,12 @@
 
 namespace casual
 {
-   namespace configuration
+   namespace configuration::model
    {
-      namespace model
-      {
-         //! for each file: load the user configuration and transform it to the model
-         //! @return an accumulated model of all user configuration files
-         configuration::Model load( const std::vector< std::filesystem::path>& files);
+      //! for each file: load the user configuration and transform it to the model
+      //! @return an accumulated model of all user configuration files
+      configuration::Model load( const std::vector< std::filesystem::path>& files);
 
-      } // model
    } // configuration
 
 } // casual

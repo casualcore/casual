@@ -13,7 +13,7 @@
 #include "domain/manager/transform.h"
 
 #include "configuration/model/load.h"
-#include "configuration/example/domain.h"
+#include "configuration/example/model.h"
 
 #include "common/unittest/file.h"
 

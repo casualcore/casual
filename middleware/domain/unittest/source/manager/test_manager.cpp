@@ -1383,7 +1383,7 @@ domain:
 
          auto origin = local::configuration::load( configuration);
 
-         auto model = casual::configuration::model::transform( unittest::call< casual::configuration::user::Domain>( admin::service::name::configuration::get));
+         auto model = casual::configuration::model::transform( unittest::call< casual::configuration::user::Model>( admin::service::name::configuration::get));
 
          EXPECT_TRUE( origin.domain == model.domain) << CASUAL_NAMED_VALUE( origin.domain) << "\n " << CASUAL_NAMED_VALUE( model.domain);
 
@@ -1424,7 +1424,7 @@ domain:
                      );
 
                   // return the new configuration model
-                  return casual::configuration::model::transform( unittest::call< casual::configuration::user::Domain>( admin::service::name::configuration::get));
+                  return casual::configuration::model::transform( unittest::call< casual::configuration::user::Model>( admin::service::name::configuration::get));
                }
                
             } // call
@@ -1501,7 +1501,7 @@ domain:
 
 )");
 
-         auto origin = casual::configuration::model::transform( unittest::call< casual::configuration::user::Domain>( admin::service::name::configuration::get));
+         auto origin = casual::configuration::model::transform( unittest::call< casual::configuration::user::Model>( admin::service::name::configuration::get));
          EXPECT_TRUE( origin.domain != wanted.domain) << CASUAL_NAMED_VALUE( origin.domain) << "\n " << CASUAL_NAMED_VALUE( wanted.domain);
 
          auto updated = local::call::post( casual::configuration::model::transform( wanted));
@@ -1561,7 +1561,7 @@ domain:
 )");
 
 
-         auto origin = casual::configuration::model::transform( unittest::call< casual::configuration::user::Domain>( admin::service::name::configuration::get));
+         auto origin = casual::configuration::model::transform( unittest::call< casual::configuration::user::Model>( admin::service::name::configuration::get));
          EXPECT_TRUE( origin.domain != wanted.domain) << CASUAL_NAMED_VALUE( origin.domain) << "\n " << CASUAL_NAMED_VALUE( wanted.domain);
 
          auto updated = local::call::post( casual::configuration::model::transform( wanted));

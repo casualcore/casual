@@ -19,6 +19,64 @@ namespace casual::configuration
 {
    namespace model
    {
+      namespace system
+      {
+         namespace resource
+         {
+            struct Paths : common::Compare< Paths>
+            {
+               std::vector< std::string> include;
+               std::vector< std::string> library;
+
+               inline auto tie() const { return std::tie( include, library);}
+
+               CASUAL_CONST_CORRECT_SERIALIZE(
+                  CASUAL_SERIALIZE( include);
+                  CASUAL_SERIALIZE( library);
+               )
+            };
+            
+         } // resource
+
+         struct Resource : common::Compare< Resource>
+         {
+            std::string key;
+            std::string server;
+            std::string xa_struct_name;
+
+            std::vector< std::string> libraries;
+            resource::Paths paths;
+            std::string note;
+
+            inline friend bool operator == ( const Resource& lhs, const std::string& rhs) { return lhs.key == rhs;}
+
+            inline auto tie() const { return std::tie( key, server, xa_struct_name, libraries, paths, note);}
+
+            CASUAL_CONST_CORRECT_SERIALIZE(
+               CASUAL_SERIALIZE( key);
+               CASUAL_SERIALIZE( server);
+               CASUAL_SERIALIZE( xa_struct_name);
+               CASUAL_SERIALIZE( libraries);
+               CASUAL_SERIALIZE( paths);
+               CASUAL_SERIALIZE( note);
+            )
+         };
+
+         struct Model : common::Compare< Model>
+         {
+            std::vector< system::Resource> resources;
+            
+            Model& operator += ( Model rhs);
+
+            CASUAL_CONST_CORRECT_SERIALIZE(
+               CASUAL_SERIALIZE( resources);
+            )
+
+            inline auto tie() const { return std::tie( resources);}
+         };
+         
+      } // system
+
       namespace domain
       {
          struct Environment : common::Compare< Environment>
@@ -634,10 +692,12 @@ namespace casual::configuration
          };
 
       } // queue
+
    } // model
 
    struct Model : common::Compare< Model>
    {
+      model::system::Model system;
       model::domain::Model domain;
       model::transaction::Model transaction;               
       model::service::Model service;
@@ -650,6 +710,7 @@ namespace casual::configuration
       friend Model normalize( Model model);
 
       CASUAL_CONST_CORRECT_SERIALIZE(
+         CASUAL_SERIALIZE( system);
          CASUAL_SERIALIZE( domain);
          CASUAL_SERIALIZE( transaction);
          CASUAL_SERIALIZE( service);
@@ -657,7 +718,7 @@ namespace casual::configuration
          CASUAL_SERIALIZE( gateway);
       )
 
-      inline auto tie() const { return std::tie( domain, transaction, service, queue, gateway);}
+      inline auto tie() const { return std::tie( system, domain, transaction, service, queue, gateway);}
    };
 
 

@@ -18,9 +18,8 @@
 #include "common/server/service.h"
 #include "common/exception/guard.h"
 
-#include "configuration/build/server.h"
-#include "configuration/build/resource.h"
-#include "configuration/resource/property.h"
+#include "configuration/system.h"
+#include "configuration/build/model/load.h"
 
 #include <vector>
 #include <string>
@@ -61,9 +60,13 @@ namespace casual
 
                   struct 
                   {
-                     std::string properties;
                      std::vector< std::string> keys;
                   } resource;
+
+                  struct
+                  {
+                     std::string system;
+                  } files;
 
 
 
@@ -118,21 +121,21 @@ namespace casual
                {
                   auto state( const Settings& settings)
                   {
-                     auto properties = settings.resource.properties.empty() ?
-                        configuration::resource::property::get() : configuration::resource::property::get( settings.resource.properties);
+                     auto system = settings.files.system.empty() ?
+                        configuration::system::get() : configuration::system::get( settings.files.system);
 
                      auto definition = settings.server.definition.empty() ? 
-                        decltype( configuration::build::server::get( "")){} : configuration::build::server::get( settings.server.definition);
+                        decltype( configuration::build::model::load::server( {})){} : configuration::build::model::load::server( settings.server.definition);
 
                      State result;
 
                      result.resources = build::transform::resources( 
-                        definition.resources,
+                        definition,
                         settings.resource.keys,
-                        properties);
+                        system);
 
                      result.services = build::transform::services(
-                        definition.services,
+                        definition,
                         settings.service.names,
                         settings.service.transaction.mode);
 
@@ -212,7 +215,7 @@ namespace casual
                         Option( option::one::many( settings.resource.keys), {"-r", "--resource-keys"}, "key of the resource")( cardinality::any{}),
                         Option( std::tie( settings.directive.compiler), {"-c", "--compiler"}, "compiler to use"),
                         Option( build::Directive::split( settings.directive.directives), {"-f", "--build-directives", "--link-directives"}, "additional compile and link directives\n\ndeprecated: --link-directives")( cardinality::any{}),
-                        Option( std::tie( settings.resource.properties), {"-p", "--properties-file"}, "path to resource properties file"),
+                        Option( std::tie( settings.files.system), argument::option::keys( { "--system-configuration"}, {"-p", "--properties-file"}), "path to system configuration file"),
                         Option( std::tie( settings.service.transaction.mode), complete::transaction::mode(), {  "--default-transaction-mode"}, "the transaction mode for services specified with --service|-s"),
                         Option( option::toggle( settings.directive.use_defaults), { "--no-defaults"}, "do not add any default compiler/link directives\n\nuse --build-directives to add your own"),
                         Option( std::tie( settings.source.file), { "--source-file"}, "name of the intermediate source file"),

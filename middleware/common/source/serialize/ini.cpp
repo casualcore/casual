@@ -496,6 +496,9 @@ namespace casual
 
                         void composite_start( const char* const name)
                         {
+                           if( ! name && m_name_stack.empty())
+                              return;
+                              
                            const auto final = name ? name : m_name_stack.back();
 
                            const auto child = m_node_stack.back()->children.emplace( final, tree());

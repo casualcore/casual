@@ -57,27 +57,27 @@ namespace casual
             }
 
             std::vector< model::Resource> resources( 
-               const std::vector< configuration::build::Resource>& resources,
+               const std::vector< configuration::build::model::Resource>& resources, 
                const std::vector< std::string>& keys,
-               const std::vector< configuration::resource::Property>& properties)
+               const configuration::model::system::Model& system)
             {
                Trace trace{ "tools::build::transform::resources"};
 
-               auto transform_key = [&properties]( auto& key)
+               auto transform_key = [&system]( auto& key)
                {
-                  auto property = common::algorithm::find_if( properties, [&key]( auto& property){ return property.key == key;});
+                  auto resource = common::algorithm::find( system.resources, key);
 
-                  if( ! property)
+                  if( ! resource)
                      common::code::raise::error( common::code::casual::invalid_configuration, 
-                        "failed to find resource property for key: ", key, " - check resource configuration for casual");
+                        "failed to find resource for key: ", key, " - check resource configuration for casual");
                   
                   model::Resource result;
 
                   result.key = key;
-                  result.libraries = property->libraries;
-                  result.xa_struct_name = property->xa_struct_name;
-                  result.paths.include = property->paths.include;
-                  result.paths.library = property->paths.library;
+                  result.libraries = resource->libraries;
+                  result.xa_struct_name = resource->xa_struct_name;
+                  result.paths.include = resource->paths.include;
+                  result.paths.library = resource->paths.library;
 
                   return result;
                };
@@ -97,13 +97,13 @@ namespace casual
             }
 
             std::vector< model::Service> services( 
-               const std::vector< configuration::build::server::Service>& services, 
+               const configuration::build::server::Model& model, 
                const std::vector< std::string>& names,
                const std::string& transaction_mode)
             {
                Trace trace{ "tools::build::transform::services"};
 
-               auto result = common::algorithm::transform( services, []( auto& service)
+               auto result = common::algorithm::transform( model.server.services, []( auto& service)
                {
                   model::Service result{ service.name};
                   result.function = service.function.value_or( service.name);

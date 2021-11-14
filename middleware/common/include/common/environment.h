@@ -166,9 +166,14 @@ namespace casual
 
             namespace name
             {
+               namespace system
+               {
+                  constexpr auto configuration = "CASUAL_SYSTEM_CONFIGURATION_GLOB";
+               } // system
 
                namespace resource
                {
+                  //! @deprecated use name::system::configuration
                   constexpr auto configuration = "CASUAL_RESOURCE_CONFIGURATION_FILE";
                } // resource
 

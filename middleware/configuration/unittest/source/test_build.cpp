@@ -7,8 +7,8 @@
 
 #include "common/unittest.h"
 
-#include "configuration/resource/property.h"
-#include "configuration/example/build/server.h"
+#include "configuration/example/build/model.h"
+#include "configuration/build/model/load.h"
 #include "configuration/example/create.h"
 
 #include "common/file.h"
@@ -37,10 +37,10 @@ namespace casual
             common::unittest::Trace trace;
 
             // serialize and deserialize
-            auto model = build::server::get(
-               example::create::file::temporary( example::build::server::example(), "server", GetParam()).string());
+            auto model = build::model::load::server(
+               example::create::file::temporary( example::build::model::server(), GetParam()));
 
-            EXPECT_TRUE( model.services.size() == 4);
+            EXPECT_TRUE( model.server.services.size() == 4);
          }
 
          TEST_P( configuration_build_server, default_service)
@@ -48,14 +48,13 @@ namespace casual
             common::unittest::Trace trace;
 
             // serialize and deserialize
-            auto model = build::server::get(
-               example::create::file::temporary( example::build::server::example(), "server", GetParam()).string());
+            auto model = build::model::load::server(
+               example::create::file::temporary( example::build::model::server(), GetParam()));
 
-            ASSERT_TRUE( model.server_default.service.transaction.has_value());
-            EXPECT_TRUE( model.server_default.service.transaction.value() == "join");
+            EXPECT_TRUE( model.server.server_default.service.transaction == "join");
 
-            ASSERT_TRUE( model.server_default.service.category.has_value());
-            EXPECT_TRUE( model.server_default.service.category.value() == "some.category");
+            ASSERT_TRUE( model.server.server_default.service.category.has_value());
+            EXPECT_TRUE( model.server.server_default.service.category.value() == "some.category");
          }
 
          TEST_P( configuration_build_server, service_s1__expect_default)
@@ -63,14 +62,17 @@ namespace casual
             common::unittest::Trace trace;
 
             // serialize and deserialize
-            auto model = build::server::get(
-               example::create::file::temporary( example::build::server::example(), "server", GetParam()).string());
+            auto model = build::model::load::server(
+               example::create::file::temporary( example::build::model::server(), GetParam()));
 
-            auto& service = model.services.at( 0);
+            auto& service = model.server.services.at( 0);
 
             EXPECT_TRUE( service.name == "s1");
+            ASSERT_TRUE( service.transaction) << CASUAL_NAMED_VALUE( service);
             EXPECT_TRUE( service.transaction.value() == "join") << "service.transaction.value(): " << service.transaction.value();
+            ASSERT_TRUE( service.function);
             EXPECT_TRUE( service.function.value() == "s1");
+            ASSERT_TRUE( service.category);
             EXPECT_TRUE( service.category.value() == "some.category");
          }
 
@@ -79,10 +81,10 @@ namespace casual
             common::unittest::Trace trace;
 
             // serialize and deserialize
-            auto model = build::server::get(
-               example::create::file::temporary( example::build::server::example(), "server", GetParam()).string());
+            auto model = build::model::load::server(
+               example::create::file::temporary( example::build::model::server(), GetParam()));
 
-            auto& service = model.services.at( 1);
+            auto& service = model.server.services.at( 1);
 
             EXPECT_TRUE( service.name == "s2");
             EXPECT_TRUE( service.transaction.value() == "auto") << CASUAL_NAMED_VALUE( service.transaction);
@@ -93,10 +95,10 @@ namespace casual
             common::unittest::Trace trace;
 
             // serialize and deserialize
-            auto model = build::server::get(
-               example::create::file::temporary( example::build::server::example(), "server", GetParam()).string());
+            auto model = build::model::load::server(
+               example::create::file::temporary( example::build::model::server(), GetParam()));
 
-            auto& service = model.services.at( 2);
+            auto& service = model.server.services.at( 2);
 
             EXPECT_TRUE( service.name == "s3");
             EXPECT_TRUE( service.function.value() == "f3");
@@ -107,10 +109,10 @@ namespace casual
             common::unittest::Trace trace;
 
             // serialize and deserialize
-            auto model = build::server::get(
-               example::create::file::temporary( example::build::server::example(), "server", GetParam()).string());
+            auto model = build::model::load::server(
+               example::create::file::temporary( example::build::model::server(), GetParam()));
 
-            auto& service = model.services.at( 3);
+            auto& service = model.server.services.at( 3);
 
             EXPECT_TRUE( service.name == "s4");
             EXPECT_TRUE( service.category.value() == "some.other.category");

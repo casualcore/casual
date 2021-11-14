@@ -15,91 +15,86 @@
 
 namespace casual
 {
-   namespace configuration
+   namespace configuration::user::domain::environment
    {
-      namespace user
+
+      Environment get( const std::filesystem::path& path)
       {
-         namespace environment
+         Environment environment;
+
+         // Create the reader and deserialize configuration
+         common::file::Input file{ path};
+         auto reader = common::serialize::create::reader::consumed::from( file);
+
+         reader >> CASUAL_NAMED_VALUE( environment);
+         reader.validate();
+
+         return environment;
+      }
+
+      namespace local
+      {
+         namespace
          {
-            Environment get( const std::string& name)
+            std::vector< Variable> fetch( Environment environment, std::vector< std::string>& paths)
             {
-               Environment environment;
+               std::vector< Variable> result;
 
-               // Create the reader and deserialize configuration
-               common::file::Input file{ name};
-               auto reader = common::serialize::create::reader::consumed::from( file);
-
-               reader >> CASUAL_NAMED_VALUE( environment);
-               reader.validate();
-
-               return environment;
-            }
-
-            namespace local
-            {
-               namespace
+               if( environment.files)
                {
-                  std::vector< Variable> fetch( Environment environment, std::vector< std::string>& paths)
+                  for( auto& file : environment.files.value())
                   {
-                     std::vector< Variable> result;
+                     auto path = common::environment::expand( file);
 
-                     if( environment.files)
+                     if( ! common::algorithm::find( paths, path))
                      {
-                        for( auto& file : environment.files.value())
-                        {
-                           auto path = common::environment::expand( file);
+                        auto nested = get( path);
 
-                           if( ! common::algorithm::find( paths, path))
-                           {
-                              auto nested = get( path);
+                        paths.push_back( std::move( path));
 
-                              paths.push_back( std::move( path));
+                        auto variables = fetch( std::move( nested), paths);
 
-                              auto variables = fetch( std::move( nested), paths);
-
-                              common::algorithm::move( variables, result);
-                           }
-                        }
+                        common::algorithm::move( variables, result);
                      }
-
-                     if( environment.variables)
-                        common::algorithm::move( environment.variables.value(), result);
-
-                     return result;
                   }
-               } // <unnamed>
-            } // local
+               }
 
-            std::vector< Variable> fetch( Environment environment)
-            {
-               // So we only fetch one file one time. If there are circular dependencies.
-               std::vector< std::string> paths;
+               if( environment.variables)
+                  common::algorithm::move( environment.variables.value(), result);
 
-               return local::fetch( std::move( environment), paths);
+               return result;
             }
+         } // <unnamed>
+      } // local
 
-            std::vector< common::environment::Variable> transform( const std::vector< Variable>& variables)
-            {
-               return common::algorithm::transform( variables, []( auto& variable)
-               {
-                  return common::environment::Variable{ variable.key + '=' + variable.value};
-               });
-            }
+      std::vector< Variable> fetch( Environment environment)
+      {
+         // So we only fetch one file one time. If there are circular dependencies.
+         std::vector< std::string> paths;
 
-            std::vector< Variable> transform( const std::vector< common::environment::Variable>& variables)
-            {
-               return common::algorithm::transform( variables, []( auto& variable)
-               {
-                  Variable result;
-                  result.key = variable.name();
-                  result.value = variable.value();
-                  return result;
-               });
-            }
-         } // environment
+         return local::fetch( std::move( environment), paths);
+      }
 
-      } // user
-   } // configuration
+      std::vector< common::environment::Variable> transform( const std::vector< Variable>& variables)
+      {
+         return common::algorithm::transform( variables, []( auto& variable)
+         {
+            return common::environment::Variable{ variable.key + '=' + variable.value};
+         });
+      }
+
+      std::vector< Variable> transform( const std::vector< common::environment::Variable>& variables)
+      {
+         return common::algorithm::transform( variables, []( auto& variable)
+         {
+            Variable result;
+            result.key = variable.name();
+            result.value = variable.value();
+            return result;
+         });
+      }
+
+   } // configuration::user::domain::environment
 } // casual
 
 

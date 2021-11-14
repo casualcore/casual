@@ -25,7 +25,7 @@ namespace casual
             {
                auto path = common::unittest::file::temporary::content( ".yaml", std::move( content));
                
-               user::Domain domain;
+               user::domain::Model domain;
 
                common::file::Input stream{ path};
                auto archive = common::serialize::create::reader::consumed::from( stream);

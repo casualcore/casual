@@ -31,14 +31,14 @@ namespace casual
                   Trace trace{ "configuration::user::local::load"};
                   log::line( verbose::log, "file: ", file);
 
-                  user::Domain domain;
+                  user::Model user;
 
                   common::file::Input stream{ file};
                   auto archive = common::serialize::create::reader::consumed::from( stream);
-                  archive >> CASUAL_NAMED_VALUE( domain);
+                  archive >> user;
                   archive.validate();
 
-                  current += model::transform( std::move( domain));
+                  current += model::transform( normalize( std::move( user)));
 
                   return current;
                }
@@ -53,7 +53,6 @@ namespace casual
             log::line( verbose::log, "files: ", files);
 
             auto model = normalize( algorithm::accumulate( files, Model{}, &local::load));
-
             validate( model);
 
             log::line( verbose::log, "model: ", model);

@@ -15,7 +15,7 @@
 #include "configuration/model/transform.h"
 #include "configuration/model/load.h"
 #include "configuration/user.h"
-#include "configuration/example/domain.h"
+#include "configuration/example/model.h"
 
 
 
@@ -52,7 +52,7 @@ namespace casual
       {
          common::unittest::Trace trace;
 
-         auto model = model::transform( configuration::user::Domain{});
+         auto model = model::transform( configuration::user::Model{});
 
          EXPECT_TRUE( model.domain.name.empty());
       }
@@ -77,7 +77,7 @@ domain:
       {
          common::unittest::Trace trace;
 
-         const auto origin = model::transform( example::domain());
+         const auto origin = example::model();
 
          // roundtrip
          const auto result = model::transform( model::transform( origin));

@@ -44,9 +44,7 @@ namespace casual
                   environment::variable::name::ipc::transaction::manager,
                   process::handle());
 
-               return transform::state(
-                  casual::domain::configuration::fetch().transaction,
-                  configuration::resource::property::get());
+               return transform::state( casual::domain::configuration::fetch());
             }
 
             void setup( State& state)

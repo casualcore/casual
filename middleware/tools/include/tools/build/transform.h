@@ -6,9 +6,9 @@
 
 #include "tools/build/model.h"
 
-#include "configuration/resource/property.h"
-#include "configuration/build/resource.h"
-#include "configuration/build/server.h"
+#include "configuration/build/model.h"
+#include "configuration/model.h"
+
 
 namespace casual
 {
@@ -27,15 +27,25 @@ namespace casual
 
             std::vector< std::string> libraries( const std::vector< model::Resource>& resources);
 
+            
 
             std::vector< model::Resource> resources( 
-               const std::vector< configuration::build::Resource>& resources, 
+               const std::vector< configuration::build::model::Resource>& resources, 
                const std::vector< std::string>& keys,
-               const std::vector< configuration::resource::Property>& properties);
+               const configuration::model::system::Model& system);
+
+
+            inline std::vector< model::Resource> resources( 
+               const configuration::build::server::Model& model, 
+               const std::vector< std::string>& keys,
+               const configuration::model::system::Model& system)
+            {
+               return resources( model.server.resources, keys, system);
+            }
 
 
             std::vector< model::Service> services( 
-               const std::vector< configuration::build::server::Service>& services, 
+               const configuration::build::server::Model& model, 
                const std::vector< std::string>& names,
                const std::string& transaction_mode);
          } // transform

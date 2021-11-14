@@ -10,33 +10,26 @@
 
 #include "configuration/user.h"
 
-#include "common/serialize/macro.h"
 #include "common/environment.h"
 
-#include <string>
+#include <string_view>
 #include <vector>
 
 
 namespace casual
 {
-   namespace configuration
+   namespace configuration::user::domain::environment
    {
-      namespace user
-      {
-         namespace environment
-         {
 
-            Environment get( const std::string& file);
+      Environment get( const std::filesystem::path& path);
 
-            std::vector< Variable> fetch( Environment environment);
+      std::vector< Variable> fetch( Environment environment);
 
-            std::vector< common::environment::Variable> transform( const std::vector< Variable>& variables);
-            std::vector< Variable> transform( const std::vector< common::environment::Variable>& variables);
+      std::vector< common::environment::Variable> transform( const std::vector< Variable>& variables);
+      std::vector< Variable> transform( const std::vector< common::environment::Variable>& variables);
 
-         } // environment
 
-      } // user
-   } // config
+   } // configuration::user::domain::environment
 } // casual
 
 

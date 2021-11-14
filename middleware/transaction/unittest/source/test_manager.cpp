@@ -55,6 +55,16 @@ namespace casual
          {  
             namespace configuration
             {
+               constexpr auto system = R"(
+system:
+   resources:
+      -  key: rm-mockup
+         server: bin/rm-proxy-casual-mockup
+         xa_struct_name: casual_mockup_xa_switch_static
+         libraries:
+            -  casual-mockup-rm
+)";
+
                constexpr auto servers = R"(
 domain:
    groups:
@@ -87,15 +97,6 @@ domain:
            openinfo: "${CASUAL_UNITTEST_OPEN_INFO_RM2}"
 )";
 
-               constexpr auto resource = R"(
-resources:
-  - key: rm-mockup
-    server: bin/rm-proxy-casual-mockup
-    xa_struct_name: casual_mockup_xa_switch_static
-    libraries:
-      - casual-mockup-rm
-)";
-
                template< typename... C>
                auto load( C&&... contents)
                {
@@ -106,25 +107,13 @@ resources:
                   return casual::configuration::model::load( common::algorithm::transform( files, get_path));
                }
 
-
-
             } // configuration
 
-            template< typename... C>
-            auto domain( common::file::scoped::Path resource, C&&... configurations) 
-            {
-               auto scoped = common::environment::variable::scoped::set( common::environment::variable::name::resource::configuration, resource.string());
-               auto process = casual::domain::manager::unittest::process( configuration::servers, std::forward< C>( configurations)...);
-
-               return std::make_tuple( 
-                  std::move( resource),
-                  std::move( process));
-            }
 
             template< typename... C>
             auto domain( C&&... configurations) 
             {
-               return domain( common::unittest::file::temporary::content( ".yaml", configuration::resource), std::forward< C>( configurations)...);
+               return casual::domain::manager::unittest::process( configuration::servers, std::forward< C>( configurations)...);
             }
 
 
@@ -226,7 +215,7 @@ resources:
          common::unittest::Trace trace;
 
          EXPECT_NO_THROW({
-            auto domain = local::domain( local::configuration::base);
+            auto domain = local::domain( local::configuration::system, local::configuration::base);
          });
       }
 
@@ -235,17 +224,17 @@ resources:
          common::unittest::Trace trace;
 
          constexpr auto resources = R"(
-resources:
-
-  - key: rm-mockup   
-    server: "./non/existent/path"
-    xa_struct_name: casual_mockup_xa_switch_static
-    libraries:
-       - casual-mockup-rm
+system:
+   resources:
+      -  key: rm-mockup   
+         server: "./non/existent/path"
+         xa_struct_name: casual_mockup_xa_switch_static
+         libraries:
+            -  casual-mockup-rm
 )";
 
          EXPECT_NO_THROW({
-            auto domain = local::domain( common::unittest::file::temporary::content( ".yaml", resources), local::configuration::base);
+            auto domain = local::domain( resources, local::configuration::base);
          });
       }
 
@@ -259,7 +248,7 @@ resources:
             common::string::compose( "--open ", XAER_RMFAIL));
 
          EXPECT_NO_THROW({
-            auto domain = local::domain( local::configuration::base);
+            auto domain = local::domain( local::configuration::system, local::configuration::base);
          });
       }
 
@@ -285,7 +274,7 @@ domain:
 
 )";
 
-         auto domain = local::domain( configuration);
+         auto domain = local::domain( local::configuration::system, configuration);
 
          common::message::transaction::configuration::alias::Request request{ common::process::handle()};
          request.resources = { "rm2"};
@@ -320,7 +309,7 @@ domain:
            note: b
 )";
          
-         auto domain = local::domain( configuration);
+         auto domain = local::domain( local::configuration::system, configuration);
 
          auto origin = local::configuration::load( local::configuration::servers, configuration).transaction;
 
@@ -334,7 +323,7 @@ domain:
       {
          common::unittest::Trace trace;
 
-         auto domain = local::domain( R"(
+         auto domain = local::domain( local::configuration::system, R"(
 domain:
    name: post
 
@@ -353,7 +342,7 @@ domain:
            note: b
 )");
          
-         auto wanted = local::configuration::load( local::configuration::servers, R"(
+         auto wanted = local::configuration::load( local::configuration::system, local::configuration::servers, R"(
 domain:
    name: post
 
@@ -389,7 +378,7 @@ domain:
       {
          common::unittest::Trace trace;
 
-         auto domain = local::domain( local::configuration::base);
+         auto domain = local::domain( local::configuration::system, local::configuration::base);
 
          EXPECT_TRUE( local::begin() == common::code::tx::ok);
 
@@ -405,7 +394,7 @@ domain:
       {
          common::unittest::Trace trace;
 
-         auto domain = local::domain( local::configuration::base);
+         auto domain = local::domain( local::configuration::system, local::configuration::base);
 
          common::log::line( verbose::log, "domain: ", domain);
 
@@ -426,7 +415,7 @@ domain:
       {
          common::unittest::Trace trace;
 
-         auto domain = local::domain( local::configuration::base);
+         auto domain = local::domain( local::configuration::system, local::configuration::base);
 
          EXPECT_TRUE( local::begin() == common::code::tx::ok);
 
@@ -463,7 +452,7 @@ domain:
       {
          common::unittest::Trace trace;
 
-         auto domain = local::domain( local::configuration::base);
+         auto domain = local::domain( local::configuration::system, local::configuration::base);
 
 
          EXPECT_TRUE( local::begin() == common::code::tx::ok);
@@ -531,7 +520,7 @@ domain:
          auto scope = common::environment::variable::scoped::set( "CASUAL_UNITTEST_OPEN_INFO_RM1", 
             common::string::compose( "--commit ", XA_RBDEADLOCK));
 
-         auto domain = local::domain( local::configuration::base);
+         auto domain = local::domain( local::configuration::system, local::configuration::base);
 
          EXPECT_TRUE( local::begin() == common::code::tx::ok);
 
@@ -565,7 +554,7 @@ domain:
          auto scope = common::environment::variable::scoped::set( "CASUAL_UNITTEST_OPEN_INFO_RM1", 
             common::string::compose( "--commit ", XAER_NOTA));
 
-         auto domain = local::domain( local::configuration::base);
+         auto domain = local::domain( local::configuration::system, local::configuration::base);
 
          EXPECT_TRUE( local::begin() == common::code::tx::ok);
 
@@ -594,7 +583,7 @@ domain:
          auto scope = common::environment::variable::scoped::set( "CASUAL_UNITTEST_OPEN_INFO_RM1", 
             common::string::compose( "--commit ", XAER_NOTA));
 
-         auto domain = local::domain( local::configuration::base);
+         auto domain = local::domain( local::configuration::system, local::configuration::base);
 
          EXPECT_TRUE( local::begin() == common::code::tx::ok);
 
@@ -620,7 +609,7 @@ domain:
       {
          common::unittest::Trace trace;
 
-         auto domain = local::domain( local::configuration::base);
+         auto domain = local::domain( local::configuration::system, local::configuration::base);
 
          EXPECT_TRUE( local::begin() == common::code::tx::ok);
 
@@ -658,7 +647,7 @@ domain:
       {
          common::unittest::Trace trace;
 
-         auto domain = local::domain( local::configuration::base);
+         auto domain = local::domain( local::configuration::system, local::configuration::base);
 
          EXPECT_TRUE( local::begin() == common::code::tx::ok);
 
@@ -700,7 +689,7 @@ domain:
       {
          common::unittest::Trace trace;
 
-         auto domain = local::domain( local::configuration::base);
+         auto domain = local::domain( local::configuration::system, local::configuration::base);
 
          EXPECT_TRUE( local::begin() == common::code::tx::ok);
 
@@ -757,7 +746,7 @@ domain:
       {
          common::unittest::Trace trace;
 
-         auto domain = local::domain( local::configuration::base);
+         auto domain = local::domain( local::configuration::system, local::configuration::base);
 
          EXPECT_TRUE( local::begin() == common::code::tx::ok);
 
@@ -796,7 +785,7 @@ domain:
       {
          common::unittest::Trace trace;
 
-         auto domain = local::domain( local::configuration::base);
+         auto domain = local::domain( local::configuration::system, local::configuration::base);
 
          auto trid = common::transaction::id::create();
 
@@ -826,7 +815,7 @@ domain:
       {
          common::unittest::Trace trace;
 
-         auto domain = local::domain( local::configuration::base);
+         auto domain = local::domain( local::configuration::system, local::configuration::base);
 
          auto trid = common::transaction::id::create();
 
@@ -855,7 +844,7 @@ domain:
       {
          common::unittest::Trace trace;
 
-         auto domain = local::domain( local::configuration::base);
+         auto domain = local::domain( local::configuration::system, local::configuration::base);
 
          auto trid = common::transaction::id::create();
 
@@ -886,7 +875,7 @@ domain:
       {
          common::unittest::Trace trace;
 
-         auto domain = local::domain( local::configuration::base);
+         auto domain = local::domain( local::configuration::system, local::configuration::base);
 
          auto trid = common::transaction::id::create();
 
@@ -926,7 +915,7 @@ domain:
       {
          common::unittest::Trace trace;
 
-         auto domain = local::domain( local::configuration::base);
+         auto domain = local::domain( local::configuration::system, local::configuration::base);
 
          auto trid = common::transaction::id::create();
 
@@ -965,7 +954,7 @@ domain:
       {
          common::unittest::Trace trace;
 
-         auto domain = local::domain( local::configuration::base);
+         auto domain = local::domain( local::configuration::system, local::configuration::base);
 
          auto trid = common::transaction::id::create();
 
@@ -1042,7 +1031,7 @@ domain:
       {
          common::unittest::Trace trace;
 
-         auto domain = local::domain( local::configuration::base);
+         auto domain = local::domain( local::configuration::system, local::configuration::base);
 
 
          local::involved::Process rm1;
@@ -1146,7 +1135,7 @@ domain:
       {
          common::unittest::Trace trace;
 
-         auto domain = local::domain( local::configuration::base);
+         auto domain = local::domain( local::configuration::system, local::configuration::base);
 
          local::involved::Process rm1;
          local::involved::Process rm2;
@@ -1214,7 +1203,7 @@ domain:
       {
          common::unittest::Trace trace;
 
-         auto domain = local::domain( local::configuration::base);
+         auto domain = local::domain( local::configuration::system, local::configuration::base);
 
          local::involved::Process rm1;
          local::involved::Process rm2;
@@ -1305,7 +1294,7 @@ domain:
       {
          common::unittest::Trace trace;
 
-         auto domain = local::domain( local::configuration::base);
+         auto domain = local::domain( local::configuration::system, local::configuration::base);
 
          local::involved::Process rm1;
          local::involved::Process rm2;
@@ -1398,7 +1387,7 @@ domain:
       {
          common::unittest::Trace trace;
 
-         auto domain = local::domain( local::configuration::base);
+         auto domain = local::domain( local::configuration::system, local::configuration::base);
 
          EXPECT_TRUE( local::begin() == common::code::tx::ok);
 
@@ -1437,7 +1426,7 @@ domain:
       {
          common::unittest::Trace trace;
 
-         auto domain = local::domain( local::configuration::base);
+         auto domain = local::domain( local::configuration::system, local::configuration::base);
 
 
          EXPECT_TRUE( local::begin() == common::code::tx::ok);
@@ -1487,7 +1476,7 @@ domain:
       {
          common::unittest::Trace trace;
 
-         auto domain = local::domain( local::configuration::base);
+         auto domain = local::domain( local::configuration::system, local::configuration::base);
 
          EXPECT_TRUE( local::begin() == common::code::tx::ok);
 
@@ -1535,7 +1524,7 @@ domain:
       {
          common::unittest::Trace trace;
 
-         auto domain = local::domain( local::configuration::base);
+         auto domain = local::domain( local::configuration::system, local::configuration::base);
 
          auto trid = common::transaction::id::create( process::handle());
 
@@ -1578,7 +1567,7 @@ domain:
          auto scope = common::environment::variable::scoped::set( "CASUAL_UNITTEST_OPEN_INFO_RM1", 
             common::string::compose( "--start ", XAER_RMFAIL));
 
-         auto domain = local::domain( local::configuration::base);
+         auto domain = local::domain( local::configuration::system, local::configuration::base);
 
          // configure the local rm - will get XAER_RMFAIL on xa_start
          common::transaction::context().configure( { { "rm-mockup", "rm1", &casual_mockup_xa_switch_static}});
