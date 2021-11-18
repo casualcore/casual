@@ -41,16 +41,10 @@ namespace casual
 
             } // call::state
 
-         } // <unnamed>
-      } // local
-      TEST( test_domain_service, two_server_alias__service_restriction)
-      {
-         common::unittest::Trace trace;
-
-         constexpr auto configuration = R"(
+            namespace configuration
+            {
+               constexpr auto base =  R"(
 domain: 
-   name: A
-
    groups: 
       -  name: base
       -  name: user
@@ -61,7 +55,33 @@ domain:
          memberships: [ base]
       -  path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/transaction/bin/casual-transaction-manager"
          memberships: [ base]
-         
+   
+)";
+            } // configuration
+
+            namespace is
+            {
+               auto service( std::string_view name)
+               {
+                  return [name]( auto& service)
+                  {
+                     return service.name == name;
+                  };
+               }
+                        
+            } // is   
+
+         } // <unnamed>
+      } // local
+
+      TEST( test_domain_service, two_server_alias__service_restriction)
+      {
+         common::unittest::Trace trace;
+
+         auto domain = casual::domain::manager::unittest::process( local::configuration::base, R"(
+domain: 
+   name: A
+   servers:         
       -  alias: A
          path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-server"
          memberships: [ user]
@@ -74,30 +94,61 @@ domain:
          restrictions:
             -  casual/example/sink
 
-)";
-
-
-         local::Manager domain{ { configuration}};
+)");
 
          auto state = local::call::state::service();
 
-         auto is_service = []( auto name)
-         {
-            return [name]( auto& service)
-            {
-               return service.name == name;
-            };
-         };
+         // check that we excluded services that doesn't match the restrictions
+         EXPECT_TRUE( ! algorithm::find_if( state.services, local::is::service( "casual/example/uppercase")));
+
 
          {
-            auto service = algorithm::find_if( state.services, is_service( "casual/example/echo"));
+            auto service = algorithm::find_if( state.services, local::is::service( "casual/example/echo"));
             ASSERT_TRUE( service);
             EXPECT_TRUE( service->instances.sequential.size() == 1) << CASUAL_NAMED_VALUE( service->instances.sequential);
             EXPECT_TRUE( service->instances.concurrent.empty());
          }
 
          {
-            auto service = algorithm::find_if( state.services, is_service( "casual/example/sink"));
+            auto service = algorithm::find_if( state.services, local::is::service( "casual/example/sink"));
+            ASSERT_TRUE( service);
+            EXPECT_TRUE( service->instances.sequential.size() == 1) << CASUAL_NAMED_VALUE( service->instances.sequential);
+            EXPECT_TRUE( service->instances.concurrent.empty());
+         }
+      }
+
+      TEST( test_domain_service, service_restriction_regex)
+      {
+         common::unittest::Trace trace;
+
+         auto domain = casual::domain::manager::unittest::process( local::configuration::base, R"(
+domain: 
+   name: A
+   servers:         
+      -  alias: A
+         path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-server"
+         memberships: [ user]
+         restrictions:
+            -  ".*/echo$"
+            -  ".*/sink$"
+
+)");
+
+         auto state = local::call::state::service();
+
+         // check that we excluded services that doesn't match the restrictions
+         EXPECT_TRUE( ! algorithm::find_if( state.services, local::is::service( "casual/example/uppercase")));
+
+
+         {
+            auto service = algorithm::find_if( state.services, local::is::service( "casual/example/echo"));
+            ASSERT_TRUE( service);
+            EXPECT_TRUE( service->instances.sequential.size() == 1) << CASUAL_NAMED_VALUE( service->instances.sequential);
+            EXPECT_TRUE( service->instances.concurrent.empty());
+         }
+
+         {
+            auto service = algorithm::find_if( state.services, local::is::service( "casual/example/sink"));
             ASSERT_TRUE( service);
             EXPECT_TRUE( service->instances.sequential.size() == 1) << CASUAL_NAMED_VALUE( service->instances.sequential);
             EXPECT_TRUE( service->instances.concurrent.empty());

@@ -105,10 +105,16 @@ namespace casual
 
          service_concurrent_advertise,
 
-         service_conversation_connect_request = 3200,
-         service_conversation_connect_reply   = 3201,
-         service_conversation_send            = 3202,
-         service_conversation_disconnect      = 3203,
+         // The following cant be used.
+         // 3200
+         // 3201
+         // 3202
+         // 3203
+
+         conversation_connect_request = 3210,
+         conversation_connect_reply   = 3211,
+         conversation_send            = 3212,
+         conversation_disconnect      = 3213,
 
 
          // event messages

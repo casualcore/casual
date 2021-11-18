@@ -209,7 +209,7 @@ namespace casual
                         Trace trace{ "domain::manager::admin::local::service::configuration::post"};
 
                         auto protocol = serviceframework::service::protocol::deduce( std::move( parameter));
-                        auto wanted = normalize( casual::configuration::model::transform( protocol.extract< casual::configuration::user::Domain>( "domain")));
+                        auto wanted = normalize( casual::configuration::model::transform( protocol.extract< casual::configuration::user::Model>()));
 
                         auto post_configuration = []( auto& state, auto& wanted)
                         {
@@ -229,7 +229,7 @@ namespace casual
                      return [&state]( common::service::invoke::Parameter&& parameter)
                      {
                         auto protocol = serviceframework::service::protocol::deduce( std::move( parameter));
-                        auto updates = casual::configuration::model::transform( protocol.extract< casual::configuration::user::Domain>( "domain"));
+                        auto updates = casual::configuration::model::transform( protocol.extract< casual::configuration::user::Model>());
 
                         auto post_configuration = []( auto& state, auto& updates)
                         {

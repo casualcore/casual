@@ -49,7 +49,10 @@ namespace casual
             {
                while( count-- > 0)
                {
-                  auto& info = m_state.resource.properties.at( proxy.configuration.key);
+                  auto found = algorithm::find( m_state.system.configuration.resources, proxy.configuration.key);
+
+                  if( ! found)
+                     return;
 
                   state::resource::Proxy::Instance instance;
                   instance.id = proxy.id;
@@ -57,7 +60,7 @@ namespace casual
                   try
                   {
                      instance.process.pid = process::spawn(
-                        info.server,
+                        found->server,
                         {
                            "--id", std::to_string( proxy.id.value()),
                         },
@@ -70,7 +73,7 @@ namespace casual
                   }
                   catch( ...)
                   {
-                     common::event::error::send( common::exception::capture().code(), "failed to spawn resource-proxy-instance: " + info.server);
+                     common::event::error::send( common::exception::capture().code(), "failed to spawn resource-proxy-instance: " + found->server);
                   }
                }
             }

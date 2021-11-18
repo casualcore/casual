@@ -79,7 +79,7 @@ namespace casual
          void Default::reply( strong::ipc::id id, message::service::call::Reply& message)
          {
             Trace trace{ "server::handle::policy::Default::reply"};
-            log::line( log::debug, "reply: ", message);
+            log::line( log::debug, "ipc: ", id, "reply: ", message);
 
             communication::device::blocking::send( id, message);
          }
@@ -87,11 +87,9 @@ namespace casual
          void Default::reply( strong::ipc::id id, message::conversation::callee::Send& message)
          {
             Trace trace{ "server::handle::policy::Default::conversation::reply"};
+            log::line( log::debug, "ipc: ", id, "reply: ", message);
 
-            log::line( log::debug, "reply: ", message);
-
-            auto node = message.route.next();
-            communication::device::blocking::send( node.address, message);
+            communication::device::blocking::send( id, message);
          }
 
          void Default::ack( const message::service::call::ACK& message)

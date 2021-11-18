@@ -70,14 +70,22 @@ namespace casual
             protocol::result_type finalize() { return m_concept->finalize();}
             void exception() { m_concept->exception();}
             const std::string& type() const { return m_concept->type();}
-
-
-
+            
+            //! extract type `R` with `name`
             template< typename R, typename N> 
             auto extract( N&& name)
             {
                R result;
                *this >> CASUAL_NAMED_VALUE_NAME( result, name);
+               return result;
+            }
+
+            //! extract type `R`
+            template< typename R> 
+            auto extract()
+            {
+               R result;
+               *this >> result;
                return result;
             }
 

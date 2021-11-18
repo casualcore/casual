@@ -30,7 +30,7 @@ namespace casual
          struct Code 
          {
             code::xatmi result = code::xatmi::ok;
-            long user = 0;
+            long user{};
 
             CASUAL_CONST_CORRECT_SERIALIZE(
                CASUAL_SERIALIZE( result);

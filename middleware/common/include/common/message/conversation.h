@@ -19,54 +19,65 @@ namespace casual
 {
    namespace common::message
    {
-
       namespace conversation
       {
-         struct Node
+         using Code = service::Code;
+         namespace code
          {
-            inline Node() = default;
-            inline Node( strong::ipc::id address) : address( address) {}
-
-            strong::ipc::id address;
-
-            CASUAL_CONST_CORRECT_SERIALIZE(
+            constexpr auto initialize()
             {
-               CASUAL_SERIALIZE( address);
-            })
-         };
-
-         struct Route
-         {
-            std::vector< Node> nodes;
-
-            inline Node next()
-            {
-               assert( ! nodes.empty());
-
-               auto node = std::move( nodes.back());
-               nodes.pop_back();
-               return node;
+               return Code{ common::code::xatmi::absent, 0L};
             }
+         } // code
 
-            CASUAL_CONST_CORRECT_SERIALIZE(
+         namespace duplex
+         {
+            enum class Type : short
             {
-               CASUAL_SERIALIZE( nodes);
-            })
-         };
+               send,
+               receive,
+               terminated
+            };
+            inline std::ostream& operator << ( std::ostream& out, Type value)
+            {
+               switch( value)
+               {
+                  case Type::receive: return out << "receive";
+                  case Type::send: return out << "send";
+                  case Type::terminated: return out << "terminated";
+               }
+               return out << "<unknown>";
+            }
+         } // duplex
+
 
          namespace connect
          {
-            struct base_request : service::call::common_request< Type::service_conversation_connect_request>
+            using base_type = message::basic_request< Type::conversation_connect_request>;
+            struct base_request : base_type
             {
-               using base = service::call::common_request< Type::service_conversation_connect_request>;
-               
-               Route recording;
-               flag::service::conversation::connect::Flags flags;
+               using base_type::base_type;
+
+               Service service;
+               std::string parent;
+
+               common::transaction::ID trid;
+               common::service::header::Fields header;
+
+               //! pending time, only to be return in the "ACK", to collect
+               //! metrics
+               platform::time::unit pending{};
+
+               duplex::Type duplex{};
 
                CASUAL_CONST_CORRECT_SERIALIZE(
-                  base::serialize( archive);
-                  CASUAL_SERIALIZE( recording);
-                  CASUAL_SERIALIZE( flags);
+                  base_type::serialize( archive);
+                  CASUAL_SERIALIZE( service);
+                  CASUAL_SERIALIZE( parent);
+                  CASUAL_SERIALIZE( trid);
+                  CASUAL_SERIALIZE( header);
+                  CASUAL_SERIALIZE( pending);
+                  CASUAL_SERIALIZE( duplex);
                )
             };
 
@@ -105,38 +116,31 @@ namespace casual
             } // callee
 
 
-            using base_reply = basic_reply< Type::service_conversation_connect_reply>;
+            using base_reply = basic_reply< Type::conversation_connect_reply>;
             struct Reply : base_reply
             {
-               Route route;
-               Route recording;
-               service::Code code;
+               using base_reply::base_reply;
+
+               service::Code code = code::initialize();
 
                CASUAL_CONST_CORRECT_SERIALIZE(
                   base_reply::serialize( archive);
-                  CASUAL_SERIALIZE( route);
-                  CASUAL_SERIALIZE( recording);
                   CASUAL_SERIALIZE( code);
                )
             };
 
          } // connect
 
-         using send_base = basic_request< Type::service_conversation_send>;
+         using send_base = basic_message< Type::conversation_send>;
          struct basic_send : send_base
          {
-            Route route;
-            
-            flag::service::conversation::send::Flags flags;
-            flag::service::conversation::Events events;
+            duplex::Type duplex{};
             service::Transaction transaction;
-            service::Code code;
+            service::Code code = code::initialize();
 
             CASUAL_CONST_CORRECT_SERIALIZE(
                send_base::serialize( archive);
-               CASUAL_SERIALIZE( route);
-               CASUAL_SERIALIZE( flags);
-               CASUAL_SERIALIZE( events);
+               CASUAL_SERIALIZE( duplex);
                CASUAL_SERIALIZE( transaction);
                CASUAL_SERIALIZE( code);
             )
@@ -177,18 +181,12 @@ namespace casual
          } // callee
 
 
-         using disconnect_base = basic_reply< Type::service_conversation_disconnect>;
+         using disconnect_base = basic_reply< Type::conversation_disconnect>;
          struct Disconnect : disconnect_base
          {
-            Route route;
-            flag::service::conversation::Events events;
-
             CASUAL_CONST_CORRECT_SERIALIZE(
-            {
                disconnect_base::serialize( archive);
-               CASUAL_SERIALIZE( route);
-               CASUAL_SERIALIZE( events);
-            })
+            )
          };
 
       } // conversation

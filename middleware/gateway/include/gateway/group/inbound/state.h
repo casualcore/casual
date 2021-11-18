@@ -124,6 +124,21 @@ namespace casual
             )
          };
 
+         struct Conversation
+         {
+            common::strong::correlation::id correlation;
+            common::strong::file::descriptor::id descriptor;
+            common::process::Handle process;
+
+            inline friend bool operator == ( const Conversation& lhs, const common::strong::correlation::id& rhs) { return lhs.correlation == rhs;}
+
+            CASUAL_LOG_SERIALIZE( 
+               CASUAL_SERIALIZE( correlation);
+               CASUAL_SERIALIZE( descriptor);
+               CASUAL_SERIALIZE( process);
+            )
+         };
+
 
       } // state
 
@@ -147,7 +162,7 @@ namespace casual
          
 
          std::vector< state::Correlation> correlations;
-
+         std::vector< state::Conversation> conversations;
 
          std::string alias;
          std::string note;
@@ -155,6 +170,8 @@ namespace casual
 
          //! @return the correlated connection, and remove the correlation
          tcp::Connection* consume( const common::strong::correlation::id& correlation);
+
+         tcp::Connection* connection( const common::strong::correlation::id& correlation);
 
          //! @return true if the state is ready to 'terminate'
          bool done() const noexcept;

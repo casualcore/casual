@@ -12,7 +12,6 @@
 #include "common/service/type.h"
 #include "common/chronology.h"
 
-
 namespace casual
 {
    using namespace common;
@@ -22,7 +21,6 @@ namespace casual
       {
          namespace
          {
-
             template< typename T>
             T empty_if_null( std::optional< T> value)
             {
@@ -31,467 +29,526 @@ namespace casual
                return {};
             }
 
-            auto environment( const user::Environment& environment)
+
+            auto system( const configuration::user::Model& model)
             {
-               domain::Environment result;
-               result.variables = user::environment::transform( user::environment::fetch( environment));
-               return result;
-            }
+               Trace trace{ "configuration::model::local::system"};
 
-            auto transaction( const configuration::user::Domain& domain)
-            {
-               Trace trace{ "configuration::model::local::transaction"};
+               configuration::model::system::Model result;
 
-               transaction::Model result;
-
-               if( ! domain.transaction)
-                  return result;
-
-               auto& transaction = domain.transaction.value();
-
-               result.log = transaction.log;
-
-               result.resources = common::algorithm::transform( transaction.resources, []( const auto& resource)
+               // resources
                {
-                  transaction::Resource result;
-
-                  result.name = resource.name;
-                  result.key = resource.key.value_or( "");
-                  result.instances = resource.instances.value_or( 0);
-                  result.note = resource.note.value_or( "");
-                  result.openinfo = resource.openinfo.value_or( "");
-                  result.closeinfo = resource.closeinfo.value_or( "");
-
-                  return result;
-               });
-
-               // extract all explicit and implicit (via groups) resources for every server, if any
-               {
-                  auto append_resources = [&]( auto& alias, auto resources)
+                  auto transform_resource = []( auto& resource)
                   {
-                     if( resources.empty())
-                        return;
+                     configuration::model::system::Resource result;
+                     result.key = resource.key;
+                     result.server = resource.server;
+                     result.xa_struct_name = resource.xa_struct_name;
 
-                     if( auto found = algorithm::find( result.mappings, alias))
-                        algorithm::append_unique( std::move( resources), found->resources);
-                     else 
+                     result.note = empty_if_null( resource.note);
+                     result.libraries = empty_if_null( resource.libraries);
+
+                     if( resource.paths)
                      {
-                        auto& mapping = result.mappings.emplace_back();
-                        mapping.alias = alias;
-                        mapping.resources = std::move( resources);
-                        algorithm::trim( mapping.resources, algorithm::unique( algorithm::sort( mapping.resources)));
-                     }   
-                  };
+                        auto& paths = resource.paths.value();
+                        result.paths.include = empty_if_null( paths.include);
+                        result.paths.library = empty_if_null( paths.library);
+                     }
 
-                  auto extract_group_resources = [&]( auto& memberships)
-                  {
-                     return algorithm::accumulate( memberships, std::vector< std::string>{}, [&]( auto result, auto& membership)
-                     {
-                        if( auto found = algorithm::find( domain.groups, membership))
-                           if( found->resources)
-                              algorithm::append( found->resources.value(), result);
-                        
-                        return result;
-                     });
-                  };
-
-                  auto server_resources = [&]( auto& server)
-                  {
-                     auto& alias = server.alias.value();
-                     if( server.resources)
-                        append_resources( alias, server.resources.value());
-
-                     if( server.memberships)
-                        append_resources( alias, extract_group_resources( server.memberships.value()));
-                  };
-
-                  algorithm::for_each( domain.servers, server_resources);
-               }
-
-               return result;
-            }
-
-            auto domain( const configuration::user::Domain& domain)
-            {
-               Trace trace{ "configuration::model::local::domain"};
-
-               domain::Model result;
-               
-               result.name = domain.name;
-
-               if( domain.environment)
-                  result.environment = local::environment( domain.environment.value());
-
-               // groups
-               result.groups = common::algorithm::transform( domain.groups, []( auto& group)
-               {
-                  domain::Group result;
-                  result.name = group.name;
-                  result.note = group.note.value_or( "");
-                  result.dependencies = group.dependencies.value_or( result.dependencies);
-                  return result;
-               });
-
-               auto transform_executable = []( auto result)
-               {
-                  using result_type = decltype( result);
-
-                  return []( auto& value)
-                  {
-                     result_type result;
-                     result.alias = value.alias.value_or( "");
-                     result.arguments = value.arguments.value_or( result.arguments);
-                     result.instances = value.instances.value_or( result.instances);
-                     result.note = value.note.value_or( "");
-                     result.path = value.path;
-                     result.lifetime.restart = value.restart.value_or( result.lifetime.restart);
-                     result.memberships = value.memberships.value_or( result.memberships);
-
-                     // TOOD performance: worst case we'd read env-files a lot of times...
-                     if( value.environment)
-                        result.environment = local::environment( value.environment.value());
                      return result;
                   };
-               };
 
-               result.executables = common::algorithm::transform( domain.executables, transform_executable( domain::Executable{}));
-               result.servers = common::algorithm::transform( domain.servers, transform_executable( domain::Server{}));
-
-               return result;
-            }
-
-            namespace detail::execution
-            {
-               auto timeout( const std::optional<configuration::user::service::Execution>& execution)
-               {
-                  configuration::model::service::Timeout result;
-                  if( execution && execution.value().timeout)
+                  if( model.system && model.system.value().resources)
                   {
-                     if ( execution.value().timeout.value().duration)
-                     {
-                        result.duration = 
-                           common::chronology::from::string( execution.value().timeout.value().duration.value());
-                     }
-                     if ( execution.value().timeout.value().contract)
-                     {
-                        result.contract = common::service::execution::timeout::contract::transform( execution.value().timeout.value().contract.value());
-                     }
+                     result.resources = algorithm::transform( model.system.value().resources.value(), transform_resource);
                   }
-                  return result;
-               }
-               
-            }
-
-            auto service( const configuration::user::Domain& domain)
-            {
-               Trace trace{ "configuration::model::local::service"};
-
-               namespace contract = common::service::execution::timeout::contract;
-
-               service::Model result;
-
-               if( domain.defaults && domain.defaults.value().service && domain.defaults.value().service.value().timeout)
-               {
-                  log::line( log::category::warning, code::casual::invalid_configuration, " domain.default.service.timeout are deprecated - use domain.default.service.execution.duration instead");
-                  result.timeout.duration = common::chronology::from::string( domain.defaults.value().service.value().timeout.value());
-               }
-
-               if( domain.service && domain.service.value().execution && domain.service.value().execution.value().timeout)
-               {
-                  const auto& timeout = domain.service.value().execution.value().timeout;
-                  if( timeout.value().duration)
-                     result.timeout.duration = common::chronology::from::string( timeout.value().duration.value());
-
-                  if( timeout.value().contract)
-                     result.timeout.contract = contract::transform( timeout.value().contract.value());
-               }
-
-               result.services = common::algorithm::transform( domain.services, []( const auto& service)
-               {
-                  service::Service result;
-
-                  result.name = service.name;
-                  result.routes = service.routes.value_or( result.routes);
-                  if( service.timeout)
+                  else if( model.resources)
                   {
-                     log::line( log::category::warning, code::casual::invalid_configuration, " domain.service.timeout are deprecated - use domain.service.execution.duration instead");
-    
-                     result.timeout.duration = common::chronology::from::string( service.timeout.value());
+                     log::line( log::category::warning, code::casual::invalid_configuration, " root 'resources' is deprecated - use system.resources instead");
+                     result.resources = algorithm::transform( model.resources.value(), transform_resource);
                   }
-
-                  if( service.execution)
-                     result.timeout = detail::execution::timeout( service.execution);
-
-                  return result;
-               });
-
-               result.restrictions = algorithm::transform_if( domain.servers, []( auto& service)
-               {
-                  service::Restriction result;
-                  result.alias = service.alias.value();
-                  result.services = service.restrictions.value();
-
-                  return result;
-               }, []( auto& service)
-               {
-                  return service.restrictions && ! service.restrictions.value().empty();
-               });
-
-               return result;
-            }
-
-            auto gateway( const configuration::user::Domain& domain)
-            {
-               Trace trace{ "configuration::model::local::gateway"};
-
-               gateway::Model result;
-
-               if( ! domain.gateway)
-                  return result;
-
-               auto& gateway = domain.gateway.value();
-
-               // first we take care of deprecated stuff
-
-               if( gateway.listeners && ! gateway.listeners.value().empty())
-               {
-                  log::line( log::category::warning, code::casual::invalid_configuration, " domain.gateway.listeners are deprecated - use domain.gateway.inbounds");
-
-                  gateway::inbound::Group group;
-                  group.connect = decltype( group.connect)::regular;
-                  group.connections = common::algorithm::transform( gateway.listeners.value(), []( const auto& listener)
-                  {
-                     gateway::inbound::Connection result;
-                     result.note = listener.note.value_or( "");
-                     result.address = listener.address;
-                     return result;
-                  });
-
-
-                  group.limit = algorithm::accumulate( gateway.listeners.value(), gateway::inbound::Limit{}, [&]( auto current, auto& listener)
-                  {
-                     if( ! listener.limit)
-                        return current;
-
-                     auto size = listener.limit.value().size.value_or( 0);
-                     auto messages = listener.limit.value().messages.value_or( 0);
-
-                     if( size > 0 && current.size > size)
-                        current.size = size;
-
-                     if( messages > 0 && current.messages > messages)
-                        current.messages = messages;
-
-                     return current;
-                  });
-
-                  result.inbound.groups.push_back( std::move( group));
-               }
-
-               if( gateway.connections && ! gateway.connections.value().empty())
-               {
-                  log::line( log::category::warning, code::casual::invalid_configuration, " domain.gateway.connections are deprecated - use domain.gateway.outbounds");
-
-                  result.outbound.groups = common::algorithm::transform( gateway.connections.value(), []( const auto& value)
-                  {
-                     gateway::outbound::Group result;
-                     result.connect = decltype( result.connect)::regular;
-                     result.note = value.note.value_or( "");
-                     gateway::outbound::Connection connection;
-                     
-                     connection.note = result.note;
-                     connection.address = value.address;
-                  
-                     if( value.services)
-                        connection.services = value.services.value();
-                     if( value.queues)
-                        connection.queues = value.queues.value();
-
-                     result.connections.push_back( std::move( connection));
-
-                     return result;
-                  });
-               }
-
-               auto append_inbounds = []( auto& source, auto& target, auto connect)
-               { 
-                  if( ! source)
-                     return;
-
-                  algorithm::transform( source.value().groups, std::back_inserter( target), [connect]( auto& source)
-                  {
-                     gateway::inbound::Group result;
-                     result.alias = source.alias.value_or( "");
-                     result.note = source.note.value_or( "");
-                     result.connect = connect;
-
-                     if( source.limit)
-                     {
-                        result.limit.size = source.limit.value().size.value_or( result.limit.size);
-                        result.limit.messages = source.limit.value().messages.value_or( result.limit.messages);
-                     }
-
-                     result.connections = algorithm::transform( source.connections, []( auto& connection)
-                     {
-                        gateway::inbound::Connection result;
-                        result.note = connection.note.value_or( "");
-                        result.address = connection.address;
-                        
-                        if( connection.discovery && connection.discovery.value().forward)
-                           result.discovery = decltype( result.discovery)::forward;
-
-                        return result;
-                     });
-
-                     return result;
-                  });
-               };
-
-               auto append_outbounds = []( auto& source, auto& target, auto connect)
-               { 
-                  if( ! source)
-                     return;
-
-                  algorithm::transform( source.value().groups, std::back_inserter( target), [connect]( auto& source)
-                  {
-                     gateway::outbound::Group result;
-                     result.alias = source.alias.value_or( "");
-                     result.note = source.note.value_or( "");
-                     result.connect = connect;
-                     result.connections = algorithm::transform( source.connections, []( auto& connection)
-                     {
-                        gateway::outbound::Connection result;
-                        result.note = connection.note.value_or( "");
-                        result.address = connection.address;
-                        result.services = local::empty_if_null( std::move( connection.services));
-                        result.queues = local::empty_if_null( std::move( connection.queues));
-                        return result;
-                     });
-
-                     return result;
-                  });
-               };
-
-               append_inbounds( gateway.inbound, result.inbound.groups, configuration::model::gateway::connect::Semantic::regular);
-               append_outbounds( gateway.outbound, result.outbound.groups, configuration::model::gateway::connect::Semantic::regular);
-
-               if( gateway.reverse)
-               {
-                  append_inbounds( gateway.reverse.value().inbound, result.inbound.groups, configuration::model::gateway::connect::Semantic::reversed);
-                  append_outbounds( gateway.reverse.value().outbound, result.outbound.groups, configuration::model::gateway::connect::Semantic::reversed);
                }
 
                return result;
             }
 
-            auto queue( const configuration::user::Domain& domain)
+
+            namespace domain
             {
-               Trace trace{ "configuration::model::local::queue"};
 
-               queue::Model result;
-
-               if( ! domain.queue)
-                  return result;
-
-               auto& source = domain.queue.value();
-
-               result.note = source.note.value_or( "");
-
-               if( source.groups)
+         
+               auto environment( const user::domain::Environment& environment)
                {
-                  result.groups = common::algorithm::transform( source.groups.value(), []( auto& group)
+                  model::domain::Environment result;
+                  result.variables = user::domain::environment::transform( user::domain::environment::fetch( environment));
+                  return result;
+               }
+
+               auto transaction( const configuration::user::domain::Model& domain)
+               {
+                  Trace trace{ "configuration::model::local::transaction"};
+
+                  transaction::Model result;
+
+                  if( ! domain.transaction)
+                     return result;
+
+                  auto& transaction = domain.transaction.value();
+
+                  result.log = transaction.log;
+
+                  result.resources = common::algorithm::transform( transaction.resources, []( const auto& resource)
                   {
-                     queue::Group result;
+                     transaction::Resource result;
 
-                     result.alias = group.alias.value_or( "");
-                     result.note = group.note.value_or( "");
-                     result.queuebase = group.queuebase.value_or( "");
+                     result.name = resource.name;
+                     result.key = resource.key.value_or( "");
+                     result.instances = resource.instances.value_or( 0);
+                     result.note = resource.note.value_or( "");
+                     result.openinfo = resource.openinfo.value_or( "");
+                     result.closeinfo = resource.closeinfo.value_or( "");
 
-                     common::algorithm::transform( group.queues, result.queues, []( auto& queue)
+                     return result;
+                  });
+
+                  // extract all explicit and implicit (via groups) resources for every server, if any
+                  {
+                     auto append_resources = [&]( auto& alias, auto resources)
                      {
-                        model::queue::Queue result;
+                        if( resources.empty())
+                           return;
 
-                        result.name = queue.name;
-                        result.note = queue.note.value_or("");
-                        if( queue.retry)
+                        if( auto found = algorithm::find( result.mappings, alias))
+                           algorithm::append_unique( std::move( resources), found->resources);
+                        else 
                         {
-                           auto& retry = queue.retry.value();
-                           if( retry.count)
-                              result.retry.count = retry.count.value();
-                           if( retry.delay)
-                              result.retry.delay = common::chronology::from::string( retry.delay.value());
-                        }
-
-                        return result;
-                     });
-                     return result;
-                  });
-               }
-               
-               
-               if( source.forward && source.forward.value().groups)
-               {
-                  result.forward.groups = algorithm::transform( source.forward.value().groups.value(), []( auto& group)
-                  {
-                     queue::forward::Group result;
-                     result.alias = group.alias.value_or( "");
-
-                     auto set_base_forward = []( auto& source, auto& target)
-                     {
-                        target.alias = source.alias.value_or( "");
-                        target.source = source.source;
-                        if( source.instances)
-                           target.instances = source.instances.value();
-
-                        target.note = source.note.value_or( "");
+                           auto& mapping = result.mappings.emplace_back();
+                           mapping.alias = alias;
+                           mapping.resources = std::move( resources);
+                           algorithm::trim( mapping.resources, algorithm::unique( algorithm::sort( mapping.resources)));
+                        }   
                      };
 
-                     if( group.services)
+                     auto extract_group_resources = [&]( auto& memberships)
                      {
-                        result.services = algorithm::transform( group.services.value(), [&set_base_forward]( auto& service)
+                        if( ! domain.groups)
+                           return std::vector< std::string>{};
+
+                        return algorithm::accumulate( memberships, std::vector< std::string>{}, [&]( auto result, auto& membership)
                         {
-                           configuration::model::queue::forward::Service result;
+                           if( auto found = algorithm::find( domain.groups.value(), membership))
+                              if( found->resources)
+                                 algorithm::append( found->resources.value(), result);
+                           
+                           return result;
+                        });
+                     };
 
-                           set_base_forward( service, result);
-                           result.target.service = service.target.service;
+                     auto server_resources = [&]( auto& server)
+                     {
+                        auto& alias = server.alias.value();
+                        if( server.resources)
+                           append_resources( alias, server.resources.value());
 
-                           if( service.reply)
+                        if( server.memberships)
+                           append_resources( alias, extract_group_resources( server.memberships.value()));
+                     };
+
+                     if( domain.servers)
+                        algorithm::for_each( domain.servers.value(), server_resources);
+                  }
+
+                  return result;
+               }
+
+               auto domain( const configuration::user::domain::Model& domain)
+               {
+                  Trace trace{ "configuration::model::local::domain"};
+
+                  model::domain::Model result;
+                  
+                  result.name = domain.name.value_or( "");
+
+                  if( domain.environment)
+                     result.environment = local::domain::environment( domain.environment.value());
+
+                  // groups
+                  if( domain.groups)
+                     result.groups = common::algorithm::transform( domain.groups.value(), []( auto& group)
+                     {
+                        model::domain::Group result;
+                        result.name = group.name;
+                        result.note = group.note.value_or( "");
+                        result.dependencies = group.dependencies.value_or( result.dependencies);
+                        return result;
+                     });
+
+                  auto transform_executable = []( auto result)
+                  {
+                     using result_type = decltype( result);
+
+                     return []( auto& value)
+                     {
+                        result_type result;
+                        result.alias = value.alias.value_or( "");
+                        result.arguments = value.arguments.value_or( result.arguments);
+                        result.instances = value.instances.value_or( result.instances);
+                        result.note = value.note.value_or( "");
+                        result.path = value.path;
+                        result.lifetime.restart = value.restart.value_or( result.lifetime.restart);
+                        result.memberships = value.memberships.value_or( result.memberships);
+
+                        // TOOD performance: worst case we'd read env-files a lot of times...
+                        if( value.environment)
+                           result.environment = local::domain::environment( value.environment.value());
+                        return result;
+                     };
+                  };
+
+                  if( domain.executables)
+                     result.executables = common::algorithm::transform( domain.executables.value(), transform_executable( model::domain::Executable{}));
+                  if( domain.servers)
+                     result.servers = common::algorithm::transform( domain.servers.value(), transform_executable( model::domain::Server{}));
+
+                  return result;
+               }
+
+               namespace detail::execution
+               {
+                  auto timeout( const std::optional< configuration::user::domain::service::Execution>& execution)
+                  {
+                     configuration::model::service::Timeout result;
+                     if( execution && execution.value().timeout)
+                     {
+                        if ( execution.value().timeout.value().duration)
+                        {
+                           result.duration = 
+                              common::chronology::from::string( execution.value().timeout.value().duration.value());
+                        }
+                        if ( execution.value().timeout.value().contract)
+                        {
+                           result.contract = common::service::execution::timeout::contract::transform( execution.value().timeout.value().contract.value());
+                        }
+                     }
+                     return result;
+                  }
+                  
+               } // detail::execution
+
+               auto service( const configuration::user::domain::Model& domain)
+               {
+                  Trace trace{ "configuration::model::local::service"};
+
+                  namespace contract = common::service::execution::timeout::contract;
+
+                  service::Model result;
+
+                  if( domain.defaults && domain.defaults.value().service && domain.defaults.value().service.value().timeout)
+                  {
+                     log::line( log::category::warning, code::casual::invalid_configuration, " domain.default.service.timeout are deprecated - use domain.default.service.execution.duration instead");
+                     result.timeout.duration = common::chronology::from::string( domain.defaults.value().service.value().timeout.value());
+                  }
+
+                  if( domain.service && domain.service.value().execution && domain.service.value().execution.value().timeout)
+                  {
+                     const auto& timeout = domain.service.value().execution.value().timeout;
+                     if( timeout.value().duration)
+                        result.timeout.duration = common::chronology::from::string( timeout.value().duration.value());
+
+                     if( timeout.value().contract)
+                        result.timeout.contract = contract::transform( timeout.value().contract.value());
+                  }
+
+                  if( domain.services)
+                     result.services = common::algorithm::transform( domain.services.value(), []( const auto& service)
+                     {
+                        service::Service result;
+
+                        result.name = service.name;
+                        result.routes = service.routes.value_or( result.routes);
+                        if( service.timeout)
+                        {
+                           log::line( log::category::warning, code::casual::invalid_configuration, " domain.service.timeout are deprecated - use domain.service.execution.duration instead");
+         
+                           result.timeout.duration = common::chronology::from::string( service.timeout.value());
+                        }
+
+                        if( service.execution)
+                           result.timeout = detail::execution::timeout( service.execution);
+
+                        return result;
+                     });
+
+                  if( domain.servers)
+                     result.restrictions = algorithm::transform_if( domain.servers.value(), []( auto& service)
+                     {
+                        service::Restriction result;
+                        result.alias = service.alias.value();
+                        result.services = service.restrictions.value();
+
+                        return result;
+                     }, []( auto& service)
+                     {
+                        return service.restrictions && ! service.restrictions.value().empty();
+                     });
+
+                  return result;
+               }
+
+               auto gateway( const configuration::user::domain::Model& domain)
+               {
+                  Trace trace{ "configuration::model::local::gateway"};
+
+                  gateway::Model result;
+
+                  if( ! domain.gateway)
+                     return result;
+
+                  auto& gateway = domain.gateway.value();
+
+                  // first we take care of deprecated stuff
+
+                  if( gateway.listeners && ! gateway.listeners.value().empty())
+                  {
+                     log::line( log::category::warning, code::casual::invalid_configuration, " domain.gateway.listeners are deprecated - use domain.gateway.inbounds");
+
+                     gateway::inbound::Group group;
+                     group.connect = decltype( group.connect)::regular;
+                     group.connections = common::algorithm::transform( gateway.listeners.value(), []( const auto& listener)
+                     {
+                        gateway::inbound::Connection result;
+                        result.note = listener.note.value_or( "");
+                        result.address = listener.address;
+                        return result;
+                     });
+
+
+                     group.limit = algorithm::accumulate( gateway.listeners.value(), gateway::inbound::Limit{}, [&]( auto current, auto& listener)
+                     {
+                        if( ! listener.limit)
+                           return current;
+
+                        auto size = listener.limit.value().size.value_or( 0);
+                        auto messages = listener.limit.value().messages.value_or( 0);
+
+                        if( size > 0 && current.size > size)
+                           current.size = size;
+
+                        if( messages > 0 && current.messages > messages)
+                           current.messages = messages;
+
+                        return current;
+                     });
+
+                     result.inbound.groups.push_back( std::move( group));
+                  }
+
+                  if( gateway.connections && ! gateway.connections.value().empty())
+                  {
+                     log::line( log::category::warning, code::casual::invalid_configuration, " domain.gateway.connections are deprecated - use domain.gateway.outbounds");
+
+                     result.outbound.groups = common::algorithm::transform( gateway.connections.value(), []( const auto& value)
+                     {
+                        gateway::outbound::Group result;
+                        result.connect = decltype( result.connect)::regular;
+                        result.note = value.note.value_or( "");
+                        gateway::outbound::Connection connection;
+                        
+                        connection.note = result.note;
+                        connection.address = value.address;
+                     
+                        if( value.services)
+                           connection.services = value.services.value();
+                        if( value.queues)
+                           connection.queues = value.queues.value();
+
+                        result.connections.push_back( std::move( connection));
+
+                        return result;
+                     });
+                  }
+
+                  auto append_inbounds = []( auto& source, auto& target, auto connect)
+                  { 
+                     if( ! source)
+                        return;
+
+                     algorithm::transform( source.value().groups, std::back_inserter( target), [connect]( auto& source)
+                     {
+                        gateway::inbound::Group result;
+                        result.alias = source.alias.value_or( "");
+                        result.note = source.note.value_or( "");
+                        result.connect = connect;
+
+                        if( source.limit)
+                        {
+                           result.limit.size = source.limit.value().size.value_or( result.limit.size);
+                           result.limit.messages = source.limit.value().messages.value_or( result.limit.messages);
+                        }
+
+                        result.connections = algorithm::transform( source.connections, []( auto& connection)
+                        {
+                           gateway::inbound::Connection result;
+                           result.note = connection.note.value_or( "");
+                           result.address = connection.address;
+                           
+                           if( connection.discovery && connection.discovery.value().forward)
+                              result.discovery = decltype( result.discovery)::forward;
+
+                           return result;
+                        });
+
+                        return result;
+                     });
+                  };
+
+                  auto append_outbounds = []( auto& source, auto& target, auto connect)
+                  { 
+                     if( ! source)
+                        return;
+
+                     algorithm::transform( source.value().groups, std::back_inserter( target), [connect]( auto& source)
+                     {
+                        gateway::outbound::Group result;
+                        result.alias = source.alias.value_or( "");
+                        result.note = source.note.value_or( "");
+                        result.connect = connect;
+                        result.connections = algorithm::transform( source.connections, []( auto& connection)
+                        {
+                           gateway::outbound::Connection result;
+                           result.note = connection.note.value_or( "");
+                           result.address = connection.address;
+                           result.services = local::empty_if_null( std::move( connection.services));
+                           result.queues = local::empty_if_null( std::move( connection.queues));
+                           return result;
+                        });
+
+                        return result;
+                     });
+                  };
+
+                  append_inbounds( gateway.inbound, result.inbound.groups, configuration::model::gateway::connect::Semantic::regular);
+                  append_outbounds( gateway.outbound, result.outbound.groups, configuration::model::gateway::connect::Semantic::regular);
+
+                  if( gateway.reverse)
+                  {
+                     append_inbounds( gateway.reverse.value().inbound, result.inbound.groups, configuration::model::gateway::connect::Semantic::reversed);
+                     append_outbounds( gateway.reverse.value().outbound, result.outbound.groups, configuration::model::gateway::connect::Semantic::reversed);
+                  }
+
+                  return result;
+               }
+
+               auto queue( const configuration::user::domain::Model& domain)
+               {
+                  Trace trace{ "configuration::model::local::queue"};
+
+                  queue::Model result;
+
+                  if( ! domain.queue)
+                     return result;
+
+                  auto& source = domain.queue.value();
+
+                  result.note = source.note.value_or( "");
+
+                  if( source.groups)
+                  {
+                     result.groups = common::algorithm::transform( source.groups.value(), []( auto& group)
+                     {
+                        queue::Group result;
+
+                        result.alias = group.alias.value_or( "");
+                        result.note = group.note.value_or( "");
+                        result.queuebase = group.queuebase.value_or( "");
+
+                        common::algorithm::transform( group.queues, result.queues, []( auto& queue)
+                        {
+                           model::queue::Queue result;
+
+                           result.name = queue.name;
+                           result.note = queue.note.value_or("");
+                           if( queue.retry)
                            {
-                              configuration::model::queue::forward::Service::Reply reply;
-                              reply.queue = service.reply.value().queue;
-
-                              if( service.reply.value().delay)
-                                 reply.delay =  common::chronology::from::string( service.reply.value().delay.value());
-            
-                              result.reply = std::move( reply);
+                              auto& retry = queue.retry.value();
+                              if( retry.count)
+                                 result.retry.count = retry.count.value();
+                              if( retry.delay)
+                                 result.retry.delay = common::chronology::from::string( retry.delay.value());
                            }
 
                            return result;
                         });
-                     }
-
-                     if( group.queues)
+                        return result;
+                     });
+                  }
+                  
+                  
+                  if( source.forward && source.forward.value().groups)
+                  {
+                     result.forward.groups = algorithm::transform( source.forward.value().groups.value(), []( auto& group)
                      {
-                        result.queues = algorithm::transform( group.queues.value(), [&set_base_forward]( auto& queue)
+                        queue::forward::Group result;
+                        result.alias = group.alias.value_or( "");
+
+                        auto set_base_forward = []( auto& source, auto& target)
                         {
-                           configuration::model::queue::forward::Queue result;
+                           target.alias = source.alias.value_or( "");
+                           target.source = source.source;
+                           if( source.instances)
+                              target.instances = source.instances.value();
 
-                           set_base_forward( queue, result);
+                           target.note = source.note.value_or( "");
+                        };
 
-                           result.target.queue = queue.target.queue;
-                           if( queue.target.delay)
-                              result.target.delay = common::chronology::from::string( queue.target.delay.value());
+                        if( group.services)
+                        {
+                           result.services = algorithm::transform( group.services.value(), [&set_base_forward]( auto& service)
+                           {
+                              configuration::model::queue::forward::Service result;
 
-                           return result;
-                        });
-                     }
-                     
-                     return result;
-                  });
+                              set_base_forward( service, result);
+                              result.target.service = service.target.service;
+
+                              if( service.reply)
+                              {
+                                 configuration::model::queue::forward::Service::Reply reply;
+                                 reply.queue = service.reply.value().queue;
+
+                                 if( service.reply.value().delay)
+                                    reply.delay =  common::chronology::from::string( service.reply.value().delay.value());
+               
+                                 result.reply = std::move( reply);
+                              }
+
+                              return result;
+                           });
+                        }
+
+                        if( group.queues)
+                        {
+                           result.queues = algorithm::transform( group.queues.value(), [&set_base_forward]( auto& queue)
+                           {
+                              configuration::model::queue::forward::Queue result;
+
+                              set_base_forward( queue, result);
+
+                              result.target.queue = queue.target.queue;
+                              if( queue.target.delay)
+                                 result.target.delay = common::chronology::from::string( queue.target.delay.value());
+
+                              return result;
+                           });
+                        }
+                        
+                        return result;
+                     });
+                  }
+            
+                  return result;
                }
-         
-               return result;
-            }
+
+            } // domain
 
             namespace model
             {
@@ -521,19 +578,59 @@ namespace casual
                   return optional_t{ std::forward< T>( value)};
                };
 
+               namespace any::has
+               {
+                  template< typename... Ts>
+                  auto values( const Ts&... ts)
+                  {
+                     auto has_value = []( auto& value){ return value != decltype( value){};};
+                     return ( has_value( ts) || ...);
+                  }
+            
+               } // any::has
+
+               auto system( const configuration::model::system::Model& model)
+               {
+                  configuration::user::system::Model result;
+
+                  result.resources = null_if_empty( algorithm::transform( model.resources, []( auto& resource)
+                  {
+                     configuration::user::system::Resource result;
+                     result.key = resource.key;
+                     result.server = resource.server;
+                     result.xa_struct_name = resource.xa_struct_name;
+                     
+                     result.note = null_if_empty( resource.note);
+                     result.libraries = null_if_empty( resource.libraries);
+
+                     if( any::has::values( resource.paths))
+                     {
+                        configuration::user::system::resource::Paths paths;
+                        paths.include = null_if_empty( resource.paths.include);
+                        paths.library = null_if_empty( resource.paths.library);
+
+                        result.paths = std::move( paths);
+                     }
+
+                     return result;
+                  }));
+
+                  return result;
+               }
+
                auto domain( const configuration::Model& model)
                {
                   Trace trace{ "configuration::model::local::model::domain"};
 
-                  configuration::user::Domain result;
+                  configuration::user::domain::Model result;
 
-                  result.name = model.domain.name;
+                  result.name = null_if_empty( model.domain.name);
 
                   if( model.service.timeout.duration)
                      result.defaults.emplace().service.emplace().timeout = chronology::to::string( model.service.timeout.duration.value());
 
                   if( ! model.domain.environment.variables.empty())
-                     result.environment.emplace().variables = configuration::user::environment::transform( model.domain.environment.variables);
+                     result.environment.emplace().variables = configuration::user::domain::environment::transform( model.domain.environment.variables);
 
                   auto assign_executable = []( auto& source, auto& target)
                   {
@@ -548,8 +645,8 @@ namespace casual
                      
                      if( ! source.environment.variables.empty())
                      {
-                        configuration::user::Environment environment;
-                        environment.variables = user::environment::transform( source.environment.variables);
+                        configuration::user::domain::Environment environment;
+                        environment.variables = user::domain::environment::transform( source.environment.variables);
                         target.environment = std::move( environment);
                      }
                         
@@ -593,13 +690,13 @@ namespace casual
                {
                   auto execution( const configuration::model::service::Service& service)
                   {
-                     configuration::user::service::execution::Timeout timeout;                  
+                     configuration::user::domain::service::execution::Timeout timeout;                  
                      if( service.timeout.duration)
                         timeout.duration = chronology::to::string( service.timeout.duration.value());
 
                      timeout.contract = common::service::execution::timeout::contract::transform( service.timeout.contract);
 
-                     std::optional<configuration::user::service::Execution> result;
+                     std::optional<configuration::user::domain::service::Execution> result;
                      if( timeout.duration || timeout.contract)
                         result.emplace().timeout = std::move( timeout);
 
@@ -608,13 +705,13 @@ namespace casual
 
                }
 
-               auto service( const configuration::Model& model)
+               auto service( const configuration::model::service::Model& service)
                {
                   Trace trace{ "configuration::model::local::model::service"};
 
-                  return algorithm::transform( model.service.services, []( auto& service)
+                  return algorithm::transform( service.services, []( auto& service)
                   {
-                     user::service::Service result;
+                     user::domain::service::Service result;
 
                      result.routes = null_if_empty( service.routes);
                      result.name = service.name;
@@ -625,16 +722,16 @@ namespace casual
 
                }
 
-               auto transaction( const configuration::Model& model)
+               auto transaction( const configuration::model::transaction::Model& transaction)
                {
                   Trace trace{ "configuration::model::local::model::transaction"};
 
-                  user::transaction::Manager result;
+                  user::domain::transaction::Manager result;
 
-                  result.log = model.transaction.log;
-                  result.resources = algorithm::transform( model.transaction.resources, []( auto& value)
+                  result.log = transaction.log;
+                  result.resources = algorithm::transform( transaction.resources, []( auto& value)
                   {
-                     user::transaction::Resource result;
+                     user::domain::transaction::Resource result;
 
                      result.name = value.name;
                      result.key = null_if_empty( value.key);
@@ -653,17 +750,17 @@ namespace casual
                {
                   Trace trace{ "configuration::model::local::model::gateway"};
 
-                  user::gateway::Manager result;
+                  user::domain::gateway::Manager result;
 
                   auto transform_inbound = []( auto& value) 
                   {
-                     configuration::user::gateway::inbound::Group result;
+                     configuration::user::domain::gateway::inbound::Group result;
                      result.alias = value.alias;
                      result.note = null_if_empty( value.note);
                      
                      if( value.limit.size > 0 || value.limit.messages > 0)
                      {
-                        user::gateway::inbound::Limit limit;
+                        user::domain::gateway::inbound::Limit limit;
                         limit.messages = null_if_empty( value.limit.messages);
                         limit.size = null_if_empty( value.limit.size);
                         result.limit = std::move( limit);
@@ -671,12 +768,12 @@ namespace casual
 
                      result.connections = algorithm::transform( value.connections, []( auto& value)
                      {
-                        configuration::user::gateway::inbound::Connection result;
+                        configuration::user::domain::gateway::inbound::Connection result;
                         result.address = value.address;
                         result.note = null_if_empty( value.note);
 
                         if( value.discovery == decltype( value.discovery)::forward)
-                           result.discovery = configuration::user::gateway::inbound::Discovery{ true};
+                           result.discovery = configuration::user::domain::gateway::inbound::Discovery{ true};
 
 
                         return result;
@@ -686,12 +783,12 @@ namespace casual
 
                   auto transform_outbound = []( auto& value) 
                   {
-                     configuration::user::gateway::outbound::Group result;
+                     configuration::user::domain::gateway::outbound::Group result;
                      result.alias = value.alias;
                      result.note = null_if_empty( value.note);
                      result.connections = algorithm::transform( value.connections, []( auto& value)
                      {
-                        configuration::user::gateway::outbound::Connection result;
+                        configuration::user::domain::gateway::outbound::Connection result;
                         result.address = value.address;
                         result.note = null_if_empty( value.note);
                         result.services = null_if_empty( value.services);
@@ -703,7 +800,7 @@ namespace casual
 
                   auto is_reversed = []( auto& value){ return value.connect == decltype( value.connect)::reversed;};
                   
-                  auto reverse = configuration::user::gateway::Reverse{};
+                  auto reverse = configuration::user::domain::gateway::Reverse{};
 
 
                   // inbounds
@@ -712,14 +809,14 @@ namespace casual
 
                      if( reversed)
                      {
-                        configuration::user::gateway::Inbound inbound;
+                        configuration::user::domain::gateway::Inbound inbound;
                         inbound.groups = algorithm::transform( reversed, transform_inbound);
                         reverse.inbound = std::move( inbound);
                      }
 
                      if( regular)
                      {
-                        configuration::user::gateway::Inbound inbound;
+                        configuration::user::domain::gateway::Inbound inbound;
                         inbound.groups = algorithm::transform( regular, transform_inbound);
                         result.inbound = std::move( inbound);
                      }
@@ -730,17 +827,16 @@ namespace casual
                   {
                      auto [ reversed, regular] = algorithm::stable::partition( model.outbound.groups, is_reversed);
 
-
                      if( regular)
                      {
-                        configuration::user::gateway::Outbound outbound;
+                        configuration::user::domain::gateway::Outbound outbound;
                         outbound.groups = algorithm::transform( regular, transform_outbound);
                         result.outbound = std::move( outbound);
                      }
                      
                      if( reversed)
                      {
-                        configuration::user::gateway::Outbound outbound;
+                        configuration::user::domain::gateway::Outbound outbound;
                         outbound.groups = algorithm::transform( reversed, transform_outbound);
                         reverse.outbound = std::move( outbound);
                      }
@@ -752,26 +848,26 @@ namespace casual
                   return result;
                }
 
-               auto queue( const configuration::Model& model)
+               auto queue( const configuration::model::queue::Model& queue)
                {
                   Trace trace{ "configuration::model::local::model::queue"};
 
-                  user::queue::Manager result;
-                  result.note  = null_if_empty( model.queue.note);
+                  user::domain::queue::Manager result;
+                  result.note  = null_if_empty( queue.note);
 
-                  result.groups = null_if_empty( algorithm::transform( model.queue.groups, []( auto& value)
+                  result.groups = null_if_empty( algorithm::transform( queue.groups, []( auto& value)
                   {
-                     user::queue::Group result;
+                     user::domain::queue::Group result;
                      result.alias = null_if_empty( value.alias);
                      result.queuebase = null_if_empty( value.queuebase);
 
                      result.queues = algorithm::transform( value.queues, []( auto& value)
                      {
-                        user::queue::Queue result;
+                        user::domain::queue::Queue result;
                         result.name = value.name;
                         if( ! value.retry.empty())
                         {
-                           user::queue::Queue::Retry retry;
+                           user::domain::queue::Queue::Retry retry;
                            retry.count = null_if_empty( value.retry.count);
                            retry.delay = null_if_empty( chronology::to::string( value.retry.delay));
                            result.retry = std::move( retry);
@@ -784,19 +880,19 @@ namespace casual
                      return result;
                   }));
 
-                  if( ! model.queue.forward.groups.empty())
+                  if( ! queue.forward.groups.empty())
                   {
-                     user::queue::Forward forward;
+                     user::domain::queue::Forward forward;
 
-                     forward.groups = null_if_empty( algorithm::transform( model.queue.forward.groups, []( auto& group)
+                     forward.groups = null_if_empty( algorithm::transform( queue.forward.groups, []( auto& group)
                      {
-                        user::queue::forward::Group result;
+                        user::domain::queue::forward::Group result;
                         result.alias = group.alias;
                         result.note = null_if_empty( group.note);
 
                         result.services = null_if_empty( algorithm::transform( group.services, []( auto& service)
                         {
-                           user::queue::forward::Service result;
+                           user::domain::queue::forward::Service result;
                            result.alias = service.alias;
                            result.instances = service.instances;
                            result.note = null_if_empty( service.note);
@@ -805,7 +901,7 @@ namespace casual
 
                            if( service.reply)
                            {
-                              user::queue::forward::Service::Reply reply;
+                              user::domain::queue::forward::Service::Reply reply;
                               reply.queue = service.reply.value().queue;
                               reply.delay = chronology::to::string( service.reply.value().delay);
                               result.reply = std::move( reply);
@@ -816,7 +912,7 @@ namespace casual
 
                         result.queues = null_if_empty( algorithm::transform( group.queues, []( auto& queue)
                         {
-                           user::queue::forward::Queue result;
+                           user::domain::queue::forward::Queue result;
                            result.alias = queue.alias;
                            result.instances = queue.instances;
                            result.note = null_if_empty( queue.note);
@@ -840,34 +936,63 @@ namespace casual
          } // <unnamed>
       } // local
 
-      configuration::Model transform( user::Domain domain)
+      configuration::Model transform( user::Model model)
       {
-         Trace trace{ "configuration::model::transform domain"};
+         Trace trace{ "configuration::model::transform model"};
 
          // make sure we normalize alias placeholders and such..
-         domain = normalize( std::move( domain));
+         //model = normalize( std::move( model));
 
          configuration::Model result;
-         result.domain = local::domain( domain);
-         result.service = local::service( domain);
-         result.transaction = local::transaction( domain);
-         result.gateway = local::gateway( domain);
-         result.queue = local::queue( domain);
+
+         result.system = local::system( model);
+
+         if( model.domain)
+         {
+            result.domain = local::domain::domain( model.domain.value());
+            result.transaction = local::domain::transaction( model.domain.value());
+            result.service = local::domain::service( model.domain.value());
+            result.gateway = local::domain::gateway( model.domain.value());
+            result.queue = local::domain::queue( model.domain.value());
+         }
+
 
          log::line( verbose::log, "result: ", result);
 
          return result;
       }
 
-      user::Domain transform( const configuration::Model& domain)
+      user::Model transform( const configuration::Model& model)
       {
          Trace trace{ "configuration::model::transform model"};
 
-         auto result = local::model::domain( domain);
-         result.services = local::model::service( domain);
-         result.transaction = local::model::transaction( domain);
-         result.gateway = local::model::gateway( domain.gateway);
-         result.queue = local::model::queue( domain);
+         user::Model result;
+
+         if( local::model::any::has::values( model.system))
+         {
+            result.system = local::model::system( model.system);
+         }
+
+
+         if( local::model::any::has::values( model.domain, model.transaction, model.service, model.queue, model.gateway))
+         {
+            auto domain = local::model::domain( model);
+
+            if( local::model::any::has::values( model.service))
+               domain.services = local::model::service( model.service);
+
+            if( local::model::any::has::values( model.transaction))
+               domain.transaction = local::model::transaction( model.transaction);
+
+            if( local::model::any::has::values( model.gateway))
+               domain.gateway = local::model::gateway( model.gateway);
+            
+            if( local::model::any::has::values( model.queue))
+               domain.queue = local::model::queue( model.queue);
+
+            result.domain = std::move( domain);
+         }
+
 
          return result;
       }

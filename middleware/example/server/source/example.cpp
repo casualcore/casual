@@ -92,23 +92,21 @@ namespace casual
          }
 
          //! TODO maintainence:
-         //! * we can't have a service named <some-name>2
-         //! * has to have some name that give some guidance what it does
          //! * the implementation is way to C:ish
          //! * if we need to pass instructions (which I think we need) we should 
          //!    have a real model (data structures) to represent real meaning
          //!    and then serialize to and from json
          //!
          //! We'll fix this, but I don't have time right now. I did improve on the unittest that
-         //! calls this "2"
+         //! calls this service.
          //! 
          //! Good comments though.
-         void casual_example_conversation2( TPSVCINFO* info)
+         void casual_example_conversation_recv_send( TPSVCINFO* info)
          {
-            /* service  casual/example/conversation2
+            /* service  casual/example/conversation_recv_send
                Conversational service that takes data in connect 
                and any it gets via tprecv, concatenates them and send
-               with tpsend. Then does a tpreply with a 
+               with tpsend (if any data received). Then does a tpreply with a 
                string representing the flags (in hex) present on service
                entry.
                
@@ -154,6 +152,13 @@ namespace casual
                   // nothing appended if recv_len == 0
                   collected_data.append(recv_buffer, recv_len);
                }
+               if (recv_return == -1 && !(tperrno==TPEEVENT && event == TPEV_SENDONLY) )
+               {
+                  // This is unexpected!
+                  std::cerr << "unexpected return status from tprecv tperrno: " << tperrno
+                              << " event: " << event << std::endl;
+                  return; // abnormal service return
+               } 
                tpfree(recv_buffer);                       
             } // while(receiving)
             // ww have got control of conversation. If any data has
@@ -178,7 +183,7 @@ namespace casual
                   // other end, but it will terminate the service call in
                   // and "orderly" fashion!
                   // Use cerr instead? 
-                  std::cout << "conversation2: tpsend failed. tperrno: "
+                  std::cout << "conversation_recv_send: tpsend failed. tperrno: "
                               << tperrno
                               << " event: " << event
                               << std::endl;
@@ -194,10 +199,6 @@ namespace casual
             //          << " oss.str().length(): " << oss.str().length() 
             //          << std::endl << std::flush;
             auto tpreturn_buffer = tpalloc(X_OCTET, nullptr, oss.str().length());
-            // Copy in "C-style" to C-style buffer (character array with C-string, no terminating \0)
-            //memcpy(tpreturn_buffer, oss.str().c_str(), oss.str().length());
-            //casual::platform::time::unit sleep_time{60s};
-            //common::process::sleep(sleep_time);
 
             std::string s = oss.str();
 

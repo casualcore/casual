@@ -19,8 +19,9 @@
 #include "common/code/raise.h"
 #include "common/code/casual.h"
 
-#include "configuration/resource/property.h"
-#include "configuration/build/executable.h"
+#include "configuration/system.h"
+#include "configuration/build/model/load.h"
+
 
 #include <iostream>
 
@@ -54,10 +55,11 @@ namespace casual
                         std::string definition;
                      } executable;
 
+
                      struct 
                      {
-                        std::string properties;
-                     } resource;
+                        std::string system;
+                     } files;
 
                      
 
@@ -83,19 +85,19 @@ namespace casual
                   {
                      auto state( const Settings& settings)
                      {
-                        auto properties = settings.resource.properties.empty() ?
-                           configuration::resource::property::get() : configuration::resource::property::get( settings.resource.properties);
+                        auto system = settings.files.system.empty() ?
+                           configuration::system::get() : configuration::system::get( settings.files.system);
 
-                        auto definition = configuration::build::executable::get( settings.executable.definition);
+                        auto definition = configuration::build::model::load::executable( settings.executable.definition);
 
                         State result;
 
                         result.resources = build::transform::resources( 
-                           definition.resources,
+                           definition.executable.resources,
                            {}, // no raw keys
-                           properties);
+                           system);
 
-                        result.entrypoint = definition.entrypoint;
+                        result.entrypoint = definition.executable.entrypoint;
 
                         return result;
                      };

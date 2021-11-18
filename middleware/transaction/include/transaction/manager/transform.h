@@ -9,13 +9,12 @@
 #include "transaction/manager/state.h"
 
 #include "configuration/model.h"
-#include "configuration/resource/property.h"
 
 namespace casual
 {
    namespace transaction::manager::transform
    {
-      State state( casual::configuration::model::transaction::Model model, std::vector< configuration::resource::Property> properties);
+      State state( casual::configuration::Model model);
       
    } // transaction::manager::transform
 } // casual

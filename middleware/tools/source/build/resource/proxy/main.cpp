@@ -14,11 +14,12 @@
 #include "common/string.h"
 #include "common/process.h"
 #include "common/serialize/log.h"
-#include "configuration/resource/property.h"
 
 #include "common/exception/guard.h"
 #include "common/code/raise.h"
 #include "common/code/casual.h"
+
+#include "configuration/system.h"
 
 #include <string>
 #include <iostream>
@@ -40,7 +41,7 @@ namespace casual
                   namespace
                   {
 
-                     void generate( std::ostream& out, const configuration::resource::Property& resource)
+                     void generate( std::ostream& out, const configuration::model::system::Resource& resource)
                      {
                         out << license::c << R"(
 
@@ -113,25 +114,28 @@ int main( int argc, char** argv)
                         bool verbose = false;
                         bool keep_source = false;
 
-                        std::string properties_file;
+                        struct
+                        {
+                           std::string system;
+                        } files;
 
 
-                        CASUAL_CONST_CORRECT_SERIALIZE
-                        (
+
+                        CASUAL_LOG_SERIALIZE(
                            CASUAL_SERIALIZE( output);
                            CASUAL_SERIALIZE( key);
                            CASUAL_SERIALIZE( directives);
                            CASUAL_SERIALIZE( compiler);
                            CASUAL_SERIALIZE( verbose);
                            CASUAL_SERIALIZE( keep_source);
-                           CASUAL_SERIALIZE( properties_file);
+                           CASUAL_SERIALIZE( files.system);
 
                         )
                      };
 
 
 
-                     int build( const std::filesystem::path& file, const configuration::resource::Property& resource, const Settings& settings)
+                     int build( const std::filesystem::path& file, const configuration::model::system::Resource& resource, const Settings& settings)
                      {
                         trace::Exit log( "build resource proxy", settings.verbose);
 
@@ -179,17 +183,14 @@ int main( int argc, char** argv)
                      }
 
 
-                     configuration::resource::Property configuration( const Settings& settings)
+                     configuration::model::system::Resource configuration( const Settings& settings)
                      {
                         trace::Exit log( "read resource properties configuration", settings.verbose);
 
-                        auto switches = settings.properties_file.empty() ?
-                              configuration::resource::property::get() : configuration::resource::property::get( settings.properties_file);
+                        auto system = settings.files.system.empty() ?
+                              configuration::system::get() : configuration::system::get( settings.files.system);
 
-                        auto found = common::algorithm::find_if( switches,
-                           [&]( auto& value){ return value.key == settings.key;});
-
-                        if( found)
+                        if( auto found = common::algorithm::find( system.resources, settings.key))
                            return *found;
 
                         common::code::raise::error( common::code::casual::invalid_argument, "resource-key: ", settings.key, " not found");
@@ -210,7 +211,7 @@ int main( int argc, char** argv)
                               Option( std::tie( settings.directives.compile), { "-c", "--compile-directives"}, "additional compile directives"),
                               Option( std::tie( settings.directives.link), { "-l", "--link-directives"}, "additional link directives"),
 
-                              Option( std::tie( settings.properties_file), { "-p", "--resource-properties"}, "path to resource properties file"),
+                              Option( std::tie( settings.files.system), option::keys( { "--system-configuration"}, {"-p", "--properties-file"}), "path to system configuration file"),
                               Option( std::tie( settings.verbose), { "-v", "--verbose"}, "verbose output"),
                               Option( std::tie( settings.keep_source), { "-s", "--keep-source"}, "keep the generated source file")
                            }( argc, argv);

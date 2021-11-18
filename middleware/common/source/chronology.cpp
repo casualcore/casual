@@ -56,37 +56,20 @@ namespace casual
                {
                   // just to help when we go to hours and minutes.
                   const auto offset = std::abs( time.tm_gmtoff);
-
-                  // 2021-08-22T14:43:14.367989+02:00  32B
-                  std::array< char, 33> buffer{};
-
-#ifndef __clang__
-// g++ 10.x bug?          
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wformat-truncation"
-#endif
                   
-                  // TODO c++20 use std::format instead!
-                  std::snprintf( buffer.data(), buffer.size(), "%.4i-%.2i-%.2iT%.2i:%.2i:%.2i.%.6ld%c%.2ld:%.2ld",
-                     time.tm_year + 1900,
-                     time.tm_mon + 1,
-                     time.tm_mday,
-                     time.tm_hour,
-                     time.tm_min,
-                     time.tm_sec,
-                     static_cast< long>( fraction.count()),
-                     ( time.tm_gmtoff < 0 ? '-' : '+'),
-                     // get the 'hour' part
-                     offset / 3600,
-                     // get the 'minute' part
-                     offset % 3600
-                  );
-
-#ifndef __clang__
-#pragma GCC diagnostic pop
-#endif
-
-                  out.write( buffer.data(), buffer.size() - 1);
+                  out << std::setfill( '0') <<
+                  std::setw( 4) << time.tm_year + 1900 << '-' <<
+                  std::setw( 2) << time.tm_mon + 1 << '-' <<
+                  std::setw( 2) << time.tm_mday << 'T' <<
+                  std::setw( 2) << time.tm_hour << ':' <<
+                  std::setw( 2) << time.tm_min << ':' <<
+                  std::setw( 2) << time.tm_sec << '.' <<
+                  std::setw( 6) << fraction.count() << 
+                  ( time.tm_gmtoff < 0 ? '-' : '+') << 
+                  // get the 'hour' part
+                  std::setw( 2) << offset / 3600 << ':' << 
+                  // get the 'minute' part
+                  std::setw( 2) << ( offset % 3600) / 60;
                }
 
                // implement an alternative implementation if tm does not have a tm_gmtoff on some platform.

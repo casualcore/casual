@@ -25,9 +25,9 @@ namespace casual
       {
          common::unittest::Trace trace;
 
-         user::Environment empty;
+         user::domain::Environment empty;
 
-         auto result = user::environment::fetch( empty);
+         auto result = user::domain::environment::fetch( empty);
 
          EXPECT_TRUE( result.empty());
       }
@@ -36,23 +36,23 @@ namespace casual
       {
          common::unittest::Trace trace;
 
-         user::Environment env;
+         user::domain::Environment env;
          env.variables = {
             [](){
-               user::environment::Variable v;
+               user::domain::environment::Variable v;
                v.key = "a";
                v.value = "b";
                return v;
             }(),
             [](){
-               user::environment::Variable v;
+               user::domain::environment::Variable v;
                v.key = "c";
                v.value = "d";
                return v;
             }()
          };
 
-         auto result = user::environment::fetch( env);
+         auto result = user::domain::environment::fetch( env);
 
          EXPECT_TRUE( result == env.variables);
       }
@@ -78,7 +78,7 @@ namespace casual
                return { common::file::name::unique( prefix.string(), extension)};
             }
 
-            common::file::scoped::Path serialize( const user::Environment& environment, const std::string& extension)
+            common::file::scoped::Path serialize( const user::domain::Environment& environment, const std::string& extension)
             {
                common::file::scoped::Path name{ temporary( extension)};
                
@@ -90,11 +90,11 @@ namespace casual
                return name;
             }
 
-            std::vector< user::environment::Variable> variables( int size = 8)
+            std::vector< user::domain::environment::Variable> variables( int size = 8)
             {
                static int count = 1;
 
-               std::vector< user::environment::Variable> result( size);
+               std::vector< user::domain::environment::Variable> result( size);
 
                for( auto& variable : result)
                {
@@ -114,15 +114,15 @@ namespace casual
       {
          common::unittest::Trace trace;
 
-         user::Environment origin;
+         user::domain::Environment origin;
          origin.variables = local::variables();
 
          auto env_file = local::serialize( origin, GetParam());
 
-         user::Environment refered;
+         user::domain::Environment refered;
          refered.files.emplace().push_back( env_file);
 
-         auto result = user::environment::fetch( refered);
+         auto result = user::domain::environment::fetch( refered);
 
          //env_file.release();
 
@@ -134,23 +134,23 @@ namespace casual
       {
          common::unittest::Trace trace;
 
-         user::Environment origin;
+         user::domain::Environment origin;
          origin.variables = local::variables();
 
          auto env_file = local::serialize( origin, GetParam());
 
-         user::Environment refered;
+         user::domain::Environment refered;
          {
             refered.files.emplace().push_back( env_file);
             refered.variables = {
                [](){
-                  user::environment::Variable v;
+                  user::domain::environment::Variable v;
                   v.key = "k_c";
                   v.value = "v_c";
                   return v;
                }(),
                [](){
-                  user::environment::Variable v;
+                  user::domain::environment::Variable v;
                   v.key = "k_d";
                   v.value = "v_d";
                   return v;
@@ -158,7 +158,7 @@ namespace casual
             };
          }
 
-         auto result = user::environment::fetch( refered);
+         auto result = user::domain::environment::fetch( refered);
 
          EXPECT_TRUE( result.size() == refered.variables.value().size() + origin.variables.value().size());
          //EXPECT_TRUE( result.back() ==  refered.variables.back());
@@ -168,20 +168,20 @@ namespace casual
       {
          common::unittest::Trace trace;
 
-         user::Environment first;
+         user::domain::Environment first;
          first.variables = local::variables();
          auto first_file = local::serialize( first, GetParam());
 
          common::log::line( configuration::log, "first: ", first);
 
-         user::Environment second;
+         user::domain::Environment second;
          second.variables = local::variables();
          second.files.emplace().push_back( first_file);
          auto second_file = local::serialize( second, GetParam());
 
          common::log::line( configuration::log, "second: ", second);
 
-         user::Environment third;
+         user::domain::Environment third;
          third.variables = local::variables();
          third.files.emplace().push_back( second_file);
 
@@ -195,7 +195,7 @@ namespace casual
          }
 
 
-         auto result = user::environment::fetch( third);
+         auto result = user::domain::environment::fetch( third);
 
          EXPECT_TRUE( result == expected) << "   " << CASUAL_NAMED_VALUE( result) << "\n" << CASUAL_NAMED_VALUE( expected);
       }

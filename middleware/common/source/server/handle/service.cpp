@@ -9,133 +9,158 @@
 #include "common/server/context.h"
 #include "common/service/conversation/context.h"
 #include "common/buffer/pool.h"
+#include "common/transaction/context.h"
+#include "common/algorithm/compare.h"
+#include "common/communication/ipc.h"
+
+#include "casual/assert.h"
 
 namespace casual
 {
-   namespace common
+   namespace common::server::handle::service
    {
-      namespace server
+      namespace transform
       {
-         namespace handle
+         namespace local
          {
-            namespace service
+            namespace
             {
-               namespace transform
+
+               using Flag = common::service::invoke::Parameter::Flag;
+
+               template< typename M>
+               auto parameter( M& message)
                {
-                  message::service::call::Reply reply( const message::service::call::callee::Request& message)
-                  {
-                     message::service::call::Reply result;
+                  common::service::invoke::Parameter result{ std::move( message.buffer)};
+                  result.service.name = message.service.name;
+                  result.parent = std::move( message.parent);
 
-                     result.correlation = message.correlation;
-                     result.buffer = buffer::Payload{ nullptr};
-                     result.code.result = code::xatmi::service_error;
+                  if( transaction::context().current())
+                     result.flags = Flag::in_transaction;
 
-                     return result;
-                  }
+                  return result;
+               }
 
-                  message::conversation::callee::Send reply( const message::conversation::connect::callee::Request& message)
-                  {
-                     message::conversation::callee::Send result;
+            } // <unnamed>
+         } // local
+         message::service::call::Reply reply( const message::service::call::callee::Request& message)
+         {
+            message::service::call::Reply result;
 
-                     result.correlation = message.correlation;
-                     result.buffer = buffer::Payload{ nullptr};
-                     result.code.result = code::xatmi::service_error;
-                     result.route = message.recording;
+            result.correlation = message.correlation;
+            result.buffer = buffer::Payload{ nullptr};
+            result.code.result = code::xatmi::service_error;
 
-                     return result;
-                  }
-
-
-                  common::service::invoke::Parameter parameter( message::service::call::callee::Request& message)
-                  {
-                     common::service::invoke::Parameter result{ std::move( message.buffer)};
-
-                     constexpr auto valid_flags = ~common::service::invoke::Parameter::Flags{};
-
-                     result.service.name = message.service.name;
-                     result.parent = std::move( message.parent);
-                     result.flags = valid_flags.convert( message.flags);
-
-                     return result;
-                  }
-
-                  common::service::invoke::Parameter parameter( message::conversation::connect::callee::Request& message)
-                  {
-                     common::service::invoke::Parameter result{ std::move( message.buffer)};
-
-                     constexpr auto valid_flags = ~common::service::invoke::Parameter::Flags{};
-
-                     result.service.name = std::move( message.service.name);
-                     result.parent = std::move( message.parent);
-                     result.flags = valid_flags.convert( message.flags);
-
-                     auto& descriptor = common::service::conversation::Context::instance().descriptors().reserve( message.correlation);
-                     result.descriptor = descriptor.descriptor;
-                     descriptor.route = message.recording;
-                     if (message.flags.exist(casual::common::flag::service::conversation::connect::Flag::receive_only))
-                     { // caller (klient) specified receive only, so we have control of conversation
-                        descriptor.duplex = common::service::conversation::state::descriptor::Information::Duplex::send;
-                     }
-
-                     return result;
-
-                  }
-
-               } // transform
-
-               namespace complement
-               {
-                  void reply( common::service::invoke::Result&& result, message::service::call::Reply& reply)
-                  {
-                     Trace trace{ "server::handle::service::complement::reply"};
-
-                     log::line( log::debug, "result: ", result);
-
-                     reply.code.user = result.code;
-                     reply.buffer = std::move( result.payload);
-
-                     if( result.transaction == common::service::invoke::Result::Transaction::commit)
-                     {
-                        reply.transaction.state = message::service::Transaction::State::active;
-                        reply.code.result = code::xatmi::ok;
-                     }
-                     else
-                     {
-                        reply.transaction.state = message::service::Transaction::State::rollback;
-                        reply.code.result = code::xatmi::service_fail;
-                     }
-
-                     log::line( log::debug, "reply: ", reply);
-                  }
-
-
-                  void reply( common::service::invoke::Result&& result, message::conversation::callee::Send& reply)
-                  {
-                     Trace trace{ "server::handle::service::complement::reply"};
-
-                     log::line( log::debug, "result: ", result);
-
-                     if( result.transaction == common::service::invoke::Result::Transaction::commit)
-                     {
-                        reply.events = common::service::conversation::Event::service_success;
-                        reply.code.result = code::xatmi::ok;
-                     }
-                     else
-                     {
-                        reply.events = common::service::conversation::Event::service_fail;
-                        reply.code.result = code::xatmi::service_fail;
-                     }
-
-                     reply.buffer = std::move( result.payload);
-
-                     log::line( log::debug, "reply: ", reply);
-                  }
-
-               } // complement
-            }
+            return result;
          }
 
-      } // server
-   } // common
+         message::conversation::callee::Send reply( const message::conversation::connect::callee::Request& message)
+         {
+            message::conversation::callee::Send result;
 
+            result.correlation = message.correlation;
+            result.buffer = buffer::Payload{ nullptr};
+            result.code.result = code::xatmi::service_error;
+            
+            return result;
+         }
+
+
+         common::service::invoke::Parameter parameter( message::service::call::callee::Request& message)
+         {
+            
+            auto result = local::parameter( message);
+
+            using Flag = decltype( message.flags.type());
+
+            if( message.flags.exist( Flag::no_reply))
+               result.flags |= decltype( result.flags.type())::no_reply;
+
+            return result;
+         }
+
+         common::service::invoke::Parameter parameter( message::conversation::connect::callee::Request& message)
+         {
+            auto result = local::parameter( message);
+
+            // set flags
+            {
+               result.flags |= local::Flag::conversation;
+
+               using Duplex = decltype( message.duplex);
+               casual::assertion( algorithm::compare::any( message.duplex, Duplex::send, Duplex::receive), "unexpected duplex: ", message);
+
+               result.flags |= message.duplex == Duplex::receive ? local::Flag::receive_only : local::Flag::send_only;
+            }
+
+
+            // reserve descriptor, can "never" fail
+            result.descriptor = common::service::conversation::Context::instance().descriptors().reserve( 
+               message.correlation,
+               message.process,
+               message.duplex,
+               false  // not the initiator
+            );
+
+            // send reply
+            {
+               auto reply = message::reverse::type( message, process::handle());
+               communication::device::blocking::send( message.process.ipc, reply);
+            }
+
+            return result;
+         }
+
+      } // transform
+
+      namespace complement
+      {
+         void reply( common::service::invoke::Result&& result, message::service::call::Reply& reply)
+         {
+            Trace trace{ "server::handle::service::complement::reply"};
+            log::line( log::debug, "result: ", result);
+
+            reply.code.user = result.code;
+            reply.buffer = std::move( result.payload);
+
+            if( result.transaction == common::service::invoke::Result::Transaction::commit)
+            {
+               reply.transaction.state = message::service::Transaction::State::active;
+               reply.code.result = code::xatmi::ok;
+            }
+            else
+            {
+               reply.transaction.state = message::service::Transaction::State::rollback;
+               reply.code.result = code::xatmi::service_fail;
+            }
+
+            log::line( log::debug, "reply: ", reply);
+         }
+
+
+         void reply( common::service::invoke::Result&& result, message::conversation::callee::Send& reply)
+         {
+            Trace trace{ "server::handle::service::complement::reply"};
+            log::line( log::debug, "result: ", result);
+
+            reply.code.user = result.code;
+            reply.buffer = std::move( result.payload);
+
+            if( result.transaction == common::service::invoke::Result::Transaction::commit)
+            {
+               reply.code.result = code::xatmi::ok;  
+            }
+            else
+            {
+               reply.code.result = code::xatmi::service_fail;
+            }
+
+            
+
+            log::line( log::debug, "reply: ", reply);
+         }
+
+      } // complement
+
+   } // common::server::handle::service
 } // casual

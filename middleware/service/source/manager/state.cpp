@@ -19,6 +19,7 @@
 #include "common/code/casual.h"
 
 #include <functional>
+#include <regex>
 
 namespace casual
 {
@@ -442,7 +443,21 @@ namespace casual
             void restrict_add_services( const State& state, M& advertise)
             {
                if( auto found = algorithm::find( state.restrictions, advertise.alias))
-                  algorithm::trim( advertise.services.add, std::get< 0>( algorithm::intersection( advertise.services.add, found->services)));
+               {
+                  // we transform all regex once.
+                  auto expressions = algorithm::transform( found->services, []( auto& expression){ return std::regex{ expression};});
+
+                  // for all added services we match against the expressions, and keep the matched.
+                  algorithm::trim( advertise.services.add, algorithm::filter( advertise.services.add, [&expressions]( auto& service)
+                  {
+                     return algorithm::any_of( expressions, [&name = service.name]( auto& expression)
+                     {
+                        return std::regex_match( name, expression);
+                     });
+                  }));
+
+                  log::line( verbose::log, "advertise.services.add: ", advertise.services.add);
+               }
             }
 
          } // <unnamed>

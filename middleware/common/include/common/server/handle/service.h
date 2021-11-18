@@ -10,6 +10,7 @@
 
 
 #include "common/server/context.h"
+#include "common/service/conversation/context.h"
 
 #include "common/buffer/transport.h"
 #include "common/execution.h"
@@ -23,7 +24,6 @@
 
 #include "common/message/service.h"
 #include "common/message/conversation.h"
-
 
 namespace casual
 {
@@ -88,17 +88,15 @@ namespace casual
          });
 
 
-
          auto execute_reply = execute::scope( [&]()
          {
+            // Send reply to caller.
             if( send_reply)
-            {
-               // Send reply to caller.
                policy.reply( message.process.ipc, reply);
-            }
          });
 
-         auto parameter = transform::parameter( message);
+
+
 
          // If something goes wrong, make sure to rollback before reply with error.
          // this will execute before execute_reply
@@ -110,13 +108,13 @@ namespace casual
          auto& state = server::Context::instance().state();
 
          // Find service
-         auto found = algorithm::find( state.services, parameter.service.name);
+         auto found = algorithm::find( state.services, message.service.name);
 
          if( ! found)
          {
             code::raise::error( 
                code::xatmi::system, 
-               parameter.service.name + " not present at server - inconsistency between service-manager and server");
+               message.service.name, " not present at server - inconsistency between service-manager and server");
          }
 
 
@@ -128,17 +126,16 @@ namespace casual
          // - set 'global' deadline/timeout
          policy.transaction( message.trid, service, message.service.timeout.duration, start);
 
+         auto parameter = transform::parameter( message);
+         
+         // transform::parameter( message) may have reserved a descriptor that we need to
+         // unreserve! 
+         auto execute_unreserve_descriptor = execute::scope( [descriptor = parameter.descriptor]()
+         {
+            if( descriptor)
+               common::service::conversation::Context::instance().descriptors().unreserve( descriptor);
+         });
 
-         //
-         // Apply pre service buffer manipulation
-         //
-         /*
-         buffer::transport::Context::instance().dispatch(
-               information.data,
-               information.len,
-               information.name,
-               buffer::transport::Lifecycle::pre_service);
-               */
 
          // call the service
          try
@@ -160,23 +157,10 @@ namespace casual
             return;
          }
 
-
-
          // TODO: What are the semantics of 'order' of failure?
          //       If TM is down, should we send reply to caller?
          //       If broker is down, should we send reply to caller?
 
-
-         //
-         // Apply post service buffer manipulation
-         //
-         /*
-         buffer::transport::Context::instance().dispatch(
-               state.jump.buffer.data,
-               state.jump.buffer.size,
-               message.service.name,
-               buffer::transport::Lifecycle::post_service);
-               */
 
          // Do transaction stuff...
          // - commit/rollback transaction if service has "auto-transaction"
@@ -191,6 +175,7 @@ namespace casual
 
          execute_transaction();
          execute_reply();
+         execute_unreserve_descriptor();
       }
 
 

@@ -1,20 +1,25 @@
-
-
 domain:
+  name: echo-domain
 
-  # name of this domain
-  name: single-example
-      
-  servers: 
-         
-      #  
-      # path to the server. If servers path are in PATH environment variable
-      # one can omitt the path part, and only use the executable name
-      #  
-    - path: ${CASUAL_HOME}/example/bin/casual-example-server
-      instances: 1 # how many instances should be started
-      note: Arbitary information of this server
-      
-
+  servers:          
+    - alias: echo-server
+      path: ${CASUAL_HOME}/example/bin/casual-example-server
+      instances: 2
+      note: server that only provides _echo_
+      restrictions:
+        - casual/example/echo
+  
+  queue:
+    groups:
+      - alias: A
+        queues:
+          - name: a1
+          - name: a2
+          - name: a3
+      - alias: B
+        queues:
+          - name: b1
+          - name: b2
+          - name: b3
 
 

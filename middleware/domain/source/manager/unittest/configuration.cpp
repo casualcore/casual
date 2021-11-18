@@ -23,16 +23,16 @@ namespace casual
    namespace domain::manager::unittest::configuration
    {
 
-      casual::configuration::user::Domain get()
+      casual::configuration::user::Model get()
       {
          Trace trace{ "domain::manager::unittest::configuration::get"};
 
          serviceframework::service::protocol::binary::Call call;
          auto reply = call( admin::service::name::configuration::get);
-         return reply.extract< casual::configuration::user::Domain>();
+         return reply.extract< casual::configuration::user::Model>();
       }
 
-      casual::configuration::user::Domain post( casual::configuration::user::Domain wanted)
+      casual::configuration::user::Model post( casual::configuration::user::Model wanted)
       {
          Trace trace{ "domain::manager::unittest::configuration::post"};
 

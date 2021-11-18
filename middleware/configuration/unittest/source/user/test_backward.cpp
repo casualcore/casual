@@ -23,20 +23,22 @@ namespace casual
          unittest::Trace trace;
 
          constexpr auto user_yaml = R"(
-gateway:
-   connections:
-      -  address: localhost:7001
-         note: 7001
-      -  address: localhost:7002
-         note: 7002
-      -  address: localhost:7003
-         note: 7003
-         services: [ a, b, c]
-      -  address: localhost:7004
-         note: 7004
-         queues: [ a, b, c]
+domain:
+   gateway:
+      connections:
+         -  address: localhost:7001
+            note: 7001
+         -  address: localhost:7002
+            note: 7002
+         -  address: localhost:7003
+            note: 7003
+            services: [ a, b, c]
+         -  address: localhost:7004
+            note: 7004
+            queues: [ a, b, c]
 )";
 
+         // internal model
          constexpr auto model_yaml = R"(
 gateway:
    outbound:
@@ -70,7 +72,7 @@ gateway:
 
 )";
 
-         auto user = normalize( model::transform( unittest::serialize::create::value< user::Domain>( "yaml", user_yaml)));
+         auto user = normalize( model::transform( unittest::serialize::create::value< user::Model>( "yaml", user_yaml)));
 
          auto model = unittest::serialize::create::value< configuration::Model>( "yaml", model_yaml);
 

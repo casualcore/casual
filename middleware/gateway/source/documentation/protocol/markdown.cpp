@@ -357,9 +357,9 @@ namespace casual
             } // format
 
             template< typename M>
-            std::ostream& message_type( std::ostream& out, M message)
+            auto message_type( M message)
             {
-               return out << "message type: **" << cast::underlying( common::message::type( message)) << "**";
+               return common::string::compose( common::message::type( message),  " - **#", cast::underlying( common::message::type( message)), "**");
             }
 
             namespace binary
@@ -481,8 +481,6 @@ the rest of the message.
          {
             message.trid = common::transaction::id::create();
 
-            local::message_type( out, message) << "\n\n";
-
             local::format::type( out, message, {
                      { "execution", "uuid of the current execution context (breadcrumb)"},
                      { "xid.formatID", "xid format type. if 0 no more information of the xid is transported"},
@@ -498,8 +496,6 @@ the rest of the message.
          void transaction_reply( std::ostream& out, M&& message)
          {
             message.trid = common::transaction::id::create();
-
-            local::message_type( out, message) << "\n\n";
 
             local::format::type( out, message, {
                      { "execution", "uuid of the current execution context (breadcrumb)"},
@@ -525,8 +521,7 @@ the rest of the message.
 
                using message_type = common::message::transaction::resource::prepare::Request;
 
-               out << R"(
-#### message::transaction::resource::prepare::Request
+               out << "#### " << common::message::type( message_type{}) << R"(
 
 Sent to and received from other domains when one domain wants to prepare a transaction. 
 
@@ -537,8 +532,7 @@ Sent to and received from other domains when one domain wants to prepare a trans
             {
                using message_type = common::message::transaction::resource::prepare::Reply;
 
-               out << R"(
-#### message::transaction::resource::prepare::Reply
+               out << "#### " << common::message::type( message_type{}) << R"(
 
 Sent to and received from other domains when one domain wants to prepare a transaction. 
 
@@ -554,8 +548,7 @@ Sent to and received from other domains when one domain wants to prepare a trans
             {
                using message_type = common::message::transaction::resource::commit::Request;
 
-               out << R"(
-#### message::transaction::resource::commit::Request
+               out << "#### " << common::message::type( message_type{}) << R"(
 
 Sent to and received from other domains when one domain wants to commit an already prepared transaction.
 
@@ -566,8 +559,7 @@ Sent to and received from other domains when one domain wants to commit an alrea
             {
                using message_type = common::message::transaction::resource::commit::Reply;
 
-               out << R"(
-#### message::transaction::resource::commit::Reply
+               out << "#### " << common::message::type( message_type{}) << R"(
 
 Reply to a commit request. 
 
@@ -586,8 +578,7 @@ Reply to a commit request.
             {
                using message_type = common::message::transaction::resource::rollback::Request;
 
-               out << R"(
-#### message::transaction::resource::rollback::Request
+               out << "#### " << common::message::type( message_type{}) << R"(
 
 Sent to and received from other domains when one domain wants to rollback an already prepared transaction.
 That is, when one or more resources has failed to prepare.
@@ -599,8 +590,7 @@ That is, when one or more resources has failed to prepare.
             {
                using message_type =  common::message::transaction::resource::rollback::Reply;
 
-               out << R"(
-#### message::transaction::resource::rollback::Reply
+               out << "#### " << common::message::type( message_type{}) << R"(
 
 Reply to a rollback request. 
 
@@ -623,13 +613,11 @@ Reply to a rollback request.
             {
                using message_type = common::message::service::call::callee::Request;
 
-               out << R"(
-#### message::service::call::Request
+               out << "#### " << local::message_type( message_type{}) << R"(
 
 Sent to and received from other domains when one domain wants call a service in the other domain
 
 )";
-               local::message_type( out, message_type{}) << "\n\n";
 
                message_type request;
                request.trid = common::transaction::id::create();
@@ -664,14 +652,11 @@ Sent to and received from other domains when one domain wants call a service in 
             {
                using message_type = common::message::service::call::Reply;
 
-               out << R"(
-#### message::service::call::Reply
+               out << "#### " << local::message_type( message_type{}) << R"(
 
 Reply to call request
 
 )";
-               local::message_type( out, message_type{}) << "\n\n";
-
                message_type message;
 
                message.transaction.trid = common::transaction::id::create();
@@ -714,14 +699,11 @@ Messages that are used to set up a connection
             {
                using message_type = gateway::message::domain::connect::Request;
                
-               out << R"(
-### gateway::message::domain::connect::Request
+               out << "### " << local::message_type( message_type{}) << R"(
 
 Connection requests from another domain that wants to connect
 
 )";
-
-                  local::message_type( out, message_type{}) << "\n\n";
 
                   message_type message;
                   message.versions = { gateway::message::domain::protocol::Version::version_1};
@@ -741,14 +723,11 @@ Connection requests from another domain that wants to connect
             {
                using message_type = gateway::message::domain::connect::Reply;
                
-               out << R"(
-### gateway::message::domain::connect::Reply
+               out << "### " << local::message_type( message_type{}) << R"(
 
 Connection reply
 
 )";
-
-                  local::message_type( out, message_type{}) << "\n\n";
 
                   message_type message;
                   message.version = gateway::message::domain::protocol::Version::version_1;
@@ -778,15 +757,11 @@ Connection reply
             {
                using message_type = gateway::message::domain::discovery::Request;
 
-               out << R"(
-#### message::gateway::domain::discover::Request
+               out << "#### " << local::message_type( message_type{}) << R"(
 
 Sent to and received from other domains when one domain wants to discover information abut the other.
 
 )";
-
-               local::message_type( out, message_type{}) << "\n\n";
-
                message_type message;
                message.domain.name = "domain-A";
 
@@ -813,15 +788,11 @@ Sent to and received from other domains when one domain wants to discover inform
             {
                using message_type = gateway::message::domain::discovery::Reply;
 
-               out << R"(
-#### message::gateway::domain::discover::Reply
+               out << "#### " << local::message_type( message_type{}) << R"(
 
 Sent to and received from other domains when one domain wants to discover information abut the other.
 
-)";
-
-               local::message_type( out, message_type{}) << "\n\n";
-               
+)";            
                auto message = protocol::example::message< message_type>();
 
                local::format::type( out, message, {
@@ -858,15 +829,11 @@ Sent to and received from other domains when one domain wants to discover inform
             {
                using message_type = queue::ipc::message::group::enqueue::Request;
 
-               out << R"(
-#### message::queue::enqueue::Request
+               out << "#### " << local::message_type( message_type{}) << R"(
 
 Represent enqueue request.
 
 )";
-
-               local::message_type( out, message_type{}) << "\n\n";
-
                message_type message;
 
                message.trid = common::transaction::id::create();
@@ -899,14 +866,11 @@ Represent enqueue request.
             {
                using message_type = queue::ipc::message::group::enqueue::Reply;
 
-               out << R"(
-#### message::queue::enqueue::Reply
+               out << "#### " << local::message_type( message_type{}) << R"(
 
 Represent enqueue reply.
 
 )";
-
-               local::message_type( out, message_type{}) << "\n\n";
 
                message_type message;
 
@@ -920,16 +884,16 @@ Represent enqueue reply.
             {
                using message_type = queue::ipc::message::group::dequeue::Request;
 
-               out << R"(
-### dequeue 
 
-#### message::queue::dequeue::Request
+               out << R"(
+### dequeue
+
+)";
+               out << "#### " << local::message_type( message_type{}) << R"(
 
 Represent dequeue request.
 
 )";
-
-               local::message_type( out, message_type{}) << "\n\n";
 
                message_type message;
 
@@ -955,15 +919,11 @@ Represent dequeue request.
             {
                using message_type = queue::ipc::message::group::dequeue::Reply;
 
-               out << R"(
-#### message::queue::dequeue::Reply
+               out << "#### " << local::message_type( message_type{}) << R"(
 
 Represent dequeue reply.
 
 )";
-
-               local::message_type( out, message_type{}) << "\n\n";
-
                message_type message;
 
                message.message.resize( 1);
@@ -1003,15 +963,11 @@ Represent dequeue reply.
             {
                using message_type = common::message::conversation::connect::callee::Request;
 
-               out << R"(
-#### message::conversation::connect::Request
+               out << "#### " << local::message_type( message_type{}) << R"(
 
 Sent to establish a conversation
 
 )";
-
-               local::message_type( out, message_type{}) << "\n\n";
-
                message_type message;
 
                message.service.name = local::string::value( 128);
@@ -1019,7 +975,8 @@ Sent to establish a conversation
                message.trid = common::transaction::id::create();
                message.buffer.type = local::string::value( 8) + '/' + local::string::value( 16);
                message.buffer.memory = local::binary::value( 1024);
-               message.recording.nodes.resize( 1);
+               using Duplex = decltype( message.duplex);
+               message.duplex = Duplex::receive;
 
                local::format::type( out, message, {
                         { "execution", "uuid of the current execution context (breadcrumb)"},
@@ -1032,9 +989,7 @@ Sent to establish a conversation
                         { "xid.gtrid_length", "length of the transaction gtrid part"},
                         { "xid.bqual_length", "length of the transaction branch part"},
                         { "xid.data", "byte array with the size of gtrid_length + bqual_length (max 128)"},
-                        { "flags", "xatmi flag"},
-                        { "recording.nodes.size", "size of the recording of 'passed nodes'"},
-                        { "recording.nodes.element.address", "'address' of a node'"},
+                        { "duplex", string::compose( "in what duplex the callee shall enter (", Duplex::receive, ":", cast::underlying( Duplex::receive), ", ", Duplex::send, ":", cast::underlying( Duplex::send),')') },
                         { "buffer.type.size", "buffer type name size"},
                         { "buffer.type.data", "byte array with buffer type in the form 'type/subtype'"},
                         { "buffer.memory.size", "buffer payload size (could be very big)"},
@@ -1045,27 +1000,15 @@ Sent to establish a conversation
             {
                using message_type = common::message::conversation::connect::Reply;
 
-               out << R"(
-#### message::conversation::connect::Reply
+               out << "#### " << local::message_type( message_type{}) << R"(
 
 Reply for a conversation
 
 )";
-
-               local::message_type( out, message_type{}) << "\n\n";
-
                message_type message;
-
-               message.route.nodes.resize( 1);
-               message.recording.nodes.resize( 1);
-
 
                local::format::type( out, message, {
                         { "execution", "uuid of the current execution context (breadcrumb)"},
-                        { "route.nodes.size", "size of the established route"},
-                        { "route.nodes.element.address", "'address' of a 'node' in the route"},
-                        { "recording.nodes.size", "size of the recording of 'passed nodes'"},
-                        { "recording.nodes.element.address", "'address' of a node'"},
                         { "code.result", "result code of the connection attempt"},
                      });
             }
@@ -1075,27 +1018,26 @@ Reply for a conversation
 
                out << R"(
 ### send
+)";
 
-#### message::conversation::Send
+               out << "#### " << local::message_type( message_type{}) << R"(
 
 Represent a message sent 'over' an established connection
 
 )";
-
-               local::message_type( out, message_type{}) << "\n\n";
-
                message_type message;
 
-               message.route.nodes.resize( 1);
                message.buffer.type = local::string::value( 8) + '/' + local::string::value( 16);
                message.buffer.memory = local::binary::value( 1024); 
+               using Duplex = decltype( message.duplex);
+               message.duplex = Duplex::receive;
 
                local::format::type( out, message, {
                         { "execution", "uuid of the current execution context (breadcrumb)"},
-                        { "route.nodes.size", "size of the established route"},
-                        { "route.nodes.element.address", "'address' of a 'node' in the route"},
+                        { "duplex", string::compose( "in what duplex the callee shall enter (", Duplex::receive, ":", cast::underlying( Duplex::receive), ", ", Duplex::send, ":", cast::underlying( Duplex::send),')') },
                         { "events", "events"},
                         { "code.result", "status of the connection"},
+                        { "code.user", "user code, if callee did a tpreturn and supplied user-code"},
                         { "buffer.type.size", "buffer type name size"},
                         { "buffer.type.data", "byte array with buffer type in the form 'type/subtype'"},
                         { "buffer.memory.size", "buffer payload size (could be very big)"},
@@ -1109,22 +1051,17 @@ Represent a message sent 'over' an established connection
                out << R"(
 ### disconnect
 
-#### message::conversation::Disconnect
+)";
+
+               out << "#### " << local::message_type( message_type{}) << R"(
 
 Sent to abruptly disconnect the conversation
 
 )";
-
-               local::message_type( out, message_type{}) << "\n\n";
-
                message_type message;
-
-               message.route.nodes.resize( 1);
 
                local::format::type( out, message, {
                         { "execution", "uuid of the current execution context (breadcrumb)"},
-                        { "route.nodes.size", "size of the established route"},
-                        { "route.nodes.element.address", "'address' of a 'node' in the route"},
                         { "events", "events"},
                      });
             }

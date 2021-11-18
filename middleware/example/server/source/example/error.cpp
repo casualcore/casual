@@ -92,12 +92,9 @@ namespace casual
 
                            {
                               auto reply = message::reverse::type( request);
-                              reply.recording = request.recording;
-                              reply.route = request.recording;
                               //reply.code = service::code::get( request.service.name);
 
-                              auto node = reply.route.next();
-                              communication::device::blocking::send( node.address, reply);
+                              communication::device::blocking::send( request.process.ipc, reply);
                            }
 
                            {

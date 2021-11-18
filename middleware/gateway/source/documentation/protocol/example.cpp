@@ -192,10 +192,7 @@ namespace casual
             message.parent = "parent-service";
             message.trid = local::trid();
 
-            message.recording.nodes.emplace_back( common::strong::ipc::id{ 0x57c9dcf039dc490baba9b957a39c87f1_uuid});
-            message.recording.nodes.emplace_back( common::strong::ipc::id{ 0x57c9dcf039dc490baba9b957a39c87f2_uuid});
-
-            message.flags = common::flag::service::conversation::connect::Flag::send_only;
+            message.duplex = decltype( message.duplex)::send;
             message.buffer.type = ".binary/";
             message.buffer.memory = local::binary::value( 128);
          }
@@ -204,23 +201,13 @@ namespace casual
          {
             local::set_general( message);
 
-            message.route.nodes.emplace_back( common::strong::ipc::id{ 0x57c9dcf039dc490baba9b957a39c87f2_uuid});
-            message.route.nodes.emplace_back( common::strong::ipc::id{ 0x57c9dcf039dc490baba9b957a39c87f1_uuid});
-
-            message.recording.nodes.emplace_back( common::strong::ipc::id{ 0x57c9dcf039dc490baba9b957a39c87f1_uuid});
-            message.recording.nodes.emplace_back( common::strong::ipc::id{ 0x57c9dcf039dc490baba9b957a39c87f2_uuid});
          }
 
          void fill( common::message::conversation::callee::Send& message)
          {
             local::set_general( message);
 
-            message.route.nodes.emplace_back( common::strong::ipc::id{ 0x57c9dcf039dc490baba9b957a39c87f1_uuid});
-            message.route.nodes.emplace_back( common::strong::ipc::id{ 0x57c9dcf039dc490baba9b957a39c87f2_uuid});
-
-
-            message.events = common::flag::service::conversation::Event::send_only;
-            message.flags = common::flag::service::conversation::send::Flag::no_time;
+            message.duplex = decltype( message.duplex)::send;
 
             message.buffer.type = ".binary/";
             message.buffer.memory = local::binary::value( 128);
@@ -232,11 +219,6 @@ namespace casual
          void fill( common::message::conversation::Disconnect& message)
          {
             local::set_general( message);
-
-            message.route.nodes.emplace_back( common::strong::ipc::id{ 0x57c9dcf039dc490baba9b957a39c87f1_uuid});
-            message.route.nodes.emplace_back( common::strong::ipc::id{ 0x57c9dcf039dc490baba9b957a39c87f2_uuid});
-
-            message.events = common::flag::service::conversation::Event::send_only;
          }
 
          void fill( casual::queue::ipc::message::group::enqueue::Request& message)

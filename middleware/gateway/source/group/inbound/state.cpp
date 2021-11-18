@@ -41,8 +41,8 @@ namespace casual
 
                   return serialize::native::complete< complete_type>( std::move( message));
                }
-
-               common::code::raise::error( common::code::casual::invalid_argument, "failed to find correlation: ", correlation);
+               
+               return Requests::consume( correlation);
             }
 
             Requests::complete_type Requests::consume( const strong::correlation::id& correlation)
@@ -85,6 +85,15 @@ namespace casual
             if( auto connector = algorithm::find( external.connections(), descriptor))
                return connector.data();
          }
+
+         return nullptr;
+      }
+
+      tcp::Connection* State::connection( const common::strong::correlation::id& correlation)
+      {
+         if( auto found = algorithm::find( correlations, correlation))
+            if( auto connector = algorithm::find( external.connections(), found->descriptor))
+               return connector.data();
 
          return nullptr;
       }

@@ -12,6 +12,8 @@
 #include "common/environment/normalize.h"
 #include "common/algorithm/coalesce.h"
 
+#include "configuration/system.h"
+
 namespace casual
 {
    using namespace common;
@@ -90,24 +92,28 @@ namespace casual
          } // <unnamed>
       } // local
 
-      State state( casual::configuration::model::transaction::Model model, std::vector< configuration::resource::Property> properties)
+       State state( casual::configuration::Model model)
       {
          Trace trace{ "transaction::manager::transform::state"};
 
          State state;
 
-         state.persistent.log = decltype( state.persistent.log){ local::initialize_log( std::move( model.log))};
+         state.persistent.log = decltype( state.persistent.log){ local::initialize_log( std::move( model.transaction.log))};
 
-         for( auto& property : properties)
+         auto get_system = []( auto system)
          {
-            auto [ pair, emplaced] = state.resource.properties.emplace( property.key, std::move( property));
-            if( ! emplaced)
-               event::error::fatal::raise( code::casual::invalid_configuration, "multiple keys in resource config: ", pair->first);
-         }
+            if( system != decltype( system){})
+               return system;
 
-         state.resources = local::resources( model.resources, state.resource.properties);
+            // TODO deprecated, will be removed at some point
+            return configuration::system::get();
+         };
+
+         state.system.configuration =  get_system( std::move( model.system));
+
+         state.resources = local::resources( model.transaction.resources, state.system.configuration.resources);
             
-         for( auto& mapping : model.mappings)
+         for( auto& mapping : model.transaction.mappings)
          {
             state.alias.configuration.emplace( mapping.alias, algorithm::transform( mapping.resources, [&state]( auto& name)
             {

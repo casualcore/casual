@@ -219,35 +219,77 @@ namespace casual
                      }
 
                   } // call
+               } // service
 
-                  namespace conversation
+               namespace conversation
+               {
+                  namespace connect
                   {
-                     namespace connect
+                     auto request( State& state)
                      {
-                        auto request( State& state)
+                        return [&state]( common::message::conversation::connect::callee::Request& message)
                         {
-                           return [&state]( common::message::conversation::connect::callee::Request& message)
-                           {
-                              Trace trace{ "gateway::group::outbound::handle::local::internal::service::conversation::connect::request"};
-                              log::line( verbose::log, "message: ", message);
+                           Trace trace{ "gateway::group::outbound::handle::local::internal::conversation::connect::request"};
+                           log::line( verbose::log, "message: ", message);
 
-                              auto [ lookup, involved] = state.lookup.service( message.service.name, message.trid);
+                           auto [ lookup, involved] = state.lookup.service( message.service.name, message.trid);
 
-                              message.trid = lookup.trid;
+                           message.trid = lookup.trid;
 
-                              // notify TM that this "resource" is involved in the branched transaction
-                              if( involved)
-                                 transaction::involved( message);
+                           // notify TM that this "resource" is involved in the branched transaction
+                           if( involved)
+                              transaction::involved( message);
 
-                              state.route.message.add( message, lookup.connection);
-                              tcp::send( state, lookup.connection, message);
-                           };
+                           state.route.message.add( message, lookup.connection);
+                           tcp::send( state, lookup.connection, message);
+                        };
+                     }
+
+                  } // connect
+
+
+                  auto disconnect( State& state)
+                  {
+                     return [&state]( common::message::conversation::Disconnect& message)
+                     {
+                        Trace trace{ "gateway::group::outbound::handle::local::internal::conversation::disconnect"};
+                        log::line( verbose::log, "message: ", message);
+                        
+                        if( auto point = state.route.message.consume( message.correlation))
+                        {
+                           tcp::send( state, point.connection, message);
+                        }
+                        else
+                        {
+                           log::line( log::category::error, code::casual::internal_correlation, " failed to correlate internal::conversation::send [", message.correlation, "] - action: ignore");
+                           log::line( verbose::log, "state.route.message: ", state.route.message);
                         }
 
-                     } // connect
+                     };
+                  }
 
-                  } // conversation
-               } // service
+                  auto send( State& state)
+                  {
+                     return [&state]( common::message::conversation::callee::Send& message)
+                     {
+                        Trace trace{ "gateway::group::outbound::handle::local::internal::conversation::send"};
+                        log::line( verbose::log, "message: ", message);
+
+                        if( auto found = algorithm::find( state.route.message.points(), message.correlation))
+                        {
+                           tcp::send( state, found->connection, message);
+                        }
+                        else
+                        {
+                           log::line( log::category::error, code::casual::internal_correlation, " failed to correlate internal::conversation::send [", message.correlation, "] - action: ignore");
+                           log::line( verbose::log, "state.route.message: ", state.route.message);
+                        }
+                     };
+                  }
+
+
+
+               } // conversation
 
                namespace domain
                {
@@ -615,10 +657,63 @@ namespace casual
                            }
                         };
                      }
-
                   } // call
 
                } // service
+
+               namespace conversation
+               {
+                  namespace connect
+                  {
+                     auto reply( State& state)
+                     {
+                        return [&state]( common::message::conversation::connect::Reply& message)
+                        {
+                           Trace trace{ "gateway::group::outbound::handle::local::external::conversation::connect::reply"};
+                           log::line( verbose::log, "message: ", message);
+
+                           if( auto found = algorithm::find( state.route.message.points(), message.correlation))
+                           {
+                              log::line( verbose::log, "found: ", *found);
+                              ipc::flush::optional::send( found->process.ipc, message);
+                              
+                              if( message.code.result != decltype( message.code.result)::absent)
+                                 state.route.message.remove( message.correlation);
+                           }
+                           else
+                           {
+                              log::line( log::category::error, code::casual::internal_correlation, " failed to correlate external::conversation::connect::reply [", message.correlation, "] - action: ignore");
+                              log::line( verbose::log, "state.route.message: ", state.route.message);
+                           }
+
+                        };
+                     }
+                  } // connect
+
+                  auto send( State& state)
+                  {
+                     return [&state]( common::message::conversation::callee::Send& message)
+                     {
+                        Trace trace{ "gateway::group::outbound::handle::local::external::conversation::send"};
+                        log::line( verbose::log, "message: ", message);
+
+
+                        if( auto found = algorithm::find( state.route.message.points(), message.correlation))
+                        {
+                           ipc::flush::optional::send( found->process.ipc, message);
+
+                           if( message.code.result != decltype( message.code.result)::absent)
+                                 state.route.message.remove( message.correlation);
+                        }
+                        else
+                        {
+                           log::line( log::category::error, code::casual::internal_correlation, " failed to correlate external::conversation::send [", message.correlation, "] - action: ignore");
+                           log::line( verbose::log, "state.route.message: ", state.route.message);
+                        }
+
+                     };
+                  }
+               } // conversation
 
                namespace queue
                {
@@ -762,7 +857,11 @@ namespace casual
 
             // service
             local::internal::service::call::request( state),
-            local::internal::service::conversation::connect::request( state),
+
+            // conversation
+            local::internal::conversation::connect::request( state),
+            local::internal::conversation::disconnect( state),
+            local::internal::conversation::send( state),
             
             // queue
             local::internal::queue::dequeue::request( state),
@@ -789,6 +888,10 @@ namespace casual
             
             // service
             local::external::service::call::reply( state),
+
+            // conversation
+            local::external::conversation::connect::reply( state),
+            local::external::conversation::send( state),
 
             // queue
             local::external::queue::enqueue::reply( state),

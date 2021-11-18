@@ -3,6 +3,26 @@ This is the changelog for `casual` and all changes are listed in this document.
 
 ## [Unreleased]
 
+## [1.5.6] - 2021-11-15
+
+### Changed
+- configuration - added `system` at the same level as `domain`
+   - `system` holds system wide configuration, and for the time being only `system.resource` which
+      replaces the _resource.propertis file_ (`casual` can still handle the deprecated file though).
+- cli - reverted the 'locale' awareness for the `CLI`
+   - To many subtle and not to subtle problems - not worth it.
+- configuration - service restrictions for servers are now treated as regex
+   - If set, only services that matches at least one regex are advertised.
+
+## [1.5.5] - 2021-11-09
+
+### Fixes
+- xatmi - conversation - major refactoring
+- xatmi - fix leak of descriptors for conversational services.
+- cli - configuration edit - made sure we sink the SIGCHILD signal from the spawned editor
+- documentation - fixed the example configuration files
+- queue - forward to remote queues did not work correctly
+
 ## [1.5.4] - 2021-10-23
 
 ### Fixes

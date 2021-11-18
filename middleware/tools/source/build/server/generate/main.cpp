@@ -8,8 +8,8 @@
 #include "tools/build/transform.h"
 #include "tools/build/generate.h"
 
-#include "configuration/build/server.h"
-#include "configuration/resource/property.h"
+#include "configuration/build/model/load.h"
+#include "configuration/system.h"
 
 #include "common/argument.h"
 #include "common/exception/guard.h"
@@ -38,10 +38,10 @@ namespace casual
                            std::string definition;
                         } server;
 
-                        struct 
+                        struct
                         {
-                           std::string properties;
-                        } resource;
+                           std::string system;
+                        } files;
 
                         std::string output;
                      };
@@ -59,20 +59,20 @@ namespace casual
                         {
                            Trace trace{ "tools::build::server::generate::local::transform::state"};
 
-                           auto properties = settings.resource.properties.empty() ?
-                              configuration::resource::property::get() : configuration::resource::property::get( settings.resource.properties);
+                           auto system = settings.files.system.empty() ?
+                              configuration::system::get() : configuration::system::get( settings.files.system);
 
-                           auto definition = configuration::build::server::get( settings.server.definition);
+                           auto definition = configuration::build::model::load::server( settings.server.definition);
 
                            State result;
 
                            result.resources = build::transform::resources( 
-                              definition.resources,
+                              definition,
                               {}, // no raw keys
-                              properties);
+                              system);
 
                            result.services = build::transform::services( 
-                              definition.services,
+                              definition,
                               {}, 
                               {});
 
@@ -110,7 +110,7 @@ namespace casual
                         Parse{ description,
                            Option( std::tie( settings.server.definition), { "-d", "--definition"}, "path to server definition file")( argument::cardinality::one{}),
                            Option( std::tie( settings.server.definition), { "-o", "--output"}, "output file name - if not provided 'stdout' will be used"),
-                           Option( std::tie( settings.resource.properties), {"-p", "--resource-properties"}, "path to resource properties file"),
+                           Option( std::tie( settings.files.system), argument::option::keys( { "--system-configuration"}, {"-p", "--properties-file"}), "path to system configuration file"),
                         }( argc, argv);
 
                         local::generate( std::move( settings));

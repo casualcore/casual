@@ -237,6 +237,7 @@ namespace casual
                            algorithm::append( std::move( reply.content.queues), message.content.queues);
                         }
                         local::detail::normalize::content( message.content);
+                        log::line( verbose::log, "message: ", message);
 
                         communication::ipc::flush::optional::send( destination.ipc, message);
                      });
@@ -339,7 +340,7 @@ namespace casual
                   {
                      return [&state]( const common::message::event::discoverable::Avaliable& event)
                      {
-                        Trace trace{ "queue::manager::handle::local::event::discoverable::available"};
+                        Trace trace{ "discovery::handle::local::event::discoverable::available"};
                         common::log::line( verbose::log, "event: ", event);
 
                         // we know there's a new _discoverable_ available.
@@ -357,7 +358,7 @@ namespace casual
                         // note: everything captured needs to by value (besides State if used)
                         state.coordinate.advertised( std::move( pending), [&state]( auto replies, auto failed)
                         {
-                           Trace trace{ "queue::manager::handle::local::event::discoverable::available replied"};
+                           Trace trace{ "discovery::handle::local::event::discoverable::available replied"};
 
                            message::discovery::external::Request request{ common::process::handle()};
                            request.content = algorithm::accumulate( replies, message::discovery::request::Content{}, []( auto result, auto& reply)

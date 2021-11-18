@@ -195,19 +195,19 @@ namespace casual
                   auto get()
                   {
                      serviceframework::service::protocol::binary::Call call;
-                     return call( admin::service::name::configuration::get).extract< casual::configuration::user::Domain>();
+                     return call( admin::service::name::configuration::get).extract< casual::configuration::user::Model>();
                   }
 
-                  auto post( const casual::configuration::user::Domain& domain)
+                  auto post( const casual::configuration::user::Model& model)
                   {
                      serviceframework::service::protocol::binary::Call call;
-                     return call( admin::service::name::configuration::post, domain).extract< std::vector< common::strong::correlation::id>>();
+                     return call( admin::service::name::configuration::post, model).extract< std::vector< common::strong::correlation::id>>();
                   }
 
-                  auto put( const casual::configuration::user::Domain& domain)
+                  auto put( const casual::configuration::user::Model& model)
                   {
                      serviceframework::service::protocol::binary::Call call;
-                     return call( admin::service::name::configuration::put, domain).extract< std::vector< common::strong::correlation::id>>();
+                     return call( admin::service::name::configuration::put, model).extract< std::vector< common::strong::correlation::id>>();
 
                   }
                } // configuration
@@ -966,11 +966,11 @@ note: some aliases are unrestartable
                   {
                      auto invoke = []( const std::string& format)
                      {
-                        casual::configuration::user::Domain domain;
+                        casual::configuration::user::Model model;
                         auto archive = common::serialize::create::reader::consumed::from( format, std::cin);
-                        archive >> CASUAL_NAMED_VALUE( domain);
+                        archive >> model;
 
-                        event::invoke( call::configuration::post, domain);
+                        event::invoke( call::configuration::post, model);
                      };
 
                      constexpr auto description = R"(reads configuration from stdin and replaces the domain configuration
@@ -1015,11 +1015,13 @@ depending on what parts are updated.
                         auto start_editor = []( auto editor, const auto& file)
                         {
                            const auto command = string::compose( editor, ' ', file);
-                           log::line( verbose::log, "command: ", command);
+                           common::log::line( verbose::log, "command: ", command);
                            
                            posix::result( ::system( command.data()));
                         };
 
+                        // sink child signal from _editor_
+                        signal::callback::registration< code::signal::child>( [](){});
 
                         auto file = get_configuration_file( current, format.value_or( "yaml"));
 
@@ -1029,7 +1031,7 @@ depending on what parts are updated.
 
                         if( wanted == casual::configuration::model::transform( current))
                         {
-                           log::line( std::clog, "no configuration changes detected");
+                           common::log::line( std::clog, "no configuration changes detected");
                            return;
                         }
 
@@ -1059,11 +1061,11 @@ If no changes are detected, no update will take place.
                   {
                      auto invoke = []( const std::string& format)
                      {
-                        casual::configuration::user::Domain domain;
+                        casual::configuration::user::Model model;
                         auto archive = common::serialize::create::reader::consumed::from( format, std::cin);
-                        archive >> CASUAL_NAMED_VALUE( domain);
+                        archive >> model;
 
-                        event::invoke( call::configuration::put, domain);
+                        event::invoke( call::configuration::put, model);
                      };
 
                      constexpr auto description = R"(reads configuration from stdin and adds or updates parts

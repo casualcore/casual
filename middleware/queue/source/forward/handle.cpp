@@ -406,12 +406,9 @@ namespace casual
                         log::line( verbose::log, "message: ", message);
 
                         auto pending = pending::consume( state.pending.queue.lookups, message.correlation);
-
                         log::line( verbose::log, "pending: ", pending);
 
-                        // if queue is absent we just discard this. This can only happen if we're in
-                        // 'shutdown mode'
-                        if( ! message.queue)
+                        if( state.runlevel > decltype( state.runlevel())::running)
                            return;
 
                         state.forward_apply( pending.id, [&]( auto& forward)

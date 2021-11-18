@@ -39,6 +39,14 @@ namespace casual
                         };
                      }
 
+                     auto connect()
+                     {
+                        return []( auto& l, auto& r)
+                        {
+                           return l.connect == r.connect;
+                        };
+                     }
+
                      auto name()
                      {
                         return []( auto& l, auto& r)
@@ -46,6 +54,14 @@ namespace casual
                            if( l.name.empty() && r.name.empty())
                               return false;
                            return l.name == r.name;
+                        };
+                     }
+
+                     auto key()
+                     {
+                        return []( auto& l, auto& r)
+                        {
+                           return l.key == r.key;
                         };
                      }
 
@@ -87,6 +103,16 @@ namespace casual
             } // <unnamed>
          } // local
 
+         namespace system
+         {
+            Model& Model::operator += ( Model rhs)
+            {
+               local::range::replace( std::move( rhs.resources), resources, local::predicate::equal::key());
+
+               return *this;
+            }
+         } // system
+
 
          namespace domain
          {
@@ -119,6 +145,7 @@ namespace casual
                log = algorithm::coalesce( std::move( rhs.log), std::move( log));
                local::range::replace( std::move( rhs.resources), resources, local::predicate::equal::name());
                local::range::replace( std::move( rhs.mappings), mappings, local::predicate::equal::alias());
+
                return *this;
             }
             
@@ -208,7 +235,7 @@ namespace casual
 
             Inbound& Inbound::operator += ( Inbound rhs)
             {
-               local::range::update( std::move( rhs.groups), groups, local::predicate::equal::alias());
+               local::range::update( std::move( rhs.groups), groups, predicate::make_and( local::predicate::equal::alias(), local::predicate::equal::connect()));
                return *this;
             }
 
@@ -237,7 +264,7 @@ namespace casual
 
             Outbound& Outbound::operator += ( Outbound rhs)
             {
-               local::range::update( std::move( rhs.groups), groups, local::predicate::equal::alias());
+               local::range::update( std::move( rhs.groups), groups, predicate::make_and( local::predicate::equal::alias(), local::predicate::equal::connect()));
 
                return *this;
             }
@@ -323,6 +350,7 @@ namespace casual
 
       Model& Model::operator += ( Model rhs)
       {
+         system += std::move( rhs.system);
          domain += std::move( rhs.domain);
          transaction += std::move( rhs.transaction);
          service += std::move( rhs.service);

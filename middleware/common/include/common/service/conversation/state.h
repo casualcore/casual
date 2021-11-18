@@ -9,76 +9,127 @@
 
 
 #include "casual/platform.h"
-#include "common/service/descriptor.h"
 
 #include "common/message/conversation.h"
+#include "common/code/casual.h"
 
 #include "common/serialize/macro.h"
 
 namespace casual
 {
-
-   namespace common
+   namespace common::service::conversation
    {
-      namespace service
+      namespace state
       {
-         namespace conversation
+         namespace detail::index
          {
-            namespace state
+            //! potentially a container for all _descriptors_
+            template< typename I, typename V>
+            struct container
             {
-               namespace descriptor
+               using index_type = I;
+
+               template< typename... Ts>
+               auto reserve( Ts&&... ts)
                {
-                  struct Information
+                  if( auto found = algorithm::find_if( m_values, []( auto& value){ return absent( value);}))
                   {
-                     enum class Duplex : short
-                     {
-                        send,
-                        receive,
-                        terminated
-                     };
+                     *found = V{ std::forward< Ts>( ts)...};
+                     return index_type( std::distance( std::begin( m_values), std::begin( found)));
+                  }
+                  else
+                  {
+                     m_values.push_back( V{ std::forward< Ts>( ts)...});
+                     return index_type( m_values.size() - 1);
+                  }
+               }
+
+               void unreserve( index_type index) { lookup( *this, index) = V{};}
+
+               auto& at( index_type index) { return lookup( *this, index);}
+               auto& at( index_type index) const { return lookup( *this, index);}
 
 
-                     message::conversation::Route route;
+               auto begin() const noexcept { return std::begin( m_values);}
+               auto end() const noexcept { return std::end( m_values);}
 
-                     Duplex duplex = Duplex::receive;
-                     bool initiator = false;
+               //! @return true if there are no _active_ values. 
+               bool empty() const noexcept
+               {
+                  return algorithm::all_of( m_values, []( auto& value){ return absent( value);});
+               }
 
-                     inline friend std::ostream& operator << ( std::ostream& out, Duplex value)
-                     {
-                        switch( value)
-                        {
-                           case Duplex::receive: return out << "receive";
-                           case Duplex::send: return out << "send";
-                           case Duplex::terminated: return out << "terminated";
-                        }
-                        return out << "unknown...";
-                     }
-                     
-                     // for loging
-                     CASUAL_LOG_SERIALIZE(
-                     {
-                        CASUAL_SERIALIZE( route);
-                        CASUAL_SERIALIZE( duplex);
-                        CASUAL_SERIALIZE( initiator);
-                     })
-                  };
+               platform::size::type size() const noexcept
+               {
+                  return algorithm::accumulate( m_values, platform::size::type{}, []( auto count, auto& value)
+                  { 
+                     return absent( value) ? count : count + 1;
+                  });
+               }
 
-               } // descriptor
+               platform::size::type capacity() const noexcept { return m_values.size();}
 
-            } // state
+            private:
 
-            struct State
-            {
-               using holder_type =  service::descriptor::Holder< state::descriptor::Information>;
-               using descriptor_type = typename holder_type::descriptor_type;
+               template< typename C>
+               friend auto lookup( C& container, index_type index) -> decltype( container.m_values.front())
+               {
+                  const auto index_v = container.index( index);
 
-               holder_type descriptors;
+                  if( index_v >= 0 && index_v < static_cast< platform::size::type>( container.m_values.size()))
+                     if( ! absent(  container.m_values[ index_v]))
+                        return container.m_values[ index_v];
+
+                  code::raise::error( code::xatmi::descriptor, "invalid index: ", index);
+               }
+
+               platform::size::type index( index_type index)
+               {
+                  return index.value();
+               };
+
+
+               std::vector< V> m_values;
             };
 
-         } // conversation
+         } // detail::index
+         
+         namespace descriptor
+         {
+            struct Value
+            {
+               using Duplex = message::conversation::duplex::Type;
 
-      } // service
-   } // common
+               strong::correlation::id correlation;
+               process::Handle process;
+
+               Duplex duplex = Duplex::receive;
+               bool initiator = false;
+
+               inline friend bool absent( const Value& value) { return ! predicate::boolean( value.correlation);}
+               
+               CASUAL_LOG_SERIALIZE(
+                  CASUAL_SERIALIZE( correlation);
+                  CASUAL_SERIALIZE( process);
+                  CASUAL_SERIALIZE( duplex);
+                  CASUAL_SERIALIZE( initiator);
+               )
+            };            
+         } // descriptor
+
+
+      } // state
+
+      struct State
+      {
+         state::detail::index::container< strong::conversation::descriptor::id, state::descriptor::Value> descriptors;
+
+         CASUAL_LOG_SERIALIZE(
+            CASUAL_SERIALIZE( descriptors);
+         )
+      };
+
+   } // common::service::conversation
 
 } // casual
 

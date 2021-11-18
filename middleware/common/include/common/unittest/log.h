@@ -19,10 +19,10 @@ namespace casual
    {
       namespace unittest
       {
-         //! Log with category 'casual.mockup'
+         //! Log with category 'casual.unittest'
          extern common::log::Stream log;
 
-         //! Log with category 'casual.mockup.trace'
+         //! Log with category 'casual.unittest.trace'
          extern common::log::Stream trace;
 
 
@@ -44,12 +44,19 @@ namespace casual
             Trace()
             {
                auto test_info = ::testing::UnitTest::GetInstance()->current_test_info();
-               log::line( unittest::log, "TEST( ", test_info->test_case_name(), ".", test_info->name(), ") - in");
+               log::line( unittest::trace, "TEST( ", test_info->test_case_name(), ".", test_info->name(), ") - in");
             }
             ~Trace()
             {
                auto test_info = ::testing::UnitTest::GetInstance()->current_test_info();
-               log::line( unittest::log, "TEST( ", test_info->test_case_name(), ".", test_info->name(), ") - out");
+               log::line( unittest::trace, "TEST( ", test_info->test_case_name(), ".", test_info->name(), ") - out");
+            }  
+
+            template< typename... Ts>
+            static void line( Ts&&... ts)
+            {
+               auto test_info = ::testing::UnitTest::GetInstance()->current_test_info();
+               log::line( unittest::log, test_info->test_case_name(), ".", test_info->name(), " - ", std::forward< Ts>( ts)...);
             }
          };
       } // unittest

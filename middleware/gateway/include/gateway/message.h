@@ -602,35 +602,28 @@ template< typename A> struct Value< type, A, std::enable_if_t< common::serialize
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( service.timeout.duration);
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( parent);
             CASUAL_SERIALIZE_NAME( value.trid.xid, "xid");
-            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( flags);
-            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( recording);
+            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( duplex);
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( buffer);
          })
 
          CASUAL_CUSTOMIZATION_POINT_NETWORK( common::message::conversation::connect::Reply,
          {
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( execution);
-            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( route);
-            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( recording);
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( code.result);
-            // TODO: CASUAL_CUSTOMIZATION_POINT_SERIALIZE( code.user);   
          })
 
 
          CASUAL_CUSTOMIZATION_POINT_NETWORK( common::message::conversation::Disconnect,
          {
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( execution);
-            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( route);
-            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( events);
          })
 
          CASUAL_CUSTOMIZATION_POINT_NETWORK( common::message::conversation::callee::Send,
          {
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( execution);
-            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( route);
-            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( events);
+            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( duplex);
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( code.result);
-            // TODO: CASUAL_CUSTOMIZATION_POINT_SERIALIZE( code.user);  
+            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( code.user);
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( buffer);
          })
 

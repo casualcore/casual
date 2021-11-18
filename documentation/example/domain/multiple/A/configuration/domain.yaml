@@ -1,0 +1,40 @@
+domain:
+  name: A
+
+  servers:
+    - path: ${CASUAL_HOME}/example/bin/casual-example-server
+      instances: 1
+      note: advertises casual/example/echo and casual/example/rollback
+
+  queue:
+    groups:
+      - alias: A
+        queues:
+          - name: a1
+          - name: a2
+
+    forward:
+      groups:
+        - alias: forward-A
+          services:
+            - note: dequeue a1 -> call casual/example/rollback -> rollback -> a1.error
+              source: a1
+              instances: 1
+              target:
+                service: casual/example/rollback
+
+
+  gateway:
+    inbound:
+      groups:
+        - alias: inbound
+          note: listener for B
+          connections:
+            - address: 127.0.0.1:7771
+
+    outbound:
+      groups:
+        - alias: outbound
+          note: connect to B
+          connections:
+            - address: 127.0.0.1:7772

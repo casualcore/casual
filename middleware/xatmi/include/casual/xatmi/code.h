@@ -6,6 +6,7 @@
 
 #pragma once
 
+#define TPOK 0
 #define TPEBADDESC 2
 #define TPEBLOCK 3
 #define TPEINVAL 4

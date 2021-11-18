@@ -1,0 +1,84 @@
+@startuml scenario
+
+title casual medium multiple domain example
+
+box "domain A" #LightBlue
+   actor "You" as AA
+   participant "queue" as QA
+   participant "queue-forward" as QFA
+   participant "example-server" as SA
+   participant "gateway" as GA
+end box
+
+box "domain B"
+   participant "gateway" as GB 
+   participant "queue" as QB
+   participant "queue-forward" as QFB
+end box
+
+activate AA
+
+group #eeeeee in transaction 
+AA -> GA: **enqueue to b1**
+GA -> GB:
+GB -> QB: **enqueue to b1**
+activate QB
+QB -> GB: message id
+deactivate QB
+GB -> GA:
+GA -> AA: message id
+deactivate AA
+end
+
+group #eeeeee in transaction
+QB -> QFB: **dequeue b1**
+activate QFB
+QFB -> GB: call **casual/example/echo**
+GB -> GA:
+GA -> SA: call **casual/example/echo**
+activate SA
+SA -> GA: reply 
+deactivate SA
+GA -> GB
+GB -> QFB: echo reply
+QFB -> QB: **enqueue b2**
+deactivate QFB
+end
+
+group #eeeeee in transaction
+QB -> QFB: **dequeue b2**
+activate QFB
+QFB -> GB: **enqueue a1**
+GB -> GA
+GA -> QA: **enqueue a1**
+activate QA
+QA -> GA
+deactivate QA
+GA -> GB
+GB -> QFB: message id
+
+deactivate QFB
+end
+
+group #eeeeee in transaction
+
+QA -> QFA: **dequeue a1**
+activate QFA
+QFA -> SA: call **casual/example/rollback**
+activate SA
+SA -> QFA: reply **TPFAIL**
+note right 
+   This will rollback the dequeue 
+   and move the message to 
+   a1.error
+end note
+
+deactivate SA
+
+deactivate QFA
+
+end
+
+
+
+@enduml
