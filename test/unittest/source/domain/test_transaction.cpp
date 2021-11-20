@@ -32,7 +32,15 @@ namespace casual
             {
                namespace configuration
                {
-                  constexpr auto servers = R"(
+                  constexpr auto basic = R"(
+system:
+   resources:
+      -  key: rm-mockup
+         server: bin/rm-proxy-casual-mockup
+         xa_struct_name: casual_mockup_xa_switch_static
+         libraries:
+            -  casual-mockup-rm
+
 domain:
    name: test-default-domain
 
@@ -58,26 +66,13 @@ domain:
         memberships: [ example]
 )";
 
-                  constexpr auto resources = R"(
-resources:
-  - key: rm-mockup
-    server: bin/rm-proxy-casual-mockup
-    xa_struct_name: casual_mockup_xa_switch_static
-    libraries:
-      - casual-mockup-rm
-)";
-                  
+           
                } // configuration
 
                template< typename... C>
                auto domain( C&&... configurations) 
                {
-                  auto resource = common::unittest::file::temporary::content( ".yaml", configuration::resources);
-
-                  return std::make_tuple( 
-                     common::environment::variable::scoped::set( common::environment::variable::name::resource::configuration, resource.string()),
-                     std::move( resource),
-                     casual::domain::manager::unittest::process( configuration::servers, std::forward< C>( configurations)...));
+                  return casual::domain::manager::unittest::process( configuration::basic, std::forward< C>( configurations)...);
                }
 
 

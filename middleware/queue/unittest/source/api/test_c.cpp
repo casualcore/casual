@@ -44,13 +44,13 @@ domain:
 
    queue:
       groups:
-         - name: group_A
+         - alias: group_A
            queuebase: ":memory:"
            queues:
             - name: A1
             - name: A2
             - name: A3
-         - name: group_B
+         - alias: group_B
            queuebase: ":memory:"
            queues:
             - name: B1

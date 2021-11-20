@@ -14,9 +14,9 @@
 
 #include "common/server/handle/call.h"
 #include "common/communication/instance.h"
+#include "common/communication/ipc/flush/send.h"
 #include "common/flag.h"
 
-#include "domain/pending/message/send.h"
 
 #include <iomanip>
 
@@ -31,35 +31,6 @@ namespace casual
       {
          namespace
          {
-            namespace ipc
-            {
-               template< typename M> 
-               bool send( const process::Handle& process, M&& message)
-               {
-
-                  try
-                  {
-                     if( ! communication::device::non::blocking::send( process.ipc, message))
-                     {
-                        log::line( log, "could not send message ", message.type(), " to process: ", process, " - action: eventually send");
-                        casual::domain::pending::message::send( process, message);
-                     }
-                     return true;
-                  }
-                  catch( ...)
-                  {
-                     auto error = exception::capture();
-                     if( error.code() != code::casual::communication_unavailable)
-                        throw;
-
-                     // No-op, we just drop the message
-                     log::line( log, error, " failed to sendmessage ", message.type(), " to process: ", process, " - action: discard");
-                     return true;
-                  }
-               }
-
-            } // ipc
-
             namespace send::error
             {
                void reply( State& state, common::message::service::call::callee::Request& message, common::code::xatmi code)
@@ -75,7 +46,7 @@ namespace casual
                      reply.code.result = code;
                      reply.buffer = buffer::Payload{ nullptr};
                      
-                     local::ipc::send( message.process, reply);
+                     communication::ipc::flush::optional::send( message.process.ipc, reply);
                   }
 
                }
@@ -121,9 +92,9 @@ namespace casual
 
                         log::line( log, "send request - to: ", message.process, " - request: ", request);
 
-                        if( ! local::ipc::send( message.process, request))
+                        if( ! communication::ipc::flush::optional::send( message.process.ipc, request))
                         {
-                           log::line( log::category::error, "call to service ", std::quoted( message.service.name), "' failed - action: send error reply");
+                           log::line( log::category::error, "call to service ", std::quoted( message.service.name), " failed - action: send error reply");
                            send::error::reply( state, request, common::code::xatmi::no_entry);
                            return;
                         }
@@ -145,7 +116,8 @@ namespace casual
                            message::service::lookup::Request request{ process::handle()};
                            request.requested = message.service.name;
                            request.correlation = message.correlation;
-                           communication::device::blocking::send( communication::instance::outbound::service::manager::device(), request);
+                           request.context = decltype( request.context)::no_busy_intermediate;
+                           communication::ipc::flush::send( communication::instance::outbound::service::manager::device(), request);
                         }
 
                         state.pending.push_back( std::move( message));
@@ -171,7 +143,7 @@ namespace casual
                         message::service::lookup::discard::Request request{ process::handle()};
                         request.reply = false;
                         request.correlation = pending.correlation;
-                        communication::device::blocking::optional::send( communication::instance::outbound::service::manager::device(), request);
+                        communication::ipc::flush::send( communication::instance::outbound::service::manager::device(), request);
                      };
 
                      algorithm::for_each( state.pending, send_discard);

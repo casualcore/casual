@@ -13,14 +13,11 @@
 
 namespace casual
 {
-   namespace queue
+   namespace queue::forward
    {
-      namespace forward
-      {
-         using handler_type = decltype( common::message::dispatch::handler( common::communication::ipc::inbound::device()));
+      using handler_type = decltype( common::message::dispatch::handler( common::communication::ipc::inbound::device()));
 
-         handler_type handlers( State& state);
+      handler_type handlers( State& state);
          
-      } // forward
-   } // queue
+   } // queue::forward
 } // casual

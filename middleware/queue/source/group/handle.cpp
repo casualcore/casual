@@ -13,6 +13,8 @@
 #include "common/message/handle.h"
 #include "common/message/transaction.h"
 #include "common/message/signal.h"
+#include "common/message/event.h"
+#include "common/message/internal.h"
 
 #include "common/event/listen.h"
 #include "common/exception/handle.h"
@@ -24,9 +26,6 @@
 
 #include "common/environment.h"
 
-#include "common/communication/instance.h"
-
-#include "domain/pending/message/send.h"
 
 namespace casual
 {
@@ -36,58 +35,12 @@ namespace casual
    {
       namespace handle
       {
-
-         namespace ipc
-         {
-            communication::ipc::inbound::Device& device()
-            {
-               return communication::ipc::inbound::device();
-            }
-         } // ipc
-
-
          namespace local
          {
             namespace
             {
                namespace detail
                {
-                  namespace ipc
-                  {
-                     namespace eventually
-                     {
-                        template< typename M>
-                        void send( const process::Handle& destination, M&& message)
-                        {
-                           try
-                           {  
-                              if( ! communication::device::non::blocking::send(  destination.ipc, message))
-                                 casual::domain::pending::message::send( destination, message);
-                           }
-                           catch( ...)
-                           {
-                              auto error = exception::capture();
-                              
-                              if( error.code() != code::casual::communication_unavailable)
-                                 throw;
-
-                              log::line( log, error, " destination not available: ", destination, " - action: ignore");
-                              log::line( verbose::log, "dropped message: ", message);
-                           }                         
-                        }
-                     } // eventually
-
-                     namespace pending
-                     {
-                        void send( common::message::pending::Message& pending)
-                        {
-                           if( ! common::message::pending::non::blocking::send( pending))
-                              casual::domain::pending::message::send( pending);
-                        }
-                     } // pending
-
-                  } // ipc
-
                   namespace transaction
                   {
                      template< typename M>
@@ -134,6 +87,15 @@ namespace casual
                   { 
                      // defined further down.
                      void dequeues( State& state);
+
+                     void send( std::vector< common::message::pending::Message> messages)
+                     {
+                        for( auto& pending : messages)
+                        {
+                           assert( pending.destinations.size() == 1);
+                           queue::ipc::flush::optional::send( pending.destinations[ 0].ipc, std::move( pending.complete));
+                        }
+                     }
                      
                   } // pending
                } // detail
@@ -204,10 +166,9 @@ namespace casual
                            log::line( verbose::log, "message: ", message);
 
                            auto reply = common::message::reverse::type( message);
-
                            reply.ids = state.queuebase.remove( message.queue, std::move( message.ids));
 
-                           detail::ipc::eventually::send( message.process, reply);
+                           ipc::flush::optional::send( message.process.ipc, reply);
                         }; 
                      }
                      
@@ -237,7 +198,7 @@ namespace casual
                               // transaction messages of their own (since
                               // we send 'involved' first).
                               local::detail::transaction::involved( state, message);
-                              communication::device::blocking::optional::send( message.process.ipc, reply);
+                              ipc::flush::optional::send( message.process.ipc, reply);
                            }
                            else
                            {
@@ -272,7 +233,7 @@ namespace casual
                      // make sure we always send reply
                      auto send_reply = execute::scope( [&]()
                      {
-                        communication::device::blocking::optional::send( message.process.ipc, reply);
+                        ipc::flush::optional::send( message.process.ipc, reply);
                      });
 
                      if( ! reply.message.empty())
@@ -335,7 +296,7 @@ namespace casual
                         {
                            Trace trace{ "queue::handle::local::dequeue::forget::Request"};
 
-                           detail::ipc::eventually::send( message.process, state.pending.forget( message));
+                           ipc::flush::optional::send( message.process.ipc, state.pending.forget( message));
                         };
                      }
                   } // forget
@@ -352,7 +313,7 @@ namespace casual
                         {
                            Trace trace{ "queue::handle::local::peek::information::Request"};
 
-                           detail::ipc::eventually::send( message.process, state.queuebase.peek( message));
+                           ipc::flush::optional::send( message.process.ipc, state.queuebase.peek( message));
                         };
                      }
 
@@ -366,7 +327,7 @@ namespace casual
                         {
                            Trace trace{ "queue::handle::local::peek::information::Request"};
 
-                           detail::ipc::eventually::send( message.process, state.queuebase.peek( message));
+                           ipc::flush::optional::send( message.process.ipc, state.queuebase.peek( message));
                         };
                      }
                   } // messages
@@ -423,8 +384,7 @@ namespace casual
                            reply.trid = message.trid;
                            reply.state = common::code::xa::ok;
 
-                           communication::device::blocking::optional::send(
-                              common::communication::instance::outbound::transaction::manager::device(), reply);
+                           ipc::flush::optional::send( message.process.ipc, reply);
                         };
                      }
                   }
@@ -477,8 +437,9 @@ namespace casual
 
                         auto reply = common::message::reverse::type( message);
 
-                        auto send_reply = common::execute::scope( [&](){
-                           communication::device::blocking::optional::send( message.process.ipc, reply);
+                        auto send_reply = common::execute::scope( [&]()
+                        {
+                           ipc::flush::optional::send( message.process.ipc, reply);
                         });
 
                         reply.affected = common::algorithm::transform( message.queues, [&]( auto id){
@@ -540,7 +501,7 @@ namespace casual
 
                         reply.affected = algorithm::transform( message.queues, clear_queue);
 
-                        detail::ipc::eventually::send( message.process, reply);
+                        ipc::flush::optional::send( message.process.ipc, reply);
                      };
                   }
                } // clear
@@ -556,7 +517,7 @@ namespace casual
 
                         state.queuebase.metric_reset( message.queues);
 
-                        detail::ipc::eventually::send( message.process, common::message::reverse::type( message, common::process::handle()));
+                        ipc::flush::optional::send( message.process.ipc, common::message::reverse::type( message, common::process::handle()));
                      };
                   }
                } // metric::reset
@@ -682,11 +643,9 @@ namespace casual
                         using Type = queue::ipc::message::group::state::queue::Type;
                         algorithm::for_each_if( zombies, join_with_error_queue, []( auto& queue){ return queue.type() == Type::queue;});
 
-                        auto has_messages = []( auto& item){ return std::get<0>(item).metric.count > 0 || std::get<1>(item).metric.count > 0;};
+                        auto has_messages = []( auto& item){ return std::get< 0>( item).metric.count > 0 || std::get< 1>( item).metric.count > 0;};
 
-                        auto separated = algorithm::partition( joined, has_messages);
-                        auto nonempty_queues = std::get<0>( separated);
-                        auto empty_queues = std::get<1>( separated);
+                        auto [ nonempty_queues, empty_queues] = algorithm::partition( joined, has_messages);
 
                         log::line( verbose::log, "nonempty_queues: ", nonempty_queues);
                         log::line( verbose::log, "empty_queues: ", empty_queues);
@@ -696,10 +655,10 @@ namespace casual
                         auto populate = []( auto& queues, auto& out){
                            algorithm::transform( queues, 
                               std::back_inserter( out), 
-                              []( auto& item) { return std::get<0>(item).id;});
+                              []( auto& item) { return std::get< 0>( item).id;});
                            algorithm::transform( queues, 
                               std::back_inserter( out), 
-                              []( auto& item) { return std::get<1>(item).id;});
+                              []( auto& item) { return std::get< 1>( item).id;});
                         };
 
                         populate( empty_queues, remove);
@@ -717,13 +676,13 @@ namespace casual
                            auto reply = common::message::reverse::type( message, process::handle());
                            reply.alias = state.alias;
                            reply.queues = std::move( queues);
-                           communication::device::blocking::send( message.process.ipc, reply);
+                           ipc::flush::optional::send( message.process.ipc, reply);
                         }
 
-                        algorithm::for_each( nonempty_queues,
-                           []( auto& queuepair){
-                              common::log::line( common::log::category::warning, "reconfigure zombie queues and remove messages to remove it: ", std::get<0>( queuepair).name, " - ", std::get<1>( queuepair).name);
-                           });
+                        algorithm::for_each( nonempty_queues, []( auto& queuepair)
+                        {
+                           common::log::line( common::log::category::warning, "reconfigure zombie queues and remove messages to remove it: ", std::get< 0>( queuepair).name, " - ", std::get<1>( queuepair).name);
+                        });
  
                         log::line( verbose::log, "state: ", state);
 
@@ -747,7 +706,8 @@ namespace casual
                         handle::persist( state);
 
                         // send _forget requests_ to pending dequeue requests, if any.
-                        algorithm::for_each( state.pending.forget(), &local::detail::ipc::pending::send);
+                        local::detail::pending::send( state.pending.forget());
+
                      }
                   } // detail
 
@@ -868,7 +828,7 @@ namespace casual
             // persist the queuebase
             state.queuebase.persist();
             
-            algorithm::for_each( std::exchange( state.pending.replies, {}), &local::detail::ipc::pending::send);
+            local::detail::pending::send( std::exchange( state.pending.replies, {}));
 
             // handle pending dequeues, if any.
             local::detail::pending::dequeues( state);
@@ -876,11 +836,13 @@ namespace casual
 
       } // handle
 
-      handle::dispatch_type handler( State& state)
+      handle::dispatch_type handlers( State& state)
       {
          return {
             common::event::listener( handle::local::dead::process( state)),
             common::message::handle::defaults( communication::ipc::inbound::device()),
+            common::message::internal::dump::state::handle( state),
+
             handle::local::configuration::update::request( state),
             handle::local::enqueue::request( state),
             handle::local::dequeue::request( state),
