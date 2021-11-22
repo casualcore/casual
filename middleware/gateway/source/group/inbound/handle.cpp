@@ -42,8 +42,8 @@ namespace casual
                         return connection->descriptor();
                      }
                      
-                     log::line( log, code::casual::communication_unavailable, " connection absent when trying to send reply - ", message.type());
-                     log::line( verbose::log, code::casual::communication_unavailable, " message: ", message);
+                     log::line( log::category::error, code::casual::communication_unavailable, " connection absent when trying to send reply - ", message.type());
+                     log::line( log::category::verbose::error, code::casual::communication_unavailable, " message: ", message);
                   }
                   catch( ...)
                   {

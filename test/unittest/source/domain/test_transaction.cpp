@@ -36,7 +36,7 @@ namespace casual
 system:
    resources:
       -  key: rm-mockup
-         server: bin/rm-proxy-casual-mockup
+         server: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/transaction/bin/rm-proxy-casual-mockup
          xa_struct_name: casual_mockup_xa_switch_static
          libraries:
             -  casual-mockup-rm
@@ -94,9 +94,9 @@ domain:
                   return ids.empty() ? strong::resource::id{} : ids.front();
                }
 
-               transaction::resource::Link link()
+               transaction::resource::Link link( std::string name)
                {
-                  return { "rm-mockup", "rm-mockup-dynamic", &casual_mockup_xa_switch_dynamic};
+                  return { "rm-mockup", std::move( name), &casual_mockup_xa_switch_dynamic};
                }
             } // <unnamed>
          } // local
@@ -121,13 +121,13 @@ domain:
    transaction:
       resources:
          - key: rm-mockup
-           name: rm-mockup-dynamic
-           openinfo:
+           name: rm1
+           openinfo: rm1
 
 )";
 
             auto domain = local::domain( configuration);
-            transaction::context().configure( { local::link()});
+            transaction::context().configure( { local::link( "rm1")});
 
             EXPECT_TRUE( local::id() == strong::resource::id{ 1}) << "local::id(): " << local::id(); 
          }
@@ -144,13 +144,13 @@ domain:
    transaction:
       resources:
          - key: rm-mockup
-           name: rm-mockup-dynamic
+           name: rm2
            openinfo:
 
 )";
 
             auto domain = local::domain( configuration);
-            transaction::context().configure( { local::link()});
+            transaction::context().configure( { local::link( "rm2")});
 
             EXPECT_TRUE( tx_begin() == TX_OK);
             // no rm involvement
@@ -175,15 +175,16 @@ domain:
    transaction:
       resources:
          - key: rm-mockup
-           name: rm-mockup-dynamic
+           name: rm3
            openinfo:
 
 )";
 
             auto domain = local::domain( configuration);
-            transaction::context().configure( { local::link()});
+            transaction::context().configure( { local::link( "rm3")});
 
             auto id = local::id();
+            EXPECT_TRUE( id);
 
             EXPECT_TRUE( tx_begin() == TX_OK);
             unittest::rm::registration( id);

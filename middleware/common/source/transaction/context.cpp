@@ -629,14 +629,26 @@ namespace casual
             {
                Trace trace{ "transaction::Context::commit - distributed"};
 
-               message::transaction::commit::Request request;
-               request.trid = transaction.trid;
-               request.process = process;
-               request.involved = transaction.involved();
-
-               // Get reply
+               auto correlation = []( auto& transaction)
                {
-                  auto reply = communication::ipc::call( communication::instance::outbound::transaction::manager::device(), request);
+                  message::transaction::commit::Request request{ process::handle()};
+                  request.trid = transaction.trid;
+                  request.involved = transaction.involved();
+
+                  return communication::device::blocking::send( communication::instance::outbound::transaction::manager::device(), request);
+               }( transaction);
+
+               auto complete = communication::device::blocking::next( communication::ipc::inbound::device(), correlation);
+
+
+
+               if( complete.type() == message::transaction::commit::Reply::type())
+               {
+                  Trace trace{ "transaction::Context::commit - commit reply"};
+                  message::transaction::commit::Reply reply;
+                  serialize::native::complete( std::move( complete), reply);
+
+                  log::line( log::category::transaction, "message: ", reply);
 
                   // We could get commit-reply directly in an one-phase-commit
 
@@ -678,6 +690,17 @@ namespace casual
                   }
 
                   local::raise_if_not_ok( reply.state, "during commit");
+               }
+               else 
+               {
+                  Trace trace{ "transaction::Context::commit - rollback reply"};
+                  message::transaction::rollback::Reply reply;
+                  serialize::native::complete( std::move( complete), reply);
+
+                  log::line( log::category::transaction, "message: ", reply);
+                  
+                  pop_transaction();
+                  code::raise::error( code::tx::rollback, "commit failed - transaction rollback");
                }
             }
          }

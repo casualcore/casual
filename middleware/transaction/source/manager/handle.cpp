@@ -474,7 +474,7 @@ namespace casual
                               default:
                               {
                                  // Something has gone wrong.
-                                 common::log::line( common::log::category::error, result, "prepare failed for: ", transaction.global, " - action: rollback");
+                                 common::log::line( common::log::category::error, result, " prepare failed for: ", transaction.global, " - action: rollback");
                                  common::log::line( common::log::category::verbose::error, "transaction: ", transaction);
 
                                  local::send::resource::request< common::message::transaction::resource::rollback::Request>(
@@ -1233,7 +1233,7 @@ namespace casual
 
                void Prepare::operator () ( message_type& message)
                {
-                  Trace trace{ "transaction::manager::handle::domain::prepare request"};
+                  Trace trace{ "transaction::manager::handle::domain::Prepare request"};
                   common::log::line( log, "message: ", message);
 
                   // Find the transaction
@@ -1264,8 +1264,6 @@ namespace casual
                Directive Prepare::handle( message_type& message, Transaction& transaction)
                {
                   Trace trace{ "transaction::manager::handle::domain::Prepare::handle"};
-
-                  common::log::line( log, "message: ", message);
                   common::log::line( verbose::log, "transaction: ", transaction);
 
                   // We can only get this message if a 'user commit' has
@@ -1371,6 +1369,7 @@ namespace casual
                   Trace trace{ "transaction::manager::handle::domain::Commit::handle"};
                   common::log::line( verbose::log, "message: ", message);
 
+                  // keep the requests correlation, so we can reply with it.
                   transaction.correlation = message.correlation;
 
                   common::log::line( verbose::log, "transaction: ", transaction);
@@ -1470,6 +1469,9 @@ namespace casual
                {
                   Trace trace{ "transaction::manager::handle::domain::Rollback::handle"};
                   common::log::line( verbose::log, "message: ", message);
+
+                  // keep the requests correlation, so we can reply with it.
+                  transaction.correlation = message.correlation;
 
                   using Stage = Transaction::Resource::Stage;
 

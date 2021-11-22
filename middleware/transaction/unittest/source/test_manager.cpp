@@ -18,6 +18,8 @@
 #include "transaction/manager/admin/server.h"
 #include "transaction/manager/admin/transform.h"
 
+#include "transaction/unittest/utility.h"
+
 #include "common/message/dispatch.h"
 #include "common/message/transaction.h"
 #include "common/environment.h"
@@ -115,26 +117,6 @@ domain:
             {
                return casual::domain::manager::unittest::process( configuration::servers, std::forward< C>( configurations)...);
             }
-
-
-            namespace admin
-            {
-               namespace call
-               {
-                  manager::admin::model::State state()
-                  {
-                     serviceframework::service::protocol::binary::Call call;
-                     auto reply = call( manager::admin::service::name::state());
-
-                     manager::admin::model::State result;
-                     reply >> CASUAL_NAMED_VALUE( result);
-
-                     return result;
-                  }
-
-               } // call
-
-            } // admin
 
             namespace send
             {
@@ -382,7 +364,7 @@ domain:
 
          EXPECT_TRUE( local::begin() == common::code::tx::ok);
 
-         auto state = local::admin::call::state();
+         auto state = unittest::state();
 
          EXPECT_TRUE( state.transactions.empty()) << "state.transactions: " << state.transactions;
 
@@ -402,7 +384,7 @@ domain:
          EXPECT_TRUE( local::begin() == common::code::tx::ok);
          EXPECT_TRUE( local::commit() == common::code::tx::ok);
 
-         auto state = local::admin::call::state();
+         auto state = unittest::state();
          EXPECT_TRUE( state.transactions.empty());
 
          for( auto& resource : state.resources)
@@ -420,7 +402,7 @@ domain:
          EXPECT_TRUE( local::begin() == common::code::tx::ok);
 
          // Make sure we make the transaction distributed
-         auto state = local::admin::call::state();
+         auto state = unittest::state();
          EXPECT_TRUE( state.transactions.empty());
 
          // involved
@@ -436,7 +418,7 @@ domain:
 
          EXPECT_TRUE( local::commit() == common::code::tx::ok);
 
-         state = local::admin::call::state();
+         state = unittest::state();
          EXPECT_TRUE( state.transactions.empty());
 
          auto proxies = local::accumulate_metrics( state);
@@ -458,7 +440,7 @@ domain:
          EXPECT_TRUE( local::begin() == common::code::tx::ok);
 
          // Make sure we make the transaction distributed
-         auto state = local::admin::call::state();
+         auto state = unittest::state();
          EXPECT_TRUE( state.transactions.empty());
 
 
@@ -488,7 +470,7 @@ domain:
 
          EXPECT_TRUE( local::commit() == common::code::tx::ok);
 
-         state = local::admin::call::state();
+         state = unittest::state();
          EXPECT_TRUE( state.transactions.empty());
 
          auto proxies = local::accumulate_metrics( state);
@@ -525,7 +507,7 @@ domain:
          EXPECT_TRUE( local::begin() == common::code::tx::ok);
 
          // Make sure we make the transaction distributed
-         auto state = local::admin::call::state();
+         auto state = unittest::state();
          EXPECT_TRUE( state.transactions.empty());
 
          // involved
@@ -559,7 +541,7 @@ domain:
          EXPECT_TRUE( local::begin() == common::code::tx::ok);
 
          // Make sure we make the transaction distributed
-         auto state = local::admin::call::state();
+         auto state = unittest::state();
          EXPECT_TRUE( state.transactions.empty());
 
          // involved
@@ -588,7 +570,7 @@ domain:
          EXPECT_TRUE( local::begin() == common::code::tx::ok);
 
          // Make sure we make the transaction distributed
-         auto state = local::admin::call::state();
+         auto state = unittest::state();
          EXPECT_TRUE( state.transactions.empty());
 
          // involved
@@ -614,7 +596,7 @@ domain:
          EXPECT_TRUE( local::begin() == common::code::tx::ok);
 
          // Make sure we make the transaction distributed
-         auto state = local::admin::call::state();
+         auto state = unittest::state();
          EXPECT_TRUE( state.transactions.empty());
 
          // involved
@@ -630,7 +612,7 @@ domain:
 
          EXPECT_TRUE( local::rollback() == common::code::tx::ok);
 
-         state = local::admin::call::state();
+         state = unittest::state();
          EXPECT_TRUE( state.transactions.empty());
 
          auto proxies = local::accumulate_metrics( state);
@@ -652,7 +634,7 @@ domain:
          EXPECT_TRUE( local::begin() == common::code::tx::ok);
 
          // Make sure we make the transaction distributed
-         auto state = local::admin::call::state();
+         auto state = unittest::state();
          EXPECT_TRUE( state.transactions.empty());
 
          // involved
@@ -668,7 +650,7 @@ domain:
 
          EXPECT_TRUE( local::rollback() == common::code::tx::ok);
 
-         state = local::admin::call::state();
+         state = unittest::state();
          EXPECT_TRUE( state.transactions.empty()) << CASUAL_NAMED_VALUE( state);
 
          auto proxies = local::accumulate_metrics( state);
@@ -694,7 +676,7 @@ domain:
          EXPECT_TRUE( local::begin() == common::code::tx::ok);
 
          // Make sure we make the transaction distributed
-         auto state = local::admin::call::state();
+         auto state = unittest::state();
          EXPECT_TRUE( state.transactions.empty());
 
          // first rm involved
@@ -724,7 +706,7 @@ domain:
 
          EXPECT_TRUE( local::commit() == common::code::tx::ok);
 
-         state = local::admin::call::state();
+         state = unittest::state();
          EXPECT_TRUE( state.transactions.empty());
 
          auto proxies = local::accumulate_metrics( state);
@@ -773,7 +755,7 @@ domain:
          // should be more than enough for TM to complete the rollback.
          process::sleep( std::chrono::milliseconds{ 10});
 
-         auto state = local::admin::call::state();
+         auto state = unittest::state();
 
          // transaction should be rolled back and removed
          EXPECT_TRUE( state.transactions.empty());
@@ -1392,7 +1374,7 @@ domain:
          EXPECT_TRUE( local::begin() == common::code::tx::ok);
 
          // Make sure we make the transaction distributed
-         auto state = local::admin::call::state();
+         auto state = unittest::state();
          EXPECT_TRUE( state.transactions.empty());
 
          // branch involved
@@ -1409,7 +1391,7 @@ domain:
          EXPECT_TRUE( local::commit() == common::code::tx::ok);
 
 
-         state = local::admin::call::state();
+         state = unittest::state();
          EXPECT_TRUE( state.transactions.empty());
 
          auto proxies = local::accumulate_metrics( state);
@@ -1432,7 +1414,7 @@ domain:
          EXPECT_TRUE( local::begin() == common::code::tx::ok);
 
          // Make sure we make the transaction distributed
-         auto state = local::admin::call::state();
+         auto state = unittest::state();
          EXPECT_TRUE( state.transactions.empty());
 
          // involved
@@ -1460,7 +1442,7 @@ domain:
          EXPECT_TRUE( local::commit() == common::code::tx::ok);
 
 
-         state = local::admin::call::state();
+         state = unittest::state();
          EXPECT_TRUE( state.transactions.empty());
 
          auto proxies = local::accumulate_metrics( state);
@@ -1481,7 +1463,7 @@ domain:
          EXPECT_TRUE( local::begin() == common::code::tx::ok);
 
          // Make sure we make the transaction distributed
-         auto state = local::admin::call::state();
+         auto state = unittest::state();
          EXPECT_TRUE( state.transactions.empty());
 
          // involved
@@ -1508,7 +1490,7 @@ domain:
 
          EXPECT_TRUE( local::commit() == common::code::tx::ok);
 
-         state = local::admin::call::state();
+         state = unittest::state();
          EXPECT_TRUE( state.transactions.empty());
 
          auto proxies = local::accumulate_metrics( state);

@@ -303,21 +303,32 @@ namespace casual
 
          void Lookup::remove( const common::transaction::ID& external)
          {
+            Trace trace{ "gateway::group::outbound::state::Lookup::remove"};
+            log::line( verbose::log, "external: ", external);
+
             auto remove_external = [&external]( auto& transaction)
             {
                if( transaction::id::range::global( transaction.internal) != transaction::id::range::global( external))
                   return false;
 
                if( auto found = algorithm::find( transaction.externals, external))
+               {
                   transaction.externals.erase( std::begin( found));
+                  return true;
+               }
                
-               return transaction.externals.empty();
+               return false;
             };
 
             if( auto found = algorithm::find_if( m_transactions, remove_external))
-               m_transactions.erase( std::begin( found));
-            else
+            {
+               if( found->externals.empty())
+                  m_transactions.erase( std::begin( found));
+            }
+            else 
                log::line( log::category::error, code::casual::invalid_semantics, " failed to correlate the external trid: ", external, " - action: ignore");
+
+            log::line( verbose::log, "transactions: ", m_transactions);
          }
 
       } // state
