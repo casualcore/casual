@@ -3,6 +3,10 @@ This is the changelog for `casual` and all changes are listed in this document.
 
 ## [Unreleased]
 
+## [1.5.7] - 2021-11-26
+### Fixes
+- transaction - fix distributed commit when RM fails -> rollback
+
 ## [1.5.6] - 2021-11-15
 
 ### Changed
