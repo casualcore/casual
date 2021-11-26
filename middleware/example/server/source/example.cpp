@@ -139,7 +139,21 @@ namespace casual
                   common::process::sleep( 1s);
                }
 
+<<<<<<< HEAD
                auto recv_buffer = tpalloc( X_OCTET, nullptr, 128);
+=======
+            while (receiving) {
+               if (collected_data.find("sleep before tprecv") != std::string::npos)
+               { // This is a "hack" used by unit tests to delay the tprecv
+               // so that data or a disconnect arrives before the 
+               // tprecv() is called. This is to "force" a timing case.
+               // There is obviously not an absolute guarantee that
+               // the desired effect is achived, but in practice it should work.
+                  common::process::sleep(1s);
+               }
+
+               auto recv_buffer=tpalloc(X_OCTET, nullptr, 128);
+>>>>>>> 4f2775aa (Testcase for disconnect of conversational with different timing.)
                long event=0;
                long recv_len = tptypes( recv_buffer, nullptr, nullptr);
                auto recv_return = tprecv( info->cd, &recv_buffer, &recv_len, TPSIGRSTRT, &event);
