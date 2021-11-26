@@ -11,6 +11,7 @@
 #include "common/buffer/transport.h"
 #include "common/transaction/context.h"
 #include "common/execute.h"
+#include "common/array.h"
 
 #include "common/message/conversation.h"
 
@@ -19,6 +20,8 @@
 
 #include "common/communication/ipc.h"
 #include "common/communication/instance.h"
+
+#include "casual/assert.h"
 
 namespace casual
 {
@@ -269,35 +272,95 @@ namespace casual
 
                local::check::disconnect( value);
 
-               message::conversation::callee::Send message;
+               // There are two possible messages in this situation:
+               //  message::conversation::calle::send
+               //  message::conversation::disconnect
+               // This means we must use communication::device methods that
+               // allows this. The usual
+               //   communication::device[::non]::blocking(receive(communication::ipc::inbound::device(),
+               //                                          message,
+               //                                          value.correlation))
+               // only accepts messages matching the "message" argument ((message.type())
+               // we can possibly use a scheme similar to the "dispatch" used as
+               // the server message pump and set up a scheme where handlers can
+               // be registered and dispatched to. This is not a message
+               // pump as we ony want a "one-shot", so we can not directly use
+               // that (unless it provides for such a mode). It is also a
+               // bit of overkill to set up all that machinery.
+               //
+               // For now,  I am using a more simpler approach and use
+               // primitives provided by Inbound<typename Connector>.
 
-               if( flags.exist( receive::Flag::no_block))
+               // Normally we will get a conversation_send message and
+               // the content of that message is needed. We do NOT need
+               // the deserialized content of a possible (but unusual)
+               // disconnect_message.
+
+               auto receive_message = [&unreserve]( auto& correlation, auto& flags)
                {
-                  if( ! communication::device::non::blocking::receive( 
-                     communication::ipc::inbound::device(), 
-                     message, 
-                     value.correlation))
+                  // types of interest...
+                  constexpr static auto types = common::array::make( message::conversation::callee::Send::type(), message::Type::conversation_disconnect);
+
+                  auto receive_complete = []( auto& correlation, auto& flags)
+                  {
+                     if( flags.exist( receive::Flag::no_block))
+                     {  
+                        return communication::device::non::blocking::next(
+                           communication::ipc::inbound::device(),
+                           types,
+                           correlation);
+                     }
+
+                     return communication::device::blocking::next(
+                        communication::ipc::inbound::device(),
+                        types,
+                        correlation);
+                  };
+
+                  auto complete = receive_complete( correlation, flags);
+
+                  if( ! complete)
                   {
                      unreserve.release();
                      code::raise::error( code::xatmi::no_message);
                   }
-               }
-               else
-               {
-                  communication::device::blocking::receive( 
-                     communication::ipc::inbound::device(), 
-                     message, 
-                     value.correlation);
-               }
 
+                  switch( complete.type())
+                  {
+                     case message::Type::conversation_send:
+                     {
+                        // happy path
+                        message::conversation::callee::Send message;
+                        serialize::native::complete( complete, message);
+                        return message;
+                     }
+                     case message::Type::conversation_disconnect:
+                     {
+                        // "error" path
+                        // do as in local::check::disconnect().
+                        throw exception::conversation::Event{ Event::disconnect};
+                     }
+                     default:
+                     {
+                        // fatal path - not possible
+                        casual::terminate( "unexpected message type consumed: ", complete);
+                     }
+                  }
+               };
+
+               auto message = receive_message( value.correlation, flags);
                log::line( verbose::log, "message: ", message);
-
 
                receive::Result result;
                result.buffer = std::move( message.buffer);
 
-
                // check if other side has done a tpreturn
+               // This should/can only happen when we are "initiator"
+               // of the conversation. A tpreturn in the "initiator"
+               // terminates that service (assuming it is part of an invoked
+               // service), and not the conversation. Indirectly
+               // it terminates the conversation but that is a consequence
+               // of the termination of the initiator
 
                using Result = decltype( message.code.result);
                if( message.code.result != Result::absent)
@@ -309,10 +372,10 @@ namespace casual
                      default: result.event = decltype( result.event.type())::service_error; break;
                   }
                   
-                  // we're done with this conversations
+                  // we're done with this conversation,
+                  // descriptor will be unreserved
                   return result;
                }
-               
                
                if( message.duplex == decltype( message.duplex)::send)
                {
@@ -323,7 +386,7 @@ namespace casual
                log::line( verbose::log, "value: ", value);
                log::line( verbose::log, "result: ", result);
 
-               unreserve.release();
+               unreserve.release(); // keep descriptor for conversation
 
                return result;
             }

@@ -282,11 +282,38 @@ domain:
          EXPECT_TRUE( tperrno == TPENOENT);
       }
 
-      TEST( casual_xatmi_conversation, connect__TPSENDONLY__conversation_service)
+      TEST( casual_xatmi_conversation, connect__TPSENDONLY_discon__conversation_service)
       {
          unittest::Trace trace;
 
          auto domain = local::domain();
+         // What happens in this test?
+         // The connect goes to casual/example/conversation. This is a copy of
+         // the echo service. It is wriiten as a "non-conversational service"
+         // and does an immediate tpreturn with the input data and service success.
+         // It ignores the TPRECVONLY flag it gets when invoked. It is
+         // not normal to do a tpreturn when not in control of the session.
+         // The tpreturn in the service is "unconditional" and
+         // should result in a TPEV_SVCERR event to the caller and
+         // failed transaction if one was active. In this case the service
+         // has "join" so no transaction is active.
+         //
+         // This code issues a tpdiscon. This results in a message in the
+         // casual log from the example-server with the following at the end
+         // (line split):
+         //   ...|casual-example-server||||error|[casual:internal-unexpected-value]
+         //   message type: conversation_disconnect not recognized - action: discard
+         // Why?
+         // The caller side still believes that the conversation is active
+         // so the tpdiscon() is successful and sends a disconnect message.
+         // When this is received in the server/callee there is no active
+         // conversation and the message is discarded causing the log message.
+         // The mesage sent to caller by the tpreturn is probably also
+         // discarded, but this is probably not logged by default logging
+         // "(error|warning|information)".
+         //
+         // This "test" is repeated below but with
+         // casual/example/conversation_recv_send instead.
 
          auto descriptor = tpconnect( "casual/example/conversation", nullptr, 0, TPSENDONLY);
          EXPECT_TRUE( descriptor != -1);
@@ -299,6 +326,59 @@ domain:
 #endif
       }
 
+      TEST( casual_xatmi_conversation, connect__TPSENDONLY_discon__conversation_recv_send_service)
+      {
+         unittest::Trace trace;
+
+         auto domain = local::domain();
+         // What happens in this test?
+         // The connect goes to casual/example/conversation_recv_send. This
+         // service is conversational and will call tprecv() to wait for
+         // more input. This tprecv() should get an event because of the
+         // tpdiscon() called in the test. What happens in the server can not
+         // easily be verified by the test case!
+
+         const std::string_view payload {"disconnect follows"};
+         auto connection = local::connect::invoke( "casual/example/conversation_recv_send", payload, TPSENDONLY);
+         EXPECT_TRUE( connection) << CASUAL_NAMED_VALUE( connection);
+         EXPECT_TRUE( connection.error == 0) << CASUAL_NAMED_VALUE( connection);
+
+         // Sleep for a short time before disconnect. This in practice
+         // guarantees that the tprecv() in the service is called before
+         // the disconnect message arrives. 
+         common::process::sleep( 1s);
+
+         EXPECT_TRUE( tpdiscon( connection.descriptor) != -1);
+
+#ifdef HANG_WORKAROUND
+         common::process::sleep( 200ms);
+#endif
+      }
+
+      TEST( casual_xatmi_conversation, connect__TPSENDONLY_service_sleep_before_recv_discon__conversation_recv_send_service)
+      {
+         unittest::Trace trace;
+
+         auto domain = local::domain();
+         // What happens in this test?
+         // This is the same as the previous test, with the small twist
+         // that the service is instructed to sleep for a short time
+         // before calling tprecv(). This is to cause the disconnect message to
+         // arrive before the tprecv() is called. This causes different
+         // timing and can cause a different code path to detect the disconnect.
+         // It should still work. 
+
+         const std::string_view payload {"disconnect follows sleep before tprecv"};
+         auto connection = local::connect::invoke( "casual/example/conversation_recv_send", payload, TPSENDONLY);
+         EXPECT_TRUE( connection) << CASUAL_NAMED_VALUE( connection);
+         EXPECT_TRUE( connection.error == 0) << CASUAL_NAMED_VALUE( connection);
+
+         EXPECT_TRUE( tpdiscon( connection.descriptor) != -1);
+
+#ifdef HANG_WORKAROUND
+         common::process::sleep( 200ms);
+#endif
+      }
 
       TEST( casual_xatmi_conversation, connect__TPRECVONLY__echo_service)
       {

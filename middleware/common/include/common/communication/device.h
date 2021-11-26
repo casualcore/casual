@@ -152,6 +152,26 @@ namespace casual
                std::forward< P>( policy));
          }
 
+         // Added for completeness, there are variants that accepts a single type and correlation,
+         // only correlation, a single type or one of several types. 
+         // Conversational uses multiple types and correlation.
+         //! Tries to find the first logic complete message with any of the types in @p types
+         //! and with correlation @p correlation
+         //! `types` has to be an _iterateable_ (container) that holds message::Type's
+         //!
+         //! @return a logical complete message if there is one,
+         //!         otherwise the message has absent_message as type
+         template< typename R, typename P>
+         [[nodiscard]] auto next( R&& types, const correlation_type& correlation, P&& policy) 
+            // `types` is a temple to enable other forms of containers than std::vector
+            -> std::enable_if_t< traits::is::same_v< traits::remove_cvref_t< decltype( *std::begin( types))>, common::message::Type>, complete_type>
+         {
+            return select(
+               [&types, &correlation]( auto& complete){ return (! common::algorithm::find( types, complete.type()).empty()) 
+                                                  && complete.correlation() == correlation;},
+               std::forward< P>( policy));
+         }
+
          //! Tries to find the logic complete message with correlation @p correlation
          //!
          //! @return a logical complete message if there is one,
