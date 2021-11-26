@@ -115,6 +115,113 @@ namespace casual
                         }
                      }
 
+                     // Helper to check for "pending events". It is intended to
+                     // be called immediately before doing the "send" in a
+                     // tpsend. This is to detect the exceptional situations
+                     // the other end has issused a disconnect (tpsend in
+                     // subordinate tpsend) or has done a tpreturn (tpsend
+                     // in initiator)  
+                     common::Flags< Event> pending_event(common::service::conversation::state::descriptor::Value value)
+                     {
+                        common::Flags< Event> result_event{}; // assume no return event!
+
+                        // There can possibly be pending messages that effecitively
+                        // terminate the conversation.
+                        // * In the "initiator" it can happen that the subordinate has
+                        //   done a tpreturn while not in control of the conversation
+                        // * in the subordinate there can be a conversation_disconnect
+                        //   caused by a disconnect call executed by the initiator.
+                        // Not detecting and handling theese messages MAY be acceptable
+                        // but the XATMI spec documents events for reporting events
+                        // in the above cases (TPEV_SVCFAIL or TPEV_SVCERR in the
+                        // first case, TPEV_DISCONIMM in the second).
+                        //
+                        // Note that thera are always timing involved. The messages
+                        // can "arrive" between us testing for them and when
+                        // we do the real "send".
+                        // in that case a future call can detect the situation.
+
+                        // We can possibly use the generic dispatch (consume?)
+                        // machinery to handle this. A low level soultion is to
+                        // do a non-blocking recive for conversation_send or
+                        // conversation_disconnect. As we are in control of the
+                        // conversation an inbound conversation_send can only be
+                        // the result of a subordinate tpreturn, while a
+                        // conversation_disconnect is the result of an initiator
+                        // disconnect. 
+
+                        message::conversation::callee::Send inp_message;
+                        std::vector<common::message::Type> types{
+                           inp_message.type(),
+                           message::Type::conversation_disconnect};
+
+                        // Buffer for serialized messages
+                        decltype(communication::device::non::blocking::next(
+                              communication::ipc::inbound::device(),
+                              types,
+                              value.correlation)) complete_msg;
+                        // non-blocking tprecv...
+                        complete_msg = communication::device::non::blocking::next(
+                           communication::ipc::inbound::device(),
+                           types,
+                           value.correlation);
+
+                        switch (complete_msg.type())
+                        {
+                        case message::Type::absent_message:
+                           // no message, this is the "normal" scenario
+                           break;
+
+                        case message::Type::conversation_send:
+                           {
+                              // tpreturn by the subordinate when not in control
+                              // Need to generate TPEV_SVCFAIL or TPEV_SVCERR
+                              serialize::native::complete( complete_msg, inp_message);
+                              using Result = decltype( inp_message.code.result);
+                              switch( inp_message.code.result)
+                              {
+                                 case Result::service_fail:
+                                    result_event = decltype( result_event.type())::service_fail;
+                                    break;
+                                 case Result::service_error:
+                                    result_event = decltype( result_event.type())::service_error;
+                                    break;
+                                 default:
+                                    // Anything else is abnormal in this situation and should not happen.
+                                    //  
+                                    log::line( log::category::error,
+                                             code::casual::internal_unexpected_value,
+                                             " message type: ", complete_msg.type(),
+                                             " with unexpected code.result: ",
+                                             inp_message.code.result, 
+                                             " handled as service_error");
+                                    result_event = decltype( result_event.type())::service_error; 
+                                    break;
+                              }
+                           break;
+                           }
+                        case message::Type::conversation_disconnect:
+                           // do as in local::check::disconnect().
+                           throw exception::conversation::Event{ Event::disconnect};
+                           break;
+                        default:
+                           // should never happen! The next() above only accept
+                           // conversation_send and conversation_disconnect.
+                           // And absent_message can occur and when
+                           // neither has arrived. Anything else should be
+                           // the result of a coding error/bug.
+                           // Log or dump? A defensive strategy is to treat as
+                           // a disconnect. (Treat as disconnect in subordinate and
+                           // TPEV_SVCERR in initiator?)
+                           log::line( log::category::error, code::casual::internal_unexpected_value,
+                              " message type: ", complete_msg.type(),
+                              " not expected - action: treated as disconnect");
+                           throw exception::conversation::Event{ Event::disconnect};
+                           break;
+                        }
+                        return result_event;
+                     }   
+
                   } // check
 
                } // <unnamed>
@@ -243,19 +350,56 @@ namespace casual
                local::validate::send( value);
 
                value.duplex = local::duplex::convert( flags);
-
                auto unreserve = common::execute::scope( [&](){ m_state.descriptors.unreserve( descriptor);});
 
                local::check::disconnect( value);
 
-               auto message = local::prepare::message< message::conversation::caller::Send>( value, std::move( buffer));
-               message.duplex = local::duplex::invert( value.duplex);
+               // In this situation we may have some odd situations. We are in
+               // control of the conversation (checked by
+               // local::validate::send( value) above) and about to do a "send".
+               // There can possibly be pending messages that effectively
+               // terminate the conversation.
+               // * In the "initiator" it can happen that the subordinate has
+               //   done a tpreturn while not in control of the conversation
+               // * in the subordinate there can be a conversation_disconnect
+               //   caused by a disconnect call executed by the initiator.
+               // Not detecting and handling these messages MAY be acceptable,
+               // but the XATMI spec documents events for reporting events
+               // in the above cases. TPEV_SVCFAIL or TPEV_SVCERR in the
+               // first case, TPEV_DISCONIMM in the second.
+               //
+               // Note that thera are always timing involved. The messages
+               // can "arrive" between us testing for them and the "send"
+               // issued below. The situation will in that case be detected
+               // on a future call (potentially many calls into the future
+               // if many send are done in sequence). This is what makes it
+               // "maybe acceptable" to not detect the sitiation. But for
+               // early detection, we should check for this.
 
-               communication::device::blocking::send( value.process.ipc, message);
+               // We can possibly use the generic dispatch (consume?)
+               // machinery to handle this. A low level soultion is to
+               // do a non-blocking recive for conversation_send or
+               // conversation_disconnect. As we are in control of the
+               // conversation an inbound conversation_send can only be
+               // the result of a subordinate tpreturn, while a
+               // conversation_disconnect is the result of an initiator
+               // disconnect. 
+               // This low level impementation is in check::pending_event()
+               common::Flags< Event> result_event = local::check::pending_event( value);
 
-               unreserve.release();
+               if (result_event.empty())
+               {
+                  // normal case! No pending event so prepare and send data
+                  auto message = local::prepare::message< message::conversation::caller::Send>( value, std::move( buffer));
 
-               return {};
+                  message.duplex = local::duplex::invert( value.duplex);
+
+                  communication::device::blocking::send( value.process.ipc, message);
+
+                  unreserve.release();
+               }
+
+               return result_event;
 
             }
 
@@ -356,8 +500,8 @@ namespace casual
 
                // check if other side has done a tpreturn
                // This should/can only happen when we are "initiator"
-               // of the conversation. A tpreturn in the "initiator"
-               // terminates that service (assuming it is part of an invoked
+               // of the conversation. A tpreturn in the "initiator" would
+               // terminate that service (assuming it is part of an invoked
                // service), and not the conversation. Indirectly
                // it terminates the conversation but that is a consequence
                // of the termination of the initiator

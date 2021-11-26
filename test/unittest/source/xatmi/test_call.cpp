@@ -310,13 +310,8 @@ domain:
          EXPECT_TRUE( tx_rollback() == TX_OK);
       }
 
-      // Test disabled for now. There seems to be a somewhat generic "bug"
-      // in casual related to reporting an error because of
-      // illegal flags. Discovered while adding tests for conversational.
-      // Added this test for ordinary tpcall services, and the same
-      // problem appears. Invalid flags should give TPEINVAL, but gives
-      // TPESYSTEM. Possibly related to the exception raised in Flags::convert().
-      TEST( test_xatmi_call, DISABLED_tpcall_service_echo_invalid_flag__expect_TPEINVAL)
+      // Test with invalid arguments. Invalid flags should give TPEINVAL.
+      TEST( casual_xatmi, tpcall_service_echo_invalid_flag__expect_TPEINVAL)
       {
          common::unittest::Trace trace;
 
@@ -324,8 +319,34 @@ domain:
 
          auto buffer = local::allocate( 128);
          auto len = tptypes( buffer, nullptr, nullptr);
+         // TPSENDONLY is an invalid flag to tpcall. There are many more
+         // possible invalid arguments or flags and we try some of them.
+         EXPECT_TRUE( tpcall( "casual/example/echo", buffer, 128, &buffer, &len, TPSENDONLY) == -1);
+         EXPECT_TRUE( tperrno == TPEINVAL) << "tperrno: " << tperrnostring( tperrno);
 
-         EXPECT_TRUE( tpcall( "casual/example/echo", buffer, 128, &buffer, &len, 0) == -1);
+         EXPECT_TRUE( tpcall( "casual/example/echo", buffer, 128, &buffer, &len, TPRECVONLY) == -1);
+         EXPECT_TRUE( tperrno == TPEINVAL) << "tperrno: " << tperrnostring( tperrno);
+
+         EXPECT_TRUE( tpcall( "casual/example/echo", buffer, 128, &buffer, &len, TPSENDONLY|TPRECVONLY) == -1);
+         EXPECT_TRUE( tperrno == TPEINVAL) << "tperrno: " << tperrnostring( tperrno);
+
+         EXPECT_TRUE( tpcall( "casual/example/echo", buffer, 128, &buffer, &len, TPRECVONLY) == -1);
+         EXPECT_TRUE( tperrno == TPEINVAL) << "tperrno: " << tperrnostring( tperrno);
+
+         EXPECT_TRUE( tpcall( "casual/example/echo", buffer, 128, &buffer, &len, TPTRAN) == -1);
+         EXPECT_TRUE( tperrno == TPEINVAL) << "tperrno: " << tperrnostring( tperrno);
+
+         EXPECT_TRUE( tpcall( "casual/example/echo", buffer, 128, &buffer, &len, TPNOREPLY) == -1);
+         EXPECT_TRUE( tperrno == TPEINVAL) << "tperrno: " << tperrnostring( tperrno);
+
+         EXPECT_TRUE( tpcall( "casual/example/echo", buffer, 128, &buffer, &len, TPGETANY) == -1);
+         EXPECT_TRUE( tperrno == TPEINVAL) << "tperrno: " << tperrnostring( tperrno);
+
+         EXPECT_TRUE( tpcall( "casual/example/echo", buffer, 128, &buffer, &len, TPCONV) == -1);
+         EXPECT_TRUE( tperrno == TPEINVAL) << "tperrno: " << tperrnostring( tperrno);
+
+         // nullptr for service name
+         EXPECT_TRUE( tpcall( nullptr, buffer, 128, &buffer, &len, 0) == -1);
          EXPECT_TRUE( tperrno == TPEINVAL) << "tperrno: " << tperrnostring( tperrno);
 
          tpfree( buffer);

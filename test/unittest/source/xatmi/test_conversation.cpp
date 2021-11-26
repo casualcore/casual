@@ -577,7 +577,7 @@ domain:
 
          auto domain = local::domain();
 
-         // This calls the conversational2 service. This test:
+         // This calls the conversation_recv_send service. This test:
          // * has a started transaction
          // * send data in the connect
          // * connnects with TPRECVONLY ( i.e. transfers control of conversation).
@@ -874,6 +874,348 @@ domain:
          common::process::sleep( 200ms);
 #endif
       }
+
+      TEST( test_xatmi_conversation, connect_send_TPSENDONLY_service_tpreturn_send__conversation_recv_send_service)
+      {
+         common::unittest::Trace trace;
+
+         auto domain = local::domain();
+         // In this test the called service does a tpreturn() when
+         // NOT in control of the conversation. This is a kind of
+         // "service side abort". (Only the initiator of a conversation
+         // can "disconnect" it. Closest possibility in server side is
+         // tpreturn with TPFAIL.)
+         // According to the XATMI spec a tpsend (in the initiator) should get
+         // either TPEV_SVCFAIL or TPEVSVCERR in this case. Another
+         // possiblity is of course success on the send if it is not yet
+         // known that the subordinate has done a tpreturn. In that case
+         // the next call will get the notification (can be a tpsend or
+         // tprecv depending on circumstances!).
+         // What event is received in initiator depends on the tpreturn.
+         // A tpreturn with TPFAIL and no data buffer can give TPEV_SVCFAIL
+         // while all other variants give TPEV_SVCERR. In this test
+         // the service does a tpreturn with TPFAIL and no data.
+         //
+         // Relative timing of the tpsend and the callee doing the "return"
+         // might affect behaviour.
+         // 1. connect with data, TPSENDONLY
+         // 2. send data, including a substring "execute tpreturn TPFAIL no data". Keep
+         //    control of the conversation
+         // 3. (callee will do a tpreturn)
+         // 4. short sleep
+         // 5. tpsend, hand over control
+         // 6. tprecv
+         //
+         // In the above scenario (5) currently succeeds and (6)
+         // gives the TPEV_SVCFAIL. Seems as if caller Casual does not process
+         // the conversation_send sent by the tpreturn until tprecv is called.
+         // More tpsend() calls inserted at (5) also succeeds! This strengthens
+         // the hypothesis that incoming messages are not processed until the
+         // tprecv is called.
+         // The casual log includes an entry with:
+         // error|[casual:internal-unexpected-value] message type: conversation_send not recognized - action: discard
+         // This is presumably from the message that was sent from initiator
+         // is generated when the message is processed by the server after the
+         // service tpreturn().
+
+         const std::string_view payload {"connect data"};
+         auto connection = local::connect::invoke( "casual/example/conversation_recv_send", payload, TPSENDONLY);
+         EXPECT_TRUE( connection) << CASUAL_NAMED_VALUE( connection);
+         EXPECT_TRUE( connection.error == 0) << CASUAL_NAMED_VALUE( connection);
+
+         {
+            std::string send_data {" execute tpreturn TPFAIL no data"};
+            auto result = local::send::invoke ( connection.descriptor, send_data, TPSIGRSTRT);
+            EXPECT_TRUE( result) << CASUAL_NAMED_VALUE( result);
+         }
+
+         // to give the service time to call tpreturn() before we call tpsend()
+         common::process::sleep( 500ms);
+
+         {
+            std::string send_data {" send data"};
+            auto result = local::send::invoke ( connection.descriptor, send_data, TPSIGRSTRT);
+            EXPECT_TRUE( result.retval == -1) << CASUAL_NAMED_VALUE( result);
+            EXPECT_TRUE( result.error == TPEEVENT) << CASUAL_NAMED_VALUE( result);
+            EXPECT_TRUE( result.event == TPEV_SVCFAIL) << CASUAL_NAMED_VALUE( result);
+         }
+
+         // The following is in the test code because an earlier
+         // version did not report an error on the tpsend above!
+         // With that version of Casual the send succeded and the
+         // event TPEV_SVCFAIL finally occured on the tprecv.
+         {
+            // If the previous send got an event TPEV_SVCFAIL
+            // this should fail with TPEBADDESC.
+            std::string send_data {" send data and handover"};
+            auto result = local::send::invoke ( connection.descriptor, send_data, TPSIGRSTRT|TPRECVONLY);
+            EXPECT_TRUE( result.retval == -1) << CASUAL_NAMED_VALUE(result);
+            EXPECT_TRUE( result.error == TPEBADDESC) << CASUAL_NAMED_VALUE(result);
+         }
+
+         {
+            // A receive should fail in some way as the callee terminated
+            // the conversation.
+            auto result = local::receive::invoke( connection.descriptor, TPSIGRSTRT);
+            EXPECT_TRUE( result.retval == -1) << CASUAL_NAMED_VALUE(result);
+            EXPECT_TRUE( result.error == TPEBADDESC) << CASUAL_NAMED_VALUE(result);
+         }
+
+         // and the conversation descriptor should now be invalid
+         EXPECT_TRUE( tpdiscon( connection.descriptor) == -1);
+
+#ifdef HANG_WORKAROUND
+         common::process::sleep( 200ms);
+#endif
+      }
+
+      TEST( casual_xatmi_conversation, DISABLED_connect_send_TPSENDONLY_service_tpreturn_with_data_send__conversation_recv_send_service)
+      {
+         common::unittest::Trace trace;
+
+         auto domain = local::domain();
+         // This test is similiar to the previous test.
+         //
+         // 1. connect with data, TPSENDONLY
+         // 2. send data, including a substring 
+         //    "execute tpreturn TPFAIL with data".
+         //    Keep control of the conversation
+         // 3. (callee will do a tpreturn)
+         // 4. short sleep
+         // 5. tpsend, hand over control (expected to fail...)
+         // 6. tprecv (expected to fail)
+         //
+         // The difference to the previous test case is the expected
+         // event on the 2:nd tpsend (5).
+
+         const std::string_view payload {"connect data"};
+         auto connection = local::connect::invoke( "casual/example/conversation_recv_send", payload, TPSENDONLY);
+         EXPECT_TRUE( connection) << CASUAL_NAMED_VALUE( connection);
+         EXPECT_TRUE( connection.error == 0) << CASUAL_NAMED_VALUE( connection);
+
+         {
+            std::string send_data {" execute tpreturn TPFAIL with data"};
+            auto result = local::send::invoke ( connection.descriptor, send_data, TPSIGRSTRT);
+            EXPECT_TRUE( result) << CASUAL_NAMED_VALUE( result);
+         }
+
+         // to give the service time to call tpreturn() before we call tpsend()
+         common::process::sleep( 500ms);
+
+         {
+            std::string send_data {" send data"};
+            auto result = local::send::invoke ( connection.descriptor, send_data, TPSIGRSTRT);
+            EXPECT_TRUE( result.retval == -1) << CASUAL_NAMED_VALUE( result);
+            EXPECT_TRUE( result.error == TPEEVENT) << CASUAL_NAMED_VALUE( result);
+            // TPEV_SVCERR is expected as no data is allowed in the tpreturn TPFAIL
+            // when not in control of the session. 
+            EXPECT_TRUE( result.event == TPEV_SVCERR) << CASUAL_NAMED_VALUE( result);
+         }
+
+         // The following is n the test code because an earlier
+         // version did not report an error on the tpsend above!
+         // With that version of Casual the send succeded and the
+         // tprecv got an TPEV_SVCFAIL
+         {
+            // If the previous send got an event TPEV_SVCFAIL
+            // this should fail with TPEBADDESC.
+            std::string send_data {" send data and handover"};
+            auto result = local::send::invoke ( connection.descriptor, send_data, TPSIGRSTRT|TPRECVONLY);
+            EXPECT_TRUE( result.retval == -1) << CASUAL_NAMED_VALUE(result);
+            EXPECT_TRUE( result.error == TPEBADDESC) << CASUAL_NAMED_VALUE(result);
+         }
+
+         {
+            // A receive should fail in some way as the callee terminated
+            // the conversation.
+            auto result = local::receive::invoke( connection.descriptor, TPSIGRSTRT);
+            EXPECT_TRUE( result.retval == -1) << CASUAL_NAMED_VALUE(result);
+            EXPECT_TRUE( result.error == TPEBADDESC) << CASUAL_NAMED_VALUE(result);
+         }
+
+         // and the conversation descriptor should now be invalid
+         EXPECT_TRUE( tpdiscon( connection.descriptor) == -1);
+
+#ifdef HANG_WORKAROUND
+         common::process::sleep( 200ms);
+#endif
+      }
+
+      TEST( test_xatmi_conversation, connect_send_TPRECVONLY_service_return__conversation_recv_send_service)
+      {
+         common::unittest::Trace trace;
+
+         auto domain = local::domain();
+         // What happens in this test?
+         // This is a test of a scenario where the service misbehaves!
+         // The service is instructed to do a "return" (instead of the expected
+         // tpreturn(). This is against the rules. It might happen because of
+         // coding errors! 
+         // * connect with data, TPSENDONLY
+         // * send data, including a substring "execute return". Hand over
+         //   control of conversation.
+         // * (callee will do a return)
+         // * tprecv
+
+         const std::string_view payload {"connect data"};
+         auto connection = local::connect::invoke( "casual/example/conversation_recv_send", payload, TPSENDONLY);
+         EXPECT_TRUE( connection) << CASUAL_NAMED_VALUE( connection);
+         EXPECT_TRUE( connection.error == 0) << CASUAL_NAMED_VALUE( connection);
+
+         {
+            std::string send_data {" execute return"};
+            auto result = local::send::invoke ( connection.descriptor, send_data, TPSIGRSTRT|TPRECVONLY);
+            EXPECT_TRUE( result) << CASUAL_NAMED_VALUE( result);
+         }
+
+         {
+            // The receive should fail in some way as the callee terminates
+            // in a bad way
+            auto result = local::receive::invoke( connection.descriptor, TPSIGRSTRT);
+            EXPECT_TRUE( result.retval == -1) << CASUAL_NAMED_VALUE( result);
+            EXPECT_TRUE( result.error == TPEEVENT) << CASUAL_NAMED_VALUE( result);
+            EXPECT_TRUE( result.event == TPEV_SVCERR) << CASUAL_NAMED_VALUE( result);;
+         }
+
+         // and the conversation descriptor should now be invalid
+         EXPECT_TRUE( tpdiscon( connection.descriptor) == -1);
+
+#ifdef HANG_WORKAROUND
+         common::process::sleep( 200ms);
+#endif
+      }
+
+      TEST( test_xatmi_conversation, connect_send_send_TPRECVONLY_service_return_recv__conversation_recv_send_service)
+      {
+         common::unittest::Trace trace;
+
+         auto domain = local::domain();
+         // What happens in this test?
+         // similar to the test above, but in this test the called service
+         // does not have control of the conversation when doing the "return"
+         // This is a test of a scenario where the service misbehaves!
+         // The service is instructed to do a "return" (instead of the expected
+         // tpreturn(). This is against the rules. It might happen because of
+         // coding errors!
+         // There might be diferent timing cases that need to be considered!
+         // Relative timing of the tpsend and the callee doing the "return"
+         // might affect behaviour.   
+         // * connect with data, TPSENDONLY
+         // * send data, including a substring "execute return". Keep
+         //   control of the conversation
+         // * (callee will do a return)
+         // * tpsend, hand over control
+         // * tprecv
+         
+         const std::string_view payload {"connect data"};
+         auto connection = local::connect::invoke( "casual/example/conversation_recv_send", payload, TPSENDONLY);
+         EXPECT_TRUE( connection) << CASUAL_NAMED_VALUE( connection);
+         EXPECT_TRUE( connection.error == 0) << CASUAL_NAMED_VALUE( connection);
+
+         {
+            std::string send_data {" execute return"};
+            auto result = local::send::invoke ( connection.descriptor, send_data, TPSIGRSTRT);
+            EXPECT_TRUE( result) << CASUAL_NAMED_VALUE( result);
+         }
+
+         {
+            std::string send_data {" send data"};
+            auto result = local::send::invoke ( connection.descriptor, send_data, TPSIGRSTRT|TPRECVONLY);
+            EXPECT_TRUE( result) << CASUAL_NAMED_VALUE( result);
+         }
+
+         {
+            // The receive should fail in some way as the callee terminates
+            // in a bad way
+            auto result = local::receive::invoke( connection.descriptor, TPSIGRSTRT);
+            EXPECT_TRUE( result.retval == -1) << CASUAL_NAMED_VALUE( result);
+            EXPECT_TRUE( result.error == TPEEVENT) << CASUAL_NAMED_VALUE( result);
+            EXPECT_TRUE( result.event == TPEV_SVCERR) << CASUAL_NAMED_VALUE( result);;
+         }
+
+         // and the conversation descriptor should now be invalid
+         EXPECT_TRUE( tpdiscon( connection.descriptor) == -1);
+
+#ifdef HANG_WORKAROUND
+         common::process::sleep( 200ms);
+#endif
+      }
+
+
+      TEST( test_xatmi_conversation, connect_send_sleep_send_TPRECVONLY_service_return_recv__conversation_recv_send_service)
+      {
+         common::unittest::Trace trace;
+
+         auto domain = local::domain();
+         // What happens in this test?
+         // similar to the test above, but in this test the called service
+         // does not have control of the conversation when doing the "return"
+         // This is a test of a scenario where the service misbehaves!
+         // The service is instructed to do a "return" (instead of the expected
+         // tpreturn(). This is against the rules. It might happen because of
+         // coding errors!
+         // There might be diferent timing cases that need to be considered!
+         // Relative timing of the tpsend and the callee doing the "return"
+         // might affect behaviour.   
+         // * connect with data, TPSENDONLY
+         // * send data, including a substring "execute return". Keep
+         //   control of the conversation
+         // * (callee will do a return)
+         // * sleep for a short time
+         // * tpsend, hand over control
+         // * tprecv
+         
+         const std::string_view payload {"connect data"};
+         auto connection = local::connect::invoke( "casual/example/conversation_recv_send", payload, TPSENDONLY);
+         EXPECT_TRUE( connection) << CASUAL_NAMED_VALUE( connection);
+         EXPECT_TRUE( connection.error == 0) << CASUAL_NAMED_VALUE( connection);
+
+         {
+            std::string send_data {" execute return"};
+            auto result = local::send::invoke ( connection.descriptor, send_data, TPSIGRSTRT);
+            EXPECT_TRUE( result) << CASUAL_NAMED_VALUE( result);
+         }
+
+         {
+            // Should this send fail or succeed? According to XATMI spec
+            // (C506.pdf) a tpsend can fail with event.
+            // In this test case we sleep 1 second before the send.
+            // This gives the callee time to do its return before we 
+            // call tpsend().
+            // The effect in Casual (currently) seems to be that
+            // this send fails with error 12 (=TPESYSTEM).
+            // This in turn seems to be because the example_server
+            // hosting the servicve has exited! This most likely as a result of
+            // the service "misbehaving". Given that the server has exited
+            // a TPESYSTEM is not unreasonable.
+            // Further development. When code was added to tpsend to
+            // add handling of tpreturn in subordinate this changed to TPEV_SVCERR!
+            common::process::sleep( 1s);
+            std::string send_data {" send data"};
+            auto result = local::send::invoke ( connection.descriptor, send_data, TPSIGRSTRT|TPRECVONLY);
+            EXPECT_TRUE( result.retval == -1) << CASUAL_NAMED_VALUE( result);
+            //EXPECT_TRUE( result.error == TPESYSTEM) << CASUAL_NAMED_VALUE( result);
+            EXPECT_TRUE( result.error == TPEEVENT) << CASUAL_NAMED_VALUE( result);
+            EXPECT_TRUE( result.event == TPEV_SVCERR) << CASUAL_NAMED_VALUE( result);
+         }
+
+         {
+            // The receive should fail in some way as the callee terminates
+            // in a bad way. And it seems as if the error we get in this
+            // scenario is TPEBADDESC...  
+            auto result = local::receive::invoke( connection.descriptor, TPSIGRSTRT);
+            EXPECT_TRUE( result.retval == -1) << CASUAL_NAMED_VALUE( result);
+            EXPECT_TRUE( result.error == TPEBADDESC) << CASUAL_NAMED_VALUE( result);
+         }
+
+         // and the conversation descriptor should now be invalid
+         EXPECT_TRUE( tpdiscon( connection.descriptor) == -1);
+
+#ifdef HANG_WORKAROUND
+         common::process::sleep( 200ms);
+#endif
+      }
+
 
       TEST( test_xatmi_conversation, interdomain_connect_send_disconnect)
       {
