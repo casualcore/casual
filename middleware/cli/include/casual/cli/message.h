@@ -195,7 +195,7 @@ namespace casual
             {
                static void stream( const M& message)
                {
-                  std::cout << message << '\n';
+                  common::stream::write( std::cout, message, '\n');
                }
             };
 

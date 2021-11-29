@@ -126,8 +126,6 @@ namespace casual
                   // trim ws.
                   value = algorithm::find_if( range::reverse( algorithm::find_if( value, is_ws)), is_ws);
 
-                  using time_unit = platform::time::unit;
-
                   auto split = algorithm::divide_if( value, []( auto c)
                   {
                      return c < '0' || c > '9';
@@ -136,7 +134,7 @@ namespace casual
                   // extract the count part
                   auto count = [number = std::get< 0>( split)]( )
                   {
-                     using count_type = decltype( time_unit{}.count());
+                     using count_type = decltype( platform::time::unit{}.count());
                      if( number)
                         return common::string::from< count_type>( string::view::make( number));
                      return count_type{ 0};
@@ -145,13 +143,21 @@ namespace casual
                   // extract the unit part, and convert to std::string_view to be able to compare to char*
                   auto unit = string::view::make( std::get< 1>( split));
 
-                  if( unit.empty() || unit == "s") return std::chrono::seconds( count);
-                  if( unit == "ms") return std::chrono::duration_cast< time_unit>( std::chrono::milliseconds( count));
+                  if( unit.empty() || unit == "s") return std::chrono::seconds( count);                     
+                  if( unit == "us") return std::chrono::microseconds( count);
+                  if( unit == "ms") return std::chrono::milliseconds( count);
                   if( unit == "min") return std::chrono::minutes( count);
-                  if( unit == "us") return std::chrono::duration_cast< time_unit>( std::chrono::microseconds( count));
                   if( unit == "h") return std::chrono::hours( count);
                   if( unit == "d") return std::chrono::hours( count * 24);
-                  if( unit == "ns") return std::chrono::duration_cast< time_unit>( std::chrono::nanoseconds( count));
+                  
+                  if( unit == "ns") 
+                  {
+                     auto point = std::chrono::nanoseconds( count);
+                     if constexpr( std::is_same_v< platform::time::unit, std::chrono::nanoseconds>)
+                        return std::chrono::duration_cast< platform::time::unit>( point);
+                     else
+                        return std::chrono::round< platform::time::unit>( point);
+                  }
 
                   code::raise::error( code::casual::invalid_argument, "invalid time representation: ", string::view::make( value));
                }
@@ -204,6 +210,7 @@ namespace casual
                };
             } // <unnamed>
          } // local
+
          std::string string( std::chrono::nanoseconds duration)
          {
             if( duration == platform::time::unit::zero())

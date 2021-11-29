@@ -54,13 +54,13 @@ namespace casual
 
                   auto invoke = [&cli, complete]( std::vector< std::string> managers)
                   {
-                     std::cout << "managers: " << managers << '\n';
+                     stream::write( std::cout, "managers: ", managers, '\n');
 
                      // if not provided we collect from all
                      if( managers.empty())
                         managers = complete( 0, false);
 
-                     std::cout << "managers: " << managers << '\n';
+                     stream::write( std::cout, "managers: ", managers, '\n');
 
                      using information_t = decltype( cli.domain.information());
 

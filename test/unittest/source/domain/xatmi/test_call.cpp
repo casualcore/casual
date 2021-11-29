@@ -423,7 +423,7 @@ domain:
          }
 
          std::vector< int> expected_descriptors{ 1, 2, 3, 4, 5, 6, 7 ,8 , 9, 10};
-         EXPECT_TRUE( descriptors == expected_descriptors) << "descriptors: " << common::range::make( descriptors);
+         EXPECT_TRUE( descriptors == expected_descriptors) << CASUAL_NAMED_VALUE( descriptors);
 
          for( auto& desc : descriptors)
          {
@@ -462,7 +462,7 @@ domain:
             EXPECT_TRUE( tpgetrply( &fetch, &buffer, &len, TPGETANY) != -1)  << "tperrno: " << tperrnostring( tperrno);
          }
 
-         EXPECT_TRUE( descriptors == fetched) << "descriptors: " << common::range::make( descriptors) << " fetched: " << common::range::make( fetched);
+         EXPECT_TRUE( descriptors == fetched) << CASUAL_NAMED_VALUE( descriptors) << " - " << CASUAL_NAMED_VALUE( fetched);
 
          tpfree( buffer);
       }
@@ -487,7 +487,7 @@ domain:
          }
 
          std::vector< int> expected_descriptors{ 1, 2, 3, 4, 5, 6, 7 ,8 , 9, 10};
-         EXPECT_TRUE( descriptors == expected_descriptors) << "descriptors: " << common::range::make( descriptors);
+         EXPECT_TRUE( descriptors == expected_descriptors) << CASUAL_NAMED_VALUE( descriptors);
 
          EXPECT_TRUE( tx_commit() == TX_PROTOCOL_ERROR);
 

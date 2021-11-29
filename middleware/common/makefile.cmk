@@ -217,6 +217,7 @@ unittest_objectfiles = [
     make.Compile( 'unittest/source/test_flag.cpp'),  
             
     make.Compile( 'unittest/source/test_signal.cpp'),
+    make.Compile( 'unittest/source/test_stream.cpp'),
                          
     make.Compile( 'unittest/source/test_buffer.cpp'),
  

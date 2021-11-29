@@ -30,7 +30,7 @@ namespace casual
 
          auto paths = common::file::find( pattern.string());
 
-         EXPECT_TRUE( paths.size() > 1) << "paths :" << paths;
+         EXPECT_TRUE( paths.size() > 1) << trace.compose( "paths: ", paths);
       }
 
       TEST( common_file_find_pattern, specific_file)
@@ -38,8 +38,8 @@ namespace casual
          common::unittest::Trace trace;
          
          auto paths = common::file::find( __FILE__);
-         EXPECT_TRUE( paths.size() == 1) << "paths :" << paths;
-         EXPECT_TRUE( paths.at( 0) == __FILE__) << "paths :" << paths;
+         EXPECT_TRUE( paths.size() == 1) << trace.compose( "paths: ", paths);
+         EXPECT_TRUE( paths.at( 0) == __FILE__) << trace.compose( "paths: ", paths);
       }
 
       TEST( common_file_find_pattern, nonexistent_path)
@@ -49,7 +49,7 @@ namespace casual
          auto pattern = common::file::name::unique( "/a/b/c/", "/*");
          
          auto paths = common::file::find( pattern);
-         EXPECT_TRUE( paths.empty()) << "paths :" << paths;
+         EXPECT_TRUE( paths.empty()) << trace.compose( "paths: ", paths);
       }
 
       TEST( common_file_find_pattern, empty_pattern__expect_no_found)
@@ -58,7 +58,7 @@ namespace casual
          
          auto paths = common::file::find( "");
 
-         EXPECT_TRUE( paths.empty()) << "paths :" << paths;
+         EXPECT_TRUE( paths.empty()) << trace.compose( "paths: ", paths);
       }
 
       TEST( common_file_find_pattern, same_pattern_twice__expect_unique_paths)
@@ -69,9 +69,9 @@ namespace casual
          
          auto paths = common::file::find( { pattern.string(), pattern.string()});
 
-         EXPECT_TRUE( paths.size() > 1) << "paths :" << paths;
-         EXPECT_TRUE( algorithm::is::unique( paths)) << "paths :" << paths;
-         EXPECT_TRUE( common::file::find( pattern.string()) == paths) << "paths :" << paths;
+         EXPECT_TRUE( paths.size() > 1) << trace.compose( "paths: ", paths);
+         EXPECT_TRUE( algorithm::is::unique( paths)) << trace.compose( "paths: ", paths);
+         EXPECT_TRUE( common::file::find( pattern.string()) == paths) << trace.compose( "paths: ", paths);
       }
 
 
@@ -84,9 +84,9 @@ namespace casual
          file::Output b{ dir.path() + "/b_foo.yaml"};
          
          auto paths = common::file::find( { dir.path() + "/b*.yaml", dir.path() + "/a*.yaml"});
-         ASSERT_TRUE( paths.size() == 2) << "paths :" << paths;
-         EXPECT_TRUE( paths.at( 0) == b.path()) << "paths :" << paths;
-         EXPECT_TRUE( paths.at( 1) == a.path()) << "paths :" << paths;
+         ASSERT_TRUE( paths.size() == 2) << trace.compose( "paths: ", paths);
+         EXPECT_TRUE( paths.at( 0) == b.path()) << trace.compose( "paths: ", paths);
+         EXPECT_TRUE( paths.at( 1) == a.path()) << trace.compose( "paths: ", paths);
       }
 
       TEST( common_file_find_pattern, two_files__expect_sorted_order)
@@ -98,9 +98,9 @@ namespace casual
          file::Output a{ dir.path() + "/a_foo.yaml"};
          
          auto paths = common::file::find( dir.path() + "/*.yaml");
-         ASSERT_TRUE( paths.size() == 2) << "paths :" << paths;
-         EXPECT_TRUE( paths.at( 0) == a.path()) << "paths :" << paths;
-         EXPECT_TRUE( paths.at( 1) == b.path()) << "paths :" << paths;
+         ASSERT_TRUE( paths.size() == 2) << trace.compose( "paths: ", paths);
+         EXPECT_TRUE( paths.at( 0) == a.path()) << trace.compose( "paths: ", paths);
+         EXPECT_TRUE( paths.at( 1) == b.path()) << trace.compose( "paths: ", paths);
       }
 
    } // common

@@ -66,18 +66,19 @@ namespace casual
                      if( local::global::file::reopen.load())
                         reopen();
 
-                     m_output << platform::time::clock::type::now()
-                        << '|' << common::domain::identity().name
-                        << '|' << execution::id()
-                        << '|' << process::id()
-                        << '|' << std::this_thread::get_id()
-                        << '|' << m_alias
-                        << '|' << transaction::Context::instance().current().trid
-                        << '|' << execution::service::parent::name()
-                        << '|' << execution::service::name()
-                        << '|' << category
-                        << '|' << message
-                        << std::endl; // we need to flush the line.
+                     common::stream::write( m_output, platform::time::clock::type::now(),
+                        '|', common::domain::identity().name,
+                        '|', execution::id(),
+                        '|', process::id(),
+                        '|', std::this_thread::get_id(),
+                        '|', m_alias,
+                        '|', transaction::Context::instance().current().trid,
+                        '|', execution::service::parent::name(),
+                        '|', execution::service::name(),
+                        '|', category,
+                        '|', message,
+                        '\n');
+                        //std::endl); // we need to flush the line.
                   }
 
                private:

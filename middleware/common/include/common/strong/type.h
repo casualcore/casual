@@ -144,7 +144,6 @@ namespace casual
             return Type{ P::generate()};
          }
          
-
          // forward serialization
          CASUAL_FORWARD_SERIALIZE( m_value)
 
@@ -209,9 +208,9 @@ namespace casual
       {
          template< typename T>
          auto stream( std::ostream& out, const T& value, common::traits::priority::tag< 1>) 
-            -> decltype( void( typename T::policy_type::stream( out, value)), out)
+            -> decltype( void( T::policy_type::stream( out, value.value())), out)
          {
-            typename T::policy_type::stream( out, value);
+            T::policy_type::stream( out, value.value());
             return out;
          }
 

@@ -126,18 +126,19 @@ value:
 
          {
             auto yaml = writer.consume< platform::binary::type>();
-            ASSERT_TRUE( ! yaml.empty()) << CASUAL_NAMED_VALUE( yaml.size()) << " - " << CASUAL_NAMED_VALUE( yaml.data());
+            ASSERT_TRUE( ! yaml.empty()) << trace.compose( "size: ", yaml.size(), " - ", "data: ", yaml.data());
 
             std::array< char, 4> value;
             auto reader = serialize::yaml::strict::reader( yaml);
             reader >> CASUAL_NAMED_VALUE( value);
 
-            EXPECT_TRUE( common::algorithm::equal( origin, value)) << CASUAL_NAMED_VALUE( value);
+            EXPECT_TRUE( common::algorithm::equal( origin, value)) << trace.compose( "value: ", value);
          }
       }
 
       TEST( common_serialize_yaml, write_read_large_long)
       {
+         common::unittest::Trace trace;
          constexpr long value = 2170471909096019789;
 
          auto writer = serialize::yaml::writer();
@@ -148,11 +149,12 @@ value:
          long result{};
          reader >> CASUAL_NAMED_VALUE_NAME( result, "value");
 
-         EXPECT_TRUE( value == result) << CASUAL_NAMED_VALUE( result);
+         EXPECT_TRUE( value == result) << trace.compose( "result: ", result);
       }
 
       TEST( common_serialize_yaml, write_read_tuple)
       {
+         common::unittest::Trace trace;
          auto origin = std::make_tuple( 1, std::string{ "foo"}, true);
 
          auto writer = serialize::yaml::writer();
@@ -163,11 +165,12 @@ value:
          auto result = decltype( origin){};
          reader >> result;
 
-         EXPECT_TRUE( origin == result) << CASUAL_NAMED_VALUE( result);
+         EXPECT_TRUE( origin == result) << trace.compose( "result: ", result);
       }
 
       TEST( common_serialize_yaml, write_read_vector_pod)
       {
+         common::unittest::Trace trace;
          std::string yaml;
 
          {
@@ -181,7 +184,7 @@ value:
 
          ASSERT_TRUE( values.size() == 7) << values.size();
          EXPECT_TRUE( values.at( 0) == 1);
-         EXPECT_TRUE( values.at( 1) == 2) << common::range::make( values);
+         EXPECT_TRUE( values.at( 1) == 2) << trace.compose( "values: ", values);
          EXPECT_TRUE( values.at( 2) == 34) << values.at( 2);
          EXPECT_TRUE( values.at( 3) == 45);
          EXPECT_TRUE( values.at( 4) == 34);
@@ -191,6 +194,7 @@ value:
 
       TEST( common_serialize_yaml, write_read_vector_serializable)
       {
+         common::unittest::Trace trace;
          std::string yaml;
 
          {
@@ -224,6 +228,7 @@ value:
 
       TEST( common_serialize_yaml, write_read_map_complex)
       {
+         common::unittest::Trace trace;
          std::string yaml;
 
          {
@@ -246,7 +251,7 @@ value:
          local::string_to_relaxed_value( yaml, values);
 
 
-         ASSERT_TRUE( values.size() == 2) << "values: " << values;
+         ASSERT_TRUE( values.size() == 2) << trace.compose( "values: ", values);
          EXPECT_TRUE( values.at( 10).m_string == "kalle");
          EXPECT_TRUE( values.at( 10).m_values.at( 0).m_short == 1);
          EXPECT_TRUE( values.at( 10).m_values.at( 0).m_string == "one");
@@ -263,7 +268,7 @@ value:
 
       TEST( common_serialize_yaml, write_read_binary)
       {
-
+         common::unittest::Trace trace;
          std::string yaml;
 
          {
@@ -292,6 +297,8 @@ value:
 
       TEST( common_serialize_yaml, read_invalid_document__expecting_exception)
       {
+         common::unittest::Trace trace;
+
          const std::string yaml{ "   " };
 
          EXPECT_CODE

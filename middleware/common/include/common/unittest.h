@@ -17,7 +17,6 @@
 #include "common/code/raise.h"
 #include "common/compare.h"
 
-
 #include <array>
 #include <iostream>
 

@@ -157,10 +157,10 @@ domain:
             EXPECT_TRUE( tx_commit() == TX_OK);
 
             auto state = unittest::rm::state( local::id());
-            EXPECT_TRUE( state.errors.empty()) << state.errors;
+            EXPECT_TRUE( state.errors.empty()) << CASUAL_NAMED_VALUE( state.errors);
             // only open has been called
-            ASSERT_TRUE( state.invocations.size() == 1) << state.invocations;
-            ASSERT_TRUE( state.invocations.at( 0) == unittest::rm::State::Invoke::xa_open_entry) << state.invocations;
+            ASSERT_TRUE( state.invocations.size() == 1) << CASUAL_NAMED_VALUE( state.invocations);
+            ASSERT_TRUE( state.invocations.at( 0) == unittest::rm::State::Invoke::xa_open_entry) << CASUAL_NAMED_VALUE( state.invocations);
          }
 
          TEST( test_domain_transaction, dynamic_resource_involved__transaction_commit__expect_xa_end_invokation)
@@ -191,7 +191,7 @@ domain:
             EXPECT_TRUE( tx_commit() == TX_OK);
 
             auto state = unittest::rm::state( id);
-            EXPECT_TRUE( state.errors.empty()) << state.errors;
+            EXPECT_TRUE( state.errors.empty()) << CASUAL_NAMED_VALUE( state.errors);
 
             using Invoke = unittest::rm::State::Invoke;
             
@@ -206,7 +206,7 @@ domain:
             //   -> xa_commit_entry
             // 
             const auto expected = std::vector< Invoke>{ Invoke::xa_open_entry, Invoke::xa_end_entry, Invoke::xa_commit_entry};
-            EXPECT_TRUE( state.invocations == expected) << state.invocations;
+            EXPECT_TRUE( state.invocations == expected) << CASUAL_NAMED_VALUE( state.invocations);
          }
          
       } // domain

@@ -236,7 +236,7 @@ namespace casual
 
          //EXPECT_TRUE( sorted);
          EXPECT_TRUE( ! sorted.empty());
-         EXPECT_TRUE( algorithm::equal( sorted, s)) << "sorted : " << sorted << "\nunsortd: " << range::make( s);
+         EXPECT_TRUE( algorithm::equal( sorted, s)) << trace.compose( "sorted : ", sorted, "\nunsortd: ", range::make( s));
 
       }
 
@@ -248,8 +248,8 @@ namespace casual
 
          auto result = algorithm::rotate( container, std::begin( container) + 1);
 
-         EXPECT_TRUE(( std::get< 0>( result) == std::vector< int>{ 2, 3, 4, 5, 6, 7, 8})) << std::get< 0>( result);
-         EXPECT_TRUE(( std::get< 1>( result) == std::vector< int>{ 1})) << std::get< 1>( result);
+         EXPECT_TRUE(( std::get< 0>( result) == std::vector< int>{ 2, 3, 4, 5, 6, 7, 8})) << trace.compose( std::get< 0>( result));
+         EXPECT_TRUE(( std::get< 1>( result) == std::vector< int>{ 1})) << trace.compose( std::get< 1>( result));
       }
 
       TEST( common_algorithm, partition)
@@ -419,7 +419,7 @@ namespace casual
 
          auto duplicates = algorithm::duplicates( algorithm::sort( set));
 
-         ASSERT_TRUE( duplicates.size() == 2) << "duplicates: " << duplicates;
+         ASSERT_TRUE( duplicates.size() == 2) << trace.compose( "duplicates: ", duplicates);
          EXPECT_TRUE( set.at( 0) == 1);
          EXPECT_TRUE( set.at( 1) == 3);
       }
@@ -522,7 +522,7 @@ namespace casual
 
          auto split = algorithm::intersection( range, lookup);
 
-         EXPECT_TRUE( algorithm::equal( algorithm::sort( std::get< 0>( split)), algorithm::sort( lookup))) << std::get< 0>( split);
+         EXPECT_TRUE( algorithm::equal( algorithm::sort( std::get< 0>( split)), algorithm::sort( lookup))) << trace.compose( std::get< 0>( split));
          EXPECT_TRUE( algorithm::equal( std::get< 1>( split), ( std::vector< int>{ 9, 7, 8, 6})));
       }
 

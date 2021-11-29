@@ -366,7 +366,7 @@ domain:
 
          auto state = unittest::state();
 
-         EXPECT_TRUE( state.transactions.empty()) << "state.transactions: " << state.transactions;
+         EXPECT_TRUE( state.transactions.empty()) << CASUAL_NAMED_VALUE( state.transactions);
 
          EXPECT_TRUE( local::commit() == common::code::tx::ok);
       }
@@ -870,7 +870,7 @@ domain:
             message.involved = { local::rm_1};
             
             auto reply = local::call::tm( message);
-            EXPECT_TRUE( reply.involved.empty()) << "reply.involved: " << reply.involved;
+            EXPECT_TRUE( reply.involved.empty()) << CASUAL_NAMED_VALUE( reply.involved);
          }
 
          // remote rollback
@@ -889,7 +889,7 @@ domain:
             communication::device::blocking::receive( common::communication::ipc::inbound::device(), message);
 
             EXPECT_TRUE( message.trid == trid);
-            EXPECT_TRUE( message.state == common::code::xa::ok) << "state: " << message.state;
+            EXPECT_TRUE( message.state == common::code::xa::ok) << CASUAL_NAMED_VALUE( message.state);
          }
       }
 
@@ -927,7 +927,7 @@ domain:
             communication::device::blocking::receive( common::communication::ipc::inbound::device(), message);
 
             EXPECT_TRUE( message.trid == trid);
-            EXPECT_TRUE( message.state == common::code::xa::read_only) << "state: " << message.state;
+            EXPECT_TRUE( message.state == common::code::xa::read_only) << CASUAL_NAMED_VALUE( message.state);
          }
       }
 

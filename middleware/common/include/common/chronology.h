@@ -58,7 +58,7 @@ namespace casual
          }
 
          template< typename D>
-         constexpr auto string( D&& duration) { return detail::string< std::decay_t< D>>::value;}
+         constexpr auto string() { return detail::string< std::decay_t< D>>::value;}
       } // unit
 
 
@@ -78,22 +78,6 @@ namespace casual
          }
       } // to
 
-
-      struct format
-      {
-         template< typename D>
-         void operator () ( std::ostream& out, D&& duration) const
-         {
-            out << duration.count() << unit::string( duration);
-         }
-      };
-
-      template< typename D>
-      std::string duration( D&& duration) 
-      { 
-         return std::to_string( duration.count()) + unit::string( duration);
-      }
-
    } // common::chronology
 
    namespace common::stream::customization
@@ -104,7 +88,7 @@ namespace casual
          template< typename D>
          static void stream( std::ostream& out, D&& duration)
          {
-            out << duration.count() << chronology::unit::string( duration);
+            out << duration.count() << chronology::unit::string< D>();
          }
       };
 

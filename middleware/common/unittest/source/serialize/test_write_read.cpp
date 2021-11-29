@@ -530,7 +530,7 @@ namespace casual
          EXPECT_NO_THROW(
          {
             EXPECT_TRUE( TestFixture::unnamed_write_read( value) == value);
-         }) << value;
+         }) << CASUAL_NAMED_VALUE( value);
          
 
       }

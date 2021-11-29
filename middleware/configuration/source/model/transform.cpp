@@ -220,15 +220,11 @@ namespace casual
                      configuration::model::service::Timeout result;
                      if( execution && execution.value().timeout)
                      {
-                        if ( execution.value().timeout.value().duration)
-                        {
-                           result.duration = 
-                              common::chronology::from::string( execution.value().timeout.value().duration.value());
-                        }
-                        if ( execution.value().timeout.value().contract)
-                        {
-                           result.contract = common::service::execution::timeout::contract::transform( execution.value().timeout.value().contract.value());
-                        }
+                        auto& timeout = execution.value().timeout.value();
+                        if( timeout.duration)
+                           result.duration = common::chronology::from::string( timeout.duration.value());
+                        if( timeout.contract)
+                           result.contract = common::service::execution::timeout::contract::transform( timeout.contract.value());
                      }
                      return result;
                   }

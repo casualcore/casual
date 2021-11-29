@@ -35,7 +35,7 @@ namespace casual
          std::ostream& Writer::maybe_name( const char* name)
          {
             if( name)
-               m_stream << name << ": ";
+               m_stream << name << ": ";  
 
             return m_stream;
          }
@@ -89,7 +89,7 @@ namespace casual
 
          void Writer::save( const std::string& value, const char* name)
          {
-            maybe_name( name) << std::quoted( value);
+            maybe_name( name) << value;
          }
 
          void Writer::save( const string::immutable::utf8& value, const char* name)

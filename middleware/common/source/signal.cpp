@@ -122,7 +122,7 @@ namespace casual
 
                      if( ::sigaction( cast::underlying( signal), &sa, nullptr) == -1)
                      {
-                        std::cerr << "failed to register handle for signal: " << signal << " - "  << code::system::last::error() << '\n';
+                        stream::write( std::cerr, "failed to register handle for signal: ", signal, " - " , code::system::last::error(), '\n');
                         code::system::raise( "failed to register handle for signal");
                      }
                   }

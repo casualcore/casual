@@ -100,7 +100,7 @@ namespace casual
             auto reader = serialize::json::strict::reader( json);
             reader >> CASUAL_NAMED_VALUE( value);
 
-            EXPECT_TRUE( common::algorithm::equal( origin, value)) << CASUAL_NAMED_VALUE( value);
+            EXPECT_TRUE( common::algorithm::equal( origin, value)) << trace.compose( "value: ", value);
          }
       }
 

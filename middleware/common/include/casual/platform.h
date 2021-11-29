@@ -420,12 +420,4 @@ namespace casual
    } // platform
 } // casual
 
-#if __cplusplus >= 201703L
-#define CASUAL_MAYBE_UNUSED [[maybe_unused]]
-#elif __GNUC__ > 4 || __clang_major__ > 4
-#define CASUAL_MAYBE_UNUSED __attribute__((unused))
-#else
-#define CASUAL_MAYBE_UNUSED 
-#endif
-
 
