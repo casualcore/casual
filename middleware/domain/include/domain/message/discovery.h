@@ -53,6 +53,8 @@ namespace casual
                return *this;
             };
 
+            inline explicit operator bool() const noexcept { return ! services.empty() || ! queues.empty();}
+
             CASUAL_CONST_CORRECT_SERIALIZE(
                CASUAL_SERIALIZE( services);
                CASUAL_SERIALIZE( queues);

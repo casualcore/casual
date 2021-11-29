@@ -66,6 +66,8 @@ namespace casual
       correlation_type request( const Request& request)
       {
          Trace trace{ "domain::discovery::request"};
+         log::line( verbose::log, "request: ", request);
+         
          return communication::ipc::flush::optional::send( local::instance::device(), request);
       }
 
@@ -87,6 +89,8 @@ namespace casual
          correlation_type request( const Request& request)
          {
             Trace trace{ "domain::discovery::external::request"};
+            log::line( verbose::log, "request: ", request);
+
             return communication::ipc::flush::optional::send( local::instance::device(), request);
          }
 
