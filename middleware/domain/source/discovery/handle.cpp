@@ -115,12 +115,15 @@ namespace casual
             {
                auto registration( State& state)
                {
-                  return [&state]( const message::discovery::internal::Registration& message)
+                  return [&state]( const message::discovery::internal::registration::Request& message)
                   {
                      Trace trace{ "discovery::handle::local::internal::registration"};
                      log::line( verbose::log, "message: ", message);
 
                      state.agents.registration( message);
+
+                     // send reply
+                     communication::ipc::flush::optional::send( message.process.ipc, common::message::reverse::type( message));
                   };
                }
             } // internal
@@ -129,16 +132,18 @@ namespace casual
             {
                auto registration( State& state)
                {
-                  return [&state]( const message::discovery::external::Registration& message)
+                  return [&state]( const message::discovery::external::registration::Request& message)
                   {
                      Trace trace{ "discovery::handle::local::external::registration"};
                      log::line( verbose::log, "message: ", message);
 
                      state.agents.registration( message);
 
-                      // send event so others can do discovery, if they need to.
-                     common::event::send( common::message::event::discoverable::Avaliable{ common::process::handle()});                           
+                     // send event so others can do discovery, if they need to.
+                     common::event::send( common::message::event::discoverable::Avaliable{ common::process::handle()});
 
+                     // send reply
+                     communication::ipc::flush::optional::send( message.process.ipc, common::message::reverse::type( message));
                   };
                }
 

@@ -38,7 +38,7 @@ namespace casual
       
       namespace external
       {
-         using Directive = message::discovery::external::Registration::Directive;
+         using Directive = message::discovery::external::registration::Request::Directive;
 
          //! register for discovery (can send discovery to others)
          //! @attention will _flush::send_ using ipc::inbound::device()

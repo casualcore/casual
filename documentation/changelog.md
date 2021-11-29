@@ -6,6 +6,12 @@ This is the changelog for `casual` and all changes are listed in this document.
 ## [1.5.7] - 2021-11-26
 ### Fixes
 - transaction - fix distributed commit when RM fails -> rollback
+- discovery - registration for _discoverables_ more robust with request->reply
+   - Primarily for unittests when booting, testing and shutdown of multiple domains 
+     within a couple of 100ms or so.
+
+### Internal
+- unittest - 
 
 ## [1.5.6] - 2021-11-15
 

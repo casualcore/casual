@@ -67,8 +67,10 @@ namespace casual
          domain_instance_global_state_request = DOMAIN_BASE + 400,
          domain_instance_global_state_reply,
 
-         domain_discovery_internal_registration = DOMAIN_BASE + 500,
-         domain_discovery_external_registration,
+         domain_discovery_internal_registration_request = DOMAIN_BASE + 500,
+         domain_discovery_internal_registration_reply,
+         domain_discovery_external_registration_request,
+         domain_discovery_external_registration_reply,
          
          // the following is part of interdomain protocol and defined (and pinned) under gateway
          // domain_discovery_request,
