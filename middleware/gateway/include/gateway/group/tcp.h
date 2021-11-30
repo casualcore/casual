@@ -13,6 +13,7 @@
 #include "common/communication/select.h"
 #include "common/algorithm.h"
 #include "common/signal/timer.h"
+#include "common/environment.h"
 
 #include <chrono>
 
@@ -354,7 +355,8 @@ namespace casual
 
          if( auto min = common::algorithm::min( connections, min_attempts))
          {
-            if( min->metric.attempts < platform::tcp::connect::attempts::threshhold)
+            // check if we're in unittest context or not.
+            if( common::environment::variable::exists( common::environment::variable::name::unittest::context))
                common::signal::timer::set( std::chrono::milliseconds{ 10});
             else
                common::signal::timer::set( std::chrono::seconds{ 3});

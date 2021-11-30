@@ -27,18 +27,24 @@ namespace casual
             return reply.extract< casual::gateway::manager::admin::model::State>();
          }
 
-
+         
+         //! tries to fetch and compare the predicate until the predicate returns true
+         //! or we have reached 2k tries and a total time of ~16s, which should be enough for
+         //! "all" the systems we're building casual on.
          template< typename P>
          auto until( P&& predicate)
          {
+            constexpr auto total_count = 2000;
             auto state = fetch();
-            auto count = 500;
+            auto count = total_count;
 
             while( ! predicate( state) && count-- > 0)
             {
-               common::process::sleep( std::chrono::milliseconds{ 2});
+               common::process::sleep( std::chrono::milliseconds{ 8});
                state = fetch();
             }
+
+            EXPECT_TRUE( count >= 0) << "gateway::state::until failed to fullfill the predicate after " << total_count << " tries";
 
             return state;
          }
