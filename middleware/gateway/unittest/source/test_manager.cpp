@@ -29,9 +29,12 @@
 
 #include "domain/manager/unittest/process.h"
 #include "domain/manager/unittest/configuration.h"
+#include "domain/manager/unittest/discover.h"
 #include "domain/discovery/api.h"
 
 #include "service/unittest/utility.h"
+
+#include "queue/api/queue.h"
 
 #include "configuration/model/load.h"
 #include "configuration/model/transform.h"
@@ -63,6 +66,25 @@ domain:
         memberships: [ base]
       - path: bin/casual-gateway-manager
         memberships: [ gateway]
+)";
+
+               constexpr auto inbound = R"(
+domain: 
+   name: inbound
+   gateway:
+      inbound:
+         groups:
+            -  connections: 
+                  -  address: 127.0.0.1:6669
+)";
+               constexpr auto outbound =  R"(
+domain: 
+   name: outbound
+   gateway:
+      outbound:
+         groups:
+            -  connections: 
+                  -  address: 127.0.0.1:6669
 )";
 
                constexpr auto gateway = R"(
@@ -110,76 +132,6 @@ domain:
                return domain( configuration::gateway);
             }
 
-            namespace call
-            {
-
-               auto state()
-               {
-                  serviceframework::service::protocol::binary::Call call;
-                  auto reply = call( manager::admin::service::name::state);
-
-                  manager::admin::model::State result;
-                  reply >> CASUAL_NAMED_VALUE( result);
-
-                  return result;
-               }
-
-               template< typename P>
-               auto state( P&& predicate)
-               {
-                  auto state = local::call::state();
-                  auto count = 500;
-
-                  while( ! predicate( state) && count-- > 0)
-                  {
-                     common::process::sleep( std::chrono::milliseconds{ 10});
-                     state = local::call::state();
-                  }
-
-                  return state;
-               }
-
-            } // call
-
-            namespace predicate
-            {
-               namespace is
-               {
-                  auto outbound()
-                  { 
-                     return []( auto& connection)
-                     {
-                        return connection.bound == decltype( connection.bound)::out;
-                     };
-                  }
-
-               } // is
-               namespace outbound
-               {
-                  auto connected( platform::size::type count)
-                  {
-                     return [count]( auto& state)
-                     {
-                        return count <= algorithm::count_if( state.connections, []( auto& connection)
-                        {
-                           return is::outbound()( connection) && connection.remote.id;
-                        });
-
-                     };
-                  }
-
-                  auto routing( std::vector< std::string_view> services, std::vector< std::string_view> queues)
-                  {
-                     return [services = std::move( services), queues = std::move( queues)]( auto& state)
-                     {
-                        return algorithm::includes( state.services, services)
-                           && algorithm::includes( state.queues, queues);
-                     };
-                  }
-               } // outbound
-                  
-            } // predicate
-
          } // <unnamed>
       } // local
 
@@ -201,7 +153,7 @@ domain:
          auto domain = local::domain();
 
          // wait for the 'bounds' to be connected...
-         local::call::state( local::predicate::outbound::connected( 1));
+         unittest::fetch::until( unittest::fetch::predicate::outbound::connected());
 
          auto origin = local::configuration::load( local::configuration::servers, local::configuration::gateway);
 
@@ -234,7 +186,7 @@ domain:
 )");
 
          // wait for the 'bounds' to be connected...
-         local::call::state( local::predicate::outbound::connected( 1));
+         unittest::fetch::until( unittest::fetch::predicate::outbound::connected());
 
          auto wanted = local::configuration::load( local::configuration::servers, R"(
 domain: 
@@ -260,8 +212,8 @@ domain:
          // post the wanted model (with transformed user representation)
          casual::domain::manager::unittest::configuration::post( casual::configuration::model::transform( wanted));
          
-         // wait for the connections to establish again
-         local::call::state( local::predicate::outbound::connected( 1));
+         // wait for the 'bounds' to be connected...
+         unittest::fetch::until( unittest::fetch::predicate::outbound::connected());
 
          auto updated = casual::configuration::model::transform( casual::domain::manager::unittest::configuration::get());
 
@@ -277,7 +229,7 @@ domain:
 
          EXPECT_TRUE( common::communication::instance::fetch::handle( common::communication::instance::identity::gateway::manager.id));
 
-         auto state = local::call::state( local::predicate::outbound::connected( 1));
+         auto state = unittest::fetch::until( unittest::fetch::predicate::outbound::connected());
 
          EXPECT_TRUE( state.connections.size() == 2);
       }
@@ -301,7 +253,7 @@ domain:
 
          EXPECT_TRUE( common::communication::instance::fetch::handle( common::communication::instance::identity::gateway::manager.id));
 
-         auto state = local::call::state( []( auto& state)
+         auto state = unittest::fetch::until( []( auto& state)
          {
             return state.connections.size() >= 1;
          });
@@ -329,7 +281,7 @@ domain:
 
          EXPECT_TRUE( common::communication::instance::fetch::handle( common::communication::instance::identity::gateway::manager.id));
 
-         auto state = local::call::state( []( auto& state)
+         auto state = unittest::fetch::until( []( auto& state)
          {
             return state.connections.size() >= 1;
          });
@@ -366,7 +318,7 @@ domain:
 
          EXPECT_TRUE( common::communication::instance::fetch::handle( common::communication::instance::identity::gateway::manager.id));
 
-         auto state = local::call::state( local::predicate::outbound::connected( 3));
+         auto state = unittest::fetch::until( unittest::fetch::predicate::outbound::connected());
          
          auto& groups = state.outbound.groups;
 
@@ -407,26 +359,28 @@ domain:
          } // <unnamed>
       } // local
       
-      TEST( gateway_manager, connect_to_our_self__remote1_call__expect_service_remote1)
+      TEST( gateway_manager, remote1_call__expect_service_remote1)
       {
          common::unittest::Trace trace;
 
-         
-         auto domain = local::domain(); 
+         auto b = local::domain( local::configuration::inbound);
+         auto a = local::domain( local::configuration::outbound); 
 
-         {
-            auto state = local::call::state( local::predicate::outbound::connected( 1));
-            ASSERT_TRUE( state.connections.size() == 2);
-         }
+         unittest::fetch::until( unittest::fetch::predicate::outbound::connected());
+
+
+         b.activate();
 
          // we exposes service a
          casual::service::unittest::advertise( { "a"});
 
+         a.activate();
+
          // discover to make sure outbound(s) knows about wanted services
-         unittest::discover( { "a"}, {});
+         casual::domain::manager::unittest::discover( { "a"}, {});
 
          // wait until outbound knows about 'a'
-         auto state = local::call::state( local::predicate::outbound::routing( { "a"}, {}));
+         auto state = unittest::fetch::until( unittest::fetch::predicate::outbound::routing( { "a"}, {}));
 
          algorithm::sort( state.connections);
 
@@ -444,8 +398,12 @@ domain:
                common::communication::device::blocking::send( state.connections.at( 0).process.ipc, request);
             }
 
+            b.activate();
+
             // echo the call
             local::service::echo();
+
+            a.activate();
 
             common::message::service::call::Reply reply;
             common::communication::device::blocking::receive( common::communication::ipc::inbound::device(), reply);
@@ -456,25 +414,27 @@ domain:
 
 
 
-      TEST( gateway_manager, connect_to_our_self__remote1_call_in_transaction___expect_same_transaction_in_reply)
+      TEST( gateway_manager, remote1_call_in_transaction___expect_same_transaction_in_reply)
       {
          common::unittest::Trace trace;
 
-         auto domain = local::domain(); 
+         auto b = local::domain( local::configuration::inbound);
+         auto a = local::domain( local::configuration::outbound);
 
-         {
-            auto state = local::call::state( local::predicate::outbound::connected( 1));
-            ASSERT_TRUE( state.connections.size() == 2);
-         }
+         unittest::fetch::until( unittest::fetch::predicate::outbound::connected());
+
+         b.activate();
 
          // we exposes service "a"
          casual::service::unittest::advertise( { "a"});
 
+         a.activate();
+
          // discover to make sure outbound(s) knows about wanted services
-         unittest::discover( { "a"}, {});
+         casual::domain::manager::unittest::discover( { "a"}, {});
 
          // wait until outbound knows about 'a'
-         auto state = local::call::state( local::predicate::outbound::routing( { "a"}, {}));
+         auto state = unittest::fetch::until( unittest::fetch::predicate::outbound::routing( { "a"}, {}));
 
          algorithm::sort( state.connections);
 
@@ -495,8 +455,12 @@ domain:
                common::communication::device::blocking::send( state.connections.at( 0).process.ipc, request);
             }
 
+            b.activate();
+
             // echo the call
             local::service::echo();
+
+            a.activate();
 
             common::message::service::call::Reply reply;
             common::communication::device::blocking::receive( common::communication::ipc::inbound::device(), reply);
@@ -521,18 +485,18 @@ domain:
       }
 
 
-      TEST( gateway_manager,  connect_to_our_self__enqueue_dequeue___expect_message)
+      TEST( gateway_manager,  enqueue_dequeue___expect_message)
       {
          common::unittest::Trace trace;
 
-         constexpr auto configuration = R"(
+         constexpr auto queue_manager = R"(
 domain: 
-   name: queue
-   
    servers:
       - path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/queue/bin/casual-queue-manager
         memberships: [ base]
-
+)";
+         constexpr auto queue_configuration = R"(
+domain:
    queue:
       groups:
          -  name: A
@@ -541,72 +505,41 @@ domain:
                - name: a
 )";
 
+         auto b = local::domain( local::configuration::inbound, queue_manager, queue_configuration);
+         auto a = local::domain( local::configuration::outbound, queue_manager);
 
-         auto domain = local::domain( local::configuration::gateway, configuration);
-
-         EXPECT_TRUE( common::communication::instance::fetch::handle( common::communication::instance::identity::gateway::manager.id));
-         
-         {
-            auto state = local::call::state( local::predicate::outbound::connected( 1));
-         }
-
-         
-
-         // discover to make sure outbound(s) knows about wanted queues
-         unittest::discover( { }, { "a"});
-         
-         // wait for the state
-         auto state = local::call::state( local::predicate::outbound::routing( {}, { "a"}));
-
-         algorithm::sort( state.connections);
-
-         // Gateway is connected to it self. Hence we can send a request to the outbound, and it
-         // will send it to the corresponding inbound, and back in the current (mockup) domain
-
-         ASSERT_TRUE( state.connections.at( 0).bound == manager::admin::model::connection::Bound::out);
-         auto outbound =  state.connections.at( 0).process;
+         unittest::fetch::until( unittest::fetch::predicate::outbound::connected());
 
          const auto payload = unittest::random::binary( 1000);
 
          // enqueue
          {
-            casual::queue::ipc::message::group::enqueue::Request request{ process::handle()};
-            request.name = "a";
-            request.message.type = "json";
-            request.message.payload = payload;
-
-
-            auto reply = communication::ipc::call( outbound.ipc, request);
-            EXPECT_TRUE( ! reply.id.empty());
+            EXPECT_NO_THROW({
+               queue::enqueue( "a", { { "json", payload}});
+            });
          }
 
          // dequeue
          {
-            casual::queue::ipc::message::group::dequeue::Request request{ process::handle()};
-            request.name = "a";
+            auto message = queue::dequeue( "a");
 
-            auto reply = communication::ipc::call( outbound.ipc, request);
-            ASSERT_TRUE( ! reply.message.empty());
-            EXPECT_TRUE( reply.message.front().payload == payload);
-            EXPECT_TRUE( reply.message.front().type == "json");
+            ASSERT_TRUE( message.size() == 1);
+            
+            EXPECT_TRUE( message.front().payload.data == payload);
+            EXPECT_TRUE( message.front().payload.type == "json");
          }
       }
 
-      TEST( gateway_manager, connect_to_our_self__kill_outbound__expect_restart)
+      TEST( gateway_manager, kill_outbound__expect_restart)
       {
          common::unittest::Trace trace;
 
-         auto domain = local::domain(); 
+         auto b = local::domain( local::configuration::inbound);
+         auto a = local::domain( local::configuration::outbound);
 
-         EXPECT_TRUE( common::communication::instance::fetch::handle( common::communication::instance::identity::gateway::manager.id));
+         auto state = unittest::fetch::until( unittest::fetch::predicate::outbound::connected());
 
-         auto state = local::call::state( local::predicate::outbound::connected( 1));
-
-         ASSERT_TRUE( state.connections.size() == 2);
-
-         algorithm::sort( state.connections);
          auto& outbound = state.connections.at( 0);
-
 
          // send signal, outbound terminates, wait for outbound to spawn again (via event::Spawn)
          {
@@ -626,43 +559,38 @@ domain:
                {
                   log::line( log::debug, "event: ", event);
                   // we're done if outbound spawns
-                  done = event.alias == "outbound-1";
+                  done = event.alias == "outbound";
                });
          }
       }
 
-      TEST( gateway_manager, connect_to_our_self__10_outbound_connections)
+      TEST( gateway_manager, connect_10_outbound_connections)
       {
          common::unittest::Trace trace;
 
-         static constexpr auto configuration = R"(
+         constexpr auto configuration = R"(
 domain: 
    name: multi-connections
    gateway:
-      inbound: 
-         groups:
-            -  connections: 
-               -  address: 127.0.0.1:6666
       outbound:
          groups: 
             -  connections:
-               -  address: 127.0.0.1:6666
-               -  address: 127.0.0.1:6666
-               -  address: 127.0.0.1:6666
-               -  address: 127.0.0.1:6666
-               -  address: 127.0.0.1:6666
-               -  address: 127.0.0.1:6666
-               -  address: 127.0.0.1:6666
-               -  address: 127.0.0.1:6666
-               -  address: 127.0.0.1:6666
-               -  address: 127.0.0.1:6666
+               -  address: 127.0.0.1:6669
+               -  address: 127.0.0.1:6669
+               -  address: 127.0.0.1:6669
+               -  address: 127.0.0.1:6669
+               -  address: 127.0.0.1:6669
+               -  address: 127.0.0.1:6669
+               -  address: 127.0.0.1:6669
+               -  address: 127.0.0.1:6669
+               -  address: 127.0.0.1:6669
+               -  address: 127.0.0.1:6669
 )";
 
-         auto domain = local::domain( configuration);
+         auto b = local::domain( local::configuration::inbound);
+         auto a = local::domain( configuration);
 
-         EXPECT_TRUE( common::communication::instance::fetch::handle( common::communication::instance::identity::gateway::manager.id));
-
-         auto state = local::call::state( local::predicate::outbound::connected( 10));
+         auto state = unittest::fetch::until( unittest::fetch::predicate::outbound::connected());
 
          using Bound = manager::admin::model::connection::Bound;
 
@@ -671,58 +599,56 @@ domain:
             return algorithm::accumulate( state.connections, platform::size::type{}, [bound]( auto count, auto& connection)
             {
                if( connection.bound == bound)
-                  ++count;
+                  return count + 1;
                return count;
             });
          };
 
-         EXPECT_TRUE( bound_count( Bound::in) == 10) << "count: " << bound_count( Bound::in) << '\n' << CASUAL_NAMED_VALUE( state);
          EXPECT_TRUE( bound_count( Bound::out) == 10) << "count: " << bound_count( Bound::out) << '\n' << CASUAL_NAMED_VALUE( state);
+
+         b.activate();
+         state = unittest::state();
+
+         EXPECT_TRUE( bound_count( Bound::in) == 10) << "count: " << bound_count( Bound::in) << '\n' << CASUAL_NAMED_VALUE( state);
       }
 
-      TEST( gateway_manager, connect_to_our_self__10_outbound_groups__one_connection_each)
+      TEST( gateway_manager, connect__10_outbound_groups__one_connection_each)
       {
          common::unittest::Trace trace;
 
-         static constexpr auto configuration = R"(
+         constexpr auto configuration = R"(
 domain: 
-   name: gateway-domain
-
+   name: A
    gateway:
-      inbound:
-         groups:
-            -  connections: 
-               -  address: 127.0.0.1:6666
       outbound:
          groups: 
             -  connections:
-               - address: 127.0.0.1:6666
+               - address: 127.0.0.1:6669
             -  connections:
-               - address: 127.0.0.1:6666
+               - address: 127.0.0.1:6669
             -  connections:
-               - address: 127.0.0.1:6666
+               - address: 127.0.0.1:6669
             -  connections:
-               - address: 127.0.0.1:6666
+               - address: 127.0.0.1:6669
             -  connections:
-               - address: 127.0.0.1:6666
+               - address: 127.0.0.1:6669
             -  connections:
-               - address: 127.0.0.1:6666
+               - address: 127.0.0.1:6669
             -  connections:
-               - address: 127.0.0.1:6666
+               - address: 127.0.0.1:6669
             -  connections:
-               - address: 127.0.0.1:6666
+               - address: 127.0.0.1:6669
             -  connections:
-               - address: 127.0.0.1:6666
+               - address: 127.0.0.1:6669
             -  connections:
-               - address: 127.0.0.1:6666
+               - address: 127.0.0.1:6669
 )";
 
 
-         auto domain = local::domain( configuration);
+         auto b = local::domain( local::configuration::inbound);
+         auto a = local::domain( configuration);
 
-         EXPECT_TRUE( common::communication::instance::fetch::handle( common::communication::instance::identity::gateway::manager.id));
-
-         auto state = local::call::state( local::predicate::outbound::connected( 10));
+         auto state = unittest::fetch::until( unittest::fetch::predicate::outbound::connected());
 
          auto count_bound = []( auto bound)
          {
@@ -736,24 +662,26 @@ domain:
 
          using Bound = manager::admin::model::connection::Bound;
 
-         EXPECT_TRUE( algorithm::accumulate( state.connections, platform::size::type{}, count_bound( Bound::in)) == 10);
          EXPECT_TRUE( algorithm::accumulate( state.connections, platform::size::type{}, count_bound( Bound::out)) == 10);
+
+         b.activate();
+         state = unittest::state();
+
+         EXPECT_TRUE( algorithm::accumulate( state.connections, platform::size::type{}, count_bound( Bound::in)) == 10);
       }
 
-      TEST( gateway_manager, connect_to_our_self__kill_inbound__expect_restart)
+      TEST( gateway_manager, kill_inbound__expect_restart)
       {
          common::unittest::Trace trace;
 
-         auto domain = local::domain(); 
+         auto b = local::domain( local::configuration::inbound);
+         auto a = local::domain( local::configuration::outbound);
 
-         EXPECT_TRUE( common::communication::instance::fetch::handle( common::communication::instance::identity::gateway::manager.id)); 
+         unittest::fetch::until( unittest::fetch::predicate::outbound::connected());
 
-         auto state = local::call::state( local::predicate::outbound::connected( 1));
-
-         ASSERT_TRUE( state.connections.size() == 2);
-
-         algorithm::sort( state.connections);
-         auto& inbound = state.connections.at( 1);
+         b.activate();
+         auto state = unittest::state();
+         auto& inbound = state.connections.at( 0);
 
 
          // send signal, inbound terminates, wait for inbound and outbound to spawn again (via event::Spawn)
@@ -774,7 +702,7 @@ domain:
                {
                   log::line( log::debug, "event: ", event);
 
-                  done = event.alias == "inbound-1";
+                  done = event.alias == "inbound";
                });
          }
       }
@@ -783,7 +711,7 @@ domain:
       {
          common::unittest::Trace trace;
 
-         static constexpr auto configuration = R"(
+         constexpr auto configuration = R"(
 domain: 
    name: gateway-domain
 
@@ -797,7 +725,7 @@ domain:
 
          auto domain = local::domain( configuration);
 
-         auto state = local::call::state();
+         auto state = unittest::state();
          ASSERT_TRUE( state.connections.size() == 1);
          auto& outbound = state.connections.at( 0);
          auto process = common::communication::instance::fetch::handle( outbound.process.pid);
@@ -811,7 +739,7 @@ domain:
       {
          common::unittest::Trace trace;
 
-         static constexpr auto configuration = R"(
+         constexpr auto configuration = R"(
 domain: 
    name: gateway-domain
 
@@ -826,7 +754,7 @@ domain:
 
          auto domain = local::domain( configuration);
 
-         auto state = local::call::state( []( const auto& state){ return state.connections.size() >= 2;});
+         auto state = unittest::fetch::until( []( const auto& state){ return state.connections.size() >= 2;});
          ASSERT_TRUE( state.connections.size() == 2);
 
          EXPECT_NO_THROW(
@@ -834,31 +762,26 @@ domain:
          );
       }
 
-      TEST( gateway_manager, rediscover_to_1_self_connected__1_not_connected__outbounds)
+      TEST( gateway_manager, rediscover__1_outbound_not_connected)
       {
          common::unittest::Trace trace;
 
-         static constexpr auto configuration = R"(
+         constexpr auto configuration = R"(
 domain: 
-   name: gateway-domain
-
+   name: A
    gateway:
-      inbound:
-         groups:
-            -  connections: 
-               -  address: 127.0.0.1:6666
       outbound:
          groups:
             -  connections:
-               -  address: 127.0.0.1:6666
-               -  address: 127.0.0.1:6667
+               -  address: 127.0.0.1:6669
+               -  address: 127.0.0.1:6670
 )";
 
+         auto b = local::domain( local::configuration::inbound);
+         auto a = local::domain( configuration);
 
-         auto domain = local::domain( configuration);
-
-         auto state = local::call::state( local::predicate::outbound::connected( 1));
-         EXPECT_TRUE( state.connections.size() == 3);
+         auto state = unittest::fetch::until(  unittest::fetch::predicate::outbound::connected( 1));
+         EXPECT_TRUE( state.connections.size() == 2);
 
          EXPECT_NO_THROW(
             casual::domain::discovery::rediscovery::blocking::request();
@@ -871,26 +794,24 @@ domain:
 
          constexpr auto count = 5;
          
-         auto domain = local::domain(); 
-
-         EXPECT_TRUE( common::communication::instance::fetch::handle( common::communication::instance::identity::gateway::manager.id)); 
-
-         {
-            auto state = local::call::state( local::predicate::outbound::connected( 1));
-         }
+         auto b = local::domain( local::configuration::inbound);
 
          // we exposes service "a"
          casual::service::unittest::advertise( { "a"});
 
-         // discover to make sure outbound(s) knows about wanted services
-         unittest::discover( { "a"}, {});
+         auto a = local::domain( local::configuration::outbound);
 
-         auto state = local::call::state( local::predicate::outbound::routing( { "a"}, {}));
+         unittest::fetch::until( unittest::fetch::predicate::outbound::connected());
+
+         // discover to make sure outbound(s) knows about wanted services
+         casual::domain::manager::unittest::discover( { "a"}, {});
+
+         auto state = unittest::fetch::until( unittest::fetch::predicate::outbound::routing( { "a"}, {}));
 
 
          auto outbound = [&state]() -> process::Handle
          {            
-            if( auto found = algorithm::find_if( state.connections, local::predicate::is::outbound()))
+            if( auto found = algorithm::find_if( state.connections, unittest::fetch::predicate::is::outbound()))
                return found->process;
 
             return {};
@@ -907,7 +828,6 @@ domain:
          {
             auto data = common::unittest::random::binary( 128);
             
-
             algorithm::for_n< count>( [&]()
             {
                common::message::service::call::callee::Request request;
@@ -919,11 +839,15 @@ domain:
                   << CASUAL_NAMED_VALUE( outbound);
             });
 
+            b.activate();
+
             algorithm::for_n< count>( [&]()
             {
                // echo the call
                local::service::echo();
             });
+
+            a.activate();
 
             algorithm::for_n< count>( [&]()
             {
@@ -943,25 +867,15 @@ domain:
                common::message::event::service::Calls event;
                common::communication::device::blocking::receive( common::communication::ipc::inbound::device(), event);
 
-               auto is_sequential = []( auto& metric)
-               {
-                  return metric.type == decltype( metric.type)::sequential;
-               };
-               
-               // since we only have one domain, we will (possible) get the metric from outbound also,
-               // and we're only interested in _sequential_ (local) services metric
-               algorithm::append( algorithm::filter( event.metrics, is_sequential), metrics);
+               algorithm::append( event.metrics, metrics);
             }
 
             auto order_pending = []( auto& lhs, auto& rhs){ return lhs.pending < rhs.pending;};
             algorithm::sort( metrics, order_pending);
 
             ASSERT_TRUE( metrics.size() == count) << CASUAL_NAMED_VALUE( metrics);
-            // first should have 0 pending
-            EXPECT_TRUE( metrics.front().pending == platform::time::unit::zero());
-            // last should have more than 0 pending. could be several with 0 pending
-            // since messages buffers over tcp and it's not predictable when messages arrives.
-            EXPECT_TRUE( metrics.back().pending > platform::time::unit::zero()) << CASUAL_NAMED_VALUE( metrics);
+            // all should be 0 pending
+            EXPECT_TRUE(( algorithm::all_of( metrics, []( auto& metric){ return metric.pending == platform::time::unit::zero();})));
 
          }
 
@@ -970,46 +884,31 @@ domain:
       TEST( gateway_manager, native_tcp_connect__disconnect____expect_robust_connection_disconnect)
       {
          common::unittest::Trace trace;
-         constexpr auto configuration = R"(
-domain:
-   name: A
-   gateway:
-      inbound:
-         groups:
-            -  connections:
-                  -  address: 127.0.0.1:7001
-      outbound:
-         groups:
-            -  connections:
-                  -  address: 127.0.0.1:7001
 
-)";
+         auto b = local::domain( local::configuration::inbound);
+         auto a = local::domain( local::configuration::outbound);
 
-         auto domain = local::domain( configuration);
+         unittest::fetch::until( unittest::fetch::predicate::outbound::connected());
 
-         EXPECT_TRUE( common::communication::instance::fetch::handle( common::communication::instance::identity::gateway::manager.id));
 
          {
-            auto state = local::call::state( local::predicate::outbound::connected( 1));
-            ASSERT_TRUE( state.connections.size() == 2);
-         }
-
-         {
-            auto socket = communication::tcp::connect( communication::tcp::Address{ "127.0.0.1:7001"});
-            EXPECT_TRUE( socket);
+            auto socket = communication::tcp::connect( communication::tcp::Address{ "127.0.0.1:6669"});
+            ASSERT_TRUE( socket);
 
             // send two bytes
             posix::result( 
                ::send( socket.descriptor().value(), "AB", 2, 0));
 
+            b.activate();
+
             // we should have got a new connection
-            auto state = local::call::state( []( auto& state){ return state.connections.size() >= 3;});
-            ASSERT_TRUE( state.connections.size() == 3) << "connections: " << state.connections.size();
+            auto state = unittest::fetch::until( []( auto& state){ return state.connections.size() == 2;});
+            ASSERT_TRUE( state.connections.size() == 2) << "connections: " << state.connections.size();
          }
 
          // we still got two connections
-         auto state = local::call::state( []( auto& state){ return state.connections.size() <= 2;});
-         ASSERT_TRUE( state.connections.size() == 2);
+         auto state = unittest::fetch::until( []( auto& state){ return state.connections.size() == 1;});
+         EXPECT_TRUE( state.connections.size() == 1);
 
       }
 

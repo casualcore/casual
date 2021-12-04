@@ -3,12 +3,13 @@ import casual.middleware.make.api as dsl
 
 make.IncludePaths( [
     'include',
-    'admin/include',
+    'unittest/include',
 	'../common/include',
     '../configuration/include',
     '../domain/include',
 	'../xatmi/include',
-	'../serviceframework/include']
+	'../serviceframework/include',
+    ]
     + make.optional_include_paths()
     + dsl.paths().include.gtest
    )
@@ -118,7 +119,7 @@ install_headers += [
 
 service_unittest = make.LinkLibrary( 'bin/casual-service-unittest',
     [ 
-        make.Compile( 'source/unittest/utility.cpp'),
+        make.Compile( 'unittest/source/utility.cpp'),
     ],
     [ 
         'casual-common',

@@ -11,6 +11,7 @@ make.IncludePaths( ['include',
     '../middleware/gateway/include',
     '../middleware/transaction/include',
     '../middleware/service/include',
+    '../middleware/service/unittest/include',
     '../middleware/xatmi/include',
     '../middleware/queue/include',
     '../middleware/buffer/include']
