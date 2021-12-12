@@ -810,18 +810,37 @@ namespace casual
 
                namespace dead
                {
-                  /* TODO: we might need to check if any queue groups dies, while we have "pending"?
                   auto process( State& state)
                   {
                      return [&state]( const common::message::event::process::Exit& message)
                      {
                         Trace trace{ "queue::forward::service::local::handle::dead::process"};
                         log::line( verbose::log, "message: ", message);
-                        
-                        
+
+                        auto transform_id = []( auto& forward){ return forward.id;};
+
+                        // take care of source pendings
+                        {
+                           auto is_source = [pid=message.state.pid]( auto& forward){ return forward.source == pid;};
+
+                           auto ids = algorithm::transform_if( state.forward.queues, transform_id, is_source);
+                           algorithm::transform_if( state.forward.services, std::back_inserter( ids), transform_id, is_source);
+
+                           auto pending = std::get< 0>( algorithm::intersection( state.pending.dequeues, ids));
+                           log::line( verbose::log, "pending: ", pending);
+
+                           // we pretend that queue-group has sent dequeue::forget and let the normal flow 
+                           // take place.
+                           algorithm::for_each( pending, []( auto& pending)
+                           {
+                              ipc::message::group::dequeue::forget::Request forget{ common::process::handle()};
+                              forget.correlation = pending.correlation;
+                              ipc::device().push( std::move( forget));
+                           });
+                        }
                      };                     
                   }
-                  */
+
 
                } // dead
 
@@ -865,7 +884,7 @@ namespace casual
                   handle::transaction::commit::reply( state),
                   handle::transaction::rollback::reply( state),
 
-                  //common::event::listener( handle::dead::process( state)),
+                  common::event::listener( handle::dead::process( state)),
                   handle::shutdown( state)
                );
             }
