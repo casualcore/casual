@@ -19,6 +19,7 @@ namespace casual
          flag2 = 2,
          flag3 = 4,
          flag4 = 8,
+         combo3_4 = flag3 | flag4,
          flag5 = 16
       };
 
@@ -140,6 +141,18 @@ namespace casual
       {
          Flags< Enum> flags{ Enum::flag1, Enum::flag2};
          EXPECT_TRUE( flags.exist( Enum::flag2));
+      }
+
+      TEST( casual_common_flags, combo)
+      {
+         Flags< Enum> flags{ Enum::flag3, Enum::flag4};
+         EXPECT_TRUE( flags != Enum::flag1);
+         EXPECT_TRUE( flags != Enum::flag2);
+         EXPECT_TRUE( flags != Enum::flag3);
+         EXPECT_FALSE( flags == Enum::flag3);
+         EXPECT_TRUE( flags != Enum::flag4);
+         EXPECT_FALSE( flags == Enum::flag4);
+         EXPECT_TRUE( flags == Enum::combo3_4);
       }
 
    } // common

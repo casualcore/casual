@@ -12,24 +12,19 @@
 
 namespace casual
 {
-   namespace tools 
+   namespace tools::service::call
    {
-      namespace service
+      struct cli 
       {
-         namespace call
-         {
-            struct cli 
-            {
-               cli();
-               ~cli();
+         cli();
+         ~cli();
 
-               common::argument::Group options() &;
+         common::argument::Group options() &;
 
-            private:
-               struct Implementation;
-               common::move::basic_pimpl< Implementation> m_implementation;
-            };
-         } // call
-      } // service  
-   } // tools
+      private:
+         struct Implementation;
+         common::move::basic_pimpl< Implementation> m_implementation;
+      };
+ 
+   } // tools::service::call
 } // casual

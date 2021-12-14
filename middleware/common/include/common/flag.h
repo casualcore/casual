@@ -116,8 +116,6 @@ namespace casual
          constexpr friend bool operator == ( Flags lhs, Flags rhs) { return lhs.m_flags == rhs.m_flags;}
          constexpr friend bool operator != ( Flags lhs, Flags rhs) { return ! ( lhs == rhs);}
 
-         constexpr friend bool operator == ( Flags lhs, enum_type rhs) { return lhs.exist( rhs);}
-
          constexpr friend Flags operator - ( Flags lhs, Flags rhs) { return Flags{ lhs.m_flags & ~rhs.m_flags};}
          constexpr friend Flags& operator -= ( Flags& lhs, Flags rhs) { lhs.m_flags &= ~rhs.m_flags; return lhs;}
 

@@ -4,6 +4,7 @@ import casual.middleware.make.api as dsl
 
 make.IncludePaths( [
     'include',
+    'unittest/include',
     '../configuration/include',
     '../xatmi/include',
     '../serviceframework/include',
@@ -82,6 +83,24 @@ make.LinkExecutable( 'bin/casual-administration-cli-documentation',
       'casual-common',
    ])
 
+unittest_lib = make.LinkLibrary( 'bin/casual-administration-unittest',
+    [ 
+        make.Compile( 'unittest/source/cli/command.cpp'),
+    ],
+    [ 
+        'casual-common',
+    ])
+
+make.LinkUnittest( 'unittest/bin/test-casual-administration',
+   [
+      make.Compile( 'unittest/source/cli/test_call.cpp')
+   ],
+   [ 
+      unittest_lib,
+      'casual-common', 
+      'casual-unittest',
+      'casual-domain-unittest',
+   ])
 
 
 make.Install( install_exe,  dsl.paths().install + '/bin')

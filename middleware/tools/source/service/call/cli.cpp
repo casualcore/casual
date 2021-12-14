@@ -181,8 +181,8 @@ namespace casual
                {
                   auto handle_payload = [&state]( casual::cli::message::Payload& message)
                   {
-                     Trace trace{ "tools::service::call::local::handle::pipe::handle_payload"};
-                     //log::line( verbose::log, "state: ", state);
+                     Trace trace{ "tools::service::call::local::handle::pipe"};
+                     log::line( verbose::log, "state: ", state);
 
                      if( state.iterations <= 0)
                         return;
@@ -214,6 +214,8 @@ namespace casual
                {
                   auto call_reply = [&state]( common::message::service::call::Reply& message)
                   {
+                     Trace trace{ "tools::service::call::local::handle::ipc"};
+
                      if( auto found = algorithm::find( state.pending.calls, message.correlation))
                         state.pending.calls.erase( std::begin( found));
                      else
@@ -241,6 +243,7 @@ namespace casual
                {
                   Trace trace{ "tools::service::call::local::blocking::call"};
                   log::line( verbose::log, "state: ", state);
+                  log::line( verbose::log, "state.machine == State::Flag::done: ", state.machine == State::Flag::done);
 
                   communication::stream::inbound::Device pipe{ std::cin};
 
@@ -257,6 +260,9 @@ namespace casual
                   {
                      auto handle_payload = [&state]( casual::cli::message::Payload& message)
                      {
+                        Trace trace{ "tools::service::call::local::blocking::call handler"};
+                        common::log::line( verbose::log, "message: ", message);
+
                         if( state.iterations <= 0)
                            return;
 
@@ -277,8 +283,9 @@ namespace casual
                      return common::message::dispatch::handler( communication::stream::inbound::Device{ std::cin},
                         casual::cli::pipe::forward::handle::defaults(),
                         std::move( handle_payload),
-                        [&state]( const casual::cli::message::pipe::Done&)
+                        [&state]( const casual::cli::message::pipe::Done& done)
                         {
+                           common::log::line( verbose::log, "done: ", done);
                            state.machine = State::Flag::done;
                         }
                      );
@@ -319,6 +326,8 @@ namespace casual
 
                while( state.machine != State::Flag::done)
                {
+                  log::line( verbose::log, "state.machine: ", state.machine);
+
                   if( state.machine == State::Flag::pipe)
                   {
                      // just listen to the pipe 
