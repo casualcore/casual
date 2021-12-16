@@ -8,6 +8,7 @@
 #include "xatmi.h"
 
 #include "common/algorithm.h"
+#include "common/algorithm/compare.h"
 #include "common/domain.h"
 #include "common/log.h"
 
@@ -25,6 +26,54 @@ namespace casual
    using namespace common;
    namespace example::server
    {
+      // Helpers. Mainly used in service casual_example_conversation_recv_send
+      // to make code more compact and reduce clutter. 
+      namespace local 
+      {
+         namespace
+         {
+            namespace receive
+            {
+               struct Result
+               {
+                  int retval; // captured return value
+                  int error;  // captured tperrno
+                  long event; // captured event code
+                  std::string data; // received data 
+                  // Serialization needed?
+                  CASUAL_LOG_SERIALIZE(
+                     CASUAL_SERIALIZE( event);
+                     CASUAL_SERIALIZE( retval);
+                     CASUAL_SERIALIZE( error);
+                  )
+               };
+
+               Result invoke( int descriptor, long flags)
+               {
+                  Result result;
+
+                  //auto buffer = test::unittest::xatmi::buffer::x_octet{};
+                  //result.retval = tprecv( descriptor, buffer.data, &buffer.size, flags, &result.event);
+
+                  auto buffer = tpalloc( X_OCTET,nullptr, 128);
+                  auto recv_len= tptypes( buffer, nullptr,nullptr);
+                  result.retval = tprecv( descriptor, &buffer, &recv_len, flags, &result.event);
+                  result.error = tperrno;
+                  
+                  if( result.retval != -1 || // =no error or event from tprecv or
+                        (result.retval == -1 && result.error == TPEEVENT && // "error" and event with possible data
+                        algorithm::compare::any( result.event, TPEV_SVCFAIL, TPEV_SVCSUCC, TPEV_SENDONLY)))
+                  {
+                     result.data.assign( buffer, recv_len);
+                  }
+                  tpfree(buffer);
+
+                  return result;
+               }
+            } // namespace receive
+         } // namespace
+      } // namespace local
+
       extern "C"
       {
 
@@ -139,45 +188,20 @@ namespace casual
                   common::process::sleep( 1s);
                }
 
-<<<<<<< HEAD
-               auto recv_buffer = tpalloc( X_OCTET, nullptr, 128);
-=======
-            while (receiving) {
-               if (collected_data.find("sleep before tprecv") != std::string::npos)
-               { // This is a "hack" used by unit tests to delay the tprecv
-               // so that data or a disconnect arrives before the 
-               // tprecv() is called. This is to "force" a timing case.
-               // There is obviously not an absolute guarantee that
-               // the desired effect is achived, but in practice it should work.
-                  common::process::sleep(1s);
-               }
+               auto result = local::receive::invoke(info->cd, TPSIGRSTRT);
 
-               auto recv_buffer=tpalloc(X_OCTET, nullptr, 128);
->>>>>>> 4f2775aa (Testcase for disconnect of conversational with different timing.)
-               long event=0;
-               long recv_len = tptypes( recv_buffer, nullptr, nullptr);
-               auto recv_return = tprecv( info->cd, &recv_buffer, &recv_len, TPSIGRSTRT, &event);
+               // accumulate any data
+               collected_data += result.data;
 
-               // Data possible?
-               if( recv_return == 0 || (recv_return == -1 && tperrno == TPEEVENT && event == TPEV_SENDONLY))
-               {
-                  // nothing appended if recv_len == 0
-                  collected_data.append( recv_buffer, recv_len);
-               }
-
-               // finished with this receive buffer
-               // (could allocate outside of loop and reuse) 
-               tpfree( recv_buffer); 
-
-               if( recv_return == -1 && tperrno == TPEEVENT)
+               if( result.retval == -1 && result.error == TPEEVENT)
                {
                   // handle events...
-                  if( event == TPEV_SENDONLY)
+                  if( result.event == TPEV_SENDONLY)
                   {
                      // Transfer of comntrol of conversation
                      receiving = false;
                   }
-                  else if( event == TPEV_DISCONIMM)
+                  else if( result.event == TPEV_DISCONIMM)
                   {
                      // This is "kind of normal" in the sense that it can
                      // occur but is exceptional. Possible reasons are:
@@ -208,21 +232,70 @@ namespace casual
                      // with a "return" instead of tpreturn(). This is
                      // "abnormal".
                      log::line( log::category::error, "casual_example_conversation_recv_send got unexpected event from tprecv - tperrno: ",
-                        tperrnostring( tperrno), " event: ", event);
+                        tperrnostring( result.error), " event: ", result.event);
 
                      return; // abnormal(!) service return
                   }
                }
-               else if( recv_return == -1)
+               else if( result.retval == -1)
                {
                   // Got an error but not TPEEVENT. This is "unexpected"
                   // we log and tpreturn with failure.
                   log::line( log::category::error, "casual_example_conversation_recv_send got unexpected return status from tprecv - tperrno: ",
-                        tperrnostring( tperrno), " event: ", event);
+                        tperrnostring( result.error), " event: ", result.event);
                   tpreturn( TPFAIL, 0, nullptr, 0, 0);
                }
-            } // while(receiving) <-- if this is needed the control flow is way to big! (which it is...)
 
+               if (collected_data.find("execute return") != std::string::npos)
+               {
+                  // Also a "hack"for testing purposes.
+                  // Do a return from service. That is an "intentional"
+                  // break of the rules for how a service should behave.
+                  log::line(log::debug, "casual_example_conversation_recv_send requested to execute \"return\"");
+                  return;
+               }
+               if (collected_data.find("execute tpreturn TPFAIL no data") != std::string::npos)
+               {
+                  // Also a "hack"for testing purposes.
+                  // Do a tpreturn with TPFAIL from service. This is a 
+                  // kind of an "abort from service side" when done
+                  // when service (subordinate i XATMI spec terms) is
+                  // not in control of the conversation. According to spec
+                  // a tpreturn when not in control gives TPEC_SVCERR
+                  // in caller, except for a tpreturn with no data and
+                  // TPFAIL that should give TPEV_SVCFAIL. 
+                  // 
+                  // Note that if we got control in the last tprecv
+                  // it is legal/normal from a "protocol" point of view
+                  // to return with a TPFAIL. In this case data is also allowed!
+                  log::line(log::debug, "casual_example_conversation_recv_send requested to execute \"tpreturn TPFAIL no data\"");
+                  tpreturn(TPFAIL, 0, 0, 0, 0); 
+                  //      (failure, rcode, no data, length 0, flags)
+               }
+
+               if (collected_data.find("execute tpreturn TPFAIL with data") != std::string::npos)
+               {
+                  // Also a "hack"for testing purposes.
+                  // Do a tpreturn with TPFAIL from service. This is a 
+                  // kind of an "abort from service side" when done
+                  // when service (subordinate i XATMI spec terms) is
+                  // not in control of the conversation. According to spec
+                  // a tpreturn when not in control gives TPEC_SVCERR
+                  // in initiator/caller.
+                  // 
+                  // Note that if we got control in the last tprecv
+                  // it is legal to return data with a TPFAIL and
+                  // the callee gets the data together with the TPEV_FAIL).
+                  log::line(log::debug, "casual_example_conversation_recv_send requested to execute \"tpreturn TPFAIL\"");
+
+                  std::string_view oss{"tpreturn with TPFAIL"};
+                  auto tpreturn_buffer = tpalloc(X_OCTET, oss.data(), oss.length());
+
+                  common::algorithm::copy(common::range::make(oss.begin(), oss.end()), tpreturn_buffer);
+                  tpreturn( TPSUCCESS, 0, tpreturn_buffer, tptypes(tpreturn_buffer, nullptr, nullptr), 0);
+               }
+
+            } // while(receiving) <-- if this is needed the control flow is way to big! (which it is...)            } // while(receiving)
             // ww have got control of conversation. If any data has
             // been collected send it back.
             if( ! collected_data.empty()) 
