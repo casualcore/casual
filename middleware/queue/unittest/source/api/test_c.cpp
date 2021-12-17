@@ -131,6 +131,24 @@ domain:
          EXPECT_TRUE( casual_queue_message_delete( message) != -1);
       }
 
+      TEST( casual_queue_c_api, enqueue_message_non_existing_queue)
+      {
+         common::unittest::Trace trace;
+
+         local::Domain domain;
+
+         auto buffer = local::buffer::allocate();
+
+         auto message  = casual_queue_message_create( { buffer.get(), buffer.size()});
+
+         EXPECT_TRUE( casual_queue_enqueue( "non_existing_queue", message) == -1);
+
+         EXPECT_TRUE( casual_qerrno == CASUAL_QE_NO_QUEUE);
+
+         EXPECT_TRUE( casual_queue_message_delete( message) != -1);
+      }
+
+
       TEST( casual_queue_c_api, enqueue_dequeue_message)
       {
          common::unittest::Trace trace;

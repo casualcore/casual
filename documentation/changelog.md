@@ -2,6 +2,8 @@
 This is the changelog for `casual` and all changes are listed in this document.
 
 ## [Unreleased]
+### Fixes
+- queue - return no_queue iso no_message when writing to non existing queue
 
 ## [1.5.7] - 2021-11-26
 ### Fixes
