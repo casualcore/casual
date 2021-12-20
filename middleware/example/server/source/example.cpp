@@ -52,9 +52,6 @@ namespace casual
                {
                   Result result;
 
-                  //auto buffer = test::unittest::xatmi::buffer::x_octet{};
-                  //result.retval = tprecv( descriptor, buffer.data, &buffer.size, flags, &result.event);
-
                   auto buffer = tpalloc( X_OCTET,nullptr, 128);
                   auto recv_len= tptypes( buffer, nullptr,nullptr);
                   result.retval = tprecv( descriptor, &buffer, &recv_len, flags, &result.event);
@@ -169,16 +166,20 @@ namespace casual
             // for experiments with a simple conversational "echo style"
             // service.
             
-            std::string collected_data;
             // save (copy) any data provided in the call
+            std::string recent_data; // holds the most recently received data
+                                     // or provided on service invocation
             if( info->len > 0)  // not really needed, insert probably does nothing if info->len == 0
-               collected_data.assign(info->data, info->len);
+            {
+               recent_data.assign(info->data, info->len);
+            }
+            std::string collected_data{recent_data};
 
             auto receiving = ( ( info->flags & TPCONV) && ( info->flags & TPRECVONLY)) ? true : false;
 
             while( receiving) 
             {
-               if( collected_data.find( "sleep before tprecv") != std::string::npos)
+               if( recent_data.find( "sleep before tprecv") != std::string::npos)
                {  
                   // This is a "hack" used by unit tests to delay the tprecv
                   // so that data or a disconnect arrives before the 
@@ -192,6 +193,7 @@ namespace casual
 
                // accumulate any data
                collected_data += result.data;
+               recent_data = result.data;
 
                if( result.retval == -1 && result.error == TPEEVENT)
                {
@@ -246,7 +248,7 @@ namespace casual
                   tpreturn( TPFAIL, 0, nullptr, 0, 0);
                }
 
-               if (collected_data.find("execute return") != std::string::npos)
+               if( recent_data.find("execute return") != std::string::npos)
                {
                   // Also a "hack"for testing purposes.
                   // Do a return from service. That is an "intentional"
@@ -254,48 +256,43 @@ namespace casual
                   log::line(log::debug, "casual_example_conversation_recv_send requested to execute \"return\"");
                   return;
                }
-               if (collected_data.find("execute tpreturn TPFAIL no data") != std::string::npos)
+               if( recent_data.find("execute tpreturn TPFAIL no data") != std::string::npos)
                {
                   // Also a "hack"for testing purposes.
                   // Do a tpreturn with TPFAIL from service. This is a 
                   // kind of an "abort from service side" when done
                   // when service (subordinate i XATMI spec terms) is
                   // not in control of the conversation. According to spec
-                  // a tpreturn when not in control gives TPEC_SVCERR
+                  // a tpreturn when not in control gives TPEV_SVCERR
                   // in caller, except for a tpreturn with no data and
                   // TPFAIL that should give TPEV_SVCFAIL. 
                   // 
                   // Note that if we got control in the last tprecv
                   // it is legal/normal from a "protocol" point of view
-                  // to return with a TPFAIL. In this case data is also allowed!
+                  // to return with a TPFAIL. In this case data is also
+                  // allowed!
                   log::line(log::debug, "casual_example_conversation_recv_send requested to execute \"tpreturn TPFAIL no data\"");
                   tpreturn(TPFAIL, 0, 0, 0, 0); 
                   //      (failure, rcode, no data, length 0, flags)
                }
-
-               if (collected_data.find("execute tpreturn TPFAIL with data") != std::string::npos)
+               if( recent_data.find("execute tpreturn TPFAIL with data") != std::string::npos)
                {
-                  // Also a "hack"for testing purposes.
-                  // Do a tpreturn with TPFAIL from service. This is a 
-                  // kind of an "abort from service side" when done
-                  // when service (subordinate i XATMI spec terms) is
-                  // not in control of the conversation. According to spec
-                  // a tpreturn when not in control gives TPEC_SVCERR
-                  // in initiator/caller.
-                  // 
-                  // Note that if we got control in the last tprecv
-                  // it is legal to return data with a TPFAIL and
-                  // the callee gets the data together with the TPEV_FAIL).
-                  log::line(log::debug, "casual_example_conversation_recv_send requested to execute \"tpreturn TPFAIL\"");
+                  // tpreturn with TPFAIL and data.
+                  // data will be: "tpreturn TPFAIL with data".
+                  //
+                  // A "hack"for testing purposes.
+                  // See above for general comments on what is expected
+                  // to happen as a result of the tpreturn.
+                  //
+                  log::line(log::debug, "casual_example_conversation_recv_send requested to execute \"tpreturn TPFAIL with data\"");
+                  std::string_view return_data{"tpreturn TPFAIL with data"};
+                  auto tpreturn_buffer = tpalloc(X_OCTET, nullptr, return_data.length());
 
-                  std::string_view oss{"tpreturn with TPFAIL"};
-                  auto tpreturn_buffer = tpalloc(X_OCTET, oss.data(), oss.length());
-
-                  common::algorithm::copy(common::range::make(oss.begin(), oss.end()), tpreturn_buffer);
-                  tpreturn( TPSUCCESS, 0, tpreturn_buffer, tptypes(tpreturn_buffer, nullptr, nullptr), 0);
+                  common::algorithm::copy(common::range::make(return_data.begin(), return_data.end()), tpreturn_buffer);
+                  tpreturn( TPFAIL, 0, tpreturn_buffer, tptypes(tpreturn_buffer, nullptr, nullptr), 0);
+                  //      ( failure, rcode, no data, length 0, flags)
                }
-
-            } // while(receiving) <-- if this is needed the control flow is way to big! (which it is...)            } // while(receiving)
+            } // while( receiving) <-- if this is needed the control flow is way to big! (which it is...)            } // while(receiving)
             // ww have got control of conversation. If any data has
             // been collected send it back.
             if( ! collected_data.empty()) 

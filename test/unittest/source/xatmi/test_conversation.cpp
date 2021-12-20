@@ -935,38 +935,102 @@ domain:
          {
             std::string send_data {" send data"};
             auto result = local::send::invoke ( connection.descriptor, send_data, TPSIGRSTRT);
-            // We test for the result we actually get. This is a possible result
-            // but is somewhat unexpected. If/when Casual behaviour is changed
-            // expected result will change.
             EXPECT_TRUE( result.retval == -1) << CASUAL_NAMED_VALUE( result);
             EXPECT_TRUE( result.error == TPEEVENT) << CASUAL_NAMED_VALUE( result);
             EXPECT_TRUE( result.event == TPEV_SVCFAIL) << CASUAL_NAMED_VALUE( result);
-            //EXPECT_TRUE( result) << CASUAL_NAMED_VALUE( result);
          }
 
+         // The following is in the test code because an earlier
+         // version did not report an error on the tpsend above!
+         // With that version of Casual the send succeded and the
+         // event TPEV_SVCFAIL finally occured on the tprecv.
          {
-            // If the previous send had gotten an event TPEV_SVCFAIL
-            // this would have failed with TPEBADDESC. Now it seems to succeed
-            // but the data sent is discarded by the "receiving" server as the
-            // convesation is no longer active when the message is processed
-            // callee side.
+            // If the previous send got an event TPEV_SVCFAIL
+            // this should fail with TPEBADDESC.
             std::string send_data {" send data and handover"};
             auto result = local::send::invoke ( connection.descriptor, send_data, TPSIGRSTRT|TPRECVONLY);
             EXPECT_TRUE( result.retval == -1) << CASUAL_NAMED_VALUE(result);
-            EXPECT_TRUE( result.error== TPEBADDESC) << CASUAL_NAMED_VALUE(result);
-            //EXPECT_TRUE( result) << CASUAL_NAMED_VALUE( result);
+            EXPECT_TRUE( result.error == TPEBADDESC) << CASUAL_NAMED_VALUE(result);
          }
 
          {
-            // The receive should fail in some way as the callee terminated
-            // the conversation. In the current Casual implementation this is 
-            // when we get notified that the service failed.
+            // A receive should fail in some way as the callee terminated
+            // the conversation.
             auto result = local::receive::invoke( connection.descriptor, TPSIGRSTRT);
             EXPECT_TRUE( result.retval == -1) << CASUAL_NAMED_VALUE(result);
-            EXPECT_TRUE( result.error== TPEBADDESC) << CASUAL_NAMED_VALUE(result);
-            //EXPECT_TRUE( result.retval == -1) << CASUAL_NAMED_VALUE( result);
-            //EXPECT_TRUE( result.error == TPEEVENT) << CASUAL_NAMED_VALUE( result);
-            //EXPECT_TRUE( result.event == TPEV_SVCFAIL) << CASUAL_NAMED_VALUE( result);;
+            EXPECT_TRUE( result.error == TPEBADDESC) << CASUAL_NAMED_VALUE(result);
+         }
+
+         // and the conversation descriptor should now be invalid
+         EXPECT_TRUE( tpdiscon( connection.descriptor) == -1);
+
+#ifdef HANG_WORKAROUND
+         common::process::sleep( 200ms);
+#endif
+      }
+
+      TEST( casual_xatmi_conversation, DISABLED_connect_send_TPSENDONLY_service_tpreturn_with_data_send__conversation_recv_send_service)
+      {
+         unittest::Trace trace;
+
+         auto domain = local::domain();
+         // This test is similiar to the previous test.
+         //
+         // 1. connect with data, TPSENDONLY
+         // 2. send data, including a substring 
+         //    "execute tpreturn TPFAIL with data".
+         //    Keep control of the conversation
+         // 3. (callee will do a tpreturn)
+         // 4. short sleep
+         // 5. tpsend, hand over control (expected to fail...)
+         // 6. tprecv (expected to fail)
+         //
+         // The difference to the previous test case is the expected
+         // event on the 2:nd tpsend (5).
+
+         const std::string_view payload {"connect data"};
+         auto connection = local::connect::invoke( "casual/example/conversation_recv_send", payload, TPSENDONLY);
+         EXPECT_TRUE( connection) << CASUAL_NAMED_VALUE( connection);
+         EXPECT_TRUE( connection.error == 0) << CASUAL_NAMED_VALUE( connection);
+
+         {
+            std::string send_data {" execute tpreturn TPFAIL with data"};
+            auto result = local::send::invoke ( connection.descriptor, send_data, TPSIGRSTRT);
+            EXPECT_TRUE( result) << CASUAL_NAMED_VALUE( result);
+         }
+
+         // to give the service time to call tpreturn() before we call tpsend()
+         common::process::sleep( 500ms);
+
+         {
+            std::string send_data {" send data"};
+            auto result = local::send::invoke ( connection.descriptor, send_data, TPSIGRSTRT);
+            EXPECT_TRUE( result.retval == -1) << CASUAL_NAMED_VALUE( result);
+            EXPECT_TRUE( result.error == TPEEVENT) << CASUAL_NAMED_VALUE( result);
+            // TPEV_SVCERR is expected as no data is allowed in the tpreturn TPFAIL
+            // when not in control of the session. 
+            EXPECT_TRUE( result.event == TPEV_SVCERR) << CASUAL_NAMED_VALUE( result);
+         }
+
+         // The following is n the test code because an earlier
+         // version did not report an error on the tpsend above!
+         // With that version of Casual the send succeded and the
+         // tprecv got an TPEV_SVCFAIL
+         {
+            // If the previous send got an event TPEV_SVCFAIL
+            // this should fail with TPEBADDESC.
+            std::string send_data {" send data and handover"};
+            auto result = local::send::invoke ( connection.descriptor, send_data, TPSIGRSTRT|TPRECVONLY);
+            EXPECT_TRUE( result.retval == -1) << CASUAL_NAMED_VALUE(result);
+            EXPECT_TRUE( result.error == TPEBADDESC) << CASUAL_NAMED_VALUE(result);
+         }
+
+         {
+            // A receive should fail in some way as the callee terminated
+            // the conversation.
+            auto result = local::receive::invoke( connection.descriptor, TPSIGRSTRT);
+            EXPECT_TRUE( result.retval == -1) << CASUAL_NAMED_VALUE(result);
+            EXPECT_TRUE( result.error == TPEBADDESC) << CASUAL_NAMED_VALUE(result);
          }
 
          // and the conversation descriptor should now be invalid
