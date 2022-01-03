@@ -2446,6 +2446,458 @@ domain:
       }
 
 
+      TEST( test_domain_gateway, call_A_B_C_from_X__via_GW__A_B_C_connects_directly_to_X_within_transaction__resource_report_XAER_RMFAIL_on_start_end_in_domain_A__expect_correct_transaction_state)
+      {
+         common::unittest::Trace trace;
+
+         constexpr auto A = R"(
+domain:
+   name: A
+   transaction:
+      resources:
+         -  name: example-resource-server
+            key: rm-mockup
+            # #define XAER_RMFAIL  -7    /* resource manager unavailable */
+            openinfo: --start -7 --end -7
+            instances: 1
+   servers:
+      -  path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-resource-server"
+         memberships: [ user]
+         arguments: [ --nested-calls, casual/example/resource/domain/echo/B, casual/example/resource/domain/echo/C, casual/example/resource/domain/echo/X]
+         instances: 4
+   gateway:
+      outbound:
+         groups:
+            -  connections:
+               -  address: 127.0.0.1:7779  # GW
+               -  address: 127.0.0.1:7773  # X
+      inbound:
+         groups:
+            -  connections: 
+               -  address: 127.0.0.1:7770
+
+)";
+
+         constexpr auto B = R"(
+domain: 
+   name: B
+
+   servers:
+      -  path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-resource-server"
+         memberships: [ user]
+         arguments: [ --nested-calls, casual/example/resource/domain/echo/A, casual/example/resource/domain/echo/C, casual/example/resource/domain/echo/X]
+         instances: 4
+   gateway:
+      outbound:
+         groups:
+            -  connections:
+               -  address: 127.0.0.1:7779  # GW
+               -  address: 127.0.0.1:7773  # X
+      inbound:
+         groups:
+            -  connections: 
+               -  address: 127.0.0.1:7771
+
+)";
+
+         constexpr auto C = R"(
+domain: 
+   name: C
+
+   servers:
+      -  path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-resource-server"
+         memberships: [ user]
+         arguments: [ --nested-calls, casual/example/resource/nested/calls/A, casual/example/resource/nested/calls/B, casual/example/resource/domain/echo/X]
+         instances: 4
+   gateway:
+      outbound:
+         groups:
+            -  connections:
+               -  address: 127.0.0.1:7779  # GW
+               -  address: 127.0.0.1:7773  # X
+      inbound:
+         groups:
+            -  connections: 
+               -  address: 127.0.0.1:7772
+
+)";
+
+         constexpr auto GW = R"(
+domain: 
+   name: GW
+
+   gateway:
+      outbound:
+         groups:
+            -  connections:
+               -  address: 127.0.0.1:7770 # A 
+               -  address: 127.0.0.1:7771 # B
+               -  address: 127.0.0.1:7772 # C
+      inbound:
+         groups:
+            -  connections: 
+               -  address: 127.0.0.1:7779
+                  discovery:
+                     forward: true
+
+)";
+
+
+         constexpr auto X = R"(
+domain: 
+   name: X
+   servers:
+      -  path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-resource-server"
+         memberships: [ user]
+         instances: 3
+   gateway:
+      outbound:
+         groups:
+            -  connections:
+               -  address: 127.0.0.1:7779
+      inbound:
+         groups:
+            -  connections: 
+               -  address: 127.0.0.1:7773
+
+)";
+
+         // sink child signals 
+         signal::callback::registration< code::signal::child>( [](){});
+
+         auto a = local::domain( A);
+         auto b = local::domain( B);
+         auto c = local::domain( C);
+         auto x = local::domain( X);
+          
+         auto gw = local::domain( GW);
+
+         // everything is booted, we need to 'wait' until all domains got outbound connections
+         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
+         
+         a.activate();
+         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
+
+         b.activate();
+         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
+
+         c.activate();
+         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
+
+         x.activate();
+         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
+
+         // we're in X at the moment
+
+         auto call_C = []( auto count)
+         {
+            algorithm::for_n( count, []()
+            {
+               local::call( "casual/example/resource/nested/calls/C", TPOK);
+            });
+         };
+
+         constexpr auto transaction_count = 1;
+         constexpr auto call_count = 1;
+
+         algorithm::for_n( transaction_count, [call_C]()
+         {
+            ASSERT_TRUE( tx_begin() == TX_OK);
+            call_C( call_count);
+            ASSERT_EQ( tx_rollback(), TX_OK);
+         });
+
+         auto check_transaction_state = []( )
+         {
+            auto state = casual::transaction::unittest::state();
+
+            EXPECT_TRUE( state.pending.persistent.replies.empty()) << CASUAL_NAMED_VALUE( state);
+            EXPECT_TRUE( state.pending.requests.empty()) << CASUAL_NAMED_VALUE( state);
+            EXPECT_TRUE( state.transactions.empty()) << CASUAL_NAMED_VALUE( state);
+
+            return state;
+         };
+
+         // check in x
+         {  
+            // we're in X at the moment 
+            auto state = check_transaction_state();
+            ASSERT_TRUE( state.resources.size() == 1);
+            auto& resource = state.resources[ 0];
+            ASSERT_TRUE( resource.instances.size() == 1);
+            auto& instance = resource.instances[ 0];
+            // distributed transactions, only rollback
+            EXPECT_TRUE( instance.metrics.resource.count == transaction_count * 2) << CASUAL_NAMED_VALUE( instance.metrics.resource);
+         }
+
+
+         // check in gateway
+         {
+            gw.activate();
+            auto state = check_transaction_state();
+            ASSERT_TRUE( state.resources.size() == 1);
+            auto& resource = state.resources[ 0];
+            ASSERT_TRUE( resource.instances.size() == 1);
+            auto& instance = resource.instances[ 0];
+            // distributed transactions, only rollback
+            EXPECT_TRUE( instance.metrics.resource.count == 0) << CASUAL_NAMED_VALUE( instance.metrics.resource);
+         }
+
+         {
+            a.activate();
+            auto state = check_transaction_state();
+            ASSERT_TRUE( state.resources.size() == 1);
+            auto& resource = state.resources[ 0];
+            ASSERT_TRUE( resource.instances.size() == 1);
+            auto& instance = resource.instances[ 0];
+            // distributed transactions, only rollback
+            EXPECT_TRUE( instance.metrics.resource.count == transaction_count * 2) << CASUAL_NAMED_VALUE( instance.metrics.resource);
+         }
+
+         {
+            b.activate();
+            auto state = check_transaction_state();
+            ASSERT_TRUE( state.resources.size() == 1);
+            auto& resource = state.resources[ 0];
+            ASSERT_TRUE( resource.instances.size() == 1);
+            auto& instance = resource.instances[ 0];
+            // distributed transactions, only rollback
+            EXPECT_TRUE( instance.metrics.resource.count == transaction_count * 1) << CASUAL_NAMED_VALUE( instance.metrics.resource);
+         }
+
+         {
+            c.activate();
+            auto state = check_transaction_state();
+            ASSERT_TRUE( state.resources.size() == 1);
+            auto& resource = state.resources[ 0];
+            ASSERT_TRUE( resource.instances.size() == 1);
+            auto& instance = resource.instances[ 0];
+            // distributed transactions, only rollback
+            EXPECT_TRUE( instance.metrics.resource.count == transaction_count * 2) << CASUAL_NAMED_VALUE( instance.metrics.resource);
+         }  
+      }
+
+      TEST( test_domain_gateway, call_A_B_C_from_X__via_GW__A_B_C_connects_directly_to_X_within_transaction___rollback___expect_correct_transaction_state)
+      {
+         common::unittest::Trace trace;
+
+         constexpr auto A = R"(
+domain:
+   name: A
+   servers:
+      -  path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-resource-server"
+         memberships: [ user]
+         arguments: [ --nested-calls, casual/example/resource/domain/echo/B, casual/example/resource/domain/echo/C, casual/example/resource/domain/echo/X]
+         instances: 4
+   gateway:
+      outbound:
+         groups:
+            -  connections:
+               -  address: 127.0.0.1:7779  # GW
+               -  address: 127.0.0.1:7773  # X
+      inbound:
+         groups:
+            -  connections: 
+               -  address: 127.0.0.1:7770
+
+)";
+
+         constexpr auto B = R"(
+domain: 
+   name: B
+   servers:
+      -  path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-resource-server"
+         memberships: [ user]
+         arguments: [ --nested-calls, casual/example/resource/domain/echo/A, casual/example/resource/domain/echo/C, casual/example/resource/domain/echo/X]
+         instances: 4
+   gateway:
+      outbound:
+         groups:
+            -  connections:
+               -  address: 127.0.0.1:7779  # GW
+               -  address: 127.0.0.1:7773  # X
+      inbound:
+         groups:
+            -  connections: 
+               -  address: 127.0.0.1:7771
+
+)";
+
+         constexpr auto C = R"(
+domain: 
+   name: C
+   servers:
+      -  path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-resource-server"
+         memberships: [ user]
+         arguments: [ --nested-calls, casual/example/resource/nested/calls/A, casual/example/resource/nested/calls/B, casual/example/resource/domain/echo/X]
+         instances: 4
+   gateway:
+      outbound:
+         groups:
+            -  connections:
+               -  address: 127.0.0.1:7779  # GW
+               -  address: 127.0.0.1:7773  # X
+      inbound:
+         groups:
+            -  connections: 
+               -  address: 127.0.0.1:7772
+
+)";
+
+         constexpr auto GW = R"(
+domain: 
+   name: GW
+   gateway:
+      outbound:
+         groups:
+            -  connections:
+               -  address: 127.0.0.1:7770 # A 
+               -  address: 127.0.0.1:7771 # B
+               -  address: 127.0.0.1:7772 # C
+      inbound:
+         groups:
+            -  connections: 
+               -  address: 127.0.0.1:7779
+                  discovery:
+                     forward: true
+
+)";
+
+
+         constexpr auto X = R"(
+domain: 
+   name: X
+   servers:
+      -  path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-resource-server"
+         memberships: [ user]
+         instances: 3
+   gateway:
+      outbound:
+         groups:
+            -  connections:
+               -  address: 127.0.0.1:7779
+      inbound:
+         groups:
+            -  connections: 
+               -  address: 127.0.0.1:7773
+
+)";
+
+         // sink child signals 
+         signal::callback::registration< code::signal::child>( [](){});
+
+         auto a = local::domain( A);
+         auto b = local::domain( B);
+         auto c = local::domain( C);
+         auto x = local::domain( X);
+          
+         auto gw = local::domain( GW);
+
+         // everything is booted, we need to 'wait' until all domains got outbound connections
+         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
+         
+         a.activate();
+         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
+
+         b.activate();
+         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
+
+         c.activate();
+         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
+
+         x.activate();
+         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
+
+         // we're in X at the moment
+
+         auto call_C = []( auto count)
+         {
+            algorithm::for_n( count, []()
+            {
+               local::call( "casual/example/resource/nested/calls/C", TPOK);
+            });
+         };
+
+         constexpr auto transaction_count = 1;
+         constexpr auto call_count = 1;
+
+         algorithm::for_n( transaction_count, [call_C]()
+         {
+            ASSERT_TRUE( tx_begin() == TX_OK);
+            call_C( call_count);
+            ASSERT_EQ( tx_rollback(), TX_OK);
+         });
+
+         auto check_transaction_state = []( )
+         {
+            auto state = casual::transaction::unittest::state();
+
+            EXPECT_TRUE( state.pending.persistent.replies.empty()) << CASUAL_NAMED_VALUE( state);
+            EXPECT_TRUE( state.pending.requests.empty()) << CASUAL_NAMED_VALUE( state);
+            EXPECT_TRUE( state.transactions.empty()) << CASUAL_NAMED_VALUE( state);
+
+            return state;
+         };
+
+         // check in x
+         {  
+            // we're in X at the moment 
+            auto state = check_transaction_state();
+            ASSERT_TRUE( state.resources.size() == 1);
+            auto& resource = state.resources[ 0];
+            ASSERT_TRUE( resource.instances.size() == 1);
+            auto& instance = resource.instances[ 0];
+            // distributed transactions, only rollback
+            EXPECT_TRUE( instance.metrics.resource.count == transaction_count * 3) << CASUAL_NAMED_VALUE( instance.metrics.resource);
+         }
+
+
+         // check in gateway
+         {
+            gw.activate();
+            auto state = check_transaction_state();
+            ASSERT_TRUE( state.resources.size() == 1);
+            auto& resource = state.resources[ 0];
+            ASSERT_TRUE( resource.instances.size() == 1);
+            auto& instance = resource.instances[ 0];
+            // distributed transactions, prepare and commit.
+            EXPECT_TRUE( instance.metrics.resource.count == 0) << CASUAL_NAMED_VALUE( instance.metrics.resource);
+         }
+
+         {
+            a.activate();
+            auto state = check_transaction_state();
+            ASSERT_TRUE( state.resources.size() == 1);
+            auto& resource = state.resources[ 0];
+            ASSERT_TRUE( resource.instances.size() == 1);
+            auto& instance = resource.instances[ 0];
+            // distributed transactions, only rollback
+            EXPECT_TRUE( instance.metrics.resource.count == transaction_count * 2) << CASUAL_NAMED_VALUE( instance.metrics.resource);
+         }
+
+         {
+            b.activate();
+            auto state = check_transaction_state();
+            ASSERT_TRUE( state.resources.size() == 1);
+            auto& resource = state.resources[ 0];
+            ASSERT_TRUE( resource.instances.size() == 1);
+            auto& instance = resource.instances[ 0];
+            // distributed transactions, only rollback
+            EXPECT_TRUE( instance.metrics.resource.count == transaction_count  * 2) << CASUAL_NAMED_VALUE( instance.metrics.resource);
+         }
+
+         {
+            c.activate();
+            auto state = check_transaction_state();
+            ASSERT_TRUE( state.resources.size() == 1);
+            auto& resource = state.resources[ 0];
+            ASSERT_TRUE( resource.instances.size() == 1);
+            auto& instance = resource.instances[ 0];
+            // distributed transactions, only rollback
+            EXPECT_TRUE( instance.metrics.resource.count == transaction_count * 3) << CASUAL_NAMED_VALUE( instance.metrics.resource);
+         }  
+      }
+
       //! put in this TU to enable all helpers to check state
       TEST( test_domain_assassinate, interdomain_call__timeout_1ms__call)
       {

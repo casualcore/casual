@@ -9,6 +9,7 @@
 #include "common/unittest/rm.h"
 #include "common/unittest/log.h"
 #include "common/argument.h"
+#include "common/code/xa.h"
 
 
 #include "common/transaction/transaction.h"
@@ -40,15 +41,16 @@ namespace casual
 
                struct State : rm::State 
                {
-                  struct 
+                  State() = default;
+                  struct
                   {
-                     int xa_open = XA_OK;
-                     int xa_close = XA_OK;
-                     int xa_start = XA_OK;
-                     int xa_end = XA_OK;
-                     int xa_prepare = XA_OK;
-                     int xa_commit = XA_OK;
-                     int xa_rollback= XA_OK;
+                     code::xa open = code::xa::ok;
+                     code::xa close = code::xa::ok;
+                     code::xa start = code::xa::ok;
+                     code::xa end = code::xa::ok;
+                     code::xa prepare = code::xa::ok;
+                     code::xa commit = code::xa::ok;
+                     code::xa rollback= code::xa::ok;
 
                   } result;
 
@@ -65,7 +67,7 @@ namespace casual
                } // global
 
                auto& state( int id, rm::State::Invoke invoked)
-               {
+               {  
                   auto& state = global::state[ strong::resource::id{ id}];
                   state.invocations.push_back( invoked);
                   return state;
@@ -128,21 +130,26 @@ namespace casual
 
             try
             {
-               argument::Parse parse{ "mockup rm",
-                  argument::Option( std::tie( state.result.xa_open), { "--open"}, ""),
-                  argument::Option( std::tie( state.result.xa_close), { "--close"}, ""),
-                  argument::Option( std::tie( state.result.xa_start), { "--start"}, ""),
-                  argument::Option( std::tie( state.result.xa_end), { "--end"}, ""),
-                  argument::Option( std::tie( state.result.xa_prepare), { "--prepare"}, ""),
-                  argument::Option( std::tie( state.result.xa_commit), { "--commit"}, ""),
-                  argument::Option( std::tie( state.result.xa_rollback), { "--rollback"}, "")
+               auto parse_result = []( code::xa& code)
+               {
+                  return [&code]( const std::string& value) { 
+                     code = code::xa{ string::from< int>( value)};
+                  };
                };
-               
-               parse( common::string::split( openinfo));
+
+               argument::Parse{ "mockup rm",
+                  argument::Option( parse_result( state.result.open), { "--open"}, ""),
+                  argument::Option( parse_result( state.result.close), { "--close"}, ""),
+                  argument::Option( parse_result( state.result.start), { "--start"}, ""),
+                  argument::Option( parse_result( state.result.end), { "--end"}, ""),
+                  argument::Option( parse_result( state.result.prepare), { "--prepare"}, ""),
+                  argument::Option( parse_result( state.result.commit), { "--commit"}, ""),
+                  argument::Option( parse_result( state.result.rollback), { "--rollback"}, "")
+               }( common::string::split( openinfo));
             }
             catch( ...)
             {
-               log::line( log, "failed to parse mockup openinfo: ", openinfo);
+               log::line( log, "failed to parse mockup openinfo: ", openinfo, " - ", exception::capture());
             }
 
 
@@ -153,7 +160,7 @@ namespace casual
             }
 
             log::line( log, "xa_open_entry - openinfo: ", openinfo, " rmid: ", rmid, " flags: ", flags);
-            return state.result.xa_open;
+            return cast::underlying( state.result.open);
          }
          int xa_close_entry( const char* closeinfo, int rmid, long flags)
          {
@@ -166,7 +173,7 @@ namespace casual
             }
             log::line( log, "xa_close_entry - closeinfo: ", closeinfo, " rmid: ", rmid, " flags: ", flags);
 
-            return state.result.xa_close;
+            return cast::underlying( state.result.close);
          }
          int xa_start_entry( XID* xid, int rmid, long flags)
          {
@@ -180,6 +187,9 @@ namespace casual
                log::line( log::category::error, "XAER_PROTO: xa_start_entry - a transaction is active - ", state.transactions.current);
                return state.error( code::xa::protocol);
             }
+
+            if( state.result.start != code::xa::ok)
+               return cast::underlying( state.result.start);
 
             auto found = algorithm::find( state.transactions.all, trid);
 
@@ -198,7 +208,7 @@ namespace casual
 
             state.transactions.current = trid;
 
-            return state.result.xa_start;
+            return cast::underlying( state.result.start);
          }
 
          int xa_end_entry( XID* xid, int rmid, long flags)
@@ -221,7 +231,7 @@ namespace casual
                if( auto found = algorithm::find( state.transactions.all, trid))
                   state.transactions.all.erase( std::begin( found));
             }
-            return state.result.xa_end;
+            return cast::underlying( state.result.end);
          }
 
          int xa_rollback_entry( XID* xid, int rmid, long flags)
@@ -231,7 +241,7 @@ namespace casual
 
             auto& state = local::state( rmid, rm::State::Invoke::xa_rollback_entry);
 
-            return state.result.xa_rollback;
+            return cast::underlying( state.result.rollback);
          }
 
          int xa_prepare_entry( XID* xid, int rmid, long flags)
@@ -241,7 +251,7 @@ namespace casual
 
             auto& state = local::state( rmid, rm::State::Invoke::xa_prepare_entry);
 
-            return state.result.xa_prepare;
+            return cast::underlying( state.result.prepare);
          }
 
          int xa_commit_entry( XID* xid, int rmid, long flags)
@@ -251,7 +261,7 @@ namespace casual
 
             auto& state = local::state( rmid, rm::State::Invoke::xa_commit_entry);
 
-            if( state.result.xa_commit == XA_OK)
+            if( state.result.commit == code::xa::ok)
             {
                if( state.transactions.current == transaction)
                   state.transactions.current = transaction::ID{};
@@ -264,7 +274,7 @@ namespace casual
                }
             }
 
-            return state.result.xa_commit;
+            return cast::underlying( state.result.commit);
          }
 
          int xa_recover_entry( XID* xid, long count, int rmid, long flags)
