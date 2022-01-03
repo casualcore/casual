@@ -10,6 +10,7 @@
 #include "transaction/manager/state.h"
 #include "transaction/common.h"
 
+#include "casual/assert.h"
 
 #include "common/algorithm.h"
 #include "common/environment.h"
@@ -43,9 +44,7 @@ namespace casual
                void Proxy::Instance::state( State state)
                {
                   if( m_state != State::shutdown)
-                  {
                      m_state = state;
-                  }
                }
 
                Proxy::Instance::State Proxy::Instance::state() const
@@ -55,8 +54,8 @@ namespace casual
 
                bool Proxy::booted() const
                {
-                  return common::algorithm::all_of( instances, []( const Instance& i){
-                     switch( i.state())
+                  return common::algorithm::all_of( instances, []( const Instance& instance){
+                     switch( instance.state())
                      {
                         case Instance::State::idle:
                         case Instance::State::error:
@@ -105,7 +104,7 @@ namespace casual
 
                namespace external
                {
-                  Proxy::Proxy( common::process::Handle  process, id::type id)
+                  Proxy::Proxy( common::process::Handle  process, common::strong::resource::id id)
                      : process{std::move( process)}, id{std::move( id)}
                   {
                   }
@@ -117,195 +116,121 @@ namespace casual
 
                   namespace proxy
                   {
-                     id::type id( State& state, const common::process::Handle& process)
+                     common::strong::resource::id id( State& state, const common::process::Handle& process)
                      {
-                        auto found = common::algorithm::find( state.externals, process);
-
-                        if( found)
-                        {
+                        if( auto found = common::algorithm::find( state.externals, process))
                            return found->id;
-                        }
 
-                        static id::type base_id;
+                        static common::strong::resource::id base_id;
                         
                         --base_id.underlaying();
-                        state.externals.emplace_back( process, base_id);
-                        return state.externals.back().id;
+                        return state.externals.emplace_back( process, base_id).id;
+
                      }
                   } // proxy
                } // external
             } // resource
 
-         } // state
-
-         Transaction::Resource::Result Transaction::Resource::convert( common::code::xa value)
-         {
-            switch( value)
+            namespace code::priority
             {
-               using xa = common::code::xa;
-
-               case xa::heuristic_hazard: return Result::xa_HEURHAZ; break;
-               case xa::heuristic_mix: return Result::xa_HEURMIX; break;
-               case xa::heuristic_commit: return Result::xa_HEURCOM; break;
-               case xa::heuristic_rollback: return Result::xa_HEURRB; break;
-               case xa::resource_fail: return Result::xaer_RMFAIL; break;
-               case xa::resource_error: return Result::xaer_RMERR; break;
-               case xa::rollback_integrity: return Result::xa_RBINTEGRITY; break;
-               case xa::rollback_communication: return Result::xa_RBCOMMFAIL; break;
-               case xa::rollback_unspecified: return Result::xa_RBROLLBACK; break;
-               case xa::rollback_other: return Result::xa_RBOTHER; break;
-               case xa::rollback_deadlock: return Result::xa_RBDEADLOCK; break;
-               case xa::protocol: return Result::xaer_PROTO; break;
-               case xa::rollback_protocoll: return Result::xa_RBPROTO; break;
-               case xa::rollback_timeout: return Result::xa_RBTIMEOUT; break;
-               case xa::rollback_transient: return Result::xa_RBTRANSIENT; break;
-               case xa::argument: return Result::xaer_INVAL; break;
-               case xa::no_migrate: return Result::xa_NOMIGRATE; break;
-               case xa::outside: return Result::xaer_OUTSIDE; break;
-               case xa::invalid_xid: return Result::xaer_NOTA; break;
-               case xa::outstanding_async: return Result::xaer_ASYNC; break;
-               case xa::retry: return Result::xa_RETRY; break;
-               case xa::duplicate_xid: return Result::xaer_DUPID; break;
-               case xa::ok: return Result::xa_OK; break;
-               case xa::read_only: return Result::xa_RDONLY; break;
-            }
-            return Result::xaer_RMFAIL;
-         }
-
-         common::code::xa Transaction::Resource::convert( Result value)
-         {
-            using xa = common::code::xa;
-            
-            switch( value)
-            {
-               case Result::xa_HEURHAZ: return xa::heuristic_hazard; break;
-               case Result::xa_HEURMIX: return xa::heuristic_mix; break;
-               case Result::xa_HEURCOM: return xa::heuristic_commit; break;
-               case Result::xa_HEURRB: return xa::heuristic_rollback; break;
-               case Result::xaer_RMFAIL: return xa::resource_fail; break;
-               case Result::xaer_RMERR: return xa::resource_error; break;
-               case Result::xa_RBINTEGRITY: return xa::rollback_integrity; break;
-               case Result::xa_RBCOMMFAIL: return xa::rollback_communication; break;
-               case Result::xa_RBROLLBACK: return xa::rollback_unspecified; break;
-               case Result::xa_RBOTHER: return xa::rollback_other; break;
-               case Result::xa_RBDEADLOCK: return xa::rollback_deadlock; break;
-               case Result::xaer_PROTO: return xa::protocol; break;
-               case Result::xa_RBPROTO: return xa::rollback_protocoll; break;
-               case Result::xa_RBTIMEOUT: return xa::rollback_timeout; break;
-               case Result::xa_RBTRANSIENT: return xa::rollback_transient; break;
-               case Result::xaer_INVAL: return xa::argument; break;
-               case Result::xa_NOMIGRATE: return xa::no_migrate; break;
-               case Result::xaer_OUTSIDE: return xa::outside; break;
-               case Result::xaer_NOTA: return xa::invalid_xid; break;
-               case Result::xaer_ASYNC: return xa::outstanding_async; break;
-               case Result::xa_RETRY: return xa::retry; break;
-               case Result::xaer_DUPID: return xa::duplicate_xid; break;
-               case Result::xa_OK: return xa::ok; break;
-               case Result::xa_RDONLY: return xa::read_only; break;
-            }
-            return xa::resource_fail;
-         }
-
-         void Transaction::Resource::set_result( common::code::xa value)
-         {
-            result = convert( value);
-         }
-
-         bool Transaction::Resource::done() const
-         {
-            switch( result)
-            {
-            case Result::xa_RDONLY:
-            case Result::xaer_NOTA:
-               return true;
-            default:
-               return false;
-            }
-         }
-
-         std::ostream& operator << ( std::ostream& out, Transaction::Resource::Stage value)
-         {
-            using Stage = Transaction::Resource::Stage;
-            auto stringify = []( Stage value)
-            {
-               switch( value)
+               common::code::xa convert( xa code)
                {
-                  case Stage::involved: return "involved";
-                  case Stage::prepare_requested: return "prepare_requested";
-                  case Stage::prepare_replied: return "prepare_replied";
-                  case Stage::commit_requested: return "commit_requested";
-                  case Stage::commit_replied: return "commit_replied";
-                  case Stage::rollback_requested: return "rollback_requested";
-                  case Stage::rollback_replied: return "rollback_replied";
-                  case Stage::done: return "done";
-                  case Stage::error: return "error";
-                  case Stage::not_involved: return "not_involved";
+                  switch( code)
+                  {
+                     case xa::heuristic_hazard: return common::code::xa::heuristic_hazard; break;
+                     case xa::heuristic_mix: return common::code::xa::heuristic_mix; break;
+                     case xa::heuristic_commit: return common::code::xa::heuristic_commit; break;
+                     case xa::heuristic_rollback: return common::code::xa::heuristic_rollback; break;
+                     case xa::resource_fail: return common::code::xa::resource_fail; break;
+                     case xa::resource_error: return common::code::xa::resource_error; break;
+                     case xa::rollback_integrity: return common::code::xa::rollback_integrity; break;
+                     case xa::rollback_communication: return common::code::xa::rollback_communication; break;
+                     case xa::rollback_unspecified: return common::code::xa::rollback_unspecified; break;
+                     case xa::rollback_other: return common::code::xa::rollback_other; break;
+                     case xa::rollback_deadlock: return common::code::xa::rollback_deadlock; break;
+                     case xa::protocol: return common::code::xa::protocol; break;
+                     case xa::rollback_protocoll: return common::code::xa::rollback_protocoll; break;
+                     case xa::rollback_timeout: return common::code::xa::rollback_timeout; break;
+                     case xa::rollback_transient: return common::code::xa::rollback_transient; break;
+                     case xa::argument: return common::code::xa::argument; break;
+                     case xa::no_migrate: return common::code::xa::no_migrate; break;
+                     case xa::outside: return common::code::xa::outside; break;
+                     case xa::invalid_xid: return common::code::xa::invalid_xid; break;
+                     case xa::outstanding_async: return common::code::xa::outstanding_async; break;
+                     case xa::retry: return common::code::xa::retry; break;
+                     case xa::duplicate_xid: return common::code::xa::duplicate_xid; break;
+                     case xa::ok: return common::code::xa::ok; break;
+                     case xa::read_only: return common::code::xa::read_only; break;
+                  }
+
+                  casual::terminate( "invalid value for code::priority::xa: ", cast::underlying( code));
+
                }
-               return "unknown";
-            };
 
-            return out << stringify( value);
-         }
+               xa convert( common::code::xa code)
+               {
+                  switch( code)
+                  {
+                     case common::code::xa::heuristic_hazard: return xa::heuristic_hazard; break;
+                     case common::code::xa::heuristic_mix: return xa::heuristic_mix; break;
+                     case common::code::xa::heuristic_commit: return xa::heuristic_commit; break;
+                     case common::code::xa::heuristic_rollback: return xa::heuristic_rollback; break;
+                     case common::code::xa::resource_fail: return xa::resource_fail; break;
+                     case common::code::xa::resource_error: return xa::resource_error; break;
+                     case common::code::xa::rollback_integrity: return xa::rollback_integrity; break;
+                     case common::code::xa::rollback_communication: return xa::rollback_communication; break;
+                     case common::code::xa::rollback_unspecified: return xa::rollback_unspecified; break;
+                     case common::code::xa::rollback_other: return xa::rollback_other; break;
+                     case common::code::xa::rollback_deadlock: return xa::rollback_deadlock; break;
+                     case common::code::xa::protocol: return xa::protocol; break;
+                     case common::code::xa::rollback_protocoll: return xa::rollback_protocoll; break;
+                     case common::code::xa::rollback_timeout: return xa::rollback_timeout; break;
+                     case common::code::xa::rollback_transient: return xa::rollback_transient; break;
+                     case common::code::xa::argument: return xa::argument; break;
+                     case common::code::xa::no_migrate: return xa::no_migrate; break;
+                     case common::code::xa::outside: return xa::outside; break;
+                     case common::code::xa::invalid_xid: return xa::invalid_xid; break;
+                     case common::code::xa::outstanding_async: return xa::outstanding_async; break;
+                     case common::code::xa::retry: return xa::retry; break;
+                     case common::code::xa::duplicate_xid: return xa::duplicate_xid; break;
+                     case common::code::xa::ok: return xa::ok; break;
+                     case common::code::xa::read_only: return xa::read_only; break;
+                  }
 
+                  casual::terminate( "invalid value for common::code::xa: ", cast::underlying( code));
+               }
+               
+            } // code::priority
 
-         std::vector< common::strong::resource::id> Transaction::Branch::involved() const
-         {
-            return common::algorithm::transform( resources, []( auto& r){ return r.id;});
-         }
-
-         void Transaction::Branch::involve( common::strong::resource::id resource)
-         {
-            if( ! algorithm::find( resources, resource))
-            {
-               log::line( verbose::log, "new resource involved: ", resource);
-               resources.emplace_back( resource);
-            }
-         }
-
-         Transaction::Resource::Stage Transaction::Branch::stage() const
-         {
-            auto min_stage = []( Resource::Stage stage, auto& resource){ return std::min( stage, resource.stage);};
-
-            return algorithm::accumulate( resources, Resource::Stage::not_involved, min_stage);
-         }
-
-         Transaction::Resource::Result Transaction::Branch::results() const
-         {
-            auto severe_result = []( Resource::Result result, auto& resource){ return std::min( result, resource.result);};
-
-            return algorithm::accumulate( resources, Resource::Result::xa_RDONLY, severe_result);
-         }
-
+         } // state
 
          platform::size::type Transaction::resource_count() const noexcept
          {
-            auto count_resources = []( auto size, auto& branch){ return size + branch.resources.size();};
-
-            return algorithm::accumulate( branches, 0, count_resources);
-         }    
-
-         Transaction::Resource::Stage Transaction::stage() const
-         {
-            auto min_branch_stage = []( Resource::Stage stage, auto& branch)
-            {
-               return std::min( stage, branch.stage());
-            };
-            return algorithm::accumulate( branches, Resource::Stage::not_involved, min_branch_stage);
+            return algorithm::accumulate( branches, platform::size::type{}, []( auto size, auto& branch)
+            { 
+               return size + branch.resources.size();
+            });
          }
 
-         common::code::xa Transaction::results() const
+         void Transaction::purge()
          {
-            auto severe_branch_results = []( Resource::Result result, auto& branch)
-            {
-               return std::min( result, branch.results());
-            };
-            return Resource::convert( algorithm::accumulate( branches, Resource::Result::xa_RDONLY, severe_branch_results));
+            auto has_resources = []( auto& branch){ return ! branch.resources.empty();};
+
+            auto erase = std::get< 1>( algorithm::partition( branches, has_resources));
+            branches.erase( std::begin( erase), std::end( erase));
          }
 
-
-         bool State::outstanding() const
+         std::ostream& operator << ( std::ostream& out, Transaction::Progress value)
          {
-            return ! persistent.replies.empty();
+            switch( value)
+            {
+               using Enum = Transaction::Progress;
+               case Enum::involved: return out << "involved";
+               case Enum::prepare: return out << "prepare";
+               case Enum::commit: return out << "commit";
+               case Enum::rollback: return out << "rollback";
+            }
+            return out << "<unknown>";
          }
 
 
@@ -314,14 +239,12 @@ namespace casual
             return common::algorithm::all_of( resources, []( const auto& p){ return p.booted();});
          }
 
-         size_type State::instances() const
+         platform::size::type State::instances() const
          {
-            size_type result = 0;
-
-            for( auto& resource : resources)
-               result += resource.instances.size();
-
-            return result;
+            return algorithm::accumulate( resources, platform::size::type{}, []( auto result, auto& resource)
+            {
+               return result + resource.instances.size();
+            });
          }
 
          std::vector< common::strong::process::id> State::processes() const
@@ -335,27 +258,7 @@ namespace casual
             return result;
          }
 
-         void State::operator () ( const common::process::lifetime::Exit& death)
-         {
-            for( auto& resource : resources)
-            {
-               if( auto found = common::algorithm::find( resource.instances, death.pid))
-               {
-                  if( found->state() != state::resource::Proxy::Instance::State::shutdown)
-                     log::line( log::category::error, "resource proxy instance died - ", *found);
-
-                  resource.metrics += found->metrics;
-                  resource.instances.erase( std::begin( found));
-
-                  log::line( log, "remove dead process: ", death);
-                  return;
-               }
-            }
-
-            log::line( log::category::warning, "failed to find and remove dead instance: ", death);
-         }
-
-         state::resource::Proxy& State::get_resource( state::resource::id::type rm)
+         state::resource::Proxy& State::get_resource( common::strong::resource::id rm)
          {
             if( auto found = common::algorithm::find( resources, rm))
                return *found;
@@ -387,7 +290,7 @@ namespace casual
             code::raise::error( code::casual::invalid_argument, "failed to find resource - name: ", name);
          }
 
-         state::resource::Proxy::Instance& State::get_instance( state::resource::id::type rm, common::strong::process::id pid)
+         state::resource::Proxy::Instance& State::get_instance( common::strong::resource::id rm, common::strong::process::id pid)
          {
             auto& resource = get_resource( rm);
             auto has_pid = [pid]( auto& instance){ return instance.process.pid == pid;};
@@ -405,14 +308,14 @@ namespace casual
             }).empty();
          }
 
-         State::instance_range State::idle_instance( state::resource::id::type rm)
+         state::resource::Proxy::Instance* State::idle( common::strong::resource::id rm)
          {
             auto& resource = get_resource( rm);
 
-            return common::algorithm::find_if( resource.instances, state::filter::idle());
+            return common::algorithm::find_if( resource.instances, []( auto& instance){ return instance.state() == decltype( instance.state())::idle;}).data();
          }
 
-         const state::resource::external::Proxy& State::get_external( state::resource::id::type rm) const
+         const state::resource::external::Proxy& State::get_external( common::strong::resource::id rm) const
          {
             if( auto found = common::algorithm::find( externals, rm))
                return *found;

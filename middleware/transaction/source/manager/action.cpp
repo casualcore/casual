@@ -16,12 +16,12 @@
 #include "common/server/handle/call.h"
 #include "common/event/send.h"
 #include "common/communication/instance.h"
+#include "common/communication/ipc/flush/send.h"
 #include "common/instance.h"
 
 #include "common/code/raise.h"
 #include "common/code/casual.h"
 
-#include "domain/pending/message/send.h"
 #include "domain/configuration/fetch.h"
 
 
@@ -105,14 +105,8 @@ namespace casual
                      default:
                      {
                         log::line( log, "shutdown instance: ", instance);
-
                         instance.state( State::shutdown);
-
-                        if( ! communication::device::non::blocking::send( instance.process.ipc, message::shutdown::Request{}))
-                        {
-                           // We couldn't send shutdown for some reason, we send it to pending
-                           casual::domain::pending::message::send( instance.process, message::shutdown::Request{});
-                        }
+                        communication::ipc::flush::send( instance.process.ipc, message::shutdown::Request{});
                         break;
                      }
                   }
@@ -143,31 +137,6 @@ namespace casual
             return result;
          }
 
-         namespace local
-         {
-            namespace
-            {
-               namespace instance
-               {
-                  bool request( const common::communication::ipc::message::Complete& message, state::resource::Proxy::Instance& instance)
-                  {
-                     Trace trace{ "transaction::action::resource::instance::request"};
-
-                     if( communication::device::non::blocking::send( instance.process.ipc, message))
-                     {
-                        instance.state( state::resource::Proxy::Instance::State::busy);
-                        instance.metrics.requested = platform::time::clock::type::now();
-                        return true;
-                     }
-                     return false;
-
-                  }
-               } // instance
-
-            } // <unnamed>
-         } // local
-
-
          bool request( State& state, state::pending::Request& message)
          {
             Trace trace{ "transaction::action::resource::request"};
@@ -175,13 +144,13 @@ namespace casual
 
             if( state::resource::id::local( message.resource))
             {
-               if( auto found = state.idle_instance( message.resource))
+               if( auto found = state.idle( message.resource))
                {
-                  if( local::instance::request( message.message, *found))
-                     return true;
-                  
-                  log::line( log, "failed to send resource request - type: ", message.message.type(), " to: ", found->process, " - action: try later");
-                  return false;  
+                  communication::ipc::flush::send( found->process.ipc, message.message);
+                  found->state( state::resource::Proxy::Instance::State::busy);
+                  found->metrics.requested = platform::time::clock::type::now();
+
+                  return true;
                }
       
                log::line( log, "failed to find idle resource - action: wait");
@@ -190,17 +159,7 @@ namespace casual
 
             // 'external' resource proxy
             auto& resource = state.get_external( message.resource);
-
-            // we flush our inbound ipc to maximise success of sending directly (the resource might be trying to send
-            // stuff to us right now, and our inbound and the resource inbound might be 'full', unlikely on linux
-            // system but it can occur on OSX/BSD with extremely high loads)
-            communication::ipc::inbound::device().flush();
-
-            if( ! communication::device::non::blocking::send( resource.process.ipc, message.message))
-            {
-               log::line( log, "failed to send resource request to 'external' resource -  ", resource.process, " - action: send via pending");
-               casual::domain::pending::message::send( resource.process, std::move( message.message));
-            }
+            communication::ipc::flush::send( resource.process.ipc, message.message);
             
             return true;
          }

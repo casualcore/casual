@@ -98,15 +98,15 @@ domain:
                return buffer;
             }
 
-            inline auto call( std::string_view service, int code, decltype( __FILE__) file = __FILE__, decltype( __LINE__) line = __LINE__)
+            inline auto call( std::string_view service, int code)
             {
                auto buffer = local::allocate( 128);
                auto len = tptypes( buffer, nullptr, nullptr);
 
                if( tpcall( service.data(), buffer, 128, &buffer, &len, 0) == -1)
-                  EXPECT_TRUE( tperrno == code) << "file: " << file << "(" << line << ") tperrno: " << tperrnostring( tperrno) << " code: " << tperrnostring( code);
+                  EXPECT_TRUE( tperrno == code) << "tpcall - expected: " << tperrnostring( code) << " got: " << tperrnostring( tperrno);
                else
-                  EXPECT_TRUE( code == 0);
+                  EXPECT_TRUE( code == 0) << "tpcall - expected: " << tperrnostring( code) << " got: " << tperrnostring( 0);
 
                tpfree( buffer);
             };
@@ -1750,8 +1750,7 @@ domain:
             auto& resource = state.resources[ 0];
             ASSERT_TRUE( resource.instances.size() == 1);
             auto& instance = resource.instances[ 0];
-            // distributed transactions, prepare and commit.
-            EXPECT_TRUE( instance.metrics.resource.count == transaction_count * 2) << CASUAL_NAMED_VALUE( instance.metrics.resource);
+            EXPECT_TRUE( instance.metrics.resource.count == transaction_count) << CASUAL_NAMED_VALUE( instance.metrics.resource);
          }
 
          {
@@ -1761,8 +1760,7 @@ domain:
             auto& resource = state.resources[ 0];
             ASSERT_TRUE( resource.instances.size() == 1);
             auto& instance = resource.instances[ 0];
-            // distributed transactions, prepare and commit.
-            EXPECT_TRUE( instance.metrics.resource.count == transaction_count * 2) << CASUAL_NAMED_VALUE( instance.metrics.resource);
+            EXPECT_TRUE( instance.metrics.resource.count == transaction_count) << CASUAL_NAMED_VALUE( instance.metrics.resource);
          }        
       }
 

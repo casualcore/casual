@@ -80,13 +80,8 @@ namespace casual
                   {
                      admin::model::Branch result;
 
-                     common::algorithm::transform( branch.resources, result.resources, []( auto& r)
-                     {
-                        return r.id;
-                     });
-
-                     result.trid = ID{}( branch.trid);
-                     result.state = static_cast< long>( branch.results());
+                     result.resources = branch.resources;
+                     // TOOD: result.state = static_cast< long>( branch.results());
 
                      return result;
                   }
@@ -99,7 +94,7 @@ namespace casual
                      admin::model::Transaction result;
                      result.global.id = common::transcode::hex::encode( transaction.global.global());
                      result.global.owner = transaction.owner();
-                     result.state = static_cast< long>( transaction.results());
+                     // TODO: result.state = static_cast< long>( transaction.results());
 
                      common::algorithm::transform( transaction.branches, result.branches, Branch{});
 

@@ -14,27 +14,25 @@
 
 namespace casual
 {
-   namespace transaction
+   namespace transaction::global
    {
-      namespace global
+      struct ID 
       {
-         struct ID 
-         {
-            inline ID() = default;
-            inline ID( const common::transaction::ID& trid) 
-               : trid{ trid} {}
+         inline ID() = default;
+         inline ID( const common::transaction::ID& trid) 
+            : trid{ trid} {}
 
-            inline auto global() const { return common::transaction::id::range::global( trid);}
+         inline auto global() const { return common::transaction::id::range::global( trid);}
 
-            inline friend bool operator == ( const ID& lhs, const ID& rhs) { return lhs.global() == rhs.global();}
-            inline friend bool operator == ( const ID& lhs, const common::transaction::ID& rhs) { return lhs.global() == common::transaction::id::range::global( rhs);}
-            inline friend bool operator == ( const common::transaction::ID& lhs, const ID& rhs) { return rhs == lhs;}
+         inline friend bool operator == ( const ID& lhs, const ID& rhs) { return lhs.global() == rhs.global();}
+         inline friend bool operator == ( const ID& lhs, const common::transaction::ID& rhs) { return lhs.global() == common::transaction::id::range::global( rhs);}
+         inline friend bool operator == ( const common::transaction::ID& lhs, const ID& rhs) { return rhs == lhs;}
 
 
-            friend std::ostream& operator << ( std::ostream& out, const ID& value);
+         friend std::ostream& operator << ( std::ostream& out, const ID& value);
 
-            common::transaction::ID trid;            
-         };
-      } // global
-   } // transaction
+         common::transaction::ID trid;            
+      };
+      
+   } // transaction::global
 } // casual

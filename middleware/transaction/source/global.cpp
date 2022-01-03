@@ -12,15 +12,13 @@
 
 namespace casual
 {
-   namespace transaction
+   namespace transaction::global
    {
-      namespace global
-      {
 
-         std::ostream& operator << ( std::ostream& out, const ID& value)
-         {
-            return common::transcode::hex::encode( out, value.global());
-         }
-      } // global
-   } // transaction
+      std::ostream& operator << ( std::ostream& out, const ID& value)
+      {
+         return common::transcode::hex::encode( out, value.global());
+      }
+
+   } // transaction::global
 } // casual

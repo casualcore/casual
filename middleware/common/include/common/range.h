@@ -107,13 +107,13 @@ namespace casual
          };
          friend constexpr bool operator != ( const Range& lhs, const Range& rhs) { return !( lhs == rhs);}
 
-         template< typename C, std::enable_if_t< ! traits::is::string::like_v< C>, int> = 0>
+         template< typename C, std::enable_if_t< traits::is::container::like_v< C>, int> = 0>
          friend constexpr bool operator == ( const Range& lhs, const C& rhs)
          {
             return equal( lhs, rhs);
          }
 
-         template< typename C, std::enable_if_t< ! traits::is::string::like_v< C>, int> = 0>
+         template< typename C, std::enable_if_t< traits::is::container::like_v< C>, int> = 0>
          friend constexpr bool operator == ( C& lhs, const Range< Iter>& rhs)
          {
             return equal( lhs, rhs);

@@ -243,13 +243,12 @@ namespace casual
          {
             Trace trace{ "transaction::Context::join"};
 
-            Transaction transaction( trid);
+            auto& transaction = m_transactions.emplace_back( trid);
 
             if( trid)
                resources_start( transaction, flag::xa::Flag::no_flags);
 
-            m_transactions.push_back( std::move( transaction));
-            return m_transactions.back();
+            return transaction;
          }
 
          Transaction& Context::start( const platform::time::point::type& start)
@@ -629,79 +628,58 @@ namespace casual
             {
                Trace trace{ "transaction::Context::commit - distributed"};
 
-               auto correlation = []( auto& transaction)
+               message::transaction::commit::Request request{ process::handle()};
+               request.trid = transaction.trid;
+               request.involved = transaction.involved();
+
+               auto reply = communication::ipc::call( communication::instance::outbound::transaction::manager::device(), request);
+               log::line( log::category::transaction, "message: ", reply);
+
+               switch( reply.stage)
                {
-                  message::transaction::commit::Request request{ process::handle()};
-                  request.trid = transaction.trid;
-                  request.involved = transaction.involved();
+                  using State = decltype( reply.stage);
 
-                  return communication::device::blocking::send( communication::instance::outbound::transaction::manager::device(), request);
-               }( transaction);
-
-               auto complete = communication::device::blocking::next( communication::ipc::inbound::device(), correlation);
-
-
-
-               if( complete.type() == message::transaction::commit::Reply::type())
-               {
-                  Trace trace{ "transaction::Context::commit - commit reply"};
-                  message::transaction::commit::Reply reply;
-                  serialize::native::complete( std::move( complete), reply);
-
-                  log::line( log::category::transaction, "message: ", reply);
-
-                  // We could get commit-reply directly in an one-phase-commit
-
-                  switch( reply.stage)
+                  case State::prepare:
                   {
-                     using State = decltype( reply.stage);
+                     log::line( log::category::transaction, "prepare reply: ", reply.state);
 
-                     case State::prepare:
+                     switch( m_commit_return)
                      {
-                        log::line( log::category::transaction, "prepare reply: ", reply.state);
-
-                        if( m_commit_return == Commit_Return::logged)
+                        using Enum = decltype( m_commit_return);
+                        case Enum::logged:
                         {
                            log::line( log::category::transaction, "decision logged directive");
 
                            // Discard the coming commit-message
                            communication::ipc::inbound::device().discard( reply.correlation);
+                           break;
                         }
-                        else
+                        case Enum::completed:
                         {
                            // Wait for the commit
                            communication::device::blocking::receive( communication::ipc::inbound::device(), reply, reply.correlation);
 
                            log::line( log::category::transaction, "commit reply: ", reply.state);
+                           break;
                         }
+                     }
 
-                        break;
-                     }
-                     case State::commit:
-                     {
-                        log::line( log::category::transaction, "commit reply: ", reply.state);
-                        break;
-                     }
-                     case State::error:
-                     {
-                        log::line( log::category::error, "commit error: ", reply.state);
-                        break;
-                     }
+                     break;
                   }
-
-                  local::raise_if_not_ok( reply.state, "during commit");
+                  case State::commit:
+                  {
+                     log::line( log::category::transaction, "commit reply: ", reply.state);
+                     break;
+                  }
+                  case State::rollback:
+                  {
+                     pop_transaction();
+                     code::raise::error( code::tx::rollback, "commit failed - transaction rollback");
+                     break;
+                  }
                }
-               else 
-               {
-                  Trace trace{ "transaction::Context::commit - rollback reply"};
-                  message::transaction::rollback::Reply reply;
-                  serialize::native::complete( std::move( complete), reply);
 
-                  log::line( log::category::transaction, "message: ", reply);
-                  
-                  pop_transaction();
-                  code::raise::error( code::tx::rollback, "commit failed - transaction rollback");
-               }
+               local::raise_if_not_ok( reply.state, "during commit");
             }
          }
 
@@ -935,7 +913,7 @@ namespace casual
                // xa_end on the succeeded.
                algorithm::for_each( succeeded, xa_end);
 
-               code::raise::error( range::front( failed).code, "resource start failed: ", algorithm::transform( failed, []( auto& f){ return f.code;}));
+               code::raise::error( range::front( failed).code, "resource start failed: ", algorithm::transform( failed, []( auto& f){ return std::make_tuple( f.resource->id(), f.code);}));
             };
 
             auto start_functor = [&]( auto& involved)

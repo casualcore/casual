@@ -78,7 +78,7 @@ namespace casual
                         '|', category,
                         '|', message,
                         '\n');
-                        //std::endl); // we need to flush the line.
+                        m_output.flush(); // we need to flush the line.
                   }
 
                private:

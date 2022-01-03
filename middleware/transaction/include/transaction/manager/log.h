@@ -42,7 +42,8 @@ namespace casual
             ~Log();
 
             void prepare( const Transaction& transaction);
-            void remove( const global::ID& global);
+            void remove( common::transaction::id::range::range_type global);
+            inline void remove( const global::ID& global) { remove( global.global());}
 
             //! persist the current "transaction" and start a new one
             void persist();

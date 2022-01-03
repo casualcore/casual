@@ -659,9 +659,9 @@ namespace casual
                                     case Enum::prepare: 
                                        return; // we wait for the next one
                                        break;
-                                    case Enum::error:
+                                    case Enum::rollback:
                                     {
-                                       casual::cli::pipe::log::error( "transaction commit error: ", message.trid);
+                                       casual::cli::pipe::log::error( "transaction commit failed - rolled back: ", message.trid);
                                        break;
                                     }
                                     case Enum::commit:

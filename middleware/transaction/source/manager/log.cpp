@@ -87,12 +87,11 @@ namespace casual
             common::log::line( verbose::log, "total prepares: ", m_stats.update.prepare);
          }
 
-         void Log::remove( const global::ID& global)
+         void Log::remove( common::transaction::id::range::range_type global)
          {
             Trace trace{ "transaction::Log::remove"};
 
-            m_statement.remove.execute( global.global());
-
+            m_statement.remove.execute( global);
             m_stats.update.remove += m_connection.affected();
 
             common::log::line( verbose::log, "total removes: ", m_stats.update.remove);

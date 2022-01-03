@@ -14,6 +14,7 @@
 #include "common/serialize/macro.h"
 
 #include <vector>
+#include <deque>
 
 namespace casual
 {
@@ -58,7 +59,9 @@ namespace casual
                strong::correlation::id correlation;
                
                inline friend bool operator == ( const Pending& lhs, const strong::correlation::id& rhs) { return lhs.correlation == rhs;}
-               inline friend bool operator == ( const Pending& lhs, id_type rhs) { return lhs.id == rhs;}
+
+               template< typename I>
+               friend auto operator == ( const Pending& lhs, I&& rhs) -> decltype( std::declval< const id_type&>() == rhs) { return lhs.id == rhs;}
                inline friend bool operator == ( const Pending& lhs, State rhs) { return lhs.state == rhs;}
 
                CASUAL_LOG_SERIALIZE(
@@ -67,10 +70,6 @@ namespace casual
                   CASUAL_SERIALIZE( correlation);
                )
             };
-
-            Out() = default;
-            Out( Out&&) noexcept = default;
-            Out& operator = ( Out&&) noexcept = default;
 
             //! register pending 'fan outs' and a callback which is invoked when all pending
             //! has been 'received'.
@@ -94,7 +93,8 @@ namespace casual
                      m_entries.erase( std::begin( found));
             }
 
-            inline void failed( id_type id)
+            template< typename I>
+            inline auto failed( I&& id) -> decltype( void( std::declval< const id_type&>() == id))
             {
                algorithm::trim( m_entries, algorithm::remove_if( m_entries, [id]( auto& entry)
                {
@@ -122,24 +122,22 @@ namespace casual
                   : m_pending{ std::move( pending)}, m_callback{ std::move( callback)} {}
 
                inline bool coordinate( message_type message)
-               {
+               {  
                   auto found = algorithm::find( m_pending, message.correlation);
                   assert( found);
-
-                  found->state = Pending::State::received;
+                  found->state = decltype( found->state)::received;
                   
                   m_received.push_back( std::move( message));
 
                   return done();
                }
 
-               inline bool failed( id_type id)
+               template< typename I>
+               auto failed( I&& id) -> decltype( Pending{}.id == id)
                {
-                  algorithm::for_each( m_pending, [id]( auto& pending)
-                  {
+                  for( auto& pending: m_pending)
                      if( pending.id == id && pending.state == Pending::State::pending)
                         pending.state = Pending::State::failed;
-                  });
                      
                   return done();
                }
@@ -173,7 +171,7 @@ namespace casual
                
             };
 
-            std::vector< Entry> m_entries;
+            std::deque< Entry> m_entries;
          };            
       } // fan
 

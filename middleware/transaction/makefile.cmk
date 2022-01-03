@@ -115,7 +115,7 @@ unittest_library = make.LinkLibrary( 'bin/casual-transaction-unittest',
 # unittest
 test_transaction = make.LinkUnittest( 'bin/test-casual-transaction',
     [
-        make.Compile( 'unittest/source/manager/test_state.cpp'),
+        # temp make.Compile( 'unittest/source/manager/test_state.cpp'),
         make.Compile( 'unittest/source/manager/test_log.cpp'),
         make.Compile( 'unittest/source/test_admin.cpp'),
         make.Compile( 'unittest/source/test_manager.cpp'),

@@ -554,7 +554,7 @@ domain:
             auto reply = local::call::tm( message);
             EXPECT_TRUE( reply.involved.empty());
          }
-         EXPECT_TRUE( local::commit() == common::code::tx::ok);
+         EXPECT_EQ( local::commit(), common::code::tx::ok);
       }
 
       TEST( transaction_manager, begin_commit_transaction__1_resources_involved__environment_open_info__XAER_NOTA___expect__TX_OK)
@@ -847,8 +847,8 @@ domain:
             communication::device::blocking::receive( common::communication::ipc::inbound::device(), message);
 
             EXPECT_TRUE( message.trid == trid);
-            // rollback has no optimization, just ok, or errors...
-            EXPECT_TRUE( message.state == common::code::xa::ok);
+            // we expect to get read_only, altough the rm classifies this as an error...
+            EXPECT_TRUE( message.state == common::code::xa::read_only) << CASUAL_NAMED_VALUE( message);
          }
       }
 
@@ -901,31 +901,46 @@ domain:
 
          auto trid = common::transaction::id::create();
 
+         constexpr auto resource = strong::resource::id{ -200}; 
+
 
          // remote involved
          {
-            common::message::transaction::resource::external::Involved message;
+            common::message::transaction::resource::external::Involved message{ process::handle()};
             message.trid = trid;
-            message.process = process::handle();
 
             local::send::tm( message);
          }
 
-         // remote rollback
+         // remote rollback request
          {
-            common::message::transaction::resource::rollback::Request message;
+            common::message::transaction::resource::rollback::Request message{ process::handle()};
             message.trid = trid;
-            message.process = process::handle();
+            message.resource = resource;
 
             local::send::tm( message);
          }
 
-         // rollback reply
+         // we will get a rollback request from TM since we pretend to be an involved remote resource
+         {
+            common::message::transaction::resource::rollback::Request request;
+            communication::device::blocking::receive( common::communication::ipc::inbound::device(), request);
+
+            EXPECT_TRUE( request.resource == common::strong::resource::id{ -1});
+
+            auto reply = common::message::reverse::type( request);
+            reply.trid = request.trid;
+            reply.state = decltype( reply.state)::read_only;
+            communication::device::blocking::send( request.process.ipc, reply);
+         }
+
+         // remote rollback reply from TM
          {
             common::message::transaction::resource::rollback::Reply message;
 
             communication::device::blocking::receive( common::communication::ipc::inbound::device(), message);
 
+            EXPECT_TRUE( message.resource == resource) << CASUAL_NAMED_VALUE( message.resource);
             EXPECT_TRUE( message.trid == trid);
             EXPECT_TRUE( message.state == common::code::xa::read_only) << CASUAL_NAMED_VALUE( message.state);
          }
@@ -1272,7 +1287,7 @@ domain:
          }
       }
 
-      TEST( transaction_manager, transaction_2_remote_resource_involved__one_phase_commit_optimization__RM_fail__expect_rollback__commit_XA_RBOTHER)
+      TEST( transaction_manager, transaction_2_remote_resource_involved__one_phase_commit_optimization__RM_fail__expect_rollback__commit_XAER_RMERR)
       {
          common::unittest::Trace trace;
 
@@ -1359,7 +1374,7 @@ domain:
             communication::device::blocking::receive( communication::ipc::inbound::device(), message);
 
             EXPECT_TRUE( message.trid == trid) << CASUAL_NAMED_VALUE( message);
-            EXPECT_TRUE( message.state == common::code::xa::rollback_other) << CASUAL_NAMED_VALUE( message.state);
+            EXPECT_TRUE( message.state == common::code::xa::resource_error) << CASUAL_NAMED_VALUE( message.state);
          }
       }
 
