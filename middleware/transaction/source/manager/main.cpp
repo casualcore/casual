@@ -67,7 +67,7 @@ namespace casual
 
                   common::algorithm::for_each(
                      state.resources,
-                     manager::action::resource::Instances( state));
+                     action::resource::scale::instances( state));
 
                   // Make sure we wait for the resources to get ready
                   namespace dispatch = common::message::dispatch;

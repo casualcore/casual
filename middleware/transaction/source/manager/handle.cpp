@@ -85,7 +85,7 @@ namespace casual
                      namespace branch
                      {
                         template< typename M>
-                        Transaction::Branch& find_or_add( State& state, M&& message)
+                        state::transaction::Branch& find_or_add( State& state, M&& message)
                         {
                            // Find the transaction
                            if( auto transaction = common::algorithm::find( state.transactions, message.trid))
@@ -265,10 +265,10 @@ namespace casual
                                  {
                                     Request request{ common::process::handle()};
                                     request.trid = branch.trid;
-                                    request.resource = resource;
+                                    request.resource = resource.id;
                                     request.flags = flags;
 
-                                    result.emplace_back( send::resource::request( state, request), resource);
+                                    result.emplace_back( send::resource::request( state, request), resource.id);
                                  }
 
                                  return result;
@@ -433,7 +433,7 @@ namespace casual
                                  // Prepare has gone ok. Log persistant state
                                  state.persistent.log.prepare( *transaction);
                                  
-                                 // add _commit-prepare_ message to persitent reply, if reply is a commit type
+                                 // add _commit-prepare_ message to persistent reply, if reply is the commit reply type
                                  if constexpr( common::traits::is::any_v< Reply, common::message::transaction::commit::Reply>)
                                  {
                                     auto reply = create::reply< Reply>( origin, destination, code);
@@ -476,7 +476,7 @@ namespace casual
                            auto transaction = detail::branch::involved( state, message);
                            common::log::line( verbose::log, "transaction: ", *transaction);
 
-                           if( transaction->progress > decltype( transaction->progress)::involved)
+                           if( transaction->stage > decltype( transaction->stage())::involved)
                            {
                               // transaction is not in the correct 'stage'
                               detail::send::reply( message, []( auto& reply)
@@ -486,6 +486,8 @@ namespace casual
                               });
                               return;
                            }
+
+                           transaction->owner = message.process;
 
                            // Only the owner of the transaction can fiddle with the transaction ?
 
@@ -510,7 +512,7 @@ namespace casual
                               {
                                  // Only one resource involved, we do a one-phase-commit optimization.
                                  common::log::line( log, "global: ", transaction->global, " - only one resource involved");
-                                 transaction->progress = decltype( transaction->progress)::commit;
+                                 transaction->stage = decltype( transaction->stage())::commit;
 
                                  auto pending = detail::coordinate::pending::branches< common::message::transaction::resource::commit::Request>( 
                                     state, transaction->branches, state.coordinate.commit.empty_pendings(), common::flag::xa::Flag::one_phase);
@@ -524,7 +526,7 @@ namespace casual
                               {
                                  // More than one resource involved, we do the prepare stage
                                  common::log::line( log, "global: ", transaction->global, " more than one resource involved");
-                                 transaction->progress = decltype( transaction->progress)::prepare;
+                                 transaction->stage = decltype( transaction->stage())::prepare;
 
                                  auto pending = detail::coordinate::pending::branches< common::message::transaction::resource::prepare::Request>( 
                                     state, transaction->branches, state.coordinate.prepare.empty_pendings());
@@ -553,7 +555,8 @@ namespace casual
                            auto transaction = detail::branch::involved( state, message);
                            common::log::line( verbose::log, "transaction: ", *transaction);
 
-                           transaction->progress = decltype( transaction->progress)::rollback;
+                           transaction->stage = decltype( transaction->stage())::rollback;
+                           transaction->owner = message.process;
 
                            auto pending = detail::coordinate::pending::branches< common::message::transaction::resource::rollback::Request>( 
                               state, transaction->branches, state.coordinate.rollback.empty_pendings());
@@ -622,7 +625,7 @@ namespace casual
 
                               // prepare and send the reply
                               auto reply = common::message::reverse::type( message);
-                              reply.involved = branch.resources;
+                              reply.involved = common::algorithm::transform( branch.resources, []( auto& resource){ return resource.id;});
                               common::communication::device::blocking::optional::send( message.process.ipc, reply);
 
                               // partition what we don't got since before
@@ -732,7 +735,7 @@ namespace casual
 
                                  auto transaction = common::algorithm::find( state.transactions, message.trid);
 
-                                 if( ! transaction || transaction->progress > decltype( transaction->progress)::involved)
+                                 if( ! transaction || transaction->stage > decltype( transaction->stage())::involved)
                                  {
                                     // Either the transaction is absent (???) or we're already in at least the prepare stage.
                                     // Eitherway we reply with read_only
@@ -746,6 +749,8 @@ namespace casual
                                  }
 
                                  // external TM is running the show, let's oblige
+                                 transaction->owner = message.process;
+
                                  switch( transaction->resource_count())
                                  {
                                     case 0:
@@ -769,7 +774,7 @@ namespace casual
                                     {
                                        // Only one resource involved, we do a one-phase-commit optimization.
                                        common::log::line( log, "global: ", transaction->global, " - only one resource involved");
-                                       transaction->progress = decltype( transaction->progress)::commit;
+                                       transaction->stage = decltype( transaction->stage())::commit;
 
                                        auto pending = local::detail::coordinate::pending::branches< common::message::transaction::resource::commit::Request>( 
                                           state, transaction->branches, state.coordinate.commit.empty_pendings(), common::flag::xa::Flag::one_phase);
@@ -784,7 +789,7 @@ namespace casual
                                     {
                                        // More than one resource involved, we do the prepare stage
                                        common::log::line( log, "global: ", transaction->global, " more than one resource involved");
-                                       transaction->progress = decltype( transaction->progress)::prepare;
+                                       transaction->stage = decltype( transaction->stage())::prepare;
 
                                        auto pending = local::detail::coordinate::pending::branches< common::message::transaction::resource::prepare::Request>( 
                                           state, transaction->branches, state.coordinate.prepare.empty_pendings());
@@ -856,7 +861,7 @@ namespace casual
 
                                  auto transaction = common::algorithm::find( state.transactions, message.trid);
 
-                                 if( ! transaction || transaction->progress > decltype( transaction->progress)::involved)
+                                 if( ! transaction || transaction->stage > decltype( transaction->stage())::involved)
                                  {
                                     // Either the transaction is absent (???) or we're already in at least the prepare stage.
                                     // Eitherway we reply with read_only
@@ -872,7 +877,8 @@ namespace casual
                                  // We dont 'optimize' the rollback phase. We could check if there are 0 resources involved and
                                  // possible gain a few us.
 
-                                 transaction->progress = decltype( transaction->progress)::rollback;
+                                 transaction->stage = decltype( transaction->stage())::rollback;
+                                 transaction->owner = message.process;
 
                                  auto pending = local::detail::coordinate::pending::branches< common::message::transaction::resource::rollback::Request>( 
                                     state, transaction->branches, state.coordinate.rollback.empty_pendings());
@@ -1074,7 +1080,7 @@ namespace casual
                { 
                   common::exception::guard( [&](){
                      resource.configuration.instances = 0;
-                     manager::action::resource::Instances{ state}( resource);
+                     manager::action::resource::scale::instances( state, resource);
                   }); 
                };
 

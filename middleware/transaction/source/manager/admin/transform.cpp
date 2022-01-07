@@ -10,203 +10,201 @@
 #include "common/algorithm.h"
 #include "common/transcode.h"
 
+#include "casual/assert.h"
+
 namespace casual
 {
-   namespace transaction
+   namespace transaction::manager::admin::transform
    {
-      namespace manager
+
+      namespace local
       {
-         namespace admin
+         namespace
          {
-            namespace transform
+            template< typename R, typename T>
+            R metrics( const T& value)
             {
-               namespace local
+               auto transform_metric = []( auto& value)
                {
-                  namespace
-                  {
-                     template< typename R, typename T>
-                     R metrics( const T& value)
-                     {
-                        auto transform_metric = []( auto& value)
-                        {
-                           decltype( R{}.resource) result;
+                  decltype( R{}.resource) result;
 
-                           result.limit.min = value.limit.min;
-                           result.limit.max = value.limit.max;
-                           result.total = value.total;
-                           result.count = value.count;
+                  result.limit.min = value.limit.min;
+                  result.limit.max = value.limit.max;
+                  result.total = value.total;
+                  result.count = value.count;
 
-                           return result;
+                  return result;
 
-                        };
-                        R result;
+               };
+               R result;
 
-                        result.resource = transform_metric( value.resource);
-                        result.roundtrip = transform_metric( value.roundtrip);
+               result.resource = transform_metric( value.resource);
+               result.roundtrip = transform_metric( value.roundtrip);
 
-                        return result;
-                     }
-                  } // <unnamed>
-               } // local
+               return result;
+            }
 
-               admin::model::Metrics metrics( const state::Metrics& value)
+            namespace resource
+            {
+               admin::model::resource::Instance instance( const state::resource::Proxy::Instance& value)
                {
-                  return local::metrics< admin::model::Metrics>( value);
+                  admin::model::resource::Instance result;
+
+                  result.id = value.id;
+                  result.process = value.process;
+                  result.state = static_cast< admin::model::resource::Instance::State>( value.state());
+                  result.metrics = transform::metrics( value.metrics);
+
+                  return result;
                }
+               
+            } // resource
 
-               state::Metrics metrics( const admin::model::Metrics& value)
-               {
-                  return local::metrics< state::Metrics>( value);
-               }
+            admin::model::Log log( const manager::Log::Statistics& log)
+            {
+               admin::model::Log result;
 
-               struct Branch
+               result.update.prepare = log.update.prepare;
+               result.update.remove = log.update.remove;
+               result.writes = log.writes;
+
+               return result;
+            }
+
+            auto transaction()
+            {
+               return []( const state::Transaction& transaction)
                {
-                  struct ID
+                  auto branch = []( auto& branch)
                   {
-                     admin::model::Branch::ID operator () ( const common::transaction::ID& id) const
+                     auto trid = []( auto& id)
                      {
-                        admin::model::Branch::ID result;
+                        admin::model::transaction::Branch::ID result;
 
-                        result.owner = id.owner();
                         result.type = id.xid.formatID;
                         result.global = common::transcode::hex::encode( common::transaction::id::range::global( id));
                         result.branch = common::transcode::hex::encode( common::transaction::id::range::branch( id));
 
                         return result;
-                     }
+                     };
+
+                     auto resource = []( auto& resource)
+                     {
+                        return admin::model::transaction::branch::Resource{ resource.id, resource.code};
+                     };
+
+                     admin::model::transaction::Branch result;
+                     result.trid = trid( branch.trid);
+                     result.resources = common::algorithm::transform( branch.resources, resource);
+
+                     return result;
                   };
 
-                  admin::model::Branch operator () ( const manager::Transaction::Branch& branch) const
+                  auto stage = []( auto stage)
                   {
-                     admin::model::Branch result;
-
-                     result.resources = branch.resources;
-                     // TOOD: result.state = static_cast< long>( branch.results());
-
-                     return result;
-                  }
-               };
-
-               struct Transaction 
-               {
-                  admin::model::Transaction operator () ( const manager::Transaction& transaction) const
-                  {
-                     admin::model::Transaction result;
-                     result.global.id = common::transcode::hex::encode( transaction.global.global());
-                     result.global.owner = transaction.owner();
-                     // TODO: result.state = static_cast< long>( transaction.results());
-
-                     common::algorithm::transform( transaction.branches, result.branches, Branch{});
-
-                     return result;
-                  }
-               };
-
-
-               namespace resource
-               {
-
-                  admin::model::resource::Instance Instance::operator () ( const state::resource::Proxy::Instance& value) const
-                  {
-                     admin::model::resource::Instance result;
-
-                     result.id = value.id;
-                     result.process = value.process;
-                     result.state = static_cast< admin::model::resource::Instance::State>( value.state());
-                     result.metrics = transform::metrics( value.metrics);
-
-                     return result;
-                  }
-
-                  admin::model::resource::Proxy Proxy::operator () ( const state::resource::Proxy& value) const
-                  {
-                     admin::model::resource::Proxy result;
-
-                     result.id = value.id;
-                     result.name = value.configuration.name;
-                     result.key = value.configuration.key;
-                     result.openinfo = value.configuration.openinfo;
-                     result.closeinfo = value.configuration.closeinfo;
-                     result.concurency = value.configuration.instances;
-                     result.metrics = transform::metrics( value.metrics);
-
-                     common::algorithm::transform( value.instances, result.instances, Instance{});
-
-                     return result;
-                  }
-
-               } // resource
-
-
-               namespace local
-               {
-                  namespace
-                  {
-                     namespace pending
+                     switch( stage)
                      {
-                        auto request()
-                        {
-                           return []( auto& value)
-                           {
-                              admin::model::pending::Request result;
+                        case state::transaction::Stage::involved: return admin::model::transaction::Stage::involved;
+                        case state::transaction::Stage::prepare: return admin::model::transaction::Stage::prepare;
+                        case state::transaction::Stage::commit: return admin::model::transaction::Stage::commit;
+                        case state::transaction::Stage::rollback: return admin::model::transaction::Stage::rollback;
+                     }
+                     casual::terminate( "unknown value for stage: ", common::cast::underlying( stage));
+                  };
 
-                              result.resource = value.resource;
-                              result.correlation = value.message.correlation().value();
-                              result.type = common::message::convert::type( value.message.type());
-
-                              return result;
-                           };
-                        }
-
-                        auto reply()
-                        {
-                           return []( auto& value)
-                           {
-                              admin::model::pending::Reply result;
-
-                              result.destinations = value.destinations;
-                              result.type = common::message::convert::type( value.complete.type());
-                              result.correlation = value.complete.correlation().value();
-
-                              return result;
-                           };
-                        }
-                     } // pending
-                     
-                  } // <unnamed>
-               } // local
+                  admin::model::Transaction result;
+                  result.global.id = common::transcode::hex::encode( transaction.global());
+                  result.owner = transaction.owner;
+                  result.stage = stage( transaction.stage());
 
 
-               admin::model::Log log( const manager::Log::Stats& log)
-               {
-                  admin::model::Log result;
-
-                  result.update.prepare = log.update.prepare;
-                  result.update.remove = log.update.remove;
-                  result.writes = log.writes;
+                  result.branches = common::algorithm::transform( transaction.branches, branch);
 
                   return result;
-               }
+               };
+            }
 
-               admin::model::State state( const manager::State& state)
+            namespace pending
+            {
+               auto request()
                {
-                  admin::model::State result;
+                  return []( auto& value)
+                  {
+                     admin::model::pending::Request result;
 
-                  common::algorithm::transform( state.resources, result.resources, transform::resource::Proxy{});
-                  common::algorithm::transform( state.transactions, result.transactions, transform::Transaction{});
+                     result.resource = value.resource;
+                     result.correlation = value.message.correlation().value();
+                     result.type = common::message::convert::type( value.message.type());
 
-                  common::algorithm::transform( state.pending.requests, result.pending.requests, local::pending::request());
-                  common::algorithm::transform( state.persistent.replies, result.pending.persistent.replies, local::pending::reply());
-
-                  result.log = transform::log( state.persistent.log.stats());
-
-                  return result;
+                     return result;
+                  };
                }
 
-            } // transform
+               auto reply()
+               {
+                  return []( auto& value)
+                  {
+                     admin::model::pending::Reply result;
 
+                     result.destinations = value.destinations;
+                     result.type = common::message::convert::type( value.complete.type());
+                     result.correlation = value.complete.correlation().value();
+
+                     return result;
+                  };
+               }
+            } // pending
             
-         } // admin
-      } // manager
-   } // transaction
+         } // <unnamed>
+      } // local
+
+      admin::model::Metrics metrics( const state::Metrics& value)
+      {
+         return local::metrics< admin::model::Metrics>( value);
+      }
+
+      state::Metrics metrics( const admin::model::Metrics& value)
+      {
+         return local::metrics< state::Metrics>( value);
+      }
+
+      namespace resource
+      {
+
+         model::resource::Proxy proxy( const state::resource::Proxy& value)
+         {
+            admin::model::resource::Proxy result;
+
+            result.id = value.id;
+            result.name = value.configuration.name;
+            result.key = value.configuration.key;
+            result.openinfo = value.configuration.openinfo;
+            result.closeinfo = value.configuration.closeinfo;
+            result.concurrency = value.configuration.instances;
+            result.metrics = transform::metrics( value.metrics);
+
+            common::algorithm::transform( value.instances, result.instances, &local::resource::instance);
+
+            return result;
+         }
+
+      } // resource
+
+
+      admin::model::State state( const manager::State& state)
+      {
+         admin::model::State result;
+
+         common::algorithm::transform( state.resources, result.resources, &transform::resource::proxy);
+         common::algorithm::transform( state.transactions, result.transactions, local::transaction());
+
+         common::algorithm::transform( state.pending.requests, result.pending.requests, local::pending::request());
+         common::algorithm::transform( state.persistent.replies, result.pending.persistent.replies, local::pending::reply());
+
+         result.log = local::log( state.persistent.log.statistics());
+
+         return result;
+      }
+
+   } // transaction::manager::admin::transform
 } // casual

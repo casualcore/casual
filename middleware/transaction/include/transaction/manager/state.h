@@ -18,6 +18,7 @@
 #include "common/metric.h"
 #include "common/functional.h"
 #include "common/message/coordinate.h"
+#include "common/state/machine.h"
 
 #include "common/serialize/native/complete.h"
 
@@ -229,105 +230,127 @@ namespace casual
                
             } // code::priority
 
-         } // state
-
-
-         struct Transaction
-         {
-
-            struct Branch
+            namespace transaction
             {
-               Branch( const common::transaction::ID& trid) : trid( trid) {}
-
-               inline void involve( common::strong::resource::id resource)
+               namespace branch
                {
-                  common::algorithm::append_unique_value( resource, resources);
+                  struct Resource
+                  {
+                     Resource( common::strong::resource::id id) : id{ id} {}
+
+                     common::strong::resource::id id;
+                     //! the 'code' is only used to include in the _admin state_, Hence, 
+                     //! we keep this state only for the user.
+                     common::code::xa code = common::code::xa::ok;
+
+                     inline friend bool operator == ( const Resource& lhs, common::strong::resource::id rhs) { return lhs.id == rhs;}
+
+                     CASUAL_LOG_SERIALIZE(
+                        CASUAL_SERIALIZE( id);
+                        CASUAL_SERIALIZE( code);
+                     )
+                  };
+               } // branch
+
+               struct Branch
+               {
+                  Branch( const common::transaction::ID& trid) : trid( trid) {}
+
+                  inline void involve( common::strong::resource::id id)
+                  {
+                     if( ! common::algorithm::find( resources, id))
+                        resources.emplace_back( id);
+                  }
+
+                  template< typename R> 
+                  auto involve( R&& range) -> std::enable_if_t< common::traits::is::iterable_v< R>>
+                  {
+                     common::algorithm::append_unique( range, resources);
+                  }
+
+                  common::transaction::ID trid;
+                  std::vector< branch::Resource> resources;
+
+                  inline friend bool operator == ( const Branch& lhs, const common::transaction::ID& rhs) { return lhs.trid == rhs;}
+
+                  CASUAL_LOG_SERIALIZE(
+                     CASUAL_SERIALIZE( trid);
+                     CASUAL_SERIALIZE( resources);
+                  )
+               };
+
+               enum struct Stage : std::int8_t 
+               {
+                  involved,
+                  prepare,
+                  commit,
+                  rollback
+               };
+
+               std::ostream& operator << ( std::ostream& out, Stage value);
+               
+            } // transaction
+
+            struct Transaction
+            {
+
+               Transaction() = default;
+               Transaction( Transaction&&) = default;
+               Transaction& operator = ( Transaction&&) = default;
+
+               inline explicit Transaction( const common::transaction::ID& trid) : global( trid)
+               {
+                  branches.emplace_back( trid);
                }
 
-               template< typename R> 
-               auto involve( R&& range) -> std::enable_if_t< common::traits::is::iterable_v< R>>
+               platform::size::type resource_count() const noexcept;
+               
+               //! removes all branches that has no resources associated. 
+               //! used only when the prepare/commmit/rollback starts
+               void purge();
+
+               template< typename R>
+               void purge( const R& replies)
                {
-                  common::algorithm::append_unique( range, resources);
+                  auto equal_resource = []( auto& resource, auto& reply)
+                  {
+                     return resource == reply.resource;
+                  };
+
+                  for( auto& branch : branches)
+                     common::algorithm::trim( branch.resources, std::get< 0>( common::algorithm::intersection( branch.resources, replies, equal_resource)));
+
+                  purge();
                }
 
-               common::transaction::ID trid;
-               std::vector< common::strong::resource::id> resources;
+               common::state::Machine< transaction::Stage> stage;
 
-               inline friend bool operator == ( const Branch& lhs, const common::transaction::ID& rhs) { return lhs.trid == rhs;}
+               //! the global part of the distributed transaction id
+               global::ID global;
+
+               //! 1..* branches of this global transaction
+               std::vector< transaction::Branch> branches;
+
+               common::process::Handle owner;
+
+               platform::time::point::type started;
+               platform::time::point::type deadline;
+
+               inline friend bool operator == ( const Transaction& lhs, const global::ID& rhs) { return lhs.global == rhs;}
+               inline friend bool operator == ( const Transaction& lhs, common::transaction::id::range::range_type rhs) { return lhs.global() == rhs;}
+               
+               inline friend bool operator == ( const Transaction& lhs, const common::transaction::ID& rhs) { return lhs.global == rhs;}
 
                CASUAL_LOG_SERIALIZE(
-                  CASUAL_SERIALIZE( trid);
-                  CASUAL_SERIALIZE( resources);
+                  CASUAL_SERIALIZE( stage);
+                  CASUAL_SERIALIZE( global);
+                  CASUAL_SERIALIZE( branches);
+                  CASUAL_SERIALIZE( started);
+                  CASUAL_SERIALIZE( deadline);
                )
             };
 
-
-            Transaction() = default;
-            Transaction( Transaction&&) = default;
-            Transaction& operator = ( Transaction&&) = default;
-
-            inline explicit Transaction( const common::transaction::ID& trid) : global( trid)
-            {
-               branches.emplace_back( trid);
-            }
-
-            inline const common::process::Handle& owner() const { return global.trid.owner();}
-
-            platform::size::type resource_count() const noexcept;
-            
-            //! removes all branches that has no resources associated. 
-            //! used only when the prepare/commmit/rollback starts
-            void purge();
-
-            template< typename R>
-            void purge( const R& replies)
-            {
-               auto equal_resource = []( auto& resource, auto& reply)
-               {
-                  return resource == reply.resource;
-               };
-
-               for( auto& branch : branches)
-                  common::algorithm::trim( branch.resources, std::get< 0>( common::algorithm::intersection( branch.resources, replies, equal_resource)));
-
-               purge();
-            }
-
-            enum struct Progress : std::int8_t 
-            {
-               involved,
-               prepare,
-               commit,
-               rollback
-            };
-
-            friend std::ostream& operator << ( std::ostream& out, Progress value);
-
-            Progress progress = Progress::involved;
-
-            //! the global part of the distributed transaction id
-            global::ID global;
-
-            //! 1..* branches of this global transaction
-            std::vector< Branch> branches;
-
-            platform::time::point::type started;
-            platform::time::point::type deadline;
-
-            inline friend bool operator == ( const Transaction& lhs, const global::ID& rhs) { return lhs.global == rhs;}
-            inline friend bool operator == ( const Transaction& lhs, common::transaction::id::range::range_type rhs) { return lhs.global.global() == rhs;}
-            
-            inline friend bool operator == ( const Transaction& lhs, const common::transaction::ID& rhs) { return lhs.global == rhs;}
-
-            CASUAL_LOG_SERIALIZE(
-               CASUAL_SERIALIZE( progress);
-               CASUAL_SERIALIZE( global);
-               CASUAL_SERIALIZE( branches);
-               CASUAL_SERIALIZE( started);
-               CASUAL_SERIALIZE( deadline);
-            )
-         };
-
+         } // state
 
          struct State
          {
@@ -338,7 +361,7 @@ namespace casual
             State( State&&) = default;
             State& operator = ( State&&) = default;
 
-            std::vector< Transaction> transactions;
+            std::vector< state::Transaction> transactions;
             std::vector< state::resource::Proxy> resources;
             std::vector< state::resource::external::Proxy> externals;
 

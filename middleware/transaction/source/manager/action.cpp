@@ -37,82 +37,85 @@ namespace casual
 
       namespace resource
       {
-         void Instances::operator () ( state::resource::Proxy& proxy)
+         namespace scale
          {
-            Trace trace( "resource::Instances::operator()");
-
-            log::line( log, "update instances for resource: ", proxy);
-         
-            auto count = proxy.configuration.instances - range::size( proxy.instances);
-
-            if( count > 0)
+            void instances( State& state, state::resource::Proxy& proxy)
             {
-               while( count-- > 0)
+               Trace trace( "resource::Instances::operator()");
+               log::line( log, "update instances for resource: ", proxy);
+            
+               auto count = proxy.configuration.instances - range::size( proxy.instances);
+
+               if( count > 0)
                {
-                  auto found = algorithm::find( m_state.system.configuration.resources, proxy.configuration.key);
-
-                  if( ! found)
-                     return;
-
-                  state::resource::Proxy::Instance instance;
-                  instance.id = proxy.id;
-
-                  try
+                  while( count-- > 0)
                   {
-                     instance.process.pid = process::spawn(
-                        found->server,
+                     auto found = algorithm::find( state.system.configuration.resources, proxy.configuration.key);
+
+                     if( ! found)
+                        return;
+
+                     state::resource::Proxy::Instance instance;
+                     instance.id = proxy.id;
+
+                     try
+                     {
+                        instance.process.pid = process::spawn(
+                           found->server,
+                           {
+                              "--id", std::to_string( proxy.id.value()),
+                           },
+                           { common::instance::variable( { proxy.configuration.name, proxy.id.value()})}
+                        );
+
+                        instance.state( state::resource::Proxy::Instance::State::started);
+
+                        proxy.instances.push_back( std::move( instance));
+                     }
+                     catch( ...)
+                     {
+                        common::event::error::send( common::exception::capture().code(), "failed to spawn resource-proxy-instance: " + found->server);
+                     }
+                  }
+               }
+               else
+               {
+                  auto end = std::end( proxy.instances);
+
+                  for( auto& instance : range::make( end + count, end))
+                  {
+                     switch( instance.state())
+                     {
+                        using State = decltype( instance.state());
+
+                        case State::absent:
+                        case State::started:
                         {
-                           "--id", std::to_string( proxy.id.value()),
-                        },
-                        { common::instance::variable( { proxy.configuration.name, proxy.id.value()})}
-                     );
 
-                     instance.state( state::resource::Proxy::Instance::State::started);
+                           log::line( log, "Instance has not register yet. We, kill it...: ", instance);
 
-                     proxy.instances.push_back( std::move( instance));
-                  }
-                  catch( ...)
-                  {
-                     common::event::error::send( common::exception::capture().code(), "failed to spawn resource-proxy-instance: " + found->server);
-                  }
-               }
-            }
-            else
-            {
-               auto end = std::end( proxy.instances);
-
-               for( auto& instance : range::make( end + count, end))
-               {
-                  switch( instance.state())
-                  {
-                     using State = decltype( instance.state());
-
-                     case State::absent:
-                     case State::started:
-                     {
-
-                        log::line( log, "Instance has not register yet. We, kill it...: ", instance);
-
-                        process::lifetime::terminate( { instance.process.pid});
-                        instance.state( State::shutdown);
-                        break;
-                     }
-                     case State::shutdown:
-                     {
-                        log::line( log, "instance already in shutdown state - ", instance);
-                        break;
-                     }
-                     default:
-                     {
-                        log::line( log, "shutdown instance: ", instance);
-                        instance.state( State::shutdown);
-                        communication::ipc::flush::send( instance.process.ipc, message::shutdown::Request{});
-                        break;
+                           process::lifetime::terminate( { instance.process.pid});
+                           instance.state( State::shutdown);
+                           break;
+                        }
+                        case State::shutdown:
+                        {
+                           log::line( log, "instance already in shutdown state - ", instance);
+                           break;
+                        }
+                        default:
+                        {
+                           log::line( log, "shutdown instance: ", instance);
+                           instance.state( State::shutdown);
+                           communication::ipc::flush::send( instance.process.ipc, message::shutdown::Request{});
+                           break;
+                        }
                      }
                   }
                }
             }
-         }
+         } // scale
+
 
          std::vector< admin::model::resource::Proxy> instances( State& state, std::vector< admin::model::scale::Instances> instances)
          {
@@ -124,8 +127,8 @@ namespace casual
                if( auto resource = state.find_resource( directive.name))
                {
                   resource->configuration.instances = directive.instances;
-                  Instances{ state}( *resource);
-                  result.push_back( admin::transform::resource::Proxy{}( *resource));
+                  scale::instances( state, *resource);
+                  result.push_back( admin::transform::resource::proxy( *resource));
                }
 
                // else:
