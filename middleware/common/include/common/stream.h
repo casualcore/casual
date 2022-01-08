@@ -16,100 +16,64 @@
 #include <ostream>
 
 
-
-namespace casual
-{
-   namespace common::stream::detail
-   {
-      // using SFINAE expression to get a sutable specialization
-      template< typename T> 
-      auto formatter( std::ostream& out, const T& value, traits::priority::tag< 1>) 
-         -> decltype( void( customization::supersede::point< traits::remove_cvref_t< T>>::stream( out, value)), out)
-      {
-         customization::supersede::point< traits::remove_cvref_t< T>>::stream( out, value);
-         return out;
-      }
-
-      template< typename T> 
-      auto formatter( std::ostream& out, const T& value, traits::priority::tag< 0>) 
-         -> decltype( void( customization::point< traits::remove_cvref_t< T>>::stream( out, value)), out)
-      {
-         customization::point< traits::remove_cvref_t< T>>::stream( out, value);
-         return out;
-      }
-
-      template< typename T>
-      auto write( std::ostream& out, const T& value) 
-         -> decltype( formatter( out, value, traits::priority::tag< 1>{}))
-      {
-         return formatter( out, value, traits::priority::tag< 1>{});
-      }
-
-   } // common::stream::detail
-} // casual
-
-
-// std stream operator is a better match then this, hence this is a fallback
-// this also need to be declared before used by formatters below
-template< typename S, typename T>
-auto operator << ( S& out, const T& value) -> decltype( casual::common::stream::detail::write( out, value))
-{
-   return casual::common::stream::detail::write( out, value);
-}
-
-
-
 namespace casual
 {
    namespace common::stream
    {
       namespace detail
       {
-         // highest priority, takes all that have specialized customization::supersede::point
-         template< typename T> 
-         auto indirection( std::ostream& out, const T& value, traits::priority::tag< 2>) 
-            -> decltype( void( customization::supersede::point< traits::remove_cvref_t< T>>::stream( out, value)), out)
+         namespace dispatch
          {
-            customization::supersede::point< traits::remove_cvref_t< T>>::stream( out, value);
-            return out;
-         }
+            //! dispatch to the customization priority, including ostream stream operator
+            template< typename T> 
+            auto write( std::ostream& out, T&& value, traits::priority::tag< 1>) 
+               -> decltype( customization::detail::write( out, std::forward< T>( value)))
+            {
+               return customization::detail::write( out, std::forward< T>( value));
+            }
 
-         // takes all that can use the ostream stream operator, including the one defined above.
-         template< typename T> 
-         auto indirection( std::ostream& out, const T& value, traits::priority::tag< 1>) 
-            -> decltype( out << value)
-         {
-            return out << value;
-         }
+            // if not, we takes all that can be serialized
+            template< typename T> 
+            auto write( std::ostream& out, T&& value, traits::priority::tag< 0>) 
+               -> decltype( void( std::declval< serialize::line::Writer&>() << std::forward< T>( value)), out)
+            {
+               serialize::line::Writer archive;
+               archive << std::forward< T>( value);
+               archive.consume( out);
+               return out;
+            }
+            
+         } // dispatch
 
-         // lower, takes all that can be serialized
+
          template< typename T> 
-         auto indirection( std::ostream& out, const T& value, traits::priority::tag< 0>) 
-            -> decltype( void( std::declval< serialize::line::Writer&>() << value), out)
+         auto write( std::ostream& out, T&& value)
+            -> decltype( dispatch::write( out, std::forward< T>( value), traits::priority::tag< 1>{}))
          {
-            serialize::line::Writer archive;
-            archive << value;
-            archive.consume( out);
-            return out;
+            return dispatch::write( out, std::forward< T>( value), traits::priority::tag< 1>{});
          }
          
       } // detail
 
-      //! sentinel
-      inline std::ostream& write( std::ostream& out) { return out;}
-
       //! write multible values
-      template< typename T, typename... Ts>
-      auto write( std::ostream& out, const T& t, const Ts&... ts) 
-         -> decltype( detail::indirection( out, t, traits::priority::tag< 2>{})) 
+      template< typename... Ts>
+      auto write( std::ostream& out, Ts&&... ts) 
+         -> decltype( ( detail::write( out, std::forward< Ts>( ts)), ...) )
       {
-         detail::indirection( out, t, traits::priority::tag< 2>{});
-         return write( out, ts...);
+         return ( detail::write( out, std::forward< Ts>( ts)), ...);
       }
-
 
       namespace customization
       {
+         template< typename T>
+         struct delay
+         {
+            template< typename... Ts>
+            static auto write( std::ostream& out, Ts&&... ts) -> decltype( stream::write( out, std::forward< Ts>( ts)...))
+            {
+               return stream::write( out, std::forward< Ts>( ts)...);
+            }
+         };
 
          namespace supersede
          {
@@ -134,6 +98,28 @@ namespace casual
                   out << '[' << value.category().name() << ':' << value.message() << ']';
                }
             };
+
+            //! specialization for std::error_code
+            template< typename T> 
+            struct point< T, std::enable_if_t< 
+               std::is_error_code_enum< T>::value>>
+            {
+               static void stream( std::ostream& out, T value)
+               {
+                  supersede::point< std::error_code>::stream( out, std::error_code{ value});
+               }
+            };
+
+            //! specialization for std::error_condition
+            template< typename T> 
+            struct point< T, std::enable_if_t< 
+               std::is_error_condition_enum< T>::value>>
+            {
+               static void stream( std::ostream& out, T value)
+               {
+                  supersede::point< std::error_condition>::stream( out, std::error_condition{ value});
+               }
+            };
             
          } // supersede
 
@@ -146,7 +132,7 @@ namespace casual
             && traits::has::empty_v< C>>>
          {
             template< typename R>
-            static void stream( std::ostream& out, const R& range)
+            static void stream( std::ostream& out, R&& range)
             {
                out << '[';
 
@@ -160,32 +146,6 @@ namespace casual
             }
          };
 
-
-         //! specialization for std::error_code
-         template< typename C> 
-         struct point< C, std::enable_if_t< 
-            std::is_error_code_enum< C>::value>>
-         {
-            template< typename T>
-            static auto stream( std::ostream& out, T value)
-               -> decltype( void( stream::write( out, std::error_code{ value})))
-            {
-               stream::write( out, std::error_code{ value});
-            }
-         };
-
-         //! specialization for std::error_condition
-         template< typename C> 
-         struct point< C, std::enable_if_t< 
-            std::is_error_condition_enum< C>::value>>
-         {
-            template< typename T>
-            static auto stream( std::ostream& out, T value)
-               -> decltype( void( stream::write( out, std::error_condition{ value})))
-            {
-               stream::write( out, std::error_condition{ value});
-            }
-         };
 
          //! Specialization for named
          template< typename T>

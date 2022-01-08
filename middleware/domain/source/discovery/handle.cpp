@@ -64,6 +64,8 @@ namespace casual
                      assert( ! message.correlation);
                      assert( message.process == process::handle());
 
+                     log::line( verbose::log, "message: ", message);
+
                      auto result = algorithm::accumulate( range, state.coordinate.discovery.empty_pendings(), [&message]( auto result, const auto& point)
                      {
                         if( auto correlation = communication::ipc::flush::optional::send( point.process.ipc, message))
@@ -115,12 +117,15 @@ namespace casual
             {
                auto registration( State& state)
                {
-                  return [&state]( const message::discovery::internal::Registration& message)
+                  return [&state]( const message::discovery::internal::registration::Request& message)
                   {
                      Trace trace{ "discovery::handle::local::internal::registration"};
                      log::line( verbose::log, "message: ", message);
 
                      state.agents.registration( message);
+
+                     // send reply
+                     communication::ipc::flush::optional::send( message.process.ipc, common::message::reverse::type( message));
                   };
                }
             } // internal
@@ -129,16 +134,18 @@ namespace casual
             {
                auto registration( State& state)
                {
-                  return [&state]( const message::discovery::external::Registration& message)
+                  return [&state]( const message::discovery::external::registration::Request& message)
                   {
                      Trace trace{ "discovery::handle::local::external::registration"};
                      log::line( verbose::log, "message: ", message);
 
                      state.agents.registration( message);
 
-                      // send event so others can do discovery, if they need to.
-                     common::event::send( common::message::event::discoverable::Avaliable{ common::process::handle()});                           
+                     // send event so others can do discovery, if they need to.
+                     common::event::send( common::message::event::discoverable::Avaliable{ common::process::handle()});
 
+                     // send reply
+                     communication::ipc::flush::optional::send( message.process.ipc, common::message::reverse::type( message));
                   };
                }
 
@@ -161,6 +168,8 @@ namespace casual
 
                      message::discovery::Request request{ process::handle()};
                      request.content = std::move( message.content);
+                     request.domain = common::domain::identity();
+
 
                      // send request to all externals, if any.
                      auto pending = detail::send::requests( state, state.agents.external(), request);
@@ -184,7 +193,6 @@ namespace casual
 
                namespace advertised
                {
-                  // message::discovery::external::advertised::Reply
 
                   auto reply( State& state)
                   {
@@ -366,10 +374,14 @@ namespace casual
                               return result += std::move( reply.content);
                            });
 
-                           common::log::line( verbose::log, "request: ", request);
+                           // we only send request if we've got something to discover...
+                           if( request.content)
+                           {
+                              common::log::line( verbose::log, "request: ", request);
 
-                           // we use the regular external handler to send and coordinate external::Request.
-                           local::external::request( state)( std::move( request));
+                              // we use the regular external handler to send and coordinate external::Request.
+                              local::external::request( state)( std::move( request));
+                           }
                         });
                      };
                   }

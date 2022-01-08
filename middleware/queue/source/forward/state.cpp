@@ -27,6 +27,51 @@ namespace casual
             return out << "<unknown>";
          }
 
+         namespace forward
+         {
+            Service& Service::operator++()
+            {
+               ++instances.running;
+               return *this;
+            }
+
+            Service& Service::operator--()
+            {
+               assert( instances.running > 0);
+               --instances.running;
+
+               if( instances.absent())
+               {
+                  source.process = {};
+                  if( reply)
+                     reply.value().process = {};
+               }
+
+               return *this;
+            }
+
+            Queue& Queue::operator++()
+            {
+               ++instances.running;
+               return *this;
+            }
+
+            Queue& Queue::operator--()
+            {
+               assert( instances.running > 0);
+               --instances.running;
+
+               if( instances.absent())
+               {
+                  source.process = {};
+                  target.process = {};
+               }
+
+               return *this;
+            }
+
+         } // forward
+
       } // state
 
       bool State::done() const noexcept

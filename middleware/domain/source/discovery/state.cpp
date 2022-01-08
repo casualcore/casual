@@ -38,7 +38,7 @@ namespace casual
          } // agent
 
             
-         void Agents::registration( const message::discovery::internal::Registration& message)
+         void Agents::registration( const message::discovery::internal::registration::Request& message)
          {
             // we only add 'new' processes
             if( algorithm::find( m_agents, message.process))
@@ -48,7 +48,7 @@ namespace casual
             algorithm::sort( m_agents);
          }
 
-         void Agents::registration( const message::discovery::external::Registration& message)
+         void Agents::registration( const message::discovery::external::registration::Request& message)
          {
             // we only add 'new' processes
             if( algorithm::find( m_agents, message.process))

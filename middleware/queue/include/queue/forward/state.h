@@ -9,6 +9,8 @@
 #include "queue/common/ipc/message.h"
 #include "queue/common/ipc.h"
 
+#include "casual/assert.h"
+
 #include "common/serialize/macro.h"
 #include "common/strong/type.h"
 #include "common/strong/id.h"
@@ -60,6 +62,9 @@ namespace casual
                common::process::Handle process;
 
                explicit operator bool () const { return id && process;}
+
+               friend inline bool operator == ( const Source& lhs, common::strong::queue::id id) { return lhs.id == id;}
+               friend inline bool operator == ( const Source& lhs, common::strong::process::id pid) { return lhs.process.pid == pid;}
 
                CASUAL_LOG_SERIALIZE(
                   CASUAL_SERIALIZE( id);
@@ -153,6 +158,10 @@ namespace casual
                std::string alias;
                std::string note;
 
+               //! increment and decrement running instances
+               Service& operator++();
+               Service& operator--();
+
                inline bool valid_queues() const { return source && ( ! reply || reply.value());}
 
                friend bool operator == ( const Service& lhs, forward::id rhs) { return lhs.id == rhs;}
@@ -183,6 +192,10 @@ namespace casual
                std::string alias;
                std::string note;
 
+               //! increment and decrement running instances
+               Queue& operator++();
+               Queue& operator--();
+
                inline bool valid_queues() const { return source && target;}
 
                friend bool operator == ( const forward::Queue& lhs, forward::id rhs) { return lhs.id == rhs;}
@@ -207,6 +220,7 @@ namespace casual
                forward::id id;
                common::strong::correlation::id correlation;
 
+               inline friend bool operator == ( const base& lhs, forward::id rhs) { return lhs.id == rhs;}
                inline friend bool operator == ( const base& lhs, const common::strong::correlation::id& rhs) { return lhs.correlation == rhs;}
 
                CASUAL_LOG_SERIALIZE(
@@ -390,7 +404,7 @@ namespace casual
             if( auto found = forward_service( id))
                return functor( *found);
 
-            return functor( *forward_queue( id));
+            return functor( *assertion( forward_queue( id), "failed to find id: ", id));
          }
 
          CASUAL_LOG_SERIALIZE(

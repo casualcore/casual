@@ -7,6 +7,7 @@
 #include "transaction/manager/state.h"
 #include "transaction/common.h"
 #include "transaction/manager/handle.h"
+#include "transaction/manager/action.h"
 #include "transaction/manager/transform.h"
 
 #include "domain/configuration/fetch.h"
@@ -66,7 +67,7 @@ namespace casual
 
                   common::algorithm::for_each(
                      state.resources,
-                     manager::action::resource::Instances( state));
+                     action::resource::scale::instances( state));
 
                   // Make sure we wait for the resources to get ready
                   namespace dispatch = common::message::dispatch;

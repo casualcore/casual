@@ -16,30 +16,22 @@
 
 namespace casual
 {
-   namespace transaction
+   namespace transaction::manager::action
    {
-      namespace manager
+      namespace resource
       {
-         namespace action
+         namespace scale
          {
-            namespace resource
-            {
-               struct Instances : state::Base
-               {
-                  using state::Base::Base;
+            void instances( State& state, state::resource::Proxy& proxy);
+            inline auto instances( State& state) { return [ &state]( auto& proxy){ scale::instances( state, proxy);};}
+         } // scale
 
-                  void operator () ( state::resource::Proxy& proxy);
-               };
+         std::vector< admin::model::resource::Proxy> instances( State& state, std::vector< admin::model::scale::Instances> instances);
 
-               std::vector< admin::model::resource::Proxy> instances( State& state, std::vector< admin::model::scale::Instances> instances);
+         bool request( State& state, state::pending::Request& message);
 
-               bool request( State& state, state::pending::Request& message);
-
-            } // resource
-
-         } // action
-      } // manager
-   } // transaction
+      } // resource
+   } // transaction::manager::action
 } // casual
 
 

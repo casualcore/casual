@@ -77,7 +77,7 @@ namespace casual
                template< typename T>
                std::ostream& operator << ( T&& value)
                {
-                  return *m_active.value << std::forward< T>( value);
+                  return stream::write( *m_active.value, std::forward< T>( value));
                }
 
             private:

@@ -19,6 +19,7 @@ namespace casual
    {
       namespace chronology
       {
+
          TEST( common_chronology, from_string__invalid_unit)
          {
             unittest::Trace trace;
@@ -72,6 +73,24 @@ namespace casual
             EXPECT_TRUE( from::string( "us") == std::chrono::milliseconds::zero());
          }
 
+         TEST( common_chronology, from_string__ns)
+         {
+            unittest::Trace trace;
+
+            if constexpr( std::is_same_v< std::chrono::nanoseconds, platform::time::unit>)
+            {
+               EXPECT_TRUE( from::string( "42ns") == std::chrono::nanoseconds( 42)) << trace.compose( "42ns - ", from::string( "42ns"), " - ", from::string( "42ns").count());
+               EXPECT_TRUE( from::string( "0ns") == std::chrono::seconds::zero());
+               EXPECT_TRUE( from::string( "ns") == std::chrono::milliseconds::zero());
+            }
+            else 
+            {
+               EXPECT_TRUE( from::string( "999ns") == std::chrono::microseconds( 1)) << trace.compose( "42ns - ", from::string( "42ns"), " - ", from::string( "42ns").count());
+               EXPECT_TRUE( from::string( "0ns") == std::chrono::seconds::zero());
+               EXPECT_TRUE( from::string( "ns") == std::chrono::milliseconds::zero());
+            }
+         }
+
          TEST( common_chronology, from_string__h_min_s)
          {
             unittest::Trace trace;
@@ -93,7 +112,7 @@ namespace casual
 
             auto duration = std::chrono::nanoseconds{ 42}; 
 
-            EXPECT_TRUE( to::string( duration) == "42ns") << to::string( duration);
+            EXPECT_TRUE( to::string( duration) == "42ns") << chronology::to::string( duration);
          }
 
          TEST( common_chronology, to_string__2h_40min_1ns)
@@ -111,7 +130,7 @@ namespace casual
 
             auto now = platform::time::clock::type::now();
             std::ostringstream out;
-            out << now;
+            stream::write( out, now);
 
             // 2020-03-27T02:23:34.633337+05:30
             std::regex format{ R"(\d{4}-\d{2}-\d{2}T\d{2}\:\d{2}\:\d{2}\.\d{6}[+-]\d{2}\:\d{2})"};

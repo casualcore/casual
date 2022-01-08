@@ -1097,13 +1097,13 @@ namespace casual
       }
 
       template< typename Range, typename T>
-      auto count( Range&& range, T&& value)
+      platform::size::type count( Range&& range, T&& value)
       {
          return std::count( std::begin( range), std::end( range), std::forward< T>( value));
       }
 
       template< typename Range, typename Predicate>
-      auto count_if( Range&& range, Predicate predicate)
+      platform::size::type count_if( Range&& range, Predicate predicate)
       {
          return std::count_if( std::begin( range), std::end( range), predicate);
       }

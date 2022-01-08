@@ -3,6 +3,25 @@ This is the changelog for `casual` and all changes are listed in this document.
 
 ## [Unreleased]
 
+## [1.5.8] - 2022-01-08
+### Fixes
+- transaction - fix distributed transaction bug in complex topology
+- queue - forward react if queue group "dies"
+- xatmi - conversation disconnect not properly handled
+- queue - return `no_queue` iso `no_message` when writing to non existing queue
+- discovery - on discoverable::Available event - we only discover when it makes sense
+
+### Internal
+- log - made sure we only use our own stream::write and got rid of global ostream stream operator
+- common - flag abstraction degradation - equality operator for underlying enum type messed up semantics
+
+## [1.5.7] - 2021-11-26
+### Fixes
+- transaction - fix distributed commit when RM fails -> rollback
+- discovery - registration for _discoverables_ more robust with request->reply
+   - Primarily for unittests when booting, testing and shutdown of multiple domains 
+     within a couple of 100ms or so.
+
 ## [1.5.6] - 2021-11-15
 
 ### Changed

@@ -8,6 +8,7 @@
 #include "queue/group/state.h"
 #include "queue/group/handle.h"
 #include "queue/common/ipc/message.h"
+#include "queue/common/ipc.h"
 #include "queue/common/log.h"
 
 #include "common/argument.h"
@@ -39,7 +40,7 @@ namespace casual
                   {
                      // Timeout has occurred, we push the corresponding 
                      // signal to our own "queue", and handle it "later"
-                     handle::ipc::device().push( common::message::signal::Timeout{});
+                     ipc::device().push( common::message::signal::Timeout{});
                   });
 
                   // connect to queue-manager - it will send configuration::update::Reqest that we'll handle
@@ -74,8 +75,8 @@ namespace casual
 
                   common::message::dispatch::pump( 
                      condition( state), 
-                     group::handler( state), 
-                     handle::ipc::device());
+                     group::handlers( state), 
+                     ipc::device());
 
                   abort_guard.release();
                }

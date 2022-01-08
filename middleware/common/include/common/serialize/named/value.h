@@ -7,6 +7,7 @@
 #pragma once
 
 #include "common/traits.h"
+#include "common/stream/customization.h"
 
 #include <utility>
 #include <type_traits>
@@ -73,6 +74,12 @@ namespace casual
          //const T& value() const & { return std::get< 1>( *this);}
          //T value() && { return std::move( std::get< 1>( *this));} 
       };
+
+      template <typename T, typename R>
+      inline std::ostream& operator << ( std::ostream& out, const Value< T, R>& named)
+      {
+         return stream::customization::delay< T>::write( out, named.name(), ": ", named.value());
+      }
 
       namespace value
       {

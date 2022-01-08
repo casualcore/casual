@@ -314,8 +314,8 @@ domain:
          EXPECT_TRUE( service.service.name == "A");
 
 
-         EXPECT_TRUE( local::has_services( state.services, { "B"})) << "state.services: " << state.services;
-         EXPECT_TRUE( ! local::has_services( state.services, { "A"})) << "state.services: " << state.services;
+         EXPECT_TRUE( local::has_services( state.services, { "B"})) << CASUAL_NAMED_VALUE( state.services);
+         EXPECT_TRUE( ! local::has_services( state.services, { "A"})) << CASUAL_NAMED_VALUE( state.services);
          
       }
 
@@ -386,8 +386,8 @@ domain:
          auto state = local::call::state();
 
 
-         EXPECT_TRUE( local::has_services( state.services, { "B"})) << "state.services: " << state.services;
-         EXPECT_TRUE( ! local::has_services( state.services, { "A"})) << "state.services: " << state.services;
+         EXPECT_TRUE( local::has_services( state.services, { "B"})) << CASUAL_NAMED_VALUE( state.services);
+         EXPECT_TRUE( ! local::has_services( state.services, { "A"})) << CASUAL_NAMED_VALUE( state.services);
          
       }
 
@@ -415,8 +415,8 @@ domain:
             auto reply = common::message::reverse::type( request);
             common::communication::device::blocking::receive( common::communication::ipc::inbound::device(), reply);
 
-            ASSERT_TRUE( reply.content.services.size() == 1) << "reply: " << reply;
-            EXPECT_TRUE( reply.content.services.at( 0).name == "B") << "reply: " << reply;
+            ASSERT_TRUE( reply.content.services.size() == 1) << CASUAL_NAMED_VALUE( reply);
+            EXPECT_TRUE( reply.content.services.at( 0).name == "B") << CASUAL_NAMED_VALUE( reply);
          }
       }
 
@@ -429,7 +429,7 @@ domain:
          service::unittest::advertise( { "service1", "service2"});
 
          auto state = local::call::state();
-         EXPECT_TRUE( local::has_services( state.services, { "service1", "service2"})) << "state.services: " << state.services;
+         EXPECT_TRUE( local::has_services( state.services, { "service1", "service2"})) << CASUAL_NAMED_VALUE( state.services);
 
          {
             auto instance = local::instance::find( state, common::process::id());

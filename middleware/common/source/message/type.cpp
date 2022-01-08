@@ -40,8 +40,10 @@ namespace casual
             case Type::domain_pending_message_send_request: return out << "domain_pending_message_send_request";
             case Type::domain_instance_global_state_request: return out << "domain_instance_global_state_request";
             case Type::domain_instance_global_state_reply: return out << "domain_instance_global_state_reply";
-            case Type::domain_discovery_internal_registration: return out << "domain_discovery_internal_registration";
-            case Type::domain_discovery_external_registration: return out << "domain_discovery_external_registration";
+            case Type::domain_discovery_internal_registration_request: return out << "domain_discovery_internal_registration_request";
+            case Type::domain_discovery_internal_registration_reply: return out << "domain_discovery_internal_registration_reply";
+            case Type::domain_discovery_external_registration_request: return out << "domain_discovery_external_registration_request";
+            case Type::domain_discovery_external_registration_reply: return out << "domain_discovery_external_registration_reply";
             case Type::domain_discovery_external_request: return out << "domain_discovery_external_request";
             case Type::domain_discovery_external_reply: return out << "domain_discovery_external_reply";
             case Type::domain_discovery_external_advertised_request: return out << "domain_discovery_external_advertised_request";

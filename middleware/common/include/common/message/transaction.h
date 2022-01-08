@@ -75,11 +75,11 @@ namespace casual
 
                namespace reply
                {
-                  enum class Stage : char
+                  enum class Stage : std::int8_t
                   {
                      prepare = 0,
                      commit = 1,
-                     error = 2,
+                     rollback = 2,
                   };
 
                   inline std::ostream& operator << ( std::ostream& out, Stage value)
@@ -88,7 +88,7 @@ namespace casual
                      {
                         case Stage::prepare: return out << "prepare";
                         case Stage::commit: return out << "commit";
-                        case Stage::error: return out << "error";
+                        case Stage::rollback: return out << "rollback";
                      }
                      return out << "unknown";
                   }

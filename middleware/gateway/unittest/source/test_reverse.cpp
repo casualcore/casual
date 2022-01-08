@@ -11,6 +11,7 @@
 #include "gateway/manager/admin/server.h"
 
 #include "domain/manager/unittest/process.h"
+#include "domain/manager/unittest/discover.h"
 #include "service/unittest/utility.h"
 
 #include "serviceframework/service/protocol/call.h"
@@ -142,11 +143,11 @@ domain:
             return ! state.connections.empty() && ! state.connections[ 0].remote.name.empty();
          });
 
-         unittest::discover( { "a"}, {});
+         casual::domain::manager::unittest::discover( { "a"}, {});
 
          // check that service has concurrent instances
          {
-            auto service = unittest::service::state();
+            auto service = casual::service::unittest::state();
             auto found = algorithm::find( service.services, "a");
             ASSERT_TRUE( found);
             EXPECT_TRUE( ! found->instances.concurrent.empty()) << CASUAL_NAMED_VALUE( *found);
@@ -201,12 +202,12 @@ domain:
             return ! state.connections.empty() && ! state.connections[ 0].remote.name.empty();
          });
 
-         unittest::discover( { "a"}, {});
+         casual::domain::manager::unittest::discover( { "a"}, {});
 
 
          auto outbound_processes = []() -> std::vector< process::Handle>
          {
-            auto state = unittest::service::state();
+            auto state = casual::service::unittest::state();
             if( auto found = algorithm::find( state.services, "a"))
             {
                return algorithm::accumulate( found->instances.concurrent, std::vector< process::Handle>{}, [&state]( auto result, auto& instance)

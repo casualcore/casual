@@ -16,12 +16,12 @@
 #include "common/server/handle/call.h"
 #include "common/event/send.h"
 #include "common/communication/instance.h"
+#include "common/communication/ipc/flush/send.h"
 #include "common/instance.h"
 
 #include "common/code/raise.h"
 #include "common/code/casual.h"
 
-#include "domain/pending/message/send.h"
 #include "domain/configuration/fetch.h"
 
 
@@ -37,88 +37,85 @@ namespace casual
 
       namespace resource
       {
-         void Instances::operator () ( state::resource::Proxy& proxy)
+         namespace scale
          {
-            Trace trace( "resource::Instances::operator()");
-
-            log::line( log, "update instances for resource: ", proxy);
-         
-            auto count = proxy.configuration.instances - range::size( proxy.instances);
-
-            if( count > 0)
+            void instances( State& state, state::resource::Proxy& proxy)
             {
-               while( count-- > 0)
+               Trace trace( "resource::Instances::operator()");
+               log::line( log, "update instances for resource: ", proxy);
+            
+               auto count = proxy.configuration.instances - range::size( proxy.instances);
+
+               if( count > 0)
                {
-                  auto found = algorithm::find( m_state.system.configuration.resources, proxy.configuration.key);
-
-                  if( ! found)
-                     return;
-
-                  state::resource::Proxy::Instance instance;
-                  instance.id = proxy.id;
-
-                  try
+                  while( count-- > 0)
                   {
-                     instance.process.pid = process::spawn(
-                        found->server,
-                        {
-                           "--id", std::to_string( proxy.id.value()),
-                        },
-                        { common::instance::variable( { proxy.configuration.name, proxy.id.value()})}
-                     );
+                     auto found = algorithm::find( state.system.configuration.resources, proxy.configuration.key);
 
-                     instance.state( state::resource::Proxy::Instance::State::started);
+                     if( ! found)
+                        return;
 
-                     proxy.instances.push_back( std::move( instance));
-                  }
-                  catch( ...)
-                  {
-                     common::event::error::send( common::exception::capture().code(), "failed to spawn resource-proxy-instance: " + found->server);
+                     state::resource::Proxy::Instance instance;
+                     instance.id = proxy.id;
+
+                     try
+                     {
+                        instance.process.pid = process::spawn(
+                           found->server,
+                           {
+                              "--id", std::to_string( proxy.id.value()),
+                           },
+                           { common::instance::variable( { proxy.configuration.name, proxy.id.value()})}
+                        );
+
+                        instance.state( state::resource::Proxy::Instance::State::started);
+
+                        proxy.instances.push_back( std::move( instance));
+                     }
+                     catch( ...)
+                     {
+                        common::event::error::send( common::exception::capture().code(), "failed to spawn resource-proxy-instance: " + found->server);
+                     }
                   }
                }
-            }
-            else
-            {
-               auto end = std::end( proxy.instances);
-
-               for( auto& instance : range::make( end + count, end))
+               else
                {
-                  switch( instance.state())
+                  auto end = std::end( proxy.instances);
+
+                  for( auto& instance : range::make( end + count, end))
                   {
-                     using State = decltype( instance.state());
-
-                     case State::absent:
-                     case State::started:
+                     switch( instance.state())
                      {
+                        using State = decltype( instance.state());
 
-                        log::line( log, "Instance has not register yet. We, kill it...: ", instance);
-
-                        process::lifetime::terminate( { instance.process.pid});
-                        instance.state( State::shutdown);
-                        break;
-                     }
-                     case State::shutdown:
-                     {
-                        log::line( log, "instance already in shutdown state - ", instance);
-                        break;
-                     }
-                     default:
-                     {
-                        log::line( log, "shutdown instance: ", instance);
-
-                        instance.state( State::shutdown);
-
-                        if( ! communication::device::non::blocking::send( instance.process.ipc, message::shutdown::Request{}))
+                        case State::absent:
+                        case State::started:
                         {
-                           // We couldn't send shutdown for some reason, we send it to pending
-                           casual::domain::pending::message::send( instance.process, message::shutdown::Request{});
+
+                           log::line( log, "Instance has not register yet. We, kill it...: ", instance);
+
+                           process::lifetime::terminate( { instance.process.pid});
+                           instance.state( State::shutdown);
+                           break;
                         }
-                        break;
+                        case State::shutdown:
+                        {
+                           log::line( log, "instance already in shutdown state - ", instance);
+                           break;
+                        }
+                        default:
+                        {
+                           log::line( log, "shutdown instance: ", instance);
+                           instance.state( State::shutdown);
+                           communication::ipc::flush::send( instance.process.ipc, message::shutdown::Request{});
+                           break;
+                        }
                      }
                   }
                }
             }
-         }
+         } // scale
+
 
          std::vector< admin::model::resource::Proxy> instances( State& state, std::vector< admin::model::scale::Instances> instances)
          {
@@ -130,8 +127,8 @@ namespace casual
                if( auto resource = state.find_resource( directive.name))
                {
                   resource->configuration.instances = directive.instances;
-                  Instances{ state}( *resource);
-                  result.push_back( admin::transform::resource::Proxy{}( *resource));
+                  scale::instances( state, *resource);
+                  result.push_back( admin::transform::resource::proxy( *resource));
                }
 
                // else:
@@ -143,31 +140,6 @@ namespace casual
             return result;
          }
 
-         namespace local
-         {
-            namespace
-            {
-               namespace instance
-               {
-                  bool request( const common::communication::ipc::message::Complete& message, state::resource::Proxy::Instance& instance)
-                  {
-                     Trace trace{ "transaction::action::resource::instance::request"};
-
-                     if( communication::device::non::blocking::send( instance.process.ipc, message))
-                     {
-                        instance.state( state::resource::Proxy::Instance::State::busy);
-                        instance.metrics.requested = platform::time::clock::type::now();
-                        return true;
-                     }
-                     return false;
-
-                  }
-               } // instance
-
-            } // <unnamed>
-         } // local
-
-
          bool request( State& state, state::pending::Request& message)
          {
             Trace trace{ "transaction::action::resource::request"};
@@ -175,13 +147,13 @@ namespace casual
 
             if( state::resource::id::local( message.resource))
             {
-               if( auto found = state.idle_instance( message.resource))
+               if( auto found = state.idle( message.resource))
                {
-                  if( local::instance::request( message.message, *found))
-                     return true;
-                  
-                  log::line( log, "failed to send resource request - type: ", message.message.type(), " to: ", found->process, " - action: try later");
-                  return false;  
+                  communication::ipc::flush::send( found->process.ipc, message.message);
+                  found->state( state::resource::Proxy::Instance::State::busy);
+                  found->metrics.requested = platform::time::clock::type::now();
+
+                  return true;
                }
       
                log::line( log, "failed to find idle resource - action: wait");
@@ -190,17 +162,7 @@ namespace casual
 
             // 'external' resource proxy
             auto& resource = state.get_external( message.resource);
-
-            // we flush our inbound ipc to maximise success of sending directly (the resource might be trying to send
-            // stuff to us right now, and our inbound and the resource inbound might be 'full', unlikely on linux
-            // system but it can occur on OSX/BSD with extremely high loads)
-            communication::ipc::inbound::device().flush();
-
-            if( ! communication::device::non::blocking::send( resource.process.ipc, message.message))
-            {
-               log::line( log, "failed to send resource request to 'external' resource -  ", resource.process, " - action: send via pending");
-               casual::domain::pending::message::send( resource.process, std::move( message.message));
-            }
+            communication::ipc::flush::send( resource.process.ipc, message.message);
             
             return true;
          }

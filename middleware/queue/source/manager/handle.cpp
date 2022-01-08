@@ -9,6 +9,7 @@
 #include "queue/manager/transform.h"
 #include "queue/common/log.h"
 #include "queue/common/ipc/message.h"
+#include "queue/common/ipc.h"
 
 
 #include "domain/discovery/api.h"
@@ -22,6 +23,7 @@
 #include "common/event/send.h"
 #include "common/algorithm/compare.h"
 #include "common/message/handle.h"
+#include "common/message/internal.h"
 
 
 #include "common/code/raise.h"
@@ -45,22 +47,6 @@ namespace casual
             namespace
             {
 
-               template< typename G, typename M>
-               void send( State& state, G&& groups, M&& message)
-               {
-                  // Try to send it first with no blocking.
-                  auto busy = common::algorithm::filter( groups, [&message]( auto& group)
-                  {
-                     return ! communication::device::non::blocking::send( group.queue, message);
-                  });
-
-                  // Block for the busy ones, if any
-                  algorithm::for_each( busy, [&message]( auto& group)
-                  {
-                     communication::device::blocking::send( group.queue, message);
-                  });
-               }
-
                namespace pending::lookups
                {
                   //! check if there are pending lookups that can be replied 
@@ -79,7 +65,7 @@ namespace casual
                            reply.process = queue->process;
                            reply.order = queue->order;
 
-                           return predicate::boolean( communication::device::blocking::optional::send( lookup.process.ipc, reply));
+                           return predicate::boolean( ipc::flush::optional::send( lookup.process.ipc, reply));
                         }
                         return false;
                      };
@@ -98,7 +84,7 @@ namespace casual
                      {
                         auto reply = common::message::reverse::type( lookup);
                         reply.name = lookup.name;
-                        communication::device::blocking::optional::send( lookup.process.ipc, reply);
+                        ipc::flush::optional::send( lookup.process.ipc, reply);
                      };
 
                      algorithm::for_each( pending, discard_lookup);
@@ -229,7 +215,7 @@ namespace casual
                         auto send_reply = common::execute::scope( [&]()
                         {
                            common::log::line( verbose::log, "reply.execution: ", reply.execution);
-                           communication::device::blocking::optional::send( message.process.ipc, reply);
+                           ipc::flush::optional::send( message.process.ipc, reply);
                         });
 
                         if( auto queue = state.queue( message.name))
@@ -279,7 +265,7 @@ namespace casual
                            else
                               reply.state = decltype( reply.state)::replied;
 
-                           communication::device::blocking::optional::send( message.process.ipc, reply);
+                           ipc::flush::optional::send( message.process.ipc, reply);
                         };
                      }
                   } // discard
@@ -347,7 +333,7 @@ namespace casual
                            // send configuration
                            queue::ipc::message::forward::group::configuration::update::Request request{ common::process::handle()};
                            request.model = found->configuration;
-                           communication::device::blocking::send( message.process.ipc, request);
+                           ipc::flush::optional::send( message.process.ipc, request);
                         }
                         else
                            common::log::line( common::log::category::error, "failed to correlate forward group - ", message.process.pid);
@@ -420,7 +406,7 @@ namespace casual
 
                            common::log::line( verbose::log, "reply: ", reply);
 
-                           communication::device::blocking::send( message.process.ipc, reply);
+                           ipc::flush::optional::send( message.process.ipc, reply);
                         };
                      }
 
@@ -439,7 +425,7 @@ namespace casual
                            {
                               auto pending = algorithm::container::extract( state.pending.lookups, std::begin( found));
                               auto reply = common::message::reverse::type( pending);
-                              communication::device::blocking::optional::send( pending.process.ipc, reply);
+                              ipc::flush::optional::send( pending.process.ipc, reply);
                            }
                            
                         };
@@ -459,7 +445,7 @@ namespace casual
 
                         reply.model.queue = transform::configuration( state);
 
-                        communication::device::blocking::optional::send( message.process.ipc, reply);
+                        ipc::flush::optional::send( message.process.ipc, reply);
                      };
 
                   }
@@ -519,6 +505,7 @@ namespace casual
       {
          return common::message::dispatch::handler( ipc::device(),
             common::message::handle::defaults( ipc::device()),
+            common::message::internal::dump::state::handle( state),
             
             handle::local::group::connect( state),
             handle::local::group::configuration::update::reply( state),

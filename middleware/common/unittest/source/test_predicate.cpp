@@ -177,7 +177,7 @@ namespace casual
          auto filtered = std::get< 0>( algorithm::partition( values, pred));
 
          auto expected = std::vector< local::State>{ { 1, 2}, { 1, 2}, { 1, 2}};
-         EXPECT_TRUE( filtered == expected) << "filtered: " << filtered;
+         EXPECT_TRUE( filtered == expected) << trace.compose( "filtered: ", filtered);
       }
 
       TEST( casual_common_predicate, and__lvalue_lambdas__a__b)
@@ -194,7 +194,7 @@ namespace casual
          auto filtered = std::get< 0>( algorithm::partition( values, pred));
 
          auto expected = std::vector< local::State>{ { 1, 2}, { 1, 2}, { 1, 2}};
-         EXPECT_TRUE( filtered == expected) << "filtered: " << filtered;
+         EXPECT_TRUE( filtered == expected) << trace.compose( "filtered: ", filtered);
       }
 
       TEST( casual_common_predicate, a__b)
@@ -207,7 +207,7 @@ namespace casual
          filtered = std::get< 0>( algorithm::partition( filtered, local::filter::B{ 2}));
 
          auto expected = std::vector< local::State>{ { 1, 2}, { 1, 2}, { 1, 2}};
-         EXPECT_TRUE( filtered == expected) << "filtered: " << filtered;
+         EXPECT_TRUE( filtered == expected) << trace.compose( "filtered: ", filtered);
       }
 
       TEST( casual_common_predicate, and__rvalue_functors__a__b)
@@ -224,7 +224,7 @@ namespace casual
          auto filtered = std::get< 0>( algorithm::partition( values, pred));
 
          auto expected = std::vector< local::State>{ { 1, 2}, { 1, 2}, { 1, 2}};
-         EXPECT_TRUE( filtered == expected) << "filtered: " << filtered;
+         EXPECT_TRUE( filtered == expected) << trace.compose( "filtered: ", filtered);
       }
 
       TEST( casual_common_predicate, and__lvalue_functors__a__b)
@@ -244,7 +244,7 @@ namespace casual
          auto filtered = std::get< 0>( algorithm::partition( values, pred));
 
          auto expected = std::vector< local::State>{ { 1, 2}, { 1, 2}, { 1, 2}};
-         EXPECT_TRUE( filtered == expected) << "filtered: " << filtered;
+         EXPECT_TRUE( filtered == expected) << trace.compose( "filtered: ", filtered);
       }
 
       

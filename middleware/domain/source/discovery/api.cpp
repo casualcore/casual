@@ -28,8 +28,20 @@ namespace casual
                   static communication::instance::outbound::detail::optional::Device device{ discovery::instance::identity};
                   return device;
                }
-
             } // instance
+
+            namespace flush
+            {
+               template< typename M>
+               void call( M&& message)
+               {
+                  if( auto correlation = communication::ipc::flush::optional::send( local::instance::device(), message))
+                  {
+                     auto reply = common::message::reverse::type( message);
+                     communication::device::blocking::receive( communication::ipc::inbound::device(), reply, correlation);
+                  }
+               }
+            } // flush
          } // <unnamed>
       } // local
 
@@ -38,8 +50,9 @@ namespace casual
          void registration( const common::process::Handle& process)
          {
             Trace trace{ "domain::discovery::internal::registration"};
-            message::discovery::internal::Registration message{ process};
-            communication::ipc::flush::optional::send( local::instance::device(), message);
+
+            message::discovery::internal::registration::Request message{ process};
+            local::flush::call( message);
          }
 
          void registration()
@@ -53,6 +66,8 @@ namespace casual
       correlation_type request( const Request& request)
       {
          Trace trace{ "domain::discovery::request"};
+         log::line( verbose::log, "request: ", request);
+         
          return communication::ipc::flush::optional::send( local::instance::device(), request);
       }
 
@@ -61,9 +76,9 @@ namespace casual
          void registration( const common::process::Handle& process, Directive directive)
          {
             Trace trace{ "domain::discovery::external::registration"};
-            message::discovery::external::Registration message{ process};
+            message::discovery::external::registration::Request message{ process};
             message.directive = directive;
-            communication::ipc::flush::optional::send( local::instance::device(), message);
+            local::flush::call( message);
          } 
 
          void registration( Directive directive)
@@ -74,6 +89,8 @@ namespace casual
          correlation_type request( const Request& request)
          {
             Trace trace{ "domain::discovery::external::request"};
+            log::line( verbose::log, "request: ", request);
+
             return communication::ipc::flush::optional::send( local::instance::device(), request);
          }
 

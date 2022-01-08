@@ -123,7 +123,7 @@ namespace casual
          });
 
          for( auto& socket : connections)
-            EXPECT_TRUE( local::boolean( socket)) << CASUAL_NAMED_VALUE( socket);
+            EXPECT_TRUE( local::boolean( socket)) << trace.compose( "socket: ", socket);
       }
 
       namespace local

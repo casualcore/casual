@@ -17,6 +17,8 @@
 #include "common/algorithm.h"
 #include "common/metric.h"
 #include "common/functional.h"
+#include "common/message/coordinate.h"
+#include "common/state/machine.h"
 
 #include "common/serialize/native/complete.h"
 
@@ -33,8 +35,6 @@ namespace casual
    {
       namespace manager
       {
-         using size_type = platform::size::type;
-
          struct State;
 
          namespace state
@@ -48,22 +48,27 @@ namespace casual
 
                Metrics& operator += ( const Metrics& rhs);
 
+               //! adds/aggregate metrics from a resource reply
+               template< typename R>
+               void add( const R& reply, platform::time::point::type now = platform::time::clock::type::now())
+               {
+                  resource += reply.statistics.end - reply.statistics.start;
+                  roundtrip += now - requested;
+               }
+
                CASUAL_LOG_SERIALIZE(
-               { 
                   CASUAL_SERIALIZE( resource);
                   CASUAL_SERIALIZE( roundtrip);
                   CASUAL_SERIALIZE( requested);
-               })
+               )
             };
 
             namespace resource
             {
                namespace id
                {
-                  using type = common::strong::resource::id;
-
-                  inline bool remote( type id) { return id < common::strong::resource::id{0};}
-                  inline bool local( type id) { return id > common::strong::resource::id{0};}
+                  inline bool remote( common::strong::resource::id id) { return id < common::strong::resource::id{0};}
+                  inline bool local( common::strong::resource::id id) { return id > common::strong::resource::id{0};}
 
                } // id
 
@@ -85,7 +90,7 @@ namespace casual
                      friend std::ostream& operator << ( std::ostream& out, const State& value);
 
 
-                     id::type id;
+                     common::strong::resource::id id;
                      common::process::Handle process;
 
                      Metrics metrics;
@@ -110,7 +115,7 @@ namespace casual
                   inline Proxy( configuration::model::transaction::Resource configuration)
                      : configuration{ std::move( configuration)} {}
 
-                  id::type id = id::type::generate();
+                  common::strong::resource::id id = common::strong::resource::id::generate();
 
                   std::vector< Instance> instances;
                   configuration::model::transaction::Resource configuration;
@@ -125,8 +130,8 @@ namespace casual
                   bool remove_instance( common::strong::process::id pid);
 
                   inline friend bool operator < ( const Proxy& lhs, const Proxy& rhs) { return lhs.id < rhs.id;}
-                  friend bool operator == ( const Proxy& lhs, id::type rhs) { return lhs.id == rhs; }
-                  friend bool operator == ( id::type lhs, const Proxy& rhs) { return lhs == rhs.id; }
+                  friend bool operator == ( const Proxy& lhs, common::strong::resource::id rhs) { return lhs.id == rhs; }
+                  friend bool operator == ( common::strong::resource::id lhs, const Proxy& rhs) { return lhs == rhs.id; }
 
                   CASUAL_LOG_SERIALIZE(
                      CASUAL_SERIALIZE( id);
@@ -140,18 +145,18 @@ namespace casual
                {
                   struct Proxy
                   {
-                     Proxy( common::process::Handle  process, id::type id);
+                     Proxy( common::process::Handle  process, common::strong::resource::id id);
 
                      common::process::Handle process;
 
                      //! RM id
-                     id::type id;
+                     common::strong::resource::id id;
 
                      // TODO maintainance: get metrics for "external" resources
                      // Metrics metrics;
 
                      friend bool operator == ( const Proxy& lhs, const common::process::Handle& rhs);
-                     inline friend bool operator == ( const Proxy& lhs, id::type rhs) { return lhs.id == rhs;}
+                     inline friend bool operator == ( const Proxy& lhs, common::strong::resource::id rhs) { return lhs.id == rhs;}
 
                      CASUAL_LOG_SERIALIZE(
                         CASUAL_SERIALIZE( process);
@@ -161,7 +166,7 @@ namespace casual
 
                   namespace proxy
                   {
-                     id::type id( State& state, const common::process::Handle& process);
+                     common::strong::resource::id id( State& state, const common::process::Handle& process);
                   } // proxy
 
                } // external
@@ -172,13 +177,13 @@ namespace casual
                struct Request
                {
                   template< typename M>
-                  Request( resource::id::type resource, M&& message) 
+                  Request( common::strong::resource::id resource, M&& message) 
                      : resource( resource),  message( common::serialize::native::complete< common::communication::ipc::message::Complete>( std::forward< M>( message))) {}
 
-                  resource::id::type resource;
+                  common::strong::resource::id resource;
                   common::communication::ipc::message::Complete message;
 
-                  inline friend bool operator == ( const Request& lhs, resource::id::type rhs) { return lhs.resource == rhs;}
+                  inline friend bool operator == ( const Request& lhs, common::strong::resource::id rhs) { return lhs.resource == rhs;}
 
                   CASUAL_LOG_SERIALIZE(
                      CASUAL_SERIALIZE( resource);
@@ -187,217 +192,165 @@ namespace casual
                };
 
             } // pending
-         } // state
 
-
-         struct Transaction
-         {
-            //! Holds specific implementations for the current transaction. 
-            //! That is, depending on where the task comes from and if there
-            //! are some optimizations there are different semantics for 
-            //! the transaction.
-            struct Dispatch
+            namespace code::priority
             {
-               common::unique_function< bool( State&, common::message::transaction::resource::prepare::Reply&, Transaction&)> prepare;
-               common::unique_function< bool( State&, common::message::transaction::resource::commit::Reply&, Transaction&)> commit;
-               common::unique_function< bool( State&, common::message::transaction::resource::rollback::Reply&, Transaction&)> rollback;
-
-               inline explicit operator bool () { return static_cast< bool>( prepare);}
-            };
-
-            struct Resource
-            {
-               using id_type = state::resource::id::type;
-
-               enum class Stage : std::uint16_t
-               {
-                  involved,
-                  prepare_requested,
-                  prepare_replied,
-                  commit_requested,
-                  commit_replied,
-                  rollback_requested,
-                  rollback_replied,
-                  done,
-                  error,
-                  not_involved,
-               };
-
-               friend std::ostream& operator << ( std::ostream& out, Stage value);
-
-               friend Stage operator + ( Stage lhs, Stage rhs) { return std::max( lhs, rhs);}
-
                //! Used to rank the return codes from the resources, the lower the enum value (higher up),
                //! the more severe...
-               enum class Result : int
+               enum struct xa : int
                {
-                  xa_HEURHAZ,
-                  xa_HEURMIX,
-                  xa_HEURCOM,
-                  xa_HEURRB,
-                  xaer_RMFAIL,
-                  xaer_RMERR,
-                  xa_RBINTEGRITY,
-                  xa_RBCOMMFAIL,
-                  xa_RBROLLBACK,
-                  xa_RBOTHER,
-                  xa_RBDEADLOCK,
-                  xaer_PROTO,
-                  xa_RBPROTO,
-                  xa_RBTIMEOUT,
-                  xa_RBTRANSIENT,
-                  xaer_INVAL,
-                  xa_NOMIGRATE,
-                  xaer_OUTSIDE,
-                  xaer_ASYNC,
-                  xa_RETRY,
-                  xaer_DUPID,
-                  xaer_NOTA,  //! nothing to do?
-                  xa_OK,      //! Went as expected
-                  xa_RDONLY,  //! Went "better" than expected
+                  heuristic_hazard,
+                  heuristic_mix,
+                  heuristic_commit,
+                  heuristic_rollback,
+                  resource_fail,
+                  resource_error,
+                  rollback_integrity,
+                  rollback_communication,
+                  rollback_unspecified,
+                  rollback_other,
+                  rollback_deadlock,
+                  protocol,
+                  rollback_protocoll,
+                  rollback_timeout,
+                  rollback_transient,
+                  argument,
+                  no_migrate,
+                  outside,
+                  outstanding_async,
+                  retry,
+                  duplicate_xid,
+                  invalid_xid,  //! nothing to do?
+                  ok,      //! Went as expected
+                  read_only,  //! Went "better" than expected
                };
 
-               inline Resource( id_type id) : id( id) {}
+               common::code::xa convert( xa code);
+               xa convert( common::code::xa code);
+               
+            } // code::priority
 
-               Resource( Resource&&) noexcept = default;
-               Resource& operator = ( Resource&&) noexcept = default;
-
-               id_type id;
-
-               Stage stage = Stage::involved;
-               Result result = Result::xa_OK;
-
-
-               static Result convert( common::code::xa value);
-               static common::code::xa convert( Result value);
-
-               void set_result( common::code::xa value);
-
-               //! @return true if there's nothing more to do, hence this resource can be removed
-               //!    from the transaction
-               bool done() const;
-
-               struct update
-               {
-                  static inline auto stage( Resource::Stage stage)
-                  {
-                     return [stage]( Resource& value){ value.stage = stage;};
-                  }
-               };
-
-               struct filter
-               {
-                  static inline auto stage( Resource::Stage stage)
-                  {
-                     return [stage]( const Resource& value){ return value.stage == stage;};
-                  }
-
-                  static inline auto result( Resource::Result result)
-                  {
-                     return [ result]( const Resource& value){ return value.result == result;};
-                  }
-               };
-
-               inline friend bool operator < ( const Resource& lhs, const Resource& rhs) { return lhs.id < rhs.id; }
-               inline friend bool operator == ( const Resource& lhs, const Resource& rhs) { return lhs.id == rhs.id; }
-               inline friend bool operator == ( const Resource& lhs, id_type id) { return lhs.id == id; }
-
-               CASUAL_LOG_SERIALIZE(
-               { 
-                  CASUAL_SERIALIZE( id);
-                  CASUAL_SERIALIZE( stage);
-                  CASUAL_SERIALIZE( result);
-                  CASUAL_SERIALIZE_NAME( done(), "done");
-               })
-            };
-
-            struct Branch
+            namespace transaction
             {
-               Branch( const common::transaction::ID& trid) : trid( trid) {}
-
-               std::vector< common::strong::resource::id> involved() const;
-               void involve( common::strong::resource::id resource);
-
-               template< typename R> 
-               auto involve( R&& range) -> std::enable_if_t< common::traits::is::iterable_v< R>>
+               namespace branch
                {
-                  for( auto r : range)
-                     involve( r);
+                  struct Resource
+                  {
+                     Resource( common::strong::resource::id id) : id{ id} {}
+
+                     common::strong::resource::id id;
+                     //! the 'code' is only used to include in the _admin state_, Hence, 
+                     //! we keep this state only for the user.
+                     common::code::xa code = common::code::xa::ok;
+
+                     inline friend bool operator == ( const Resource& lhs, common::strong::resource::id rhs) { return lhs.id == rhs;}
+
+                     CASUAL_LOG_SERIALIZE(
+                        CASUAL_SERIALIZE( id);
+                        CASUAL_SERIALIZE( code);
+                     )
+                  };
+               } // branch
+
+               struct Branch
+               {
+                  Branch( const common::transaction::ID& trid) : trid( trid) {}
+
+                  inline void involve( common::strong::resource::id id)
+                  {
+                     if( ! common::algorithm::find( resources, id))
+                        resources.emplace_back( id);
+                  }
+
+                  template< typename R> 
+                  auto involve( R&& range) -> std::enable_if_t< common::traits::is::iterable_v< R>>
+                  {
+                     common::algorithm::append_unique( range, resources);
+                  }
+
+                  common::transaction::ID trid;
+                  std::vector< branch::Resource> resources;
+
+                  inline friend bool operator == ( const Branch& lhs, const common::transaction::ID& rhs) { return lhs.trid == rhs;}
+
+                  CASUAL_LOG_SERIALIZE(
+                     CASUAL_SERIALIZE( trid);
+                     CASUAL_SERIALIZE( resources);
+                  )
+               };
+
+               enum struct Stage : std::int8_t 
+               {
+                  involved,
+                  prepare,
+                  commit,
+                  rollback
+               };
+
+               std::ostream& operator << ( std::ostream& out, Stage value);
+               
+            } // transaction
+
+            struct Transaction
+            {
+
+               Transaction() = default;
+               Transaction( Transaction&&) = default;
+               Transaction& operator = ( Transaction&&) = default;
+
+               inline explicit Transaction( const common::transaction::ID& trid) : global( trid)
+               {
+                  branches.emplace_back( trid);
                }
 
-               //! @return the least progressed stage of all resources associated with this branch
-               Resource::Stage stage() const;
+               platform::size::type resource_count() const noexcept;
+               
+               //! removes all branches that has no resources associated. 
+               //! used only when the prepare/commmit/rollback starts
+               void purge();
 
-               //! @return the most severe result from all the resources
-               Resource::Result results() const;
+               template< typename R>
+               void purge( const R& replies)
+               {
+                  auto equal_resource = []( auto& resource, auto& reply)
+                  {
+                     return resource == reply.resource;
+                  };
 
-               common::transaction::ID trid;
-               std::vector< Resource> resources;
+                  for( auto& branch : branches)
+                     common::algorithm::trim( branch.resources, std::get< 0>( common::algorithm::intersection( branch.resources, replies, equal_resource)));
 
-               inline friend bool operator == ( const Branch& lhs, const common::transaction::ID& rhs) { return lhs.trid == rhs;}
+                  purge();
+               }
+
+               common::state::Machine< transaction::Stage> stage;
+
+               //! the global part of the distributed transaction id
+               global::ID global;
+
+               //! 1..* branches of this global transaction
+               std::vector< transaction::Branch> branches;
+
+               common::process::Handle owner;
+
+               platform::time::point::type started;
+               platform::time::point::type deadline;
+
+               inline friend bool operator == ( const Transaction& lhs, const global::ID& rhs) { return lhs.global == rhs;}
+               inline friend bool operator == ( const Transaction& lhs, common::transaction::id::range::range_type rhs) { return lhs.global() == rhs;}
+               
+               inline friend bool operator == ( const Transaction& lhs, const common::transaction::ID& rhs) { return lhs.global == rhs;}
 
                CASUAL_LOG_SERIALIZE(
-               { 
-                  CASUAL_SERIALIZE( trid);
-                  CASUAL_SERIALIZE( resources);
-                  CASUAL_SERIALIZE_NAME( results(), "results");
-                  CASUAL_SERIALIZE_NAME( stage(), "stage");
-               })
+                  CASUAL_SERIALIZE( stage);
+                  CASUAL_SERIALIZE( global);
+                  CASUAL_SERIALIZE( branches);
+                  CASUAL_SERIALIZE( started);
+                  CASUAL_SERIALIZE( deadline);
+               )
             };
 
-
-            Transaction() = default;
-            Transaction( Transaction&&) = default;
-            Transaction& operator = ( Transaction&&) = default;
-
-            inline Transaction( const common::transaction::ID& trid) : global( trid)
-            {
-               branches.emplace_back( trid);
-            }
-
-            inline const common::process::Handle& owner() const { return global.trid.owner();}
-
-            platform::size::type resource_count() const noexcept;
-
-            //! the global part of the distributed transaction id
-            global::ID global;
-
-            //! 1..* branches of this global transaction
-            std::vector< Branch> branches;
-
-            //! Depending on context the transaction will have different
-            //! handle-implementations.
-            Dispatch implementation;
-
-            platform::time::point::type started;
-            platform::time::point::type deadline;
-
-            //! Used to keep track of the origin for commit request.
-            common::strong::correlation::id correlation;
-
-            //! Indicate if the transaction is owned by a remote domain,
-            //! and what RM id that domain act as.
-            state::resource::id::type resource;
-            
-            //! @return the 
-            Resource::Stage stage() const;
-
-            //! @return the most severe result from all the resources
-            //! in all branches
-            common::code::xa results() const;
-
-            inline friend bool operator == ( const Transaction& lhs, const global::ID& rhs) { return lhs.global == rhs;}
-
-            CASUAL_LOG_SERIALIZE(
-               CASUAL_SERIALIZE( global);
-               CASUAL_SERIALIZE( branches);
-               CASUAL_SERIALIZE( started);
-               CASUAL_SERIALIZE( deadline);
-               CASUAL_SERIALIZE( correlation);
-               CASUAL_SERIALIZE( resource);
-            )
-         };
-
+         } // state
 
          struct State
          {
@@ -408,9 +361,25 @@ namespace casual
             State( State&&) = default;
             State& operator = ( State&&) = default;
 
-            std::vector< Transaction> transactions;
+            std::vector< state::Transaction> transactions;
             std::vector< state::resource::Proxy> resources;
             std::vector< state::resource::external::Proxy> externals;
+
+            struct
+            {
+               template< typename Reply>
+               using Cordinate = common::message::coordinate::fan::Out< Reply, common::strong::resource::id>;
+               
+               Cordinate< common::message::transaction::resource::prepare::Reply> prepare;   
+               Cordinate< common::message::transaction::resource::commit::Reply> commit;
+               Cordinate< common::message::transaction::resource::rollback::Reply> rollback;
+
+               CASUAL_LOG_SERIALIZE( 
+                  CASUAL_SERIALIZE( prepare);
+                  CASUAL_SERIALIZE( commit);
+                  CASUAL_SERIALIZE( rollback);
+               )
+            } coordinate;
 
             struct
             {
@@ -452,7 +421,7 @@ namespace casual
 
             struct 
             {
-               std::map< std::string, std::vector< state::resource::id::type>> configuration;
+               std::map< std::string, std::vector< common::strong::resource::id>> configuration;
 
                CASUAL_LOG_SERIALIZE(
                   CASUAL_SERIALIZE( configuration);
@@ -460,33 +429,26 @@ namespace casual
             } alias;
 
 
-            //! @return true if there are pending stuff to do. We can't block
-            //! if we got stuff to do...
-            bool outstanding() const;
-
             //! @return true if all resource proxies is booted
             bool booted() const;
 
             //! @return number of total instances
-            size_type instances() const;
+            platform::size::type instances() const;
 
             std::vector< common::strong::process::id> processes() const;
 
-            void operator () ( const common::process::lifetime::Exit& death);
-
-            state::resource::Proxy& get_resource( state::resource::id::type rm);
+            state::resource::Proxy& get_resource( common::strong::resource::id rm);
             state::resource::Proxy& get_resource( const std::string& name);
             const state::resource::Proxy& get_resource( const std::string& name) const;
             state::resource::Proxy* find_resource( const std::string& name);
-            state::resource::Proxy::Instance& get_instance( state::resource::id::type rm, common::strong::process::id pid);
+            state::resource::Proxy::Instance& get_instance( common::strong::resource::id rm, common::strong::process::id pid);
 
             bool remove_instance( common::strong::process::id pid);
 
+            //! @return an idle instance, nullptr if all are busy.
+            state::resource::Proxy::Instance* idle( common::strong::resource::id rm);
 
-            using instance_range = common::range::type_t< std::vector< state::resource::Proxy::Instance>>;
-            instance_range idle_instance( state::resource::id::type rm);
-
-            const state::resource::external::Proxy& get_external( state::resource::id::type rm) const;
+            const state::resource::external::Proxy& get_external( common::strong::resource::id rm) const;
 
             common::message::transaction::configuration::alias::Reply configuration(
                const common::message::transaction::configuration::alias::Request& request);
@@ -505,32 +467,6 @@ namespace casual
 
          namespace state
          {
-            namespace filter
-            {
-               //! @return a functor that returns true if instance is idle
-               inline auto idle()
-               {
-                  return []( const resource::Proxy::Instance& i){ return i.state() == resource::Proxy::Instance::State::idle;};
-               }
-
-               struct Running
-               {
-                  //! @return true if instance is running
-                  inline bool operator () ( const resource::Proxy::Instance& instance) const
-                  {
-                     return instance.state() == resource::Proxy::Instance::State::idle
-                        || instance.state() == resource::Proxy::Instance::State::busy;
-                  }
-
-                  //! @return true if at least one instance in resource-proxy is running
-                  inline bool operator () ( const resource::Proxy& resource) const
-                  {
-                     return common::algorithm::any_of( resource.instances, Running{});
-                  }
-               };
-
-            } // filter
-
             //! Base that holds the state
             struct Base
             {

@@ -32,7 +32,15 @@ namespace casual
             {
                namespace configuration
                {
-                  constexpr auto servers = R"(
+                  constexpr auto basic = R"(
+system:
+   resources:
+      -  key: rm-mockup
+         server: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/transaction/bin/rm-proxy-casual-mockup
+         xa_struct_name: casual_mockup_xa_switch_static
+         libraries:
+            -  casual-mockup-rm
+
 domain:
    name: test-default-domain
 
@@ -58,26 +66,13 @@ domain:
         memberships: [ example]
 )";
 
-                  constexpr auto resources = R"(
-resources:
-  - key: rm-mockup
-    server: bin/rm-proxy-casual-mockup
-    xa_struct_name: casual_mockup_xa_switch_static
-    libraries:
-      - casual-mockup-rm
-)";
-                  
+           
                } // configuration
 
                template< typename... C>
                auto domain( C&&... configurations) 
                {
-                  auto resource = common::unittest::file::temporary::content( ".yaml", configuration::resources);
-
-                  return std::make_tuple( 
-                     common::environment::variable::scoped::set( common::environment::variable::name::resource::configuration, resource.string()),
-                     std::move( resource),
-                     casual::domain::manager::unittest::process( configuration::servers, std::forward< C>( configurations)...));
+                  return casual::domain::manager::unittest::process( configuration::basic, std::forward< C>( configurations)...);
                }
 
 
@@ -99,9 +94,9 @@ resources:
                   return ids.empty() ? strong::resource::id{} : ids.front();
                }
 
-               transaction::resource::Link link()
+               transaction::resource::Link link( std::string name)
                {
-                  return { "rm-mockup", "rm-mockup-dynamic", &casual_mockup_xa_switch_dynamic};
+                  return { "rm-mockup", std::move( name), &casual_mockup_xa_switch_dynamic};
                }
             } // <unnamed>
          } // local
@@ -126,13 +121,13 @@ domain:
    transaction:
       resources:
          - key: rm-mockup
-           name: rm-mockup-dynamic
-           openinfo:
+           name: rm1
+           openinfo: rm1
 
 )";
 
             auto domain = local::domain( configuration);
-            transaction::context().configure( { local::link()});
+            transaction::context().configure( { local::link( "rm1")});
 
             EXPECT_TRUE( local::id() == strong::resource::id{ 1}) << "local::id(): " << local::id(); 
          }
@@ -149,23 +144,23 @@ domain:
    transaction:
       resources:
          - key: rm-mockup
-           name: rm-mockup-dynamic
+           name: rm2
            openinfo:
 
 )";
 
             auto domain = local::domain( configuration);
-            transaction::context().configure( { local::link()});
+            transaction::context().configure( { local::link( "rm2")});
 
             EXPECT_TRUE( tx_begin() == TX_OK);
             // no rm involvement
             EXPECT_TRUE( tx_commit() == TX_OK);
 
             auto state = unittest::rm::state( local::id());
-            EXPECT_TRUE( state.errors.empty()) << state.errors;
+            EXPECT_TRUE( state.errors.empty()) << CASUAL_NAMED_VALUE( state.errors);
             // only open has been called
-            ASSERT_TRUE( state.invocations.size() == 1) << state.invocations;
-            ASSERT_TRUE( state.invocations.at( 0) == unittest::rm::State::Invoke::xa_open_entry) << state.invocations;
+            ASSERT_TRUE( state.invocations.size() == 1) << CASUAL_NAMED_VALUE( state.invocations);
+            ASSERT_TRUE( state.invocations.at( 0) == unittest::rm::State::Invoke::xa_open_entry) << CASUAL_NAMED_VALUE( state.invocations);
          }
 
          TEST( test_domain_transaction, dynamic_resource_involved__transaction_commit__expect_xa_end_invokation)
@@ -180,22 +175,23 @@ domain:
    transaction:
       resources:
          - key: rm-mockup
-           name: rm-mockup-dynamic
+           name: rm3
            openinfo:
 
 )";
 
             auto domain = local::domain( configuration);
-            transaction::context().configure( { local::link()});
+            transaction::context().configure( { local::link( "rm3")});
 
             auto id = local::id();
+            EXPECT_TRUE( id);
 
             EXPECT_TRUE( tx_begin() == TX_OK);
             unittest::rm::registration( id);
             EXPECT_TRUE( tx_commit() == TX_OK);
 
             auto state = unittest::rm::state( id);
-            EXPECT_TRUE( state.errors.empty()) << state.errors;
+            EXPECT_TRUE( state.errors.empty()) << CASUAL_NAMED_VALUE( state.errors);
 
             using Invoke = unittest::rm::State::Invoke;
             
@@ -210,7 +206,7 @@ domain:
             //   -> xa_commit_entry
             // 
             const auto expected = std::vector< Invoke>{ Invoke::xa_open_entry, Invoke::xa_end_entry, Invoke::xa_commit_entry};
-            EXPECT_TRUE( state.invocations == expected) << state.invocations;
+            EXPECT_TRUE( state.invocations == expected) << CASUAL_NAMED_VALUE( state.invocations);
          }
          
       } // domain

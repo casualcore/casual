@@ -13,37 +13,21 @@
 
 namespace casual
 {
-   namespace transaction
+   namespace transaction::manager::admin::transform
    {
-      namespace manager
+
+      model::Metrics metrics( const state::Metrics& value);
+      state::Metrics metrics( const model::Metrics& value);
+
+      namespace resource
       {
-         namespace admin
-         {    
-            namespace transform
-            {
-               model::Metrics metrics( const state::Metrics& value);
-               state::Metrics metrics( const model::Metrics& value);
+         model::resource::Proxy proxy( const state::resource::Proxy& value);
 
-               namespace resource
-               {
-                  struct Instance
-                  {
-                     model::resource::Instance operator () ( const state::resource::Proxy::Instance& value) const;
-                  };
+      } // resource
 
-                  struct Proxy
-                  {
-                     model::resource::Proxy operator () ( const state::resource::Proxy& value) const;
-                  };
+      model::State state( const manager::State& state);
 
-               } // resource
-
-               model::State state( const manager::State& state);
-
-            } // transform
-         } // admin
-      } // manager
-   } // transaction
+   } // transaction::manager::admin::transform
 } // casual
 
 

@@ -775,6 +775,9 @@ namespace casual
                               Trace trace{ "gateway::group::outbound::handle::local::external::transaction::resource::prepare::reply"};
                               log::line( verbose::log, "message: ", message);
 
+                              // We have register the external branch with the TM so it knows about it, hence
+                              // can communicate directly with the external branched trid
+
                               // this trid is NOT done, we have to wait until commit or rollback
 
                               detail::send( state, message);
@@ -790,6 +793,9 @@ namespace casual
                            {
                               Trace trace{ "gateway::group::outbound::handle::local::external::transaction::resource::commit::reply"};
                               log::line( verbose::log, "message: ", message);
+
+                              // We have register the external branch with the TM so it knows about it, hence
+                              // can communicate directly with the external branched trid
 
                               // this trid is done, remove it from the state
                               state.lookup.remove( message.trid);
@@ -807,6 +813,9 @@ namespace casual
                            {
                               Trace trace{ "gateway::group::outbound::handle::local::external::transaction::resource::rollback::reply"};
                               log::line( verbose::log, "message: ", message);
+
+                              // We have register the external branch with the TM so it knows about it, hence
+                              // can communicate directly with the external branched trid
 
                               // this trid is done, remove it from the state
                               state.lookup.remove( message.trid);

@@ -72,7 +72,7 @@ domain:
                count: 3
 
       groups:
-         - name: A
+         - alias: A
            queuebase: ":memory:"
            queues:
             -  name: a1
@@ -81,7 +81,7 @@ domain:
             -  name: a3
             -  name: delayed_100ms
                retry: { count: 10, delay: 100ms}
-         - name: B
+         - alias: B
            queuebase: ":memory:"
            queues:
             - name: b1

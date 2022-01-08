@@ -57,7 +57,7 @@ namespace casual
 
          auto trid = transaction::id::create();
 
-         EXPECT_TRUE( trid.owner() == process::handle()) << CASUAL_NAMED_VALUE( trid) << '\n' << CASUAL_NAMED_VALUE( process::handle()) << '\n';
+         EXPECT_TRUE( trid.owner() == process::handle()) << trace.compose( CASUAL_NAMED_VALUE( trid), '\n', CASUAL_NAMED_VALUE( process::handle()));
 
       }
 

@@ -93,7 +93,7 @@ namespace casual
             coordinate( message);
          }
 
-         EXPECT_TRUE( invoked) << CASUAL_NAMED_VALUE( coordinate);
+         EXPECT_TRUE( invoked) << trace.compose( "coordinate: ", coordinate);
       }
 
 
@@ -133,7 +133,7 @@ namespace casual
          
 
          EXPECT_TRUE( invoked);
-         EXPECT_TRUE( coordinate.empty()) << CASUAL_NAMED_VALUE( coordinate);
+         EXPECT_TRUE( coordinate.empty()) << trace.compose( "coordinate: ", coordinate);
       }
 
       TEST( common_message_coordinate, add_10_pending__add_9_message___expect_not_invoke)
@@ -168,12 +168,12 @@ namespace casual
          algorithm::for_each( range::make( std::begin( origin), 9), std::ref( coordinate));
          
          EXPECT_TRUE( ! invoked);
-         EXPECT_TRUE( ! coordinate.empty()) << CASUAL_NAMED_VALUE( coordinate);
+         EXPECT_TRUE( ! coordinate.empty()) << trace.compose( "coordinate: ", coordinate);
 
          coordinate.failed( process::id());         
 
          EXPECT_TRUE( invoked);
-         EXPECT_TRUE( coordinate.empty()) << CASUAL_NAMED_VALUE( coordinate);
+         EXPECT_TRUE( coordinate.empty()) << trace.compose( "coordinate: ", coordinate);
       }
 
       TEST( common_message_coordinate, add_10_pending__same_pid__failed_pid___expect_invoked)
@@ -206,7 +206,7 @@ namespace casual
          coordinate.failed( process::id());         
 
          EXPECT_TRUE( invoked);
-         EXPECT_TRUE( coordinate.empty()) << CASUAL_NAMED_VALUE( coordinate);
+         EXPECT_TRUE( coordinate.empty()) << trace.compose( "coordinate: ", coordinate);
       }
 
    } // common::message

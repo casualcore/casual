@@ -47,6 +47,14 @@ namespace casual
                   return result;
                }
 
+               template< typename T>
+               auto extract( std::string_view name)
+               {
+                  T result;
+                  m_policy.archive() >> CASUAL_NAMED_VALUE_NAME( result, name.data());
+                  return result;
+               }
+
             private:
                policy_type m_policy;
             };

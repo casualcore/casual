@@ -113,30 +113,31 @@ namespace casual
                      auto transaction()
                      {
                         auto format_global = []( auto& value) { return value.global.id;};
-                        auto format_branch = []( auto& value) { return value.branches.size();};
-                        auto format_owner = []( auto& value){ return value.global.owner.pid;};
+                        auto format_number_of_branches = []( auto& value) { return value.branches.size();};
+                        auto format_owner = []( auto& value){ return value.owner.pid;};
 
-                        auto format_state = []( auto& value)
+                        auto format_stage = []( auto& value)
                         {
-                           return common::string::compose( static_cast< common::code::xa>( value.state));
+                           return value.stage;
                         };
 
                         auto format_resources = []( auto& value)
                         {
-                           std::vector< model::resource::id_type> resources;
-                           
-                           for( auto& branch : value.branches)
+                           auto resources = algorithm::accumulate( value.branches, std::vector< strong::resource::id>{}, []( auto result, auto& branch)
                            {
-                              algorithm::append( branch.resources, resources);
-                           }
-                           return common::string::compose( algorithm::unique( algorithm::sort( resources)));
+                              for( auto& resource : branch.resources)
+                                 algorithm::append_unique_value( resource.id, result);
+                              return result;
+                           });
+
+                           return common::string::compose( resources);
                         };
 
                         return common::terminal::format::formatter< admin::model::Transaction>::construct(
                            common::terminal::format::column( "global", format_global, common::terminal::color::yellow),
-                           common::terminal::format::column( "branch", format_branch, common::terminal::color::grey),
+                           common::terminal::format::column( "#branches", format_number_of_branches, common::terminal::color::grey),
                            common::terminal::format::column( "owner", format_owner, common::terminal::color::white, common::terminal::format::Align::right),
-                           common::terminal::format::column( "state", format_state, common::terminal::color::green, common::terminal::format::Align::left),
+                           common::terminal::format::column( "stage", format_stage, common::terminal::color::green, common::terminal::format::Align::left),
                            common::terminal::format::column( "resources", format_resources, common::terminal::color::magenta, common::terminal::format::Align::left)
                         );
                      }
@@ -200,7 +201,7 @@ namespace casual
                            return value.process.pid;
                         };
 
-                        auto format_queue = []( const admin::model::resource::Instance& value) 
+                        auto format_ipc = []( const admin::model::resource::Instance& value) 
                         {
                            return value.process.ipc;
                         };
@@ -251,7 +252,7 @@ namespace casual
                         return common::terminal::format::formatter< admin::model::resource::Instance>::construct(
                            terminal::format::column( "id", std::mem_fn( &admin::model::resource::Instance::id), common::terminal::color::yellow, terminal::format::Align::right),
                            terminal::format::column( "pid", format_pid, common::terminal::color::white, terminal::format::Align::right),
-                           terminal::format::column( "queue", format_queue, common::terminal::color::no_color, terminal::format::Align::right),
+                           terminal::format::column( "ipc", format_ipc, common::terminal::color::no_color, terminal::format::Align::right),
                            terminal::format::column( "invoked", format_invoked, common::terminal::color::blue, terminal::format::Align::right),
                            terminal::format::column( "min (s)", format_min, terminal::color::blue, terminal::format::Align::right),
                            terminal::format::column( "max (s)", format_max, terminal::color::blue, terminal::format::Align::right),
@@ -265,55 +266,65 @@ namespace casual
                      }
                   } // format
 
-                  namespace dispatch
+                  namespace state
                   {
-                     namespace list
+                     auto option()
                      {
-                        namespace transaction
+                        auto complete = []( auto values, bool)
                         {
-                           void invoke()
+                           return std::vector< std::string>{ "json", "yaml", "xml", "ini"};
+                        };
+
+                        return argument::Option{
+                           []( const std::optional< std::string>& format)
                            {
                               auto state = call::state();
-                              format::transaction().print( std::cout, state.transactions);
-                           }
-
-                           constexpr auto description = R"(list current transactions)";
-
-                        } // transaction
-
-                        namespace resources
-                        {
-                           void invoke()
-                           {
-                              auto state = call::state();
-                              format::resource_proxy().print( std::cout, algorithm::sort( state.resources));
-                           }
-
-                           constexpr auto description = R"(list all resources)";
-                        } // resources
-                     } // list
-
-                     void state( const std::optional< std::string>& format)
-                     {
-                        auto state = call::state();
-                        auto archive = common::serialize::create::writer::from( format.value_or( ""));
-                        archive << CASUAL_NAMED_VALUE( state);
-                        archive.consume( std::cout);
+                              auto archive = common::serialize::create::writer::from( format.value_or( "yaml"));
+                              archive << CASUAL_NAMED_VALUE( state);
+                              archive.consume( std::cout);
+                           },
+                           complete,
+                           { "--state"},
+                           R"("view current state in optional format")"
+                        };
                      }
-
-                  } // dispatch
-
-                  namespace complete
-                  {
-                     auto state = []( auto values, bool)
-                     {
-                        return std::vector< std::string>{ "json", "yaml", "xml", "ini"};
-                     };
-
-                  } // complete
+                  } // state
 
                   namespace list
                   {
+                     namespace transactions
+                     {
+                        auto option()
+                        {
+                           return argument::Option{
+                              []()
+                              {
+                                 auto state = call::state();
+                                 format::transaction().print( std::cout, state.transactions);
+                              },
+                              { "-lt", "--list-transactions"},
+                              R"(list current transactions)"
+                           };
+                        }
+                     } // transactions
+
+                     namespace resources
+                     {
+                        auto option()
+                        {
+                           return argument::Option{
+                              []()
+                              {
+                                 auto state = call::state();
+                                 format::resource_proxy().print( std::cout, algorithm::sort( state.resources));
+                              },
+                              { "-lr", "--list-resources" },
+                              R"(list all resources)"
+                           };
+                        }
+                        
+                     } // resources
+
                      namespace instances
                      {
                         auto option()
@@ -659,9 +670,9 @@ namespace casual
                                     case Enum::prepare: 
                                        return; // we wait for the next one
                                        break;
-                                    case Enum::error:
+                                    case Enum::rollback:
                                     {
-                                       casual::cli::pipe::log::error( "transaction commit error: ", message.trid);
+                                       casual::cli::pipe::log::error( "transaction commit failed - rolled back: ", message.trid);
                                        break;
                                     }
                                     case Enum::commit:
@@ -962,8 +973,8 @@ hence, directly downstream there will be no transaction, but users can start new
                argument::Group options()
                {
                   return argument::Group{ [](){}, { "transaction"}, "transaction related administration",
-                     argument::Option{ &local::dispatch::list::transaction::invoke, { "-lt", "--list-transactions" }, local::dispatch::list::transaction::description},
-                     argument::Option{ &local::dispatch::list::resources::invoke, { "-lr", "--list-resources" }, local::dispatch::list::resources::description},
+                     local::list::transactions::option(),
+                     local::list::resources::option(),
                      local::list::instances::option(),
                      local::begin::option(),
                      local::begin::compound::option(),
@@ -972,7 +983,7 @@ hence, directly downstream there will be no transaction, but users can start new
                      local::scale::instances::option(),
                      local::list::pending::option(),
                      local::information::option(),
-                     argument::Option{ &local::dispatch::state, local::complete::state, { "--state" }, "view current state in optional format"}
+                     local::state::option(),
                   };
                }
             };

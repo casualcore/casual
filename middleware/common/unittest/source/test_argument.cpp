@@ -408,7 +408,7 @@ namespace casual
             parse( { "-a", "1 2", "-a", "3 4"});
          });
 
-         EXPECT_TRUE(( values == std::vector< std::string>{ "1 2", "3 4"})) << "values: " << values;
+         EXPECT_TRUE(( values == std::vector< std::string>{ "1 2", "3 4"})) << trace.compose( "values: ", values);
       }
 
       TEST( common_argument_parse, option_deprecated_keys)

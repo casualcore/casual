@@ -7,48 +7,35 @@
 
 #pragma once
 
-
+#include "queue/common/ipc.h"
 #include "queue/group/state.h"
 
 #include "common/message/dispatch.h"
-#include "common/communication/ipc.h"
+
 
 namespace casual
 {
-
-   namespace queue
+   namespace queue::group
    {
-      namespace group
-      {
-         namespace handle
-         {
+      namespace handle
+      {      
+         using dispatch_type = decltype( common::message::dispatch::handler( ipc::device()));
 
-            namespace ipc
-            {
-               common::communication::ipc::inbound::Device& device();
-            }
+         void shutdown( State& state);
 
-            using dispatch_type = decltype( common::message::dispatch::handler( ipc::device()));
+         //! hard shutdown - best effort shutdown
+         void abort( State& state);
 
-            void shutdown( State& state);
+         //! * persist the queuebase
+         //! * send pending replies, if any
+         //! * check if pending request has some messages to consume
+         void persist( State& state);
 
-            //! hard shutdown - best effort shutdown
-            void abort( State& state);
+      } // handle
 
+      handle::dispatch_type handlers( State& state);
 
-            //! * persist the queuebase
-            //! * send pending replies, if any
-            //! * check if pending request has some messages to consume
-            void persist( State& state);
-
-
-         } // handle
-
-         handle::dispatch_type handler( State& state);
-
-      } // group
-   } // queue
-
+   } // queue::group
 
 } // casual
 

@@ -73,7 +73,7 @@ namespace casual
                   auto group = lookup();
 
                   if( ! group.process.ipc)
-                     queue::raise( queue::code::no_message);
+                     queue::raise( queue::code::no_queue);
 
                   request.queue = group.queue;
 

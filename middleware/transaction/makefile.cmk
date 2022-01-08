@@ -101,17 +101,29 @@ target = make.LinkExecutable( 'bin/rm-proxy-casual-mockup',
 
 install_bin.append( target)
 
+unittest_library = make.LinkLibrary( 'bin/casual-transaction-unittest',
+    [ 
+        make.Compile( 'source/unittest/utility.cpp')
+    ],
+    [
+        'casual-common',
+        'casual-serviceframework', 
+    ]
+)
+
+
 # unittest
 test_transaction = make.LinkUnittest( 'bin/test-casual-transaction',
     [
-        make.Compile( 'unittest/source/manager/test_state.cpp'),
+        # temp make.Compile( 'unittest/source/manager/test_state.cpp'),
         make.Compile( 'unittest/source/manager/test_log.cpp'),
         make.Compile( 'unittest/source/test_admin.cpp'),
         make.Compile( 'unittest/source/test_manager.cpp'),
         
     ],
     [ 
-        manager_archive, 
+        manager_archive,
+        unittest_library,
         'casual-common', 
         'casual-serviceframework', 
         'casual-configuration', 

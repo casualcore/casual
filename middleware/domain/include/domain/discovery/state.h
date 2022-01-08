@@ -66,8 +66,8 @@ namespace casual
          {
             using const_range_type = common::range::const_type_t< std::vector< state::Agent>>;
             
-            void registration( const message::discovery::internal::Registration& message);
-            void registration( const message::discovery::external::Registration& message);
+            void registration( const message::discovery::internal::registration::Request& message);
+            void registration( const message::discovery::external::registration::Request& message);
 
             const_range_type internal() const;
             const_range_type external() const;

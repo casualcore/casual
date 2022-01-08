@@ -186,6 +186,7 @@ namespace casual
 
       TYPED_TEST( common_serialize_relaxed_archive_write_read, simple_vo)
       {
+         common::unittest::Trace trace;
          auto result = TestFixture::template write_read< local::vo::simple::Total>( local::vo::simple::Reduced{ "test test"});
 
          EXPECT_TRUE( result.some_string == "test test") << "result: " << CASUAL_NAMED_VALUE( result);
@@ -195,6 +196,7 @@ namespace casual
 
       TYPED_TEST( common_serialize_relaxed_archive_write_read, medium_vo)
       {
+         common::unittest::Trace trace;
          auto result = TestFixture::template write_read< local::vo::medium::Total>( local::vo::medium::Reduced{ "test", { { "index-0"}, { "index-1"}}});
 
          EXPECT_TRUE( result.some_string == "test") << CASUAL_NAMED_VALUE( result);
@@ -208,6 +210,7 @@ namespace casual
 
       TYPED_TEST( common_serialize_relaxed_archive_write_read, optional_empty)
       {
+         common::unittest::Trace trace;
          auto result = TestFixture::template write_read< local::vo::Optional< int>>( local::vo::Optional< int>{});
 
          EXPECT_TRUE( ! result.optional_value.has_value()) << CASUAL_NAMED_VALUE( result);
@@ -215,6 +218,7 @@ namespace casual
 
       TYPED_TEST( common_serialize_relaxed_archive_write_read, optional_has_value)
       {
+         common::unittest::Trace trace;
          auto result = TestFixture::template write_read< local::vo::Optional< std::size_t>>( local::vo::Optional< std::size_t>{ 42l});
 
          EXPECT_TRUE( result.optional_value == 42ul) << CASUAL_NAMED_VALUE( result);
@@ -223,8 +227,8 @@ namespace casual
 
       TYPED_TEST( common_serialize_relaxed_archive_write_read, DISABLED_optional_empty_vector)
       {
+         common::unittest::Trace trace;
          // TODO: fix the mayham with json/yaml serialization
-         unittest::Trace trace;
 
          using optional_type = local::vo::Optional< std::vector< int>>;
 
@@ -235,6 +239,7 @@ namespace casual
 
       TYPED_TEST( common_serialize_relaxed_archive_write_read, optional_has_value_vector)
       {
+         common::unittest::Trace trace;
          using optional_type = local::vo::Optional< std::vector< int>>;
 
          std::vector< int> value{ 1, 2, 3, 4, 5, 6};

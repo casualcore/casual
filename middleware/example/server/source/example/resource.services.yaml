@@ -28,3 +28,7 @@ server:
       function: casual_example_resource_echo
       transaction: branch
 
+    - name: casual/example/resource/domain/name
+      function: casual_example_resource_domain_name
+
+

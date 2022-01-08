@@ -70,11 +70,9 @@ namespace casual
                      bool operator () ( const detail::Representation& option)
                      {
                         if( option.keys.active().empty() && ! option.keys.deprecated().empty())
-                        {
-                           indent() << "[deprecated] " << string::join( option.keys.deprecated(), ", ") << " [" << option.cardinality << ']';
-                        }
+                           stream::write( indent(), "[deprecated] ", string::join( option.keys.deprecated(), ", "), " [", option.cardinality, ']');
                         else
-                           indent() << string::join( option.keys.active(), ", ") << " [" << option.cardinality << ']';
+                           stream::write( indent(), string::join( option.keys.active(), ", "), " [", option.cardinality, ']');
 
                         {
                            auto information = option.invocable.complete( {}, true);
@@ -104,7 +102,7 @@ namespace casual
                         if( ! option.keys.deprecated().empty() && ! option.keys.active().empty())
                         {
                            m_out << '\n';
-                           indent( 6) << "deprecated: " << option.keys.deprecated() << "\n";
+                           stream::write( indent( 6), "deprecated: ", option.keys.deprecated(), "\n");
                         }
 
 

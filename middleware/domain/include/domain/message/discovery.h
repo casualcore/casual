@@ -17,10 +17,11 @@ namespace casual
    namespace domain::message::discovery
    {
 
-      namespace internal
+      namespace internal::registration
       {
-         using Registration = common::message::basic_request< common::message::Type::domain_discovery_internal_registration>;
-      } // internal
+         using Request = common::message::basic_request< common::message::Type::domain_discovery_internal_registration_request>;
+         using Reply = common::message::basic_message< common::message::Type::domain_discovery_internal_registration_reply>;
+      } // internal::registration
 
       namespace request
       {
@@ -51,6 +52,8 @@ namespace casual
                common::algorithm::append_unique( std::move( rhs.queues), queues);
                return *this;
             };
+
+            inline explicit operator bool() const noexcept { return ! services.empty() || ! queues.empty();}
 
             CASUAL_CONST_CORRECT_SERIALIZE(
                CASUAL_SERIALIZE( services);
@@ -137,24 +140,30 @@ namespace casual
 
       namespace external
       {
-         using base_registration = common::message::basic_request< common::message::Type::domain_discovery_external_registration>;
-         struct Registration : base_registration
+         namespace registration
          {
-            using base_registration::base_registration;
-
-            enum struct Directive
+            using base_request = common::message::basic_request< common::message::Type::domain_discovery_external_registration_request>;
+            struct Request : base_request
             {
-               regular,
-               rediscovery
+               using base_request::base_request;
+
+               enum struct Directive
+               {
+                  regular,
+                  rediscovery
+               };
+
+               Directive directive{};
+
+               CASUAL_CONST_CORRECT_SERIALIZE(
+                  base_request::serialize( archive);
+                  CASUAL_SERIALIZE( directive);
+               )
             };
 
-            Directive directive{};
+            using Reply = common::message::basic_message< common::message::Type::domain_discovery_external_registration_reply>;
+         } // registration
 
-            CASUAL_CONST_CORRECT_SERIALIZE(
-               base_registration::serialize( archive);
-               CASUAL_SERIALIZE( directive);
-            )
-         };
 
 
          using base_request = common::message::basic_request< common::message::Type::domain_discovery_external_request>;
@@ -217,6 +226,12 @@ namespace casual
 
    namespace common::message::reverse
    {
+      template<>
+      struct type_traits< casual::domain::message::discovery::internal::registration::Request> : detail::type< casual::domain::message::discovery::internal::registration::Reply> {};
+
+      template<>
+      struct type_traits< casual::domain::message::discovery::external::registration::Request> : detail::type< casual::domain::message::discovery::external::registration::Reply> {};
+
       template<>
       struct type_traits< casual::domain::message::discovery::Request> : detail::type< casual::domain::message::discovery::Reply> {};
 

@@ -14,8 +14,8 @@
 #include "common/message/type.h"
 #include "common/execute.h"
 #include "common/exception/handle.h"
+#include "common/code/raise.h"
 #include "common/compare.h"
-
 
 #include <array>
 #include <iostream>
@@ -129,6 +129,34 @@ namespace casual
 
          } // standard
       } // capture
+
+      namespace fetch
+      {
+         //! tries to fetch and compare the predicate until the predicate returns true
+         //! or we have reached 2k tries and a total time of ~16s, which should be enough for
+         //! "all" the systems we're building casual on.
+         template< typename F>
+         constexpr auto until( F fetcher)
+         {
+            return [fetcher]( auto&& predicate)
+            {
+               constexpr auto total_count = 2000;
+               auto state = fetcher();
+               auto count = total_count;
+
+               while( ! predicate( state) && --count > 0)
+               {
+                  common::process::sleep( std::chrono::milliseconds{ 8});
+                  state = fetcher();
+               }
+
+               if( count == 0)
+                  code::raise::error( code::casual::invalid_semantics, "unittest::fetch::until failed to fullfill the predicate after ", total_count, " tries");
+
+               return state;
+            };
+         }
+      } // fetch
 
       namespace detail
       {

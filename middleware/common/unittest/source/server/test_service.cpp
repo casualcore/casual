@@ -62,7 +62,7 @@ namespace casual
          auto s1 = server::xatmi::service( ".1", &local::service1);
          auto s2 = server::xatmi::service( ".2", &local::service2);
 
-         EXPECT_TRUE( s1 != s2) << CASUAL_NAMED_VALUE( s1) << " - " << CASUAL_NAMED_VALUE( s2);
+         EXPECT_TRUE( s1 != s2) << trace.compose( CASUAL_NAMED_VALUE( s1), " - ", CASUAL_NAMED_VALUE( s2));
       }
 
       TEST( common_server_xatmi_service, tpsvcinfo_name_correctly_copied)

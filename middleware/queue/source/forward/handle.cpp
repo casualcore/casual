@@ -4,6 +4,8 @@
 //! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
+#include "queue/forward/handle.h"
+
 #include "queue/forward/state.h"
 #include "queue/common/log.h"
 #include "queue/common/ipc.h"
@@ -12,8 +14,10 @@
 #include "common/message/transaction.h"
 #include "common/message/dispatch.h"
 #include "common/message/handle.h"
+#include "common/message/internal.h"
 #include "common/message/service.h"
 #include "common/event/send.h"
+#include "common/event/listen.h"
 #include "common/communication/ipc.h"
 #include "common/communication/instance.h"
 #include "common/exception/guard.h"
@@ -209,7 +213,7 @@ namespace casual
                         pending.trid = request.trid;
 
                         state.pending.dequeues.push_back( std::move( pending));
-                        ++forward.instances.running;
+                        ++forward;
                      };
 
                      common::algorithm::for_n( forward.instances.missing(), send_request);
@@ -274,7 +278,6 @@ namespace casual
 
                      auto send_discard_request = []( auto& pending)
                      {
-                        ipc::device().flush();
                         ipc::message::lookup::discard::Request request{ process::handle()};
                         request.correlation = pending.correlation;
                         ipc::flush::send( ipc::queue::manager(), request);
@@ -293,22 +296,13 @@ namespace casual
                            ipc::message::group::dequeue::forget::Request request{ process::handle()};
                            request.correlation = pending.correlation;
                            
-                           if( ipc::flush::optional::send( forward.source.process.ipc, request))
-                              return true;
-
-                           // there might be queue-groups that has died (extremely unlikely)
-                           // if so, just forget this pending dequeue
-                           assert( forward.instances.running > 0);
-                           --forward.instances.running;
-
-                           return false;
+                           ipc::flush::optional::send( forward.source.process.ipc, request);
+                           
                         });
                      };
 
-                     auto& pending = state.pending.dequeues;
+                     algorithm::for_each( state.pending.dequeues, send_forget_request);
 
-                     // send dequeue forget to groups. We need to keep the pending for the forget reply
-                     algorithm::trim( pending, algorithm::filter( pending, send_forget_request));
                   }
 
                   // take care of pending service lookups
@@ -523,9 +517,7 @@ namespace casual
 
                               state.forward_apply( pending.id, []( auto& forward)
                               {
-                                 assert( forward.instances.running > 0);
-                                 --forward.instances.running;
-                                 
+                                 --forward;                                 
                                  common::log::line( verbose::log, "forward: ", forward);
                               });
 
@@ -533,7 +525,8 @@ namespace casual
                            }
                         };
                         
-                     } // detail::discard::pending 
+                     } // detail::discard::pending
+
                      auto request( State& state)
                      {
                         // we get this from queue group if it's 'going down' or some other configuration
@@ -711,8 +704,7 @@ namespace casual
 
                            state.forward_apply( pending.id, [&state]( auto& forward)
                            {
-                              assert( forward.instances.running > 0);
-                              --forward.instances.running;
+                              --forward;
                               ++forward.metric.rollback.count;
                               forward.metric.rollback.last = platform::time::clock::type::now();
 
@@ -743,8 +735,8 @@ namespace casual
 
                            state.forward_apply( pending.id, [&state]( auto& forward)
                            {
-                              assert( forward.instances.running > 0);
-                              --forward.instances.running;
+                              --forward;
+
                               ++forward.metric.commit.count;
                               forward.metric.commit.last = platform::time::clock::type::now();
 
@@ -816,6 +808,42 @@ namespace casual
                   }
                } // state
 
+               namespace dead
+               {
+                  auto process( State& state)
+                  {
+                     return [&state]( const common::message::event::process::Exit& message)
+                     {
+                        Trace trace{ "queue::forward::service::local::handle::dead::process"};
+                        log::line( verbose::log, "message: ", message);
+
+                        auto transform_id = []( auto& forward){ return forward.id;};
+
+                        // take care of source pendings
+                        {
+                           auto is_source = [pid=message.state.pid]( auto& forward){ return forward.source == pid;};
+
+                           auto ids = algorithm::transform_if( state.forward.queues, transform_id, is_source);
+                           algorithm::transform_if( state.forward.services, std::back_inserter( ids), transform_id, is_source);
+
+                           auto pending = std::get< 0>( algorithm::intersection( state.pending.dequeues, ids));
+                           log::line( verbose::log, "pending: ", pending);
+
+                           // we pretend that queue-group has sent dequeue::forget and let the normal flow 
+                           // take place.
+                           algorithm::for_each( pending, []( auto& pending)
+                           {
+                              ipc::message::group::dequeue::forget::Request forget{ common::process::handle()};
+                              forget.correlation = pending.correlation;
+                              ipc::device().push( std::move( forget));
+                           });
+                        }
+                     };                     
+                  }
+
+
+               } // dead
+
                auto shutdown( State& state)
                {
                   return [&state]( const common::message::shutdown::Request& message)
@@ -840,6 +868,8 @@ namespace casual
             {
                return message::dispatch::handler( ipc::device(),
                   message::handle::defaults( ipc::device()),
+                  common::message::internal::dump::state::handle( state),
+
                   handle::configuration::update::request( state),
                   handle::state::request( state),
                   handle::queue::lookup::reply( state),
@@ -854,6 +884,7 @@ namespace casual
                   handle::transaction::commit::reply( state),
                   handle::transaction::rollback::reply( state),
 
+                  common::event::listener( handle::dead::process( state)),
                   handle::shutdown( state)
                );
             }
@@ -861,7 +892,7 @@ namespace casual
          } // <unnamed>
       } // local
 
-      auto handlers( State& state)
+      handler_type handlers( State& state)
       {
          return local::handlers( state);
       }

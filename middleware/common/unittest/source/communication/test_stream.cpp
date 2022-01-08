@@ -71,7 +71,7 @@ namespace casual
                communication::stream::inbound::Device in{ stream};
                device::blocking::receive( in, message);
 
-               EXPECT_TRUE( origin == message) << CASUAL_NAMED_VALUE( message);
+               EXPECT_TRUE( origin == message) << trace.compose( "message: ", message);
             }
 
             TEST( common_communication_stream, send_message__dispatch)

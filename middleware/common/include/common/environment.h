@@ -166,6 +166,13 @@ namespace casual
 
             namespace name
             {
+               namespace unittest
+               {
+                  //! if set, we're in a unittest context and can act differently
+                  //! TODO we might want to have a #define from the compiler
+                  constexpr auto context = "CASUAL_UNITTEST_CONTEXT";
+               } // unittest
+               
                namespace system
                {
                   constexpr auto configuration = "CASUAL_SYSTEM_CONFIGURATION_GLOB";

@@ -12,7 +12,9 @@ make.IncludePaths([
     '../service/include',
     '../queue/include',
     '../xatmi/include',
-    '../serviceframework/include']    
+    '../serviceframework/include',
+    '../service/unittest/include',
+    ]    
     + make.optional_include_paths()
     + dsl.paths().include.gtest
    )
@@ -180,6 +182,7 @@ target_unittest = make.LinkUnittest( 'bin/test-casual-gateway',
        outbound_archive,
        common_archive, 
        'casual-serviceframework',
+       'casual-queue-api',
        'casual-common',
        'casual-domain-discovery',
        'casual-configuration',

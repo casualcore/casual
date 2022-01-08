@@ -187,9 +187,11 @@ domain_unittest_library = make.LinkLibrary( 'bin/casual-domain-unittest',
     [
         make.Compile( 'source/manager/unittest/process.cpp'),
         make.Compile( 'source/manager/unittest/configuration.cpp'),
+        make.Compile( 'source/manager/unittest/discover.cpp'),
     ],
     [
         common_library,
+        domain_discovery_library,
         'casual-common',
         'casual-unittest',
         'casual-serviceframework',   

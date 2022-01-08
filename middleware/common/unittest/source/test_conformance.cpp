@@ -33,9 +33,9 @@
 //
 
 
-
 namespace casual
 {
+
    namespace common
    {
       // static test of traits
@@ -256,12 +256,12 @@ namespace casual
             {
                auto result = waitpid( pid.value(), nullptr, 0);
 
-               EXPECT_TRUE( result == pid.value()) << "result: " << result << " - pid: " << pid << " - errno: " << common::code::system::last::error();
+               EXPECT_TRUE( result == pid.value()) << string::compose( "result: ", result, " - pid: ", pid, " - errno: ", common::code::system::last::error());
 
                if( result == pid.value())
                   terminated.push_back( pid);
             }
-            EXPECT_TRUE( terminated == pids) << "terminated: " << terminated << ", pids: " << pids;
+            EXPECT_TRUE( terminated == pids) << string::compose( "terminated: ", terminated, ", pids: ", pids);
          }
       }
 

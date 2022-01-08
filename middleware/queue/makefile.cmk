@@ -13,7 +13,9 @@ make.IncludePaths( [
     '../transaction/include',
     '../domain/include',
     '../service/include',
-    '../../thirdparty/database/include']
+    '../../thirdparty/database/include',
+    '../service/unittest/include'
+    ]
     + make.optional_include_paths()
     + dsl.paths().include.gtest
    )

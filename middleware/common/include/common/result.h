@@ -20,7 +20,8 @@ namespace casual
    {
          namespace detail
          {
-            inline bool predicate( int result) { return result != -1;}
+            template< typename I>
+            inline auto predicate( I result) -> std::enable_if_t< std::is_integral_v< I>, I> { return result != -1;}
             inline bool predicate( const void* result) { return result != nullptr;}
          } // detail
 

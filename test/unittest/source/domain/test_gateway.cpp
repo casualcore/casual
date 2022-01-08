@@ -25,6 +25,8 @@
 #include "service/manager/admin/model.h"
 #include "service/unittest/utility.h"
 
+#include "transaction/unittest/utility.h"
+
 #include "queue/api/queue.h"
 
 #include "casual/xatmi.h"
@@ -43,12 +45,25 @@ namespace casual
       {
          namespace
          {
-            using Manager = casual::domain::manager::unittest::Process;
-
             namespace configuration
             {
                constexpr auto base = R"(
-domain: 
+system:
+   resources:
+      -  key: rm-mockup
+         server: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/transaction/bin/rm-proxy-casual-mockup"
+         xa_struct_name: casual_mockup_xa_switch_static
+         libraries:
+            -  casual-mockup-rm
+
+domain:
+   transaction:
+      resources:
+         -  name: example-resource-server
+            key: rm-mockup
+            openinfo: foo
+            instances: 1
+
    groups: 
       -  name: base
       -  name: queue
@@ -69,6 +84,12 @@ domain:
                
             } // configuration
 
+            template< typename... C>
+            auto domain( C&&... configurations)
+            {
+               return casual::domain::manager::unittest::process( configuration::base, std::forward< C>( configurations)...);
+            }
+
 
             auto allocate( platform::size::type size = 128)
             {
@@ -77,15 +98,15 @@ domain:
                return buffer;
             }
 
-            inline auto call( std::string_view service, int code, decltype( __FILE__) file = __FILE__, decltype( __LINE__) line = __LINE__)
+            inline auto call( std::string_view service, int code)
             {
                auto buffer = local::allocate( 128);
                auto len = tptypes( buffer, nullptr, nullptr);
 
                if( tpcall( service.data(), buffer, 128, &buffer, &len, 0) == -1)
-                  EXPECT_TRUE( tperrno == code) << "file: " << file << "(" << line << ") tperrno: " << tperrnostring( tperrno) << " code: " << tperrnostring( code);
+                  EXPECT_TRUE( tperrno == code) << "tpcall - expected: " << tperrnostring( code) << " got: " << tperrnostring( tperrno);
                else
-                  EXPECT_TRUE( code == 0);
+                  EXPECT_TRUE( code == 0) << "tpcall - expected: " << tperrnostring( code) << " got: " << tperrnostring( 0);
 
                tpfree( buffer);
             };
@@ -182,9 +203,9 @@ domain:
                   };
 
                   if( extended.empty())
-                     return local::Manager{ { local::configuration::base, replace( replace( template_config, "NAME", name), "PORT", port)}};
+                     return local::domain( replace( replace( template_config, "NAME", name), "PORT", port));
                   else
-                     return local::Manager{ { local::configuration::base, replace( replace( template_config, "NAME", name), "PORT", port), extended}};
+                     return local::domain( replace( replace( template_config, "NAME", name), "PORT", port), extended);
                };
 
                namespace reverse
@@ -211,15 +232,16 @@ domain:
                         return std::regex_replace( text, std::regex{ pattern}, value); 
                      };
 
-                     return local::Manager{ { local::configuration::base, replace( replace( template_config, "NAME", name), "PORT", port)}};
+                     return local::domain( replace( replace( template_config, "NAME", name), "PORT", port));
                   }
                   
                } // reverse
             } // example
 
 
-            namespace domain
+            namespace lookup::domain
             {
+
                auto name( std::string_view name)
                {
                   return local::call( "casual/example/domain/name").get() == name;
@@ -236,7 +258,7 @@ domain:
                   }
                   return false;
                }
-            } // domain
+            } // lookup::domain
 
          } // <unnamed>
       } // local
@@ -296,7 +318,7 @@ domain:
 
       
          // startup the domain that will try to do stuff
-         local::Manager b{ { local::configuration::base, B}};
+         auto b = local::domain( B);
          EXPECT_TRUE( communication::instance::ping( b.handle().ipc) == b.handle());
 
          auto payload = common::unittest::random::binary( 1024);
@@ -308,7 +330,7 @@ domain:
          }
 
          // startup the domain that has the service
-         local::Manager a{ { local::configuration::base, A}};
+         auto a = local::domain( A);
          EXPECT_TRUE( communication::instance::ping( a.handle().ipc) == a.handle());
 
          // activate the b domain, so we can try to dequeue
@@ -331,7 +353,7 @@ domain:
          signal::callback::registration< code::signal::child>( [](){});
 
          auto c = local::example::domain( "C", "7002");
-         auto b = local::Manager{ { local::configuration::base, R"(
+         auto b = local::domain( R"(
 domain: 
    name: B
 
@@ -350,11 +372,11 @@ domain:
             -  connections:
                -  address: 127.0.0.1:7002
 
-)"}}; 
+)"); 
          
          test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
          
-         auto a = local::Manager{ { local::configuration::base, R"(
+         auto a = local::domain( R"(
 domain: 
    name: A
   
@@ -363,7 +385,7 @@ domain:
          groups:
             -  connections:
                   -  address: 127.0.0.1:7001
-)"}};
+)");
 
 
          test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
@@ -399,7 +421,7 @@ domain:
          signal::callback::registration< code::signal::child>( [](){});
 
          auto e = local::example::domain( "E", "7001");
-         auto d = local::Manager{ { local::configuration::base, R"(
+         auto d = local::domain( R"(
 domain: 
    name: D
    gateway:
@@ -414,7 +436,7 @@ domain:
             -  connections:
                -  address: 127.0.0.1:7001
 
-)"}}; 
+)"); 
          test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
 
          auto c = local::example::domain( "C", "7003");
@@ -423,7 +445,7 @@ domain:
          
          
          
-         auto a = local::Manager{ { local::configuration::base, R"(
+         auto a = local::domain( R"(
 domain: 
    name: A
   
@@ -434,7 +456,7 @@ domain:
                   -  address: 127.0.0.1:7002
                   -  address: 127.0.0.1:7003
                   -  address: 127.0.0.1:7004
-)"}};
+)");
 
 
          test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
@@ -494,17 +516,17 @@ domain:
 )";
 
 
-         local::Manager a{ { local::configuration::base, A}};
+         auto a = local::domain(  A);
 
          test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
 
          // we might get to the "wrong" domain until all services are advertised.
-         EXPECT_TRUE( local::domain::name( "B", 1000));
+         EXPECT_TRUE( local::lookup::domain::name( "B", 1000));
 
          // we expect to always get to B
          algorithm::for_n< 10>( []()
          {
-            ASSERT_TRUE( local::domain::name( "B"));
+            ASSERT_TRUE( local::lookup::domain::name( "B"));
          });
       }
 
@@ -542,17 +564,17 @@ domain:
 )";
 
 
-         local::Manager a{ { local::configuration::base, A}};
+         auto a = local::domain(  A);
 
          test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
 
          // we might get to the "wrong" domain until all services are advertised.
-         EXPECT_TRUE( local::domain::name( "B", 1000));
+         EXPECT_TRUE( local::lookup::domain::name( "B", 1000));
 
          // we expect to always get to B
          algorithm::for_n< 10>( []()
          {
-            EXPECT_TRUE( local::domain::name( "B"));
+            EXPECT_TRUE( local::lookup::domain::name( "B"));
          });
       }
 
@@ -580,7 +602,7 @@ domain:
 )";
 
 
-         local::Manager a{ { local::configuration::base, A}};
+         auto a = local::domain(  A);
 
          test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
 
@@ -623,7 +645,7 @@ domain:
 )";
 
 
-         local::Manager a{ { local::configuration::base, A}};
+         auto a = local::domain(  A);
 
          test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
 
@@ -665,7 +687,7 @@ domain:
 )";
 
 
-         local::Manager a{ { local::configuration::base, A}};
+         auto a = local::domain(  A);
 
          test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
 
@@ -725,7 +747,7 @@ domain:
 )";
 
 
-         local::Manager b{ { local::configuration::base, B}};
+         auto b = local::domain(  B);
          test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
 
          constexpr auto A = R"(
@@ -740,7 +762,7 @@ domain:
 )";
 
 
-         local::Manager a{ { local::configuration::base, A}};
+         auto a = local::domain(  A);
          test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
 
          const auto binary = common::unittest::random::binary( platform::ipc::transport::size);
@@ -798,7 +820,7 @@ domain:
 )";
 
 
-         local::Manager b{ { local::configuration::base, B}};
+         auto b = local::domain(  B);
 
          auto c = local::example::reverse::domain( "C", "7002");
          auto d = local::example::reverse::domain( "D", "7002");
@@ -816,7 +838,7 @@ domain:
 )";
 
 
-         local::Manager a{ { local::configuration::base, A}};
+         auto a = local::domain(  A);
          test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
 
          const auto binary = common::unittest::random::binary( platform::ipc::transport::size);
@@ -882,7 +904,7 @@ domain:
 )";
 
 
-         local::Manager b{ { local::configuration::base, B}};
+         auto b = local::domain(  B);
          test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
 
          constexpr auto A = R"(
@@ -897,7 +919,7 @@ domain:
 )";
 
 
-         local::Manager a{ { local::configuration::base, A}};
+         auto a = local::domain(  A);
          test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
 
          const auto binary = common::unittest::random::binary( platform::ipc::transport::size);
@@ -944,7 +966,7 @@ domain:
 
          common::unittest::Trace trace;
 
-         local::Manager b{ { local::configuration::base, R"(
+         auto b = local::domain( R"(
 domain: 
    name: B
 
@@ -958,7 +980,7 @@ domain:
          groups:
             -  connections: 
                -  address: 127.0.0.1:7001
-)"}};
+)");
 
 
 
@@ -978,7 +1000,7 @@ domain:
 )";
 
 
-         local::Manager a{ { local::configuration::base, A}};
+         auto a = local::domain(  A);
 
          test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
 
@@ -1021,7 +1043,7 @@ domain:
 
          common::unittest::Trace trace;
 
-         local::Manager b{ { local::configuration::base, R"(
+         auto b = local::domain( R"(
 domain: 
    name: B
 
@@ -1035,7 +1057,7 @@ domain:
          groups:
             -  connections: 
                -  address: 127.0.0.1:7001
-)"}};
+)");
 
 
 
@@ -1051,7 +1073,7 @@ domain:
 )";
 
 
-         local::Manager a{ { local::configuration::base, A}};
+         auto a = local::domain(  A);
 
          test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
 
@@ -1097,7 +1119,7 @@ domain:
 
          common::unittest::Trace trace;
 
-         local::Manager b{ { local::configuration::base, R"(
+         auto b = local::domain(  R"(
 domain: 
    name: B
 
@@ -1116,11 +1138,11 @@ domain:
          groups:
             -  connections:
                   -  address: 127.0.0.1:7002
-)"}};
+)");
 
 
 
-         local::Manager a{ { local::configuration::base, R"(
+         auto a = local::domain( R"(
 domain: 
    name: A
 
@@ -1134,7 +1156,7 @@ domain:
             -  connections:
                   -  address: 127.0.0.1:7001
                      services: [ casual/example/sleep]
-)"}};
+)");
 
 
          test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
@@ -1185,17 +1207,17 @@ domain:
 )";
 
 
-         local::Manager a{ { local::configuration::base, A}};
+         auto a = local::domain(  A);
 
          test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
 
          // we might get to the "wrong" domain until all services are advertised.
-         EXPECT_TRUE( local::domain::name( "B", 1000));
+         EXPECT_TRUE( local::lookup::domain::name( "B", 1000));
 
          // we expect to always get to B
          algorithm::for_n< 10>( []()
          {
-            EXPECT_TRUE( local::domain::name( "B"));
+            EXPECT_TRUE( local::lookup::domain::name( "B"));
          });
 
          // shutdown B
@@ -1204,7 +1226,7 @@ domain:
          // we expect to always get to C
          algorithm::for_n< 10>( []()
          {
-            EXPECT_TRUE( local::domain::name( "C"));
+            EXPECT_TRUE( local::lookup::domain::name( "C"));
          });
 
          // shutdown C
@@ -1213,7 +1235,7 @@ domain:
          // we expect to always get to D ( the only on left...)
          algorithm::for_n< 10>( []()
          {
-            EXPECT_TRUE( local::domain::name( "D"));
+            EXPECT_TRUE( local::lookup::domain::name( "D"));
          });
       }
 
@@ -1245,17 +1267,17 @@ domain:
 )";
 
 
-         local::Manager a{ { local::configuration::base, A}};
+         auto a = local::domain(  A);
 
          test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
 
          // we might get to C until all services are advertised.
-         EXPECT_TRUE( local::domain::name( "B", 1000));
+         EXPECT_TRUE( local::lookup::domain::name( "B", 1000));
 
          // after both ar up, we expect to always get to B
          algorithm::for_n< 10>( []()
          {
-            EXPECT_TRUE( local::domain::name( "B"));
+            EXPECT_TRUE( local::lookup::domain::name( "B"));
          });
 
          // shutdown B
@@ -1264,7 +1286,7 @@ domain:
          // we expect to always get to C
          algorithm::for_n< 10>( []()
          {
-            EXPECT_TRUE( local::domain::name( "C"));
+            EXPECT_TRUE( local::lookup::domain::name( "C"));
          });
 
          // boot B
@@ -1277,12 +1299,12 @@ domain:
          test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
          
          // we expect to get to B agin
-         EXPECT_TRUE( local::domain::name( "B", 1000));
+         EXPECT_TRUE( local::lookup::domain::name( "B", 1000));
 
          // we expect to always get to B, again
          algorithm::for_n< 10>( []()
          {
-            EXPECT_TRUE( local::domain::name( "B"));
+            EXPECT_TRUE( local::lookup::domain::name( "B"));
          });
       }
 
@@ -1317,7 +1339,7 @@ domain:
 )";
 
          
-         local::Manager a{ { local::configuration::base, A}};
+         auto a = local::domain(  A);
 
          auto ready_predicate = []( auto& state)
          {
@@ -1378,13 +1400,8 @@ domain:
          // sink child signals 
          signal::callback::registration< code::signal::child>( [](){});
 
-         auto create_domain = []( auto&& config)
-         {
-            return local::Manager{ { local::configuration::base, config}};
-         };
-
-         auto b = create_domain( B);
-         auto a = create_domain( A);
+         auto b = local::domain( B);
+         auto a = local::domain( A);
 
          test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
 
@@ -1404,7 +1421,7 @@ domain:
          log::line( verbose::log, "before boot of B");
 
          // boot B again
-         b = create_domain( B);
+         b = local::domain( B);
          a.activate();
 
          test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
@@ -1458,13 +1475,8 @@ domain:
          // sink child signals 
          signal::callback::registration< code::signal::child>( [](){});
 
-         auto create_domain = []( auto&& config)
-         {
-            return local::Manager{ { local::configuration::base, config}};
-         };
-
-         auto b = create_domain( B);
-         auto a = create_domain( A);
+         auto b = local::domain( B);
+         auto a = local::domain( A);
 
          test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
 
@@ -1512,13 +1524,8 @@ domain:
          // sink child signals 
          signal::callback::registration< code::signal::child>( [](){});
 
-         auto create_domain = []( auto&& config)
-         {
-            return local::Manager{ { local::configuration::base, config}};
-         };
-
-         auto b = create_domain( B);
-         auto a = create_domain( A);
+         auto b = local::domain( B);
+         auto a = local::domain( A);
 
          test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
 
@@ -1537,7 +1544,7 @@ domain:
          log::line( verbose::log, "before boot of B");
 
          // boot B again
-         b = create_domain( B);
+         b = local::domain( B);
          a.activate();
 
          test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
@@ -1588,13 +1595,8 @@ domain:
          // sink child signals 
          signal::callback::registration< code::signal::child>( [](){});
 
-         auto create_domain = []( auto&& config)
-         {
-            return local::Manager{ { local::configuration::base, config}};
-         };
-
-         auto b = create_domain( B);
-         auto a = create_domain( A);
+         auto b = local::domain( B);
+         auto a = local::domain( A);
 
          test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
 
@@ -1613,7 +1615,7 @@ domain:
          log::line( verbose::log, "before boot of B");
 
          // boot B again
-         b = create_domain( B);
+         b = local::domain( B);
          a.activate();
 
          test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
@@ -1625,29 +1627,1279 @@ domain:
 
       }
 
+      
+      TEST( test_domain_gateway, call_A_B_from_C__via_GW__within_transaction__a_lot___expect_correct_transaction_state)
+      {
+         common::unittest::Trace trace;
+
+         constexpr auto A = R"(
+domain:
+   name: A
+   servers:
+      - path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-resource-server"
+        memberships: [ user]
+   gateway:
+      inbound:
+         groups:
+            -  connections: 
+               -  address: 127.0.0.1:7770
+
+)";
+
+         constexpr auto B = R"(
+domain: 
+   name: B
+
+   servers:
+      -  path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-resource-server"
+         memberships: [ user]
+   gateway:
+      inbound:
+         groups:
+            -  connections: 
+               -  address: 127.0.0.1:7771
+
+)";
+
+         constexpr auto GW = R"(
+domain: 
+   name: GW
+
+   gateway:
+      outbound:
+         groups:
+            -  connections:
+               -  address: 127.0.0.1:7770
+               -  address: 127.0.0.1:7771
+      inbound:
+         groups:
+            -  connections: 
+               -  address: 127.0.0.1:7772
+                  discovery:
+                     forward: true
+
+)";
+
+
+         constexpr auto C = R"(
+domain: 
+   name: C
+
+   gateway:
+      outbound:
+         groups:
+            -  connections:
+               -  address: 127.0.0.1:7772
+
+)";
+
+         // sink child signals 
+         signal::callback::registration< code::signal::child>( [](){});
+
+         auto b = local::domain( B);
+         auto a = local::domain( A);
+         auto gw = local::domain( GW);
+
+         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
+
+         auto c = local::domain( C);
+
+         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
+
+         auto call_A_and_B = []( auto count)
+         {
+            algorithm::for_n( count, []()
+            {
+               local::call( "casual/example/resource/domain/echo/A", TPOK);
+               local::call( "casual/example/resource/domain/echo/B", TPOK);
+            });
+         };
+
+         constexpr auto transaction_count = 10;
+         constexpr auto call_count = 1;
+
+         algorithm::for_n( transaction_count, [call_A_and_B]()
+         {
+            ASSERT_TRUE( tx_begin() == TX_OK);
+            call_A_and_B( call_count);
+            ASSERT_TRUE( tx_commit() == TX_OK);
+         });
+
+         auto check_transaction_state = []( )
+         {
+            auto state = casual::transaction::unittest::state();
+
+            EXPECT_TRUE( state.pending.persistent.replies.empty()) << CASUAL_NAMED_VALUE( state);
+            EXPECT_TRUE( state.pending.requests.empty()) << CASUAL_NAMED_VALUE( state);
+            EXPECT_TRUE( state.transactions.empty()) << CASUAL_NAMED_VALUE( state);
+
+            return state;
+         };
+
+         // check in c
+         check_transaction_state();
+
+         // check in gateway
+         gw.activate();
+         check_transaction_state();
+
+         {
+            b.activate();
+            auto state = check_transaction_state();
+            ASSERT_TRUE( state.resources.size() == 1);
+            auto& resource = state.resources[ 0];
+            ASSERT_TRUE( resource.instances.size() == 1);
+            auto& instance = resource.instances[ 0];
+            EXPECT_TRUE( instance.metrics.resource.count == transaction_count) << CASUAL_NAMED_VALUE( instance.metrics.resource);
+         }
+
+         {
+            a.activate();
+            auto state = check_transaction_state();
+            ASSERT_TRUE( state.resources.size() == 1);
+            auto& resource = state.resources[ 0];
+            ASSERT_TRUE( resource.instances.size() == 1);
+            auto& instance = resource.instances[ 0];
+            EXPECT_TRUE( instance.metrics.resource.count == transaction_count) << CASUAL_NAMED_VALUE( instance.metrics.resource);
+         }        
+      }
+
+      TEST( test_domain_gateway, call_A_B_C_X_from_X__via_GW__within_transaction__one_call_tree_that_goes_all_over_the_place___expect_correct_transaction_state)
+      {
+         common::unittest::Trace trace;
+
+         constexpr auto A = R"(
+domain:
+   name: A
+   servers:
+      -  path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-resource-server"
+         memberships: [ user]
+         arguments: [ --nested-calls, casual/example/resource/domain/echo/B, casual/example/resource/domain/echo/C, casual/example/resource/domain/echo/X]
+         instances: 4
+   gateway:
+      outbound:
+         groups:
+            -  connections:
+               -  address: 127.0.0.1:7779
+      inbound:
+         groups:
+            -  connections: 
+               -  address: 127.0.0.1:7770
+
+)";
+
+         constexpr auto B = R"(
+domain: 
+   name: B
+
+   servers:
+      -  path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-resource-server"
+         memberships: [ user]
+         arguments: [ --nested-calls, casual/example/resource/domain/echo/A, casual/example/resource/domain/echo/C, casual/example/resource/domain/echo/X]
+         instances: 4
+   gateway:
+      outbound:
+         groups:
+            -  connections:
+               -  address: 127.0.0.1:7779
+      inbound:
+         groups:
+            -  connections: 
+               -  address: 127.0.0.1:7771
+
+)";
+
+         constexpr auto C = R"(
+domain: 
+   name: C
+
+   servers:
+      -  path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-resource-server"
+         memberships: [ user]
+         arguments: [ --nested-calls, casual/example/resource/nested/calls/A, casual/example/resource/nested/calls/B, casual/example/resource/domain/echo/X]
+         instances: 4
+   gateway:
+      outbound:
+         groups:
+            -  connections:
+               -  address: 127.0.0.1:7779
+      inbound:
+         groups:
+            -  connections: 
+               -  address: 127.0.0.1:7772
+
+)";
+
+         constexpr auto GW = R"(
+domain: 
+   name: GW
+
+   gateway:
+      outbound:
+         groups:
+            -  connections:
+               -  address: 127.0.0.1:7770
+               -  address: 127.0.0.1:7771
+               -  address: 127.0.0.1:7772
+               -  address: 127.0.0.1:7773
+      inbound:
+         groups:
+            -  connections: 
+               -  address: 127.0.0.1:7779
+                  discovery:
+                     forward: true
+
+)";
+
+
+         constexpr auto X = R"(
+domain: 
+   name: X
+   servers:
+      -  path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-resource-server"
+         memberships: [ user]
+         instances: 3
+   gateway:
+      outbound:
+         groups:
+            -  connections:
+               -  address: 127.0.0.1:7779
+      inbound:
+         groups:
+            -  connections: 
+               -  address: 127.0.0.1:7773
+
+)";
+
+         // sink child signals 
+         signal::callback::registration< code::signal::child>( [](){});
+
+         auto a = local::domain( A);
+         auto b = local::domain( B);
+         auto c = local::domain( C);
+         auto x = local::domain( X);
+          
+         auto gw = local::domain( GW);
+
+         // everything is booted, we need to 'wait' until all domains got outbound connections
+         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
+         
+         a.activate();
+         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
+
+         b.activate();
+         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
+
+         c.activate();
+         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
+
+         x.activate();
+         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
+
+         // we're in X at the moment
+
+         auto call_A_and_B = []( auto count)
+         {
+            algorithm::for_n( count, []()
+            {
+               local::call( "casual/example/resource/nested/calls/C", TPOK);
+            });
+         };
+
+         constexpr auto transaction_count = 5;
+         constexpr auto call_count = 1;
+
+         algorithm::for_n( transaction_count, [call_A_and_B]()
+         {
+            ASSERT_TRUE( tx_begin() == TX_OK);
+            call_A_and_B( call_count);
+            ASSERT_TRUE( tx_commit() == TX_OK);
+         });
+
+         auto check_transaction_state = []( )
+         {
+            auto state = casual::transaction::unittest::state();
+
+            EXPECT_TRUE( state.pending.persistent.replies.empty()) << CASUAL_NAMED_VALUE( state);
+            EXPECT_TRUE( state.pending.requests.empty()) << CASUAL_NAMED_VALUE( state);
+            EXPECT_TRUE( state.transactions.empty()) << CASUAL_NAMED_VALUE( state);
+
+            return state;
+         };
+
+         // check in x
+         {  
+            // we're in X at the moment 
+            auto state = check_transaction_state();
+            ASSERT_TRUE( state.resources.size() == 1);
+            auto& resource = state.resources[ 0];
+            ASSERT_TRUE( resource.instances.size() == 1);
+            auto& instance = resource.instances[ 0];
+            // distributed transactions, prepare and commit.
+            EXPECT_TRUE( instance.metrics.resource.count == transaction_count * 2 * 3) << CASUAL_NAMED_VALUE( instance.metrics.resource);
+         }
+
+
+         // check in gateway
+         {
+            gw.activate();
+            auto state = check_transaction_state();
+            ASSERT_TRUE( state.resources.size() == 1);
+            auto& resource = state.resources[ 0];
+            ASSERT_TRUE( resource.instances.size() == 1);
+            auto& instance = resource.instances[ 0];
+            // distributed transactions, prepare and commit.
+            EXPECT_TRUE( instance.metrics.resource.count == 0) << CASUAL_NAMED_VALUE( instance.metrics.resource);
+         }
+
+         {
+            a.activate();
+            auto state = check_transaction_state();
+            ASSERT_TRUE( state.resources.size() == 1);
+            auto& resource = state.resources[ 0];
+            ASSERT_TRUE( resource.instances.size() == 1);
+            auto& instance = resource.instances[ 0];
+            // distributed transactions, prepare and commit.
+            EXPECT_TRUE( instance.metrics.resource.count == transaction_count * 2 * 2) << CASUAL_NAMED_VALUE( instance.metrics.resource);
+         }
+
+         {
+            b.activate();
+            auto state = check_transaction_state();
+            ASSERT_TRUE( state.resources.size() == 1);
+            auto& resource = state.resources[ 0];
+            ASSERT_TRUE( resource.instances.size() == 1);
+            auto& instance = resource.instances[ 0];
+            // distributed transactions, prepare and commit.
+            EXPECT_TRUE( instance.metrics.resource.count == transaction_count * 2 * 2) << CASUAL_NAMED_VALUE( instance.metrics.resource);
+         }
+
+         {
+            c.activate();
+            auto state = check_transaction_state();
+            ASSERT_TRUE( state.resources.size() == 1);
+            auto& resource = state.resources[ 0];
+            ASSERT_TRUE( resource.instances.size() == 1);
+            auto& instance = resource.instances[ 0];
+            // distributed transactions, prepare and commit.
+            EXPECT_TRUE( instance.metrics.resource.count == transaction_count * 2 * 3) << CASUAL_NAMED_VALUE( instance.metrics.resource);
+         }  
+      }
+
+
+      TEST( test_domain_gateway, call_A_B_C_from_X__via_GW__A_B_C_connects_directly_to_X_within_transaction__one_call_tree_that_goes_all_over_the_place___expect_correct_transaction_state)
+      {
+         common::unittest::Trace trace;
+
+         constexpr auto A = R"(
+domain:
+   name: A
+   servers:
+      -  path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-resource-server"
+         memberships: [ user]
+         arguments: [ --nested-calls, casual/example/resource/domain/echo/B, casual/example/resource/domain/echo/C, casual/example/resource/domain/echo/X]
+         instances: 4
+   gateway:
+      outbound:
+         groups:
+            -  connections:
+               -  address: 127.0.0.1:7779  # GW
+               -  address: 127.0.0.1:7773  # X
+      inbound:
+         groups:
+            -  connections: 
+               -  address: 127.0.0.1:7770
+
+)";
+
+         constexpr auto B = R"(
+domain: 
+   name: B
+
+   servers:
+      -  path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-resource-server"
+         memberships: [ user]
+         arguments: [ --nested-calls, casual/example/resource/domain/echo/A, casual/example/resource/domain/echo/C, casual/example/resource/domain/echo/X]
+         instances: 4
+   gateway:
+      outbound:
+         groups:
+            -  connections:
+               -  address: 127.0.0.1:7779  # GW
+               -  address: 127.0.0.1:7773  # X
+      inbound:
+         groups:
+            -  connections: 
+               -  address: 127.0.0.1:7771
+
+)";
+
+         constexpr auto C = R"(
+domain: 
+   name: C
+
+   servers:
+      -  path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-resource-server"
+         memberships: [ user]
+         arguments: [ --nested-calls, casual/example/resource/nested/calls/A, casual/example/resource/nested/calls/B, casual/example/resource/domain/echo/X]
+         instances: 4
+   gateway:
+      outbound:
+         groups:
+            -  connections:
+               -  address: 127.0.0.1:7779  # GW
+               -  address: 127.0.0.1:7773  # X
+      inbound:
+         groups:
+            -  connections: 
+               -  address: 127.0.0.1:7772
+
+)";
+
+         constexpr auto GW = R"(
+domain: 
+   name: GW
+
+   gateway:
+      outbound:
+         groups:
+            -  connections:
+               -  address: 127.0.0.1:7770 # A 
+               -  address: 127.0.0.1:7771 # B
+               -  address: 127.0.0.1:7772 # C
+      inbound:
+         groups:
+            -  connections: 
+               -  address: 127.0.0.1:7779
+                  discovery:
+                     forward: true
+
+)";
+
+
+         constexpr auto X = R"(
+domain: 
+   name: X
+   servers:
+      -  path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-resource-server"
+         memberships: [ user]
+         instances: 3
+   gateway:
+      outbound:
+         groups:
+            -  connections:
+               -  address: 127.0.0.1:7779
+      inbound:
+         groups:
+            -  connections: 
+               -  address: 127.0.0.1:7773
+
+)";
+
+         // sink child signals 
+         signal::callback::registration< code::signal::child>( [](){});
+
+         auto a = local::domain( A);
+         auto b = local::domain( B);
+         auto c = local::domain( C);
+         auto x = local::domain( X);
+          
+         auto gw = local::domain( GW);
+
+         // everything is booted, we need to 'wait' until all domains got outbound connections
+         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
+         
+         a.activate();
+         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
+
+         b.activate();
+         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
+
+         c.activate();
+         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
+
+         x.activate();
+         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
+
+         // we're in X at the moment
+
+         auto call_A_and_B = []( auto count)
+         {
+            algorithm::for_n( count, []()
+            {
+               local::call( "casual/example/resource/nested/calls/C", TPOK);
+            });
+         };
+
+         constexpr auto transaction_count = 5;
+         constexpr auto call_count = 1;
+
+         algorithm::for_n( transaction_count, [call_A_and_B]()
+         {
+            ASSERT_TRUE( tx_begin() == TX_OK);
+            call_A_and_B( call_count);
+            ASSERT_TRUE( tx_commit() == TX_OK);
+         });
+
+         auto check_transaction_state = []( )
+         {
+            auto state = casual::transaction::unittest::state();
+
+            EXPECT_TRUE( state.pending.persistent.replies.empty()) << CASUAL_NAMED_VALUE( state);
+            EXPECT_TRUE( state.pending.requests.empty()) << CASUAL_NAMED_VALUE( state);
+            EXPECT_TRUE( state.transactions.empty()) << CASUAL_NAMED_VALUE( state);
+
+            return state;
+         };
+
+         // check in x
+         {  
+            // we're in X at the moment 
+            auto state = check_transaction_state();
+            ASSERT_TRUE( state.resources.size() == 1);
+            auto& resource = state.resources[ 0];
+            ASSERT_TRUE( resource.instances.size() == 1);
+            auto& instance = resource.instances[ 0];
+            // distributed transactions, prepare and commit.
+            EXPECT_TRUE( instance.metrics.resource.count == transaction_count * 2 * 3) << CASUAL_NAMED_VALUE( instance.metrics.resource);
+         }
+
+
+         // check in gateway
+         {
+            gw.activate();
+            auto state = check_transaction_state();
+            ASSERT_TRUE( state.resources.size() == 1);
+            auto& resource = state.resources[ 0];
+            ASSERT_TRUE( resource.instances.size() == 1);
+            auto& instance = resource.instances[ 0];
+            // distributed transactions, prepare and commit.
+            EXPECT_TRUE( instance.metrics.resource.count == 0) << CASUAL_NAMED_VALUE( instance.metrics.resource);
+         }
+
+         {
+            a.activate();
+            auto state = check_transaction_state();
+            ASSERT_TRUE( state.resources.size() == 1);
+            auto& resource = state.resources[ 0];
+            ASSERT_TRUE( resource.instances.size() == 1);
+            auto& instance = resource.instances[ 0];
+            // distributed transactions, prepare and commit.
+            EXPECT_TRUE( instance.metrics.resource.count == transaction_count * 2 * 2) << CASUAL_NAMED_VALUE( instance.metrics.resource);
+         }
+
+         {
+            b.activate();
+            auto state = check_transaction_state();
+            ASSERT_TRUE( state.resources.size() == 1);
+            auto& resource = state.resources[ 0];
+            ASSERT_TRUE( resource.instances.size() == 1);
+            auto& instance = resource.instances[ 0];
+            // distributed transactions, prepare and commit.
+            EXPECT_TRUE( instance.metrics.resource.count == transaction_count * 2 * 2) << CASUAL_NAMED_VALUE( instance.metrics.resource);
+         }
+
+         {
+            c.activate();
+            auto state = check_transaction_state();
+            ASSERT_TRUE( state.resources.size() == 1);
+            auto& resource = state.resources[ 0];
+            ASSERT_TRUE( resource.instances.size() == 1);
+            auto& instance = resource.instances[ 0];
+            // distributed transactions, prepare and commit.
+            EXPECT_TRUE( instance.metrics.resource.count == transaction_count * 2 * 3) << CASUAL_NAMED_VALUE( instance.metrics.resource);
+         }  
+      }
+
+
+      TEST( test_domain_gateway, call_A_B_C_from_X__via_GW__A_B_C_connects_directly_to_X_within_transaction__resource_report_XAER_RMERR_on_prepare_in_domain_A__expect_correct_transaction_state)
+      {
+         common::unittest::Trace trace;
+
+         constexpr auto A = R"(
+domain:
+   name: A
+   transaction:
+      resources:
+         -  name: example-resource-server
+            key: rm-mockup
+            # XAER_RMERR   -3 
+            openinfo: --prepare -3
+            instances: 1
+   servers:
+      -  path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-resource-server"
+         memberships: [ user]
+         arguments: [ --nested-calls, casual/example/resource/domain/echo/B, casual/example/resource/domain/echo/C, casual/example/resource/domain/echo/X]
+         instances: 4
+   gateway:
+      outbound:
+         groups:
+            -  connections:
+               -  address: 127.0.0.1:7779  # GW
+               -  address: 127.0.0.1:7773  # X
+      inbound:
+         groups:
+            -  connections: 
+               -  address: 127.0.0.1:7770
+
+)";
+
+         constexpr auto B = R"(
+domain: 
+   name: B
+
+   servers:
+      -  path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-resource-server"
+         memberships: [ user]
+         arguments: [ --nested-calls, casual/example/resource/domain/echo/A, casual/example/resource/domain/echo/C, casual/example/resource/domain/echo/X]
+         instances: 4
+   gateway:
+      outbound:
+         groups:
+            -  connections:
+               -  address: 127.0.0.1:7779  # GW
+               -  address: 127.0.0.1:7773  # X
+      inbound:
+         groups:
+            -  connections: 
+               -  address: 127.0.0.1:7771
+
+)";
+
+         constexpr auto C = R"(
+domain: 
+   name: C
+
+   servers:
+      -  path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-resource-server"
+         memberships: [ user]
+         arguments: [ --nested-calls, casual/example/resource/nested/calls/A, casual/example/resource/nested/calls/B, casual/example/resource/domain/echo/X]
+         instances: 4
+   gateway:
+      outbound:
+         groups:
+            -  connections:
+               -  address: 127.0.0.1:7779  # GW
+               -  address: 127.0.0.1:7773  # X
+      inbound:
+         groups:
+            -  connections: 
+               -  address: 127.0.0.1:7772
+
+)";
+
+         constexpr auto GW = R"(
+domain: 
+   name: GW
+
+   gateway:
+      outbound:
+         groups:
+            -  connections:
+               -  address: 127.0.0.1:7770 # A 
+               -  address: 127.0.0.1:7771 # B
+               -  address: 127.0.0.1:7772 # C
+      inbound:
+         groups:
+            -  connections: 
+               -  address: 127.0.0.1:7779
+                  discovery:
+                     forward: true
+
+)";
+
+
+         constexpr auto X = R"(
+domain: 
+   name: X
+   servers:
+      -  path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-resource-server"
+         memberships: [ user]
+         instances: 3
+   gateway:
+      outbound:
+         groups:
+            -  connections:
+               -  address: 127.0.0.1:7779
+      inbound:
+         groups:
+            -  connections: 
+               -  address: 127.0.0.1:7773
+
+)";
+
+         // sink child signals 
+         signal::callback::registration< code::signal::child>( [](){});
+
+         auto a = local::domain( A);
+         auto b = local::domain( B);
+         auto c = local::domain( C);
+         auto x = local::domain( X);
+          
+         auto gw = local::domain( GW);
+
+         // everything is booted, we need to 'wait' until all domains got outbound connections
+         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
+         
+         a.activate();
+         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
+
+         b.activate();
+         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
+
+         c.activate();
+         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
+
+         x.activate();
+         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
+
+         // we're in X at the moment
+
+         auto call_A_and_B = []( auto count)
+         {
+            algorithm::for_n( count, []()
+            {
+               local::call( "casual/example/resource/nested/calls/C", TPOK);
+            });
+         };
+
+         constexpr auto transaction_count = 5;
+         constexpr auto call_count = 1;
+
+         algorithm::for_n( transaction_count, [call_A_and_B]()
+         {
+            ASSERT_TRUE( tx_begin() == TX_OK);
+            call_A_and_B( call_count);
+            ASSERT_TRUE( tx_commit() == TX_ROLLBACK);
+         });
+
+         auto check_transaction_state = []( )
+         {
+            auto state = casual::transaction::unittest::state();
+
+            EXPECT_TRUE( state.pending.persistent.replies.empty()) << CASUAL_NAMED_VALUE( state);
+            EXPECT_TRUE( state.pending.requests.empty()) << CASUAL_NAMED_VALUE( state);
+            EXPECT_TRUE( state.transactions.empty()) << CASUAL_NAMED_VALUE( state);
+
+            return state;
+         };
+
+         // check in x
+         {  
+            // we're in X at the moment 
+            auto state = check_transaction_state();
+            ASSERT_TRUE( state.resources.size() == 1);
+            auto& resource = state.resources[ 0];
+            ASSERT_TRUE( resource.instances.size() == 1);
+            auto& instance = resource.instances[ 0];
+            // distributed transactions, prepare and commit.
+            EXPECT_TRUE( instance.metrics.resource.count == transaction_count * 2 * 3) << CASUAL_NAMED_VALUE( instance.metrics.resource);
+         }
+
+
+         // check in gateway
+         {
+            gw.activate();
+            auto state = check_transaction_state();
+            ASSERT_TRUE( state.resources.size() == 1);
+            auto& resource = state.resources[ 0];
+            ASSERT_TRUE( resource.instances.size() == 1);
+            auto& instance = resource.instances[ 0];
+            // distributed transactions, prepare and commit.
+            EXPECT_TRUE( instance.metrics.resource.count == 0) << CASUAL_NAMED_VALUE( instance.metrics.resource);
+         }
+
+         {
+            a.activate();
+            auto state = check_transaction_state();
+            ASSERT_TRUE( state.resources.size() == 1);
+            auto& resource = state.resources[ 0];
+            ASSERT_TRUE( resource.instances.size() == 1);
+            auto& instance = resource.instances[ 0];
+            // distributed transactions, prepare and commit.
+            EXPECT_TRUE( instance.metrics.resource.count == transaction_count * 2 * 2) << CASUAL_NAMED_VALUE( instance.metrics.resource);
+         }
+
+         {
+            b.activate();
+            auto state = check_transaction_state();
+            ASSERT_TRUE( state.resources.size() == 1);
+            auto& resource = state.resources[ 0];
+            ASSERT_TRUE( resource.instances.size() == 1);
+            auto& instance = resource.instances[ 0];
+            // distributed transactions, prepare and commit.
+            EXPECT_TRUE( instance.metrics.resource.count == transaction_count * 2 * 2) << CASUAL_NAMED_VALUE( instance.metrics.resource);
+         }
+
+         {
+            c.activate();
+            auto state = check_transaction_state();
+            ASSERT_TRUE( state.resources.size() == 1);
+            auto& resource = state.resources[ 0];
+            ASSERT_TRUE( resource.instances.size() == 1);
+            auto& instance = resource.instances[ 0];
+            // distributed transactions, prepare and commit.
+            EXPECT_TRUE( instance.metrics.resource.count == transaction_count * 2 * 3) << CASUAL_NAMED_VALUE( instance.metrics.resource);
+         }  
+      }
+
+
+      TEST( test_domain_gateway, call_A_B_C_from_X__via_GW__A_B_C_connects_directly_to_X_within_transaction__resource_report_XAER_RMFAIL_on_start_end_in_domain_A__expect_correct_transaction_state)
+      {
+         common::unittest::Trace trace;
+
+         constexpr auto A = R"(
+domain:
+   name: A
+   transaction:
+      resources:
+         -  name: example-resource-server
+            key: rm-mockup
+            # #define XAER_RMFAIL  -7    /* resource manager unavailable */
+            openinfo: --start -7 --end -7
+            instances: 1
+   servers:
+      -  path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-resource-server"
+         memberships: [ user]
+         arguments: [ --nested-calls, casual/example/resource/domain/echo/B, casual/example/resource/domain/echo/C, casual/example/resource/domain/echo/X]
+         instances: 4
+   gateway:
+      outbound:
+         groups:
+            -  connections:
+               -  address: 127.0.0.1:7779  # GW
+               -  address: 127.0.0.1:7773  # X
+      inbound:
+         groups:
+            -  connections: 
+               -  address: 127.0.0.1:7770
+
+)";
+
+         constexpr auto B = R"(
+domain: 
+   name: B
+
+   servers:
+      -  path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-resource-server"
+         memberships: [ user]
+         arguments: [ --nested-calls, casual/example/resource/domain/echo/A, casual/example/resource/domain/echo/C, casual/example/resource/domain/echo/X]
+         instances: 4
+   gateway:
+      outbound:
+         groups:
+            -  connections:
+               -  address: 127.0.0.1:7779  # GW
+               -  address: 127.0.0.1:7773  # X
+      inbound:
+         groups:
+            -  connections: 
+               -  address: 127.0.0.1:7771
+
+)";
+
+         constexpr auto C = R"(
+domain: 
+   name: C
+
+   servers:
+      -  path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-resource-server"
+         memberships: [ user]
+         arguments: [ --nested-calls, casual/example/resource/nested/calls/A, casual/example/resource/nested/calls/B, casual/example/resource/domain/echo/X]
+         instances: 4
+   gateway:
+      outbound:
+         groups:
+            -  connections:
+               -  address: 127.0.0.1:7779  # GW
+               -  address: 127.0.0.1:7773  # X
+      inbound:
+         groups:
+            -  connections: 
+               -  address: 127.0.0.1:7772
+
+)";
+
+         constexpr auto GW = R"(
+domain: 
+   name: GW
+
+   gateway:
+      outbound:
+         groups:
+            -  connections:
+               -  address: 127.0.0.1:7770 # A 
+               -  address: 127.0.0.1:7771 # B
+               -  address: 127.0.0.1:7772 # C
+      inbound:
+         groups:
+            -  connections: 
+               -  address: 127.0.0.1:7779
+                  discovery:
+                     forward: true
+
+)";
+
+
+         constexpr auto X = R"(
+domain: 
+   name: X
+   servers:
+      -  path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-resource-server"
+         memberships: [ user]
+         instances: 3
+   gateway:
+      outbound:
+         groups:
+            -  connections:
+               -  address: 127.0.0.1:7779
+      inbound:
+         groups:
+            -  connections: 
+               -  address: 127.0.0.1:7773
+
+)";
+
+         // sink child signals 
+         signal::callback::registration< code::signal::child>( [](){});
+
+         auto a = local::domain( A);
+         auto b = local::domain( B);
+         auto c = local::domain( C);
+         auto x = local::domain( X);
+          
+         auto gw = local::domain( GW);
+
+         // everything is booted, we need to 'wait' until all domains got outbound connections
+         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
+         
+         a.activate();
+         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
+
+         b.activate();
+         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
+
+         c.activate();
+         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
+
+         x.activate();
+         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
+
+         // we're in X at the moment
+
+         auto call_C = []( auto count)
+         {
+            algorithm::for_n( count, []()
+            {
+               local::call( "casual/example/resource/nested/calls/C", TPOK);
+            });
+         };
+
+         constexpr auto transaction_count = 1;
+         constexpr auto call_count = 1;
+
+         algorithm::for_n( transaction_count, [call_C]()
+         {
+            ASSERT_TRUE( tx_begin() == TX_OK);
+            call_C( call_count);
+            ASSERT_EQ( tx_rollback(), TX_OK);
+         });
+
+         auto check_transaction_state = []( )
+         {
+            auto state = casual::transaction::unittest::state();
+
+            EXPECT_TRUE( state.pending.persistent.replies.empty()) << CASUAL_NAMED_VALUE( state);
+            EXPECT_TRUE( state.pending.requests.empty()) << CASUAL_NAMED_VALUE( state);
+            EXPECT_TRUE( state.transactions.empty()) << CASUAL_NAMED_VALUE( state);
+
+            return state;
+         };
+
+         // check in x
+         {  
+            // we're in X at the moment 
+            auto state = check_transaction_state();
+            ASSERT_TRUE( state.resources.size() == 1);
+            auto& resource = state.resources[ 0];
+            ASSERT_TRUE( resource.instances.size() == 1);
+            auto& instance = resource.instances[ 0];
+            // distributed transactions, only rollback
+            EXPECT_TRUE( instance.metrics.resource.count == transaction_count * 2) << CASUAL_NAMED_VALUE( instance.metrics.resource);
+         }
+
+
+         // check in gateway
+         {
+            gw.activate();
+            auto state = check_transaction_state();
+            ASSERT_TRUE( state.resources.size() == 1);
+            auto& resource = state.resources[ 0];
+            ASSERT_TRUE( resource.instances.size() == 1);
+            auto& instance = resource.instances[ 0];
+            // distributed transactions, only rollback
+            EXPECT_TRUE( instance.metrics.resource.count == 0) << CASUAL_NAMED_VALUE( instance.metrics.resource);
+         }
+
+         {
+            a.activate();
+            auto state = check_transaction_state();
+            ASSERT_TRUE( state.resources.size() == 1);
+            auto& resource = state.resources[ 0];
+            ASSERT_TRUE( resource.instances.size() == 1);
+            auto& instance = resource.instances[ 0];
+            // distributed transactions, only rollback
+            EXPECT_TRUE( instance.metrics.resource.count == transaction_count * 2) << CASUAL_NAMED_VALUE( instance.metrics.resource);
+         }
+
+         {
+            b.activate();
+            auto state = check_transaction_state();
+            ASSERT_TRUE( state.resources.size() == 1);
+            auto& resource = state.resources[ 0];
+            ASSERT_TRUE( resource.instances.size() == 1);
+            auto& instance = resource.instances[ 0];
+            // distributed transactions, only rollback
+            EXPECT_TRUE( instance.metrics.resource.count == transaction_count * 1) << CASUAL_NAMED_VALUE( instance.metrics.resource);
+         }
+
+         {
+            c.activate();
+            auto state = check_transaction_state();
+            ASSERT_TRUE( state.resources.size() == 1);
+            auto& resource = state.resources[ 0];
+            ASSERT_TRUE( resource.instances.size() == 1);
+            auto& instance = resource.instances[ 0];
+            // distributed transactions, only rollback
+            EXPECT_TRUE( instance.metrics.resource.count == transaction_count * 2) << CASUAL_NAMED_VALUE( instance.metrics.resource);
+         }  
+      }
+
+      TEST( test_domain_gateway, call_A_B_C_from_X__via_GW__A_B_C_connects_directly_to_X_within_transaction___rollback___expect_correct_transaction_state)
+      {
+         common::unittest::Trace trace;
+
+         constexpr auto A = R"(
+domain:
+   name: A
+   servers:
+      -  path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-resource-server"
+         memberships: [ user]
+         arguments: [ --nested-calls, casual/example/resource/domain/echo/B, casual/example/resource/domain/echo/C, casual/example/resource/domain/echo/X]
+         instances: 4
+   gateway:
+      outbound:
+         groups:
+            -  connections:
+               -  address: 127.0.0.1:7779  # GW
+               -  address: 127.0.0.1:7773  # X
+      inbound:
+         groups:
+            -  connections: 
+               -  address: 127.0.0.1:7770
+
+)";
+
+         constexpr auto B = R"(
+domain: 
+   name: B
+   servers:
+      -  path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-resource-server"
+         memberships: [ user]
+         arguments: [ --nested-calls, casual/example/resource/domain/echo/A, casual/example/resource/domain/echo/C, casual/example/resource/domain/echo/X]
+         instances: 4
+   gateway:
+      outbound:
+         groups:
+            -  connections:
+               -  address: 127.0.0.1:7779  # GW
+               -  address: 127.0.0.1:7773  # X
+      inbound:
+         groups:
+            -  connections: 
+               -  address: 127.0.0.1:7771
+
+)";
+
+         constexpr auto C = R"(
+domain: 
+   name: C
+   servers:
+      -  path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-resource-server"
+         memberships: [ user]
+         arguments: [ --nested-calls, casual/example/resource/nested/calls/A, casual/example/resource/nested/calls/B, casual/example/resource/domain/echo/X]
+         instances: 4
+   gateway:
+      outbound:
+         groups:
+            -  connections:
+               -  address: 127.0.0.1:7779  # GW
+               -  address: 127.0.0.1:7773  # X
+      inbound:
+         groups:
+            -  connections: 
+               -  address: 127.0.0.1:7772
+
+)";
+
+         constexpr auto GW = R"(
+domain: 
+   name: GW
+   gateway:
+      outbound:
+         groups:
+            -  connections:
+               -  address: 127.0.0.1:7770 # A 
+               -  address: 127.0.0.1:7771 # B
+               -  address: 127.0.0.1:7772 # C
+      inbound:
+         groups:
+            -  connections: 
+               -  address: 127.0.0.1:7779
+                  discovery:
+                     forward: true
+
+)";
+
+
+         constexpr auto X = R"(
+domain: 
+   name: X
+   servers:
+      -  path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-resource-server"
+         memberships: [ user]
+         instances: 3
+   gateway:
+      outbound:
+         groups:
+            -  connections:
+               -  address: 127.0.0.1:7779
+      inbound:
+         groups:
+            -  connections: 
+               -  address: 127.0.0.1:7773
+
+)";
+
+         // sink child signals 
+         signal::callback::registration< code::signal::child>( [](){});
+
+         auto a = local::domain( A);
+         auto b = local::domain( B);
+         auto c = local::domain( C);
+         auto x = local::domain( X);
+          
+         auto gw = local::domain( GW);
+
+         // everything is booted, we need to 'wait' until all domains got outbound connections
+         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
+         
+         a.activate();
+         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
+
+         b.activate();
+         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
+
+         c.activate();
+         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
+
+         x.activate();
+         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
+
+         // we're in X at the moment
+
+         auto call_C = []( auto count)
+         {
+            algorithm::for_n( count, []()
+            {
+               local::call( "casual/example/resource/nested/calls/C", TPOK);
+            });
+         };
+
+         constexpr auto transaction_count = 1;
+         constexpr auto call_count = 1;
+
+         algorithm::for_n( transaction_count, [call_C]()
+         {
+            ASSERT_TRUE( tx_begin() == TX_OK);
+            call_C( call_count);
+            ASSERT_EQ( tx_rollback(), TX_OK);
+         });
+
+         auto check_transaction_state = []( )
+         {
+            auto state = casual::transaction::unittest::state();
+
+            EXPECT_TRUE( state.pending.persistent.replies.empty()) << CASUAL_NAMED_VALUE( state);
+            EXPECT_TRUE( state.pending.requests.empty()) << CASUAL_NAMED_VALUE( state);
+            EXPECT_TRUE( state.transactions.empty()) << CASUAL_NAMED_VALUE( state);
+
+            return state;
+         };
+
+         // check in x
+         {  
+            // we're in X at the moment 
+            auto state = check_transaction_state();
+            ASSERT_TRUE( state.resources.size() == 1);
+            auto& resource = state.resources[ 0];
+            ASSERT_TRUE( resource.instances.size() == 1);
+            auto& instance = resource.instances[ 0];
+            // distributed transactions, only rollback
+            EXPECT_TRUE( instance.metrics.resource.count == transaction_count * 3) << CASUAL_NAMED_VALUE( instance.metrics.resource);
+         }
+
+
+         // check in gateway
+         {
+            gw.activate();
+            auto state = check_transaction_state();
+            ASSERT_TRUE( state.resources.size() == 1);
+            auto& resource = state.resources[ 0];
+            ASSERT_TRUE( resource.instances.size() == 1);
+            auto& instance = resource.instances[ 0];
+            // distributed transactions, prepare and commit.
+            EXPECT_TRUE( instance.metrics.resource.count == 0) << CASUAL_NAMED_VALUE( instance.metrics.resource);
+         }
+
+         {
+            a.activate();
+            auto state = check_transaction_state();
+            ASSERT_TRUE( state.resources.size() == 1);
+            auto& resource = state.resources[ 0];
+            ASSERT_TRUE( resource.instances.size() == 1);
+            auto& instance = resource.instances[ 0];
+            // distributed transactions, only rollback
+            EXPECT_TRUE( instance.metrics.resource.count == transaction_count * 2) << CASUAL_NAMED_VALUE( instance.metrics.resource);
+         }
+
+         {
+            b.activate();
+            auto state = check_transaction_state();
+            ASSERT_TRUE( state.resources.size() == 1);
+            auto& resource = state.resources[ 0];
+            ASSERT_TRUE( resource.instances.size() == 1);
+            auto& instance = resource.instances[ 0];
+            // distributed transactions, only rollback
+            EXPECT_TRUE( instance.metrics.resource.count == transaction_count  * 2) << CASUAL_NAMED_VALUE( instance.metrics.resource);
+         }
+
+         {
+            c.activate();
+            auto state = check_transaction_state();
+            ASSERT_TRUE( state.resources.size() == 1);
+            auto& resource = state.resources[ 0];
+            ASSERT_TRUE( resource.instances.size() == 1);
+            auto& instance = resource.instances[ 0];
+            // distributed transactions, only rollback
+            EXPECT_TRUE( instance.metrics.resource.count == transaction_count * 3) << CASUAL_NAMED_VALUE( instance.metrics.resource);
+         }  
+      }
+
       //! put in this TU to enable all helpers to check state
       TEST( test_domain_assassinate, interdomain_call__timeout_1ms__call)
       {
          common::unittest::Trace trace;
-
-         constexpr auto base_configuration = R"(
-domain: 
-
-   groups: 
-      -  name: base
-      -  name: user
-         dependencies: [ base]
-      -  name: gateway
-         dependencies: [ user]
-   
-   servers:
-      -  path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/service/bin/casual-service-manager"
-         memberships: [ base]
-      -  path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/transaction/bin/casual-transaction-manager"
-         memberships: [ base]
-      -  path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/gateway/bin/casual-gateway-manager"
-         memberships: [ gateway]
-)";
 
          constexpr auto A = R"(
 domain: 
@@ -1683,8 +2935,8 @@ domain:
    
 )";
 
-         local::Manager a{ { base_configuration, A}};
-         local::Manager b{ { base_configuration, B}};
+         auto a = local::domain( A);
+         auto b = local::domain( B);
 
          test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
 
