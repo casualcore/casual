@@ -73,7 +73,7 @@ namespace casual
                   auto group = lookup();
 
                   if( ! group.process.ipc)
-                     queue::raise( queue::code::no_queue);
+                     common::code::raise::error( queue::code::no_queue);
 
                   request.queue = group.queue;
 
@@ -130,7 +130,7 @@ namespace casual
                         auto group = lookup();
 
                         if( ! group)
-                           queue::raise( queue::code::no_queue);
+                           common::code::raise::error( queue::code::no_queue);
 
                         // 'call' non-blocking dequeue
                         auto reply = common::communication::ipc::call( 
@@ -159,7 +159,7 @@ namespace casual
                      auto group = lookup();
 
                      if( ! group)
-                        queue::raise( queue::code::no_queue);
+                        common::code::raise::error( queue::code::no_queue);
 
                      // 'request' blocking dequeue
                      auto correlation = common::communication::device::blocking::send( 
@@ -189,7 +189,7 @@ namespace casual
                         }
 
                         if( message.correlation != correlation)
-                           queue::error( code::system, "correlation mismatch");
+                           common::code::raise::error( code::system, "correlation mismatch");
 
                         common::algorithm::transform( message.message, state.result, transform::message());
                      };
@@ -324,7 +324,7 @@ namespace casual
                auto message = local::dequeue::blocking( lookup, selector);
 
                if( message.empty())
-                  queue::raise( code::no_message);
+                  common::code::raise::error( code::no_message, "no message available");
 
                return std::move( message.front());
             }
@@ -481,7 +481,7 @@ namespace casual
                auto queue = lookup();
 
                if( queue.order > 0)
-                  queue::error( queue::code::argument, "not possible to peek a remote queue: ", queuename);
+                  common::code::raise::error( queue::code::argument, "not possible to peek a remote queue: ", queuename);
 
                request.queue = queue.queue;
 
@@ -535,10 +535,10 @@ namespace casual
                auto queue = lookup();
 
                if( queue.order > 0)
-                  queue::error( queue::code::argument, "not possible to peek a remote queue: ", queuename);
+                  common::code::raise::error( queue::code::argument, "not possible to peek a remote queue: ", queuename);
 
                if( ! queue.process)
-                  queue::raise( queue::code::no_queue);
+                  common::code::raise::error( queue::code::no_queue);
 
                auto reply = common::communication::ipc::call( queue.process.ipc, request);
 

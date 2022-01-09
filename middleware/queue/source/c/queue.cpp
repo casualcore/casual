@@ -83,7 +83,7 @@ namespace casual
                   if( auto found = common::algorithm::find_if( m_cache, is_descriptor))
                      return *found;
 
-                  queue::raise( queue::code::argument);
+                  common::code::raise::error( queue::code::argument);
                }
 
                Holder& add( value_type value)
@@ -281,7 +281,7 @@ namespace casual
                }( queue, selector);
 
                if( message.empty())
-                  queue::raise( queue::code::no_message);
+                  common::code::raise::error( queue::code::no_message);
 
                return local::message::global::cache.add( std::move( message.front())).id.value();
             }
@@ -297,11 +297,11 @@ namespace casual
                }( queue, selector);
 
                if( information.empty())
-                  queue::raise( queue::code::no_message);
+                  common::code::raise::error( queue::code::no_message);
 
                auto message = peek::messages( queue, { information.front().id});
                if( message.empty())
-                  queue::raise( queue::code::no_message);
+                  common::code::raise::error( queue::code::no_message);
 
                xatmi::Message result;
                {
