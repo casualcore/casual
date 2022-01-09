@@ -25,19 +25,6 @@ namespace casual
 
       std::error_code make_error_code( queue::code code);
 
-      [[noreturn]] inline void raise( queue::code code)
-      {
-         throw std::system_error{ make_error_code( code)};
-      }
-
-      template< typename... Ts>
-      [[noreturn]] inline void error( queue::code code, Ts&&... ts)
-      {
-         common::log::line( common::log::category::error, code, ' ', std::forward< Ts>( ts)...);
-         queue::raise( code);
-      }
-
-
    } // queue
 } // casual
 
