@@ -12,7 +12,6 @@ make.IncludePaths( ['server/include',
 
 library_paths = [ 'server/bin',
     '../common/bin',
-    '../queue/bin',
     '../buffer/bin',
     '../configuration/bin',
     '../serviceframework/bin',

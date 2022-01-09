@@ -259,10 +259,13 @@ connections    | all the connections for this group
 
 ##### domain.gateway.inbound.groups.connection
 
+
 property          | description
 ------------------|----------------------------------------------------
 address           | the address to listen on, `host:port`
 discovery.forward | boolean if the connetion should forward discovery request to 'discoverables'
+exclude.services  | `[0..*]` regex patterns. During a discovery, all services that match any pattern are discarded.
+exclude.queues    | `[0..*]` regex patterns. During a discovery, all queues that match any pattern are discarded.
 
 
 ### domain.gateway.outbound

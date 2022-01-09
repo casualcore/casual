@@ -391,6 +391,15 @@ namespace casual
                            if( connection.discovery && connection.discovery.value().forward)
                               result.discovery = decltype( result.discovery)::forward;
 
+                           if( connection.exclude)
+                           {
+                              if( connection.exclude.value().services)
+                                 result.exclude.services = connection.exclude.value().services.value();
+
+                              if( connection.exclude.value().queues)
+                                 result.exclude.queues = connection.exclude.value().queues.value();
+                           }
+
                            return result;
                         });
 
@@ -769,8 +778,17 @@ namespace casual
                         result.note = null_if_empty( value.note);
 
                         if( value.discovery == decltype( value.discovery)::forward)
-                           result.discovery = configuration::user::domain::gateway::inbound::Discovery{ true};
+                           result.discovery = configuration::user::domain::gateway::inbound::connection::Discovery{ true};
 
+                        if( ! value.exclude.services.empty() || ! value.exclude.queues.empty())
+                        {
+                           configuration::user::domain::gateway::inbound::connection::Exclude exclude;
+
+                           exclude.services = null_if_empty( value.exclude.services);
+                           exclude.queues = null_if_empty( value.exclude.queues);
+
+                           result.exclude = std::move( exclude);
+                        }
 
                         return result;
                      });
