@@ -13,9 +13,8 @@
 #include "common/communication/instance.h"
 #include "serviceframework/service/protocol/call.h"
 
-#include "gateway/manager/admin/model.h"
-#include "gateway/manager/admin/server.h"
-
+#include "service/unittest/utility.h"
+#include "gateway/unittest/utility.h"
 
 #include "casual/xatmi.h"
 
@@ -35,62 +34,6 @@ namespace casual
             {
                return casual::domain::manager::unittest::process( std::forward< C>( configurations)...);
             }
-
-            namespace call
-            {
-               auto state()
-               {
-                  // to ensure that we use the 'current' domain
-                  communication::instance::outbound::service::manager::device().connector().clear();
-
-                  serviceframework::service::protocol::binary::Call call;
-                  auto reply = call( gateway::manager::admin::service::name::state);
-
-                  gateway::manager::admin::model::State result;
-                  reply >> CASUAL_NAMED_VALUE( result);
-
-                  return result;
-               }
-            }
-
-            namespace state
-            {
-               namespace gateway
-               {
-                  auto call()
-                  {
-                     // to ensure that we use the 'current' domain
-                     communication::instance::outbound::service::manager::device().connector().clear();
-
-                     serviceframework::service::protocol::binary::Call call;
-                     auto reply = call( casual::gateway::manager::admin::service::name::state);
-
-                     casual::gateway::manager::admin::model::State result;
-                     reply >> CASUAL_NAMED_VALUE( result);
-
-                     return result;
-                  }
-
-                  template< typename P>
-                  auto until( P&& predicate)
-                  {
-                     auto state = state::gateway::call();
-
-                     auto count = 1000;
-
-                     while( ! predicate( state) && count-- > 0)
-                     {
-                        process::sleep( std::chrono::milliseconds{ 2});
-                        state = call::state();
-                     }
-
-                     return state;
-                  }
-
-               } // gateway
-
-               
-            } // state
 
             auto allocate( platform::size::type size = 128)
             {
@@ -122,22 +65,6 @@ domain:
 )";
 
             } // configuration
-            
-            namespace wait::until::connected
-            {
-               // tool to make sure we're connected to the previous domain, since the 'timing' is not
-               // deterministisc
-               auto to( std::string_view remote)
-               {
-                  auto state = local::state::gateway::until( [remote]( auto& state)
-                  {
-                     return predicate::boolean( algorithm::find_if( state.connections, [remote]( auto& connection)
-                     {
-                        return connection.remote.name == remote;
-                     })); 
-                  });
-               };
-            } // wait::until::connected
 
          } // <unnamed>
       } // local
@@ -191,9 +118,9 @@ domain:
 
          auto c = local::manager( local::configuration::base, C);
          auto b = local::manager( local::configuration::base, B);
-         local::wait::until::connected::to( "C");
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected());
          auto a = local::manager( local::configuration::base, A);
-         local::wait::until::connected::to( "B");
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected());
 
          {
             auto buffer = local::allocate( 128);
@@ -253,9 +180,9 @@ domain:
 
          auto c = local::manager( local::configuration::base, C);
          auto b = local::manager( local::configuration::base, B);
-         local::wait::until::connected::to( "C");
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected());
          auto a = local::manager( local::configuration::base, A);
-         local::wait::until::connected::to( "B");
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected());
 
          {
             auto buffer = local::allocate( 128);
@@ -316,7 +243,7 @@ domain:
          
          auto b = local::manager( local::configuration::base, B);
          auto a = local::manager( local::configuration::base, A);
-         local::wait::until::connected::to( "B");
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected( { "B"}));
 
          auto call_domain_name = []()
          {
@@ -340,7 +267,7 @@ domain:
 
          // make sure we're _in_ domain A
          a.activate();
-         local::wait::until::connected::to( "C");
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected( { "B", "C"}));
 
          {
             std::map< std::string, int> domain_count;

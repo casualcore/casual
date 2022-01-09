@@ -167,12 +167,17 @@ protocol_objects = [
     make.Compile( 'source/documentation/protocol/example.cpp')
 ]
 
+unittest_archive = make.LinkArchive( 'bin/casual-gateway-unittest',
+    [
+        make.Compile( 'unittest/source/utility.cpp'),
+    ]
+)
 
 # Unittest
 
 target_unittest = make.LinkUnittest( 'bin/test-casual-gateway',
    [
-        make.Compile( 'unittest/source/utility.cpp'),
+        
         make.Compile( 'unittest/source/test_manager.cpp'),
         make.Compile( 'unittest/source/test_protocol.cpp'),
         make.Compile( 'unittest/source/group/outbound/test_state.cpp'),
@@ -180,7 +185,8 @@ target_unittest = make.LinkUnittest( 'bin/test-casual-gateway',
    ] + protocol_objects, 
    [ 
        outbound_archive,
-       common_archive, 
+       common_archive,
+       unittest_archive, 
        'casual-serviceframework',
        'casual-queue-api',
        'casual-common',
