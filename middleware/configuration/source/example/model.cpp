@@ -296,6 +296,11 @@ domain:
                connections:
                   -  address: some.host.org:7780
                   -  address: some.host.org:4242
+                     exclude:
+                        services:
+                           -  "foo.bar.*"
+                        queues:
+                           -  "queue[123]"
 
             -  note: (generated alias) listeners - no limits
                connections:

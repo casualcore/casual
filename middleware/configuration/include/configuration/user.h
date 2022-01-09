@@ -369,25 +369,41 @@ namespace casual
                   )
                };
 
-               struct Discovery
+               namespace connection
                {
-                  bool forward = false;
+                  struct Discovery
+                  {
+                     bool forward = false;
 
-                  CASUAL_CONST_CORRECT_SERIALIZE(
-                     CASUAL_SERIALIZE( forward);
-                  )
-               };
+                     CASUAL_CONST_CORRECT_SERIALIZE(
+                        CASUAL_SERIALIZE( forward);
+                     )
+                  };
+
+                  struct Exclude
+                  {
+                     std::optional< std::vector< std::string>> services;
+                     std::optional< std::vector< std::string>> queues;
+
+                     CASUAL_CONST_CORRECT_SERIALIZE(
+                        CASUAL_SERIALIZE( services);
+                        CASUAL_SERIALIZE( queues);
+                     )
+                  };
+                  
+               } // connection
 
                struct Connection
                {
                   std::string address;
-                  std::optional< Discovery> discovery;
+                  std::optional< connection::Discovery> discovery;
+                  std::optional< connection::Exclude> exclude;
                   std::optional< std::string> note;
-
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
                      CASUAL_SERIALIZE( address);
                      CASUAL_SERIALIZE( discovery);
+                     CASUAL_SERIALIZE( exclude);
                      CASUAL_SERIALIZE( note);
                   )
                };
@@ -396,10 +412,12 @@ namespace casual
                {
                   struct Connection
                   {
-                     std::optional< Discovery> discovery;
+                     std::optional< connection::Discovery> discovery;
+                     std::optional< connection::Exclude> exclude;
                      
                      CASUAL_CONST_CORRECT_SERIALIZE(
                         CASUAL_SERIALIZE( discovery);
+                        CASUAL_SERIALIZE( exclude);
                      )
                   };
 
@@ -421,7 +439,6 @@ namespace casual
                   std::vector< inbound::Connection> connections;
                   std::optional< std::string> note;
 
-
                   CASUAL_CONST_CORRECT_SERIALIZE(
                      CASUAL_SERIALIZE( alias);
                      CASUAL_SERIALIZE( note);
@@ -435,7 +452,6 @@ namespace casual
             {
                std::optional< inbound::Default> defaults;
                std::vector< inbound::Group> groups;
-
 
                //! normalizes the 'inbound', mostly to set default values
                friend Inbound normalize( Inbound inbound);

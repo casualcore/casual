@@ -347,25 +347,61 @@ namespace casual::configuration
 
          namespace inbound
          {
-            namespace discovery
+            namespace connection
             {
-               enum struct Directive
+               namespace discovery
                {
-                  localized,
-                  forward,
-               };
-
-               inline std::ostream& operator << ( std::ostream& out, Directive value)
-               {
-                  switch( value)
+                  enum struct Directive
                   {
-                     case Directive::forward: return out << "forward";
-                     case Directive::localized: return out << "localized";
-                  }
-                  return out << "<unknown>";
-               }
+                     localized,
+                     forward,
+                  };
 
-            } // discovery
+                  inline std::ostream& operator << ( std::ostream& out, Directive value)
+                  {
+                     switch( value)
+                     {
+                        case Directive::forward: return out << "forward";
+                        case Directive::localized: return out << "localized";
+                     }
+                     return out << "<unknown>";
+                  }
+
+               } // discovery
+
+               struct Exclude : common::Compare< Exclude>
+               {
+                  std::vector< std::string> services;
+                  std::vector< std::string> queues;
+
+                  inline auto tie() const { return std::tie( services, queues);}
+
+                  CASUAL_CONST_CORRECT_SERIALIZE(
+                     CASUAL_SERIALIZE( services);
+                     CASUAL_SERIALIZE( queues);
+                  )
+               };
+               
+            } // connection
+            
+            struct Connection : common::Compare< Connection>
+            {
+               std::string address;
+               connection::discovery::Directive discovery{};
+               connection::Exclude exclude;
+               std::string note;
+
+               Connection& operator += ( Connection rhs);
+
+               CASUAL_CONST_CORRECT_SERIALIZE(
+                  CASUAL_SERIALIZE( address);
+                  CASUAL_SERIALIZE( discovery);
+                  CASUAL_SERIALIZE( exclude);
+                  CASUAL_SERIALIZE( note);
+               )
+
+               inline auto tie() const { return std::tie( address, discovery, exclude, note);}
+            };
 
             struct Limit : common::Compare< Limit>
             {
@@ -380,23 +416,6 @@ namespace casual::configuration
                )
 
                inline auto tie() const { return std::tie( size, messages);}
-            };
-            
-            struct Connection : common::Compare< Connection>
-            {
-               std::string address;
-               discovery::Directive discovery{};
-               std::string note;
-
-               Connection& operator += ( Connection rhs);
-
-               CASUAL_CONST_CORRECT_SERIALIZE(
-                  CASUAL_SERIALIZE( address);
-                  CASUAL_SERIALIZE( discovery);
-                  CASUAL_SERIALIZE( note);
-               )
-
-               inline auto tie() const { return std::tie( address, discovery, note);}
             };
 
             struct Group : common::Compare< Group>
