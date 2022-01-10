@@ -47,17 +47,13 @@ make.Environment( 'PATH', '../tools/bin' + os.pathsep + os.getenv('PATH'))
 
 # Common stuff
 
-common = make.LinkLibrary( 'bin/casual-queue-common',
+common = make.LinkArchive( 'bin/casual-queue-common',
    [
     make.Compile( 'source/common/log.cpp'),
-    #make.Compile( 'source/common/ipc.cpp'),
     make.Compile( 'source/common/queue.cpp'),
     make.Compile( 'source/code.cpp'),
-   ],
-   [ 'casual-common', ])
+   ])
  
-install_lib.append( common)
-
 # Group
 
 group_archive = make.LinkArchive( 'bin/casual-queue-group-archive',
@@ -85,6 +81,7 @@ queue_group = make.LinkExecutable( 'bin/casual-queue-group',
 install_bin.append( queue_group)
  
 # Manager
+
 
 manager_archive = make.LinkArchive( 'bin/casual-queue-manager-archive',
 [
@@ -131,8 +128,8 @@ queue_c_api = make.LinkLibrary( 'bin/casual-queue-c-api',
        make.Compile( 'source/c/queue.cpp'),
    ],
    [
-    common,
     queue_api,
+    common,
     'casual-common', 
     ])
 

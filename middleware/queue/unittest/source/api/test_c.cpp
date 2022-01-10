@@ -143,7 +143,7 @@ domain:
 
          EXPECT_TRUE( casual_queue_enqueue( "non_existing_queue", message) == -1);
 
-         EXPECT_TRUE( casual_qerrno == CASUAL_QE_NO_QUEUE);
+         EXPECT_EQ( casual_qerrno, CASUAL_QE_NO_QUEUE);
 
          EXPECT_TRUE( casual_queue_message_delete( message) != -1);
       }

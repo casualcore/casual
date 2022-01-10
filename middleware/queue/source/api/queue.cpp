@@ -43,7 +43,6 @@ namespace casual
                common::Uuid enqueue( const queue::Lookup& lookup, M&& message)
                {
                   Trace trace( "casual::queue::enqueue");
-
                   common::log::line( verbose::log, "message: ", message);
 
                   auto& transaction = common::transaction::context().current();
@@ -55,7 +54,6 @@ namespace casual
                      // the TM
                      transaction.external();
                   }
-
 
                   ipc::message::group::enqueue::Request request;
                   request.trid = transaction.trid;
@@ -73,7 +71,7 @@ namespace casual
                   auto group = lookup();
 
                   if( ! group.process.ipc)
-                     common::code::raise::error( queue::code::no_queue);
+                     common::code::raise::error( queue::code::no_queue, "failed to lookup queue: ", lookup.name());
 
                   request.queue = group.queue;
 
