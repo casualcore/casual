@@ -546,7 +546,7 @@ namespace casual
 
                         void consume( const common::transaction::ID& trid)
                         {
-                           algorithm::trim( m_pending, algorithm::remove( m_pending, trid));
+                           algorithm::container::trim( m_pending, algorithm::remove( m_pending, trid));
                            if( m_pending.empty())
                               m_machine = Machine::done;
                         }

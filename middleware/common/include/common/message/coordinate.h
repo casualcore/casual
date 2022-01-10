@@ -11,6 +11,7 @@
 #include "common/uuid.h"
 #include "common/log.h"
 #include "common/algorithm.h"
+#include "common/algorithm/container.h"
 #include "common/serialize/macro.h"
 
 #include <vector>
@@ -96,7 +97,7 @@ namespace casual
             template< typename I>
             inline auto failed( I&& id) -> decltype( void( std::declval< const id_type&>() == id))
             {
-               algorithm::trim( m_entries, algorithm::remove_if( m_entries, [id]( auto& entry)
+               algorithm::container::trim( m_entries, algorithm::remove_if( m_entries, [id]( auto& entry)
                {
                   return entry.failed( id);
                }));

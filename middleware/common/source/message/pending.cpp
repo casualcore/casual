@@ -26,12 +26,12 @@ namespace casual
 
       void Message::remove( strong::ipc::id ipc)
       {
-         algorithm::trim( destinations, algorithm::remove( destinations, ipc));
+         algorithm::container::trim( destinations, algorithm::remove( destinations, ipc));
       }
 
       void Message::remove( strong::process::id pid)
       {
-         algorithm::trim( destinations, algorithm::remove( destinations, pid));
+         algorithm::container::trim( destinations, algorithm::remove( destinations, pid));
       }
 
       namespace non
@@ -55,7 +55,7 @@ namespace casual
                }
                };
 
-               algorithm::trim( message.destinations, algorithm::remove_if( message.destinations, send));
+               algorithm::container::trim( message.destinations, algorithm::remove_if( message.destinations, send));
             
                return message.sent();
             }

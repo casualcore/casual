@@ -7,6 +7,7 @@
 
 #include "common/transaction/transaction.h"
 #include "common/log/stream.h"
+#include "common/algorithm/container.h"
 
 #include <ostream>
 
@@ -31,7 +32,7 @@ namespace casual
 
          void Transaction::replied( const correlation_type& correlation)
          {
-            algorithm::trim( m_pending, algorithm::remove( m_pending, correlation));
+            algorithm::container::trim( m_pending, algorithm::remove( m_pending, correlation));
          }
 
          void Transaction::involve( strong::resource::id id)

@@ -15,6 +15,7 @@
 #include "common/strong/id.h"
 #include "common/message/event.h"
 #include "common/functional.h"
+#include "common/algorithm/container.h"
 
 #include <queue>
 #include <memory>
@@ -263,7 +264,7 @@ namespace casual
                   Queue::done( state, std::move( task));
                });
 
-               common::algorithm::trim( m_running, keep);
+               common::algorithm::container::trim( m_running, keep);
             }
 
             //! @returns true any running task listen to this event message

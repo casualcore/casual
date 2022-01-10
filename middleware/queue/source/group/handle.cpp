@@ -63,7 +63,7 @@ namespace casual
                      void done( State& state, M& message)
                      {
                         Trace trace{ "queue::group::handle::local::detail::transaction::done"};
-                        algorithm::trim( state.involved, algorithm::remove( state.involved, message.trid));
+                        algorithm::container::trim( state.involved, algorithm::remove( state.involved, message.trid));
                         log::line( verbose::log, "involved: ", state.involved);
                      }
 

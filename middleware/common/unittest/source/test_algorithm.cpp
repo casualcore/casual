@@ -10,6 +10,7 @@
 #include "common/algorithm.h"
 #include "common/algorithm/compare.h"
 #include "common/algorithm/coalesce.h"
+#include "common/algorithm/container.h"
 #include "common/algorithm/is.h"
 
 namespace casual
@@ -389,7 +390,7 @@ namespace casual
          auto s = local::sorted();
 
          auto found =  algorithm::find( s, 3);
-         auto result = algorithm::trim( s, found);
+         auto result = algorithm::container::trim( s, found);
 
          EXPECT_TRUE( algorithm::equal( result, s));
 
@@ -402,28 +403,13 @@ namespace casual
 
          std::vector< int> set{ 3, 1, 3, 2, 1, 3, 1, 2, 3};
 
-         algorithm::trim( set, algorithm::unique( algorithm::sort( set)));
+         algorithm::container::trim( set, algorithm::unique( algorithm::sort( set)));
 
          ASSERT_TRUE( set.size() == 3);
          EXPECT_TRUE( set.at( 0) == 1);
          EXPECT_TRUE( set.at( 1) == 2);
          EXPECT_TRUE( set.at( 2) == 3);
       }
-
-
-      TEST( common_algorithm, duplicates)
-      {
-         common::unittest::Trace trace;
-
-         std::vector< int> set{ 1, 2, 3, 4, 5, 6, 7, 1, 3};
-
-         auto duplicates = algorithm::duplicates( algorithm::sort( set));
-
-         ASSERT_TRUE( duplicates.size() == 2) << trace.compose( "duplicates: ", duplicates);
-         EXPECT_TRUE( set.at( 0) == 1);
-         EXPECT_TRUE( set.at( 1) == 3);
-      }
-
 
       TEST( common_algorithm, copy_empty)
       {

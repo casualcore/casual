@@ -146,7 +146,7 @@ namespace casual
                         };
 
                         // we can remove the backmarkers with invalid 'pids'
-                        algorithm::trim( source_instances,
+                        algorithm::container::trim( source_instances,
                            range::reverse( algorithm::remove_if( range::reverse( source_instances), is_removable)));
                      }
 
@@ -303,10 +303,10 @@ namespace casual
          // We remove from event listeners if one of them has died
          event.remove( pid);
 
-         algorithm::trim( whitelisted, algorithm::remove( whitelisted, pid));
+         algorithm::container::trim( whitelisted, algorithm::remove( whitelisted, pid));
 
          // We remove from pending 
-         algorithm::trim( pending.lookup, algorithm::remove( pending.lookup, pid));
+         algorithm::container::trim( pending.lookup, algorithm::remove( pending.lookup, pid));
 
          // Remove from singletons
          auto is_singleton = [pid]( auto& v){ return v.second == pid;};
@@ -317,7 +317,7 @@ namespace casual
             singletons.erase( std::begin( found));
          }
 
-         algorithm::trim( configuration.suppliers, algorithm::remove( configuration.suppliers, pid));
+         algorithm::container::trim( configuration.suppliers, algorithm::remove( configuration.suppliers, pid));
 
          using result_type = std::tuple< state::Server*, state::Executable*>;
 

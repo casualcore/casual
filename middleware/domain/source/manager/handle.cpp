@@ -347,7 +347,7 @@ namespace casual
                return server.get().instances.size() == 1 && common::process::id( server.get().instances[ 0].handle) == common::process::id();
             };
 
-            algorithm::trim( runnables.servers, algorithm::remove_if( runnables.servers, unrestartable_server));
+            algorithm::container::trim( runnables.servers, algorithm::remove_if( runnables.servers, unrestartable_server));
 
             // prepare the scaling
             {                  
@@ -388,7 +388,7 @@ namespace casual
                   {
                      auto filter = []( auto& ids, auto& untouchables)
                      {
-                        algorithm::trim( ids, algorithm::remove_if( ids, [&untouchables]( auto& id)
+                        algorithm::container::trim( ids, algorithm::remove_if( ids, [&untouchables]( auto& id)
                         { 
                            return ! algorithm::find( untouchables, id).empty();
                         }));
@@ -436,7 +436,7 @@ namespace casual
                return std::get< 0>( algorithm::intersection( groups, names, has_name));
             };
 
-            algorithm::trim( groups, filter_groups( range::make( groups), names));
+            algorithm::container::trim( groups, filter_groups( range::make( groups), names));
 
             // filter
             algorithm::for_each( groups, local::filter_unrestartable( state));
@@ -817,7 +817,7 @@ namespace casual
                      else // we assume it's a grandchild
                         state.grandchildren.push_back( message.process);
 
-                     algorithm::trim( state.pending.lookup, algorithm::remove_if( state.pending.lookup, process::detail::lookup::request( state)));
+                     algorithm::container::trim( state.pending.lookup, algorithm::remove_if( state.pending.lookup, process::detail::lookup::request( state)));
 
                      // tasks might be interested in server-connect
                      state.tasks.event( state, message);

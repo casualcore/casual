@@ -520,7 +520,7 @@ namespace casual
             log::line( verbose::log, "process::terminate processes: ", processes);
 
             auto result = algorithm::transform( processes, local::terminate);
-            return algorithm::trim( result, algorithm::remove_if( result, []( auto pid){ return ! pid.valid();}));
+            return algorithm::container::trim( result, algorithm::remove_if( result, []( auto pid){ return ! pid.valid();}));
          }
 
 

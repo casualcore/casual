@@ -5,14 +5,13 @@
 //!
 
 
-#include <gtest/gtest.h>
+#include "common/unittest.h"
 
 #include "serviceframework/service/protocol.h"
 #include "common/serialize/create.h"
+#include "common/algorithm/container.h"
 
 #include "../../include/test_vo.h"
-
-#include "common/unittest.h"
 
 namespace casual
 {
@@ -258,7 +257,7 @@ namespace casual
          auto log = std::move( parameter).str();
 
          // remove all ws and " to make it less likely to fail if we change format.
-         algorithm::trim( log, algorithm::remove( algorithm::remove( log, '"'), ' '));
+         algorithm::container::trim( log, algorithm::remove( algorithm::remove( log, '"'), ' '));
 
          constexpr auto expected = R"(value:{m_long:42,m_string:foo},result:{m_long:43,m_string:bar}
 )";

@@ -70,7 +70,7 @@ namespace casual
                         return false;
                      };
 
-                     algorithm::trim( state.pending.lookups, algorithm::remove_if( state.pending.lookups, lookup_replied));
+                     algorithm::container::trim( state.pending.lookups, algorithm::remove_if( state.pending.lookups, lookup_replied));
                   }
 
                   void discard( State& state)
@@ -157,7 +157,7 @@ namespace casual
 
                            auto queues = algorithm::transform( state.pending.lookups, []( auto& pending){ return pending.name;});
 
-                           algorithm::trim( queues, algorithm::unique( algorithm::sort( queues)));
+                           algorithm::container::trim( queues, algorithm::unique( algorithm::sort( queues)));
 
                            if( ! queues.empty())
                               local::discovery::send( std::move( queues));

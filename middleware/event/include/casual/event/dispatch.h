@@ -8,8 +8,6 @@
 
 #include "casual/event/model.h"
 
-
-
 #include <memory>
 #include <functional>
 

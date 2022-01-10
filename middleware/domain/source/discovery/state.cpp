@@ -85,7 +85,7 @@ namespace casual
 
          void Agents::remove( common::strong::process::id pid)
          {
-            common::algorithm::trim( m_agents, common::algorithm::remove( m_agents, pid));
+            common::algorithm::container::trim( m_agents, common::algorithm::remove( m_agents, pid));
          }
 
 

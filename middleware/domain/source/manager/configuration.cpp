@@ -72,14 +72,14 @@ namespace casual
 
                            auto remove_membership = [id]( auto& process)
                            {
-                              algorithm::trim( process.memberships, algorithm::remove( process.memberships, id));
+                              algorithm::container::trim( process.memberships, algorithm::remove( process.memberships, id));
                            };
 
                            algorithm::for_each( state.servers, remove_membership);
                            algorithm::for_each( state.executables, remove_membership);
                            algorithm::for_each( state.groups, [id]( auto& group)
                            {
-                              algorithm::trim( group.dependencies, algorithm::remove( group.dependencies, id));
+                              algorithm::container::trim( group.dependencies, algorithm::remove( group.dependencies, id));
                            });
                         }
                      };

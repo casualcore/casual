@@ -12,6 +12,7 @@
 
 #include "common/communication/ipc/message.h"
 #include "common/serialize/native/complete.h"
+#include "common/algorithm/container.h"
 
 #include "common/message/pending.h"
 
@@ -59,7 +60,7 @@ namespace casual
 
          void subscription( const message::event::subscription::End& message)
          {
-            algorithm::trim( m_subscribers, algorithm::remove_if( m_subscribers, [&]( auto& v){
+            algorithm::container::trim( m_subscribers, algorithm::remove_if( m_subscribers, [&]( auto& v){
                return v.ipc == message.process.ipc;
             }));
          }
@@ -68,7 +69,7 @@ namespace casual
          template< typename ID>
          void remove( ID id)
          {
-            algorithm::trim( m_subscribers, algorithm::remove_if( m_subscribers, [id]( auto& process){
+            algorithm::container::trim( m_subscribers, algorithm::remove_if( m_subscribers, [id]( auto& process){
                return process == id;
             }));
          }

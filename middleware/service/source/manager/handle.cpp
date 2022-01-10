@@ -311,7 +311,7 @@ namespace casual
 
                            auto services = algorithm::transform( state.pending.lookups, []( auto& pending){ return pending.request.requested;});
 
-                           algorithm::trim( services, algorithm::unique( algorithm::sort( services)));
+                           algorithm::container::trim( services, algorithm::unique( algorithm::sort( services)));
 
                            if( ! services.empty())
                               local::discovery::send( std::move( services));
@@ -637,7 +637,7 @@ namespace casual
                               return result;
                            });
 
-                           algorithm::trim( services, algorithm::unique( algorithm::sort( services)));
+                           algorithm::container::trim( services, algorithm::unique( algorithm::sort( services)));
 
                            // extract the corresponding pending lookups and 'emulate' new lookups, if any.
                            {

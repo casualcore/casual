@@ -150,11 +150,11 @@ namespace casual
                {
                   std::vector< std::string> result;
 
-                  algorithm::erase_if( resources, [descriptor, &result]( auto& pair)
+                  algorithm::container::erase_if( resources, [descriptor, &result]( auto& pair)
                   {
                      auto& connections = pair.second;
 
-                     if( ! algorithm::trim( connections, algorithm::remove( connections, descriptor)).empty())
+                     if( ! algorithm::container::trim( connections, algorithm::remove( connections, descriptor)).empty())
                         return false;
                      
                      result.push_back( pair.first);
@@ -172,7 +172,7 @@ namespace casual
                      if( auto found = algorithm::find( resources, key))
                      {
                         // if connections become 'absent' we remove the 'resource' and add key to the 'unadvertise-directive'
-                        if( algorithm::trim( found->second, algorithm::remove( found->second, descriptor)).empty())
+                        if( algorithm::container::trim( found->second, algorithm::remove( found->second, descriptor)).empty())
                         {
                            resources.erase( std::begin( found));
                            result.push_back( key);

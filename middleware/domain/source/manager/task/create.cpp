@@ -183,7 +183,7 @@ namespace casual
 
                            auto has_tag = []( auto& handle){ return ! handle.ipc.valid();};
                            
-                           algorithm::trim( handles, algorithm::remove_if( handles, has_tag));
+                           algorithm::container::trim( handles, algorithm::remove_if( handles, has_tag));
 
                            if( ! handles.empty())
                               terminate( state);
@@ -267,7 +267,7 @@ namespace casual
 
                            auto split = algorithm::partition( entities, is_active);
                            algorithm::for_each( std::get< 1>( split), local::progress::restore::restart( state));
-                           algorithm::trim( entities, std::get< 0>( split));
+                           algorithm::container::trim( entities, std::get< 0>( split));
                         };
 
                         clean( servers);
@@ -401,7 +401,7 @@ namespace casual
                         Trace trace{ "domain::manager::task::create::local::scale::group::task start"};
 
                         // we remove all 'groups' that are done.
-                        algorithm::trim( groups, algorithm::remove_if( groups, [&state]( auto& group){ return group::done( state, group);}));
+                        algorithm::container::trim( groups, algorithm::remove_if( groups, [&state]( auto& group){ return group::done( state, group);}));
 
                         // TODO remove!
                         log::line( verbose::log, "groups", groups);
@@ -431,7 +431,7 @@ namespace casual
                                     return event;
                                  });
                               });
-                              algorithm::trim( groups, remain);
+                              algorithm::container::trim( groups, remain);
                               return ! done.empty() && ! groups.empty();
                            };
 
@@ -560,8 +560,8 @@ namespace casual
                
                for( auto& group: groups)
                {
-                  algorithm::trim( state.executables, algorithm::remove_if( state.executables, has_id( group.executables)));
-                  algorithm::trim( state.servers, algorithm::remove_if( state.servers, has_id( group.servers)));
+                  algorithm::container::trim( state.executables, algorithm::remove_if( state.executables, has_id( group.executables)));
+                  algorithm::container::trim( state.servers, algorithm::remove_if( state.servers, has_id( group.servers)));
                }
             };
 
@@ -601,12 +601,12 @@ namespace casual
             {
                Trace trace{ "domain::manager::task::create::configuration::managers::update task start"};
 
-               algorithm::remove_if( correlations, [&request]( auto& correlation)
+               algorithm::container::trim( correlations, algorithm::remove_if( correlations, [&request]( auto& correlation)
                {
-                  if( ( correlation.id = communication::device::blocking::send( correlation.process.ipc, request)))
+                  if( ( correlation.id = communication::device::blocking::optional::send( correlation.process.ipc, request)))
                      return false;
                   return true;
-               });
+               }));
 
                if( correlations.empty())
                   return {};
@@ -614,12 +614,12 @@ namespace casual
                return create::local::callbacks( 
                   [&correlations]( const casual::configuration::message::update::Reply& message)
                   {
-                     algorithm::trim( correlations, algorithm::remove( correlations, message.correlation));
+                     algorithm::container::trim( correlations, algorithm::remove( correlations, message.correlation));
                      return correlations.empty();
                   },
                   [&correlations]( const common::message::event::process::Exit& message)
                   {
-                     algorithm::trim( correlations, algorithm::remove( correlations, message.state.pid));
+                     algorithm::container::trim( correlations, algorithm::remove( correlations, message.state.pid));
                      return correlations.empty();
                   }
                );

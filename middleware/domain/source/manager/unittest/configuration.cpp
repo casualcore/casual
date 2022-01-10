@@ -56,7 +56,7 @@ namespace casual
                   log::line( verbose::log, "event: ", event);
 
                   if( event.done())
-                     algorithm::trim( tasks, algorithm::remove( tasks, event.correlation));
+                     algorithm::container::trim( tasks, algorithm::remove( tasks, event.correlation));
                })
             );
 

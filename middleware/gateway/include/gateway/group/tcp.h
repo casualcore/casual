@@ -263,7 +263,7 @@ namespace casual
             common::strong::file::descriptor::id descriptor)
          {
             directive.read.remove( descriptor);
-            common::algorithm::trim( m_connections, common::algorithm::remove( m_connections, descriptor));
+            common::algorithm::container::trim( m_connections, common::algorithm::remove( m_connections, descriptor));
             if( auto found = common::algorithm::find( m_information, descriptor))
                return common::algorithm::container::extract( m_information, std::begin( found)).configuration;
             
@@ -347,7 +347,7 @@ namespace casual
             return false;
          };
 
-         common::algorithm::trim( connections, common::algorithm::remove_if( connections, connected));
+         common::algorithm::container::trim( connections, common::algorithm::remove_if( connections, connected));
 
          // check if we need to set a timeout to keep trying to connect
 

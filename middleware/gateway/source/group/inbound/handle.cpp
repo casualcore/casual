@@ -719,7 +719,7 @@ namespace casual
                ipc::flush::optional::send( ipc::manager::service(), request);
             });
 
-            algorithm::trim( state.pending.disconnects, algorithm::remove( state.pending.disconnects, descriptor));
+            algorithm::container::trim( state.pending.disconnects, algorithm::remove( state.pending.disconnects, descriptor));
 
             // There is no other pending we need to discard at the moment.
 
