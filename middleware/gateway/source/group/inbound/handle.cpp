@@ -622,11 +622,37 @@ namespace casual
                            // Set 'sender' so we get the reply
                            message.process = common::process::handle();
 
-                           auto information = state.external.information( descriptor);
+                           const auto information = state.external.information( descriptor);
                            assert( information);
 
                            if( information->configuration.discovery == decltype( information->configuration.discovery)::forward)
                               message.directive = decltype( message.directive)::forward;
+
+                           auto exclude = []( auto& discovery, auto& patterns)
+                           {
+                              if( range::empty( discovery))
+                                 return;
+
+                              // "precompiles" all patterns
+                              auto precompile = []( auto& patterns){ return algorithm::transform( patterns, []( auto& pattern){ return std::regex{ pattern};});};
+
+                              algorithm::container::erase_if( discovery, [ expressions = precompile( patterns)]( auto& value)
+                              {
+                                 for( auto& expression : expressions)
+                                 {
+                                    if( std::regex_match( value, expression))
+                                    {
+                                       common::log::line( verbose::log, "discovery exclude: ", value);
+                                       return true;
+                                    }
+                                 };
+
+                                 return false;
+                              });
+                           };
+
+                           exclude( message.content.services, information->configuration.exclude.services);
+                           exclude( message.content.queues, information->configuration.exclude.queues);
 
                            casual::domain::discovery::request( message);                    
                         };

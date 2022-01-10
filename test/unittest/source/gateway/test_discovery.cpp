@@ -13,11 +13,11 @@
 
 #include "common/communication/instance.h"
 
-#include "gateway/unittest/utility.h"
-#include "service/unittest/utility.h"
-
 #include "queue/api/queue.h"
+#include "queue/code.h"
 
+#include "service/unittest/utility.h"
+#include "gateway/unittest/utility.h"
 
 #include "casual/xatmi.h"
 
@@ -352,6 +352,96 @@ domain:
             ASSERT_TRUE( domain_count.size() == 2) << CASUAL_NAMED_VALUE( domain_count);
             EXPECT_TRUE( domain_count.at( "B") > 0);
             EXPECT_TRUE( domain_count.at( "C") > 0);
+         }
+      }
+
+
+      TEST( test_domain_gateway_discovery, domain_A_to_B_C__C_has_exclude_for_echo_C_and_queue_c___expect_TPENOENT_for_echo_C)
+      {
+         common::unittest::Trace trace;
+
+         constexpr auto C = R"(
+domain: 
+   name: C
+   servers:
+      - path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-server"
+        memberships: [ user]
+   queue:
+      groups:
+         -  alias: C
+            queues:
+               -  name: c
+   gateway:
+      inbound:
+         groups:
+            -  connections:
+               -  address: 127.0.0.1:7010
+                  exclude:
+                     services:
+                        -  "casual/example/domain/echo/.*"
+                     queues:
+                        -  "c"
+)";
+
+         constexpr auto B = R"(
+domain: 
+   name: B
+
+   servers:
+      - path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-server"
+        memberships: [ user]
+   queue:
+      groups:
+         -  alias: B
+            queues:
+               -  name: b
+   gateway:
+      inbound:
+         groups:
+            -  connections:
+               -  address: 127.0.0.1:7011
+)";
+
+
+         constexpr auto A = R"(
+domain: 
+   name: A
+
+   gateway:
+      outbound:
+         groups:
+            -  connections:
+               -  address: 127.0.0.1:7010
+               -  address: 127.0.0.1:7011
+)";
+
+
+         auto c = local::manager( local::configuration::base, C);
+         auto b = local::manager( local::configuration::base, B);
+         auto a = local::manager( local::configuration::base, A);
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected());
+
+         // expect to find stuff in B
+         {
+            auto buffer = local::allocate( 128);
+            auto len = tptypes( buffer, nullptr, nullptr);
+
+            EXPECT_TRUE( tpcall( "casual/example/domain/echo/B", buffer, 128, &buffer, &len, 0) != -1) << "tperrno: " << tperrnostring( tperrno);
+            tpfree( buffer);
+
+            EXPECT_TRUE( queue::enqueue( "b", queue::Payload{ "foo", common::unittest::random::binary( 128)}));
+         }
+
+         // expect NOT to find stuff in C
+         {
+            auto buffer = local::allocate( 128);
+            auto len = tptypes( buffer, nullptr, nullptr);
+
+            EXPECT_TRUE( tpcall( "casual/example/domain/echo/C", buffer, 128, &buffer, &len, 0) == -1);
+            EXPECT_TRUE( tperrno == TPENOENT) << "tperrno: " << tperrnostring( tperrno); 
+            tpfree( buffer);
+
+            EXPECT_CODE( queue::enqueue( "c", queue::Payload{ "foo", common::unittest::random::binary( 128)}), queue::code::no_queue);
          }
       }
 
