@@ -343,7 +343,7 @@ namespace casual
                   auto message = local::dequeue::blocking( lookup, selector);
 
                   if( message.empty())
-                     queue::raise( code::no_message);
+                     common::code::raise::error( code::no_message);
 
                   return std::move( message.front());
                }

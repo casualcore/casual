@@ -8,6 +8,7 @@
 #include "queue/manager/state.h"
 #include "queue/common/log.h"
 #include "queue/common/queue.h"
+#include "common/algorithm/container.h"
 
 #include "common/algorithm.h"
 

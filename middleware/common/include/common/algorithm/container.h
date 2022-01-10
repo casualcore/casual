@@ -11,7 +11,7 @@
 namespace casual
 {
    namespace common::algorithm::container
-   {
+   {  
       namespace move
       {
          namespace detail

@@ -109,6 +109,20 @@ namespace casual
 
          private:
 
+            template< typename M>
+            void do_subscription( const M& message) { }
+
+
+            template< typename M, typename E, typename... Es>
+            void do_subscription( const M& message, E&&, Es&&...)
+            {
+               event< E>().subscription( message);
+               do_subscription( message, Es{}...);
+            }
+
+            void do_remove( strong::process::id pid) { }
+
+
             template< typename E, typename... Es>
             std::ostream& print( std::ostream& out, E&&, Es&&...) const
             {
