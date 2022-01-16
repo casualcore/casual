@@ -483,6 +483,95 @@ domain:
 
       }
 
+      TEST( test_domain_gateway, domain_A_to_B__shutdown_B__boot_B__exepct_connection_to_B_again)
+      {
+         common::unittest::Trace trace;
+
+         // sink child signals 
+         signal::callback::registration< code::signal::child>( [](){});
+
+         constexpr auto B =  R"(
+domain: 
+   name: B
+   gateway:
+      inbound:
+         groups:
+            -  connections: 
+               -  address: 127.0.0.1:7010
+
+)";
+
+         auto b = local::domain( B);
+             
+         auto a = local::domain( R"(
+domain: 
+   name: A
+   gateway:
+      outbound:
+         groups:
+            -  connections:
+                  -  address: 127.0.0.1:7010
+)");
+
+
+         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
+
+         // shutdown and boot b
+         local::sink( std::move( b));
+         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected( 0));
+
+
+         b = local::domain( B);
+         a.activate();
+
+         // wait until we're connected again
+         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected( 1));
+
+      }
+
+      TEST( test_domain_gateway, domain_A_to_B_reverse_connection_shutdown_A__boot_A__exepct_connection_to_B_again)
+      {
+         common::unittest::Trace trace;
+
+         // sink child signals 
+         signal::callback::registration< code::signal::child>( [](){});
+
+
+         auto b = local::domain( R"(
+domain: 
+   name: B
+   gateway:
+      reverse:
+         inbound:
+            groups:
+               -  connections: 
+                  -  address: 127.0.0.1:7010
+
+)");
+         constexpr auto A = R"(
+domain: 
+   name: A
+   gateway:
+      reverse:
+         outbound:
+            groups:
+               -  connections:
+                     -  address: 127.0.0.1:7010
+)";
+
+         auto a = local::domain( A);
+
+         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected( 1));
+
+         // shutdown and boot a
+         local::sink( std::move( a));
+         a = local::domain( A);
+
+         // wait until we're connected again
+         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected( 1));
+
+      }
+
       TEST( test_domain_gateway, domain_A_to__B_C_D__outbound_separated_groups___expect_prio_B)
       {
          common::unittest::Trace trace;

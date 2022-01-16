@@ -884,36 +884,156 @@ domain:
 
       }
 
-      TEST( gateway_manager, native_tcp_connect__disconnect____expect_robust_connection_disconnect)
+      TEST( gateway_manager_connect, inbound__native_tcp_connect_disconnect_10_times___expect_still_listening)
       {
          common::unittest::Trace trace;
 
-         auto b = local::domain( local::configuration::inbound);
-         auto a = local::domain( local::configuration::outbound);
+         auto b = local::domain( R"(
+domain: 
+   name: B
+   gateway:
+      inbound:
+         groups:
+            -  connections: 
+                  -  address: 127.0.0.1:7010
+)");
+
+         // make sure the connection listen.
+         auto state = unittest::fetch::until( unittest::fetch::predicate::listeners( 1));
+
+         common::algorithm::for_n< 10>( []()
+         {
+            auto socket = communication::tcp::connect( communication::tcp::Address{ "127.0.0.1:7010"});
+            ASSERT_TRUE( socket);
+         });
+
+         auto a = local::domain( R"(
+domain: 
+   name: A
+   gateway:
+      outbound:
+         groups:
+            -  connections: 
+                  -  address: 127.0.0.1:7010
+)");
 
          unittest::fetch::until( unittest::fetch::predicate::outbound::connected());
 
+      }
 
+      TEST( gateway_manager_connect, reverse_outbound__native_tcp_connect_disconnect_10_times___expect_still_listening)
+      {
+         common::unittest::Trace trace;
+
+         auto a = local::domain( R"(
+domain: 
+   name: A
+   gateway:
+      reverse:
+         outbound:
+            groups:
+               -  connections: 
+                     -  address: 127.0.0.1:7010
+)");
+         // make sure the connection listen.
+         unittest::fetch::until( unittest::fetch::predicate::listeners( 1));
+
+         common::algorithm::for_n< 10>( []()
          {
-            auto socket = communication::tcp::connect( communication::tcp::Address{ "127.0.0.1:6669"});
+            auto socket = communication::tcp::connect( communication::tcp::Address{ "127.0.0.1:7010"});
             ASSERT_TRUE( socket);
+         });
 
-            // send two bytes
-            posix::result( 
-               ::send( socket.descriptor().value(), "AB", 2, 0));
+         auto b = local::domain( R"(
+domain: 
+   name: B
+   gateway:
+      reverse:
+         inbound:
+            groups:
+               -  connections: 
+                     -  address: 127.0.0.1:7010
+)");
 
-            b.activate();
-
-            // we should have got a new connection
-            auto state = unittest::fetch::until( []( auto& state){ return state.connections.size() == 2;});
-            ASSERT_TRUE( state.connections.size() == 2) << "connections: " << state.connections.size();
-         }
-
-         // we still got two connections
-         auto state = unittest::fetch::until( []( auto& state){ return state.connections.size() == 1;});
-         EXPECT_TRUE( state.connections.size() == 1);
+         a.activate();
+         unittest::fetch::until( unittest::fetch::predicate::outbound::connected());
 
       }
+
+      TEST( gateway_manager_connect, native_tcp_listen_to_outbound__accept_and_disconnect_10_times___expect_still_trying_to_connect)
+      {
+         common::unittest::Trace trace;
+
+         auto a = local::domain( R"(
+domain: 
+   name: A
+   gateway:
+      outbound:
+         groups:
+            -  connections: 
+                  -  address: 127.0.0.1:7010
+)");
+
+         // 10 bad listeners
+         common::algorithm::for_n< 10>( []()
+         {
+            communication::tcp::Listener listener{ communication::tcp::Address{ "127.0.0.1:7010"}};
+            ASSERT_TRUE( listener());
+         });
+
+         auto b = local::domain( R"(
+domain: 
+   name: B
+   gateway:
+      inbound:
+         groups:
+            -  connections: 
+                  -  address: 127.0.0.1:7010
+)");
+
+         a.activate();
+         unittest::fetch::until( unittest::fetch::predicate::outbound::connected());
+
+      }
+
+      TEST( gateway_manager_connect, native_tcp_listen_to_reverse_inbound__accept_and_disconnect_10_times___expect_still_trying_to_connect)
+      {
+         common::unittest::Trace trace;
+
+         auto b = local::domain( R"(
+domain: 
+   name: B
+   gateway:
+      reverse:
+         inbound:
+            groups:
+               -  connections: 
+                     -  address: 127.0.0.1:7010
+)");
+
+         // 10 bad listeners
+         common::algorithm::for_n< 10>( []()
+         {
+            communication::tcp::Listener listener{ communication::tcp::Address{ "127.0.0.1:7010"}};
+            ASSERT_TRUE( listener());
+         });
+
+         auto a = local::domain( R"(
+domain: 
+   name: A
+   gateway:
+      reverse:
+         outbound:
+            groups:
+               -  connections: 
+                     -  address: 127.0.0.1:7010
+)");
+
+
+         unittest::fetch::until( unittest::fetch::predicate::outbound::connected());
+
+      }
+
 
    } // gateway
 

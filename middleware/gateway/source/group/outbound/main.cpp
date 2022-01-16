@@ -202,6 +202,26 @@ namespace casual
 
                   } // state
 
+                  namespace event
+                  {
+                     namespace process
+                     {
+                        auto exit( State& state)
+                        {
+                           return [&state]( common::message::event::process::Exit& message)
+                           {
+                              Trace trace{ "gateway::group::outbound::local::internal::handle::event::process::exit"};
+                              common::log::line( verbose::log, "message: ", message);
+
+                              // the process might be from our spawned connector
+                              if( auto configuration = state.external.pending().exit( message.state))
+                                 external::reconnect( state, std::move( configuration.value()));
+                              
+                           };
+                        }
+                     } // process
+                  } // event
+
                   namespace shutdown
                   {
                      auto request( State& state)
@@ -238,6 +258,7 @@ namespace casual
                      common::message::internal::dump::state::handle( state),
                      handle::configuration::update::request( state),
                      handle::state::request( state),
+                     handle::event::process::exit( state),
                      handle::shutdown::request( state),
                      handle::timeout( state));
                }

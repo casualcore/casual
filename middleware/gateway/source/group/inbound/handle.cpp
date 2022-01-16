@@ -68,25 +68,6 @@ namespace casual
                   };
                }
 
-               namespace event
-               {
-                  namespace process
-                  {
-                     auto exit( State& state)
-                     {
-                        return [&state]( common::message::event::process::Exit& message)
-                        {
-                           Trace trace{ "gateway::group::inbound::handle::local::internal::event::process::exit"};
-                           common::log::line( verbose::log, "message: ", message);
-
-                           // the process might be from our spawned connector
-                           state.external.pending().exit( message.state);
-                           
-                        };
-                     }
-                  } // process
-               } // event
-
                namespace service
                {
                   namespace lookup
@@ -657,9 +638,6 @@ namespace casual
 
             // domain discovery
             local::internal::domain::connected( state),
-
-            // events
-            local::internal::event::process::exit( state),
          };
       }
 

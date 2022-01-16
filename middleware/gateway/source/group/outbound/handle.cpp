@@ -41,19 +41,6 @@ namespace casual
 
             namespace internal
             {
-               namespace process
-               {
-                  auto exit( State& state)
-                  {
-                     return [&state]( common::message::event::process::Exit& message)
-                     {
-                        Trace trace{ "gateway::group::outbound::handle::local::internal::process::exit"};
-                        common::log::line( verbose::log, "message: ", message);
-
-                        state.external.pending().exit( message.state);
-                     };
-                  }
-               } // process
 
                namespace transaction
                {
@@ -885,8 +872,6 @@ namespace casual
             local::internal::domain::discovery::request( state),
             local::internal::domain::discovery::advertised::request( state),
             local::internal::domain::rediscover::request( state),
-
-            local::internal::process::exit( state),
          };
       }
 

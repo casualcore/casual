@@ -72,17 +72,20 @@ namespace casual
 
             //! removes the connection iff we've got it, and the exit is NOT
             //! a clean exit (status 0)
-            void exit( const common::process::lifetime::Exit& exit)
+            //! @returns configuration for the connector if the connection failed, otherwise empty.
+            std::optional< Configuration> exit( const common::process::lifetime::Exit& exit)
             {
                if( exit.reason == decltype( exit.reason)::exited && exit.status == 0)
-                  return;
+                  return {};
 
                if( auto found = common::algorithm::find( m_connectors, exit.pid))
                {
                   auto connector = common::algorithm::container::extract( m_connectors, std::begin( found));
                   // we 'clear' the connector to not send unnecessary signals.
                   connector.process.clear();
+                  return { std::move( connector.configuration)};
                }
+               return {};
             }
 
             auto& connections() const noexcept { return m_connectors;}

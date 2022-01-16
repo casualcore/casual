@@ -77,6 +77,18 @@ namespace casual
                   };
                }
             } // outbound
+
+            inline auto listeners( platform::size::type count = 1)
+            {
+               return [ count]( auto& state)
+               {
+                  return common::algorithm::count_if( state.listeners, []( auto& listener)
+                  {
+                     return listener.created > platform::time::point::type{};
+                  }) == count;
+
+               };
+            }
                
          } // predicate
       } // fetch
