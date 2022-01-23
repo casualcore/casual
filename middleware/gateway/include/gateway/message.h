@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include "gateway/message/protocol.h"
 #include "gateway/manager/admin/model.h"
 
 #include "domain/message/discovery.h"
@@ -27,26 +28,8 @@ namespace casual
 {
    namespace gateway::message
    {
-      using size_type = platform::size::type;
-
       namespace domain
       {
-         namespace protocol
-         {
-            enum class Version : size_type
-            {
-               invalid = 0,
-               version_1 = 1000,
-               version_1_1 = 1001,
-
-               // make sure this 'points' to the latest version
-               latest = version_1_1
-            };
-
-            //! an array with all versions ordered by highest to lowest
-            constexpr auto versions = std::array< Version, 2>{ Version::version_1_1, Version::version_1};
-         } // protocol
-
          namespace connect
          {
             using base_request = common::message::basic_message< common::message::Type::gateway_domain_connect_request>;
@@ -84,6 +67,7 @@ namespace casual
          {
             using Request = common::message::basic_message< common::message::Type::gateway_domain_disconnect_request>;
             using Reply = common::message::basic_message< common::message::Type::gateway_domain_disconnect_reply>;
+
          } // disconnect
 
          //! Sent from group-connector when the logical connection is done
@@ -478,6 +462,16 @@ namespace casual
          
       } // outbound
 
+      //! make sure we specialize `protocol::version_traits` for the correct version.
+      namespace protocol
+      {   
+         template<>
+         struct version_traits< domain::disconnect::Request> : version_helper< Version::v1_1> {};
+
+         template<>
+         struct version_traits< domain::disconnect::Reply> : version_helper< Version::v1_1> {};
+
+      } // protocol
 
    } // gateway::message
 
@@ -485,12 +479,11 @@ namespace casual
    {
       namespace message::reverse
       {
+         template<>
+         struct type_traits< casual::gateway::message::domain::connect::Request> : detail::type< casual::gateway::message::domain::connect::Reply> {};
 
          template<>
-         struct type_traits< casual::gateway::message::domain::connect::Request> : detail::type<  casual::gateway::message::domain::connect::Reply> {};
-
-         template<>
-         struct type_traits< casual::gateway::message::domain::disconnect::Request> : detail::type<  casual::gateway::message::domain::disconnect::Reply> {};
+         struct type_traits< casual::gateway::message::domain::disconnect::Request> : detail::type< casual::gateway::message::domain::disconnect::Reply> {};
 
          template<>
          struct type_traits< casual::gateway::message::inbound::configuration::update::Request> : detail::type< casual::gateway::message::inbound::configuration::update::Reply> {};

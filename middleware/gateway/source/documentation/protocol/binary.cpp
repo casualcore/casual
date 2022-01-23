@@ -29,15 +29,19 @@ namespace casual
       {
          namespace
          {
-            template< typename M, typename E>
-            auto file( M&& message, std::filesystem::path base, E&& extension)
+            template< typename M>
+            auto file( M&& message, std::filesystem::path base, std::string_view extension)
             {
-               auto information = common::string::compose( 
-                  '.', gateway::message::domain::protocol::Version::version_1,
+               if( ! std::filesystem::exists( base))
+                  std::filesystem::create_directories( base);
+
+               std::filesystem::path information = common::string::compose(
+                  common::message::type( message), 
+                  '.', message::protocol::version< M>(),
                   '.', cast::underlying( common::message::type( message)),
                   '.', extension);
-
-               return std::ofstream{ base += information, std::ios::binary | std::ios::trunc};
+               
+               return std::ofstream{ base / information, std::ios::binary | std::ios::trunc};
             }
 
             using complete_type = communication::tcp::message::Complete;
@@ -88,26 +92,30 @@ namespace casual
             template< typename G>
             void generate( G&& generator, const std::filesystem::path& basename)
             {
-               generator( example::message< gateway::message::domain::connect::Request>(), basename / "message.gateway.domain.connect.Request");
-               generator( example::message< gateway::message::domain::connect::Reply>(), basename / "message.gateway.domain.connect.Reply");
-               generator( example::message< gateway::message::domain::discovery::Request>(), basename / "message.gateway.domain.discovery.Request");
-               generator( example::message< gateway::message::domain::discovery::Reply>(), basename / "message.gateway.domain.discovery.Reply");
-               generator( example::message< common::message::service::call::callee::Request>(), basename / "message.service.call.Request");
-               generator( example::message< common::message::service::call::Reply>(), basename / "message.service.call.Reply");
-               generator( example::message< common::message::conversation::connect::callee::Request>(), basename / "message.conversation.connect.Request");
-               generator( example::message< common::message::conversation::connect::Reply>(), basename / "message.conversation.connect.Reply");
-               generator( example::message< common::message::conversation::callee::Send>(), basename / "message.conversation.Send");
-               generator( example::message< common::message::conversation::Disconnect>(), basename / "message.conversation.Disconnect");
-               generator( example::message< queue::ipc::message::group::enqueue::Request>(), basename / "message.queue.enqueue.Request");
-               generator( example::message< queue::ipc::message::group::enqueue::Reply>(), basename / "message.queue.enqueue.Reply");
-               generator( example::message< queue::ipc::message::group::dequeue::Request>(), basename / "message.queue.dequeue.Request");
-               generator( example::message< queue::ipc::message::group::dequeue::Reply>(), basename / "message.queue.dequeue.Reply");
-               generator( example::message< common::message::transaction::resource::prepare::Request>(), basename / "message.transaction.resource.prepare.Request");
-               generator( example::message< common::message::transaction::resource::prepare::Reply>(), basename / "message.transaction.resource.prepare.Reply");
-               generator( example::message< common::message::transaction::resource::commit::Request>(), basename / "message.transaction.resource.commit.Request");
-               generator( example::message< common::message::transaction::resource::commit::Reply>(), basename / "message.transaction.resource.commit.Reply");
-               generator( example::message< common::message::transaction::resource::rollback::Request>(), basename / "message.transaction.resource.rollback.Request");
-               generator( example::message< common::message::transaction::resource::rollback::Reply>(), basename / "message.transaction.resource.rollback.Reply");
+               generator( example::message< gateway::message::domain::connect::Request>(), basename);
+               generator( example::message< gateway::message::domain::connect::Reply>(), basename);
+               generator( example::message< casual::gateway::message::domain::disconnect::Request>(), basename);
+               generator( example::message< casual::gateway::message::domain::disconnect::Reply>(), basename);
+               generator( example::message< gateway::message::domain::disconnect::Request>(), basename);
+               generator( example::message< gateway::message::domain::disconnect::Reply>(), basename);
+               generator( example::message< gateway::message::domain::discovery::Request>(), basename);
+               generator( example::message< gateway::message::domain::discovery::Reply>(), basename);
+               generator( example::message< common::message::service::call::callee::Request>(), basename);
+               generator( example::message< common::message::service::call::Reply>(), basename);
+               generator( example::message< common::message::conversation::connect::callee::Request>(), basename);
+               generator( example::message< common::message::conversation::connect::Reply>(), basename);
+               generator( example::message< common::message::conversation::callee::Send>(), basename);
+               generator( example::message< common::message::conversation::Disconnect>(), basename);
+               generator( example::message< queue::ipc::message::group::enqueue::Request>(), basename);
+               generator( example::message< queue::ipc::message::group::enqueue::Reply>(), basename);
+               generator( example::message< queue::ipc::message::group::dequeue::Request>(), basename);
+               generator( example::message< queue::ipc::message::group::dequeue::Reply>(), basename);
+               generator( example::message< common::message::transaction::resource::prepare::Request>(), basename);
+               generator( example::message< common::message::transaction::resource::prepare::Reply>(), basename);
+               generator( example::message< common::message::transaction::resource::commit::Request>(), basename);
+               generator( example::message< common::message::transaction::resource::commit::Reply>(), basename);
+               generator( example::message< common::message::transaction::resource::rollback::Request>(), basename);
+               generator( example::message< common::message::transaction::resource::rollback::Reply>(), basename);
             }
 
             void main(int argc, char **argv)
@@ -116,6 +124,11 @@ namespace casual
                std::string format;
 
                {
+                  auto complete = []( auto values, bool help)
+                  {
+                     return std::vector< std::string>{ "yaml", "json", "xml", "ini"};
+                  };
+
                   using namespace casual::common::argument;
                   Parse{ R"(binary dump examples for interdomain protocol
 
@@ -126,7 +139,7 @@ descriptive: [<base-path>/]<message-name>.<protocol-version>.<message-type-id>.<
 
 )",
                      Option( std::tie( basename), { "-b", "--base"}, "base path for the generated files"),
-                     Option( std::tie( format), common::serialize::create::writer::complete::format(), { "--format"}, "format for optional descriptive generated representation")
+                     Option( std::tie( format), complete, { "--format"}, "format for optional descriptive generated representation")
                   }( argc, argv);
                }
 

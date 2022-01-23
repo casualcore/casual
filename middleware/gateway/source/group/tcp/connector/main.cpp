@@ -68,14 +68,14 @@ namespace casual
 
                   auto reply = common::message::reverse::type( request);
 
-                  if( auto found = algorithm::find_first_of( message::domain::protocol::versions, request.versions))
+                  if( auto found = algorithm::find_first_of( message::protocol::versions, request.versions))
                      reply.version = *found;
 
                   reply.domain = common::domain::identity();
 
                   communication::device::blocking::send( state.device, reply);
 
-                  if( algorithm::none_of( gateway::message::domain::protocol::versions, predicate::value::equal( reply.version)))
+                  if( algorithm::none_of( gateway::message::protocol::versions, predicate::value::equal( reply.version)))
                      code::raise::error( code::casual::invalid_version, "invalid protocol version: ", reply.version);
 
                   gateway::message::domain::Connected connected;
@@ -92,13 +92,13 @@ namespace casual
 
                   gateway::message::domain::connect::Request request;
                   request.domain = common::domain::identity();
-                  request.versions = range::to_vector( gateway::message::domain::protocol::versions);
+                  request.versions = range::to_vector( gateway::message::protocol::versions);
 
                   auto reply = common::message::reverse::type( request);
                   
                   communication::device::blocking::receive( state.device, reply, communication::device::blocking::send( state.device, request));
 
-                  if( algorithm::none_of( gateway::message::domain::protocol::versions, predicate::value::equal( reply.version)))
+                  if( algorithm::none_of( gateway::message::protocol::versions, predicate::value::equal( reply.version)))
                      code::raise::error( code::casual::invalid_version, "invalid protocol version: ", reply.version);
 
                   gateway::message::domain::Connected connected;

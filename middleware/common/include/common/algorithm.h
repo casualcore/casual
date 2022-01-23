@@ -645,7 +645,7 @@ namespace casual
       {
          //! associate container specialization
          template< typename R, typename T>
-         auto find( R&& range, const T& value, traits::priority::tag< 1>) 
+         constexpr auto find( R&& range, const T& value, traits::priority::tag< 1>) 
             -> decltype( range::make( range.find( value), std::end( range)))
          {
             return range::make( range.find( value), std::end( range));
@@ -653,7 +653,7 @@ namespace casual
 
          //! non associate container specialization
          template< typename R, typename T>
-         auto find( R&& range, const T& value, traits::priority::tag< 0>)
+         constexpr auto find( R&& range, const T& value, traits::priority::tag< 0>)
             -> decltype( range::make( std::find( std::begin( range), std::end( range), value), std::end( range)))
          {
             return range::make( std::find( std::begin( range), std::end( range), value), std::end( range));
@@ -662,14 +662,14 @@ namespace casual
 
       //! @returns a range [found, end( range)) - empty range if not found.
       template< typename R, typename T>
-      auto find( R&& range, const T& value)
+      constexpr auto find( R&& range, const T& value)
          -> decltype( detail::find( std::forward< R>( range), value, traits::priority::tag< 1>{}))
       {
          return detail::find( std::forward< R>( range), value, traits::priority::tag< 1>{});
       }
 
       template< typename R, typename P>
-      auto find_if( R&& range, P predicate)
+      constexpr auto find_if( R&& range, P predicate)
       {
          return range::make( std::find_if( std::begin( range), std::end( range), predicate), std::end( range));
       }

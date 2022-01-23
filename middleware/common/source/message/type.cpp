@@ -170,6 +170,7 @@ namespace casual
             case Type::gateway_domain_connected: return out << "gateway_domain_connected";
             case Type::domain_discovery_request: return out << "domain_discovery_request";
             case Type::domain_discovery_reply: return out << "domain_discovery_reply";
+            case Type::domain_discovery_topology_change: return out << "domain_discovery_topology_change";
             case Type::configuration_request: return out << "configuration_request";
             case Type::configuration_reply: return out << "configuration_reply";
             case Type::configuration_supplier_registration: return out << "configuration_supplier_registration";

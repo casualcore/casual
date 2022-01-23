@@ -900,7 +900,7 @@ namespace casual
                         if( message.whitelist)
                            state.whitelisted.push_back( message.process.pid);
 
-                        // if ervice-manager, we need to interact.
+                        // if service-manager, we need to interact.
                         if( message.singleton.identification == communication::instance::identity::service::manager.id)
                            singleton::service( state, message.process);
 

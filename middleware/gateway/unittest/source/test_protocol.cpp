@@ -60,7 +60,7 @@ namespace casual
 
       TEST( gateway_protocol_v1, connect_request)
       {
-         constexpr auto expected = R"(cHPL9BRESkGHswCG8UP8YDFdrMYYLkwSv5h376kky4YAAAAAAAAACGRvbWFpbiBBAAAAAAAAAAEAAAAAAAAD6A==)";
+         constexpr auto expected = R"(cHPL9BRESkGHswCG8UP8YDFdrMYYLkwSv5h376kky4YAAAAAAAAACGRvbWFpbiBBAAAAAAAAAAMAAAAAAAAD6gAAAAAAAAPpAAAAAAAAA+g=)";
          local::compare( local::fill< gateway::message::domain::connect::Request>(), expected);
       }
 
@@ -68,18 +68,6 @@ namespace casual
       {
          constexpr auto expected = R"(cHPL9BRESkGHswCG8UP8YDFdrMYYLkwSv5h376kky4YAAAAAAAAACGRvbWFpbiBBAAAAAAAAA+g=)";
          local::compare( local::fill< gateway::message::domain::connect::Reply>(), expected);
-      }
-
-      TEST( gateway_protocol_v1_1, disconnect_request)
-      {
-         constexpr auto expected = R"(cHPL9BRESkGHswCG8UP8YA==)";
-         local::compare( local::fill< gateway::message::domain::disconnect::Request>(), expected);
-      }
-
-      TEST( gateway_protocol_v1_1, disconnect_reply)
-      {
-         constexpr auto expected = R"(cHPL9BRESkGHswCG8UP8YA==)";
-         local::compare( local::fill< gateway::message::domain::disconnect::Reply>(), expected);
       }
 
       TEST( gateway_protocol_v1, discover_request)
@@ -166,6 +154,23 @@ namespace casual
       {
          constexpr auto expected = R"(cHPL9BRESkGHswCG8UP8YAAAAAAAAAABUy+LbBV2Tcqf6CowAt5XngAAAAAAAAAVcHJvcGVydHkgMTpwcm9wZXJ0eSAyAAAAAAAAAAZxdWV1ZUIVpWN406nwoAAAAAAAAAAGLmpzb24vAAAAAAAAAAJ7fQAAAAAAAAABFaVjeNOp8KA=)";
          local::compare( local::fill< queue::ipc::message::group::dequeue::Reply>(), expected);
+      }
+
+      TEST( gateway_protocol_v1_1, disconnect_request)
+      {
+         constexpr auto expected = R"(cHPL9BRESkGHswCG8UP8YA==)";
+         local::compare( local::fill< gateway::message::domain::disconnect::Request>(), expected);
+
+         static_assert( gateway::message::protocol::version< gateway::message::domain::disconnect::Request>() == gateway::message::protocol::Version::v1_1);
+         
+      }
+
+      TEST( gateway_protocol_v1_1, disconnect_reply)
+      {
+         constexpr auto expected = R"(cHPL9BRESkGHswCG8UP8YA==)";
+         local::compare( local::fill< gateway::message::domain::disconnect::Reply>(), expected);
+
+         static_assert( gateway::message::protocol::version< gateway::message::domain::disconnect::Reply>() == gateway::message::protocol::Version::v1_1);
       }
 
    }

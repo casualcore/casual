@@ -93,7 +93,7 @@ namespace casual
 
             message.domain.id = common::strong::domain::id{ 0x315dacc6182e4c12bf9877efa924cb86_uuid};
             message.domain.name = "domain A";
-            message.versions = { gateway::message::domain::protocol::Version::version_1};
+            message.versions = common::range::to_vector( gateway::message::protocol::versions);
          }
 
          void fill( gateway::message::domain::connect::Reply& message)
@@ -102,7 +102,7 @@ namespace casual
 
             message.domain.id = common::strong::domain::id{ 0x315dacc6182e4c12bf9877efa924cb86_uuid};
             message.domain.name = "domain A";
-            message.version = gateway::message::domain::protocol::Version::version_1;
+            message.version = gateway::message::protocol::Version::v1_0;
          }
 
          void fill( gateway::message::domain::disconnect::Request& message)

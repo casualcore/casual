@@ -713,7 +713,7 @@ namespace casual
             {
                log::line( verbose::log, "connection: ", *connection);
 
-               if( connection->protocol() == decltype( connection->protocol())::version_1_1)
+               if( message::protocol::compatible< message::domain::disconnect::Request>( connection->protocol()))
                {
                   try 
                   {

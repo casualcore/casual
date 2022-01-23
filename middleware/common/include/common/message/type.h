@@ -285,6 +285,7 @@ namespace casual
          // part of domain-discovery, but we need to keep the pinned values.         
          domain_discovery_request   = 7300,
          domain_discovery_reply     = 7301,
+         domain_discovery_topology_change = 7302, // 1.2
 
          //! sent from the connector when the logical connected is established
          gateway_domain_connected,

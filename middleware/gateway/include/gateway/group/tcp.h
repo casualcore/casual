@@ -155,7 +155,7 @@ namespace casual
       {
          using complete_type = common::communication::tcp::message::Complete;
 
-         inline explicit Connection( common::communication::tcp::Duplex&& device, message::domain::protocol::Version protocol)
+         inline explicit Connection( common::communication::tcp::Duplex&& device, message::protocol::Version protocol)
             : m_device{ std::move( device)}, m_protocol{ protocol} {}
 
       
@@ -176,7 +176,7 @@ namespace casual
          }
 
          inline auto protocol() const noexcept { return m_protocol;}
-         inline void protocol( message::domain::protocol::Version protocol) noexcept { m_protocol = protocol;}
+         inline void protocol( message::protocol::Version protocol) noexcept { m_protocol = protocol;}
 
          inline friend bool operator == ( const Connection& lhs, common::strong::file::descriptor::id rhs) { return lhs.descriptor() == rhs;}
          
@@ -192,7 +192,7 @@ namespace casual
 
          std::vector< complete_type> m_unsent;
          common::communication::tcp::Duplex m_device;
-         message::domain::protocol::Version m_protocol;
+         message::protocol::Version m_protocol;
       };
 
       template< typename Configuration>

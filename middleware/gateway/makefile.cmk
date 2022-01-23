@@ -44,6 +44,7 @@ common_archive = make.LinkArchive( 'bin/casual-gateway-common',
         make.Compile( 'source/common.cpp'),
         make.Compile( 'source/manager/state.cpp'),
         make.Compile( 'source/group/tcp.cpp'),
+        make.Compile( 'source/message/protocol.cpp'),
     ])
         
 
@@ -203,6 +204,7 @@ target = make.LinkExecutable( "bin/casual-gateway-markdown-protocol",
         make.Compile( 'source/documentation/protocol/markdown.cpp')
     ] + protocol_objects,
     [
+        common_archive,
         'casual-common'
     ])
 
@@ -213,6 +215,7 @@ target = make.LinkExecutable( "bin/casual-gateway-binary-protocol",
         make.Compile( 'source/documentation/protocol/binary.cpp')
     ] + protocol_objects,
     [
+        common_archive,
         'casual-common'
     ])
 
