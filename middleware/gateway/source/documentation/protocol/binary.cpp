@@ -98,8 +98,8 @@ namespace casual
                generator( example::message< casual::gateway::message::domain::disconnect::Reply>(), basename);
                generator( example::message< gateway::message::domain::disconnect::Request>(), basename);
                generator( example::message< gateway::message::domain::disconnect::Reply>(), basename);
-               generator( example::message< gateway::message::domain::discovery::Request>(), basename);
-               generator( example::message< gateway::message::domain::discovery::Reply>(), basename);
+               generator( example::message< casual::domain::message::discovery::Request>(), basename);
+               generator( example::message< casual::domain::message::discovery::Reply>(), basename);
                generator( example::message< common::message::service::call::callee::Request>(), basename);
                generator( example::message< common::message::service::call::Reply>(), basename);
                generator( example::message< common::message::conversation::connect::callee::Request>(), basename);

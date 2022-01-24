@@ -115,7 +115,7 @@ namespace casual
             local::set_general( message);
          }
 
-         void fill( gateway::message::domain::discovery::Request& message)
+         void fill( casual::domain::message::discovery::Request& message)
          {
             local::set_general( message);
 
@@ -126,7 +126,7 @@ namespace casual
             message.content.queues = { "queue1", "queue2", "queue3"};
          }
 
-         void fill( gateway::message::domain::discovery::Reply& message)
+         void fill( casual::domain::message::discovery::Reply& message)
          {
             local::set_general( message);
 
@@ -135,7 +135,7 @@ namespace casual
 
             message.content.services = {
                   [](){
-                     gateway::message::domain::discovery::reply::Service service;
+                     casual::domain::message::discovery::reply::Service service;
                      service.name = "service1";
                      service.category = "example";
                      service.transaction = common::service::transaction::Type::join;
@@ -146,7 +146,7 @@ namespace casual
             };
             message.content.queues = {
                   [](){
-                     gateway::message::domain::discovery::reply::Queue queue;
+                     casual::domain::message::discovery::reply::Queue queue;
                      queue.name = "queue1";
                      queue.retries = 10;
                      return queue;

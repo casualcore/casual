@@ -774,7 +774,7 @@ Confirmation that the outbound has got the disconnect request.
          void domain_discovery( std::ostream& out)
          {
             {
-               using message_type = gateway::message::domain::discovery::Request;
+               using message_type = casual::domain::message::discovery::Request;
 
                local::message::section< message_type>( out, "##") << R"(
 
@@ -805,7 +805,7 @@ Sent to and received from other domains when one domain wants to discover inform
 
 
             {
-               using message_type = gateway::message::domain::discovery::Reply;
+               using message_type = casual::domain::message::discovery::Reply;
 
                local::message::section< message_type>( out, "##") << R"(
 

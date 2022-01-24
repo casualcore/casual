@@ -87,19 +87,6 @@ namespace casual
                CASUAL_SERIALIZE( version);
             )
          };
-
-         namespace discovery
-         {
-            namespace reply
-            {
-               using Service = casual::domain::message::discovery::reply::Service;
-               using Queue = casual::domain::message::discovery::reply::Queue;               
-            } // reply
-
-            using Request = casual::domain::message::discovery::Request;
-            using Reply = casual::domain::message::discovery::Reply;
-         } // discovery
-
             
       } // domain
 
@@ -471,6 +458,9 @@ namespace casual
          template<>
          struct version_traits< domain::disconnect::Reply> : version_helper< Version::v1_1> {};
 
+         template<>
+         struct version_traits< casual::domain::message::discovery::toplogy::Change> : version_helper< Version::v1_2> {};
+
       } // protocol
 
    } // gateway::message
@@ -544,15 +534,15 @@ template< typename A> struct Value< type, A, std::enable_if_t< common::serialize
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( execution);
          })
 
-         CASUAL_CUSTOMIZATION_POINT_NETWORK( casual::gateway::message::domain::discovery::Request,
+         // value
+         CASUAL_CUSTOMIZATION_POINT_NETWORK( casual::domain::message::discovery::reply::Queue,
          {
-            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( execution);
-            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( domain);
-            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( content.services);
-            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( content.queues);
+            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( name);
+            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( retries);
          })
-         
-         CASUAL_CUSTOMIZATION_POINT_NETWORK( casual::gateway::message::domain::discovery::reply::Service,
+
+         // value
+         CASUAL_CUSTOMIZATION_POINT_NETWORK( casual::domain::message::discovery::reply::Service,
          {
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( name);
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( category);
@@ -563,7 +553,15 @@ template< typename A> struct Value< type, A, std::enable_if_t< common::serialize
             CASUAL_SERIALIZE_NAME( value.property.hops, "hops");
          })
 
-         CASUAL_CUSTOMIZATION_POINT_NETWORK( casual::gateway::message::domain::discovery::Reply,
+         CASUAL_CUSTOMIZATION_POINT_NETWORK( casual::domain::message::discovery::Request,
+         {
+            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( execution);
+            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( domain);
+            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( content.services);
+            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( content.queues);
+         })
+
+         CASUAL_CUSTOMIZATION_POINT_NETWORK( casual::domain::message::discovery::Reply,
          {
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( execution);
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( domain);

@@ -207,7 +207,7 @@ namespace casual
          
          struct
          {
-            common::message::coordinate::fan::Out< gateway::message::domain::discovery::Reply, common::strong::file::descriptor::id> discovery;
+            common::message::coordinate::fan::Out< casual::domain::message::discovery::Reply, common::strong::file::descriptor::id> discovery;
 
             CASUAL_LOG_SERIALIZE( 
                CASUAL_SERIALIZE( discovery);

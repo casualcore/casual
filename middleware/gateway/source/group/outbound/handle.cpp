@@ -339,7 +339,7 @@ namespace casual
 
                      auto request( State& state)
                      {
-                        return [&state]( gateway::message::domain::discovery::Request& message)
+                        return [&state]( casual::domain::message::discovery::Request& message)
                         {
                            Trace trace{ "gateway::group::outbound::handle::local::internal::domain::discover::request"};
                            log::line( verbose::log, "message: ", message);
@@ -389,7 +389,7 @@ namespace casual
 
                               detail::advertise::replies( state, replies, outcome);
 
-                              gateway::message::domain::discovery::Reply message{ common::process::handle()};
+                              casual::domain::message::discovery::Reply message{ common::process::handle()};
                               message.correlation = correlation;
                               
                               message.content = algorithm::accumulate( replies, decltype( message.content){}, []( auto result, auto& reply)
@@ -453,7 +453,7 @@ namespace casual
                                  || algorithm::find( state.disconnecting, information.descriptor))
                                  return result;
 
-                              gateway::message::domain::discovery::Request request;
+                              casual::domain::message::discovery::Request request;
                               request.domain = common::domain::identity();
                               request.content.services = information.configuration.services;
                               request.content.queues = information.configuration.queues;
@@ -500,7 +500,7 @@ namespace casual
                               {
                                  auto result = state.coordinate.discovery.empty_pendings();
 
-                                 gateway::message::domain::discovery::Request request{ common::process::handle()};
+                                 casual::domain::message::discovery::Request request{ common::process::handle()};
                                  request.correlation = message.correlation;
                                  request.domain = common::domain::identity();
                                  request.content.services = configuration.services;
@@ -821,7 +821,7 @@ namespace casual
                   {
                      auto reply( State& state)
                      {
-                        return [&state]( gateway::message::domain::discovery::Reply&& message)
+                        return [&state]( casual::domain::message::discovery::Reply&& message)
                         {
                            Trace trace{ "gateway::group::outbound::handle::local::external::domain::discover::reply"};
                            log::line( verbose::log, "message: ", message);

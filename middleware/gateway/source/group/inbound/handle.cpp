@@ -285,7 +285,7 @@ namespace casual
                   {
                      auto request( State& state)
                      {
-                        return [&state]( gateway::message::domain::discovery::Request& message)
+                        return [&state]( casual::domain::message::discovery::Request& message)
                         {
                            Trace trace{ "gateway::group::inbound::handle::local::internal::domain::discovery::request"};
                            common::log::line( verbose::log, "message: ", message);
@@ -308,7 +308,7 @@ namespace casual
                         };
                      }
 
-                     auto reply = basic_forward< gateway::message::domain::discovery::Reply>;
+                     auto reply = basic_forward< casual::domain::message::discovery::Reply>;
 
                   } // discovery
                } // domain
@@ -555,7 +555,7 @@ namespace casual
                   {
                      auto request( State& state)
                      {
-                        return []( gateway::message::domain::discovery::Request& message)
+                        return []( casual::domain::message::discovery::Request& message)
                         {
                            Trace trace{ "gateway::inbound::handle::local::external::domain::discovery::request"};
                            common::log::line( verbose::log, "message: ", message);
