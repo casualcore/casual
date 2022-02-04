@@ -531,8 +531,6 @@ extern "C" void TPRETURN(struct TPSVCRET_REC_s *TPSVCRET_REC,
    char rec_type[REC_TYPE_LEN + 1];
    char sub_type[SUB_TYPE_LEN + 1];
    char *data_rec;
-   long flags;
-   int rval;
 
    /* Copy COBOL string to C string and null terminate C string */
    cobstr_to_cstr(rec_type, TPTYPE_REC->REC_TYPE, REC_TYPE_LEN);
@@ -556,25 +554,37 @@ extern "C" void TPRETURN(struct TPSVCRET_REC_s *TPSVCRET_REC,
     * TPSUCCESS (=2) and TPFAIL (=1) defined in the C-interface to tpreturn()!
     * The interface say that (cobol) TPSUCCESS is succesful return,
     * and that (Cobol) TPFAIL and all other values are treated as a
-    * service failure. (ontroduce contants in the header that defines
+    * service failure. (Introducing contants in the header that defines
     * the C TPSVCRET_REC might be nicer, avoid compare with explicit 0)
     * Note:
     * There are different TPSUCCESS values defined in different
     * header files so I currently use hardcoded values here.
    */
-   rval= (TPSVCRET_REC->TP_RETURN_VAL == 0) ? 2 : 1;
+   int rval= (TPSVCRET_REC->TP_RETURN_VAL == 0) ? 2 : 1;
 
    /* flags for tpreturn is reserved for future use an shall be 0 */
-   flags = 0;
-   /* may need special version of tpreturn to support COBOL api   */
-   /* error handling not needed. Calling program/routine          */
-   /* will/should exit immediately after the return. C function   */
-   /* tpreturn is void.                                           */
+   long flags = 0;
+   /* Use special version of tpreturn to support COBOL api.       */
+   /* Error handling not needed. Calling program/routine          */
+   /* should exit immediately after the return. The corresponding */
+   /* C api function tpreturn() is void and never returns. It     */
+   /* "returns" with a longjmp.                                   */
    tpreturn_cobol_support(rval,    /* int */
-       TPSVCRET_REC->APPL_CODE,        /* expands to long */
-       data_rec,                       /* char *          */
-            TPTYPE_REC->LEN,                /* expands to long */
-            flags);                         /* long            */
+      TPSVCRET_REC->APPL_CODE,     /* expands to long */
+      data_rec,                    /* char *          */
+      TPTYPE_REC->LEN,             /* expands to long */
+      flags);                      /* long            */
+   // The user program SHOULD use the TPRETURN copy file
+   // that unconditionally does an EXIT PROGRAM.
+   // In case it "calls" TPRETURN instead we set the
+   // return code to "TPOK" in *TPSTATUS_REC. I have seen
+   // formally incorrect code that called TPRETURN without
+   // following EXIT PROGRAM or GO BACK. Instead the code
+   // relied on the return status being TPOK.
+   // This has "worked" with other XATMI-implementations.
+   TPSTATUS_REC->TP_STATUS = 0; // TPOK
+   TPSTATUS_REC->TPEVENT = 0;  // TPEV-NOEVENT
+   TPSTATUS_REC->APPL_RETURN_CODE = 0; //
    return;
 }
 
