@@ -205,6 +205,7 @@ namespace casual
             std::string note;
             casual::configuration::model::gateway::inbound::Limit limit;
             std::vector< state::Connection> connections;
+            std::vector< casual::configuration::model::gateway::inbound::Connection> failed;
 
             CASUAL_CONST_CORRECT_SERIALIZE(
             {
@@ -212,6 +213,7 @@ namespace casual
                CASUAL_SERIALIZE( note);
                CASUAL_SERIALIZE( limit);
                CASUAL_SERIALIZE( connections);
+               CASUAL_SERIALIZE( failed);
             })
          };
 
@@ -377,6 +379,7 @@ namespace casual
             platform::size::type order{};
 
             std::vector< state::Connection> connections;
+            std::vector< configuration::model::gateway::outbound::Connection> failed;
 
             state::Pending pending;
 
@@ -389,6 +392,7 @@ namespace casual
                CASUAL_SERIALIZE( connections);
                CASUAL_SERIALIZE( pending);
                CASUAL_SERIALIZE( correlation);
+               CASUAL_SERIALIZE( failed);
             )
          };
 

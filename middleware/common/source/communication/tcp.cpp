@@ -106,9 +106,20 @@ namespace casual
                         std::string host{ address.host()};
                         std::string port{ address.port()};
 
-                        // if not successful we just log and keep the address::Native in an invalid state.
+                        // if not successful some errors will raise, the rest we log and keep the address::Native in an invalid state.
                         if( const int result = ::getaddrinfo( host.data(), port.data(), &hints, &information.value))
-                           log::line( verbose::log, ::gai_strerror( result), " address: ", address);
+                        {
+                           switch ( result)
+                           {
+                              case EAI_FAIL:
+                              case EAI_FAMILY:
+                              case EAI_NONAME:
+                                 code::raise::error( code::casual::communication_invalid_address, "result: ", result, " - ", ::gai_strerror( result));
+                              
+                              default:
+                                 log::line( verbose::log, ::gai_strerror( result), " address: ", address);
+                           }
+                        }  
                      }
 
                      Native() = default;
@@ -354,7 +365,8 @@ namespace casual
             auto result = local::socket::local( address);
 
             // queuesize could (probably) be set to zero as well (in casual-context)
-            posix::result( ::listen( result.descriptor().value(), platform::tcp::listen::backlog));
+            if( auto error = posix::error( ::listen( result.descriptor().value(), platform::tcp::listen::backlog)))
+               code::raise::error( code::casual::communication_invalid_address, "failed to create listener socket - ", error);
 
             return result;
          }

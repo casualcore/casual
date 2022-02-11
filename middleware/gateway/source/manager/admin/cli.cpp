@@ -134,6 +134,34 @@ namespace casual
                      return dash_if_empty( value.address.peer);
                   };
 
+                  struct format_runlevel
+                  {
+                     std::size_t width( const model::Connection& value, const std::ostream&) const
+                     {
+                        using Enum = decltype( value.runlevel);
+                        switch( value.runlevel)
+                        {
+                           case Enum::connecting: return 10;
+                           case Enum::connected: return 9;
+                           case Enum::failed: return 6;
+                        }
+                        return 0;
+                     }
+
+                     void print( std::ostream& out, const model::Connection& value, std::size_t width) const
+                     {
+                        out << std::setfill( ' ');
+
+                        using Enum = decltype( value.runlevel);
+                        switch( value.runlevel)
+                        {
+                           case Enum::connecting: out << std::left << std::setw( width) << terminal::color::white << "connecting"; break;
+                           case Enum::connected: out << std::left << std::setw( width) << terminal::color::green << "connected"; break;
+                           case Enum::failed: out << std::left << std::setw( width) << terminal::color::red << "failed"; break;
+                        }
+                     }
+                  };
+
                   using Formatter = terminal::format::formatter<  manager::admin::model::Connection>;
 
                   if( ! terminal::output::directive().porcelain())
@@ -143,6 +171,7 @@ namespace casual
                         terminal::format::column( "id", format_domain_id, terminal::color::no_color),
                         terminal::format::column( "group", format::group, terminal::color::yellow),
                         terminal::format::column( "bound", format_bound, terminal::color::magenta),
+                        terminal::format::custom::column( "runlevel", format_runlevel{}),
                         terminal::format::column( "local", format_local_address, terminal::color::white),
                         terminal::format::column( "peer", format_peer_address, terminal::color::white),
                         terminal::format::column( "created", format::created, terminal::color::blue)
@@ -154,11 +183,12 @@ namespace casual
 
                      auto format_runlevel = []( auto& value)
                      {
-                        switch( value.runlevel())
+                        switch( value.runlevel)
                         {
-                           using Enum = decltype( value.runlevel());
+                           using Enum = decltype( value.runlevel);
                            case Enum::connecting: return "connecting";
                            case Enum::connected: return "online";
+                           case Enum::failed: return "failed";
                         }
                         return "<unknown>";
                      };
@@ -236,8 +266,35 @@ namespace casual
                         return string::compose( listener.address.host, ':', listener.address.port);
                      };
 
+                     struct format_runlevel
+                     {
+                        std::size_t width( const model::Listener& value, const std::ostream&) const
+                        {
+                           using Enum = decltype( value.runlevel);
+                           switch( value.runlevel)
+                           {
+                              case Enum::listening: return 9;
+                              case Enum::failed: return 6;
+                           }
+                           return 0;
+                        }
+
+                        void print( std::ostream& out, const model::Listener& value, std::size_t width) const
+                        {
+                           out << std::setfill( ' ');
+
+                           using Enum = decltype( value.runlevel);
+                           switch( value.runlevel)
+                           {
+                              case Enum::listening: out << std::left << std::setw( width) << terminal::color::green << "listening"; break;
+                              case Enum::failed: out << std::left << std::setw( width) << terminal::color::red << "failed"; break;
+                           }
+                        }
+                     };
+
                      return Formatter::construct( 
                         terminal::format::column( "group", format::group, terminal::color::yellow),
+                        terminal::format::custom::column( "runlevel", format_runlevel{}),
                         terminal::format::column( "address", format_address, terminal::color::white),
                         terminal::format::column( "created", format::created, terminal::color::blue)
                      );
@@ -263,13 +320,25 @@ namespace casual
                         return "-";
                      };
 
+                     auto format_runlevel = []( auto& value)
+                     {
+                        switch( value.runlevel)
+                        {
+                           using Enum = decltype( value.runlevel);
+                           case Enum::listening: return "listening";
+                           case Enum::failed: return "failed";
+                        }
+                        return "<unknown>";
+                     };
+
                      return Formatter::construct( 
                         terminal::format::column( "host", format_host),
                         terminal::format::column( "port", format_port),
                         terminal::format::column( "limit size", format_limit_size),
                         terminal::format::column( "limit messages", format_limit_messages),
                         terminal::format::column( "group", format::group),
-                        terminal::format::column( "created", format::created)
+                        terminal::format::column( "created", format::created),
+                        terminal::format::column( "runlevel", format_runlevel)
                      );
                   }
                }
@@ -341,7 +410,11 @@ namespace casual
                   {
                      auto invoke = []()
                      {
-                        format::connections().print( std::cout, call::state().connections);
+                        auto connections = call::state().connections;
+                        auto failed = call::state().failed_connections;
+                        connections.insert( std::end( connections), std::begin( failed), std::end( failed));
+
+                        format::connections().print( std::cout, connections);
                      };
 
                      return argument::Option{ 
@@ -354,7 +427,11 @@ namespace casual
                   {
                      auto invoke = []()
                      {
-                        format::listeners().print( std::cout, call::state().listeners);
+                        auto listeners = call::state().listeners;
+                        auto failed = call::state().failed_listeners;
+                        listeners.insert( std::end( listeners), std::begin( failed), std::end( failed));
+
+                        format::listeners().print( std::cout, listeners);
                      };
 
                      return argument::Option{ 

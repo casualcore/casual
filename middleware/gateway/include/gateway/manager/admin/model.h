@@ -61,11 +61,21 @@ namespace casual
             {
                connecting = 1,
                connected = 2,
+               failed = 3,
                //! @deprecated remove in 2.0
                online = connected,
             };
 
-            inline std::ostream& operator << ( std::ostream& out, Runlevel value) { return out << "<not used>";}
+            inline std::ostream& operator << ( std::ostream& out, Runlevel value)
+            {
+               switch ( value)
+               {
+                  case Runlevel::connecting: return out << "connecting";
+                  case Runlevel::connected: return out << "connected";
+                  case Runlevel::failed: return out << "failed";
+               }
+               return out << "<not used>";
+            }
 
             struct Address
             {
@@ -89,13 +99,7 @@ namespace casual
             common::domain::Identity remote;
             connection::Address address;
             platform::time::point::type created{};
-
-            inline connection::Runlevel runlevel() const noexcept
-            {
-               if( ! address.peer.empty())
-                  return connection::Runlevel::connected;
-               return connection::Runlevel::connecting;
-            }
+            connection::Runlevel runlevel{};
 
             //! @deprecated remove in 2.0 - group knows the process, not the connection
             common::process::Handle process;
@@ -108,10 +112,9 @@ namespace casual
                CASUAL_SERIALIZE( remote);
                CASUAL_SERIALIZE( address);
                CASUAL_SERIALIZE( created);
+               CASUAL_SERIALIZE( runlevel);
 
                //! @deprecated remove in 2.0
-               auto runlevel = Connection::runlevel();
-               CASUAL_SERIALIZE( runlevel);
                CASUAL_SERIALIZE( process);
             )
 
@@ -237,6 +240,22 @@ namespace casual
                inline auto tie() const noexcept { return std::tie( host, port);}
             };
 
+            enum struct Runlevel : short
+            {
+               listening = 1,
+               failed = 2,
+            };
+
+            inline std::ostream& operator << ( std::ostream& out, Runlevel value)
+            {
+               switch ( value)
+               {
+                  case Runlevel::listening: return out << "listening";
+                  case Runlevel::failed: return out << "failed";
+               }
+               return out << "<not used>";
+            }
+
          } // listener
 
          struct Listener : common::Compare< Listener>
@@ -245,6 +264,7 @@ namespace casual
             listener::Address address;
             connection::Bound bound{};
             platform::time::point::type created{};
+            listener::Runlevel runlevel{};
 
             //@ deprecared
             struct
@@ -265,6 +285,7 @@ namespace casual
                CASUAL_SERIALIZE( address);
                CASUAL_SERIALIZE( bound);
                CASUAL_SERIALIZE( created);
+               CASUAL_SERIALIZE( runlevel);
                CASUAL_SERIALIZE( limit);
             )
 
@@ -325,6 +346,8 @@ namespace casual
 
             std::vector< Connection> connections;
             std::vector< Listener> listeners;
+            std::vector< Connection> failed_connections;
+            std::vector< Listener> failed_listeners;
 
             std::vector< Routing> services;
             std::vector< Routing> queues;
@@ -334,6 +357,8 @@ namespace casual
                CASUAL_SERIALIZE( outbound);
                CASUAL_SERIALIZE( connections);
                CASUAL_SERIALIZE( listeners);
+               CASUAL_SERIALIZE( failed_connections);
+               CASUAL_SERIALIZE( failed_listeners);
                CASUAL_SERIALIZE( services);
                CASUAL_SERIALIZE( queues);
             )

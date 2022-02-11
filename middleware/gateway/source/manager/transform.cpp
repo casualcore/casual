@@ -74,6 +74,11 @@ namespace casual
                      result.remote = connection.domain;
                      result.created = connection.created;
 
+                     if( result.address.local.empty())
+                        result.runlevel = manager::admin::model::connection::Runlevel::connecting;
+                     else
+                        result.runlevel = manager::admin::model::connection::Runlevel::connected;
+
                      // deprecated remove in 2.0
                      result.process = reply.process; 
 
@@ -91,6 +96,27 @@ namespace casual
             algorithm::for_each( std::get< 1>( outbounds), transform( Phase::reversed, Bound::out));
 
             algorithm::sort( result.connections);
+
+            auto transform_failed = [&result]( auto connect, auto bound)
+            {
+               return [&result, connect, bound]( auto& reply)
+               {
+                  algorithm::transform( reply.state.failed, result.failed_connections, [&reply, connect, bound]( auto& connection)
+                  {
+                     manager::admin::model::Connection result;
+                     result.group = reply.state.alias;
+                     result.connect = connect;
+                     result.bound = bound;
+                     result.address.peer = connection.address;
+                     result.runlevel = manager::admin::model::connection::Runlevel::failed;
+
+                     return result;
+                  });
+               };
+            };
+
+            algorithm::for_each( std::get< 1>( inbounds), transform_failed( Phase::reversed, Bound::in));
+            algorithm::for_each( std::get< 0>( outbounds), transform_failed( Phase::regular, Bound::out));
          }
 
          // groups
@@ -160,6 +186,8 @@ namespace casual
                      result.address.port = listener.address.port();
                      result.bound = bound;
                      result.created = listener.created;
+                     result.runlevel = manager::admin::model::listener::Runlevel::listening;
+
                      return result;
                   });
                };
@@ -169,6 +197,26 @@ namespace casual
             algorithm::for_each( std::get< 1>( outbounds), transform( manager::admin::model::connection::Bound::out));
 
             algorithm::sort( result.listeners);
+
+            auto transform_failed = [&result]( auto bound)
+            {
+               return [&result, bound]( auto& reply)
+               {
+                  algorithm::transform( reply.state.failed, result.failed_listeners, [&reply, bound]( auto& listener)
+                  {
+                     manager::admin::model::Listener result;
+                     result.group = reply.state.alias;
+                     result.bound = bound;
+                     result.address.host = listener.address;
+                     result.runlevel = manager::admin::model::listener::Runlevel::failed;
+
+                     return result;
+                  });
+               };
+            };
+
+            algorithm::for_each( std::get< 0>( inbounds), transform_failed( manager::admin::model::connection::Bound::in));
+            algorithm::for_each( std::get< 1>( outbounds), transform_failed( manager::admin::model::connection::Bound::out));
          }
 
          // services

@@ -60,11 +60,13 @@ namespace casual
 
    
                std::vector< Connection> unconnected;
+               std::vector< configuration::model::gateway::outbound::Connection> failed;
 
 
                CASUAL_LOG_SERIALIZE(
                   outbound::State::serialize( archive);
                   CASUAL_SERIALIZE( unconnected);
+                  CASUAL_SERIALIZE( failed);
                )
             };
 
@@ -193,6 +195,8 @@ namespace casual
                               result.address.peer = pending.configuration.address;
                               return result;
                            });
+
+                           algorithm::copy( state.failed, reply.state.failed);
 
                            log::line( verbose::log, "reply: ", reply);
 

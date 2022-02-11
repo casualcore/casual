@@ -234,63 +234,6 @@ domain:
          EXPECT_TRUE( state.connections.size() == 2);
       }
 
-      TEST( gateway_manager, outbound_connect_non_existent__expect_keep_trying)
-      {
-         common::unittest::Trace trace;
-
-         constexpr auto configuration = R"(
-domain:
-   name: A
-   gateway:
-      outbound:
-         groups:
-            -  connections:
-                  -  address: non.existent.local:70001
-
-)";
-
-         auto domain = local::domain( configuration);
-
-         EXPECT_TRUE( common::communication::instance::fetch::handle( common::communication::instance::identity::gateway::manager.id));
-
-         auto state = unittest::fetch::until( []( auto& state)
-         {
-            return state.connections.size() >= 1;
-         });
-
-         ASSERT_TRUE( state.connections.size() == 1) << CASUAL_NAMED_VALUE( state);
-         EXPECT_TRUE( state.connections.at( 0).bound == decltype( state.connections.at( 0).bound)::out);
-      }
-
-      TEST( gateway_manager, outbound_connect_empty_address__expect_keep_trying)
-      {
-         common::unittest::Trace trace;
-
-         constexpr auto configuration = R"(
-domain:
-   name: A
-   gateway:
-      outbound:
-         groups:
-            -  connections:
-                  -  address: ${non_existent_environment}
-
-)";
-
-         auto domain = local::domain( configuration);
-
-         EXPECT_TRUE( common::communication::instance::fetch::handle( common::communication::instance::identity::gateway::manager.id));
-
-         auto state = unittest::fetch::until( []( auto& state)
-         {
-            return state.connections.size() >= 1;
-         });
-
-         ASSERT_TRUE( state.connections.size() == 1) << CASUAL_NAMED_VALUE( state);
-         EXPECT_TRUE( state.connections.at( 0).bound == decltype( state.connections.at( 0).bound)::out);
-      }
-
-
       TEST( gateway_manager, outbound_groups_3___expect_order)
       {
          common::unittest::Trace trace;
@@ -1034,6 +977,164 @@ domain:
 
       }
 
+
+      TEST( gateway_manager_outbound_connect, outbound_non_existent_address__expect_fail)
+      {
+         common::unittest::Trace trace;
+
+         constexpr auto outbound = R"(
+domain: 
+   name: outbound
+   gateway:
+      outbound:
+         groups:
+            -  connections: 
+                  -  address: non.existent.local:70001
+)";
+
+         auto a = local::domain( outbound);
+
+         unittest::fetch::until( []( auto& state)
+         {
+            return state.failed_connections.size() == 1;
+         });
+      }
+
+      TEST( gateway_manager_outbound_connect, reverse_inbound_non_existent_address__expect_fail)
+      {
+         common::unittest::Trace trace;
+
+         constexpr auto reverse_inbound = R"(
+domain: 
+   name: reverse_inbound
+   gateway:
+      reverse:
+         inbound:
+            groups:
+               -  connections: 
+                     -  address: non.existent.local:70001
+)";
+
+         auto a = local::domain( reverse_inbound);
+
+         unittest::fetch::until( []( auto& state)
+         {
+            return state.failed_connections.size() == 1;
+         });
+      }
+
+      TEST( gateway_manager_outbound_connect, outbound_empty_address__expect_fail)
+      {
+         common::unittest::Trace trace;
+
+         constexpr auto outbound = R"(
+domain: 
+   name: outbound
+   gateway:
+      outbound:
+         groups:
+            -  connections: 
+                  -  address: ${non_existent_environment}
+)";
+
+         auto a = local::domain( outbound);
+
+         unittest::fetch::until( []( auto& state)
+         {
+            return state.failed_connections.size() == 1;
+         });
+      }
+
+      TEST( gateway_manager_outbound_connect, reverse_inbound_empty_address__expect_fail)
+      {
+         common::unittest::Trace trace;
+
+         constexpr auto reverse_inbound = R"(
+domain: 
+   name: reverse_inbound
+   gateway:
+      reverse:
+         inbound:
+            groups:
+               -  connections: 
+                     -  address: ${non_existent_environment}
+)";
+
+         auto a = local::domain( reverse_inbound);
+
+         unittest::fetch::until( []( auto& state)
+         {
+            return state.failed_connections.size() == 1;
+         });
+      }
+
+      TEST( gateway_manager_inbound_connect, inbound_non_existent_address__expect_fail)
+      {
+         common::unittest::Trace trace;
+
+         constexpr auto inbound = R"(
+domain: 
+   name: inbound
+   gateway:
+      inbound:
+         groups:
+            -  connections: 
+                  -  address: non.existent.local:70001
+)";
+
+         auto a = local::domain( inbound);
+
+         unittest::fetch::until( []( auto& state)
+         {
+            return state.failed_listeners.size() == 1;
+         });
+      }
+
+      TEST( gateway_manager_inbound_connect, reverse_outbound_non_existent_address__expect_fail)
+      {
+         common::unittest::Trace trace;
+
+         constexpr auto reverse_outbound = R"(
+domain: 
+   name: reverse_outbound
+   gateway:
+      reverse:
+         outbound:
+            groups:
+               -  connections: 
+                     -  address: non.existent.local:70001
+)";
+
+         auto a = local::domain( reverse_outbound);
+
+         unittest::fetch::until( []( auto& state)
+         {
+            return state.failed_listeners.size() == 1;
+         });
+      }
+
+      TEST( gateway_manager_inbound_connect, inbound_address_in_use__expect_fail)
+      {
+         common::unittest::Trace trace;
+         
+         constexpr auto inbound = R"(
+domain: 
+   name: inbound
+   gateway:
+      inbound:
+         groups:
+            -  connections: 
+                  -  address: 127.0.0.1:7010
+                  -  address: 127.0.0.1:7010
+)";
+
+         auto a = local::domain( inbound);
+
+         unittest::fetch::until( []( auto& state)
+         {
+            return state.failed_listeners.size() == 1;
+         });
+      }
 
    } // gateway
 

@@ -345,6 +345,9 @@ namespace casual
 
                auto error = common::exception::capture();
                common::log::line( common::log::category::warning, error, " connect severely failed for address: '", connection.configuration.address, "' - action: try later");
+
+               state.failed.push_back( connection.configuration);
+               return true;
             }
 
             return false;

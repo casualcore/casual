@@ -54,10 +54,12 @@ namespace casual
                };
 
                std::vector< Listener> listeners;
+               std::vector< configuration::model::gateway::outbound::Connection> failed;
                
                CASUAL_LOG_SERIALIZE(
                   outbound::State::serialize( archive);
                   CASUAL_SERIALIZE( listeners);
+                  CASUAL_SERIALIZE( failed);
                )
             };
 
@@ -97,17 +99,26 @@ namespace casual
                            state.alias = message.model.alias;
                            state.order = message.order;
 
-                           state.listeners = algorithm::transform( message.model.connections, []( auto& information)
+                           auto try_connect_listener = [&state]( auto& configuration)
                            {
-                              auto result = State::Listener{
-                                  communication::tcp::socket::listen( information.address),
-                                  information};
+                              try
+                              {
+                                 auto result = State::Listener{
+                                    communication::tcp::socket::listen( configuration.address),
+                                    configuration};
 
-                              // we need the socket to not block in accept. 
-                              result.socket.set( communication::socket::option::File::no_block);
+                                 // we need the socket to not block in 'accept'
+                                 result.socket.set( communication::socket::option::File::no_block);
 
-                              return result;
-                           });
+                                 state.listeners.push_back( std::move( result));
+                              }
+                              catch( ...)
+                              {
+                                 state.failed.push_back( configuration);
+                              } 
+                           };
+
+                           algorithm::for_each( message.model.connections, try_connect_listener);
 
                            state.directive.read.add( 
                               algorithm::transform( state.listeners, []( auto& listener){ return listener.socket.descriptor();}));
@@ -140,6 +151,8 @@ namespace casual
 
                               return result;
                            });
+
+                           algorithm::copy( state.failed, reply.state.failed);
 
                            communication::device::blocking::optional::send( message.process.ipc, reply);
                         };
