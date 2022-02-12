@@ -69,17 +69,16 @@ namespace casual
                   ipc = 2,
                   multiplexing = pipe | ipc,
                };
-
-               friend std::ostream& operator << ( std::ostream& out, Flag flag)
+               
+               constexpr friend auto description( Flag flag)
                {
                   switch( flag)
                   {
-                     case Flag::done: return out << "done";
-                     case Flag::pipe: return out << "pipe";
-                     case Flag::ipc: return out << "ipc";
-                     case Flag::multiplexing: return out << "multiplexing";
+                     case Flag::done: return std::string_view{ "done"};
+                     case Flag::pipe: return std::string_view{ "pipe"};
+                     case Flag::ipc: return std::string_view{ "ipc"};
+                     default: return std::string_view{ "<unknown>"};
                   }
-                  return out << "<unknown>";
                }
 
                Flags< Flag> machine = Flag::pipe;

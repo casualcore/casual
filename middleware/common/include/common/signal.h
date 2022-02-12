@@ -195,21 +195,23 @@ namespace casual
 
       namespace callback
       {
+         using callback_type = common::function< void()>;
+         
          namespace detail
          {
-            void registration( code::signal signal, common::function< void()> callback);
+            void registration( code::signal signal, callback_type callback);
 
             struct Replace
             {
                code::signal signal;
-               common::function< void()> callback;
+               callback_type callback;
             };
             Replace replace( Replace wanted);
             
          } // detail
 
-         template< code::signal signal, typename T>
-         auto registration( T&& callback)
+         template< code::signal signal>
+         auto registration( callback_type callback)
          {
             static_assert( algorithm::compare::any( signal, 
                code::signal::alarm, 
@@ -217,13 +219,13 @@ namespace casual
                code::signal::user,
                code::signal::child), "not a valid signal for callback");
 
-            return detail::registration( signal, std::forward< T>( callback));
+            return detail::registration( signal, std::move( callback));
          }
 
          namespace scoped
          {
-            template< code::signal signal, typename T>
-            auto replace( T&& callback)
+            template< code::signal signal>
+            auto replace( callback_type callback)
             {
                static_assert( algorithm::compare::any( signal, 
                   code::signal::alarm, 
@@ -231,7 +233,7 @@ namespace casual
                   code::signal::user,
                   code::signal::child), "not a valid signal for callback");
 
-               detail::Replace value{ signal, std::forward< T>( callback)};
+               detail::Replace value{ signal, std::move( callback)};
 
                return execute::scope( [ old = detail::replace( std::move( value))]()
                {
