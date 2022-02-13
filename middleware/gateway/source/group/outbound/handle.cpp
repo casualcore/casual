@@ -407,81 +407,10 @@ namespace casual
 
                         };
                      }
-                     
-                     namespace advertised
-                     {
-                        //! reply with what we got...
-                        auto request( const State& state)
-                        {
-                           return [&state]( const casual::domain::message::discovery::external::advertised::Request& message)
-                           {
-                              Trace trace{ "http::outbound::handle::local::discovery::advertised::request"};
-                              log::line( verbose::log, "message: ", message);
-
-                              auto reply = common::message::reverse::type( message, common::process::handle());
-                              reply.content.services = algorithm::transform( state.lookup.services(), predicate::adapter::first());
-                              reply.content.queues = algorithm::transform( state.lookup.queues(), predicate::adapter::first());
-
-                              communication::device::blocking::optional::send( message.process.ipc, reply);
-                           };
-                        }
-                     } // advertised
 
                   } // discovery
 
-                  namespace rediscover
-                  {
-                     auto request( State& state)
-                     {
-                        return [&state]( casual::domain::message::discovery::rediscovery::Request& message)
-                        {
-                           Trace trace{ "gateway::group::outbound::handle::local::internal::domain::rediscover::request"};
-                           log::line( verbose::log, "message: ", message);
-
-                           if( state.runlevel > decltype( state.runlevel())::running)
-                           {
-                              ipc::flush::optional::send( 
-                                 message.process.ipc, 
-                                 common::message::reverse::type( message));
-                              return;
-                           }
-
-                           auto pending = algorithm::accumulate( state.external.information(), state.coordinate.discovery.empty_pendings(), [&state]( auto result, auto& information)
-                           {
-                              if( ( information.configuration.services.empty() 
-                                 && information.configuration.queues.empty())
-                                 || algorithm::find( state.disconnecting, information.descriptor))
-                                 return result;
-
-                              casual::domain::message::discovery::Request request;
-                              request.domain = common::domain::identity();
-                              request.content.services = information.configuration.services;
-                              request.content.queues = information.configuration.queues;
-
-                              result.emplace_back( local::tcp::send( state, information.descriptor, request), information.descriptor);
-                              return result;
-                           });
-
-
-                           state.coordinate.discovery( std::move( pending), [&state, correlation = message.correlation, ipc = message.process.ipc]( auto&& replies, auto&& outcome)
-                           { 
-                              Trace trace{ "gateway::group::outbound::handle::local::internal::domain::rediscover::request callback"};
-
-                              // clears and unadvertise all 'resources', if any.
-                              handle::unadvertise( state.lookup.clear());
-
-                              // advertise the newly found, if any.
-                              discovery::detail::advertise::replies( state, replies, outcome);
-
-                              casual::domain::message::discovery::rediscovery::Reply reply;
-                              reply.correlation = correlation;
-                              ipc::flush::optional::send( ipc, reply);
-                           });
-
-                        };
-                     }
-                  } // rediscover
-
+      
                   auto connected( State& state)
                   {
                      return [&state]( const gateway::message::domain::Connected& message)
@@ -524,8 +453,8 @@ namespace casual
                               );
                            }
 
-                           // register to domain discovery
-                           casual::domain::discovery::external::registration( common::process::handle());                           
+                           // let the _discovery_ know that the topology has been updated
+                           casual::domain::discovery::topology::update();
 
                            log::line( verbose::log, "information: ", *information);
                         }
@@ -815,27 +744,44 @@ namespace casual
                   } // resource
                } // transaction
 
-               namespace domain
+               namespace domain::discovery
                {
-                  namespace discovery
+                  auto reply( State& state)
                   {
-                     auto reply( State& state)
+                     return [&state]( casual::domain::message::discovery::Reply&& message)
                      {
-                        return [&state]( casual::domain::message::discovery::Reply&& message)
+                        Trace trace{ "gateway::group::outbound::handle::local::external::domain::discover::reply"};
+                        log::line( verbose::log, "message: ", message);
+
+                        // increase hops for all services.
+                        for( auto& service : message.content.services)
+                           ++service.property.hops;
+
+                        state.coordinate.discovery( std::move( message));                         
+                     };
+                  }
+
+                  namespace topology
+                  {
+                     //! we get this from inbounds that are configured with _discovery forward_ and the domain topology has 
+                     //! been updated.
+                     auto update()
+                     {
+                        return []( casual::domain::message::discovery::topology::Update&& message)
                         {
-                           Trace trace{ "gateway::group::outbound::handle::local::external::domain::discover::reply"};
+                           Trace trace{ "gateway::group::outbound::handle::local::external::domain::discover::topology::update"};
                            log::line( verbose::log, "message: ", message);
 
-                           // increase hops for all services.
-                           for( auto& service : message.content.services)
-                              ++service.property.hops;
+                           // no need to send it if we've seen this message before
+                           if( algorithm::find( message.domains, common::domain::identity()))
+                              return;
 
-                           state.coordinate.discovery( std::move( message));                         
+                           casual::domain::discovery::topology::update( message);
                         };
                      }
-                  } // discover
-               } // domain
-  
+                  } // topology
+
+               } // domain::discovery
             } // external
 
 
@@ -845,6 +791,8 @@ namespace casual
 
       internal_handler internal( State& state)
       {
+         casual::domain::discovery::provider::registration( casual::domain::discovery::provider::Ability::discover_external);
+         
          return {
             common::message::handle::defaults( ipc::inbound()),
             common::message::internal::dump::state::handle( state),
@@ -870,8 +818,6 @@ namespace casual
 
             // discover
             local::internal::domain::discovery::request( state),
-            local::internal::domain::discovery::advertised::request( state),
-            local::internal::domain::rediscover::request( state),
          };
       }
 
@@ -897,7 +843,8 @@ namespace casual
             local::external::transaction::resource::rollback::reply( state),
 
             // discover
-            local::external::domain::discovery::reply( state)
+            local::external::domain::discovery::reply( state),
+            local::external::domain::discovery::topology::update()
          };
       }
 

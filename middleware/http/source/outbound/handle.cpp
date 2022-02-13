@@ -12,6 +12,7 @@
 #include "domain/message/discovery.h"
 
 #include "common/communication/instance.h"
+#include "common/communication/ipc/flush/send.h"
 #include "common/message/handle.h"
 
 namespace casual
@@ -108,27 +109,10 @@ namespace casual
                            return result;
                         });                   
 
-                        communication::device::blocking::optional::send( message.process.ipc, reply);
+                        communication::ipc::flush::optional::send( message.process.ipc, reply);
                      };
                   }
 
-                  namespace advertised
-                  {
-                     //! reply with what we got...
-                     auto request( const State& state)
-                     {
-                        return [&state]( const casual::domain::message::discovery::external::advertised::Request& message)
-                        {
-                           Trace trace{ "http::outbound::handle::local::discovery::advertised::request"};
-                           log::line( verbose::log, "message: ", message);
-
-                           auto reply = common::message::reverse::type( message, process::handle());
-                           reply.content.services = algorithm::transform( state.lookup, predicate::adapter::first());
-
-                           communication::device::blocking::optional::send( message.process.ipc, reply);
-                        };
-                     }
-                  } // advertised
                } // discovery
 
             } // <unnamed>
@@ -142,8 +126,7 @@ namespace casual
             return message::dispatch::handler( device,
                message::handle::defaults( device),
                local::service::call::request( state),
-               local::discovery::request( state),
-               local::discovery::advertised::request( state));
+               local::discovery::request( state));
          }
       } // internal
 

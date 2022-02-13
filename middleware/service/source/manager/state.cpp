@@ -323,7 +323,15 @@ namespace casual
          return runlevel > decltype( runlevel())::running;
       }
 
-      state::Service* State::service( const std::string& name)
+      state::Service* State::service( const std::string& name) noexcept
+      {
+         if( auto found = algorithm::find( services, name))
+            return &found->second;
+
+         return nullptr;
+      }
+
+      const state::Service* State::service( const std::string& name) const noexcept
       {
          if( auto found = algorithm::find( services, name))
             return &found->second;

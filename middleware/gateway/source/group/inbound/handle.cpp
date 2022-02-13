@@ -18,6 +18,7 @@
 #include "common/message/internal.h"
 #include "common/event/listen.h"
 
+#include "casual/assert.h"
 
 namespace casual
 {
@@ -285,6 +286,7 @@ namespace casual
                   {
                      auto request( State& state)
                      {
+                        //! comes from external and handled here.
                         return [&state]( casual::domain::message::discovery::Request& message)
                         {
                            Trace trace{ "gateway::group::inbound::handle::local::internal::domain::discovery::request"};
@@ -309,6 +311,40 @@ namespace casual
                      }
 
                      auto reply = basic_forward< casual::domain::message::discovery::Reply>;
+
+                     namespace topology
+                     {
+                        auto update( State& state)
+                        {
+                           return [&state]( const casual::domain::message::discovery::topology::Update& message)
+                           {
+                              Trace trace{ "gateway::group::inbound::handle::local::internal::domain::discovery::topology::update"};
+                              common::log::line( verbose::log, "message: ", message);
+
+                              auto send_if_compatible = [ &state, &message]( auto& connection)
+                              {
+                                 if( ! message::protocol::compatible( message, connection.protocol()))
+                                    return;
+
+                                 auto information = state.external.information( connection.descriptor());
+                                 casual::assertion( information, "information not valid for descriptor: ", connection.descriptor());
+
+                                 if( information->configuration.discovery != decltype( information->configuration.discovery)::forward)
+                                    return;
+
+                                 // check if domain has seen this message before...
+                                 if( algorithm::find( message.domains, information->domain))
+                                    return;
+                                 
+                                 connection.send( state.directive, message);
+                              };
+
+                              algorithm::for_each( state.external.connections(), send_if_compatible);
+
+                           };
+                        }
+
+                     } // topology
 
                   } // discovery
                } // domain
@@ -606,6 +642,8 @@ namespace casual
 
       internal_handler internal( State& state)
       {
+         casual::domain::discovery::provider::registration( casual::domain::discovery::provider::Ability::topology);
+
          return {
             common::message::handle::defaults( communication::ipc::inbound::device()),
             common::message::internal::dump::state::handle( state),
@@ -620,8 +658,6 @@ namespace casual
             local::internal::conversation::connect::reply( state),
             local::internal::conversation::send( state),
 
-
-
             // queue
             local::internal::queue::lookup::reply( state),
             local::internal::queue::dequeue::reply( state),
@@ -630,13 +666,13 @@ namespace casual
             // domain discovery
             local::internal::domain::discovery::request( state),
             local::internal::domain::discovery::reply( state),
+            local::internal::domain::discovery::topology::update( state),
 
             // transaction
             local::internal::transaction::resource::prepare::reply( state),
             local::internal::transaction::resource::commit::reply( state),
             local::internal::transaction::resource::rollback::reply( state),
 
-            // domain discovery
             local::internal::domain::connected( state),
          };
       }

@@ -701,7 +701,7 @@ domain:
          ASSERT_TRUE( state.connections.size() == 2);
 
          EXPECT_NO_THROW(
-            casual::domain::discovery::rediscovery::blocking::request();
+            communication::ipc::receive< casual::domain::discovery::rediscovery::Reply>( casual::domain::discovery::rediscovery::request());
          );
       }
 
@@ -727,7 +727,7 @@ domain:
          EXPECT_TRUE( state.connections.size() == 2);
 
          EXPECT_NO_THROW(
-            casual::domain::discovery::rediscovery::blocking::request();
+            communication::ipc::receive< casual::domain::discovery::rediscovery::Reply>( casual::domain::discovery::rediscovery::request());
          );
       }
 

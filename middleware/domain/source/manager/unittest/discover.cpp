@@ -20,12 +20,9 @@ namespace casual
       void discover( std::vector< std::string> services, std::vector< std::string> queues)
       {
          Trace trace{ "domain::unittest::discover"};
-         casual::domain::discovery::external::Request request{ common::process::handle()};
-         request.content.services = std::move( services);
-         request.content.queues = std::move( queues);
-         if( auto correlation = casual::domain::discovery::external::request( request))
+         if( auto correlation = casual::domain::discovery::request( std::move( services), std::move( queues)))
          {
-            casual::domain::discovery::external::Reply reply;
+            message::discovery::api::Reply reply;
             common::communication::device::blocking::receive( common::communication::ipc::inbound::device(), reply, correlation);
          }
       }

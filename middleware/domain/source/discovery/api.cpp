@@ -33,11 +33,13 @@ namespace casual
             namespace flush
             {
                template< typename M>
-               void call( M&& message)
+               void call( M&& request)
                {
-                  if( auto correlation = communication::ipc::flush::optional::send( local::instance::device(), message))
+                  log::line( verbose::log, "request: ", request);
+
+                  if( auto correlation = communication::ipc::flush::optional::send( local::instance::device(), request))
                   {
-                     auto reply = common::message::reverse::type( message);
+                     auto reply = common::message::reverse::type( request);
                      communication::device::blocking::receive( communication::ipc::inbound::device(), reply, correlation);
                   }
                }
@@ -45,25 +47,26 @@ namespace casual
          } // <unnamed>
       } // local
 
-      namespace internal
+      namespace provider
       {
-         void registration( const common::process::Handle& process)
+         void registration( const common::process::Handle& process, common::Flags< Ability> abilities)
          {
-            Trace trace{ "domain::discovery::internal::registration"};
+            Trace trace{ "domain::discovery::provider::registration"};
 
-            message::discovery::internal::registration::Request message{ process};
+            message::discovery::api::provider::registration::Request message{ process};
+            message.abilities = abilities;
+
             local::flush::call( message);
          }
 
-         void registration()
+         void registration( common::Flags< Ability> abilities)
          {
-            registration( process::handle());
+            registration( process::handle(), abilities);
          }
 
-
-      } // internal
+      } // provider
       
-      correlation_type request( const Request& request)
+      common::strong::correlation::id request( const Request& request)
       {
          Trace trace{ "domain::discovery::request"};
          log::line( verbose::log, "request: ", request);
@@ -71,56 +74,41 @@ namespace casual
          return communication::ipc::flush::optional::send( local::instance::device(), request);
       }
 
-      namespace external
+      common::strong::correlation::id request( std::vector< std::string> services, std::vector< std::string> queues, common::strong::correlation::id correlation)
       {
-         void registration( const common::process::Handle& process, Directive directive)
-         {
-            Trace trace{ "domain::discovery::external::registration"};
-            message::discovery::external::registration::Request message{ process};
-            message.directive = directive;
-            local::flush::call( message);
-         } 
+         Trace trace{ "domain::discovery::request"};
+         log::line( verbose::log, "services: ", services, ", queues: ", queues);
 
-         void registration( Directive directive)
+         message::discovery::api::Request request{ common::process::handle()};
+         request.correlation = correlation;
+         request.content.services = std::move( services);
+         request.content.queues = std::move( queues);
+
+         return communication::ipc::flush::optional::send( local::instance::device(), request);
+      }
+
+      namespace topology
+      {
+         void update()
          {
-            registration( process::handle(), directive);
+            update( message::discovery::topology::Update{});
          }
 
-         correlation_type request( const Request& request)
+         void update( const message::discovery::topology::Update& message)
          {
-            Trace trace{ "domain::discovery::external::request"};
-            log::line( verbose::log, "request: ", request);
-
-            return communication::ipc::flush::optional::send( local::instance::device(), request);
+            Trace trace{ "domain::discovery::rediscovery::topology::update"};
+            communication::ipc::flush::optional::send( local::instance::device(), message);
          }
-
-      } // external
+      } // topology
 
       namespace rediscovery
       {
-
-         correlation_type request()
+         common::strong::correlation::id request()
          {
-            Trace trace{ "domain::discovery::rediscovery::request"};
-            message::discovery::rediscovery::Request message{ process::handle()};
-            return communication::ipc::flush::optional::send( local::instance::device(), message);
+            return communication::ipc::flush::optional::send( local::instance::device(), message::discovery::api::rediscovery::Request{ common::process::handle()});
          }
-
-         namespace blocking
-         {
-            void request()
-            {
-               Trace trace{ "domain::discovery::rediscovery::blocking::request"};
-               if( auto correlation = rediscovery::request())
-               {
-                  Reply reply;
-                  communication::device::blocking::receive( communication::ipc::inbound::device(), reply, correlation);
-               }
-
-            }
-
-         } // blocking
       } // rediscovery
+
 
    } // domain::discovery  
 } // casual

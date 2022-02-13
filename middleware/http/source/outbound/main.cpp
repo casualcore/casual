@@ -67,7 +67,7 @@ namespace casual
                }
 
                // register to answer external discoveries.
-               casual::domain::discovery::external::registration();
+               casual::domain::discovery::provider::registration( casual::domain::discovery::provider::Ability::discover_external);
 
                // connect to domain
                common::communication::instance::whitelist::connect();

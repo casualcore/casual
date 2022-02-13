@@ -9,12 +9,14 @@
 #include "common/unittest.h"
 
 #include "domain/manager/unittest/process.h"
+#include "domain/discovery/api.h"
 
 #include "common/communication/instance.h"
-#include "serviceframework/service/protocol/call.h"
 
-#include "gateway/manager/admin/model.h"
-#include "gateway/manager/admin/server.h"
+#include "gateway/unittest/utility.h"
+#include "service/unittest/utility.h"
+
+#include "queue/api/queue.h"
 
 
 #include "casual/xatmi.h"
@@ -36,62 +38,6 @@ namespace casual
                return casual::domain::manager::unittest::process( std::forward< C>( configurations)...);
             }
 
-            namespace call
-            {
-               auto state()
-               {
-                  // to ensure that we use the 'current' domain
-                  communication::instance::outbound::service::manager::device().connector().clear();
-
-                  serviceframework::service::protocol::binary::Call call;
-                  auto reply = call( gateway::manager::admin::service::name::state);
-
-                  gateway::manager::admin::model::State result;
-                  reply >> CASUAL_NAMED_VALUE( result);
-
-                  return result;
-               }
-            }
-
-            namespace state
-            {
-               namespace gateway
-               {
-                  auto call()
-                  {
-                     // to ensure that we use the 'current' domain
-                     communication::instance::outbound::service::manager::device().connector().clear();
-
-                     serviceframework::service::protocol::binary::Call call;
-                     auto reply = call( casual::gateway::manager::admin::service::name::state);
-
-                     casual::gateway::manager::admin::model::State result;
-                     reply >> CASUAL_NAMED_VALUE( result);
-
-                     return result;
-                  }
-
-                  template< typename P>
-                  auto until( P&& predicate)
-                  {
-                     auto state = state::gateway::call();
-
-                     auto count = 1000;
-
-                     while( ! predicate( state) && count-- > 0)
-                     {
-                        process::sleep( std::chrono::milliseconds{ 2});
-                        state = call::state();
-                     }
-
-                     return state;
-                  }
-
-               } // gateway
-
-               
-            } // state
-
             auto allocate( platform::size::type size = 128)
             {
                auto buffer = tpalloc( X_OCTET, nullptr, size);
@@ -109,36 +55,24 @@ domain:
       - name: base
       - name: user
         dependencies: [ base]
+      - name: queue
+        dependencies: [ base]
       - name: gateway
-        dependencies: [ user]
+        dependencies: [ queue]
    
    servers:
       - path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/service/bin/casual-service-manager"
         memberships: [ base]
       - path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/transaction/bin/casual-transaction-manager"
         memberships: [ base]
+      - path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/queue/bin/casual-queue-manager"
+        memberships: [ queue]
       - path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/gateway/bin/casual-gateway-manager"
         memberships: [ gateway]
 )";
 
             } // configuration
-            
-            namespace wait::until::connected
-            {
-               // tool to make sure we're connected to the previous domain, since the 'timing' is not
-               // deterministisc
-               auto to( std::string_view remote)
-               {
-                  auto state = local::state::gateway::until( [remote]( auto& state)
-                  {
-                     return predicate::boolean( algorithm::find_if( state.connections, [remote]( auto& connection)
-                     {
-                        return connection.remote.name == remote;
-                     })); 
-                  });
-               };
-            } // wait::until::connected
-
+         
          } // <unnamed>
       } // local
       
@@ -191,9 +125,10 @@ domain:
 
          auto c = local::manager( local::configuration::base, C);
          auto b = local::manager( local::configuration::base, B);
-         local::wait::until::connected::to( "C");
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected( "C"));
+
          auto a = local::manager( local::configuration::base, A);
-         local::wait::until::connected::to( "B");
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected( "B"));
 
          {
             auto buffer = local::allocate( 128);
@@ -253,9 +188,9 @@ domain:
 
          auto c = local::manager( local::configuration::base, C);
          auto b = local::manager( local::configuration::base, B);
-         local::wait::until::connected::to( "C");
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected( "C"));
          auto a = local::manager( local::configuration::base, A);
-         local::wait::until::connected::to( "B");
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected( "B"));
 
          {
             auto buffer = local::allocate( 128);
@@ -316,7 +251,7 @@ domain:
          
          auto b = local::manager( local::configuration::base, B);
          auto a = local::manager( local::configuration::base, A);
-         local::wait::until::connected::to( "B");
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected( "B"));
 
          auto call_domain_name = []()
          {
@@ -340,7 +275,7 @@ domain:
 
          // make sure we're _in_ domain A
          a.activate();
-         local::wait::until::connected::to( "C");
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected( "C"));
 
          {
             std::map< std::string, int> domain_count;
@@ -354,6 +289,140 @@ domain:
             EXPECT_TRUE( domain_count.at( "B") > 0);
             EXPECT_TRUE( domain_count.at( "C") > 0);
          }
+      }
+
+      TEST( test_domain_gateway_discovery, A_to_B__topology_registration__B_to_C__expect__topology_update)
+      {
+         common::unittest::Trace trace;
+
+         constexpr auto C = R"(
+domain: 
+   name: C
+   servers:
+      - path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-server"
+        memberships: [ user]
+   gateway:
+      inbound:
+         groups:
+            -  connections:
+               -  address: 127.0.0.1:7010
+)";
+
+         auto b = local::manager( local::configuration::base, R"(
+domain: 
+   name: B
+   gateway:
+      outbound:
+         groups:
+            -  connections:
+               -  address: 127.0.0.1:7010
+      inbound:
+         groups:
+            -  connections:
+               -  address: 127.0.0.1:7020
+                  discovery:
+                     forward: true
+)");
+
+         auto a = local::manager( local::configuration::base, R"(
+domain: 
+   name: A
+   gateway:
+      outbound:
+         groups:
+            -  connections:
+               -  address: 127.0.0.1:7020
+)");
+
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected( "B"));
+
+         // make sure we get the topology update
+         casual::domain::discovery::provider::registration( casual::domain::discovery::provider::Ability::topology);
+
+         // boot C - topology update should propagate to A
+         auto c = local::manager( local::configuration::base, C);
+
+         a.activate();
+
+         {
+            auto update = common::communication::ipc::receive< casual::domain::message::discovery::topology::Update>();
+            EXPECT_TRUE( algorithm::find( update.domains, "B")) << CASUAL_NAMED_VALUE( update.domains);
+            EXPECT_TRUE( algorithm::find( update.domains, "A")) << CASUAL_NAMED_VALUE( update.domains);
+         }
+
+      }
+
+      TEST( test_domain_gateway_discovery, A_queue_forward_to_C__via_B__boot_A_B__then_boot_C__expect_forward_from_A)
+      {
+         common::unittest::Trace trace;
+
+         constexpr auto C = R"(
+domain: 
+   name: C
+   queue:
+      groups:
+         -  alias: C
+            queuebase: ":memory:"
+            queues:
+               -  name: c1
+   gateway:
+      inbound:
+         groups:
+            -  connections:
+               -  address: 127.0.0.1:7010
+)";
+
+         auto b = local::manager( local::configuration::base, R"(
+domain: 
+   name: B
+   gateway:
+      outbound:
+         groups:
+            -  connections:
+               -  address: 127.0.0.1:7010
+      inbound:
+         groups:
+            -  connections:
+               -  address: 127.0.0.1:7020
+                  discovery:
+                     forward: true
+)");
+
+         auto a = local::manager( local::configuration::base, R"(
+domain: 
+   name: A
+   gateway:
+      outbound:
+         groups:
+            -  connections:
+               -  address: 127.0.0.1:7020
+
+   queue:
+      groups:
+         -  alias: A
+            queuebase: ":memory:"
+            queues:
+               -  name: a1
+      forward:
+         groups:
+            -  alias: F-A
+               queues:
+                  -  source: a1
+                     target:
+                        queue: c1
+                     instances: 1
+
+
+)");
+      
+         queue::enqueue( "a1", { { ".binary", common::unittest::random::binary( 512)}});
+
+         // boot C - topology update should propagate to A, and the queue forward kicks in
+         auto c = local::manager( local::configuration::base, C);
+
+         auto message = queue::blocking::available::dequeue( "c1");
+         EXPECT_TRUE( message.payload.data.size() == 512);
+
       }
 
    } // test::domain

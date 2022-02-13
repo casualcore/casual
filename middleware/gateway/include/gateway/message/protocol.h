@@ -59,7 +59,7 @@ namespace casual
       template< typename M>
       constexpr auto compatible( M&& message, Version current)
       {
-         return current >= protocol::compatible< M>();
+         return protocol::compatible< std::decay_t< M>>( current);
       }
 
    } //gateway::message::protocol

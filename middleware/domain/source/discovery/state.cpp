@@ -23,69 +23,29 @@ namespace casual
             return out << "<unknown>";
          }
 
-         namespace agent
-         {
-            std::ostream& operator << ( std::ostream& out, Bound value)
-            {
-               switch( value)
-               {
-                  case Bound::internal: return out << "internal";
-                  case Bound::external: return out << "external";
-                  case Bound::external_rediscover: return out << "external_rediscover";
-               }
-               return out << "<unknown>";
-            }            
-         } // agent
 
             
-         void Agents::registration( const message::discovery::internal::registration::Request& message)
+         void Providers::registration( const message::discovery::api::provider::registration::Request& message)
          {
             // we only add 'new' processes
-            if( algorithm::find( m_agents, message.process))
+            if( algorithm::find( m_providers, message.process))
                return;
 
-            m_agents.emplace_back( agent::Bound::internal, message.process);
-            algorithm::sort( m_agents);
+            m_providers.emplace_back( message.abilities, message.process);
+
          }
 
-         void Agents::registration( const message::discovery::external::registration::Request& message)
+         Providers::const_range_type Providers::filter( provider::Abilities abilities) noexcept
          {
-            // we only add 'new' processes
-            if( algorithm::find( m_agents, message.process))
-               return;
-
-            if( message.directive == decltype( message.directive)::rediscovery)
-                m_agents.emplace_back( agent::Bound::external_rediscover, message.process);
-            else 
-               m_agents.emplace_back( agent::Bound::external, message.process);
-            algorithm::sort( m_agents);
+            return algorithm::filter( m_providers, [abilities]( auto& provider)
+            {
+               return predicate::boolean( provider.abilities & abilities);
+            });
          }
 
-         Agents::const_range_type Agents::internal() const
+         void Providers::remove( common::strong::process::id pid)
          {
-            return range::make( 
-               std::begin( m_agents),
-               std::begin( algorithm::find( m_agents, agent::Bound::external)));
-         }
-
-         Agents::const_range_type Agents::external() const
-         {
-            return range::make( 
-               std::begin( algorithm::find( m_agents, agent::Bound::external)),
-               std::end( m_agents));
-         }
-
-         Agents::const_range_type Agents::rediscover() const
-         {
-            return range::make( 
-               std::begin( algorithm::find( m_agents, agent::Bound::external_rediscover)),
-               std::end( m_agents));
-         }
-
-
-         void Agents::remove( common::strong::process::id pid)
-         {
-            common::algorithm::trim( m_agents, common::algorithm::remove( m_agents, pid));
+            common::algorithm::trim( m_providers, common::algorithm::remove( m_providers, pid));
          }
 
 
@@ -96,7 +56,7 @@ namespace casual
          if( runlevel == decltype( runlevel())::running)
             return false;
 
-         return coordinate.discovery.empty() && coordinate.rediscovery.empty();
+         return coordinate.empty();
       }
 
       

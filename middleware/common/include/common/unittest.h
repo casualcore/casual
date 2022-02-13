@@ -16,6 +16,7 @@
 #include "common/exception/handle.h"
 #include "common/code/raise.h"
 #include "common/compare.h"
+#include "common/communication/ipc.h"
 
 #include <array>
 #include <iostream>

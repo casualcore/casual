@@ -27,10 +27,14 @@ namespace casual
                {
                   auto invoke = []()
                   {
-                     if( terminal::output::directive().block())
-                        discovery::rediscovery::blocking::request();
-                     else
-                        communication::ipc::inbound::device().discard( discovery::rediscovery::request());
+                     auto correlation = discovery::rediscovery::request();
+                     if( ! terminal::output::directive().block())
+                     {
+                        communication::ipc::inbound::device().discard( correlation);
+                        return;
+                     }
+
+                     communication::ipc::receive< message::discovery::api::Reply>( correlation);
                   };
 
                   return argument::Option{

@@ -122,17 +122,10 @@ namespace casual
 
                namespace discovery
                {
-                  auto send( std::vector< std::string> services, const strong::correlation::id& correlation = strong::correlation::id{ uuid::make()})
+                  auto send( std::vector< std::string> services, const strong::correlation::id& correlation = strong::correlation::id::generate())
                   {
                      Trace trace{ "service::manager::handle::local::discovery::send"};
-
-                     casual::domain::message::discovery::external::Request request{ common::process::handle()};
-                     request.correlation = correlation;
-                     request.content.services = std::move( services);
-
-                     log::line( verbose::log, "request: ", request);
-
-                     return casual::domain::discovery::external::request( std::move( request));
+                     return casual::domain::discovery::request( std::move( services), {}, correlation);
                   }
                }
 
@@ -299,26 +292,6 @@ namespace casual
                         };
                      }
                   } // subscription
-
-                  namespace discoverable
-                  {
-                     auto available( State& state)
-                     {
-                        return [&state]( const common::message::event::discoverable::Avaliable& event)
-                        {
-                           Trace trace{ "service::manager::handle::local::event::discoverable::available"};
-                           common::log::line( verbose::log, "event: ", event);
-
-                           auto services = algorithm::transform( state.pending.lookups, []( auto& pending){ return pending.request.requested;});
-
-                           algorithm::trim( services, algorithm::unique( algorithm::sort( services)));
-
-                           if( ! services.empty())
-                              local::discovery::send( std::move( services));
-                        };
-                     }
-                     
-                  } // discoverable
 
                } // event
 
@@ -745,81 +718,112 @@ namespace casual
                   } // prepare
                } // process
 
-               namespace domain
+               namespace domain::discovery
                {
-                  namespace discover
+                  auto request( State& state)
                   {
-                     auto request( State& state)
+                     return [&state]( casual::domain::message::discovery::Request& message)
                      {
-                        return [&state]( casual::domain::message::discovery::Request& message)
+                        Trace trace{ "service::manager::handle::domain::discovery::request"};
+                        common::log::line( verbose::log, "message: ", message);
+
+                        auto reply = common::message::reverse::type( message, common::process::handle());
+                        reply.domain = common::domain::identity();
+                        
+                        reply.content.services = algorithm::accumulate( message.content.services, decltype( reply.content.services){}, [&state]( auto result, auto& name)
                         {
-                           Trace trace{ "service::manager::handle::domain::discover::Request"};
-                           common::log::line( verbose::log, "message: ", message);
+                           auto service = state.service( name);
+
+                           // * We only answer with sequential (local) services
+                           // * We don't allow other domains to access or know about our admin services.
+                           if( service && ! service->instances.sequential.empty() && service->information.category != common::service::category::admin)
+                           {
+                              result.emplace_back(
+                                 name,
+                                 service->information.category,
+                                 service->information.transaction);
+                           }
+
+                           return result;
+                        });
+
+                        communication::device::blocking::send( message.process.ipc, reply);
+                     };
+                  }
+
+                  auto reply( State& state)
+                  {
+                     return [&state]( casual::domain::message::discovery::api::Reply& message)
+                     {
+                        Trace trace{ "service::manager::handle::domain::discovery::external::reply"};
+                        common::log::line( verbose::log, "message: ", message);
+
+                        if( auto found = algorithm::find( state.pending.lookups, message.correlation))
+                        {
+                           auto pending = algorithm::container::extract( state.pending.lookups, std::begin( found));
+
+                           auto service = state.service( pending.request.requested);
+
+                           if( service && ! service->instances.empty())
+                           {
+                              // The requested service is now available, use
+                              // the lookup to decide how to progress.
+                              service::lookup( state)( pending.request);
+                           }
+                           else if( pending.request.context == decltype( pending.request.context)::wait)
+                           {
+                              // we put the pending back. In front to be as fair as possible
+                              state.pending.lookups.push_front( std::move( pending));
+                           }
+                           else 
+                           {
+                              auto reply = common::message::reverse::type( pending.request);
+                              reply.service.name = pending.request.requested;
+                              reply.state = decltype( reply.state)::absent;
+
+                              communication::device::blocking::send( pending.request.process.ipc, reply);
+                           }
+                        }
+                     };
+                  }
+
+                  namespace external::needs
+                  {
+                     //! reply with all known external and what we're waiting for.
+                     auto request( const State& state)
+                     {
+                        return [&state]( const casual::domain::message::discovery::needs::Request& message)
+                        {
+                           Trace trace{ "service::manager::handle::domain::discovery::external::needs::request"};
+                           log::line( verbose::log, "message: ", message);
 
                            auto reply = common::message::reverse::type( message, common::process::handle());
-                           reply.domain = common::domain::identity();
-                           
-                           reply.content.services = algorithm::accumulate( message.content.services, decltype( reply.content.services){}, [&state]( auto result, auto& name)
+
+                           // all pending
+                           reply.content.services = algorithm::transform( state.pending.lookups, []( auto& value)
                            {
-                              auto service = state.service( name);
+                              return value.request.requested;
+                           });
 
-                              // * We only answer with sequential (local) services
-                              // * We don't allow other domains to access or know about our admin services.
-                              if( service && ! service->instances.sequential.empty() && service->information.category != common::service::category::admin)
-                              {
-                                 result.emplace_back(
-                                    name,
-                                    service->information.category,
-                                    service->information.transaction);
-                              }
-
+                           // all "external" we know of.
+                           reply.content.services = algorithm::accumulate( state.services, std::move( reply.content.services), []( auto result, auto& value)
+                           {
+                              if( ! value.second.instances.concurrent.empty())
+                                 result.push_back( value.first);
+                                 
                               return result;
                            });
 
-                           communication::device::blocking::send( message.process.ipc, reply);
+                           algorithm::trim( reply.content.services, algorithm::unique( algorithm::sort( reply.content.services)));
+
+                           log::line( verbose::log, "reply: ", reply);
+                           communication::device::blocking::optional::send( message.process.ipc, reply);
                         };
                      }
+                  } // external::needs
 
-                     auto reply( State& state)
-                     {
+               } // domain::discovery
 
-                        return [&state]( casual::domain::message::discovery::external::Reply& message)
-                        {
-                           Trace trace{ "service::manager::handle::gateway::discover::Reply"};
-                           common::log::line( verbose::log, "message: ", message);
-
-                           if( auto found = algorithm::find( state.pending.lookups, message.correlation))
-                           {
-                              auto pending = algorithm::container::extract( state.pending.lookups, std::begin( found));
-
-                              auto service = state.service( pending.request.requested);
-
-                              if( service && ! service->instances.empty())
-                              {
-                                 // The requested service is now available, use
-                                 // the lookup to decide how to progress.
-                                 service::lookup( state)( pending.request);
-                              }
-                              else if( pending.request.context == decltype( pending.request.context)::wait)
-                              {
-                                 // we put the pending back. In front to be as fair as possible
-                                 state.pending.lookups.push_front( std::move( pending));
-                              }
-                              else 
-                              {
-                                 auto reply = common::message::reverse::type( pending.request);
-                                 reply.service.name = pending.request.requested;
-                                 reply.state = decltype( reply.state)::absent;
-
-                                 communication::device::blocking::send( pending.request.process.ipc, reply);
-                              }
-                           }
-                           // else we've sent a discover request triggered by an discoverable event.
-                        };
-                     }
-
-                  } // discover
-               } // domain
 
                //! Handles ACK from services.
                //!
@@ -1009,8 +1013,7 @@ namespace casual
          return {
             common::message::handle::defaults( ipc::device()),
             common::event::listener( 
-               handle::local::event::process::exit( state),
-               handle::local::event::discoverable::available( state)
+               handle::local::event::process::exit( state)
             ),
             common::message::internal::dump::state::handle( state),
             handle::local::process::prepare::shutdown( state),
@@ -1023,8 +1026,9 @@ namespace casual
             handle::local::event::subscription::begin( state),
             handle::local::event::subscription::end( state),
             handle::local::Call{ admin::services( state), state},
-            handle::local::domain::discover::request( state),
-            handle::local::domain::discover::reply( state),
+            handle::local::domain::discovery::request( state),
+            handle::local::domain::discovery::reply( state),
+            handle::local::domain::discovery::external::needs::request( state),
             handle::local::configuration::update::request( state),
             handle::local::configuration::request( state),
             handle::local::shutdown::request( state),

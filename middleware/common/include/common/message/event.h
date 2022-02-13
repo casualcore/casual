@@ -195,15 +195,7 @@ namespace casual
                )
             };
 
-
-
          } // process
-
-         namespace discoverable
-         {
-            using Avaliable = basic_event< Type::event_discoverable_avaliable>;
-            
-         } // discoverable
 
          namespace service
          {

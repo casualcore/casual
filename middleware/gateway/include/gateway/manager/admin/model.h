@@ -101,6 +101,8 @@ namespace casual
             platform::time::point::type created{};
             connection::Runlevel runlevel{};
 
+            inline friend bool operator == ( const Connection& lhs, std::string_view rhs) { return lhs.remote == rhs;}
+
             //! @deprecated remove in 2.0 - group knows the process, not the connection
             common::process::Handle process;
 

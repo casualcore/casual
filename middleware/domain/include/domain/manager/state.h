@@ -363,8 +363,7 @@ namespace casual
             common::message::event::Task,
             common::message::event::sub::Task,
             common::message::event::Error,
-            common::message::event::Notification,
-            common::message::event::discoverable::Avaliable
+            common::message::event::Notification
          > event;
 
          std::vector< common::strong::process::id> whitelisted;

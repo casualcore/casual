@@ -447,7 +447,10 @@ namespace casual
          //! find a service from name
          //! @param name of the service wanted
          //! @return pointer to service, nullptr if not found
-         [[nodiscard]] state::Service* service( const std::string& name);
+         //! @{
+         [[nodiscard]] state::Service* service( const std::string& name) noexcept;
+         [[nodiscard]] const state::Service* service( const std::string& name) const noexcept;
+         //! @}
 
          //! find service from an `origin` service name
          //! @param name of the service wanted

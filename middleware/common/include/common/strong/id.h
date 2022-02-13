@@ -100,6 +100,7 @@ namespace casual
          struct policy
          {
             using extended_equality = void;
+            inline static auto generate() { return uuid::make();}
          };
          using id = strong::Type< Uuid, policy>;
       } // correlation

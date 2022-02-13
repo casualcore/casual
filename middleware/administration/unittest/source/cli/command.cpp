@@ -19,7 +19,6 @@ namespace casual
 
    namespace administration::unittest::cli::command
    {
-
       Pipe::Pipe( std::string command) : m_old_path{ environment::variable::get( "PATH", std::string{})}
       {
          // sink child signals 
@@ -48,6 +47,9 @@ namespace casual
 
       std::string Pipe::string() &&
       {
+         // block all signals but terminate
+         signal::thread::scope::Block block{ signal::set::filled( code::signal::terminate)};
+
          std::array< char, 256> buffer;
          std::ostringstream result;
          auto descriptor = ::fileno( m_stream);

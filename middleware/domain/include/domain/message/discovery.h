@@ -16,16 +16,9 @@ namespace casual
 {
    namespace domain::message::discovery
    {
-
-      namespace internal::registration
-      {
-         using Request = common::message::basic_request< common::message::Type::domain_discovery_internal_registration_request>;
-         using Reply = common::message::basic_message< common::message::Type::domain_discovery_internal_registration_reply>;
-      } // internal::registration
-
       namespace request
       {
-         enum struct Directive : short
+         enum struct Directive : std::uint16_t
          {
             local,
             forward
@@ -88,19 +81,21 @@ namespace casual
 
             inline explicit operator bool () const noexcept { return ! services.empty() || ! queues.empty();}
 
-            inline friend Content operator + ( Content lhs, Content rhs)
+            inline Content& operator += ( Content other)
             {
-               common::algorithm::append( std::move( rhs.queues), lhs.queues);
-               common::algorithm::append( std::move( rhs.services), lhs.services);
-               return lhs;
+               common::algorithm::append( std::move( other.services), services);
+               common::algorithm::append( std::move( other.queues), queues);
+               return *this;
             }
+
+            inline friend Content operator + ( Content lhs, Content rhs) { return lhs += std::move( rhs);}
 
             CASUAL_CONST_CORRECT_SERIALIZE(
                CASUAL_SERIALIZE( services);
                CASUAL_SERIALIZE( queues);
             )
          };
-      }
+      } // reply
 
 
       using base_request = common::message::basic_request< common::message::Type::domain_discovery_request>;
@@ -137,36 +132,96 @@ namespace casual
          )
       };
 
-
-      namespace external
+      namespace topology
       {
-         namespace registration
+         using base_update = common::message::basic_message< common::message::Type::domain_discovery_topology_update>;
+         struct Update : base_update
          {
-            using base_request = common::message::basic_request< common::message::Type::domain_discovery_external_registration_request>;
+            using base_update::base_update;
+
+            //! domains that has seen/handled the message.
+            std::vector< common::domain::Identity> domains;
+
+            CASUAL_CONST_CORRECT_SERIALIZE(
+               base_update::serialize( archive);
+               CASUAL_SERIALIZE( domains);
+            )
+         };
+      
+      } // topology
+
+      namespace needs
+      {
+         using base_request = common::message::basic_request< common::message::Type::domain_discovery_needs_request>;
+         struct Request : base_request
+         {
+            using base_request::base_request;
+
+            CASUAL_CONST_CORRECT_SERIALIZE(
+               base_request::serialize( archive);
+            )
+         };
+
+
+         using base_reply = common::message::basic_request< common::message::Type::domain_discovery_needs_reply>;
+         using Content = discovery::request::Content;
+
+         //! Contains what externals needs the requested has (advertised and _waiting lookups_)
+         struct Reply : base_reply
+         {
+            using base_reply::base_reply;
+            Content content;
+
+            CASUAL_CONST_CORRECT_SERIALIZE(
+               base_reply::serialize( archive);
+               CASUAL_SERIALIZE( content);
+            )
+         };
+
+      } // needs
+
+      namespace api
+      {
+         namespace provider::registration
+         {
+            enum struct Ability : std::uint16_t
+            {
+               discover_internal = 1,
+               discover_external = 2,
+               needs = 4,
+               topology = 8,
+            };
+
+            constexpr auto description( Ability value)
+            {
+               switch( value)
+               {
+                  case Ability::discover_internal: return std::string_view{ "discover_internal"};
+                  case Ability::discover_external: return std::string_view{ "discover_external"};
+                  case Ability::needs: return std::string_view{ "needs"};
+                  case Ability::topology: return std::string_view{ "topology"};
+               }
+               return std::string_view{ "<unknown>"};
+            }
+            
+            using base_request = common::message::basic_request< common::message::Type::domain_discovery_api_provider_registration_request>;
             struct Request : base_request
             {
                using base_request::base_request;
 
-               enum struct Directive
-               {
-                  regular,
-                  rediscovery
-               };
-
-               Directive directive{};
+               common::Flags< registration::Ability> abilities;
 
                CASUAL_CONST_CORRECT_SERIALIZE(
                   base_request::serialize( archive);
-                  CASUAL_SERIALIZE( directive);
+                  CASUAL_SERIALIZE( abilities);
                )
             };
 
-            using Reply = common::message::basic_message< common::message::Type::domain_discovery_external_registration_reply>;
-         } // registration
-
-
-
-         using base_request = common::message::basic_request< common::message::Type::domain_discovery_external_request>;
+            using Reply = common::message::basic_message< common::message::Type::domain_discovery_api_provider_registration_reply>;
+            
+         } // provider::registration
+         
+         using base_request = common::message::basic_request< common::message::Type::domain_discovery_api_request>;
          struct Request : base_request
          {
             using base_request::base_request;
@@ -180,7 +235,7 @@ namespace casual
          };
 
 
-         using base_reply = common::message::basic_message< common::message::Type::domain_discovery_external_reply>;
+         using base_reply = common::message::basic_message< common::message::Type::domain_discovery_api_reply>;
          struct Reply : base_reply
          {
             using base_reply::base_reply;
@@ -190,15 +245,13 @@ namespace casual
             )
          };
 
-         namespace advertised
+         namespace rediscovery
          {
-            using Request = common::message::basic_request< common::message::Type::domain_discovery_external_advertised_request>;
-
-            using base_reply = common::message::basic_request< common::message::Type::domain_discovery_external_advertised_reply>;
+            using Request = common::message::basic_request< common::message::Type::domain_discovery_api_rediscovery_request>;
 
             using Content = discovery::request::Content;
 
-            //! Contains what externals has advertised
+            using base_reply = common::message::basic_message< common::message::Type::domain_discovery_api_rediscovery_reply>;
             struct Reply : base_reply
             {
                using base_reply::base_reply;
@@ -210,39 +263,30 @@ namespace casual
                   CASUAL_SERIALIZE( content);
                )
             };
-
             
-         } // advertised
-         
-      } // external
+         } // rediscovery
 
-      namespace rediscovery
-      {
-         using Request = common::message::basic_request< common::message::Type::domain_discovery_external_rediscovery_request>;
-         using Reply = common::message::basic_message< common::message::Type::domain_discovery_external_rediscovery_reply>;
-      } // rediscovery
+      } // api
 
    } // domain::message::discovery 
 
    namespace common::message::reverse
    {
       template<>
-      struct type_traits< casual::domain::message::discovery::internal::registration::Request> : detail::type< casual::domain::message::discovery::internal::registration::Reply> {};
+      struct type_traits< casual::domain::message::discovery::api::provider::registration::Request> : detail::type< casual::domain::message::discovery::api::provider::registration::Reply> {};
 
       template<>
-      struct type_traits< casual::domain::message::discovery::external::registration::Request> : detail::type< casual::domain::message::discovery::external::registration::Reply> {};
+      struct type_traits< casual::domain::message::discovery::api::Request> : detail::type< casual::domain::message::discovery::api::Reply> {};
+
+      template<>
+      struct type_traits< casual::domain::message::discovery::api::rediscovery::Request> : detail::type< casual::domain::message::discovery::api::rediscovery::Reply> {};
+
 
       template<>
       struct type_traits< casual::domain::message::discovery::Request> : detail::type< casual::domain::message::discovery::Reply> {};
 
       template<>
-      struct type_traits< casual::domain::message::discovery::external::Request> : detail::type< casual::domain::message::discovery::external::Reply> {};
-
-      template<>
-      struct type_traits< casual::domain::message::discovery::external::advertised::Request> : detail::type< casual::domain::message::discovery::external::advertised::Reply> {};
-
-      template<>
-      struct type_traits< casual::domain::message::discovery::rediscovery::Request> : detail::type< casual::domain::message::discovery::rediscovery::Reply> {};
+      struct type_traits< casual::domain::message::discovery::needs::Request> : detail::type< casual::domain::message::discovery::needs::Reply> {};
       
    } // common::message::reverse
 } // casual

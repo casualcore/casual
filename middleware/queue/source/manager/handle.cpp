@@ -96,17 +96,10 @@ namespace casual
 
                namespace discovery
                {
-                  auto send( std::vector< std::string> queues, const strong::correlation::id& correlation = strong::correlation::id::emplace( uuid::make()))
+                  auto send( std::vector< std::string> queues, const strong::correlation::id& correlation = strong::correlation::id::generate())
                   {
                      Trace trace{ "queue::manager::handle::local::discovery::send"};
-
-                     casual::domain::message::discovery::external::Request request{ common::process::handle()};
-                     request.correlation = correlation;
-                     request.content.queues = std::move( queues);
-
-                     log::line( verbose::log, "request: ", request);
-
-                     return casual::domain::discovery::external::request( request);
+                     return casual::domain::discovery::request( {}, std::move( queues), correlation);
                   }
                }
             } // <unnamed>
@@ -145,26 +138,6 @@ namespace casual
                         };
                      }
                   } // process
-
-                  namespace discoverable
-                  {
-                     auto available( State& state)
-                     {
-                        return [&state]( const common::message::event::discoverable::Avaliable& event)
-                        {
-                           Trace trace{ "queue::manager::handle::local::event::discoverable::available"};
-                           common::log::line( verbose::log, "event: ", event);
-
-                           auto queues = algorithm::transform( state.pending.lookups, []( auto& pending){ return pending.name;});
-
-                           algorithm::trim( queues, algorithm::unique( algorithm::sort( queues)));
-
-                           if( ! queues.empty())
-                              local::discovery::send( std::move( queues));
-                        };
-                     }
-                     
-                  } // discoverable
                   
                } // event
 
@@ -383,25 +356,19 @@ namespace casual
                            Trace trace{ "queue::manager::handle::local::domain::discover::request"};
                            common::log::line( verbose::log, "message: ", message);
 
-                           auto reply = common::message::reverse::type( message);
+                           auto reply = common::message::reverse::type( message, common::process::handle());
+                           reply.domain = std::move( message.domain);
 
-                           reply.process = common::process::handle();
-                           reply.domain = common::domain::identity();
-
-                           auto is_relevant = [&state, directive = message.directive]( auto& name)
+                           auto is_local = [&state]( auto& name)
                            {
                               if( auto found = algorithm::find( state.queues, name))
-                              {
-                                 if( directive == decltype( directive)::forward)
-                                    return ! found->second.empty();
+                                 return algorithm::any_of( found->second, []( auto& instance){ return instance.local();});
 
-                                 return algorithm::any_of( found->second, []( auto& instance){ return ! instance.remote();});
-                              }
                               return false;
                            };
 
 
-                           for( auto& queue : algorithm::filter( message.content.queues, is_relevant))
+                           for( auto& queue : algorithm::filter( message.content.queues, is_local))
                               reply.content.queues.emplace_back( std::move( queue));
 
                            common::log::line( verbose::log, "reply: ", reply);
@@ -412,7 +379,7 @@ namespace casual
 
                      auto reply( State& state)
                      {
-                        return [&state]( casual::domain::message::discovery::external::Reply& message)
+                        return [&state]( casual::domain::message::discovery::api::Reply& message)
                         {
                            Trace trace{ "queue::manager::handle::local::domain::discover::reply"};
                            common::log::line( verbose::log, "message: ", message);
@@ -430,8 +397,48 @@ namespace casual
                            
                         };
                      }
+
+                     namespace needs
+                     { 
+                        auto request( State& state)
+                        {
+                           return [&state]( casual::domain::message::discovery::needs::Request& message)
+                           {
+                              Trace trace{ "queue::manager::handle::local::domain::discover::needs::request"};
+                              common::log::line( verbose::log, "message: ", message);
+
+                              auto reply = common::message::reverse::type( message);
+
+                              // get all our known "remote" queues
+                              reply.content.queues = algorithm::accumulate( state.queues, std::move( reply.content.queues), []( auto result, const auto& pair)
+                              {
+                                 if( algorithm::any_of( pair.second, []( auto& instance){ return instance.remote();}))
+                                    result.push_back( pair.first);
+                                 
+                                 return result;
+                              });
+
+                              // add the pending _wait for ever_ requests
+                              reply.content.queues = algorithm::accumulate( state.pending.lookups, std::move( reply.content.queues), []( auto result, const auto& pending)
+                              {
+                                 if( pending.context == decltype( pending.context)::wait)
+                                    result.push_back( pending.name);
+
+                                 return result;
+                              });
+
+                              common::log::line( verbose::log, "reply: ", reply);
+
+                              ipc::flush::optional::send( message.process.ipc, reply);
+                              
+                           };
+                        }
+                     } // needs
+
                   } // discover
                } // domain 
+
+
                namespace configuration
                {
                   auto request( State& state)
@@ -522,12 +529,10 @@ namespace casual
             
             handle::local::domain::discover::request( state),
             handle::local::domain::discover::reply( state),
+            handle::local::domain::discover::needs::request( state),
 
             handle::local::shutdown::request( state),
-            common::event::listener( 
-               handle::local::event::process::exit( state),
-               handle::local::event::discoverable::available( state)
-            ),
+            common::event::listener( handle::local::event::process::exit( state)),
 
             common::server::handle::admin::Call{
                manager::admin::services( state)}

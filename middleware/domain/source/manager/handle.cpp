@@ -714,20 +714,6 @@ namespace casual
                      };
                   }
                } // task
-
-               namespace discoverable
-               {
-                  auto available( State& state)
-                  {
-                     return [&state]( common::message::event::discoverable::Avaliable& event)
-                     {
-                        Trace trace{ "domain::manager::handle::local::event::discoverable::available"};
-                        log::line( verbose::log, "event: ", event);
-
-                        manager::task::event::dispatch( state, [&event](){ return event;});
-                     };
-                  }
-               } // discoverable
             } // event
 
             namespace process
@@ -1067,7 +1053,6 @@ namespace casual
             handle::local::event::notification( state),
             handle::local::event::task( state),
             handle::local::event::sub::task( state),
-            handle::local::event::discoverable::available( state),
             handle::local::process::connect( state),
             handle::local::process::lookup( state),
             handle::local::configuration::request( state),

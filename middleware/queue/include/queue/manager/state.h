@@ -102,6 +102,7 @@ namespace casual
             platform::size::type order{};
 
             inline auto remote() const { return order > 0;}
+            inline auto local() const { return order == 0;}
 
             inline friend bool operator < ( const Queue& lhs, const Queue& rhs) { return lhs.order < rhs.order;};
             inline friend bool operator == ( const Queue& lhs, common::strong::process::id rhs) { return lhs.process == rhs;}

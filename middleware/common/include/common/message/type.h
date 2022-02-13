@@ -67,24 +67,19 @@ namespace casual
          domain_instance_global_state_request = DOMAIN_BASE + 400,
          domain_instance_global_state_reply,
 
-         domain_discovery_internal_registration_request = DOMAIN_BASE + 500,
-         domain_discovery_internal_registration_reply,
-         domain_discovery_external_registration_request,
-         domain_discovery_external_registration_reply,
-         
+         domain_discovery_api_provider_registration_request = DOMAIN_BASE + 500,
+         domain_discovery_api_provider_registration_reply,
+         domain_discovery_api_request,
+         domain_discovery_api_reply,
+         domain_discovery_api_rediscovery_request,
+         domain_discovery_api_rediscovery_reply,
+
          // the following is part of interdomain protocol and defined (and pinned) under gateway
          // domain_discovery_request,
          // domain_discovery_reply,
 
-         domain_discovery_external_request,
-         domain_discovery_external_reply,
-
-         domain_discovery_external_advertised_request,
-         domain_discovery_external_advertised_reply,
-
-         domain_discovery_external_rediscovery_request,
-         domain_discovery_external_rediscovery_reply,
-
+         domain_discovery_needs_request,
+         domain_discovery_needs_reply,
 
          // Server
          SERVER_BASE = 2000,
@@ -138,9 +133,6 @@ namespace casual
          event_process_configured,
          event_process_exit,
          event_process_assassination_contract,
-
-         // sent from _processes_ that can be discovered
-         event_discoverable_avaliable,
 
          // internal domain events
          event_domain_information,
@@ -285,7 +277,7 @@ namespace casual
          // part of domain-discovery, but we need to keep the pinned values.         
          domain_discovery_request   = 7300,
          domain_discovery_reply     = 7301,
-         domain_discovery_topology_change = 7302, // 1.2
+         domain_discovery_topology_update = 7302, // 1.2
 
          //! sent from the connector when the logical connected is established
          gateway_domain_connected,

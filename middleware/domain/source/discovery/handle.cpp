@@ -16,6 +16,8 @@
 #include "common/event/send.h"
 #include "common/communication/ipc/flush/send.h"
 
+#include "casual/assert.h"
+
 namespace casual
 {
    using namespace common;
@@ -43,12 +45,12 @@ namespace casual
                //! extracts and replaces process and correlation for the message
                //! @return the destination
                template< typename M>
-               auto destination( M& message)
+               Destination destination( M& message)
                {
-                  return Destination{
-                     std::exchange( message.process, common::process::handle()).ipc,
-                     std::exchange( message.correlation, {})
-                  };
+                  if constexpr( std::is_const_v< M>)
+                     return { message.process.ipc, message.correlation};
+                  else
+                     return { std::exchange( message.process, common::process::handle()).ipc, std::exchange( message.correlation, {})};
                }
             } // extract
 
@@ -57,19 +59,20 @@ namespace casual
             {
                namespace send
                {
-                  template< typename R>
-                  auto requests( const State& state, R&& range, const message::discovery::Request& message)
+                  template< typename Result, typename P, typename M>
+                  auto requests( Result result, P&& providers, const M& message)
                   {
                      Trace trace{ "discovery::handle::local::detail::send::requests"};
-                     assert( ! message.correlation);
-                     assert( message.process == process::handle());
+                     log::line( verbose::log, "providers: ", providers);
+                     casual::assertion( ! message.correlation);
+                     casual::assertion( message.process == process::handle());
 
                      log::line( verbose::log, "message: ", message);
 
-                     auto result = algorithm::accumulate( range, state.coordinate.discovery.empty_pendings(), [&message]( auto result, const auto& point)
+                     result = algorithm::accumulate( providers, std::move( result), [&message]( auto result, const auto& provider)
                      {
-                        if( auto correlation = communication::ipc::flush::optional::send( point.process.ipc, message))
-                           result.emplace_back( correlation, point.process.pid);
+                        if( auto correlation = communication::ipc::flush::optional::send( provider.process.ipc, message))
+                           result.emplace_back( correlation, provider.process.pid);
 
                         return result;
                      });
@@ -109,56 +112,77 @@ namespace casual
                   }
                } // normalize
 
-    
+               namespace collect::needs::then
+               {
+                  //! the `continuation` is invoked with all the discovery replies
+                  template< typename F>
+                  auto discover( State& state, F continuation)
+                  {
+                     Trace trace{ "discovery::handle::local::detail::collect::needs::then::discover"};
+
+                     // send request to all with the discover ability, if any.
+                     auto pending = detail::send::requests( state.coordinate.needs.empty_pendings(), 
+                        state.providers.filter( state::provider::Ability::needs), message::discovery::needs::Request{ process::handle()});
+
+                     // note: everything captured needs to by value (besides State if used)
+                     state.coordinate.needs( std::move( pending), [ &state, continuation = std::move( continuation)]( auto replies, auto outcome)
+                     {
+                        Trace trace{ "discovery::handle::local::detail::collect::needs::then::discover collect-needs"};
+                        log::line( verbose::log, "replies: ", replies, "outcome: ", outcome);
+                        
+                        // coordinate discovery requests..
+                        message::discovery::Request request{ process::handle()};
+                        for( auto& reply : replies)
+                           request.content += std::move( reply.content);
+
+                        if( ! request.content)
+                        {
+                           // Noting to discover, we let caller continuation do it's thing...
+                           state.coordinate.discovery( {}, std::move( continuation));
+                        }
+                        else
+                        {
+                           auto pending = detail::send::requests( state.coordinate.discovery.empty_pendings(), 
+                              state.providers.filter( state::provider::Ability::discover_external), request);
+
+                           // let caller continuation do it's thing...
+                           state.coordinate.discovery( std::move( pending), std::move( continuation));
+                        }
+                     });
+                  }
+               } // collect::needs::then
 
             } // detail
 
-            namespace internal
+
+            namespace api
             {
-               auto registration( State& state)
+               namespace provider
                {
-                  return [&state]( const message::discovery::internal::registration::Request& message)
+                  auto registration( State& state)
                   {
-                     Trace trace{ "discovery::handle::local::internal::registration"};
-                     log::line( verbose::log, "message: ", message);
+                     return [&state]( const message::discovery::api::provider::registration::Request& message)
+                     {
+                        Trace trace{ "discovery::handle::local::provider::registration"};
+                        log::line( verbose::log, "message: ", message);
 
-                     state.agents.registration( message);
-
-                     // send reply
-                     communication::ipc::flush::optional::send( message.process.ipc, common::message::reverse::type( message));
-                  };
-               }
-            } // internal
-
-            namespace external
-            {
-               auto registration( State& state)
-               {
-                  return [&state]( const message::discovery::external::registration::Request& message)
-                  {
-                     Trace trace{ "discovery::handle::local::external::registration"};
-                     log::line( verbose::log, "message: ", message);
-
-                     state.agents.registration( message);
-
-                     // send event so others can do discovery, if they need to.
-                     common::event::send( common::message::event::discoverable::Avaliable{ common::process::handle()});
-
-                     // send reply
-                     communication::ipc::flush::optional::send( message.process.ipc, common::message::reverse::type( message));
-                  };
-               }
+                        // send reply and registrate
+                        if( communication::ipc::flush::optional::send( message.process.ipc, common::message::reverse::type( message)))
+                           state.providers.registration( message);
+                     };
+                  }
+               } // provider
 
                auto request( State& state)
                {
-                  return [&state]( message::discovery::external::Request&& message)
+                  return [&state]( message::discovery::api::Request&& message)
                   {
-                     Trace trace{ "discovery::handle::local::external::request"};
+                     Trace trace{ "discovery::handle::local::api::request"};
                      log::line( verbose::log, "message: ", message);
 
-                     if( state.runlevel > decltype( state.runlevel())::running)
+                     if( state.runlevel > decltype( state.runlevel())::running || ! message.content)
                      {
-                        // we don't take any more request.
+                        // we don't take any more request, or the request is empty
                         communication::ipc::flush::optional::send( message.process.ipc, common::message::reverse::type( message));
                         return;
                      }
@@ -170,20 +194,18 @@ namespace casual
                      request.content = std::move( message.content);
                      request.domain = common::domain::identity();
 
+                     log::line( verbose::log, "state.providers: ", state.providers);
 
-                     // send request to all externals, if any.
-                     auto pending = detail::send::requests( state, state.agents.external(), request);
+                     // send request to all with the discover ability, if any.
+                     auto pending = detail::send::requests( state.coordinate.discovery.empty_pendings(), 
+                        state.providers.filter( state::provider::Ability::discover_external), request);
 
                      // note: everything captured needs to by value (besides State if used)
-                     state.coordinate.discovery( std::move( pending), [destination]( auto replies, auto failed)
+                     state.coordinate.discovery( std::move( pending), [destination]( auto replies, auto outcome)
                      {
-                        Trace trace{ "discovery::handle::local::external::request coordinate"};
-                        
-                        // we could be the sender, if so, discard the reply.
-                        if( destination.ipc == common::process::handle().ipc)
-                           return;
+                        Trace trace{ "discovery::handle::local::api::request coordinate"};
 
-                        message::discovery::external::Reply message;
+                        message::discovery::api::Reply message;
                         message.correlation = destination.correlation;
 
                         communication::ipc::flush::optional::send( destination.ipc, message);
@@ -191,23 +213,56 @@ namespace casual
                   };
                }
 
-               namespace advertised
+               namespace rediscovery
                {
-
-                  auto reply( State& state)
+                  auto request( State& state)
                   {
-                     return [&state]( message::discovery::external::advertised::Reply&& message)
+                     return [ &state]( const message::discovery::api::rediscovery::Request& message)
                      {
-                        Trace trace{ "discovery::handle::local::external::advertised::reply"};
+                        Trace trace{ "discovery::handle::local::rediscovery::request"};
                         log::line( verbose::log, "message: ", message);
 
-                        state.coordinate.advertised( std::move( message));
+                        // mutate the message and extract 'reply destination'
+                        auto destination = local::extract::destination( message);
+
+                        // collect needs and discover then use our continuation
+                        detail::collect::needs::then::discover( state, [ destination = std::move( destination)]( auto replies, auto outcome)
+                        {
+                           Trace trace{ "discovery::handle::local::rediscovery::request continuation"};
+                           log::line( verbose::log, "replies: ", replies, "outcome: ", outcome);
+
+                           message::discovery::api::rediscovery::Reply reply;
+                           reply.correlation = destination.correlation;
+                           reply.content = algorithm::accumulate( replies, std::move( reply.content), []( auto result, auto& reply)
+                           {
+                              auto transform_names = []( auto& range){ return algorithm::transform( range, []( auto& value){ return value.name;});};
+
+                              algorithm::append_unique( transform_names( reply.content.services), result.services);
+                              algorithm::append_unique( transform_names( reply.content.queues), result.queues);
+
+                              return result;
+                           });
+
+                           communication::ipc::flush::optional::send( destination.ipc, reply);
+                        });
                      };
                   }
-                  
-               } // advertised
+               } // rediscovery
+            } // api
 
-            } // external
+            namespace needs
+            {
+               auto reply( State& state)
+               {
+                  return [&state]( message::discovery::needs::Reply&& message)
+                  {
+                     Trace trace{ "discovery::handle::local::needs::reply"};
+                     log::line( verbose::log, "message: ", message);
+
+                     state.coordinate.needs( std::move( message));
+                  };
+               }
+            } // needs
 
             auto request( State& state)
             {
@@ -229,10 +284,10 @@ namespace casual
                      auto destination = local::extract::destination( message);
                      log::line( verbose::log, "destination: ", destination);
 
-                     auto pending = detail::send::requests( state, range, message);
+                     auto pending = detail::send::requests( state.coordinate.discovery.empty_pendings(), range, message);
 
                      // note: everything captured needs to by value (besides State if used)
-                     state.coordinate.discovery( std::move( pending), [destination]( auto replies, auto failed)
+                     state.coordinate.discovery( std::move( pending), [destination]( auto replies, auto outcome)
                      {
                         Trace trace{ "discovery::handle::local::request coordinate"};
 
@@ -240,10 +295,8 @@ namespace casual
                         message.correlation = destination.correlation;
 
                         for( auto& reply : replies)
-                        {
-                           algorithm::append( std::move( reply.content.services), message.content.services);
-                           algorithm::append( std::move( reply.content.queues), message.content.queues);
-                        }
+                           message.content += std::move( reply.content);
+
                         local::detail::normalize::content( message.content);
                         log::line( verbose::log, "message: ", message);
 
@@ -251,11 +304,13 @@ namespace casual
                      });
                   };
 
+                  using Ability = state::provider::Ability;
+
                   // should we ask all 'agents' or only the local inbounds
                   if( message.directive == decltype( message.directive)::forward)
-                     handle_request( state, state.agents.all(), message);
+                     handle_request( state, state.providers.filter( { Ability::discover_external, Ability::discover_internal}), message);
                   else
-                     handle_request( state, state.agents.internal(), message);
+                     handle_request( state, state.providers.filter( Ability::discover_internal), message);
                };
             }
 
@@ -271,63 +326,47 @@ namespace casual
                };
             }
 
-            namespace rediscovery
+            namespace topology
             {
-               auto request( State& state)
+               auto update( State& state)
                {
-                  return [&state]( message::discovery::rediscovery::Request&& message)
+                  return [ &state]( message::discovery::topology::Update&& message)
                   {
-                     Trace trace{ "discovery::handle::local::rediscovery::request"};
+                     Trace trace{ "discovery::handle::local::topology::update"};
                      log::line( verbose::log, "message: ", message);
 
                      if( state.runlevel > decltype( state.runlevel())::running)
-                     {
-                        // we don't take any more request.
-                        communication::ipc::flush::optional::send( message.process.ipc, common::message::reverse::type( message));
                         return;
-                     }
 
-                     // mutate the message and extract 'reply destination', and set our self as receiver
-                     auto destination = local::extract::destination( message);
+                     // we might have already handled the topology update
+                     if( algorithm::find( message.domains, common::domain::identity()))
+                        return;
 
-                     auto pending = algorithm::accumulate( state.agents.rediscover(), state.coordinate.rediscovery.empty_pendings(), [&message]( auto result, const auto& point)
+                     message.domains.push_back( common::domain::identity());
+
+                     // collect needs and discover then use our continuation (mutable to enable move from captured)
+                     detail::collect::needs::then::discover( state, [ &state, domains = std::move( message.domains)]( auto replies, auto outcome) mutable
                      {
-                        if( auto correlation = communication::ipc::flush::optional::send( point.process.ipc, message))
-                           result.emplace_back( correlation, point.process.pid);
+                        Trace trace{ "discovery::handle::local::topology::update coordinate continuation"};
+                        log::line( verbose::log, "replies: ", replies, "outcome: ", outcome);
 
-                        return result;
-                     });
+                        // we're not interested in the replies, we just propagate the topology::Update to 
+                        // all with that ability, if any.
 
-                     // note: everything captured needs to by value (besides State if used)
-                     state.coordinate.rediscovery( std::move( pending), [destination]( auto replies, auto failed)
-                     {
-                        Trace trace{ "discovery::handle::local::rediscovery::request"};
+                        message::discovery::topology::Update message;
+                        message.domains = std::move( domains);
 
-                        message::discovery::rediscovery::Reply message;
-                        message.correlation = destination.correlation;
-                        communication::ipc::flush::optional::send( destination.ipc, message);
+                        for( auto& provider : state.providers.filter( state::provider::Ability::topology))
+                           communication::ipc::flush::optional::send( provider.process.ipc, message);
                      });
                   };
                }
-
-               auto reply( State& state)
-               {
-                  return [&state]( message::discovery::rediscovery::Reply&& message)
-                  {
-                     Trace trace{ "discovery::handle::local::rediscovery::reply"};
-                     log::line( verbose::log, "message: ", message);
-
-                     state.coordinate.rediscovery( std::move( message));
-                  };
-               }
-               
-            } // rediscovery
+            } // topology
 
             namespace event
             {
                namespace process
                {
-                  
                   auto exit( State& state)
                   {
                      return [&state]( const common::message::event::process::Exit& event)
@@ -335,58 +374,11 @@ namespace casual
                         Trace trace{ "discovery::handle::local::event::process::exit"};
                         log::line( verbose::log, "event: ", event);
 
-                        state.agents.remove( event.state.pid);
-                        state.coordinate.discovery.failed( event.state.pid);
-                        state.coordinate.rediscovery.failed( event.state.pid);
+                        state.providers.remove( event.state.pid);
+                        state.coordinate.failed( event.state.pid);
                      };
                   }
                } // process
-
-               namespace discoverable
-               {
-                  auto available( State& state)
-                  {
-                     return [&state]( const common::message::event::discoverable::Avaliable& event)
-                     {
-                        Trace trace{ "discovery::handle::local::event::discoverable::available"};
-                        common::log::line( verbose::log, "event: ", event);
-
-                        // we know there's a new _discoverable_ available.
-                        // collect all known advertised external services/queues, and when we get'em
-                        // we discover these
-
-                        auto pending = algorithm::accumulate( state.agents.external(), state.coordinate.advertised.empty_pendings(), []( auto result, const auto& point)
-                        {   
-                           if( auto correlation = communication::ipc::flush::optional::send( point.process.ipc, message::discovery::external::advertised::Request{ common::process::handle()}))
-                              result.emplace_back( correlation, point.process.pid);
-
-                           return result;
-                        });
-
-                        // note: everything captured needs to by value (besides State if used)
-                        state.coordinate.advertised( std::move( pending), [&state]( auto replies, auto failed)
-                        {
-                           Trace trace{ "discovery::handle::local::event::discoverable::available replied"};
-
-                           message::discovery::external::Request request{ common::process::handle()};
-                           request.content = algorithm::accumulate( replies, message::discovery::request::Content{}, []( auto result, auto& reply)
-                           {
-                              return result += std::move( reply.content);
-                           });
-
-                           // we only send request if we've got something to discover...
-                           if( request.content)
-                           {
-                              common::log::line( verbose::log, "request: ", request);
-
-                              // we use the regular external handler to send and coordinate external::Request.
-                              local::external::request( state)( std::move( request));
-                           }
-                        });
-                     };
-                  }
-                  
-               } // discoverable
 
             } // event
 
@@ -411,17 +403,14 @@ namespace casual
       {
          return {
             common::message::handle::defaults( common::communication::ipc::inbound::device()),
-            common::event::listener( 
-               local::event::process::exit( state),
-               local::event::discoverable::available( state)),
-            local::external::registration( state),
-            local::external::request( state),
-            local::external::advertised::reply( state),
-            local::internal::registration( state),
+            common::event::listener( local::event::process::exit( state)),
+            local::api::provider::registration( state),
+            local::api::request( state),
+            local::api::rediscovery::request( state),
+            local::needs::reply( state),
             local::request( state),
             local::reply( state),
-            local::rediscovery::request( state),
-            local::rediscovery::reply( state),
+            local::topology::update( state),
             local::shutdown::request( state)
          };
       }

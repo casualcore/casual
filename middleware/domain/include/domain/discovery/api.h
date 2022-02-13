@@ -14,68 +14,43 @@ namespace casual
 {
    namespace domain::discovery
    {
-      namespace internal
-      {  
-         //! register for discovery (to expose internal/local services/queueues)
-         //! @attention will _flush::send_ using ipc::inbound::device()
-         //! @{
-         void registration();
-         void registration( const common::process::Handle& process);
-         //! @}
-
-      } // internal
 
       using Request = message::discovery::Request;
       using Reply = message::discovery::Reply;
-      using correlation_type = common::strong::correlation::id;
 
-      //! sends an discovery request to casual-domain-discovery, 
-      //! that will "ask" all regestrated _inbounds_, and possible outbounds, and accumulate one reply.
+      //! Used by _inbounds_ that get's this message from another domain's outbound.
+      //! Will "ask" all regestrated _internals_, and possible _outbounds_, and accumulate one reply.
       //! @returns the correlation id.
       //! @attention reply will be sent to the process in the request.
       //! @attention will _flush::send_ using ipc::inbound::device()
-      correlation_type request( const Request& request);
-      
-      namespace external
+      common::strong::correlation::id request( const Request& request);
+
+      namespace provider
       {
-         using Directive = message::discovery::external::registration::Request::Directive;
+         using Ability = message::discovery::api::provider::registration::Ability;
+         void registration( common::Flags< Ability> abilities);
+         void registration( const common::process::Handle& process, common::Flags< Ability> abilities);
+      } // provider
+      
 
-         //! register for discovery (can send discovery to others)
-         //! @attention will _flush::send_ using ipc::inbound::device()
-         //! @{
-         void registration( Directive directive = Directive::regular);
-         void registration( const common::process::Handle& process, Directive directive = Directive::regular);
-         //! @}
+      common::strong::correlation::id request( 
+         std::vector< std::string> services, 
+         std::vector< std::string> queues, 
+         common::strong::correlation::id correlation = common::strong::correlation::id::generate());
 
-         using Request = message::discovery::external::Request;
-         using Reply = message::discovery::external::Reply;
-
-         //! sends an external discovery request to casual-domain-discovery, 
-         //! that will "ask" all regestrated _externals_, and accumulate one reply.
-         //! @returns the correlation id.
-         //! @attention reply will be sent to the process in the request.
-         //! @attention will _flush::send_ using ipc::inbound::device()
-         correlation_type request( const Request& request);
-
-      } // external
-
+      namespace topology
+      {
+         void update();
+         void update( const message::discovery::topology::Update& message);
+      } // topology
+      
       namespace rediscovery
       {
-         //! register for rediscovery
-         //! @attention will _flush::send_ using ipc::inbound::device()
-         void registration();
+         using Reply = message::discovery::api::rediscovery::Reply;
 
-         using Request = message::discovery::rediscovery::Request;
-         using Reply = message::discovery::rediscovery::Reply;
-
-         correlation_type request();
-
-         namespace blocking
-         {
-            void request();
-         } // blocking
-         
+         common::strong::correlation::id request();   
       } // rediscovery
+      
 
    } // domain::discovery  
 } // casual

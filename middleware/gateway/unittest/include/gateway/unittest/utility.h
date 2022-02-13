@@ -68,6 +68,19 @@ namespace casual
                   };
                }
 
+               inline auto connected( std::vector< std::string_view> names)
+               {
+                  return [ names = std::move( names)]( auto& state)
+                  {
+                     return common::algorithm::includes( state.connections, names);
+                  };
+               }
+
+               inline auto connected( std::string_view name)
+               {
+                  return connected( std::vector< std::string_view>{ name});
+               }
+
                inline auto routing( std::vector< std::string_view> services, std::vector< std::string_view> queues)
                {
                   return [services = std::move( services), queues = std::move( queues)]( auto& state)
