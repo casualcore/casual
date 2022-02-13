@@ -74,8 +74,7 @@ namespace casual
             //! register pending 'fan outs' and a callback which is invoked when all pending
             //! has been 'received'.
             template< typename C>
-            auto operator () ( std::vector< Pending> pending, C&& callback)
-               -> decltype( void( callback( std::vector< message_type>{}, std::vector< Pending>{})))
+            void operator () ( std::vector< Pending> pending, C&& callback)
             {
                auto& entry = m_entries.emplace_back( std::move( pending), std::forward< C>( callback));
 
@@ -104,9 +103,11 @@ namespace casual
 
             inline auto empty() const noexcept { return m_entries.empty();}
 
+            using pending_type = std::vector< Pending>;
+            
             //! @returns an empty 'pending_type' vector
             //! convince function to get 'the right type' 
-            inline auto empty_pendings() const noexcept { return std::vector< Pending>{};}
+            inline auto empty_pendings() const noexcept { return pending_type{};}
 
             CASUAL_LOG_SERIALIZE(
                CASUAL_SERIALIZE_NAME( m_entries, "entries");
@@ -116,7 +117,7 @@ namespace casual
 
             struct Entry
             {
-               using callback_t = common::function< void( std::vector< message_type> received, std::vector< Pending> outcome)>;
+               using callback_t = common::unique_function< void( std::vector< message_type> received, std::vector< Pending> outcome)>;
 
                inline Entry( std::vector< Pending> pending, callback_t callback)
                   : m_pending{ std::move( pending)}, m_callback{ std::move( callback)} {}

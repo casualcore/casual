@@ -370,6 +370,15 @@ namespace casual
          return device::call( std::forward< D>( destination), std::forward< M>( message), device);
       }
 
+      //! @returns the received message of type `R`
+      template< typename R, typename... Ts>
+      R receive( Ts&&... ts)
+      {
+         R reply;
+         device::blocking::receive( inbound::device(), reply, std::forward< Ts>( ts)...);
+         return reply;
+      }
+
 
       bool remove( strong::ipc::id id);
       bool remove( const process::Handle& owner);

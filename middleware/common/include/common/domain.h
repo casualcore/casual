@@ -42,6 +42,8 @@ namespace casual
          inline friend bool operator != ( const Identity& lhs, const Identity& rhs) { return ! ( lhs == rhs);}
          friend bool operator < ( const Identity& lhs, const Identity& rhs);
 
+         inline friend bool operator == ( const Identity& lhs, std::string_view rhs) { return lhs.name == rhs;}
+
       };
 
       const Identity& identity();
