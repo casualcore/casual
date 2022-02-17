@@ -3,6 +3,19 @@ This is the changelog for `casual` and all changes are listed in this document.
 
 ## [Unreleased]
 
+## [1.5.9] - 2022-02-18
+### Fixes
+- discovery - propagate topology updates upstream
+   - When a domain logically connects (_connector_) to another domain (_connectee_), the _connector_
+     propagates `topology update` to all "it's inbounds" that has `discovery:forward true` 
+     configured. Hence, enable (auto) discovery for stuff arbitrary number of _nodes_ upstream.
+- gateway - "move" listeners and connectors to failed on fatal errors.
+   - Listeners: on error we move the listener directly to _failed_
+   - Connectors: on fatal errors we move the connection to _failed_,
+      on non fatal we try again after some time (as before).
+- cobol - set return status in Cobol api TPRETURN
+- gateway - keep trying to connect if the logical connection fails
+
 ## [1.5.8] - 2022-01-08
 ### Fixes
 - transaction - fix distributed transaction bug in complex topology
