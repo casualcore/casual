@@ -8,7 +8,7 @@
 
 #include "casual/event/dispatch.h"
 
-#include "domain/manager/unittest/process.h"
+#include "domain/unittest/manager.h"
 #include "domain/pending/message/send.h"
 #include "casual/domain/manager/api/state.h"
 
@@ -43,7 +43,7 @@ domain:
                Domain( const char* configuration) 
                   : domain{ { configuration}} {}
 
-               domain::manager::unittest::Process domain{ { local::configuration}};
+               domain::unittest::Manager domain{ { local::configuration}};
             };
 
             namespace send

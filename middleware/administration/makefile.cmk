@@ -10,6 +10,7 @@ make.IncludePaths( [
     '../serviceframework/include',
     '../common/include',
     '../domain/include',
+    '../domain/unittest/include',
     '../service/include',
     '../queue/include',
     '../transaction/include',

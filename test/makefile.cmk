@@ -7,7 +7,9 @@ make.IncludePaths( ['include',
     '../middleware/common/include',
     '../middleware/serviceframework/include',
     '../middleware/configuration/include',
+    '../middleware/configuration/unittest/include',
     '../middleware/domain/include',
+    '../middleware/domain/unittest/include',
     '../middleware/gateway/include',
     '../middleware/gateway/unittest/include',
     '../middleware/transaction/include',
@@ -15,6 +17,7 @@ make.IncludePaths( ['include',
     '../middleware/service/unittest/include',
     '../middleware/xatmi/include',
     '../middleware/queue/include',
+    '../middleware/queue/unittest/include',
     '../middleware/buffer/include']
     + make.optional_include_paths()
     + dsl.paths().include.gtest
@@ -53,22 +56,22 @@ target = make.LinkExecutable( 'bin/casual-test-mockup-string-server',
 make.Install( [ target], dsl.paths().install + '/test/bin')
 
 unittest_object = [
-    make.Compile( 'unittest/source/domain/test_configuration.cpp'),
-    make.Compile( 'unittest/source/domain/test_basic.cpp'),
-    make.Compile( 'unittest/source/domain/xatmi/test_call.cpp'),
-    make.Compile( 'unittest/source/domain/xatmi/test_start.cpp'),
-    make.Compile( 'unittest/source/domain/test_transaction.cpp'),
-    make.Compile( 'unittest/source/domain/test_gateway.cpp'),
-    make.Compile( 'unittest/source/domain/gateway/test_reverse.cpp'),
-    make.Compile( 'unittest/source/domain/gateway/test_discovery.cpp'),
-    make.Compile( 'unittest/source/domain/test_service.cpp'),
-    make.Compile( 'unittest/source/domain/test_assassinate.cpp'),
-    make.Compile( 'unittest/source/domain/xatmi/test_conversation.cpp'),
+    make.Compile( 'unittest/source/test_configuration.cpp'),
+    make.Compile( 'unittest/source/test_domain.cpp'),
+    make.Compile( 'unittest/source/xatmi/test_call.cpp'),
+    make.Compile( 'unittest/source/xatmi/test_start.cpp'),
+    make.Compile( 'unittest/source/test_transaction.cpp'),
+    make.Compile( 'unittest/source/test_gateway.cpp'),
+    make.Compile( 'unittest/source/gateway/test_reverse.cpp'),
+    make.Compile( 'unittest/source/gateway/test_discovery.cpp'),
+    make.Compile( 'unittest/source/test_service.cpp'),
+    make.Compile( 'unittest/source/test_assassinate.cpp'),
+    make.Compile( 'unittest/source/xatmi/test_conversation.cpp'),
 ]
 
 # only build http test cases if the enviornment is set up
 if "CASUAL_UNITTEST_HTTP_INBOUND_CONFIG" in os.environ and "CASUAL_UNITTEST_HTTP_INBOUND_PATH" in os.environ:
-   unittest_object.append( make.Compile( 'unittest/source/domain/test_http.cpp'))
+   unittest_object.append( make.Compile( 'unittest/source/test_http.cpp'))
 
 make.LinkUnittest( 'unittest/bin/test-casual',
    unittest_object,

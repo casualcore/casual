@@ -7,12 +7,14 @@
 #pragma once
 
 #include "configuration/user.h"
+#include "configuration/model.h"
+#include "configuration/model/load.h"
 
-#include "common/strong/id.h"
+#include "common/unittest/file.h"
 
 namespace casual
 {
-   namespace domain::manager::unittest::configuration
+   namespace domain::unittest::configuration
    {
       casual::configuration::user::Model get();
       
@@ -20,6 +22,13 @@ namespace casual
       //! the updated configuration state
       casual::configuration::user::Model post( casual::configuration::user::Model wanted);
 
+      namespace detail
+      {
+         casual::configuration::Model load( std::vector< std::string_view> contents);
+      } // detail
 
-   } // domain::manager::unittest::configuration
+
+
+
+   } // domain::unittest::configuration
 } // casual

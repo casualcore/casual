@@ -8,8 +8,7 @@
 #include "common/unittest.h"
 #include "common/unittest/file.h"
 
-
-#include "casual/test/domain.h"
+#include "domain/unittest/manager.h"
 
 #include "common/communication/instance.h"
 #include "common/transcode.h"
@@ -80,8 +79,8 @@ http:
                {
                   auto outbound = local::configuration::outbound();
 
-                  domain::Manager a{ local::configuration::a()};
-                  domain::Manager b{ local::configuration::b( outbound)};
+                  auto a = casual::domain::unittest::manager( local::configuration::a());
+                  auto b = casual::domain::unittest::manager( local::configuration::b( outbound));
 
                   {
                      b.activate();
@@ -113,14 +112,14 @@ http:
         
 
 
-         TEST( test_domain_http, call_echo_in_other_domain_X_OCTET)
+         TEST( test_http, call_echo_in_other_domain_X_OCTET)
          {
             common::unittest::Trace trace;
 
             local::call_echo_in_other_domain( X_OCTET);
          }
 
-         TEST( test_domain_http, call_echo_in_other_domain_CSTRING)
+         TEST( test_http, call_echo_in_other_domain_CSTRING)
          {
             common::unittest::Trace trace;
 
@@ -141,13 +140,13 @@ http:
          };
 
 
-         struct test_parallel_http : ::testing::TestWithParam< Count> 
+         struct test_http_parallel : ::testing::TestWithParam< Count> 
          {
 
          };
 
 
-         TEST_P( test_parallel_http, call_echo_in_other_domain)
+         TEST_P( test_http_parallel, call_echo_in_other_domain)
          {
             common::unittest::Trace trace;
 
@@ -155,8 +154,8 @@ http:
 
             auto outbound = local::configuration::outbound();
 
-            domain::Manager a{ local::configuration::a()};
-            domain::Manager b{ local::configuration::b( outbound)};
+            auto a = casual::domain::unittest::manager( local::configuration::a());
+            auto b = casual::domain::unittest::manager( local::configuration::b( outbound));
 
             {
                b.activate();
@@ -211,7 +210,7 @@ http:
 
          INSTANTIATE_TEST_SUITE_P( 
             http,
-            test_parallel_http,
+            test_http_parallel,
             ::testing::ValuesIn( counts)
          );
       

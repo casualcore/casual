@@ -6,7 +6,9 @@ make.IncludePaths( [
     'unittest/include',
 	'../common/include',
     '../configuration/include',
+    '../configuration/unittest/include',
     '../domain/include',
+    '../domain/unittest/include',
 	'../xatmi/include',
 	'../serviceframework/include',
     ]

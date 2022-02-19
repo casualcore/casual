@@ -12,10 +12,8 @@
 #include "domain/manager/configuration.h"
 #include "domain/manager/admin/model.h"
 #include "domain/manager/admin/server.h"
-#include "domain/manager/unittest/process.h"
-#include "domain/manager/unittest/configuration.h"
-
-#include "../../include/unittest/call.h"
+#include "domain/unittest/manager.h"
+#include "domain/unittest/internal/call.h"
 
 #include "common/string.h"
 #include "common/environment.h"
@@ -68,7 +66,7 @@ namespace casual
             template< typename... C>
             auto domain( C&&... configurations)
             {
-               return casual::domain::manager::unittest::process( std::forward< C>( configurations)...);
+               return casual::domain::unittest::manager( std::forward< C>( configurations)...);
             }
 
             namespace find
@@ -247,12 +245,12 @@ domain:
             {
                admin::model::State state()
                {
-                  return unittest::call< admin::model::State>( admin::service::name::state);
+                  return unittest::internal::call< admin::model::State>( admin::service::name::state);
                }
 
                auto scale( const std::vector< admin::model::scale::Alias>& aliases)
                {
-                  return unittest::call< std::vector< strong::correlation::id>>( admin::service::name::scale::aliases, aliases);
+                  return unittest::internal::call< std::vector< strong::correlation::id>>( admin::service::name::scale::aliases, aliases);
                }
 
                auto scale( const std::string& alias, platform::size::type instances)
@@ -264,7 +262,7 @@ domain:
                {
                   auto aliases( const std::vector< admin::model::restart::Alias>& aliases)
                   {
-                     return unittest::call< std::vector< strong::correlation::id>>( admin::service::name::restart::aliases, aliases);
+                     return unittest::internal::call< std::vector< strong::correlation::id>>( admin::service::name::restart::aliases, aliases);
                   }
 
                   auto aliases( std::vector< std::string> aliases)
@@ -283,7 +281,7 @@ domain:
                         return admin::model::restart::Group{ std::move( name)};
                      };
 
-                     return unittest::call< std::vector< strong::correlation::id>>( admin::service::name::restart::groups, algorithm::transform( groups, transform));
+                     return unittest::internal::call< std::vector< strong::correlation::id>>( admin::service::name::restart::groups, algorithm::transform( groups, transform));
                   }
                } // restart
 
@@ -959,7 +957,7 @@ domain:
       TEST( domain_manager, kill_internal_pending__expect_restart)
       {
          common::unittest::Trace trace;
-         unittest::Process manager;
+         unittest::Manager manager;
 
          // setup subscription to see when stuff is done
          common::event::subscribe( common::process::handle(), 
@@ -1383,7 +1381,7 @@ domain:
 
          auto origin = local::configuration::load( configuration);
 
-         auto model = casual::configuration::model::transform( unittest::call< casual::configuration::user::Model>( admin::service::name::configuration::get));
+         auto model = casual::configuration::model::transform( unittest::internal::call< casual::configuration::user::Model>( admin::service::name::configuration::get));
 
          EXPECT_TRUE( origin.domain == model.domain) << CASUAL_NAMED_VALUE( origin.domain) << "\n " << CASUAL_NAMED_VALUE( model.domain);
 
@@ -1405,7 +1403,7 @@ domain:
                   auto condition = common::event::condition::compose(
                      common::event::condition::prelude( [&]()
                      {
-                        tasks = unittest::call< std::vector< common::strong::correlation::id>>( admin::service::name::configuration::post, wanted);
+                        tasks = unittest::internal::call< std::vector< common::strong::correlation::id>>( admin::service::name::configuration::post, wanted);
                      }),
                      common::event::condition::done( [&tasks](){ return tasks.empty();})
                   );
@@ -1424,7 +1422,7 @@ domain:
                      );
 
                   // return the new configuration model
-                  return casual::configuration::model::transform( unittest::call< casual::configuration::user::Model>( admin::service::name::configuration::get));
+                  return casual::configuration::model::transform( unittest::internal::call< casual::configuration::user::Model>( admin::service::name::configuration::get));
                }
                
             } // call
@@ -1501,7 +1499,7 @@ domain:
 
 )");
 
-         auto origin = casual::configuration::model::transform( unittest::call< casual::configuration::user::Model>( admin::service::name::configuration::get));
+         auto origin = casual::configuration::model::transform( unittest::internal::call< casual::configuration::user::Model>( admin::service::name::configuration::get));
          EXPECT_TRUE( origin.domain != wanted.domain) << CASUAL_NAMED_VALUE( origin.domain) << "\n " << CASUAL_NAMED_VALUE( wanted.domain);
 
          auto updated = local::call::post( casual::configuration::model::transform( wanted));
@@ -1561,7 +1559,7 @@ domain:
 )");
 
 
-         auto origin = casual::configuration::model::transform( unittest::call< casual::configuration::user::Model>( admin::service::name::configuration::get));
+         auto origin = casual::configuration::model::transform( unittest::internal::call< casual::configuration::user::Model>( admin::service::name::configuration::get));
          EXPECT_TRUE( origin.domain != wanted.domain) << CASUAL_NAMED_VALUE( origin.domain) << "\n " << CASUAL_NAMED_VALUE( wanted.domain);
 
          auto updated = local::call::post( casual::configuration::model::transform( wanted));

@@ -11,9 +11,9 @@
 
 namespace casual
 {
-   namespace domain::manager::unittest
+   namespace domain::unittest
    {
       void discover( std::vector< std::string> services, std::vector< std::string> queues);
       
-   } // domain::manager::unittest
+   } // domain::unittest
 } // casual

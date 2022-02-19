@@ -8,9 +8,8 @@
 
 #include "casual/domain/manager/api/internal/transform.h"
 #include "domain/manager/admin/server.h"
-#include "domain/manager/unittest/process.h"
-
-#include "../../include/unittest/call.h"
+#include "domain/unittest/manager.h"
+#include "domain/unittest/internal/call.h"
 
 namespace casual
 {
@@ -39,7 +38,7 @@ namespace casual
                      auto state()
                      {
                         // we do the 'hack' call, and transform the result.
-                        return api::internal::transform::state( unittest::call< admin::model::State>( admin::service::name::state));
+                        return api::internal::transform::state( unittest::internal::call< admin::model::State>( admin::service::name::state));
                      }
                   }
 
@@ -62,7 +61,7 @@ domain:
 
 )";
 
-               unittest::Process manager{ { configuration}};
+               auto manager = unittest::manager( configuration);
 
                auto state = local::call::state();
 

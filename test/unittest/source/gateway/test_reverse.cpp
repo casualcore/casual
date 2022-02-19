@@ -7,13 +7,9 @@
 
 #include "common/unittest.h"
 
-#include "domain/manager/unittest/process.h"
+#include "domain/unittest/manager.h"
 
-#include "common/communication/instance.h"
-#include "serviceframework/service/protocol/call.h"
-
-#include "gateway/manager/admin/model.h"
-#include "gateway/manager/admin/server.h"
+#include "gateway/unittest/utility.h"
 
 #include "casual/xatmi.h"
 
@@ -21,50 +17,13 @@ namespace casual
 {
    using namespace common;
 
-   namespace test::domain
+   namespace test
    {
 
       namespace local
       {
          namespace
          {
-            using Manager = casual::domain::manager::unittest::Process;
-
-            namespace state
-            {
-               namespace gateway
-               {
-                  auto call()
-                  {
-                     serviceframework::service::protocol::binary::Call call;
-                     auto reply = call( casual::gateway::manager::admin::service::name::state);
-
-                     casual::gateway::manager::admin::model::State result;
-                     reply >> CASUAL_NAMED_VALUE( result);
-
-                     return result;
-                  }
-
-                  template< typename P>
-                  auto until( P&& predicate)
-                  {
-                     auto state = state::gateway::call();
-
-                     auto count = 1000;
-
-                     while( ! predicate( state) && count-- > 0)
-                     {
-                        process::sleep( std::chrono::milliseconds{ 2});
-                        state = state::gateway::call();
-                     }
-
-                     return state;
-                  }
-
-               } // gateway
-
-            } // state
-
             auto allocate( platform::size::type size = 128)
             {
                auto buffer = tpalloc( X_OCTET, nullptr, size);
@@ -75,7 +34,7 @@ namespace casual
          } // <unnamed>
       } // local
       
-      TEST( test_domain_gateway_reverse, call_service__from_A_to_B___expect_discovery)
+      TEST( test_gateway_reverse, call_service__from_A_to_B___expect_discovery)
       {
          common::unittest::Trace trace;
 
@@ -131,21 +90,12 @@ domain:
                   -  address: 127.0.0.1:6669
 )";
 
-         local::Manager a{ { A}};
-         local::Manager b{ { B}}; // will be the 'active' domain
-
-         EXPECT_TRUE( communication::instance::ping( a.handle().ipc) == a.handle());
-         EXPECT_TRUE( communication::instance::ping( b.handle().ipc) == b.handle());
-
+         auto a = casual::domain::unittest::manager( A);
+         auto b = casual::domain::unittest::manager( B); // will be the 'active' domain
+         
          // make sure we're connected
-         {
-            auto state = local::state::gateway::until( []( auto& state)
-            { 
-               return ! state.connections.empty() && ! state.connections[ 0].remote.name.empty();
-            });
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected( "A"));
 
-            EXPECT_TRUE( state.connections.at( 0).remote.name == "A");
-         }
 
          {
             auto buffer = local::allocate( 128);
@@ -158,5 +108,5 @@ domain:
          
       }
 
-   } // test::domain
+   } // test
 } // casual

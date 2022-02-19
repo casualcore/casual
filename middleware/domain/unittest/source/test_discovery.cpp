@@ -7,7 +7,7 @@
 #include "common/unittest.h"
 
 #include "domain/discovery/api.h"
-#include "domain/manager/unittest/process.h"
+#include "domain/unittest/manager.h"
 
 #include "common/communication/device.h"
 #include "common/communication/ipc.h"
@@ -16,16 +16,16 @@
 namespace casual
 {
    using namespace std::literals;
-
    using namespace common;
+
    namespace domain::discovery
-   {   
+   {
 
       TEST( domain_discovery, no_discoverable__outbound_request___expect_empty_message)
       {
-         unittest::Trace trace;
+         common::unittest::Trace trace;
 
-         manager::unittest::Process manager;
+         unittest::Manager manager;
 
          auto correlation = discovery::request( {}, {});
 
@@ -39,9 +39,9 @@ namespace casual
 
       TEST( domain_discovery, no_discoverable__inbound_request___expect_empty_message)
       {
-         unittest::Trace trace;
+         common::unittest::Trace trace;
 
-         manager::unittest::Process manager;
+         unittest::Manager manager;
 
          auto correlation = discovery::request( message::discovery::Request{ process::handle()});
 
@@ -56,9 +56,9 @@ namespace casual
 
       TEST( domain_discovery, register_as_discover_provieder__send_api_request___expect_request__then_reply)
       {
-         unittest::Trace trace;
+         common::unittest::Trace trace;
 
-         manager::unittest::Process manager;
+         unittest::Manager manager;
 
          // we register our self
          discovery::provider::registration( discovery::provider::Ability::discover_external);
@@ -83,9 +83,9 @@ namespace casual
 
       TEST( domain_discovery, register_as_means_provider__send_discovery_request___expect_request__then_reply)
       {
-         unittest::Trace trace;
+         common::unittest::Trace trace;
 
-         manager::unittest::Process manager;
+         unittest::Manager manager;
 
          // we register our self
          discovery::provider::registration( discovery::provider::Ability::discover_internal);
@@ -116,9 +116,9 @@ namespace casual
 
       TEST( domain_discovery, register_as_discover_provieder_x2__send_outbound_request___expect_2_request__then_reply)
       {
-         unittest::Trace trace;
+         common::unittest::Trace trace;
 
-         manager::unittest::Process manager;
+         unittest::Manager manager;
 
          // we register our self
          discovery::provider::registration( discovery::provider::Ability::discover_external);
@@ -149,9 +149,9 @@ namespace casual
 
       TEST( domain_discovery, register_as_external_and_internal_discover_provider__send_forward_request___expect_internal_and_external_discovery_requests__then_reply)
       {
-         unittest::Trace trace;
+         common::unittest::Trace trace;
 
-         manager::unittest::Process manager;
+         unittest::Manager manager;
 
          // we register our self
          discovery::provider::registration( discovery::provider::Ability::discover_external);
@@ -188,9 +188,9 @@ namespace casual
 
       TEST( domain_discovery, register_discover_external_internal_and_needs___rediscover___expect_needs_and_discover_external_request__then_reply)
       {
-         unittest::Trace trace;
+         common::unittest::Trace trace;
 
-         manager::unittest::Process manager;
+         unittest::Manager manager;
          using Ability = discovery::provider::Ability;
 
          discovery::provider::registration( { Ability::discover_external, Ability::discover_internal, Ability::needs});
@@ -225,9 +225,9 @@ namespace casual
 
       TEST( domain_discovery, register_discover_external_and_needs_and_topology__send_topology_update___expect_needs_and_discover_external_request_and_topology_update)
       {
-         unittest::Trace trace;
+         common::unittest::Trace trace;
 
-         manager::unittest::Process manager;
+         unittest::Manager manager;
          using Ability = discovery::provider::Ability;
 
          discovery::provider::registration( { Ability::discover_external, Ability::topology, Ability::needs});

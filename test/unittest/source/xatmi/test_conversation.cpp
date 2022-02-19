@@ -11,9 +11,11 @@
 
 #include "common/unittest.h"
 
-#include "domain/manager/unittest/process.h"
+#include "domain/unittest/manager.h"
+
+#include "gateway/unittest/utility.h"
+
 #include "test/unittest/xatmi/buffer.h"
-#include "test/unittest/gateway.h"
 
 #include "common/string/view.h"
 #include "common/algorithm/compare.h"
@@ -33,7 +35,7 @@ namespace casual
 {
    using namespace common;
 
-   namespace xatmi
+   namespace test
    {
       namespace local
       {
@@ -76,7 +78,7 @@ domain:
             template< typename... Ts>
             auto domain( Ts&&... ts)
             {
-               return casual::domain::manager::unittest::process( configuration::base, std::forward< Ts>( ts)...);
+               return casual::domain::unittest::manager( configuration::base, std::forward< Ts>( ts)...);
             }
 
             auto domain()
@@ -201,17 +203,17 @@ domain:
          } // <unnamed>
       } // local
 
-      TEST( casual_xatmi_conversation, disconnect__invalid_descriptor__expect_TPEBADDESC)
+      TEST( test_xatmi_conversation, disconnect__invalid_descriptor__expect_TPEBADDESC)
       {
-         unittest::Trace trace;
+         common::unittest::Trace trace;
 
          EXPECT_TRUE( tpdiscon( 42) == -1);
          EXPECT_TRUE( tperrno == TPEBADDESC);
       }
 
-      TEST( casual_xatmi_conversation, send__invalid_descriptor__expect_TPEBADDESC)
+      TEST( test_xatmi_conversation, send__invalid_descriptor__expect_TPEBADDESC)
       {
-         unittest::Trace trace;
+         common::unittest::Trace trace;
 
          long event = 0;
 
@@ -220,9 +222,9 @@ domain:
          EXPECT_TRUE( event == 0);
       }
 
-      TEST( casual_xatmi_conversation, receive__invalid_descriptor__expect_TPEBADDESC)
+      TEST( test_xatmi_conversation, receive__invalid_descriptor__expect_TPEBADDESC)
       {
-         unittest::Trace trace;
+         common::unittest::Trace trace;
 
          auto buffer = test::unittest::xatmi::buffer::x_octet{};
          
@@ -232,9 +234,9 @@ domain:
          EXPECT_TRUE( event == 0);
       }
 
-      TEST( casual_xatmi_conversation, connect__no_flag__expect_TPEINVAL)
+      TEST( test_xatmi_conversation, connect__no_flag__expect_TPEINVAL)
       {
-         unittest::Trace trace;
+         common::unittest::Trace trace;
 
          auto domain = local::domain();
 
@@ -242,9 +244,9 @@ domain:
          EXPECT_TRUE( tperrno == TPEINVAL);
       }
 
-      TEST( casual_xatmi_conversation, connect__TPSENDONLY_and_TPRECVONLY___expect_TPEINVAL)
+      TEST( test_xatmi_conversation, connect__TPSENDONLY_and_TPRECVONLY___expect_TPEINVAL)
       {
-         unittest::Trace trace;
+         common::unittest::Trace trace;
 
          auto domain = local::domain();
 
@@ -252,9 +254,9 @@ domain:
          EXPECT_TRUE( tperrno == TPEINVAL);
       }
 
-      TEST( casual_xatmi_conversation, connect__invalid_flag_TPTRAN__expect_TPEINVAL)
+      TEST( test_xatmi_conversation, connect__invalid_flag_TPTRAN__expect_TPEINVAL)
       {
-         unittest::Trace trace;
+         common::unittest::Trace trace;
 
          // TPTRAN is a flag that is input( !) to a called service
          // Not allowed in tpconnect.
@@ -262,9 +264,9 @@ domain:
          EXPECT_TRUE( tperrno == TPEINVAL) << "tperrno: " << tperrnostring( tperrno);
       }
 
-      TEST( casual_xatmi_conversation, connect__invalid_flag_TPCONV__expect_TPEINVAL)
+      TEST( test_xatmi_conversation, connect__invalid_flag_TPCONV__expect_TPEINVAL)
       {
-         unittest::Trace trace;
+         common::unittest::Trace trace;
 
          // TPCONV is a flag that is input( !) to a called service, set for conversational.
          // Not allowed in tpconnect.
@@ -272,9 +274,9 @@ domain:
          EXPECT_TRUE( tperrno == TPEINVAL) << "tperrno: " << tperrnostring( tperrno);
       }
 
-      TEST( casual_xatmi_conversation, connect__TPSENDONLY__absent_service___expect_TPENOENT)
+      TEST( test_xatmi_conversation, connect__TPSENDONLY__absent_service___expect_TPENOENT)
       {
-         unittest::Trace trace;
+         common::unittest::Trace trace;
 
          auto domain = local::domain();
 
@@ -282,9 +284,9 @@ domain:
          EXPECT_TRUE( tperrno == TPENOENT);
       }
 
-      TEST( casual_xatmi_conversation, connect__TPSENDONLY_discon__conversation_service)
+      TEST( test_xatmi_conversation, connect__TPSENDONLY_discon__conversation_service)
       {
-         unittest::Trace trace;
+         common::unittest::Trace trace;
 
          auto domain = local::domain();
          // What happens in this test?
@@ -326,9 +328,9 @@ domain:
 #endif
       }
 
-      TEST( casual_xatmi_conversation, connect__TPSENDONLY_discon__conversation_recv_send_service)
+      TEST( test_xatmi_conversation, connect__TPSENDONLY_discon__conversation_recv_send_service)
       {
-         unittest::Trace trace;
+         common::unittest::Trace trace;
 
          auto domain = local::domain();
          // What happens in this test?
@@ -355,9 +357,9 @@ domain:
 #endif
       }
 
-      TEST( casual_xatmi_conversation, connect__TPSENDONLY_service_sleep_before_recv_discon__conversation_recv_send_service)
+      TEST( test_xatmi_conversation, connect__TPSENDONLY_service_sleep_before_recv_discon__conversation_recv_send_service)
       {
-         unittest::Trace trace;
+         common::unittest::Trace trace;
 
          auto domain = local::domain();
          // What happens in this test?
@@ -380,13 +382,13 @@ domain:
 #endif
       }
 
-      TEST( casual_xatmi_conversation, connect__TPRECVONLY__echo_service)
+      TEST( test_xatmi_conversation, connect__TPRECVONLY__echo_service)
       {
-         unittest::Trace trace;
+         common::unittest::Trace trace;
 
          auto domain = local::domain();
 
-         auto payload = unittest::random::string( 128);
+         auto payload = common::unittest::random::string( 128);
 
          // This calls the echo service that in reality is a request/response
          // type service. It echoes the input data with a tpreturn. 
@@ -420,9 +422,9 @@ domain:
 #endif
       }
 
-      TEST( casual_xatmi_conversation, connect__TPRECVONLY__conversation_recv_send_auto_service)
+      TEST( test_xatmi_conversation, connect__TPRECVONLY__conversation_recv_send_auto_service)
       {
-         unittest::Trace trace;
+         common::unittest::Trace trace;
 
          auto domain = local::domain();
 
@@ -456,9 +458,9 @@ domain:
 #endif
       }
 
-      TEST( casual_xatmi_conversation, connect__TPRECVONLY__conversation_recv_send_service)
+      TEST( test_xatmi_conversation, connect__TPRECVONLY__conversation_recv_send_service)
       {
-         unittest::Trace trace;
+         common::unittest::Trace trace;
 
          auto domain = local::domain();
 
@@ -494,9 +496,9 @@ domain:
 
       }
 
-      TEST( casual_xatmi_conversation, connect__TX_TPRECVONLY__conversation_recv_send_service)
+      TEST( test_xatmi_conversation, connect__TX_TPRECVONLY__conversation_recv_send_service)
       {
-         unittest::Trace trace;
+         common::unittest::Trace trace;
 
          auto domain = local::domain();
 
@@ -533,9 +535,9 @@ domain:
 #endif
       }
 
-      TEST( casual_xatmi_conversation, connect__TX_TPRECVONLY_TPNOTRAN__conversation_recv_send_service)
+      TEST( test_xatmi_conversation, connect__TX_TPRECVONLY_TPNOTRAN__conversation_recv_send_service)
       {
-         unittest::Trace trace;
+         common::unittest::Trace trace;
 
          auto domain = local::domain();
 
@@ -569,9 +571,9 @@ domain:
 #endif
       }
 
-      TEST( casual_xatmi_conversation, connect_with_data__TX_TPRECVONLY__conversation_recv_send_service)
+      TEST( test_xatmi_conversation, connect_with_data__TX_TPRECVONLY__conversation_recv_send_service)
       {
-         unittest::Trace trace;
+         common::unittest::Trace trace;
 
          auto domain = local::domain();
 
@@ -627,9 +629,9 @@ domain:
 #endif
       }
 
-      TEST( casual_xatmi_conversation, connect_tpsend__TX_TPRECVONLY__conversation_recv_send_service)
+      TEST( test_xatmi_conversation, connect_tpsend__TX_TPRECVONLY__conversation_recv_send_service)
       {
-         unittest::Trace trace;
+         common::unittest::Trace trace;
 
          auto domain = local::domain();
 
@@ -696,9 +698,9 @@ domain:
 #endif
       }
 
-      TEST( casual_xatmi_conversation, connect_tpsend_tpsend__TX_TPRECVONLY__conversation_recv_send_service)
+      TEST( test_xatmi_conversation, connect_tpsend_tpsend__TX_TPRECVONLY__conversation_recv_send_service)
       {
-         unittest::Trace trace;
+         common::unittest::Trace trace;
 
          auto domain = local::domain();
 
@@ -815,7 +817,7 @@ domain:
 
                // send
                {
-                  unittest::Trace::line( "send");
+                  common::unittest::Trace::line( "send");
 
                   std::string send_data{ "Data with tpsend"};
 
@@ -827,7 +829,7 @@ domain:
                // As we have sent data with connect and tpsend, service is expected
                // to send the data back with a tpsend() ( followed by a tpreturn()).
                {
-                  unittest::Trace::line( "receive");
+                  common::unittest::Trace::line( "receive");
 
                   auto result = local::receive::invoke( connection.descriptor, TPSIGRSTRT);
                   ASSERT_TRUE( result) << CASUAL_NAMED_VALUE( result);
@@ -835,7 +837,7 @@ domain:
                   EXPECT_TRUE( result.payload == sent_data) << CASUAL_NAMED_VALUE( result);
                }
 
-               unittest::Trace::line( "receive tpreturn");
+               common::unittest::Trace::line( "receive tpreturn");
 
                // This receive is expected to get the result from the tpreturn()
                auto result = local::receive::invoke( connection.descriptor, TPSIGRSTRT);
@@ -856,9 +858,9 @@ domain:
       // This test verifies that a service can be called multiple times.
       // In this test case the service calls are "independent" from a transaction
       // point of view.
-      TEST( casual_xatmi_conversation, do_10_connect_tpsend__TX_TPRECVONLY__conversation_recv_send_service)
+      TEST( test_xatmi_conversation, do_10_connect_tpsend__TX_TPRECVONLY__conversation_recv_send_service)
       {
-         unittest::Trace trace;
+         common::unittest::Trace trace;
 
 
          auto domain = local::domain();
@@ -873,9 +875,9 @@ domain:
 #endif
       }
 
-      TEST( casual_xatmi_conversation, interdomain_connect_send_disconnect)
+      TEST( test_xatmi_conversation, interdomain_connect_send_disconnect)
       {
-         unittest::Trace trace;
+         common::unittest::Trace trace;
 
          auto b = local::domain( local::configuration::example, R"(
 domain:
@@ -897,7 +899,7 @@ domain:
                   -  address: 127.0.0.1:7001
 )");
 
-         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected());
 
          local::connect_send_recv();
 
@@ -928,5 +930,5 @@ domain:
       // multiple server instances. 
 
 
-   } // xatmi
+   } // test
 } // casual

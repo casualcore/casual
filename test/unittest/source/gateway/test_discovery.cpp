@@ -8,7 +8,7 @@
 
 #include "common/unittest.h"
 
-#include "domain/manager/unittest/process.h"
+#include "domain/unittest/manager.h"
 #include "domain/discovery/api.h"
 
 #include "common/communication/instance.h"
@@ -25,7 +25,7 @@ namespace casual
 {
    using namespace common;
 
-   namespace test::domain
+   namespace test
    {
 
       namespace local
@@ -35,7 +35,7 @@ namespace casual
             template< typename... C>
             auto manager( C&&... configurations)
             {
-               return casual::domain::manager::unittest::process( std::forward< C>( configurations)...);
+               return casual::domain::unittest::manager( std::forward< C>( configurations)...);
             }
 
             auto allocate( platform::size::type size = 128)
@@ -76,7 +76,7 @@ domain:
          } // <unnamed>
       } // local
       
-      TEST( test_domain_gateway_discovery, domain_chain_A_B_C__C_has_echo__B_has_forward__call_echo_from_A___expect_discovery)
+      TEST( test_gateway_discovery, domain_chain_A_B_C__C_has_echo__B_has_forward__call_echo_from_A___expect_discovery)
       {
          common::unittest::Trace trace;
 
@@ -141,7 +141,7 @@ domain:
       }
 
 
-      TEST( test_domain_gateway_discovery, domain_chain_A_B_C__C_has_echo__B_has_NOT_forward__call_echo_from_A___expect_TPENOENT)
+      TEST( test_gateway_discovery, domain_chain_A_B_C__C_has_echo__B_has_NOT_forward__call_echo_from_A___expect_TPENOENT)
       {
          common::unittest::Trace trace;
 
@@ -203,7 +203,7 @@ domain:
          }
       }
 
-      TEST( test_domain_gateway_discovery, A_to_B_C__C_is_down__expect_B___boot_C__expect_discovery_to_C__alternate_between_B_and_C)
+      TEST( test_gateway_discovery, A_to_B_C__C_is_down__expect_B___boot_C__expect_discovery_to_C__alternate_between_B_and_C)
       {
          common::unittest::Trace trace;
 
@@ -291,7 +291,7 @@ domain:
          }
       }
 
-      TEST( test_domain_gateway_discovery, A_to_B__topology_registration__B_to_C__expect__topology_update)
+      TEST( test_gateway_discovery, A_to_B__topology_registration__B_to_C__expect__topology_update)
       {
          common::unittest::Trace trace;
 
@@ -352,7 +352,7 @@ domain:
 
       }
 
-      TEST( test_domain_gateway_discovery, A_queue_forward_to_C__via_B__boot_A_B__then_boot_C__expect_forward_from_A)
+      TEST( test_gateway_discovery, A_queue_forward_to_C__via_B__boot_A_B__then_boot_C__expect_forward_from_A)
       {
          common::unittest::Trace trace;
 
@@ -425,5 +425,5 @@ domain:
 
       }
 
-   } // test::domain
+   } // test
 } // casual

@@ -7,7 +7,9 @@ make.IncludePaths([
     '../common/include',
     '../xatmi/include',
     '../buffer/include',
-    '../domain/include']
+    '../domain/include',
+    '../domain/unittest/include',
+    ]
     + make.optional_include_paths()
     + dsl.paths().include.gtest
    )

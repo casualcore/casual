@@ -4,12 +4,10 @@
 //! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-
-#include <gtest/gtest.h>
 #include "common/unittest.h"
 
 #include "domain/pending/message/send.h"
-#include "domain/manager/unittest/process.h"
+#include "domain/unittest/manager.h"
 
 
 #include "common/message/service.h"
@@ -18,46 +16,36 @@
 
 namespace casual
 {
-
-   namespace domain
+   namespace domain::pending
    {
-      namespace pending
+      TEST( domain_pending_message, spawn_terminate)
       {
-         namespace send
+         common::unittest::Trace trace;
+
+         EXPECT_NO_THROW( {
+            unittest::Manager domain;
+         });
+      }
+
+      TEST( domain_pending_message, eventually_message__expect_sent)
+      {
+         common::unittest::Trace trace;
+
+         unittest::Manager domain;
+
          {
+            common::message::service::lookup::Request message;
+            message.requested = "foo";
+            pending::message::send( common::process::handle(), message);
+         }
 
-            TEST( domain_pending_message, spawn_terminate)
-            {
-               common::unittest::Trace trace;
+         {
+            common::message::service::lookup::Request message;
+            common::communication::device::blocking::receive( common::communication::ipc::inbound::device(), message);
 
-               EXPECT_NO_THROW( {
-                  manager::unittest::Process domain;
-               });
-            }
+            EXPECT_TRUE( message.requested ==  "foo");
+         }
+      }
 
-
-
-            TEST( domain_pending_message, eventually_message__expect_sent)
-            {
-               common::unittest::Trace trace;
-
-               manager::unittest::Process domain;
-
-               {
-                  common::message::service::lookup::Request message;
-                  message.requested = "foo";
-                  pending::message::send( common::process::handle(), message);
-               }
-
-               {
-                  common::message::service::lookup::Request message;
-                  common::communication::device::blocking::receive( common::communication::ipc::inbound::device(), message);
-
-                  EXPECT_TRUE( message.requested ==  "foo");
-               }
-            }
-
-         } // send
-      } // pending
-   } // domain
+   } // domain::pending::send
 } // casual

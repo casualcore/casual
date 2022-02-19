@@ -81,6 +81,18 @@ namespace casual
                   return connected( std::vector< std::string_view>{ name});
                }
 
+               // returns a predicate that checks if all out-connections has NOT a 'remote id'
+               inline auto disconnected()
+               {
+                  return []( auto& state)
+                  {
+                     return common::algorithm::all_of( state.connections, []( auto& connection)
+                     {
+                        return connection.bound != decltype( connection.bound)::out || ! connection.remote.id;
+                     }); 
+                  };
+               };
+
                inline auto routing( std::vector< std::string_view> services, std::vector< std::string_view> queues)
                {
                   return [services = std::move( services), queues = std::move( queues)]( auto& state)

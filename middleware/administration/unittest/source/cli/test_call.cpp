@@ -12,7 +12,7 @@
 #include "common/result.h"
 #include "common/signal.h"
 
-#include "domain/manager/unittest/process.h"
+#include "domain/unittest/manager.h"
 
 namespace casual
 {
@@ -58,7 +58,7 @@ domain:
             template< typename... C>
             auto domain( C&&... configurations)
             {
-               return casual::domain::manager::unittest::process( configuration::base, std::forward< C>( configurations)...);
+               return casual::domain::unittest::manager( configuration::base, std::forward< C>( configurations)...);
             }
          } // <unnamed>      
 

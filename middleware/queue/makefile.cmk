@@ -5,13 +5,16 @@ import os
 
 make.IncludePaths( [ 
     'include',
+    'unittest/include',
     '../common/include',
     '../cli/include',
     '../configuration/include',
+    '../configuration/unittest/include',
     '../serviceframework/include', 
     '../xatmi/include',
     '../transaction/include',
     '../domain/include',
+    '../domain/unittest/include',
     '../service/include',
     '../../thirdparty/database/include',
     '../service/unittest/include'
@@ -176,6 +179,12 @@ install_bin.append( target)
 
 # Unittest
 
+unittest_utility_archive = make.LinkArchive( 'bin/casual-queue-unittest',
+    [
+        make.Compile( 'unittest/source/utility.cpp'),
+    ]
+)
+
 test_casual_queue = make.LinkUnittest( 'unittest/bin/test-casual-queue', 
     [
         make.Compile( 'unittest/source/manager/test_transform.cpp'),
@@ -190,6 +199,7 @@ test_casual_queue = make.LinkUnittest( 'unittest/bin/test-casual-queue',
      common,
      queue_api,
      queue_c_api,
+     unittest_utility_archive,
      'casual-common',
      'casual-serviceframework',
      'casual-configuration',

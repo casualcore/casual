@@ -5,13 +5,11 @@
 //!
 
 #include "common/unittest.h"
-#include "common/unittest/file.h"
 
-#include "domain/manager/unittest/process.h"
-#include "domain/manager/unittest/configuration.h"
+#include "domain/unittest/manager.h"
+#include "domain/unittest/configuration.h"
 
-#include "configuration/model.h"
-#include "configuration/model/load.h"
+#include "configuration/unittest/utility.h"
 #include "configuration/model/transform.h"
 
 #include "common/environment.h"
@@ -21,7 +19,7 @@ namespace casual
 {
    using namespace common;
 
-   namespace test::domain::configuration
+   namespace test
    {
       namespace local
       {
@@ -43,41 +41,24 @@ domain:
 )";
 
 
-               constexpr auto resources = R"(
-resources:
-  - key: rm-mockup
-    server: bin/rm-proxy-casual-mockup
-    xa_struct_name: casual_mockup_xa_switch_static
-    libraries:
-      - casual-mockup-rm
+               constexpr auto system = R"(
+system:
+   resources:
+      -  key: rm-mockup
+         server: bin/rm-proxy-casual-mockup
+         xa_struct_name: casual_mockup_xa_switch_static
+         libraries:
+            - casual-mockup-rm
 )";
 
 
-               template< typename... C>
-               auto load( C&&... contents)
-               {
-                  auto files = common::unittest::file::temporary::contents( ".yaml", std::forward< C>( contents)...);
-
-                  auto get_path = []( auto& file){ return static_cast< std::filesystem::path>( file);};
-
-                  return casual::configuration::model::load( common::algorithm::transform( files, get_path));
-               }
             } // configuration
 
-            template< typename... C>
-            auto domain( common::file::scoped::Path resource, C&&... configurations) 
-            {
-               auto scoped = common::environment::variable::scoped::set( common::environment::variable::name::resource::configuration, resource.string());
-               auto process = casual::domain::manager::unittest::process( configuration::servers, std::forward< C>( configurations)...);
-               return std::make_tuple( 
-                  std::move( resource),
-                  std::move( process));
-            }
 
             template< typename... C>
             auto domain( C&&... configurations)
             {
-               return domain( common::unittest::file::temporary::content( ".yaml", configuration::resources), std::forward< C>( configurations)...);
+               return domain::unittest::manager( configuration::system, configuration::servers, std::forward< C>( configurations)...);
             }
 
             namespace validate
@@ -88,9 +69,9 @@ resources:
 
                   auto domain = local::domain( std::forward< C>( configurations)...);
 
-                  auto origin = local::configuration::load( std::forward< C>( configurations)...);
+                  auto origin = casual::configuration::unittest::load( std::forward< C>( configurations)...);
 
-                  auto model = casual::configuration::model::transform( casual::domain::manager::unittest::configuration::get());
+                  auto model = casual::configuration::model::transform( casual::domain::unittest::configuration::get());
 
                   EXPECT_TRUE( origin.domain == model.domain) << CASUAL_NAMED_VALUE( origin.domain) << "\n " << CASUAL_NAMED_VALUE( model.domain);
                   EXPECT_TRUE( origin.service == model.service) << CASUAL_NAMED_VALUE( origin.service) << "\n " << CASUAL_NAMED_VALUE( model.service);
@@ -106,7 +87,7 @@ resources:
       } // local
       
 
-      TEST( test_domain_configuration, base_configuration)
+      TEST( test_configuration, base_configuration)
       {
          unittest::Trace trace;
 
@@ -120,7 +101,7 @@ domain:
          local::validate::configuration( configuration);
       }
 
-      TEST( test_domain_configuration, full_configuration)
+      TEST( test_configuration, full_configuration)
       {
          unittest::Trace trace;
 
@@ -224,5 +205,5 @@ domain:
          local::validate::configuration( configuration);
       }
       
-   } // test::domain::configuration
+   } // test
 } // casual

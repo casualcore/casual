@@ -7,53 +7,36 @@
 
 #pragma once
 
-
-
 namespace casual
 {
-   namespace queue
+   namespace queue::manager::admin::service::name
    {
-      namespace manager
+      constexpr auto state = ".casual/queue/state";
+      constexpr auto restore = ".casual/queue/restore";
+      constexpr auto clear = ".casual/queue/clear";
+
+      namespace messages
       {
-         namespace admin
+         constexpr auto list = ".casual/queue/messages/list";
+         constexpr auto remove = ".casual/queue/messages/remove";
+         
+      } // messages
+
+      namespace metric
+      {
+         constexpr auto reset = ".casual/queue/metric/reset";
+      } // metric 
+
+      namespace forward
+      {
+         namespace scale
          {
-            namespace service
-            {
-               namespace name
-               {
-                  constexpr auto state = ".casual/queue/state";
-                  constexpr auto restore = ".casual/queue/restore";
-                  constexpr auto clear = ".casual/queue/clear";
-
-                  namespace messages
-                  {
-                     constexpr auto list = ".casual/queue/messages/list";
-                     constexpr auto remove = ".casual/queue/messages/remove";
-                     
-                  } // messages
-
-                  namespace metric
-                  {
-                     constexpr auto reset = ".casual/queue/metric/reset";
-                  } // metric 
-
-                  namespace forward
-                  {
-                     namespace scale
-                     {
-                        constexpr auto aliases = ".casual/queue/forward/scale/aliases";
-                     } // scale
-                     
-                  } // forward
-                  
-               } // name
-
-            } // service
-
-         } // admin
-      } // manager
-   } // queue
-
+            constexpr auto aliases = ".casual/queue/forward/scale/aliases";
+         } // scale
+         
+      } // forward
+      
+   } // queue::manager::admin::service::name
 } // casual
 
 

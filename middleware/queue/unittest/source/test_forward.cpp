@@ -5,12 +5,11 @@
 //!
 
 #include "common/unittest.h"
-#include "common/unittest/file.h"
+//#include "common/unittest/file.h"
 
+#include "queue/unittest/utility.h"
 #include "queue/common/queue.h"
 #include "queue/api/queue.h"
-#include "queue/manager/admin/model.h"
-#include "queue/manager/admin/services.h"
 #include "queue/code.h"
 
 #include "common/process.h"
@@ -24,10 +23,9 @@
 #include "common/serialize/macro.h"
 #include "common/communication/instance.h"
 
-#include "serviceframework/service/protocol/call.h"
 
-#include "domain/manager/unittest/process.h"
-#include "domain/manager/unittest/configuration.h"
+#include "domain/unittest/manager.h"
+#include "domain/unittest/configuration.h"
 
 #include "service/unittest/utility.h"
 
@@ -174,54 +172,13 @@ domain:
             template< typename... C>
             auto domain( C&&... configurations)
             {
-               return casual::domain::manager::unittest::process( configuration::servers, std::forward< C>( configurations)...);
+               return casual::domain::unittest::manager( configuration::servers, std::forward< C>( configurations)...);
             }
 
             //! default domain
             auto domain()
             {
                return domain( configuration::queue);
-            }
-
-
-            namespace call
-            {
-               manager::admin::model::State state()
-               {
-                  serviceframework::service::protocol::binary::Call call;
-                  auto reply = call( manager::admin::service::name::state);
-
-                  manager::admin::model::State result;
-                  reply >> CASUAL_NAMED_VALUE( result);
-
-                  return result;
-               }
-
-               void scale_aliases( const std::vector< manager::admin::model::scale::Alias>& aliases)
-               {
-                  serviceframework::service::protocol::binary::Call call;
-                  call << CASUAL_NAMED_VALUE( aliases);
-                  call( manager::admin::service::name::forward::scale::aliases);
-               }
-
-            } // call
-
-            void scale_all_forward_aliases( platform::size::type instances)
-            {
-               auto state = local::call::state();
-
-               auto scale_forward = [instances]( auto& forward)
-               {
-                  manager::admin::model::scale::Alias result;
-                  result.name = forward.alias;
-                  result.instances = instances;
-                  return result;
-               };
-
-               auto aliases = common::algorithm::transform( state.forward.services, scale_forward);
-               common::algorithm::transform( state.forward.queues, aliases, scale_forward);
-
-               call::scale_aliases( aliases);
             }
 
          } // <unnamed>
@@ -244,7 +201,7 @@ domain:
 
          auto origin = local::configuration::load( local::configuration::servers, local::configuration::queue);
 
-         auto model = casual::configuration::model::transform( casual::domain::manager::unittest::configuration::get());
+         auto model = casual::configuration::model::transform( casual::domain::unittest::configuration::get());
 
          EXPECT_TRUE( origin.queue == model.queue) << CASUAL_NAMED_VALUE( origin.queue) << '\n' << CASUAL_NAMED_VALUE( model.queue);
 
@@ -271,11 +228,11 @@ domain:
          auto wanted = local::configuration::load( local::configuration::servers, local::configuration::queue, extra);
 
          // make sure the wanted differs (otherwise we're not testing anyting...)
-         ASSERT_TRUE( wanted.queue != casual::configuration::model::transform( casual::domain::manager::unittest::configuration::get()).queue);
+         ASSERT_TRUE( wanted.queue != casual::configuration::model::transform( casual::domain::unittest::configuration::get()).queue);
 
          // post the wanted model (in transformed user representation)
          auto updated = casual::configuration::model::transform( 
-            casual::domain::manager::unittest::configuration::post( casual::configuration::model::transform( wanted)));
+            casual::domain::unittest::configuration::post( casual::configuration::model::transform( wanted)));
 
          EXPECT_TRUE( wanted.queue == updated.queue) << CASUAL_NAMED_VALUE( wanted.queue) << '\n' << CASUAL_NAMED_VALUE( updated.queue);
 
@@ -287,7 +244,7 @@ domain:
          
          auto domain = local::domain();
 
-         auto state = local::call::state();
+         auto state = unittest::state();
 
          EXPECT_TRUE( state.forward.services.size() == 4) << CASUAL_NAMED_VALUE( state.forward.services.size());
          EXPECT_TRUE( state.forward.queues.size() == 4) << CASUAL_NAMED_VALUE( state.forward.queues.size());
@@ -300,9 +257,9 @@ domain:
          
          auto domain = local::domain();
 
-         local::scale_all_forward_aliases( 5);
+         unittest::scale::all::forward::aliases( 5);
 
-         auto state = local::call::state();
+         auto state = unittest::state();
 
          auto has_instances = []( auto& forward){ return forward.instances.configured == 5;};
 
@@ -315,9 +272,9 @@ domain:
          
          auto domain = local::domain();
 
-         local::scale_all_forward_aliases( 0);
+         unittest::scale::all::forward::aliases( 0);
 
-         auto state = local::call::state();
+         auto state = unittest::state();
 
          auto has_instances = []( auto& forward){ return forward.instances.configured == 0;};
 
@@ -575,7 +532,7 @@ domain:
             });
          }
 
-         local::scale_all_forward_aliases( 4);
+         unittest::scale::all::forward::aliases( 4);
 
          // we only replies to one of the service calls, and not send 'ACK' to service-manger
          // hence, the service-forwards will be wating for a service-lookup-reply from service-manager
@@ -594,7 +551,7 @@ domain:
             common::communication::device::blocking::send( request.process.ipc, reply);
          }
 
-         local::scale_all_forward_aliases( 0);
+         unittest::scale::all::forward::aliases( 0);
 
          auto zero_instances = []( auto& state)
          {
@@ -607,12 +564,12 @@ domain:
                common::algorithm::all_of( state.forward.queues, has_zero);
          };
 
-         auto state = local::call::state();
+         auto state = unittest::state();
 
          while( ! zero_instances( state))
          {
             common::process::sleep( std::chrono::milliseconds{ 5});
-            state = local::call::state();
+            state = unittest::state();
          }
 
          // check queue-forwards, there should not be any rollbacks on queue-forwards

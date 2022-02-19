@@ -9,7 +9,7 @@
 #include "casual/service/manager/api/state.h"
 #include "service/manager/admin/server.h"
 
-#include "domain/manager/unittest/process.h"
+#include "domain/unittest/manager.h"
 
 
 namespace casual
@@ -52,7 +52,7 @@ domain:
       - path: bin/casual-service-manager
 )";
 
-               casual::domain::manager::unittest::Process manager{ { configuration}};
+               auto manager = casual::domain::unittest::manager( configuration);
 
                // we need to call twice since the service metric is only registred 
                // after the call.

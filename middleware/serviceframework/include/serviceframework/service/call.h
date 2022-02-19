@@ -31,7 +31,7 @@ namespace casual
             using Flags = common::service::call::sync::Flags;
             using Result = common::service::call::sync::Result;
 
-            Result invoke( const std::string& service, const payload_type& payload, Flags flags = Flags{});
+            Result invoke( std::string service, const payload_type& payload, Flags flags = Flags{});
          } // call
 
          namespace send
@@ -39,7 +39,7 @@ namespace casual
             using Flag = common::service::call::async::Flag;
             using Flags = common::service::call::async::Flags;
 
-            descriptor_type invoke( const std::string& service, const payload_type& payload, Flags flags = Flags{});
+            descriptor_type invoke( std::string service, const payload_type& payload, Flags flags = Flags{});
 
          } // send
 

@@ -4,7 +4,7 @@
 //! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-#include "domain/manager/unittest/configuration.h"
+#include "domain/unittest/configuration.h"
 #include "domain/common.h"
 #include "domain/manager/admin/server.h"
 
@@ -20,21 +20,19 @@ namespace casual
 {
    using namespace common;
 
-   namespace domain::manager::unittest::configuration
+   namespace domain::unittest::configuration
    {
 
       casual::configuration::user::Model get()
       {
-         Trace trace{ "domain::manager::unittest::configuration::get"};
+         Trace trace{ "domain::unittest::configuration::get"};
 
-         serviceframework::service::protocol::binary::Call call;
-         auto reply = call( admin::service::name::configuration::get);
-         return reply.extract< casual::configuration::user::Model>();
+         return serviceframework::service::protocol::binary::Call{}( manager::admin::service::name::configuration::get).extract< casual::configuration::user::Model>();
       }
 
       casual::configuration::user::Model post( casual::configuration::user::Model wanted)
       {
-         Trace trace{ "domain::manager::unittest::configuration::post"};
+         Trace trace{ "domain::unittest::configuration::post"};
 
          std::vector< common::strong::correlation::id> tasks;
 
@@ -42,7 +40,7 @@ namespace casual
             common::event::condition::prelude( [&]()
             {
                serviceframework::service::protocol::binary::Call call;
-               tasks = call( admin::service::name::configuration::post, wanted).extract< std::vector< common::strong::correlation::id>>();
+               tasks = call( manager::admin::service::name::configuration::post, wanted).extract< std::vector< common::strong::correlation::id>>();
             }),
             common::event::condition::done( [&tasks](){ return tasks.empty();})
          );
@@ -61,8 +59,7 @@ namespace casual
             );
 
          return configuration::get();
-
       }
 
-   } // domain::manager::unittest::configuration
+   } // domain::unittest::configuration
 } // casual

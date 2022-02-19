@@ -6,12 +6,11 @@
 
 #include "common/unittest.h"
 
-#include "domain/manager/unittest/process.h"
+#include "domain/unittest/manager.h"
 
-#include "service/manager/admin/server.h"
-#include "service/manager/admin/model.h"
+#include "service/unittest/utility.h"
 
-#include "serviceframework/service/protocol/call.h"
+
 
 namespace casual
 {
@@ -23,23 +22,7 @@ namespace casual
       {
          namespace
          {
-            using Manager = casual::domain::manager::unittest::Process;
-            
-            namespace call::state
-            {
-               auto service()
-               {
-                  serviceframework::service::protocol::binary::Call call;
 
-                  auto reply = call( casual::service::manager::admin::service::name::state());
-
-                  casual::service::manager::admin::model::State result;
-                  reply >> CASUAL_NAMED_VALUE( result);
-
-                  return result;
-               }
-
-            } // call::state
 
             namespace configuration
             {
@@ -74,11 +57,11 @@ domain:
          } // <unnamed>
       } // local
 
-      TEST( test_domain_service, two_server_alias__service_restriction)
+      TEST( test_service, two_server_alias__service_restriction)
       {
          common::unittest::Trace trace;
 
-         auto domain = casual::domain::manager::unittest::process( local::configuration::base, R"(
+         auto domain = casual::domain::unittest::manager( local::configuration::base, R"(
 domain: 
    name: A
    servers:         
@@ -96,7 +79,7 @@ domain:
 
 )");
 
-         auto state = local::call::state::service();
+         auto state = casual::service::unittest::state();
 
          // check that we excluded services that doesn't match the restrictions
          EXPECT_TRUE( ! algorithm::find_if( state.services, local::is::service( "casual/example/uppercase")));
@@ -117,11 +100,11 @@ domain:
          }
       }
 
-      TEST( test_domain_service, service_restriction_regex)
+      TEST( test_service, service_restriction_regex)
       {
          common::unittest::Trace trace;
 
-         auto domain = casual::domain::manager::unittest::process( local::configuration::base, R"(
+         auto domain = casual::domain::unittest::manager( local::configuration::base, R"(
 domain: 
    name: A
    servers:         
@@ -134,7 +117,7 @@ domain:
 
 )");
 
-         auto state = local::call::state::service();
+         auto state = casual::service::unittest::state();
 
          // check that we excluded services that doesn't match the restrictions
          EXPECT_TRUE( ! algorithm::find_if( state.services, local::is::service( "casual/example/uppercase")));

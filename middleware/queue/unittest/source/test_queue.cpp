@@ -6,12 +6,10 @@
 
 
 #include "common/unittest.h"
-#include "common/unittest/file.h"
 
+#include "queue/unittest/utility.h"
 #include "queue/common/queue.h"
 #include "queue/api/queue.h"
-#include "queue/manager/admin/model.h"
-#include "queue/manager/admin/services.h"
 #include "queue/code.h"
 
 #include "common/process.h"
@@ -26,9 +24,7 @@
 #include "common/communication/instance.h"
 #include "common/serialize/macro.h"
 
-#include "serviceframework/service/protocol/call.h"
-
-#include "domain/manager/unittest/process.h"
+#include "domain/unittest/manager.h"
 
 #include <fstream>
 #include <future>
@@ -96,7 +92,7 @@ domain:
             template< typename... C>
             auto domain( C&&... configurations)
             {
-               return domain::manager::unittest::process( configuration::servers, std::forward< C>( configurations)...);
+               return domain::unittest::manager( configuration::servers, std::forward< C>( configurations)...);
             }
 
             //! default domain
@@ -104,32 +100,6 @@ domain:
             {
                return domain( configuration::queue);
             }
-
-            namespace call
-            {
-               manager::admin::model::State state()
-               {
-                  serviceframework::service::protocol::binary::Call call;
-                  auto reply = call( manager::admin::service::name::state);
-
-                  manager::admin::model::State result;
-                  reply >> CASUAL_NAMED_VALUE( result);
-
-                  return result;
-               }
-
-               std::vector< manager::admin::model::Message> messages( const std::string& queue)
-               {
-                  serviceframework::service::protocol::binary::Call call;
-                  call << CASUAL_NAMED_VALUE( queue);
-                  auto reply = call( manager::admin::service::name::messages::list);
-
-                  std::vector< manager::admin::model::Message> result;
-                  reply >> CASUAL_NAMED_VALUE( result);
-
-                  return result;
-               }
-            } // call
 
          } // <unnamed>
 
@@ -144,8 +114,7 @@ domain:
 
          auto domain = local::domain();
 
-
-         auto state = local::call::state();
+         auto state = unittest::state();
 
          EXPECT_TRUE( state.groups.size() == 2);
          EXPECT_TRUE( state.queues.size() == ( 3 + 4) * 2)  << "state.queues.size(): " << state.queues.size();
@@ -158,7 +127,7 @@ domain:
 
          auto domain = local::domain();
 
-         auto state = local::call::state();
+         auto state = unittest::state();
 
          auto find_and_compare_queue = [&state]( const std::string& name, auto&& predicate)
          {
@@ -254,7 +223,7 @@ domain:
          message.payload.data.assign( std::begin( payload), std::end( payload));
 
          queue::enqueue( "a1", message);
-         auto messages = local::call::messages( "a1");
+         auto messages = unittest::messages( "a1"); // unittest::messages( "a1");
 
          EXPECT_TRUE( messages.size() == 1);
       }
@@ -268,7 +237,7 @@ domain:
          queue::Message message;
 
          queue::enqueue( "a1", message);
-         auto messages = local::call::messages( "a1");
+         auto messages = unittest::messages( "a1");
 
          EXPECT_TRUE( messages.size() == 1);
       }
@@ -290,7 +259,7 @@ domain:
             queue::enqueue( "a1", message);
          }
 
-         auto messages = local::call::messages( "a1");
+         auto messages = unittest::messages( "a1");
 
          EXPECT_TRUE( messages.size() == 5);
       }
@@ -701,13 +670,13 @@ domain:
          message.payload.data.assign( std::begin( payload), std::end( payload));
 
          queue::enqueue( "a1", message);
-         auto messages = local::call::messages( "a1");
+         auto messages = unittest::messages( "a1");
 
          ASSERT_TRUE( messages.size() == 1);
          auto removed = queue::messages::remove( "a1", { messages.front().id});
          EXPECT_TRUE( messages.front().id == removed.at( 0));
 
-         EXPECT_TRUE( local::call::messages( "a1").empty());
+         EXPECT_TRUE( unittest::messages( "a1").empty());
       }
 
       TEST( casual_queue, enqueue_5___clear_queue___expect_0_message_in_queue)
@@ -728,7 +697,7 @@ domain:
             });
          }
 
-         auto messages = local::call::messages( "a1");
+         auto messages = unittest::messages( "a1");
          EXPECT_TRUE( messages.size() == 5);
 
          auto cleared = queue::clear::queue( { "a1"});
@@ -736,7 +705,7 @@ domain:
          EXPECT_TRUE( cleared.at( 0).queue == "a1");
          EXPECT_TRUE( cleared.at( 0).count == 5);
 
-         EXPECT_TRUE( local::call::messages( "a1").empty());
+         EXPECT_TRUE( unittest::messages( "a1").empty());
       }
 
       TEST( casual_queue, configure_with_enviornment_variables)
@@ -772,7 +741,7 @@ domain:
 
          auto domain = local::domain( configuration);
 
-         auto state = local::call::state();
+         auto state = unittest::state();
 
          ASSERT_TRUE( state.groups.size() == 1) << CASUAL_NAMED_VALUE( state);
          auto& group = state.groups.at( 0);
@@ -917,7 +886,7 @@ domain:
 
          {
             auto domain = local::domain( local::zombie::configuration_with_queue_B);
-            auto state = local::call::state();
+            auto state = unittest::state();
 
             EXPECT_TRUE( state.queues.size() == 2 * 2) << "state.queues.size(): " << state.queues.size();
             EXPECT_TRUE( state.zombies.size() == 0) << "state.zombies.size(): " << state.zombies.size();
@@ -925,7 +894,7 @@ domain:
 
          {
             auto domain = local::domain( local::zombie::configuration_without_queue_B);
-            auto state = local::call::state();
+            auto state = unittest::state();
 
             EXPECT_TRUE( state.queues.size() == 1 * 2) << "state.queues.size(): " << state.queues.size();
             EXPECT_TRUE( state.zombies.size() == 0) << "state.zombies.size(): " << state.zombies.size();
@@ -942,7 +911,7 @@ domain:
 
          {
             auto domain = local::domain( local::zombie::configuration_with_queue_B);
-            auto state = local::call::state();
+            auto state = unittest::state();
 
             EXPECT_TRUE( state.queues.size() == 2 * 2) << "state.queues.size(): " << state.queues.size();
             EXPECT_TRUE( state.zombies.size() == 0) << "state.zombies.size(): " << state.zombies.size();
@@ -950,14 +919,14 @@ domain:
             queue::Message message;
 
             queue::enqueue( "queue_B", message);
-            auto messages = local::call::messages( "queue_B");
+            auto messages = unittest::messages( "queue_B");
 
             EXPECT_TRUE( messages.size() == 1);
          }
 
          {
             auto domain = local::domain( local::zombie::configuration_without_queue_B);
-            auto state = local::call::state();
+            auto state = unittest::state();
 
             EXPECT_TRUE( state.queues.size() == 1 * 2) << "state.queues.size(): " << state.queues.size();
             EXPECT_TRUE( state.zombies.size() == 1 * 2) << "state.zombies.size(): " << state.zombies.size();

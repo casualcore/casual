@@ -33,8 +33,8 @@
 #include "common/unittest/rm.h"
 
 
-#include "domain/manager/unittest/process.h"
-#include "domain/manager/unittest/configuration.h"
+#include "domain/unittest/manager.h"
+#include "domain/unittest/configuration.h"
 
 #include "serviceframework/service/protocol/call.h"
 #include "serviceframework/log.h"
@@ -115,7 +115,7 @@ domain:
             template< typename... C>
             auto domain( C&&... configurations) 
             {
-               return casual::domain::manager::unittest::process( configuration::servers, std::forward< C>( configurations)...);
+               return casual::domain::unittest::manager( configuration::servers, std::forward< C>( configurations)...);
             }
 
             namespace send
@@ -295,7 +295,7 @@ domain:
 
          auto origin = local::configuration::load( local::configuration::servers, configuration).transaction;
 
-         auto model = casual::configuration::model::transform( casual::domain::manager::unittest::configuration::get()).transaction;
+         auto model = casual::configuration::model::transform( casual::domain::unittest::configuration::get()).transaction;
 
          EXPECT_TRUE( origin == model) << CASUAL_NAMED_VALUE( origin) << '\n' << CASUAL_NAMED_VALUE( model);
 
@@ -344,11 +344,11 @@ domain:
 )");
 
          // make sure the wanted differs (otherwise we're not testing anyting...)
-         ASSERT_TRUE( wanted.transaction != casual::configuration::model::transform( casual::domain::manager::unittest::configuration::get()).transaction);
+         ASSERT_TRUE( wanted.transaction != casual::configuration::model::transform( casual::domain::unittest::configuration::get()).transaction);
 
          // post the wanted model (in transformed user representation)
          auto updated = casual::configuration::model::transform( 
-            casual::domain::manager::unittest::configuration::post( casual::configuration::model::transform( wanted)));
+            casual::domain::unittest::configuration::post( casual::configuration::model::transform( wanted)));
 
          EXPECT_TRUE( wanted.transaction == updated.transaction) << CASUAL_NAMED_VALUE( wanted.transaction) << '\n' << CASUAL_NAMED_VALUE( updated.transaction);
 

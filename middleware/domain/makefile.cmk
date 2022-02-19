@@ -7,6 +7,7 @@ import casual.middleware.make.api as dsl
 
 make.IncludePaths([
    'include',
+   'unittest/include',
    '../common/include',
    '../buffer/include',
    '../configuration/include',
@@ -185,9 +186,10 @@ install_bins.append( pending_executable)
 #unittest lib for other modules to use (in unittest)
 domain_unittest_library = make.LinkLibrary( 'bin/casual-domain-unittest',
     [
-        make.Compile( 'source/manager/unittest/process.cpp'),
-        make.Compile( 'source/manager/unittest/configuration.cpp'),
-        make.Compile( 'source/manager/unittest/discover.cpp'),
+        make.Compile( 'unittest/source/manager.cpp'),
+        make.Compile( 'unittest/source/configuration.cpp'),
+        make.Compile( 'unittest/source/discover.cpp'),
+        make.Compile( 'unittest/source/utility.cpp'),
     ],
     [
         common_library,

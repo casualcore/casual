@@ -11,7 +11,7 @@
 
 #include "common/unittest.h"
 
-#include "domain/manager/unittest/process.h"
+#include "domain/unittest/manager.h"
 
 #include "common/flag.h"
 
@@ -33,7 +33,7 @@ namespace casual
 {
    using namespace common;
 
-   namespace xatmi
+   namespace test
    {
       namespace local
       {
@@ -41,30 +41,26 @@ namespace casual
          {
             namespace configuration
             {
-               constexpr auto resource = R"(
-resources:
-  - key: rm-mockup
-    server: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/transaction/bin/rm-proxy-casual-mockup
-    xa_struct_name: casual_mockup_xa_switch_static
-    libraries:
-      - casual-mockup-rm
+               constexpr auto system = R"(
+system:
+   resources:
+      -  key: rm-mockup
+         server: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/transaction/bin/rm-proxy-casual-mockup
+         xa_struct_name: casual_mockup_xa_switch_static
+         libraries:
+            -  casual-mockup-rm
 )";
             }
 
             template< typename... C>
-            auto domain( common::file::scoped::Path resource, C&&... configurations) 
+            auto domain( C&&... configurations) 
             {
-               auto scoped = common::environment::variable::scoped::set( common::environment::variable::name::resource::configuration, resource.string());
-               auto process = casual::domain::manager::unittest::process( std::forward< C>( configurations)...);
-
-               return std::make_tuple( 
-                  std::move( resource),
-                  std::move( process));
+               return casual::domain::unittest::manager( configuration::system, std::forward< C>( configurations)...);
             }
 
             auto domain()
             {
-               return domain( common::unittest::file::temporary::content( ".yaml", configuration::resource), R"(
+               return domain( R"(
 domain:
    name: test-default-domain
 
@@ -107,7 +103,7 @@ domain:
 
 
 
-      TEST( casual_xatmi, tpalloc_X_OCTET_binary__expect_ok)
+      TEST( test_xatmi_call, tpalloc_X_OCTET_binary__expect_ok)
       {
          common::unittest::Trace trace;
 
@@ -116,7 +112,7 @@ domain:
          tpfree( buffer);
       }
 
-      TEST( casual_xatmi, tpacall_service_null__expect_TPEINVAL)
+      TEST( test_xatmi_call, tpacall_service_null__expect_TPEINVAL)
       {
          common::unittest::Trace trace;
 
@@ -127,7 +123,7 @@ domain:
          EXPECT_TRUE( tperrno == TPEINVAL) << "tperrno: " << tperrno;
       }
 
-      TEST( casual_xatmi, tpacall_TPNOREPLY_without_TPNOTRAN__in_transaction___expect_TPEINVAL)
+      TEST( test_xatmi_call, tpacall_TPNOREPLY_without_TPNOTRAN__in_transaction___expect_TPEINVAL)
       {
          common::unittest::Trace trace;
 
@@ -144,7 +140,7 @@ domain:
          EXPECT_TRUE( tperrno == TPEINVAL) << "tperrno: " << tperrno;
       }
 
-      TEST( casual_xatmi, tpcancel_descriptor_42__expect_TPEBADDESC)
+      TEST( test_xatmi_call, tpcancel_descriptor_42__expect_TPEBADDESC)
       {
          common::unittest::Trace trace;
 
@@ -155,7 +151,7 @@ domain:
       }
 
 
-      TEST( casual_xatmi, tx_rollback__no_transaction__expect_TX_PROTOCOL_ERROR)
+      TEST( test_xatmi_call, tx_rollback__no_transaction__expect_TX_PROTOCOL_ERROR)
       {
          common::unittest::Trace trace;
 
@@ -165,7 +161,7 @@ domain:
       }
 
 
-      TEST( casual_xatmi, tpgetrply_descriptor_42__expect_TPEBADDESC)
+      TEST( test_xatmi_call, tpgetrply_descriptor_42__expect_TPEBADDESC)
       {
          common::unittest::Trace trace;
 
@@ -181,7 +177,7 @@ domain:
          tpfree( buffer);
       }
 
-      TEST( casual_xatmi, tpacall_service_XXX__expect_TPENOENT)
+      TEST( test_xatmi_call, tpacall_service_XXX__expect_TPENOENT)
       {
          common::unittest::Trace trace;
 
@@ -222,7 +218,7 @@ domain:
          } // <unnamed>
       } // local
 
-      TEST( casual_xatmi, tpacall_buffer_null__expect_expect_ok)
+      TEST( test_xatmi_call, tpacall_buffer_null__expect_expect_ok)
       {
          common::unittest::Trace trace;
 
@@ -234,7 +230,7 @@ domain:
       }
 
 
-      TEST( casual_xatmi, tpacall_service_echo_TPNOREPLY_TPNOTRAN__expect_ok)
+      TEST( test_xatmi_call, tpacall_service_echo_TPNOREPLY_TPNOTRAN__expect_ok)
       {
          common::unittest::Trace trace;
 
@@ -247,7 +243,7 @@ domain:
          tpfree( buffer);
       }
 
-      TEST( casual_xatmi, tpacall_echo_TPNOREPLY__no_current_transaction__expect_ok)
+      TEST( test_xatmi_call, tpacall_echo_TPNOREPLY__no_current_transaction__expect_ok)
       {
          common::unittest::Trace trace;
 
@@ -260,7 +256,7 @@ domain:
          tpfree( buffer);
       }
 
-      TEST( casual_xatmi, tpacall_echo_TPNOREPLY_ongoing_current_transaction__expect_TPEINVAL)
+      TEST( test_xatmi_call, tpacall_echo_TPNOREPLY_ongoing_current_transaction__expect_TPEINVAL)
       {
          common::unittest::Trace trace;
 
@@ -279,7 +275,7 @@ domain:
       }
 
 
-      TEST( casual_xatmi, tpcall_service_echo__expect_ok)
+      TEST( test_xatmi_call, tpcall_service_echo__expect_ok)
       {
          common::unittest::Trace trace;
 
@@ -293,7 +289,7 @@ domain:
          tpfree( buffer);
       }
 
-      TEST( casual_xatmi, tpcall_service_resource_echo__rm_xa_start_gives_XA_RBROLLBACK__expect_TPESVCERR)
+      TEST( test_xatmi_call, tpcall_service_resource_echo__rm_xa_start_gives_XA_RBROLLBACK__expect_TPESVCERR)
       {
          common::unittest::Trace trace;
 
@@ -320,7 +316,7 @@ domain:
       // Added this test for ordinary tpcall services, and the same
       // problem appears. Invalid flags should give TPEINVAL, but gives
       // TPESYSTEM. Possibly related to the exception raised in Flags::convert().
-      TEST( casual_xatmi, DISABLED_tpcall_service_echo_invalid_flag__expect_TPEINVAL)
+      TEST( test_xatmi_call, DISABLED_tpcall_service_echo_invalid_flag__expect_TPEINVAL)
       {
          common::unittest::Trace trace;
 
@@ -335,7 +331,7 @@ domain:
          tpfree( buffer);
       }
 
-      TEST( casual_xatmi, no_trid__tpcall_service_forward_echo__auto_tran____expect_TPESVCERR)
+      TEST( test_xatmi_call, no_trid__tpcall_service_forward_echo__auto_tran____expect_TPESVCERR)
       {
          common::unittest::Trace trace;
 
@@ -350,7 +346,7 @@ domain:
          tpfree( buffer);
       }
 
-      TEST( casual_xatmi, trid__tpcall_service_forward_echo__auto_tran____expect_OK)
+      TEST( test_xatmi_call, trid__tpcall_service_forward_echo__auto_tran____expect_OK)
       {
          common::unittest::Trace trace;
 
@@ -368,7 +364,7 @@ domain:
          tpfree( buffer);
       }
 
-      TEST( casual_xatmi, tpcall_service_echo__1MiB_buffer___expect_ok)
+      TEST( test_xatmi_call, tpcall_service_echo__1MiB_buffer___expect_ok)
       {
          common::unittest::Trace trace;
 
@@ -390,7 +386,7 @@ domain:
          tpfree( output);
       }
 
-      TEST( casual_xatmi, tpacall_service_echo__no_transaction__tpcancel___expect_ok)
+      TEST( test_xatmi_call, tpacall_service_echo__no_transaction__tpcancel___expect_ok)
       {
          common::unittest::Trace trace;
 
@@ -406,7 +402,7 @@ domain:
       }
 
 
-      TEST( casual_xatmi, tpacall_service_echo__10_times__no_transaction__tpcancel_all___expect_ok)
+      TEST( test_xatmi_call, tpacall_service_echo__10_times__no_transaction__tpcancel_all___expect_ok)
       {
          common::unittest::Trace trace;
 
@@ -434,7 +430,7 @@ domain:
       }
 
 
-      TEST( casual_xatmi, tpacall_service_echo__10_times___tpgetrply_any___expect_ok)
+      TEST( test_xatmi_call, tpacall_service_echo__10_times___tpgetrply_any___expect_ok)
       {
          common::unittest::Trace trace;
 
@@ -468,7 +464,7 @@ domain:
       }
 
 
-      TEST( casual_xatmi, tx_begin__tpacall_service_echo__10_times___tpgetrply_all__tx_commit__expect_ok)
+      TEST( test_xatmi_call, tx_begin__tpacall_service_echo__10_times___tpgetrply_all__tx_commit__expect_ok)
       {
          common::unittest::Trace trace;
 
@@ -502,7 +498,7 @@ domain:
          tpfree( buffer);
       }
 
-      TEST( casual_xatmi, tx_begin__tpcall_service_echo__tx_commit___expect_ok)
+      TEST( test_xatmi_call, tx_begin__tpcall_service_echo__tx_commit___expect_ok)
       {
          common::unittest::Trace trace;
 
@@ -521,7 +517,7 @@ domain:
          tpfree( buffer);
       }
 
-      TEST( casual_xatmi, tx_begin__tpacall_service_echo__tx_commit___expect_TX_PROTOCOL_ERROR)
+      TEST( test_xatmi_call, tx_begin__tpacall_service_echo__tx_commit___expect_TX_PROTOCOL_ERROR)
       {
          common::unittest::Trace trace;
 
@@ -543,7 +539,7 @@ domain:
       }
 
 
-      TEST( casual_xatmi, tpcall_service_urcode__expect_ok__urcode_42)
+      TEST( test_xatmi_call, tpcall_service_urcode__expect_ok__urcode_42)
       {
          common::unittest::Trace trace;
 
@@ -555,7 +551,7 @@ domain:
 
 
 
-      TEST( casual_xatmi, tpcall_service_TPEOS___expect_error_TPEOS)
+      TEST( test_xatmi_call, tpcall_service_TPEOS___expect_error_TPEOS)
       {
          common::unittest::Trace trace;
 
@@ -565,7 +561,7 @@ domain:
          EXPECT_TRUE( tperrno == TPEOS) << "tperrno: " << tperrno;
       }
 
-      TEST( casual_xatmi, tpcall_service_TPEPROTO___expect_error_TPEPROTO)
+      TEST( test_xatmi_call, tpcall_service_TPEPROTO___expect_error_TPEPROTO)
       {
          common::unittest::Trace trace;
 
@@ -575,7 +571,7 @@ domain:
          EXPECT_TRUE( tperrno == TPEPROTO) << "tperrno: " << tperrno;
       }
 
-      TEST( casual_xatmi, tpcall_service_TPESVCERR___expect_error_TPESVCERR)
+      TEST( test_xatmi_call, tpcall_service_TPESVCERR___expect_error_TPESVCERR)
       {
          common::unittest::Trace trace;
 
@@ -585,7 +581,7 @@ domain:
          EXPECT_TRUE( tperrno == TPESVCERR) << "tperrno: " << tperrno;
       }
 
-      TEST( casual_xatmi, tpcall_service_TPESYSTEM___expect_error_TPESYSTEM)
+      TEST( test_xatmi_call, tpcall_service_TPESYSTEM___expect_error_TPESYSTEM)
       {
          common::unittest::Trace trace;
 
@@ -595,7 +591,7 @@ domain:
          EXPECT_TRUE( tperrno == TPESYSTEM) << "tperrno: " << tperrno;
       }
 
-      TEST( casual_xatmi, tpcall_service_TPESVCFAIL___expect_error_TPESVCFAIL)
+      TEST( test_xatmi_call, tpcall_service_TPESVCFAIL___expect_error_TPESVCFAIL)
       {
          common::unittest::Trace trace;
 
@@ -624,7 +620,7 @@ domain:
          } // <unnamed>
       } // local
 
-      TEST( casual_xatmi_extended, casual_instance_browse_services)
+      TEST( test_xatmi_call_extended, casual_instance_browse_services)
       {
          common::unittest::Trace trace;
 
@@ -645,5 +641,5 @@ domain:
          tpunadvertise( "c");
       }
 
-   } // xatmi
+   } // test
 } // casual

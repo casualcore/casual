@@ -11,7 +11,7 @@
 
 #include "common/unittest.h"
 
-#include "domain/manager/unittest/process.h"
+#include "domain/unittest/manager.h"
 
 #include "service/manager/admin/server.h"
 #include "service/manager/admin/model.h"
@@ -22,17 +22,9 @@ namespace casual
 {
    using namespace common;
 
-   namespace test::domain::assassinate
+   namespace test
    {
-      namespace local
-      {
-         namespace
-         {
-            using Manager = casual::domain::manager::unittest::Process;
-         } // <unnamed>
-      } // local
-
-      TEST( test_domain_assassinate, timeout_1ms__call_)
+      TEST( test_assassinate, timeout_1ms__call_)
       {
          unittest::Trace trace;
 
@@ -60,8 +52,7 @@ domain:
         arguments: [ --sleep, 1s]
 )";
 
-
-         local::Manager domain{ { configuration}};
+         auto domain = casual::domain::unittest::manager( configuration);
 
          auto start = platform::time::clock::type::now();
 
@@ -78,6 +69,6 @@ domain:
 
 
 
-   } //test::domain::assassinate
+   } //test
 
 } // casual

@@ -10,8 +10,8 @@
 #include "gateway/manager/admin/model.h"
 #include "gateway/manager/admin/server.h"
 
-#include "domain/manager/unittest/process.h"
-#include "domain/manager/unittest/discover.h"
+#include "domain/unittest/manager.h"
+#include "domain/unittest/discover.h"
 #include "service/unittest/utility.h"
 
 #include "serviceframework/service/protocol/call.h"
@@ -38,7 +38,7 @@ namespace casual
 
                Domain() : Domain( Domain::configuration) {}
 
-               casual::domain::manager::unittest::Process domain;
+               casual::domain::unittest::Manager domain;
 
                static constexpr auto configuration = R"(
 domain: 
@@ -143,7 +143,7 @@ domain:
             return ! state.connections.empty() && ! state.connections[ 0].remote.name.empty();
          });
 
-         casual::domain::manager::unittest::discover( { "a"}, {});
+         casual::domain::unittest::discover( { "a"}, {});
 
          // check that service has concurrent instances
          {
@@ -202,7 +202,7 @@ domain:
             return ! state.connections.empty() && ! state.connections[ 0].remote.name.empty();
          });
 
-         casual::domain::manager::unittest::discover( { "a"}, {});
+         casual::domain::unittest::discover( { "a"}, {});
 
 
          auto outbound_processes = []() -> std::vector< process::Handle>

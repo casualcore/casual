@@ -8,7 +8,7 @@
 #include "common/unittest/file.h"
 
 
-#include "domain/manager/unittest/process.h"
+#include "domain/unittest/manager.h"
 #include "casual/domain/manager/api/state.h"
 
 #include "common/communication/instance.h"
@@ -53,7 +53,7 @@ domain:
                Domain( const char* configuration) 
                   : domain{ { configuration}} {}
 
-               domain::manager::unittest::Process domain{ { local::configuration}};
+               domain::unittest::Manager domain{ { local::configuration}};
             };
 
             auto ping_handle = []( auto& handle)

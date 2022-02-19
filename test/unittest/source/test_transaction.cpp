@@ -9,7 +9,7 @@
 
 #define CASUAL_NO_XATMI_UNDEFINE
 
-#include "domain/manager/unittest/process.h"
+#include "domain/unittest/manager.h"
 
 #include "common/communication/instance.h"
 #include "common/transaction/context.h"
@@ -72,7 +72,7 @@ domain:
                template< typename... C>
                auto domain( C&&... configurations) 
                {
-                  return casual::domain::manager::unittest::process( configuration::basic, std::forward< C>( configurations)...);
+                  return casual::domain::unittest::manager( configuration::basic, std::forward< C>( configurations)...);
                }
 
 
@@ -101,7 +101,7 @@ domain:
             } // <unnamed>
          } // local
 
-         TEST( test_domain_transaction, empty_configuration)
+         TEST( test_transaction, empty_configuration)
          {
             unittest::Trace trace;
             local::Clear clear;
@@ -109,7 +109,7 @@ domain:
             EXPECT_TRUE( ! transaction::context().current());
          }
 
-         TEST( test_domain_transaction, dynamic_resource_configure)
+         TEST( test_transaction, dynamic_resource_configure)
          {
             unittest::Trace trace;
             local::Clear clear;
@@ -132,7 +132,7 @@ domain:
             EXPECT_TRUE( local::id() == strong::resource::id{ 1}) << "local::id(): " << local::id(); 
          }
 
-         TEST( test_domain_transaction, dynamic_resource_not_involved__transaction_commit__expect_no_xa_end_invokation)
+         TEST( test_transaction, dynamic_resource_not_involved__transaction_commit__expect_no_xa_end_invokation)
          {
             unittest::Trace trace;
             local::Clear clear;
@@ -163,7 +163,7 @@ domain:
             ASSERT_TRUE( state.invocations.at( 0) == unittest::rm::State::Invoke::xa_open_entry) << CASUAL_NAMED_VALUE( state.invocations);
          }
 
-         TEST( test_domain_transaction, dynamic_resource_involved__transaction_commit__expect_xa_end_invokation)
+         TEST( test_transaction, dynamic_resource_involved__transaction_commit__expect_xa_end_invokation)
          {
             unittest::Trace trace;
             local::Clear clear;

@@ -14,7 +14,7 @@
 
 namespace casual
 {
-   namespace domain::manager::unittest
+   namespace domain::unittest::internal
    {
 
       // we don't have access to service-manager (or other managers)
@@ -62,5 +62,5 @@ namespace casual
          return result;
       }
 
-   } // domain::manager::unittest
+   } // domain::unittest::internal
 } // casual

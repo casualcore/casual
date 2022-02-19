@@ -8,7 +8,7 @@
 
 #include "casual/queue/c/queue.h"
 
-#include "domain/manager/unittest/process.h"
+#include "domain/unittest/manager.h"
 
 #include <xatmi.h>
 
@@ -20,12 +20,7 @@ namespace casual
       {
          namespace
          {
-            struct Domain 
-            {
-
-               domain::manager::unittest::Process domain{ { Domain::configuration}};
-
-               static constexpr auto configuration = R"(
+            constexpr auto configuration = R"(
 domain: 
    name: queue-domain
 
@@ -57,7 +52,12 @@ domain:
             - name: B2
             - name: B3
 )";
-            };
+               
+
+            auto domain()
+            {
+               return domain::unittest::manager( configuration);
+            }
 
             namespace buffer
             {
@@ -96,7 +96,7 @@ domain:
       {
          common::unittest::Trace trace;
 
-         local::Domain domain;
+         auto domain = local::domain();
 
          auto descriptor  = casual_queue_message_create( { nullptr, 0l});
 
@@ -110,7 +110,7 @@ domain:
       {
          common::unittest::Trace trace;
 
-         local::Domain domain;
+         auto domain = local::domain();
          
          EXPECT_TRUE( casual_queue_enqueue( "A1", 4242) == -1);
          EXPECT_TRUE( casual_qerrno == CASUAL_QE_INVALID_ARGUMENTS) << "casual_qerrno: " << casual_qerrno;
@@ -120,7 +120,7 @@ domain:
       {
          common::unittest::Trace trace;
 
-         local::Domain domain;
+         auto domain = local::domain();
 
          auto buffer = local::buffer::allocate();
 
@@ -135,7 +135,7 @@ domain:
       {
          common::unittest::Trace trace;
 
-         local::Domain domain;
+         auto domain = local::domain();
 
          auto buffer = local::buffer::allocate();
 
@@ -153,7 +153,7 @@ domain:
       {
          common::unittest::Trace trace;
 
-         local::Domain domain;
+         auto domain = local::domain();
 
          auto buffer = local::buffer::allocate();
 
@@ -193,7 +193,7 @@ domain:
       {
          common::unittest::Trace trace;
 
-         local::Domain domain;
+         auto domain = local::domain();
 
          auto buffer = local::buffer::allocate();
 
@@ -260,7 +260,7 @@ domain:
       {
          common::unittest::Trace trace;
 
-         local::Domain domain;
+         auto domain = local::domain();
 
          // enqueue
          {
@@ -297,7 +297,7 @@ domain:
       {
          common::unittest::Trace trace;
 
-         local::Domain domain;
+         auto domain = local::domain();
 
          // enqueue
          {

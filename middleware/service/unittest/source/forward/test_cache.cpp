@@ -12,7 +12,7 @@
 #include "common/communication/instance.h"
 #include "common/message/service.h"
 
-#include "domain/manager/unittest/process.h"
+#include "domain/unittest/manager.h"
 
 namespace casual
 {
@@ -25,7 +25,7 @@ namespace casual
          {
             struct Domain 
             {
-               casual::domain::manager::unittest::Process process{ { configuration}};
+               casual::domain::unittest::Manager process{ { configuration}};
 
                auto forward() const
                {

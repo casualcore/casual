@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include "common/unittest.h"
+
 #include "common/message/service.h"
 #include "service/manager/admin/model.h"
 
@@ -22,8 +24,6 @@ namespace casual
       //! unadvertise `service` to service-manager as current process
       void unadvertise( std::vector< std::string> services);
 
-      manager::admin::model::State state();
-
       namespace send
       {
          //! sends ack to service-manager
@@ -32,6 +32,13 @@ namespace casual
          void ack( const common::message::service::lookup::Reply& lookup);
          //! @}
       } // send
+
+      manager::admin::model::State state();
+
+      namespace fetch
+      {
+         constexpr auto until = common::unittest::fetch::until( &unittest::state);
+      }
 
    
    } // common::unittest

@@ -29,10 +29,10 @@
 
 #include "domain/discovery/api.h"
 #include "domain/configuration/fetch.h"
-#include "domain/manager/unittest/process.h"
-#include "domain/manager/unittest/configuration.h"
+#include "domain/unittest/manager.h"
+#include "domain/unittest/configuration.h"
 
-#include "configuration/model/load.h"
+#include "configuration/unittest/utility.h"
 #include "configuration/model/transform.h"
 
 namespace casual
@@ -62,11 +62,7 @@ domain:
                template< typename... C>
                auto load( C&&... contents)
                {
-                  auto files = common::unittest::file::temporary::contents( ".yaml", std::forward< C>( contents)...);
-
-                  auto get_path = []( auto& file){ return static_cast< std::filesystem::path>( file);};
-
-                  return casual::configuration::model::load( common::algorithm::transform( files, get_path));
+                  return casual::configuration::unittest::load( std::forward< C>( contents)...);
                }
 
 
@@ -76,7 +72,7 @@ domain:
             template< typename... C>
             auto domain( C&&... configurations)
             {
-               return domain::manager::unittest::process( configuration::base, std::forward< C>( configurations)...);
+               return domain::unittest::manager( configuration::base, std::forward< C>( configurations)...);
             }
 
             namespace call
@@ -147,7 +143,7 @@ domain:
 
          auto origin = local::configuration::load( local::configuration::base);
 
-         auto model = casual::configuration::model::transform( casual::domain::manager::unittest::configuration::get());
+         auto model = casual::configuration::model::transform( casual::domain::unittest::configuration::get());
 
          EXPECT_TRUE( origin.service == model.service) << CASUAL_NAMED_VALUE( origin) << '\n' << CASUAL_NAMED_VALUE( model);
       }
@@ -174,7 +170,7 @@ domain:
 
          auto origin = local::configuration::load( local::configuration::base, configuration);
 
-         auto model = casual::configuration::model::transform( casual::domain::manager::unittest::configuration::get());
+         auto model = casual::configuration::model::transform( casual::domain::unittest::configuration::get());
 
          EXPECT_TRUE( origin.service == model.service) << CASUAL_NAMED_VALUE( origin.service) << '\n' << CASUAL_NAMED_VALUE( model.service);
       }
@@ -223,11 +219,11 @@ domain:
 )");
 
          // make sure the wanted differs (otherwise we're not testing anyting...)
-         ASSERT_TRUE( wanted.service != casual::configuration::model::transform( casual::domain::manager::unittest::configuration::get()).service);
+         ASSERT_TRUE( wanted.service != casual::configuration::model::transform( casual::domain::unittest::configuration::get()).service);
 
          // post the wanted model (in transformed user representation)
          auto updated = casual::configuration::model::transform( 
-            casual::domain::manager::unittest::configuration::post( casual::configuration::model::transform( wanted)));
+            casual::domain::unittest::configuration::post( casual::configuration::model::transform( wanted)));
 
          EXPECT_TRUE( wanted.service == updated.service) << CASUAL_NAMED_VALUE( wanted.service) << '\n' << CASUAL_NAMED_VALUE( updated.service);
 

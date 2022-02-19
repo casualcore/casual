@@ -15,20 +15,20 @@
 
 namespace casual
 {
-   namespace domain::manager::unittest
+   namespace domain::unittest
    {
-      struct Process 
+      struct Manager 
       {
-         Process();
-         Process( std::vector< std::string_view> configuration);
+         Manager();
+         Manager( std::vector< std::string_view> configuration);
 
          //! callback to be able to enable other _environment_ stuff before boot
          //! @attention `callback` has to be idempotent (if activate is used)
-         Process( std::vector< std::string_view> configuration, std::function< void( const std::string&)> callback);
-         ~Process();
+         Manager( std::vector< std::string_view> configuration, std::function< void( const std::string&)> callback);
+         ~Manager();
 
-         Process( Process&&) noexcept;
-         Process& operator = ( Process&&) noexcept;
+         Manager( Manager&&) noexcept;
+         Manager& operator = ( Manager&&) noexcept;
 
          const common::process::Handle& handle() const noexcept;
          
@@ -36,7 +36,7 @@ namespace casual
          //! only usefull if more than one instance is used
          void activate();
 
-         friend std::ostream& operator << ( std::ostream& out, const Process& value);
+         friend std::ostream& operator << ( std::ostream& out, const Manager& value);
 
       private:
          struct Implementation;
@@ -44,13 +44,13 @@ namespace casual
       };
 
       template< typename... C>
-      [[nodiscard]] auto process( C&&... configurations)
+      [[nodiscard]] auto manager( C&&... configurations)
       {
          std::vector< std::string_view> views;
          ( views.emplace_back( std::forward< C>( configurations)) , ... );
 
-         return domain::manager::unittest::Process{ std::move( views)};
+         return domain::unittest::Manager{ std::move( views)};
       }
 
-   } // domain::manager::unittest
+   } // domain::unittest
 } // casual

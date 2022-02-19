@@ -83,29 +83,29 @@ namespace casual
                //! be used as flags to the call, and not part of the payload.
                //! @returns the result...
                template< typename... Args>
-               auto operator () ( const std::string& service, Args&&... args)
+               auto operator () ( std::string service, Args&&... args)
                {
-                  return call( service, common::traits::priority::tag< 1>{}, std::forward< Args>( args)...);
+                  return call( std::move( service), common::traits::priority::tag< 1>{}, std::forward< Args>( args)...);
                }
 
 
             private:
                template< typename Arg, typename... Args>
-               auto call( const std::string& service, common::traits::priority::tag< 1>, Arg flags, Args&&... args)
-                  -> decltype( result_type{ service::call::invoke( service, std::declval< service::payload_type&>(), flags)})
+               auto call( std::string service, common::traits::priority::tag< 1>, Arg flags, Args&&... args)
+                  -> decltype( result_type{ service::call::invoke( std::move( service), std::declval< service::payload_type&>(), flags)})
                {
                   ( ( m_input.archive << std::forward< Args>( args)), ...);
                   m_input.archive.consume( m_payload.memory);
-                  return result_type{ service::call::invoke( service, m_payload, flags)};
+                  return result_type{ service::call::invoke( std::move( service), m_payload, flags)};
                }
 
                template< typename... Args>
-               auto call( const std::string& service, common::traits::priority::tag< 0>, Args&&... args)
-                  -> decltype( result_type{ service::call::invoke( service, std::declval< service::payload_type&>())})
+               auto call( std::string service, common::traits::priority::tag< 0>, Args&&... args)
+                  -> decltype( result_type{ service::call::invoke( std::move( service), std::declval< service::payload_type&>())})
                {
                   ( ( m_input.archive << std::forward< Args>( args)), ...);
                   m_input.archive.consume( m_payload.memory);
-                  return { service::call::invoke( service, m_payload)};
+                  return { service::call::invoke( std::move( service), m_payload)};
                }
 
                service::payload_type m_payload;

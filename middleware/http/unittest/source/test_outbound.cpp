@@ -13,7 +13,7 @@
 #include "common/communication/ipc.h"
 #include "common/unittest/file.h"
 
-#include "domain/manager/unittest/process.h"
+#include "domain/unittest/manager.h"
 #include "domain/discovery/api.h"
 
 
@@ -53,7 +53,7 @@ http:
                   return result;
                }();
 
-               domain::manager::unittest::Process domain;
+               domain::unittest::Manager domain;
 
 
                static constexpr auto configuration = R"(

@@ -8,7 +8,7 @@
 #include "common/unittest.h"
 #include "common/unittest/eventually/send.h"
 
-#include "domain/manager/unittest/process.h"
+#include "domain/unittest/manager.h"
 
 #include "casual/xatmi/server.h"
 
@@ -43,7 +43,7 @@ namespace casual
 
             auto domain()
             {
-               return casual::domain::manager::unittest::Process{{
+               return casual::domain::unittest::manager(
 R"(
 domain:
    name: test-default-domain
@@ -68,14 +68,13 @@ domain:
         memberships: [ example]
       - path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-server
         memberships: [ example]
-)"
-               }};
+)");
             }
 
          } // <unnamed>
       } // local
 
-      TEST( casual_xatmi_server_start, initialize_and_done_is_called)
+      TEST( test_xatmi_start, server_initialize_and_done_is_called)
       {
          common::unittest::Trace trace;
          

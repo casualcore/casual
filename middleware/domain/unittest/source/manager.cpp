@@ -4,7 +4,7 @@
 //! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-#include "domain/manager/unittest/process.h"
+#include "domain/unittest/manager.h"
 #include "domain/manager/task.h"
 #include "domain/manager/admin/server.h"
 
@@ -27,7 +27,7 @@ namespace casual
 {
    using namespace common;
 
-   namespace domain::manager::unittest
+   namespace domain::unittest
    {
 
       namespace local
@@ -89,7 +89,7 @@ namespace casual
 
             void shutdown( const process::Handle& manager)
             {
-               log::Trace trace{ "domain::manager::unittest::local::shutdown", verbose::log};
+               log::Trace trace{ "domain::unittest::local::shutdown", verbose::log};
                log::line( verbose::log, "manager: ", manager);
 
                signal::thread::scope::Block blocked_signals{ { code::signal::child}};
@@ -171,13 +171,13 @@ namespace casual
          } // <unnamed>
       } // local
 
-      struct Process::Implementation
+      struct Manager::Implementation
       {
          Implementation( std::vector< std::string_view> configuration, std::function< void( const std::string&)> callback = nullptr)
             : environment( std::move( callback)),
             files( local::configuration::files( configuration))
          {
-            log::Trace trace{ "domain::manager::unittest::Process::Implementation", verbose::log};
+            log::Trace trace{ "domain::unittest::Manager::Implementation", verbose::log};
 
             common::domain::identity( {});
 
@@ -265,7 +265,7 @@ domain:
 
          void activate()
          {
-            log::Trace trace{ "domain::manager::unittest::Process::Implementation::activate", verbose::log};
+            log::Trace trace{ "domain::unittest::Manager::Implementation::activate", verbose::log};
 
             common::domain::identity( domain);
 
@@ -316,39 +316,39 @@ domain:
 
       };
 
-      Process::Process( std::vector< std::string_view> configuration)
+      Manager::Manager( std::vector< std::string_view> configuration)
          : m_implementation( configuration) {}
 
-      Process::Process( std::vector< std::string_view> configuration, std::function< void( const std::string&)> callback)
+      Manager::Manager( std::vector< std::string_view> configuration, std::function< void( const std::string&)> callback)
          : m_implementation( configuration, std::move( callback)) {}
 
-      Process::Process() {}
+      Manager::Manager() {}
 
-      Process::~Process()
+      Manager::~Manager()
       {
-         log::Trace trace{ "domain::manager::unittest::Process::~Process", verbose::log};
+         log::Trace trace{ "domain::unittest::Manager::~Manager", verbose::log};
          log::line( verbose::log, "this: ", *this);
       }
 
-      Process::Process( Process&&) noexcept = default;
-      Process& Process::operator = ( Process&&) noexcept = default;
+      Manager::Manager( Manager&&) noexcept = default;
+      Manager& Manager::operator = ( Manager&&) noexcept = default;
 
-      const common::process::Handle& Process::handle() const noexcept
+      const common::process::Handle& Manager::handle() const noexcept
       {
          return m_implementation->manager.process;
       }
 
-      void Process::activate()
+      void Manager::activate()
       {
          m_implementation->activate();
       }
 
-      std::ostream& operator << ( std::ostream& out, const Process& value)
+      std::ostream& operator << ( std::ostream& out, const Manager& value)
       {
          if( value.m_implementation)
             return common::stream::write( out, *value.m_implementation);
          return out << "nil";
       }
 
-   } // domain::manager::unittest
+   } // domain::unittest
 } // casual

@@ -27,9 +27,9 @@
 
 #include "serviceframework/service/protocol/call.h"
 
-#include "domain/manager/unittest/process.h"
-#include "domain/manager/unittest/configuration.h"
-#include "domain/manager/unittest/discover.h"
+#include "domain/unittest/manager.h"
+#include "domain/unittest/configuration.h"
+#include "domain/unittest/discover.h"
 #include "domain/discovery/api.h"
 
 #include "service/unittest/utility.h"
@@ -123,7 +123,7 @@ domain:
             template< typename... C>
             auto domain( C&&... configurations)
             {
-               return casual::domain::manager::unittest::process( configuration::servers, std::forward< C>( configurations)...);
+               return casual::domain::unittest::manager( configuration::servers, std::forward< C>( configurations)...);
             }
 
             //! default domain
@@ -157,7 +157,7 @@ domain:
 
          auto origin = local::configuration::load( local::configuration::servers, local::configuration::gateway);
 
-         auto model = casual::configuration::model::transform( casual::domain::manager::unittest::configuration::get());
+         auto model = casual::configuration::model::transform( casual::domain::unittest::configuration::get());
 
          EXPECT_TRUE( origin.gateway == model.gateway) << CASUAL_NAMED_VALUE( origin.gateway) << "\n " << CASUAL_NAMED_VALUE( model.gateway);
 
@@ -207,15 +207,15 @@ domain:
 )");
 
          // make sure the wanted differs (otherwise we're not testing anyting...)
-         ASSERT_TRUE( wanted.gateway != casual::configuration::model::transform( casual::domain::manager::unittest::configuration::get()).gateway);
+         ASSERT_TRUE( wanted.gateway != casual::configuration::model::transform( casual::domain::unittest::configuration::get()).gateway);
 
          // post the wanted model (with transformed user representation)
-         casual::domain::manager::unittest::configuration::post( casual::configuration::model::transform( wanted));
+         casual::domain::unittest::configuration::post( casual::configuration::model::transform( wanted));
          
          // wait for the 'bounds' to be connected...
          unittest::fetch::until( unittest::fetch::predicate::outbound::connected());
 
-         auto updated = casual::configuration::model::transform( casual::domain::manager::unittest::configuration::get());
+         auto updated = casual::configuration::model::transform( casual::domain::unittest::configuration::get());
 
          EXPECT_TRUE( wanted.gateway == updated.gateway) << CASUAL_NAMED_VALUE( wanted.gateway) << '\n' << CASUAL_NAMED_VALUE( updated.gateway);
 
@@ -320,7 +320,7 @@ domain:
          a.activate();
 
          // discover to make sure outbound(s) knows about wanted services
-         casual::domain::manager::unittest::discover( { "a"}, {});
+         casual::domain::unittest::discover( { "a"}, {});
 
          // wait until outbound knows about 'a'
          auto state = unittest::fetch::until( unittest::fetch::predicate::outbound::routing( { "a"}, {}));
@@ -374,7 +374,7 @@ domain:
          a.activate();
 
          // discover to make sure outbound(s) knows about wanted services
-         casual::domain::manager::unittest::discover( { "a"}, {});
+         casual::domain::unittest::discover( { "a"}, {});
 
          // wait until outbound knows about 'a'
          auto state = unittest::fetch::until( unittest::fetch::predicate::outbound::routing( { "a"}, {}));
@@ -747,7 +747,7 @@ domain:
          unittest::fetch::until( unittest::fetch::predicate::outbound::connected());
 
          // discover to make sure outbound(s) knows about wanted services
-         casual::domain::manager::unittest::discover( { "a"}, {});
+         casual::domain::unittest::discover( { "a"}, {});
 
          auto state = unittest::fetch::until( unittest::fetch::predicate::outbound::routing( { "a"}, {}));
 

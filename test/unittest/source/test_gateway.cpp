@@ -10,19 +10,14 @@
 
 #include "common/unittest.h"
 
-#include "test/unittest/gateway.h"
-
-#include "domain/manager/unittest/process.h"
+#include "domain/unittest/manager.h"
 #include "domain/manager/admin/cli.h"
 
 #include "common/communication/instance.h"
 #include "serviceframework/service/protocol/call.h"
 
-#include "gateway/manager/admin/model.h"
-#include "gateway/manager/admin/server.h"
+#include "gateway/unittest/utility.h"
 
-#include "service/manager/admin/server.h"
-#include "service/manager/admin/model.h"
 #include "service/unittest/utility.h"
 
 #include "transaction/unittest/utility.h"
@@ -38,9 +33,8 @@ namespace casual
 {
    using namespace common;
 
-   namespace test::domain
+   namespace test
    {
-
       namespace local
       {
          namespace
@@ -87,7 +81,7 @@ domain:
             template< typename... C>
             auto domain( C&&... configurations)
             {
-               return casual::domain::manager::unittest::process( configuration::base, std::forward< C>( configurations)...);
+               return casual::domain::unittest::manager( configuration::base, std::forward< C>( configurations)...);
             }
 
 
@@ -266,7 +260,7 @@ domain:
 
 
       
-      TEST( test_domain_gateway, queue_service_forward___from_A_to_B__expect_discovery)
+      TEST( test_gateway, queue_service_forward___from_A_to_B__expect_discovery)
       {
          common::unittest::Trace trace;
 
@@ -345,7 +339,7 @@ domain:
          
       }
 
-      TEST( test_domain_gateway, domain_A_to_B_to_C__expect_B_hops_1___C_hops_2)
+      TEST( test_gateway, domain_A_to_B_to_C__expect_B_hops_1___C_hops_2)
       {
          common::unittest::Trace trace;
 
@@ -373,8 +367,7 @@ domain:
                -  address: 127.0.0.1:7002
 
 )"); 
-         
-         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected());
          
          auto a = local::domain( R"(
 domain: 
@@ -388,7 +381,7 @@ domain:
 )");
 
 
-         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected());
 
          // call the two domain services to get discovery
          local::call( "casual/example/domain/echo/B", 0);
@@ -413,7 +406,7 @@ domain:
          
       }
 
-      TEST( test_domain_gateway, domain_A_to_B_C_D__D_to__E__expect_call_to_only_B_C___shutdown_B_C__exepct_call_to_D_forward_to_E)
+      TEST( test_gateway, domain_A_to_B_C_D__D_to__E__expect_call_to_only_B_C___shutdown_B_C__exepct_call_to_D_forward_to_E)
       {
          common::unittest::Trace trace;
 
@@ -437,7 +430,7 @@ domain:
                -  address: 127.0.0.1:7001
 
 )"); 
-         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected());
 
          auto c = local::example::domain( "C", "7003");
          auto b = local::example::domain( "B", "7004");
@@ -459,7 +452,7 @@ domain:
 )");
 
 
-         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected());
 
          // we expect to reach only  B C 
          algorithm::for_n< 10>([]()
@@ -472,7 +465,7 @@ domain:
          local::sink( std::move( b));
 
          // wait until we only have one outbound connected (D)
-         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected( 1));
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected( 1));
 
          // we expect all calls to reach E (via D)
          algorithm::for_n< 10>([]()
@@ -483,7 +476,7 @@ domain:
 
       }
 
-      TEST( test_domain_gateway, domain_A_to_B__shutdown_B__boot_B__exepct_connection_to_B_again)
+      TEST( test_gateway, domain_A_to_B__shutdown_B__boot_B__exepct_connection_to_B_again)
       {
          common::unittest::Trace trace;
 
@@ -514,22 +507,22 @@ domain:
 )");
 
 
-         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected());
 
          // shutdown and boot b
          local::sink( std::move( b));
-         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected( 0));
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected( 0));
 
 
          b = local::domain( B);
          a.activate();
 
          // wait until we're connected again
-         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected( 1));
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected( 1));
 
       }
 
-      TEST( test_domain_gateway, domain_A_to_B_reverse_connection_shutdown_A__boot_A__exepct_connection_to_B_again)
+      TEST( test_gateway, domain_A_to_B_reverse_connection_shutdown_A__boot_A__exepct_connection_to_B_again)
       {
          common::unittest::Trace trace;
 
@@ -561,18 +554,18 @@ domain:
 
          auto a = local::domain( A);
 
-         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected( 1));
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected( 1));
 
          // shutdown and boot a
          local::sink( std::move( a));
          a = local::domain( A);
 
          // wait until we're connected again
-         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected( 1));
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected( 1));
 
       }
 
-      TEST( test_domain_gateway, domain_A_to__B_C_D__outbound_separated_groups___expect_prio_B)
+      TEST( test_gateway, domain_A_to__B_C_D__outbound_separated_groups___expect_prio_B)
       {
          common::unittest::Trace trace;
 
@@ -607,7 +600,7 @@ domain:
 
          auto a = local::domain(  A);
 
-         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected());
 
          // we might get to the "wrong" domain until all services are advertised.
          EXPECT_TRUE( local::lookup::domain::name( "B", 1000));
@@ -620,7 +613,7 @@ domain:
       }
 
 
-      TEST( BACKWARD_test_domain_gateway, domain_A_to__B_C_D__outbound_separated_groups___expect_prio_B)
+      TEST( BACKWARD_test_gateway, domain_A_to__B_C_D__outbound_separated_groups___expect_prio_B)
       {
          // same test as above but with the deprecated configuration
 
@@ -655,7 +648,7 @@ domain:
 
          auto a = local::domain(  A);
 
-         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected());
 
          // we might get to the "wrong" domain until all services are advertised.
          EXPECT_TRUE( local::lookup::domain::name( "B", 1000));
@@ -668,7 +661,7 @@ domain:
       }
 
 
-      TEST( test_domain_gateway, domain_A_to_B___echo_send_large_message)
+      TEST( test_gateway, domain_A_to_B___echo_send_large_message)
       {
          common::unittest::Trace trace;
 
@@ -693,7 +686,7 @@ domain:
 
          auto a = local::domain(  A);
 
-         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected());
 
          const auto binary = common::unittest::random::binary( 3 * platform::ipc::transport::size);
 
@@ -711,7 +704,7 @@ domain:
          });
       }
 
-      TEST( test_domain_gateway, domain_A_to_B___echo_send_message_in_transaction)
+      TEST( test_gateway, domain_A_to_B___echo_send_message_in_transaction)
       {
          common::unittest::Trace trace;
 
@@ -736,7 +729,7 @@ domain:
 
          auto a = local::domain(  A);
 
-         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected());
 
          const auto binary = common::unittest::random::binary( platform::ipc::transport::size);
 
@@ -753,7 +746,7 @@ domain:
          ASSERT_TRUE( tx_commit() == TX_OK);
       }
 
-      TEST( test_domain_gateway, domain_A_to_B_C___call_A_B__in_same_transaction)
+      TEST( test_gateway, domain_A_to_B_C___call_A_B__in_same_transaction)
       {
          common::unittest::Trace trace;
 
@@ -778,7 +771,7 @@ domain:
 
          auto a = local::domain(  A);
 
-         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected());
 
          const auto binary = common::unittest::random::binary( platform::ipc::transport::size);
 
@@ -804,7 +797,7 @@ domain:
       }
 
 
-      TEST( test_domain_gateway, domain_A_to_B__to__C_D___call_C_D__in_same_transaction)
+      TEST( test_gateway, domain_A_to_B__to__C_D___call_C_D__in_same_transaction)
       {
          common::unittest::Trace trace;
 
@@ -837,7 +830,7 @@ domain:
 
 
          auto b = local::domain(  B);
-         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected());
 
          constexpr auto A = R"(
 domain:
@@ -852,7 +845,7 @@ domain:
 
 
          auto a = local::domain(  A);
-         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected());
 
          const auto binary = common::unittest::random::binary( platform::ipc::transport::size);
 
@@ -878,7 +871,7 @@ domain:
       }
 
 
-      TEST( test_domain_gateway, domain_A_to_B__reverse_to__C_D___call_C_D__in_same_transaction)
+      TEST( test_gateway, domain_A_to_B__reverse_to__C_D___call_C_D__in_same_transaction)
       {
          common::unittest::Trace trace;
 
@@ -928,7 +921,7 @@ domain:
 
 
          auto a = local::domain(  A);
-         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected());
 
          const auto binary = common::unittest::random::binary( platform::ipc::transport::size);
 
@@ -953,7 +946,7 @@ domain:
          ASSERT_TRUE( tx_commit() == TX_OK);
       }
 
-      TEST( test_domain_gateway, domain_A_to_B__to__C_D___call_C_D__from_A__call_D_from_C__in_same_transaction)
+      TEST( test_gateway, domain_A_to_B__to__C_D___call_C_D__from_A__call_D_from_C__in_same_transaction)
       {
          common::unittest::Trace trace;
 
@@ -994,7 +987,7 @@ domain:
 
 
          auto b = local::domain(  B);
-         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected());
 
          constexpr auto A = R"(
 domain:
@@ -1009,7 +1002,7 @@ domain:
 
 
          auto a = local::domain(  A);
-         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected());
 
          const auto binary = common::unittest::random::binary( platform::ipc::transport::size);
 
@@ -1036,7 +1029,7 @@ domain:
             c.activate();
 
             // the outbound in C might not have been able to connect to A yet, wait for it.
-            test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
+            gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected());
 
             auto buffer = local::call( "casual/example/domain/echo/D", binary);
             auto size = local::size( buffer);
@@ -1048,7 +1041,7 @@ domain:
       }
 
 
-      TEST( test_domain_gateway, domain_A_to_B___tpacall__sleep___shutdown_B___expect_reply___call_sleep_again__expect__TPENOENT)
+      TEST( test_gateway, domain_A_to_B___tpacall__sleep___shutdown_B___expect_reply___call_sleep_again__expect__TPENOENT)
       {
          // sink child signals 
          signal::callback::registration< code::signal::child>( [](){});
@@ -1091,7 +1084,7 @@ domain:
 
          auto a = local::domain(  A);
 
-         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected());
 
          const auto binary = common::unittest::random::binary( 2048);
 
@@ -1125,7 +1118,7 @@ domain:
       }
 
 
-      TEST( test_domain_gateway, domain_A_to_B___tpacall__sleep___scale_B_down__expect__TPENOENT)
+      TEST( test_gateway, domain_A_to_B___tpacall__sleep___scale_B_down__expect__TPENOENT)
       {
          // sink child signals 
          signal::callback::registration< code::signal::child>( [](){});
@@ -1164,7 +1157,7 @@ domain:
 
          auto a = local::domain(  A);
 
-         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected());
 
          const auto binary = common::unittest::random::binary( 2048);
 
@@ -1201,7 +1194,7 @@ domain:
          local::call( "casual/example/sleep", TPENOENT);
       }
 
-      TEST( test_domain_gateway, domain_A_to_B__B_to_A__A_knows_of_echo_in_B__scale_echo_down__call_echo_from_B____expect_TPNOENT)
+      TEST( test_gateway, domain_A_to_B__B_to_A__A_knows_of_echo_in_B__scale_echo_down__call_echo_from_B____expect_TPNOENT)
       {
          // sink child signals 
          signal::callback::registration< code::signal::child>( [](){});
@@ -1248,7 +1241,7 @@ domain:
 )");
 
 
-         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected());
          
          // jump in to B
          b.activate();
@@ -1263,7 +1256,7 @@ domain:
       }
 
 
-      TEST( test_domain_gateway, domain_A_to__B_C_D__outbound_separated_groups___expect_prio_B__shutdown_B__expect_C__shutdown__C__expect_D)
+      TEST( test_gateway, domain_A_to__B_C_D__outbound_separated_groups___expect_prio_B__shutdown_B__expect_C__shutdown__C__expect_D)
       {
          common::unittest::Trace trace;
 
@@ -1298,7 +1291,7 @@ domain:
 
          auto a = local::domain(  A);
 
-         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected());
 
          // we might get to the "wrong" domain until all services are advertised.
          EXPECT_TRUE( local::lookup::domain::name( "B", 1000));
@@ -1328,7 +1321,7 @@ domain:
          });
       }
 
-      TEST( test_domain_gateway, domain_A_to__B_C__outbound_separated_groups___expect_prio_B__shutdown_B__expect_C__boot_B__expect_B)
+      TEST( test_gateway, domain_A_to__B_C__outbound_separated_groups___expect_prio_B__shutdown_B__expect_C__boot_B__expect_B)
       {
          common::unittest::Trace trace;
 
@@ -1358,7 +1351,7 @@ domain:
 
          auto a = local::domain(  A);
 
-         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected());
 
          // we might get to C until all services are advertised.
          EXPECT_TRUE( local::lookup::domain::name( "B", 1000));
@@ -1385,7 +1378,7 @@ domain:
          a.activate();
 
          // we need to wait for all to be connected...
-         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected());
          
          // we expect to get to B agin
          EXPECT_TRUE( local::lookup::domain::name( "B", 1000));
@@ -1397,7 +1390,7 @@ domain:
          });
       }
 
-      TEST( test_domain_gateway, domain_A_to__B_C_D__outbound_same_group___expect_round_robin_between_A_B_C)
+      TEST( test_gateway, domain_A_to__B_C_D__outbound_same_group___expect_round_robin_between_A_B_C)
       {
          common::unittest::Trace trace;
 
@@ -1438,7 +1431,7 @@ domain:
             return false;
          };
 
-         test::unittest::gateway::state::until( ready_predicate);
+         gateway::unittest::fetch::until( ready_predicate);
 
          std::map< std::string, int> domains;
 
@@ -1454,7 +1447,7 @@ domain:
          EXPECT_TRUE( domains[ "D"] == 3);
       }
 
-      TEST( test_domain_gateway, domains_A_B__B_has_echo__call_echo_from_A__expect_discovery__shutdown_B__expect_no_ent__boot_B__expect_discovery)
+      TEST( test_gateway, domains_A_B__B_has_echo__call_echo_from_A__expect_discovery__shutdown_B__expect_no_ent__boot_B__expect_discovery)
       {
          common::unittest::Trace trace;
 
@@ -1492,7 +1485,7 @@ domain:
          auto b = local::domain( B);
          auto a = local::domain( A);
 
-         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected());
 
          local::call( "casual/example/echo", 0);
 
@@ -1501,7 +1494,7 @@ domain:
          // "shutdown" B
          local::sink( std::move( b));
          
-         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::disconnected());
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::disconnected());
 
          log::line( verbose::log, "after shutdown of B");
 
@@ -1513,7 +1506,7 @@ domain:
          b = local::domain( B);
          a.activate();
 
-         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected());
 
          log::line( verbose::log, "after boot of B");
 
@@ -1521,7 +1514,7 @@ domain:
          local::call( "casual/example/echo", 0);
       }
 
-      TEST( test_domain_gateway, domains_A_B__B_has_route_b_to_echo____A_has_route_a_to_b___call_route_a_from_A___expect_discovery)
+      TEST( test_gateway, domains_A_B__B_has_route_b_to_echo____A_has_route_a_to_b___call_route_a_from_A___expect_discovery)
       {
          common::unittest::Trace trace;
 
@@ -1567,14 +1560,14 @@ domain:
          auto b = local::domain( B);
          auto a = local::domain( A);
 
-         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected());
 
          local::call( "a", 0);
          
       }
 
 
-      TEST( test_domain_gateway, domains_A_B__B_has_echo__A_has_route_foo_to_echo__call_route_foo_from_A__expect_discovery__shutdown_B__expect_no_ent__boot_B__expect_discovery)
+      TEST( test_gateway, domains_A_B__B_has_echo__A_has_route_foo_to_echo__call_route_foo_from_A__expect_discovery__shutdown_B__expect_no_ent__boot_B__expect_discovery)
       {
          common::unittest::Trace trace;
 
@@ -1616,7 +1609,7 @@ domain:
          auto b = local::domain( B);
          auto a = local::domain( A);
 
-         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected());
 
          local::call( "foo", 0);
 
@@ -1624,7 +1617,7 @@ domain:
 
          // "shutdown" B
          local::sink( std::move( b));
-         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::disconnected());
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::disconnected());
 
          log::line( verbose::log, "after shutdown of B");
 
@@ -1636,7 +1629,7 @@ domain:
          b = local::domain( B);
          a.activate();
 
-         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected());
 
          log::line( verbose::log, "after boot of B");
          
@@ -1645,7 +1638,7 @@ domain:
       }
 
 
-      TEST( test_domain_gateway, domains_A_B__B_has_echo__A_has_route_foo_and_bar_to_echo__call_route_foo_from_A__expect_discovery__shutdown_B__expect_no_ent__boot_B__expect_discovery)
+      TEST( test_gateway, domains_A_B__B_has_echo__A_has_route_foo_and_bar_to_echo__call_route_foo_from_A__expect_discovery__shutdown_B__expect_no_ent__boot_B__expect_discovery)
       {
          common::unittest::Trace trace;
 
@@ -1687,7 +1680,7 @@ domain:
          auto b = local::domain( B);
          auto a = local::domain( A);
 
-         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected());
 
          local::call( "foo", 0);
 
@@ -1695,7 +1688,7 @@ domain:
 
          // "shutdown" B
          local::sink( std::move( b));
-         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::disconnected());
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::disconnected());
 
          log::line( verbose::log, "after shutdown of B");
 
@@ -1707,7 +1700,7 @@ domain:
          b = local::domain( B);
          a.activate();
 
-         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected());
 
          log::line( verbose::log, "after boot of B");
          
@@ -1717,7 +1710,7 @@ domain:
       }
 
       
-      TEST( test_domain_gateway, call_A_B_from_C__via_GW__within_transaction__a_lot___expect_correct_transaction_state)
+      TEST( test_gateway, call_A_B_from_C__via_GW__within_transaction__a_lot___expect_correct_transaction_state)
       {
          common::unittest::Trace trace;
 
@@ -1789,11 +1782,11 @@ domain:
          auto a = local::domain( A);
          auto gw = local::domain( GW);
 
-         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected());
 
          auto c = local::domain( C);
 
-         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected());
 
          auto call_A_and_B = []( auto count)
          {
@@ -1853,7 +1846,7 @@ domain:
          }        
       }
 
-      TEST( test_domain_gateway, call_A_B_C_X_from_X__via_GW__within_transaction__one_call_tree_that_goes_all_over_the_place___expect_correct_transaction_state)
+      TEST( test_gateway, call_A_B_C_X_from_X__via_GW__within_transaction__one_call_tree_that_goes_all_over_the_place___expect_correct_transaction_state)
       {
          common::unittest::Trace trace;
 
@@ -1971,19 +1964,19 @@ domain:
          auto gw = local::domain( GW);
 
          // everything is booted, we need to 'wait' until all domains got outbound connections
-         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected());
          
          a.activate();
-         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected());
 
          b.activate();
-         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected());
 
          c.activate();
-         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected());
 
          x.activate();
-         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected());
 
          // we're in X at the moment
 
@@ -2076,7 +2069,7 @@ domain:
       }
 
 
-      TEST( test_domain_gateway, call_A_B_C_from_X__via_GW__A_B_C_connects_directly_to_X_within_transaction__one_call_tree_that_goes_all_over_the_place___expect_correct_transaction_state)
+      TEST( test_gateway, call_A_B_C_from_X__via_GW__A_B_C_connects_directly_to_X_within_transaction__one_call_tree_that_goes_all_over_the_place___expect_correct_transaction_state)
       {
          common::unittest::Trace trace;
 
@@ -2196,19 +2189,19 @@ domain:
          auto gw = local::domain( GW);
 
          // everything is booted, we need to 'wait' until all domains got outbound connections
-         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected());
          
          a.activate();
-         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected());
 
          b.activate();
-         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected());
 
          c.activate();
-         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected());
 
          x.activate();
-         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected());
 
          // we're in X at the moment
 
@@ -2301,7 +2294,7 @@ domain:
       }
 
 
-      TEST( test_domain_gateway, call_A_B_C_from_X__via_GW__A_B_C_connects_directly_to_X_within_transaction__resource_report_XAER_RMERR_on_prepare_in_domain_A__expect_correct_transaction_state)
+      TEST( test_gateway, call_A_B_C_from_X__via_GW__A_B_C_connects_directly_to_X_within_transaction__resource_report_XAER_RMERR_on_prepare_in_domain_A__expect_correct_transaction_state)
       {
          common::unittest::Trace trace;
 
@@ -2428,19 +2421,19 @@ domain:
          auto gw = local::domain( GW);
 
          // everything is booted, we need to 'wait' until all domains got outbound connections
-         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected());
          
          a.activate();
-         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected());
 
          b.activate();
-         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected());
 
          c.activate();
-         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected());
 
          x.activate();
-         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected());
 
          // we're in X at the moment
 
@@ -2533,7 +2526,7 @@ domain:
       }
 
 
-      TEST( test_domain_gateway, call_A_B_C_from_X__via_GW__A_B_C_connects_directly_to_X_within_transaction__resource_report_XAER_RMFAIL_on_start_end_in_domain_A__expect_correct_transaction_state)
+      TEST( test_gateway, call_A_B_C_from_X__via_GW__A_B_C_connects_directly_to_X_within_transaction__resource_report_XAER_RMFAIL_on_start_end_in_domain_A__expect_correct_transaction_state)
       {
          common::unittest::Trace trace;
 
@@ -2660,19 +2653,19 @@ domain:
          auto gw = local::domain( GW);
 
          // everything is booted, we need to 'wait' until all domains got outbound connections
-         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected());
          
          a.activate();
-         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected());
 
          b.activate();
-         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected());
 
          c.activate();
-         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected());
 
          x.activate();
-         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected());
 
          // we're in X at the moment
 
@@ -2764,7 +2757,7 @@ domain:
          }  
       }
 
-      TEST( test_domain_gateway, call_A_B_C_from_X__via_GW__A_B_C_connects_directly_to_X_within_transaction___rollback___expect_correct_transaction_state)
+      TEST( test_gateway, call_A_B_C_from_X__via_GW__A_B_C_connects_directly_to_X_within_transaction___rollback___expect_correct_transaction_state)
       {
          common::unittest::Trace trace;
 
@@ -2881,19 +2874,19 @@ domain:
          auto gw = local::domain( GW);
 
          // everything is booted, we need to 'wait' until all domains got outbound connections
-         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected());
          
          a.activate();
-         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected());
 
          b.activate();
-         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected());
 
          c.activate();
-         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected());
 
          x.activate();
-         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected());
 
          // we're in X at the moment
 
@@ -2986,7 +2979,7 @@ domain:
       }
 
       //! put in this TU to enable all helpers to check state
-      TEST( test_domain_assassinate, interdomain_call__timeout_1ms__call)
+      TEST( test_assassinate, interdomain_call__timeout_1ms__call)
       {
          common::unittest::Trace trace;
 
@@ -3027,7 +3020,7 @@ domain:
          auto a = local::domain( A);
          auto b = local::domain( B);
 
-         test::unittest::gateway::state::until( test::unittest::gateway::state::predicate::outbound::connected());
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected());
 
          auto start = platform::time::clock::type::now();
 
@@ -3042,5 +3035,5 @@ domain:
 
       }
 
-   } // test::domain
+   } // test
 } // casual
