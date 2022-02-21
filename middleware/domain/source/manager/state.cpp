@@ -94,22 +94,17 @@ namespace casual
                   }
 
                   template< typename I>
-                  void scale( I& source_instances, platform::size::type count)
+                  void scale( I& instances, platform::size::type count)
                   {
                      Trace trace{ "domain::manager::state::local::scale"};
-                     log::line( verbose::log, "instances: ", source_instances);
+                     log::line( verbose::log, "instances: ", instances);
 
-                     using state_type = decltype( std::begin( source_instances)->state);
+                     using state_type = decltype( std::begin( instances)->state);
 
-                     // we need to keep the actual original order, hence we work with references.
-                     auto instances = range::to_reference( source_instances);
-
-                     auto split = algorithm::stable::partition( instances, []( auto& i)
+                     auto [ running, rest] = algorithm::stable::partition( instances, []( auto& instance)
                      {
-                        return algorithm::compare::any( i.get().state, state_type::running, state_type::scale_out);
+                        return algorithm::compare::any( instance.state, state_type::running, state_type::scale_out);
                      });
-
-                     auto running = std::get< 0>( split);
 
                      // Do we scale in, or scale out?
                      if( running.size() < count)
@@ -119,25 +114,27 @@ namespace casual
                         // scale out
                         // check if we got any 'exit' to reuse
                         {
-                           auto exit = std::get< 0>( algorithm::partition( std::get< 1>( split), []( auto& i){
-                              return algorithm::compare::any( i.get().state, state_type::exit, state_type::error);
-                           }));
-
-                           count -= algorithm::for_each_n( exit, count, []( auto& i)
+                           auto exit = algorithm::filter( rest, []( auto& instance)
                            {
-                              i.get().state = state_type::scale_out;
+                              return algorithm::compare::any( instance.state, state_type::exit, state_type::error);
+                           });
+
+                           count -= algorithm::for_each_n( exit, count, []( auto& insstance)
+                           {
+                              insstance.state = state_type::scale_out;
                            }).size();
                         }
 
                         // resize the source to get the rest, and rely on default ctor for instance_type.
-                        source_instances.resize( source_instances.size() + count);
+                        instances.resize( instances.size() + count);
                      }
                      else
                      {
                         // scale in.
                         // We just advance the range, and scale_in the reminders.
-                        algorithm::for_each( running.advance( count), []( auto& i){
-                           i.get().state = state_type::scale_in;
+                        algorithm::for_each( running.advance( count), []( auto& instance)
+                        {
+                           instance.state = state_type::scale_in;
                         });
                         
                         auto is_removable = []( auto& i)
@@ -146,11 +143,10 @@ namespace casual
                         };
 
                         // we can remove the backmarkers with invalid 'pids'
-                        algorithm::container::trim( source_instances,
-                           range::reverse( algorithm::remove_if( range::reverse( source_instances), is_removable)));
+                        algorithm::container::trim( instances, algorithm::remove_if( instances, is_removable));
                      }
 
-                     log::line( verbose::log, "instances: ", source_instances);
+                     log::line( verbose::log, "instances: ", instances);
                   }
 
                } // instance
@@ -218,11 +214,7 @@ namespace casual
             auto found = algorithm::find( instances, pid);
             
             if( ! found)
-            {
-               log::line( log, "failed to find server - pid: ", pid);
-               log::line( verbose::log, "instances: ", instances);
                return {};
-            }
 
             log::line( verbose::log, "found: ", *found);
 
@@ -309,7 +301,7 @@ namespace casual
          algorithm::container::trim( pending.lookup, algorithm::remove( pending.lookup, pid));
 
          // Remove from singletons
-         auto is_singleton = [pid]( auto& v){ return v.second == pid;};
+         auto is_singleton = [ pid]( auto& pair){ return pair.second == pid;};
 
          if( auto found = algorithm::find_if( singletons, is_singleton))
          {

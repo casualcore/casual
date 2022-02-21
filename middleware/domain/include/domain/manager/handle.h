@@ -68,15 +68,10 @@ namespace casual
          std::vector< common::strong::correlation::id> groups( State& state, std::vector< std::string> groups);
       } // restart
 
-      namespace event
+      namespace process
       {
-         namespace process
-         {
-            void exit( const common::process::lifetime::Exit& exit);
-         } // process
-
-      } // event
-
+         void exit( const common::process::lifetime::Exit& exit);
+      } // process
 
       handle::dispatch_type create( State& state);
 

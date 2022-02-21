@@ -446,20 +446,17 @@ namespace casual
          }
       } // restart
 
-      namespace event
+      namespace process
       {
-         namespace process
+         void exit( const common::process::lifetime::Exit& exit)
          {
-            void exit( const common::process::lifetime::Exit& exit)
-            {
-               Trace trace{ "domain::manager::handle::event::process::exit"};
+            Trace trace{ "domain::manager::handle::process::exit"};
 
-               // We put a dead process event on our own ipc device, that
-               // will be handled later on.
-               ipc::push( common::message::event::process::Exit{ exit});
-            }
-         } // process
-      } // event
+            // We put a dead process event on our own ipc device, that
+            // will be handled later on.
+            ipc::push( common::message::event::process::Exit{ exit});
+         }
+      } // process
 
       namespace local
       {
@@ -606,16 +603,18 @@ namespace casual
                            else
                               log::line( log::category::information, "process exited: ", message.state);
 
-                           auto restarts = state.remove( message.state.pid);
+                           auto [ server, executabe] = state.remove( message.state.pid);
 
-                           if( std::get< 0>( restarts)) handle::scale::instances( state, *std::get< 0>( restarts));
-                           if( std::get< 1>( restarts)) handle::scale::instances( state, *std::get< 1>( restarts));
+                           if( server)
+                              handle::scale::instances( state, *server);
+                           if( executabe)
+                              handle::scale::instances( state, *executabe);
 
                            // dispatch to tasks
                            state.tasks.event( state, message);
 
                            // Are there any listeners to this event?
-                           manager::task::event::dispatch( state, [&message]() -> decltype( message)
+                           manager::task::event::dispatch( state, [ &message]() -> decltype( message)
                            {
                               return message;
                            });

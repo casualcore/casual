@@ -8,6 +8,7 @@
 #include "common/unittest.h"
 
 #include "domain/unittest/manager.h"
+#include "domain/unittest/utility.h"
 
 #include "common/communication/instance.h"
 
@@ -17,6 +18,34 @@ namespace casual
 
    namespace test
    {
+      namespace local
+      {
+         namespace
+         {
+            namespace configuration
+            {
+               constexpr auto base = R"(
+domain:
+   groups: 
+      -  name: base
+      -  name: queue
+         dependencies: [ base]
+      -  name: user
+         dependencies: [ queue]
+      -  name: gateway
+         dependencies: [ user]
+   
+   servers:
+      - path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/service/bin/casual-service-manager"
+        memberships: [ base]
+      - path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/transaction/bin/casual-transaction-manager"
+        memberships: [ base]
+)";
+
+
+            } // configuration
+         } // <unnamed>
+      } // local
       
       TEST( test_domain, no_configuration)
       {
@@ -28,28 +57,33 @@ namespace casual
       }
 
 
-      TEST( test_domain, two_domain_empty_configuration)
+      TEST( test_domain, example_server_4_instances___kill_one___expect_shutdown)
       {
          common::unittest::Trace trace;
 
-         constexpr auto A = R"(
+         auto domain = casual::domain::unittest::manager( local::configuration::base, R"(
 domain:
-   name: A
-)";
+   servers:
+      -  alias: example
+         path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-server"
+         memberships: [ user]
+         instances: 4
+)");
 
-         constexpr auto B = R"(
-domain:
-   name: B
-)";
+         // find and kill one instance
+         {
+            auto state = casual::domain::unittest::fetch::until( casual::domain::unittest::fetch::predicate::alias::has::instances( "example", 4));
 
-         auto a = casual::domain::unittest::manager( A);
-         auto b = casual::domain::unittest::manager( B);
+            auto example = algorithm::find( state.servers, "example");
+            ASSERT_TRUE( example);
+            signal::send( example->instances.at( 1).handle.pid, code::signal::terminate);
+         }
 
-         EXPECT_TRUE( communication::instance::ping( a.handle().ipc) == a.handle());
-         EXPECT_TRUE( communication::instance::ping( b.handle().ipc) == b.handle());
+         casual::domain::unittest::fetch::until( casual::domain::unittest::fetch::predicate::alias::has::instances( "example", 3));
+
       }
 
 
-   } // domain
+   } // test
 
 } // casual
