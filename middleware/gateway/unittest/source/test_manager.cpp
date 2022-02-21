@@ -814,7 +814,7 @@ domain:
             }
 
             // filter out only metrics for service 'a' (could come metrics for .casual/gateway/state)
-            algorithm::trim( metrics, algorithm::filter( metrics, []( auto& metric){ return metric.service == "a";}));
+            algorithm::container::trim( metrics, algorithm::filter( metrics, []( auto& metric){ return metric.service == "a";}));
 
             auto order_pending = []( auto& lhs, auto& rhs){ return lhs.pending < rhs.pending;};
             algorithm::sort( metrics, order_pending);

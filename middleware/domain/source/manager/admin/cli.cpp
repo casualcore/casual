@@ -56,7 +56,7 @@ namespace casual
                      {
                         message::event::terminal::print( std::cout, event);
                         if( event.done())
-                           algorithm::trim( tasks, algorithm::remove( tasks, event.correlation));
+                           algorithm::container::trim( tasks, algorithm::remove( tasks, event.correlation));
                      },
                      []( const message::event::sub::Task& event)
                      {

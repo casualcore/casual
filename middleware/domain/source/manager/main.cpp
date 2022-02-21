@@ -86,7 +86,7 @@ namespace casual
                signal::callback::registration< code::signal::child>( []()
                {
                   for( auto& exit : process::lifetime::ended())
-                     manager::handle::event::process::exit( exit);
+                     manager::handle::process::exit( exit);
                });
 
                // make sure we're whitelisted from assassinations

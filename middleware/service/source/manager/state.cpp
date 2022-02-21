@@ -114,7 +114,7 @@ namespace casual
 
             void Sequential::remove( const state::Service* service, state::Service* replacement)
             {
-               algorithm::trim( m_services, algorithm::remove( m_services, service));
+               algorithm::container::trim( m_services, algorithm::remove( m_services, service));
                if( m_service && m_service == service)
                   m_service = replacement;
             }
@@ -209,10 +209,10 @@ namespace casual
                   // has the next deadline been postponed?
                   if( remove && keep && range::front( remove) < range::front( keep))
                   {
-                     algorithm::trim( m_entries, keep);
+                     algorithm::container::trim( m_entries, keep);
                      return { m_entries.front().when};
                   }
-                  algorithm::trim( m_entries, keep);
+                  algorithm::container::trim( m_entries, keep);
                   return {};
                }
 
@@ -456,7 +456,7 @@ namespace casual
                   auto expressions = algorithm::transform( found->services, []( auto& expression){ return std::regex{ expression};});
 
                   // for all added services we match against the expressions, and keep the matched.
-                  algorithm::trim( advertise.services.add, algorithm::filter( advertise.services.add, [&expressions]( auto& service)
+                  algorithm::container::trim( advertise.services.add, algorithm::filter( advertise.services.add, [&expressions]( auto& service)
                   {
                      return algorithm::any_of( expressions, [&name = service.name]( auto& expression)
                      {
@@ -489,7 +489,7 @@ namespace casual
       {
          prepare_shutdown_result result;
 
-         algorithm::trim( processes, algorithm::remove_if( processes, [&]( auto& process)
+         algorithm::container::trim( processes, algorithm::remove_if( processes, [&]( auto& process)
          {
             if( auto found = common::algorithm::find( instances.sequential, process.pid))
             {
@@ -615,7 +615,7 @@ namespace casual
          });
 
          auto result = range::to_vector( remove);
-         algorithm::trim( pending.lookups, keep);
+         algorithm::container::trim( pending.lookups, keep);
          return result;
       }
 

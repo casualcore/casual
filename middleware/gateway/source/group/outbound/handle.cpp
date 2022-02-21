@@ -889,7 +889,7 @@ namespace casual
             algorithm::for_each( state.route.service.message.consume( descriptor), error_reply);
 
             // connection might have been in 'disconnecting phase'
-            algorithm::trim( state.disconnecting, algorithm::remove( state.disconnecting, descriptor));
+            algorithm::container::trim( state.disconnecting, algorithm::remove( state.disconnecting, descriptor));
 
             // remove the information about the 'connection'.
             return state.external.remove( state.directive, descriptor);

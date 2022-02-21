@@ -11,6 +11,7 @@
 #include "queue/common/log.h"
 
 #include "common/algorithm.h"
+#include "common/algorithm/container.h"
 #include "common/execute.h"
 #include "common/event/send.h"
 #include "common/environment.h"
@@ -500,7 +501,7 @@ namespace casual
          log::line( verbose::log, "result: ", result);
 
          // keep only the intersection between result and wanted queues
-         algorithm::trim( result, std::get< 0>( algorithm::intersection( result, queues)));
+         algorithm::container::trim( result, std::get< 0>( algorithm::intersection( result, queues)));
 
          // get the earliest available message for each queue.
          for( auto& available : result)
@@ -556,7 +557,7 @@ namespace casual
             return m_connection.affected() == 0;
          };
 
-         algorithm::trim( messages, algorithm::remove_if( messages, missing_message));
+         algorithm::container::trim( messages, algorithm::remove_if( messages, missing_message));
          return messages;
       }
 

@@ -610,7 +610,7 @@ namespace casual
                               return result;
                            });
 
-                           algorithm::trim( services, algorithm::unique( algorithm::sort( services)));
+                           algorithm::container::trim( services, algorithm::unique( algorithm::sort( services)));
 
                            // extract the corresponding pending lookups and 'emulate' new lookups, if any.
                            {
@@ -814,7 +814,7 @@ namespace casual
                               return result;
                            });
 
-                           algorithm::trim( reply.content.services, algorithm::unique( algorithm::sort( reply.content.services)));
+                           algorithm::container::trim( reply.content.services, algorithm::unique( algorithm::sort( reply.content.services)));
 
                            log::line( verbose::log, "reply: ", reply);
                            communication::device::blocking::optional::send( message.process.ipc, reply);

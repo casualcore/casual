@@ -89,8 +89,8 @@ namespace casual
       {
          Trace trace{ "queue::manager::State::remove_queues"};
 
-         common::algorithm::erase_if( queues, common::predicate::adapter::second( [pid]( auto& instances){
-            return common::algorithm::trim( instances, common::algorithm::remove( instances, pid)).empty();
+         common::algorithm::container::erase_if( queues, common::predicate::adapter::second( [pid]( auto& instances){
+            return common::algorithm::container::trim( instances, common::algorithm::remove( instances, pid)).empty();
          }));
 
          log::line( log, "queues: ", queues);
@@ -102,10 +102,10 @@ namespace casual
 
          remove_queues( pid);
 
-         common::algorithm::trim( groups, common::algorithm::remove( groups, pid));
-         common::algorithm::trim( forward.groups, common::algorithm::remove( forward.groups, pid));
-         common::algorithm::trim( pending.lookups, common::algorithm::remove( pending.lookups, pid));
-         common::algorithm::trim( remotes, common::algorithm::remove( remotes, pid));
+         common::algorithm::container::trim( groups, common::algorithm::remove( groups, pid));
+         common::algorithm::container::trim( forward.groups, common::algorithm::remove( forward.groups, pid));
+         common::algorithm::container::trim( pending.lookups, common::algorithm::remove( pending.lookups, pid));
+         common::algorithm::container::trim( remotes, common::algorithm::remove( remotes, pid));
       }
 
       void State::update( queue::ipc::message::Advertise& message)
@@ -144,7 +144,7 @@ namespace casual
          {
             auto& instances = queues[ name];
 
-            common::algorithm::trim( instances, common::algorithm::remove_if( instances, [&]( auto& queue)
+            common::algorithm::container::trim( instances, common::algorithm::remove_if( instances, [&]( auto& queue)
             {
                return message.process.pid == queue.process.pid;
             }));

@@ -169,7 +169,7 @@ namespace casual
                   {
                      auto server = state::Server::create();
                      server.alias = "casual-domain-pending-message";
-                     server.path = process::path().parent_path() / "casual-domain-pending-message";
+                     server.path = common::process::path().parent_path() / "casual-domain-pending-message";
                      server.scale( 1);
                      server.memberships.push_back( state.group_id.core);
                      server.note = "handles pending internal messages";
@@ -181,7 +181,7 @@ namespace casual
                   {
                      auto server = state::Server::create();
                      server.alias = "casual-domain-discovery";
-                     server.path = process::path().parent_path() / "casual-domain-discovery";
+                     server.path = common::process::path().parent_path() / "casual-domain-discovery";
                      server.scale( 1);
                      server.memberships.push_back( state.group_id.core);
                      server.note = "handles discovery from/to other domains";
@@ -202,7 +202,7 @@ namespace casual
                {
                   auto manager = state::Server::create();
                   manager.alias = "casual-service-manager";
-                  manager.path = process::path().parent_path() / "casual-service-manager";
+                  manager.path = common::process::path().parent_path() / "casual-service-manager";
                   manager.scale( 1);
                   manager.memberships.push_back( state.group_id.master);
                   manager.note = "service lookup and management";
@@ -213,7 +213,7 @@ namespace casual
                {
                   auto tm = state::Server::create();
                   tm.alias = "casual-transaction-manager";
-                  tm.path = process::path().parent_path() / "casual-transaction-manager";
+                  tm.path = common::process::path().parent_path() / "casual-transaction-manager";
                   tm.scale( 1);
                   tm.memberships.push_back( state.group_id.transaction);
                   tm.note = "manage transaction in this domain";
@@ -224,7 +224,7 @@ namespace casual
                {
                   auto queue = state::Server::create();
                   queue.alias = "casual-queue-manager";
-                  queue.path = process::path().parent_path() / "casual-queue-manager";
+                  queue.path = common::process::path().parent_path() / "casual-queue-manager";
                   queue.scale( 1);
                   queue.memberships.push_back( state.group_id.queue);
                   queue.note = "manage queues in this domain";
@@ -235,7 +235,7 @@ namespace casual
                {
                   auto gateway = state::Server::create();
                   gateway.alias = "casual-gateway-manager";
-                  gateway.path = process::path().parent_path() / "casual-gateway-manager";
+                  gateway.path = common::process::path().parent_path() / "casual-gateway-manager";
                   gateway.scale( 1);
                   gateway.memberships.push_back( state.group_id.gateway);
                   gateway.note = "manage connections to and from other domains";
@@ -347,7 +347,7 @@ namespace casual
                return server.get().instances.size() == 1 && common::process::id( server.get().instances[ 0].handle) == common::process::id();
             };
 
-            algorithm::trim( runnables.servers, algorithm::remove_if( runnables.servers, unrestartable_server));
+            algorithm::container::trim( runnables.servers, algorithm::remove_if( runnables.servers, unrestartable_server));
 
             // prepare the scaling
             {                  
@@ -388,7 +388,7 @@ namespace casual
                   {
                      auto filter = []( auto& ids, auto& untouchables)
                      {
-                        algorithm::trim( ids, algorithm::remove_if( ids, [&untouchables]( auto& id)
+                        algorithm::container::trim( ids, algorithm::remove_if( ids, [&untouchables]( auto& id)
                         { 
                            return ! algorithm::find( untouchables, id).empty();
                         }));
@@ -436,7 +436,7 @@ namespace casual
                return std::get< 0>( algorithm::intersection( groups, names, has_name));
             };
 
-            algorithm::trim( groups, filter_groups( range::make( groups), names));
+            algorithm::container::trim( groups, filter_groups( range::make( groups), names));
 
             // filter
             algorithm::for_each( groups, local::filter_unrestartable( state));
@@ -803,7 +803,7 @@ namespace casual
                      else // we assume it's a grandchild
                         state.grandchildren.push_back( message.process);
 
-                     algorithm::trim( state.pending.lookup, algorithm::remove_if( state.pending.lookup, process::detail::lookup::request( state)));
+                     algorithm::container::trim( state.pending.lookup, algorithm::remove_if( state.pending.lookup, process::detail::lookup::request( state)));
 
                      // tasks might be interested in server-connect
                      state.tasks.event( state, message);

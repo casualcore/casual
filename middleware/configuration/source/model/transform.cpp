@@ -9,6 +9,7 @@
 #include "configuration/user/environment.h"
 #include "configuration/common.h"
 
+#include "common/algorithm/container.h"
 #include "common/service/type.h"
 #include "common/chronology.h"
 
@@ -125,7 +126,7 @@ namespace casual
                            auto& mapping = result.mappings.emplace_back();
                            mapping.alias = alias;
                            mapping.resources = std::move( resources);
-                           algorithm::trim( mapping.resources, algorithm::unique( algorithm::sort( mapping.resources)));
+                           algorithm::container::trim( mapping.resources, algorithm::unique( algorithm::sort( mapping.resources)));
                         }   
                      };
 

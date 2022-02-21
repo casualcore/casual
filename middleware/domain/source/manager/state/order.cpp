@@ -65,7 +65,7 @@ namespace casual
          auto result = algorithm::transform( algorithm::reverse( group_wrapper), batch_transform);
 
          // remove "empty"
-         algorithm::trim( result, algorithm::remove_if( result, []( auto& group){ return group.servers.empty() && group.executables.empty();}));
+         algorithm::container::trim( result, algorithm::remove_if( result, []( auto& group){ return group.servers.empty() && group.executables.empty();}));
 
          // We reverse the result so the dependency order is correct
          return algorithm::reverse( result);

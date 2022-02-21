@@ -318,7 +318,7 @@ namespace casual
                   };
 
                   for( auto& branch : branches)
-                     common::algorithm::trim( branch.resources, std::get< 0>( common::algorithm::intersection( branch.resources, replies, equal_resource)));
+                     common::algorithm::container::trim( branch.resources, std::get< 0>( common::algorithm::intersection( branch.resources, replies, equal_resource)));
 
                   purge();
                }

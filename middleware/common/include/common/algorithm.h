@@ -397,45 +397,6 @@ namespace casual
          return range::make( std::begin( range), last);
       }
 
-      //! Trims @p container so it matches @p range
-      //!
-      //! @return range that matches the trimmed @p container
-      template< typename C, typename R>
-      C& trim( C& container, R&& range)
-      {
-         auto index = std::begin( range) - std::begin( container);
-         container.erase( std::end( range), std::end( container));
-         container.erase( std::begin( container), std::begin( container) + index);
-         return container;
-      }
-
-
-      template< typename C, typename Iter>
-      C& erase( C& container, Range< Iter> range)
-      {
-         container.erase( std::begin( range), std::end( range));
-         return container;
-      }
-
-      //! Erases occurrences from an associative container that
-      //! fulfill the predicate
-      //!
-      //! @param container a container
-      //! @param predicate that takes C::value_type as parameter and returns bool
-      //! @return the container
-      template< typename C, typename P>
-      C& erase_if( C& container, P&& predicate)
-      {
-         for( auto current = std::begin( container); current != std::end( container);)
-         {
-            if( predicate( *current))
-               current = container.erase( current);
-            else
-               ++current;
-         }
-         return container;
-      }
-
 
       namespace detail
       {

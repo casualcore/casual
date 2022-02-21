@@ -918,7 +918,7 @@ domain:
          auto domain = local::domain( configuration);
 
          auto state = local::call::state();
-         state.executables = algorithm::trim( state.executables, algorithm::remove_if( state.executables, local::predicate::manager()));
+         state.executables = algorithm::container::trim( state.executables, algorithm::remove_if( state.executables, local::predicate::manager()));
 
 
          ASSERT_TRUE( state.executables.size() == 4 * 5) << CASUAL_NAMED_VALUE( state);
@@ -1021,7 +1021,7 @@ domain:
             {
                // remove correlated task
                if( task.done())
-                  algorithm::trim( result, algorithm::remove( result, task.correlation));
+                  algorithm::container::trim( result, algorithm::remove( result, task.correlation));
             }
          );
 
@@ -1066,7 +1066,7 @@ domain:
             {
                // remove correlated task
                if( task.done())
-                  algorithm::trim( result, algorithm::remove( result, task.correlation));
+                  algorithm::container::trim( result, algorithm::remove( result, task.correlation));
             }
          );
 
@@ -1127,7 +1127,7 @@ domain:
             {
                // remove correlated task
                if( task.done())
-                  algorithm::trim( result, algorithm::remove( result, task.correlation));
+                  algorithm::container::trim( result, algorithm::remove( result, task.correlation));
             }
          );
 
@@ -1194,7 +1194,7 @@ domain:
             {
                // remove correlated task
                if( task.done())
-                  algorithm::trim( result, algorithm::remove( result, task.correlation));
+                  algorithm::container::trim( result, algorithm::remove( result, task.correlation));
             }
          );
 
@@ -1262,7 +1262,7 @@ domain:
             {
                // remove correlated task
                if( task.done())
-                  algorithm::trim( result, algorithm::remove( result, task.correlation));
+                  algorithm::container::trim( result, algorithm::remove( result, task.correlation));
             }
          );
 
@@ -1328,7 +1328,7 @@ domain:
             {
                // remove correlated task
                if( task.done())
-                  algorithm::trim( result, algorithm::remove( result, task.correlation));
+                  algorithm::container::trim( result, algorithm::remove( result, task.correlation));
             }
          );
 
@@ -1417,7 +1417,7 @@ domain:
                            log::line( verbose::log, "event: ", event);
 
                            if( event.done())
-                              algorithm::trim( tasks, algorithm::remove( tasks, event.correlation));
+                              algorithm::container::trim( tasks, algorithm::remove( tasks, event.correlation));
                         })
                      );
 

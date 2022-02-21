@@ -70,7 +70,7 @@ namespace casual
                         return false;
                      };
 
-                     algorithm::trim( state.pending.lookups, algorithm::remove_if( state.pending.lookups, lookup_replied));
+                     algorithm::container::trim( state.pending.lookups, algorithm::remove_if( state.pending.lookups, lookup_replied));
                   }
 
                   void discard( State& state)

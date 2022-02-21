@@ -45,7 +45,7 @@ namespace casual
 
          void Providers::remove( common::strong::process::id pid)
          {
-            common::algorithm::trim( m_providers, common::algorithm::remove( m_providers, pid));
+            common::algorithm::container::trim( m_providers, common::algorithm::remove( m_providers, pid));
          }
 
 

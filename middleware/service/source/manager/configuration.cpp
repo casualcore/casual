@@ -184,7 +184,7 @@ namespace casual
                         existing_service->metric += service->metric;
 
                         if( auto found = algorithm::find( state.routes, service->information.name))
-                           algorithm::trim( found->second, algorithm::remove( found->second, iterator->first));
+                           algorithm::container::trim( found->second, algorithm::remove( found->second, iterator->first));
                         
                         state.services.erase( iterator);
 

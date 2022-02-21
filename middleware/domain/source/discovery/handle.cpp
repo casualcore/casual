@@ -98,7 +98,7 @@ namespace casual
                         return tie( l) < tie( r);
                      };
 
-                     algorithm::trim( content.services, algorithm::unique( algorithm::sort( content.services, service_order), equal_name));
+                     algorithm::container::trim( content.services, algorithm::unique( algorithm::sort( content.services, service_order), equal_name));
 
 
                      auto queue_order = []( auto& l, auto& r)
@@ -107,7 +107,7 @@ namespace casual
                         return tie( l) < tie( r);
                      };
 
-                     algorithm::trim( content.queues, algorithm::unique( algorithm::sort( content.queues, queue_order), equal_name));
+                     algorithm::container::trim( content.queues, algorithm::unique( algorithm::sort( content.queues, queue_order), equal_name));
 
                   }
                } // normalize

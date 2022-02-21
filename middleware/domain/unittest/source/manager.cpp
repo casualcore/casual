@@ -102,7 +102,7 @@ namespace casual
                         [&tasks]( message::event::Task& event)
                         {
                            if( event.done())
-                              algorithm::trim( tasks, algorithm::remove( tasks, event.correlation));
+                              algorithm::container::trim( tasks, algorithm::remove( tasks, event.correlation));
                         },
                         []( message::event::Error& event)
                         {
@@ -227,7 +227,7 @@ namespace casual
                      log::line( log::debug, "event: ", event);
 
                      if( event.done())
-                        algorithm::trim( tasks, algorithm::remove( tasks, event.correlation));
+                        algorithm::container::trim( tasks, algorithm::remove( tasks, event.correlation));
                   },
                   []( const message::event::Error& event)
                   {

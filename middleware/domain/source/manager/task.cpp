@@ -191,7 +191,7 @@ namespace casual
                // move all that is not abortable first, en remove the complement (abortable)
                auto split = algorithm::partition( m_running, predicate::negate( local::has::completion( Task::Property::Completion::abortable)));
                local::send::abort( state, std::get< 1>( split));
-               algorithm::trim( m_running, std::get< 0>( split));
+               algorithm::container::trim( m_running, std::get< 0>( split));
             
             }
 
@@ -203,7 +203,7 @@ namespace casual
                auto split = algorithm::stable::partition( m_pending, local::has::completion( Task::Property::Completion::mandatory));
                
                local::send::abort( state, std::get< 1>( split));
-               algorithm::trim( m_pending, std::get< 0>( split));
+               algorithm::container::trim( m_pending, std::get< 0>( split));
             }
 
             bool Queue::active( common::message::Type type) const

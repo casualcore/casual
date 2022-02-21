@@ -58,7 +58,7 @@ namespace casual
 
                      void clean() 
                      {
-                        algorithm::trim( calls, algorithm::remove_if( calls, []( auto& f)
+                        algorithm::container::trim( calls, algorithm::remove_if( calls, []( auto& f)
                         {
                            return f.wait_for( std::chrono::microseconds{ 0}) == std::future_status::ready;
                         }));

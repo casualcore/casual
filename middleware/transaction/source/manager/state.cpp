@@ -362,7 +362,7 @@ namespace casual
          auto id_equal = []( auto& l, auto& r){ return l.id == r.id;};
 
          // make sure we only reply with unique rm:S
-         algorithm::trim( reply.resources, algorithm::unique( algorithm::sort( reply.resources, id_less), id_equal));
+         algorithm::container::trim( reply.resources, algorithm::unique( algorithm::sort( reply.resources, id_less), id_equal));
 
          return reply;
       }

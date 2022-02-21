@@ -68,7 +68,7 @@ namespace casual
                               return common::message::pending::non::blocking::send( request.message);
                            };
 
-                           common::algorithm::trim( state.messages, common::algorithm::remove_if( state.messages, send));
+                           common::algorithm::container::trim( state.messages, common::algorithm::remove_if( state.messages, send));
 
                            log::line( verbose::log, "state: ", state);
 

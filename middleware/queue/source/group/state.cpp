@@ -8,6 +8,7 @@
 #include "queue/common/log.h"
 
 #include "common/algorithm.h"
+#include "common/algorithm/container.h"
 
 namespace casual
 {
@@ -46,7 +47,7 @@ namespace casual
             
             result.found = ! remove.empty();
 
-            algorithm::trim( dequeues, keep);
+            algorithm::container::trim( dequeues, keep);
 
             return result;
          }
@@ -76,7 +77,7 @@ namespace casual
             auto result = range::to_vector( std::get< 1>( partition));
 
             // trim away the extracted 
-            algorithm::trim( dequeues, std::get< 0>( partition));
+            algorithm::container::trim( dequeues, std::get< 0>( partition));
 
             return result;
          }
@@ -88,7 +89,7 @@ namespace casual
 
             auto remove = []( auto& container, auto predicate)
             {
-               algorithm::trim( container, algorithm::remove_if( container, predicate));
+               algorithm::container::trim( container, algorithm::remove_if( container, predicate));
             };
 
             remove( dequeues, [pid]( auto& m) { return m.process.pid == pid;});
