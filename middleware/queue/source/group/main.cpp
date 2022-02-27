@@ -13,7 +13,7 @@
 
 #include "common/argument.h"
 #include "common/process.h"
-#include "common/exception/handle.h"
+#include "common/exception/capture.h"
 #include "common/communication/instance.h"
 #include "common/message/signal.h"
 

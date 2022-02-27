@@ -5,14 +5,14 @@
 //!
 
 
-#include <gtest/gtest.h>
-
-#include "serviceframework/service/protocol.h"
-#include "common/serialize/create.h"
+#include "common/unittest.h"
 
 #include "../../include/test_vo.h"
+#include "serviceframework/service/protocol.h"
 
-#include "common/unittest.h"
+#include "common/serialize/create.h"
+#include "common/algorithm/container.h"
+
 
 namespace casual
 {

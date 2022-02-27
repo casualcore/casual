@@ -19,7 +19,7 @@
 #include "common/argument.h"
 #include "common/terminal.h"
 #include "common/environment.h"
-#include "common/exception/handle.h"
+#include "common/exception/capture.h"
 #include "common/execute.h"
 #include "common/communication/ipc.h"
 #include "common/communication/instance.h"

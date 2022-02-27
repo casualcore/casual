@@ -12,7 +12,7 @@
 
 #include "common/log.h"
 #include "common/memory.h"
-#include "common/exception/handle.h"
+#include "common/exception/capture.h"
 
 #include "common/code/raise.h"
 #include "common/code/xatmi.h"

@@ -14,7 +14,7 @@
 #include "configuration/model/load.h"
 
 #include "common/communication/ipc.h"
-#include "common/exception/handle.h"
+#include "common/exception/capture.h"
 #include "common/argument.h"
 
 namespace casual

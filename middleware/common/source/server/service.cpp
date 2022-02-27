@@ -13,7 +13,7 @@
 #include "common/memory.h"
 #include "common/buffer/pool.h"
 
-#include "common/exception/handle.h"
+#include "common/exception/capture.h"
 #include "common/code/raise.h"
 #include "common/code/xatmi.h"
 #include "common/code/casual.h"

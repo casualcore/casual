@@ -9,7 +9,7 @@
 #include "common/communication/instance.h"
 #include "common/message/handle.h"
 #include "common/message/signal.h"
-#include "common/exception/handle.h"
+#include "common/exception/capture.h"
 #include "common/environment.h"
 #include "common/signal.h"
 

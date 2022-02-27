@@ -9,7 +9,7 @@
 
 #include "common/traits.h"
 #include "common/log.h"
-#include "common/exception/handle.h"
+#include "common/exception/capture.h"
 #include "common/code/casual.h"
 
 #include <iosfwd>

@@ -7,7 +7,7 @@
 
 #include "common/serialize/archive.h"
 
-#include "common/exception/handle.h"
+#include "common/exception/capture.h"
 
 namespace casual
 {

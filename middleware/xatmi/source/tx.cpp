@@ -11,7 +11,7 @@
 #include "common/transaction/context.h"
 #include "common/code/tx.h"
 #include "common/code/category.h"
-#include "common/exception/handle.h"
+#include "common/exception/capture.h"
 #include "common/cast.h"
 
 namespace local

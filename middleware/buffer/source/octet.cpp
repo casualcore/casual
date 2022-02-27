@@ -10,7 +10,7 @@
 #include "common/buffer/pool.h"
 #include "common/memory.h"
 #include "casual/platform.h"
-#include "common/exception/handle.h"
+#include "common/exception/capture.h"
 
 namespace casual
 {

@@ -1,3 +1,9 @@
+//!
+//! Copyright (c) 2022, The casual project
+//!
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
+//!
+
 #include "common/communication/select.h"
 #include "common/communication/device.h"
 

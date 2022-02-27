@@ -11,7 +11,7 @@
 
 #include "common/result.h"
 
-//#include "common/exception/handle.h"
+//#include "common/exception/capture.h"
 
 #include "common/code/convert.h"
 #include "common/code/raise.h"
@@ -385,23 +385,6 @@ namespace casual
 
          return local::socket::connect( address);
       }
-
-      namespace retry
-      {
-         Socket connect( const Address& address, process::pattern::Sleep sleep)
-         {
-            Trace trace( "common::communication::tcp::retry::connect");
-
-            do
-            {
-               if( auto socket = tcp::connect( address))
-                  return socket;
-            }
-            while( sleep());
-
-            return {};
-         }
-      } // retry
 
 
       Listener::Listener( Address address) : m_listener{ socket::listen( address)}

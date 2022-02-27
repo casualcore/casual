@@ -12,7 +12,7 @@
 #include "common/executable/start.h"
 
 #include "common/functional.h"
-#include "common/exception/handle.h"
+#include "common/exception/capture.h"
 #include "common/process.h"
 #include "common/signal.h"
 

@@ -11,6 +11,7 @@
 
 #include "common/serialize/native/network.h"
 #include "common/transcode.h"
+#include "common/algorithm/container.h"
 
 namespace casual
 {

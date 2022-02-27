@@ -17,7 +17,7 @@
 #include "common/message/internal.h"
 
 #include "common/event/listen.h"
-#include "common/exception/handle.h"
+#include "common/exception/capture.h"
 #include "common/execute.h"
 #include "common/code/casual.h"
 #include "common/code/category.h"

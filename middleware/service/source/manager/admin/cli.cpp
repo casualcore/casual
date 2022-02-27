@@ -17,7 +17,7 @@
 #include "common/chronology.h"
 #include "common/terminal.h"
 #include "common/server/service.h"
-#include "common/exception/handle.h"
+#include "common/exception/capture.h"
 #include "common/algorithm/compare.h"
 #include "common/serialize/macro.h"
 #include "common/serialize/create.h"

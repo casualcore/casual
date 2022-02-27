@@ -4,7 +4,7 @@
 //! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-#include "common/exception/handle.h"
+#include "common/exception/capture.h"
 #include "common/server/handle/conversation.h"
 #include "common/message/service.h"
 #include "common/message/conversation.h"

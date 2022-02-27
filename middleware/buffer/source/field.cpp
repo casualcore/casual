@@ -14,7 +14,7 @@
 #include "common/code/xatmi.h"
 
 #include "common/environment.h"
-#include "common/exception/handle.h"
+#include "common/exception/capture.h"
 #include "common/network/byteorder.h"
 #include "common/buffer/pool.h"
 #include "common/buffer/type.h"

@@ -8,6 +8,7 @@
 #include "common/unittest.h"
 #include "common/unittest/log.h"
 #include "common/algorithm.h"
+#include "common/algorithm/container.h"
 #include "common/algorithm/compare.h"
 #include "common/algorithm/coalesce.h"
 #include "common/algorithm/is.h"

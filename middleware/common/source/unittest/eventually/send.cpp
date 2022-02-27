@@ -9,7 +9,7 @@
 #include "common/unittest/log.h"
 
 #include "common/communication/ipc.h"
-#include "common/exception/handle.h"
+#include "common/exception/capture.h"
 
 #include <future>
 #include <vector>

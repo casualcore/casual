@@ -10,7 +10,7 @@
 
 
 #include "common/argument.h"
-#include "common/exception/handle.h"
+#include "common/exception/capture.h"
 #include "common/message/dispatch.h"
 #include "common/environment.h"
 #include "common/environment/normalize.h"

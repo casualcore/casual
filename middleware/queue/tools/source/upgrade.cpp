@@ -7,7 +7,7 @@
 #include "queue/common/log.h"
 #include "queue/group/queuebase/schema.h"
 
-#include "common/exception/handle.h"
+#include "common/exception/capture.h"
 #include "common/argument.h"
 #include "common/algorithm.h"
 #include "common/algorithm/sorted.h"

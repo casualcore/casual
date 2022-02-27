@@ -10,7 +10,7 @@
 #include "common/code/raise.h"
 #include "common/code/casual.h"
 #include "common/code/system.h"
-#include "common/exception/handle.h"
+#include "common/exception/capture.h"
 
 #include "common/result.h"
 

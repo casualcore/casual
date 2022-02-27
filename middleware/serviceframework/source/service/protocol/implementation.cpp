@@ -17,7 +17,7 @@
 #include "common/serialize/create.h"
 
 #include "common/execution.h"
-#include "common/exception/handle.h"
+#include "common/exception/capture.h"
 #include "common/environment.h"
 
 #include "xatmi.h"

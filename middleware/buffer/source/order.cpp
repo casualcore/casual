@@ -9,7 +9,7 @@
 
 #include "common/buffer/pool.h"
 #include "common/buffer/type.h"
-#include "common/exception/handle.h"
+#include "common/exception/capture.h"
 #include "common/network/byteorder.h"
 #include "casual/platform.h"
 #include "common/log.h"

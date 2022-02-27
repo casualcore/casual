@@ -73,17 +73,6 @@ namespace casual
       //! @returns a connected socket if success, otherwise a 'nil' socket.
       Socket connect( const Address& address);
 
-      namespace retry
-      {
-         //! Keeps trying to connect
-         //!
-         //! @param address to connect to
-         //! @param sleep sleep pattern
-         //! @return created socket
-         Socket connect( const Address& address, process::pattern::Sleep sleep);
-      } // retry
-
-
       class Listener
       {
       public:

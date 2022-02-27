@@ -10,7 +10,7 @@
 
 #include "common/code/xa.h"
 #include "common/code/category.h"
-#include "common/exception/handle.h"
+#include "common/exception/capture.h"
 
 namespace local
 {

@@ -11,7 +11,7 @@
 #include "queue/code.h"
 
 #include "casual/platform.h"
-#include "common/exception/handle.h"
+#include "common/exception/capture.h"
 #include "common/strong/type.h"
 #include "common/algorithm.h"
 #include "common/string.h"

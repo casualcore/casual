@@ -11,7 +11,7 @@
 #include "common/algorithm.h"
 #include "common/environment/normalize.h"
 #include "common/event/send.h"
-#include "common/exception/handle.h"
+#include "common/exception/capture.h"
 
 namespace casual
 {

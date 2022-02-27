@@ -13,10 +13,9 @@
 #include "common/serialize/macro.h"
 #include "common/message/type.h"
 #include "common/execute.h"
-#include "common/exception/handle.h"
+#include "common/exception/capture.h"
 #include "common/code/raise.h"
 #include "common/compare.h"
-#include "common/communication/ipc.h"
 
 #include <array>
 #include <iostream>

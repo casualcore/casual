@@ -13,7 +13,7 @@
 #include "common/terminal.h"
 #include "common/chronology.h"
 #include "common/transcode.h"
-#include "common/exception/handle.h"
+#include "common/exception/capture.h"
 #include "common/event/listen.h"
 
 #include "serviceframework/service/protocol/call.h"

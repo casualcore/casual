@@ -17,7 +17,7 @@
 #include "common/chronology.h"
 #include "common/transcode.h"
 #include "common/execute.h"
-#include "common/exception/handle.h"
+#include "common/exception/capture.h"
 #include "common/serialize/create.h"
 #include "common/communication/ipc.h"
 #include "common/communication/instance.h"

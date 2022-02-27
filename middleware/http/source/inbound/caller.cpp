@@ -19,7 +19,7 @@
 #include "common/code/casual.h"
 #include "common/code/category.h"
 #include "common/code/xatmi.h"
-#include "common/exception/handle.h"
+#include "common/exception/capture.h"
 
 namespace casual
 {

@@ -10,7 +10,7 @@
 #include "common/message/event.h"
 #include "common/communication/ipc/message.h"
 #include "common/serialize/native/complete.h"
-#include "common/exception/handle.h"
+#include "common/exception/capture.h"
 #include "common/code/raise.h"
 #include "common/string.h"
 

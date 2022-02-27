@@ -7,7 +7,7 @@
 #pragma once
 
 #include "common/communication/ipc.h"
-#include "common/exception/handle.h"
+#include "common/exception/capture.h"
 
 namespace casual
 {

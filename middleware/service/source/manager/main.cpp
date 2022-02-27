@@ -13,7 +13,7 @@
 #include "domain/configuration/fetch.h"
 #include "domain/discovery/api.h"
 
-#include "common/exception/handle.h"
+#include "common/exception/capture.h"
 #include "common/argument.h"
 #include "common/environment.h"
 #include "common/communication/instance.h"

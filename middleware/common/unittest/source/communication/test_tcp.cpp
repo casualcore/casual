@@ -8,7 +8,7 @@
 #include "common/unittest/thread.h"
 
 #include "common/communication/tcp.h"
-#include "common/exception/handle.h"
+#include "common/exception/capture.h"
 
 #include "common/message/service.h"
 
@@ -53,6 +53,17 @@ namespace casual
             {
                static long port = 23666;
                return { string::compose(  "127.0.0.1:", ++port)};
+            }
+
+            Socket connect( tcp::Address address)
+            {
+               while( true)
+               {
+                  if( auto socket = tcp::connect( address))
+                     return socket;
+
+                  process::sleep( std::chrono::milliseconds{ 1});
+               }
             }
 
          } // <unnamed>
@@ -102,7 +113,7 @@ namespace casual
 
          unittest::Thread server{ &local::simple_server, address};
 
-         auto socket = tcp::retry::connect( address, { { std::chrono::milliseconds{ 1}, 0}});
+         auto socket = local::connect( address);
 
          EXPECT_TRUE( local::boolean( socket));
       }
@@ -119,7 +130,7 @@ namespace casual
          std::vector< Socket> connections;
 
          algorithm::for_n< 10>( [&](){
-            connections.push_back( tcp::retry::connect( address, { { std::chrono::milliseconds{ 1}, 0}}));
+            connections.push_back( local::connect( address));
          });
 
          for( auto& socket : connections)
@@ -185,7 +196,7 @@ namespace casual
 
          unittest::Thread server{ &local::echo::server, address};
 
-         auto socket = tcp::retry::connect( address, { { std::chrono::milliseconds{ 1}, 0}});
+         auto socket = local::connect( address);
          EXPECT_TRUE( socket);
 
          tcp::Duplex tcp{ std::move( socket)};
@@ -224,7 +235,7 @@ namespace casual
 
          auto connections = algorithm::generate_n< 10>( [&address]()
          {
-            auto socket = tcp::retry::connect( address, { { std::chrono::milliseconds{ 1}, 0}});
+            auto socket = local::connect( address);
             EXPECT_TRUE( socket);
             return tcp::Duplex{ std::move( socket)};
          });
@@ -264,7 +275,7 @@ namespace casual
 
          unittest::Thread server{ &local::echo::server, address};
 
-         tcp::Duplex tcp{ tcp::retry::connect( address, { { std::chrono::milliseconds{ 1}, 0}})};
+         tcp::Duplex tcp{ local::connect( address)};
 
 
          auto send = [&](){
@@ -299,7 +310,7 @@ namespace casual
 
          unittest::Thread server{ &local::echo::server, address};
 
-         tcp::Duplex tcp{ tcp::retry::connect( address, { { std::chrono::milliseconds{ 1}, 0}})};
+         tcp::Duplex tcp{ local::connect( address)};
 
          auto send_message = unittest::message::transport::size( 10 * 1024);
 
@@ -323,7 +334,7 @@ namespace casual
 
          unittest::Thread server{ &local::echo::server, address};
 
-         tcp::Duplex tcp{ tcp::retry::connect( address, { { std::chrono::milliseconds{ 1}, 0}})};
+         tcp::Duplex tcp{ local::connect( address)};
 
          auto send_message = unittest::message::transport::size( 100 * 1024);
 
@@ -347,7 +358,7 @@ namespace casual
 
          unittest::Thread server{ &local::echo::server, address};
 
-         tcp::Duplex tcp{ tcp::retry::connect( address, { { std::chrono::milliseconds{ 1}, 0}})};
+         tcp::Duplex tcp{ local::connect( address)};
 
          auto send_message = unittest::message::transport::size( 1024 * 1024);;
 
@@ -372,7 +383,7 @@ namespace casual
 
          unittest::Thread server{ &local::echo::server, address};
 
-         tcp::Duplex tcp{ tcp::retry::connect( address, { { std::chrono::milliseconds{ 1}, 0}})};
+         tcp::Duplex tcp{ local::connect( address)};
 
          auto send_message = unittest::message::transport::size( 10 * 1024 * 1024);
          unittest::random::range( send_message.payload);
