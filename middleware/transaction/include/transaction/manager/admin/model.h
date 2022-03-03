@@ -113,6 +113,8 @@ namespace casual
                CASUAL_SERIALIZE( instances);
             )
 
+            inline friend bool operator == ( const Proxy& lhs, common::strong::resource::id rhs) { return lhs.id == rhs;}
+
             inline friend bool operator < ( const Proxy& lhs,  const Proxy& rhs) { return lhs.id < rhs.id;}
          };
       } // resource

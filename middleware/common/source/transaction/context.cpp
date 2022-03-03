@@ -104,7 +104,6 @@ namespace casual
                   }
 
                } // resource
-
             } // <unnamed>
          } // local
 
@@ -528,15 +527,16 @@ namespace casual
             {
                auto resource_start = [&trans]( auto& resource)
                {
+                  // involve the resource in the transaction
+                  trans.involve( resource.id());
                   return algorithm::compare::any( resource.start( trans.trid, flag::xa::Flag::no_flags), code::xa::ok, code::xa::read_only);
                };
-               auto split = algorithm::partition( m_resources.fixed, resource_start);
+               auto [ successfull, failed] = algorithm::partition( m_resources.fixed, resource_start);
 
-               if( auto failed = std::get< 1>( split))
+               if( failed)
                {
-                  auto successfull = std::get< 0>( split);
                   // some of the resources failed, make sure we xa_end the successfull ones...
-                  algorithm::for_each( successfull, [&trans]( auto& resource)
+                  algorithm::for_each( successfull, [ &trans]( auto& resource)
                   {
                      // TODO semantics: is it ok to end with success? Seams better than 
                      // to mark this extremely short lived transaction with 'error'. Don't know
@@ -607,7 +607,7 @@ namespace casual
             resources_end( transaction, flag::xa::Flag::success);
 
 
-            if( transaction.local() && transaction.involved().size() + m_resources.fixed.size() <= 1)
+            if( transaction.local() && transaction.involved().size() <= 1)
             {
                Trace trace{ "transaction::Context::commit - local"};
 
@@ -617,9 +617,6 @@ namespace casual
 
                if( ! transaction.involved().empty())
                   return resource_commit( transaction.involved().front(), transaction, flag::xa::Flag::one_phase);
-
-               if( ! m_resources.fixed.empty())
-                  return resource_commit( m_resources.fixed.front().id(), transaction, flag::xa::Flag::one_phase);
 
                // No resources associated to this transaction, hence the commit is successful.
                return;
@@ -890,8 +887,6 @@ namespace casual
             if( ! transaction)
                return; // nothing to do
 
-            auto transform_rmid = []( auto& resource){ return resource.id();};
-
             struct Result
             {
                transaction::Resource* resource{};
@@ -932,7 +927,7 @@ namespace casual
                };
             };
 
-            
+            constexpr auto transform_rmid = []( auto& resource){ return resource.id();};
 
             if( transaction.local())
             {
@@ -956,7 +951,7 @@ namespace casual
             transaction.involve( algorithm::transform( m_resources.fixed, transform_rmid));
 
             // TODO semantics: throw if some of the rm:s report an error?
-            //   don't think so. prepare, commit or rollback will take care of eventual errors.
+            //   don't think so. prepare, commit or rollback will take care of possible errors.
          }
 
          void Context::resources_end( const Transaction& transaction, flag::xa::Flags flags)

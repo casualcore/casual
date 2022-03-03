@@ -119,9 +119,9 @@ namespace casual
                               return algorithm::compare::any( instance.state, state_type::exit, state_type::error);
                            });
 
-                           count -= algorithm::for_each_n( exit, count, []( auto& insstance)
+                           count -= algorithm::for_each_n( exit, count, []( auto& instance)
                            {
-                              insstance.state = state_type::scale_out;
+                              instance.state = state_type::scale_out;
                            }).size();
                         }
 

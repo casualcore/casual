@@ -8,6 +8,7 @@
 #include "common/transaction/transaction.h"
 #include "common/log/stream.h"
 #include "common/algorithm/container.h"
+#include "common/log/category.h"
 
 #include <ostream>
 
@@ -37,6 +38,7 @@ namespace casual
 
          void Transaction::involve( strong::resource::id id)
          {
+            log::line( log::category::transaction, "involved id: ", id);
             algorithm::append_unique_value( id, m_involved);
          }
 

@@ -1576,42 +1576,65 @@ domain:
          // unittest only...
          common::transaction::context().clear();
       }
+      
 
-/* TODO rewrite!
-
-      TEST( transaction_manager, one_local_resource__configure)
+      TEST( transaction_manager, local_transaction__two_resources__expect_distributed_transaction)
       {
          common::unittest::Trace trace;
 
-         auto domain = local::domain( local::configuration::base);
+         auto domain = local::domain( local::configuration::system, local::configuration::base);
 
-         EXPECT_NO_THROW({
-            common::transaction::context().configure( {}, { "rm1"});
-         });
+         auto count_invocation = []( auto id, auto type) 
+         {
+            return algorithm::count( common::unittest::rm::state( id).invocations, type);
+         };
+
+         constexpr auto rm1 = strong::resource::id{ 1};
+         constexpr auto rm2 = strong::resource::id{ 2};
+
+         // configure the local rm:s
+         common::transaction::context().configure( { 
+            { "rm-mockup", "rm1", &casual_mockup_xa_switch_static},
+            { "rm-mockup", "rm2", &casual_mockup_xa_switch_static}});
+
+         EXPECT_TRUE( count_invocation( rm1, common::unittest::rm::State::Invoke::xa_open_entry) == 1);
+         EXPECT_TRUE( count_invocation( rm2, common::unittest::rm::State::Invoke::xa_open_entry) == 1);
+         EXPECT_TRUE( count_invocation( rm1, common::unittest::rm::State::Invoke::xa_start_entry) == 0);
+         EXPECT_TRUE( count_invocation( rm2, common::unittest::rm::State::Invoke::xa_start_entry) == 0);
+
+         // begin transaction
+         {
+            EXPECT_TRUE( local::begin() == common::code::tx::ok);
+            EXPECT_TRUE( count_invocation( rm1, common::unittest::rm::State::Invoke::xa_start_entry) == 1);
+            EXPECT_TRUE( count_invocation( rm2, common::unittest::rm::State::Invoke::xa_start_entry) == 1);
+         }
+
+         // commit transaction
+         {
+            EXPECT_TRUE( local::commit() == common::code::tx::ok);
+            EXPECT_TRUE( count_invocation( rm1, common::unittest::rm::State::Invoke::xa_end_entry) == 1);
+            EXPECT_TRUE( count_invocation( rm2, common::unittest::rm::State::Invoke::xa_end_entry) == 1);
+
+            auto resource_proxy_invoked = []( auto& state, auto id) -> decltype( state.resources.at( 0))
+            {
+               if( auto found = common::algorithm::find( state.resources, id))
+                  return found.front();
+
+               common::code::raise::error( common::code::casual::invalid_argument, "failed to find ", id);
+            };
+
+            auto state = unittest::state();
+            auto& state_rm1 = resource_proxy_invoked( state, rm1);
+            auto& state_rm2 = resource_proxy_invoked( state, rm2);
+            EXPECT_TRUE( state_rm1.instances.at( 0).metrics.resource.count == 2) << CASUAL_NAMED_VALUE( state_rm1);
+            EXPECT_TRUE( state_rm2.instances.at( 0).metrics.resource.count == 2) << CASUAL_NAMED_VALUE( state_rm2);
+         }
+
+
+
+         // unittest only...
+         common::transaction::context().clear();
       }
-
-
-      TEST( transaction_manager, one_local_resource__begin_commit)
-      {
-         common::unittest::Trace trace;
-
-         auto domain = local::domain( local::configuration::base);
-
-         ASSERT_NO_THROW({
-            //common::transaction::context().configure( { local::xa_resource( "")}, {});
-            common::transaction::context().configure( {}, { "rm1"});
-         });
-
-         common::transaction::context().begin();
-
-         ASSERT_NO_THROW({
-            common::transaction::context().commit();
-         });
-      }
-
-      */
-
-
    
    } // transaction
 

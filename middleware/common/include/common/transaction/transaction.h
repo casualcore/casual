@@ -54,7 +54,8 @@ namespace casual
          template< typename R>
          auto involve( R&& range) -> std::enable_if_t< traits::is::iterable_v< R>>
          {
-            for( auto id : range) involve( id);
+            for( auto id : range) 
+               involve( id);
          }  
 
          //! dynamic associated rm:s to this transaction, a subset to `involved`
