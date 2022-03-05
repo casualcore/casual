@@ -163,7 +163,7 @@ namespace casual
          constexpr auto compose( Enum flag, Enums... flags)
          {
             static_assert( traits::is::same_v< Enum, Enums...> && std::is_enum_v< Enum>, "flags::compose only accepts enums of the same type");
-            return Flags< Enum>{ flags...};
+            return Flags< Enum>{ flag, flags...};
          }
       } // flags
 

@@ -25,8 +25,8 @@ namespace casual
 
       std::ostream& operator << ( std::ostream& out, const Complete& value)
       {
-         out << "{ type: " << value.type() << ", correlation: " << value.correlation() << ", size: "
-            << value.payload.size() << std::boolalpha << ", complete: " << value.complete() << ", unhandled: [";
+         stream::write( out, "{ type: ", value.type(), ", correlation: ", value.correlation(), ", size: ",
+            value.payload.size(), std::boolalpha, ", complete: ", value.complete(), ", unhandled: [");
          
          algorithm::for_each_interleave( value.m_unhandled, 
             [&]( auto& range)

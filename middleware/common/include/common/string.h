@@ -155,7 +155,6 @@ namespace casual
             return std::move( out).str();
          }
 
-
          template< typename T>
          std::string to( const T& value) 
          { 

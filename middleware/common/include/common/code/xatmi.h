@@ -15,38 +15,35 @@
 
 namespace casual
 {
-   namespace common
+   namespace common::code
    {
-      namespace code
+      enum class xatmi : int
       {
-         enum class xatmi : int
-         {
-            absent = -1,
-            ok = TPOK,
-            descriptor = TPEBADDESC,
-            no_message = TPEBLOCK,
-            argument = TPEINVAL,
-            limit = TPELIMIT,
-            no_entry = TPENOENT,
-            os = TPEOS,
-            protocol = TPEPROTO,
-            service_error = TPESVCERR,
-            service_fail = TPESVCFAIL,
-            system = TPESYSTEM,
-            timeout = TPETIME,
-            transaction = TPETRAN,
-            signal = TPGOTSIG,
-            buffer_input = TPEITYPE,
-            buffer_output = TPEOTYPE,
-            event = TPEEVENT,
-            service_advertised = TPEMATCH,
-         };
+         absent = -1,
+         ok = TPOK,
+         descriptor = TPEBADDESC,
+         no_message = TPEBLOCK,
+         argument = TPEINVAL,
+         limit = TPELIMIT,
+         no_entry = TPENOENT,
+         os = TPEOS,
+         protocol = TPEPROTO,
+         service_error = TPESVCERR,
+         service_fail = TPESVCFAIL,
+         system = TPESYSTEM,
+         timeout = TPETIME,
+         transaction = TPETRAN,
+         signal = TPGOTSIG,
+         buffer_input = TPEITYPE,
+         buffer_output = TPEOTYPE,
+         event = TPEEVENT,
+         service_advertised = TPEMATCH,
+      };
+      std::string_view description( code::xatmi code) noexcept;
 
-         std::error_code make_error_code( code::xatmi code) noexcept;
-         const char* description( code::xatmi code) noexcept;
+      std::error_code make_error_code( code::xatmi code) noexcept;
 
-      } // code
-   } // common
+   } // common::code
 } // casual
 
 namespace std
@@ -55,11 +52,7 @@ namespace std
    struct is_error_code_enum< casual::common::code::xatmi> : true_type {};
 }
 
-//
 // To help prevent missuse of "raw codes"
-//
-
-
 #ifndef CASUAL_NO_XATMI_UNDEFINE
 
 #undef TPEBADDESC

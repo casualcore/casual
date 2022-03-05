@@ -250,7 +250,28 @@ namespace casual
                decode( std::forward< Source>( source), std::begin( target), std::end( target));
             }
 
+            namespace stream
+            {
+               namespace detail
+               {
+                  template< typename T>
+                  struct Proxy
+                  {
+                     friend std::ostream& operator << ( std::ostream& out, const Proxy& proxy)
+                     {
+                        return hex::encode( out, *proxy.value);
+                     }
 
+                     const T* value;
+                  };
+               } // detail
+
+               template< typename T>
+               auto wrapper( const T& value)
+               {
+                  return detail::Proxy< T>{ &value};
+               }
+            } // stream
 
 
          } // hex

@@ -15,41 +15,35 @@
 
 namespace casual
 {
-   namespace common
+   namespace common::code
    {
-      namespace code
+      enum class tx : int
       {
+         not_supported = TX_NOT_SUPPORTED,
+         ok = TX_OK,
+         outside = TX_OUTSIDE,
+         rollback = TX_ROLLBACK,
+         mixed = TX_MIXED,
+         hazard = TX_HAZARD,
+         protocol = TX_PROTOCOL_ERROR,
+         error = TX_ERROR,
+         fail = TX_FAIL,
+         argument = TX_EINVAL,
+         committed = TX_COMMITTED,
+         no_begin = TX_NO_BEGIN,
 
-         enum class tx : int
-         {
-            not_supported = TX_NOT_SUPPORTED,
-            ok = TX_OK,
-            outside = TX_OUTSIDE,
-            rollback = TX_ROLLBACK,
-            mixed = TX_MIXED,
-            hazard = TX_HAZARD,
-            protocol = TX_PROTOCOL_ERROR,
-            error = TX_ERROR,
-            fail = TX_FAIL,
-            argument = TX_EINVAL,
-            committed = TX_COMMITTED,
-            no_begin = TX_NO_BEGIN,
+         no_begin_rollback = TX_ROLLBACK_NO_BEGIN,
+         no_begin_mixed = TX_MIXED_NO_BEGIN,
+         no_begin_hazard = TX_HAZARD_NO_BEGIN,
+         no_begin_committed = TX_COMMITTED_NO_BEGIN,
+      };
+      std::string_view description( code::tx code) noexcept;
 
-            no_begin_rollback = TX_ROLLBACK_NO_BEGIN,
-            no_begin_mixed = TX_MIXED_NO_BEGIN,
-            no_begin_hazard = TX_HAZARD_NO_BEGIN,
-            no_begin_committed = TX_COMMITTED_NO_BEGIN,
-         };
+      static_assert( static_cast< int>( tx::ok) == 0, "tx::ok has to be 0");
 
-         static_assert( static_cast< int>( tx::ok) == 0, "tx::ok has to be 0");
-
-         std::error_code make_error_code( code::tx code);
-         const char* description( code::tx code);
-
-
-      } // code
-
-   } // common
+      std::error_code make_error_code( code::tx code);
+      
+   } // common::code
 } // casual
 
 namespace std

@@ -56,6 +56,7 @@ namespace casual
             no_block = O_NONBLOCK,
             close_in_child = FD_CLOEXEC,
          };
+         std::string_view description( File value) noexcept;
 
       } // socket::option
 

@@ -22,6 +22,19 @@ namespace casual
 {
    namespace common::communication
    {
+      namespace socket::option
+      {
+         std::string_view description( File value) noexcept
+         {
+            switch( value)
+            {
+               case File::no_block: return "no_block";
+               case File::close_in_child: return "close_in_child";
+            }
+            return "<unknown>";
+         }
+         
+      } // socket::option
 
       Socket::Socket( strong::socket::id descriptor) noexcept 
          : m_descriptor( std::move( descriptor)) 

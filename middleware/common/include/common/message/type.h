@@ -319,8 +319,7 @@ namespace casual
          unittest_message = UNITTEST_BASE,
       };
 
-      std::ostream& operator << ( std::ostream& out, Type value);
-
+      std::string_view description( Type value) noexcept;
 
       //! Deduce witch type of message it is.
       template< typename M>

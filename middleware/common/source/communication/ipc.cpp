@@ -38,9 +38,8 @@ namespace casual
          {
             std::ostream& operator << ( std::ostream& out, const Header& value)
             {
-               out << "{ type: " << value.type << ", correlation: ";
-               transcode::hex::encode( out, value.correlation);
-               return stream::write( out, ", offset: ", value.offset, ", count: ", value.count, ", size: ", value.size, '}');
+               return stream::write( out, "{ type: ", description( value.type), ", correlation: ", transcode::hex::stream::wrapper( value.correlation),
+                  ", offset: ", value.offset, ", count: ", value.count, ", size: ", value.size, '}');
             }
             
             static_assert( max_message_size() <= platform::ipc::transport::size, "ipc message is too big'");

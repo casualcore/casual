@@ -28,10 +28,9 @@ namespace casual
          code::raise::error( code::convert::to::casual( last::error()));
       }
 
-      void raise( const std::string& context) noexcept( false)
+      void raise( std::errc code, std::string_view context) noexcept( false)
       {
-         auto error = last::error();
-         code::raise::error( code::convert::to::casual( error), context, " - ", error);
+         code::raise::error( code::convert::to::casual( code), context, " - ", code);
       }
       
    } // common::code::system

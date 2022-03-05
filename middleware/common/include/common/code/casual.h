@@ -56,7 +56,7 @@ namespace casual
          };
 
          std::error_code make_error_code( code::casual code);
-         const char* description( code::casual code);
+         std::string_view description( code::casual code) noexcept;
 
       } // code
    } // common

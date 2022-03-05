@@ -36,10 +36,9 @@ namespace casual
 
       std::ostream& operator << ( std::ostream& out, const Header& value)
       {
-         return out << "{ type: " << local::host::header::type( value)
-            << ", correlation: " << common::Uuid{ value.correlation}
-            << ", size: " << local::host::header::size( value)
-            << '}';
+         return stream::write( out, "{ type: ", local::host::header::type( value),
+            ", correlation: ", transcode::hex::stream::wrapper( value.correlation),
+            ", size: ", local::host::header::size( value), '}');
 
       }
 

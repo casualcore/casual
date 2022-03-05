@@ -16,31 +16,27 @@
 
 namespace casual
 {
-   namespace common
+   namespace common::code
    {
-      namespace code
+
+      enum class signal : platform::signal::native::type
       {
-         enum class signal : platform::signal::native::type
-         {
-            absent = 0,
-            alarm = SIGALRM,
-            interrupt = SIGINT,
-            kill = SIGKILL,
-            quit = SIGQUIT,
-            child = SIGCHLD,
-            terminate = SIGTERM,
-            user = SIGUSR1,
-            pipe = SIGPIPE,
-            hangup = SIGHUP,
-         };
+         absent = 0,
+         alarm = SIGALRM,
+         interrupt = SIGINT,
+         kill = SIGKILL,
+         quit = SIGQUIT,
+         child = SIGCHLD,
+         terminate = SIGTERM,
+         user = SIGUSR1,
+         pipe = SIGPIPE,
+         hangup = SIGHUP,
+      };
+      std::string_view description( code::signal code) noexcept;
 
-
-         std::error_code make_error_code( code::signal code);
-         const char* description( code::signal code);
-
-
-      } // code
-   } // common
+      std::error_code make_error_code( code::signal code);
+      
+   } // common::code
 } // casual
 
 namespace std

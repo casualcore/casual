@@ -18,10 +18,12 @@ namespace casual
          //! returns the last error code from errno
          std::errc error();
       } // last
+
+      [[noreturn]] void raise( std::errc code, std::string_view context) noexcept( false);
       
       //! converts last system error to code::casual and raise an exception
       [[noreturn]] void raise() noexcept( false);
-      [[noreturn]] void raise( const std::string& context) noexcept( false);
+      [[noreturn]] inline void raise( std::string_view context) noexcept( false) { raise( last::error(), context);}
 
    } // common::code::system
 } // casual

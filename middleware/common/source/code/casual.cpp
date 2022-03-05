@@ -11,6 +11,7 @@
 #include "common/code/serialize.h"
 
 #include "common/log.h"
+#include "common/string.h"
 #include "common/communication/log.h"
 
 #include <string>
@@ -33,7 +34,7 @@ namespace casual
 
                std::string message( int code) const override
                {
-                  return code::description( static_cast< code::casual>( code));
+                  return std::string{ code::description( static_cast< code::casual>( code))};
                }
 
                // defines the log condition equivalence, so we can compare for logging
@@ -68,7 +69,7 @@ namespace casual
          } // <unnamed>
       } // local
 
-      const char* description( code::casual code)
+      std::string_view description( code::casual code) noexcept
       {
          switch( code)
          {

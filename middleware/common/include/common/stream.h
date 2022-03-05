@@ -102,7 +102,7 @@ namespace casual
             //! specialization for std::error_code
             template< typename T> 
             struct point< T, std::enable_if_t< 
-               std::is_error_code_enum< T>::value>>
+               std::is_error_code_enum_v < T>>>
             {
                static void stream( std::ostream& out, T value)
                {
@@ -113,7 +113,7 @@ namespace casual
             //! specialization for std::error_condition
             template< typename T> 
             struct point< T, std::enable_if_t< 
-               std::is_error_condition_enum< T>::value>>
+               std::is_error_condition_enum_v< T>>>
             {
                static void stream( std::ostream& out, T value)
                {
@@ -146,6 +146,30 @@ namespace casual
             }
          };
 
+         //! Specialization for enum
+         template< typename T>
+         struct point< T, std::enable_if_t< std::is_enum_v< T>>>
+         { 
+            static void stream( std::ostream& out, T value) 
+            {
+               stream( out, value, traits::priority::tag< 1>{});
+            }
+
+         private:
+            // chosen if the enum type has a declared `description` overload
+            template< typename E>
+            static auto stream( std::ostream& out, const E& value, traits::priority::tag< 1>)
+               -> decltype( void( out << description( value)))
+            {
+               out << description( value);
+            }
+            
+            static auto stream( std::ostream& out, T value, traits::priority::tag< 0>)
+            {
+               out << common::cast::underlying( value);
+            }
+         };
+
 
          //! Specialization for named
          template< typename T>
@@ -160,7 +184,7 @@ namespace casual
 
          //! Specialization for std::exception
          template< typename T>
-         struct point< T, std::enable_if_t< std::is_base_of< std::exception, T>::value>>
+         struct point< T, std::enable_if_t< std::is_base_of_v< std::exception, T>>>
          {
             template< typename C>
             static void stream( std::ostream& out, const C& value)
