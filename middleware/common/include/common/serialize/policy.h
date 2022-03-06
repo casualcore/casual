@@ -13,6 +13,7 @@
 #include "common/log/category.h"
 #include "common/log.h"
 #include "common/string.h"
+#include "common/string/compose.h"
 
 #include "common/code/raise.h"
 #include "common/code/casual.h"

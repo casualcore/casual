@@ -4,17 +4,15 @@
 //! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-
 #pragma once
-
 
 #include "common/message/event.h"
 
+#include "common/message/pending.h"
 #include "common/communication/ipc/message.h"
 #include "common/serialize/native/complete.h"
 #include "common/algorithm/container.h"
-
-#include "common/message/pending.h"
+#include "common/stream.h"
 
 namespace casual
 {

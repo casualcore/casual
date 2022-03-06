@@ -9,6 +9,7 @@
 #include "common/process.h"
 #include "common/log.h"
 #include "common/terminal.h"
+#include "common/string/compose.h"
 
 #include "common/code/raise.h"
 

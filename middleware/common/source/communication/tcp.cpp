@@ -11,14 +11,15 @@
 
 #include "common/result.h"
 
-//#include "common/exception/capture.h"
-
 #include "common/code/convert.h"
 #include "common/code/raise.h"
 #include "common/code/system.h"
 #include "common/code/casual.h"
+#include "common/string/compose.h"
+#include "common/exception/compose.h"
 
 #include "common/log.h"
+#include "common/functional.h"
 
 // posix
 #include <sys/types.h>

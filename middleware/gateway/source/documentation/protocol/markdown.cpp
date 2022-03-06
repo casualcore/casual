@@ -19,6 +19,7 @@
 #include "common/terminal.h"
 #include "common/execute.h"
 #include "common/algorithm/sorted.h"
+#include "common/string/compose.h"
 
 #include <iostream>
 #include <typeindex>

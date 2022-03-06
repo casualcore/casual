@@ -5,7 +5,7 @@
 //!
 
 #include "common/environment/expand.h"
-#include "common/string.h"
+#include "common/string/compose.h"
 
 #include <string>
 

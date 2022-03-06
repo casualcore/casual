@@ -12,6 +12,7 @@
 #include "common/environment.h"
 #include "common/memory.h"
 #include "common/string.h"
+#include "common/string/compose.h"
 
 #include "common/code/raise.h"
 #include "common/code/casual.h"

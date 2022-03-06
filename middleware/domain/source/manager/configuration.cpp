@@ -18,6 +18,7 @@
 #include "common/communication/ipc.h"
 #include "common/communication/instance.h"
 #include "common/algorithm/container.h"
+#include "common/string/compose.h"
 
 
 

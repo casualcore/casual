@@ -9,7 +9,7 @@
 
 #include "common/flag.h"
 #include "common/predicate.h"
-#include "common/string.h"
+#include "common/string/compose.h"
 
 namespace casual
 {

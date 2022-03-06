@@ -12,6 +12,7 @@
 #include "common/log.h"
 #include "common/string.h"
 #include "common/string/view.h"
+#include "common/string/compose.h"
 
 #include "common/code/convert.h"
 #include "common/code/system.h"

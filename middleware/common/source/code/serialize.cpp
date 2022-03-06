@@ -12,7 +12,7 @@
 
 #include "common/algorithm.h"
 #include "common/uuid.h"
-
+#include "common/log.h"
 
 #include <vector>
 

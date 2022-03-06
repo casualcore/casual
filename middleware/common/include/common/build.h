@@ -6,61 +6,43 @@
 
 #pragma once
 
+#include "casual/platform.h"
+
+#include "common/serialize/macro.h"
+
+#include <string>
+#include <vector>
 
 namespace casual
 {
-   namespace common
+   namespace common::build
    {
-      namespace build
+      struct Version
       {
-         using size_type = platform::size::type;
+         std::string casual;
+         std::string compiler;
+         std::string commit;
 
-         struct Version
+         struct
          {
-            std::string casual;
-            std::string compiler;
-            std::string commit;
-
-            struct
-            {
-               std::vector< size_type> protocols;
-
-               CASUAL_CONST_CORRECT_SERIALIZE(
-                  CASUAL_SERIALIZE( protocols);
-               )
-            } gateway;
+            std::vector< platform::size::type> protocols;
 
             CASUAL_CONST_CORRECT_SERIALIZE(
-               CASUAL_SERIALIZE( casual);
-               CASUAL_SERIALIZE( compiler);
-               CASUAL_SERIALIZE( commit);
-               CASUAL_SERIALIZE( gateway);
+               CASUAL_SERIALIZE( protocols);
             )
+         } gateway;
 
-         };
+         CASUAL_CONST_CORRECT_SERIALIZE(
+            CASUAL_SERIALIZE( casual);
+            CASUAL_SERIALIZE( compiler);
+            CASUAL_SERIALIZE( commit);
+            CASUAL_SERIALIZE( gateway);
+         )
 
+      };
 
-         inline auto version()
-         {
-            Version result;
+      //! @returns the current version of the build
+      Version version() noexcept;
 
-            // casual version
-#ifdef CASUAL_MAKE_BUILD_VERSION
-            result.casual = CASUAL_MAKE_BUILD_VERSION;
-#endif 
-            // compiler version
-#ifdef __clang_version__
-            result.compiler = string::compose( "clang: ", __clang_version__);
-#elif __GNUC__
-            result.compiler = string::compose( "g++: ", __GNUC__, '.', __GNUC_MINOR__, '.', __GNUC_PATCHLEVEL__);
-#endif
-            // commit hash
-#ifdef CASUAL_MAKE_COMMIT_HASH
-            result.commit = CASUAL_MAKE_COMMIT_HASH;
-#endif
-
-            return result;
-         }
-      }
-   }
+   } // common::build
 } // casual

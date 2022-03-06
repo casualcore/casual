@@ -235,14 +235,6 @@ namespace casual
       }
 
 
-      TEST( casual_common_type, type)
-      {
-         common::unittest::Trace trace;
-
-         const auto type = type::name<long>();
-         EXPECT_TRUE( type == "long") << type;
-      }
-
       TEST( casual_common_string, integer_empty_expect_false)
       {
          common::unittest::Trace trace;

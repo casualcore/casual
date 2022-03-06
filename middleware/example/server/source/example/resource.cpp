@@ -9,7 +9,7 @@
 #include "common/algorithm.h"
 #include "common/domain.h"
 #include "common/exception/guard.h"
-#include "common/string.h"
+#include "common/string/compose.h"
 #include "common/argument.h"
 
 

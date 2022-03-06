@@ -22,19 +22,6 @@ namespace casual
 {
    namespace common
    {
-      namespace type
-      {
-         namespace internal
-         {
-            std::string name( const std::type_info& type)
-            {
-               const auto result = abi::__cxa_demangle( type.name(), nullptr, nullptr, nullptr);
-               return std::unique_ptr<char, decltype(std::free)*> { result, &std::free }.get();
-            }
-         } // internal
-      } // type
-
-
       namespace string
       {
 

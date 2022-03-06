@@ -12,7 +12,7 @@
 #include "common/serialize/native/complete.h"
 #include "common/exception/capture.h"
 #include "common/code/raise.h"
-#include "common/string.h"
+#include "common/string/compose.h"
 
 #include <string>
 

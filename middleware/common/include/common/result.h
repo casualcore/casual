@@ -9,6 +9,7 @@
 #include "common/code/convert.h"
 #include "common/code/system.h"
 #include "common/code/raise.h"
+#include "common/code/log.h"
 #include "common/algorithm/compare.h"
 
 #include <system_error>

@@ -11,7 +11,7 @@
 #include "common/log/stream.h"
 #include "common/log/trace.h"
 
-#include "common/string.h"
+#include "common/string/compose.h"
 
 namespace casual
 {

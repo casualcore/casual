@@ -10,7 +10,7 @@
 #include "common/algorithm.h"
 #include "common/algorithm/compare.h"
 #include "common/buffer/type.h"
-#include "common/string.h"
+#include "common/string/compose.h"
 
 #include "casual/buffer/field.h"
 #include "casual/buffer/string.h"

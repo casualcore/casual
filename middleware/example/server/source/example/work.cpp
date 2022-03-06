@@ -15,6 +15,7 @@
 #include "common/environment/expand.h"
 #include "common/chronology.h"
 #include "common/domain.h"
+#include "common/string/compose.h"
 
 
 #include <locale>

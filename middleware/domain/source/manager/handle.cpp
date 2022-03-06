@@ -17,16 +17,16 @@
 
 #include "configuration/message.h"
 
+#include "common/instance.h"
+#include "common/communication/instance.h" 
+
 #include "common/message/handle.h"
 #include "common/server/handle/call.h"
 #include "common/cast.h"
 #include "common/environment.h"
 #include "common/algorithm/compare.h"
 #include "common/algorithm.h"
-
-#include "common/instance.h"
-
-#include "common/communication/instance.h" 
+#include "common/string/compose.h"
 
 namespace casual
 {

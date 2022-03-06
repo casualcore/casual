@@ -10,6 +10,7 @@
 #include "common/environment.h"
 #include "common/exception/guard.h"
 #include "common/execute.h"
+#include "common/string/compose.h"
 
 
 #include <iomanip>

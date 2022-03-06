@@ -9,6 +9,8 @@
 #include "casual/assert.h"
 
 #include "common/communication/ipc.h"
+#include "common/string/compose.h"
+
 namespace casual
 {
    namespace gateway::group::tcp

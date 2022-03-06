@@ -4,9 +4,7 @@
 //! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-#include <vector>
-#include <unordered_map>
-#include <string>
+
 
 #include "http/common.h"
 #include "http/inbound/caller.h"
@@ -14,12 +12,18 @@
 #include "common/service/call/context.h"
 #include "common/transcode.h"
 #include "common/string.h"
+#include "common/string/compose.h"
+#include "common/log.h"
 
 #include "common/code/raise.h"
 #include "common/code/casual.h"
 #include "common/code/category.h"
 #include "common/code/xatmi.h"
 #include "common/exception/capture.h"
+
+#include <vector>
+#include <unordered_map>
+#include <string>
 
 namespace casual
 {

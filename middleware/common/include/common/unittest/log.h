@@ -10,7 +10,7 @@
 
 #include "common/log.h"
 #include "common/log/trace.h"
-#include "common/string.h"
+#include "common/string/compose.h"
 
 #include <gtest/gtest.h>
 
