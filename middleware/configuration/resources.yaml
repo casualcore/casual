@@ -1,14 +1,14 @@
 
 #
-# This file is used when we build casual.
-# probably not the file one wants to use when
-# building business servers.. 
+# This file is an example of an resources definition file.
+# Add configuration to handle the resources you are using.
 #
+system:
 
-resources:      
-   
-  - key: rm-mockup   
-    server: rm-proxy-casual-mockup
-    xa_struct_name: casual_mockup_xa_switch_static
-    libraries:
-      - casual-mockup-rm
+  resources:
+
+    - key: rm-mockup
+      server: rm-proxy-casual-mockup
+      xa_struct_name: casual_mockup_xa_switch_static
+      libraries:
+        - casual-mockup-rm
