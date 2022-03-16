@@ -25,7 +25,7 @@ namespace casual
          // TODO should be a scoped registration that restores the handler, if any.
          signal::callback::registration< code::signal::child>( [](){});
 
-         environment::variable::set( "PATH", environment::expand( string::compose( "${CASUAL_MAKE_SOURCE_ROOT}/middleware/administration/bin:$PATH")));
+         environment::variable::set( "PATH", environment::expand( string::compose( "${CASUAL_MAKE_SOURCE_ROOT}/middleware/administration/bin:${PATH}")));
          m_stream = posix::result( ::popen( command.data(), "r"));
       }
 
