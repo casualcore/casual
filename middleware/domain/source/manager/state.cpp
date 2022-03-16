@@ -123,6 +123,11 @@ namespace casual
                            {
                               instance.state = state_type::scale_out;
                            }).size();
+
+                           algorithm::container::trim( instances, algorithm::remove_if( instances, []( auto& instance)
+                           {
+                              return algorithm::compare::any( instance.state, state_type::exit, state_type::error);
+                           }));
                         }
 
                         // resize the source to get the rest, and rely on default ctor for instance_type.
