@@ -397,7 +397,7 @@ namespace casual
                   std::ostringstream repsentation;
                   repsentation.flags( out.flags());
                   repsentation.precision( out.precision());
-                  repsentation << binder( value);
+                  stream::write( repsentation, binder( value));
                   return std::move( repsentation.str()).size();
                }
 
@@ -407,11 +407,11 @@ namespace casual
                   std::ostringstream string_value;
                   string_value.precision( out.precision());
                   string_value.flags( out.flags());
-                  string_value << binder( value);
+                   stream::write( string_value, binder( value));
 
                   out << std::setfill( ' ');
 
-                  out << m_color << std::setw( width) << m_align << string_value.str();
+                  out << m_color << std::setw( width) << m_align << std::move( string_value).str();
                }
 
                common::terminal::Color m_color;
