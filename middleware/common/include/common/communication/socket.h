@@ -82,7 +82,7 @@ namespace casual
          strong::socket::id descriptor() const noexcept;
 
          //! return SO_ERROR from getsockopt
-         std::errc error() const;
+         std::optional< std::errc> error() const;
 
          template< typename Option>
          void set( Option&& option)
@@ -103,6 +103,8 @@ namespace casual
          void unset( socket::option::File option);
 
          friend std::ostream& operator << ( std::ostream& out, const Socket& value);
+
+         inline friend bool operator == ( const Socket& lhs, strong::file::descriptor::id rhs) { return lhs.descriptor() == rhs;}
 
          inline auto tie() const { return std::tie( m_descriptor);}
 

@@ -38,6 +38,41 @@ namespace casual
                   };
                }
 
+               inline auto inbound()
+               { 
+                  return []( auto& connection)
+                  {
+                     return connection.bound == decltype( connection.bound)::in;
+                  };
+               }
+
+               namespace runlevel
+               {
+                  inline auto connecting()
+                  { 
+                     return []( auto& connection)
+                     {
+                        return connection.runlevel == decltype( connection.runlevel)::connecting;
+                     };
+                  }
+
+                  inline auto connected()
+                  { 
+                     return []( auto& connection)
+                     {
+                        return connection.runlevel == decltype( connection.runlevel)::connected && connection.remote.id;
+                     };
+                  }
+
+                  inline auto failed()
+                  { 
+                     return []( auto& connection)
+                     {
+                        return connection.runlevel == decltype( connection.runlevel)::failed;
+                     };
+                  } 
+               } // runlevel
+
                namespace connected
                {
                   inline auto outbound()
@@ -48,6 +83,7 @@ namespace casual
                      };
                   }
                } // connected
+
 
             } // is
             namespace outbound

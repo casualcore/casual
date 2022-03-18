@@ -178,38 +178,13 @@ namespace casual
 
          //! @returns a reply message to state `request` that is filled with what's possible
          template< typename M>
-         auto reply( M&& request) const
+         auto reply( M&& request) const noexcept
          {
-            auto reply = common::message::reverse::type( request, common::process::handle());
+            auto reply = external.reply( request);
 
             reply.state.alias = alias;
             reply.state.note = note;
             reply.state.limit = pending.requests.limit();
-
-            reply.state.connections = common::algorithm::transform( external.connections(), [&]( auto& connection)
-            {
-               auto descriptor = connection.descriptor();
-               message::inbound::state::Connection result;
-               result.descriptor = descriptor;
-               result.address.local = common::communication::tcp::socket::address::host( descriptor);
-               result.address.peer = common::communication::tcp::socket::address::peer( descriptor);
-
-               if( auto found = external.information( descriptor))
-               {
-                  result.domain = found->domain;
-                  result.configuration = found->configuration;
-                  result.created = found->created;
-               }
-
-               return result;
-            });
-
-            common::algorithm::transform( external.pending().connections(), reply.state.connections, []( auto& connection)
-            {
-               message::inbound::state::Connection result;
-               result.address.peer = connection.configuration.address;
-               return result;
-            });
 
             return reply;
          }

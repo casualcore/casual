@@ -28,14 +28,14 @@ namespace casual
                reversed,
             };
 
-            inline std::ostream& operator << ( std::ostream& out, Phase value)
+            constexpr std::string_view description( Phase value) noexcept
             {
                switch( value)
                {
-                  case Phase::regular: return out << "regular";
-                  case Phase::reversed: return out << "reversed";
+                  case Phase::regular: return "regular";
+                  case Phase::reversed: return "reversed";
                }
-               return out << "<unknown>";
+               return "<unknown>";
             }
 
 
@@ -46,35 +46,39 @@ namespace casual
                in,
             };
 
-            inline std::ostream& operator << ( std::ostream& out, Bound value)
+            constexpr std::string_view description( Bound value) noexcept
             {
                switch( value)
                {
-                  case Bound::out: return out << "out";
-                  case Bound::in: return out << "in";
-                  case Bound::unknown: return out << "unknown";
+                  case Bound::out: return "out";
+                  case Bound::in: return "in";
+                  case Bound::unknown: return "unknown";
                }
-               return out << "<unknown>";
+               return "<unknown>";
             }
 
+
+            //! TODO maintenance use default values...
             enum struct Runlevel : short
             {
                connecting = 1,
+               pending = 4,
                connected = 2,
                failed = 3,
+
                //! @deprecated remove in 2.0
                online = connected,
             };
-
-            inline std::ostream& operator << ( std::ostream& out, Runlevel value)
+            constexpr std::string_view description( Runlevel value) noexcept
             {
-               switch ( value)
+               switch( value)
                {
-                  case Runlevel::connecting: return out << "connecting";
-                  case Runlevel::connected: return out << "connected";
-                  case Runlevel::failed: return out << "failed";
+                  case Runlevel::connecting: return "connecting";
+                  case Runlevel::pending: return "pending";
+                  case Runlevel::connected: return "connected";
+                  case Runlevel::failed: return "failed";
                }
-               return out << "<not used>";
+               return "<unknown>";
             }
 
             struct Address
@@ -93,14 +97,14 @@ namespace casual
          struct Connection : common::Compare< Connection>
          {
             std::string group;
+            connection::Runlevel runlevel = connection::Runlevel::connecting;
             connection::Phase connect{};
             connection::Bound bound{};
             common::strong::file::descriptor::id descriptor{};
             common::domain::Identity remote;
             connection::Address address;
             platform::time::point::type created{};
-            connection::Runlevel runlevel{};
-
+            
             inline friend bool operator == ( const Connection& lhs, std::string_view rhs) { return lhs.remote == rhs;}
 
             //! @deprecated remove in 2.0 - group knows the process, not the connection
@@ -108,14 +112,14 @@ namespace casual
 
             CASUAL_CONST_CORRECT_SERIALIZE(
                CASUAL_SERIALIZE( group);
+               CASUAL_SERIALIZE( runlevel);
                CASUAL_SERIALIZE( connect);
                CASUAL_SERIALIZE( bound);
                CASUAL_SERIALIZE( descriptor);
                CASUAL_SERIALIZE( remote);
                CASUAL_SERIALIZE( address);
                CASUAL_SERIALIZE( created);
-               CASUAL_SERIALIZE( runlevel);
-
+            
                //! @deprecated remove in 2.0
                CASUAL_SERIALIZE( process);
             )
@@ -131,16 +135,15 @@ namespace casual
                shutdown,
                error,
             };
-
-            inline std::ostream& operator << ( std::ostream& out, Runlevel value)
+            constexpr std::string_view description( Runlevel value) noexcept
             {
                switch( value)
                {
-                  case Runlevel::running: return out << "running";
-                  case Runlevel::shutdown: return out << "shutdown";
-                  case Runlevel::error: return out << "error";
+                  case Runlevel::running: return "running";
+                  case Runlevel::shutdown: return "shutdown";
+                  case Runlevel::error: return "error";
                }
-               return out << "<unknown>";
+               return "<unknown>";
             }
 
          } // group
@@ -248,14 +251,14 @@ namespace casual
                failed = 2,
             };
 
-            inline std::ostream& operator << ( std::ostream& out, Runlevel value)
+            constexpr std::string_view description( Runlevel value) noexcept
             {
                switch ( value)
                {
-                  case Runlevel::listening: return out << "listening";
-                  case Runlevel::failed: return out << "failed";
+                  case Runlevel::listening: return "listening";
+                  case Runlevel::failed: return "failed";
                }
-               return out << "<not used>";
+               return "<not used>";
             }
 
          } // listener
@@ -263,11 +266,11 @@ namespace casual
          struct Listener : common::Compare< Listener>
          {
             std::string group;
+            listener::Runlevel runlevel{};
             listener::Address address;
             connection::Bound bound{};
             platform::time::point::type created{};
-            listener::Runlevel runlevel{};
-
+         
             //@ deprecared
             struct
             {
@@ -284,10 +287,10 @@ namespace casual
 
             CASUAL_CONST_CORRECT_SERIALIZE(
                CASUAL_SERIALIZE( group);
+               CASUAL_SERIALIZE( runlevel);
                CASUAL_SERIALIZE( address);
                CASUAL_SERIALIZE( bound);
                CASUAL_SERIALIZE( created);
-               CASUAL_SERIALIZE( runlevel);
                CASUAL_SERIALIZE( limit);
             )
 
@@ -348,8 +351,6 @@ namespace casual
 
             std::vector< Connection> connections;
             std::vector< Listener> listeners;
-            std::vector< Connection> failed_connections;
-            std::vector< Listener> failed_listeners;
 
             std::vector< Routing> services;
             std::vector< Routing> queues;
@@ -359,8 +360,6 @@ namespace casual
                CASUAL_SERIALIZE( outbound);
                CASUAL_SERIALIZE( connections);
                CASUAL_SERIALIZE( listeners);
-               CASUAL_SERIALIZE( failed_connections);
-               CASUAL_SERIALIZE( failed_listeners);
                CASUAL_SERIALIZE( services);
                CASUAL_SERIALIZE( queues);
             )

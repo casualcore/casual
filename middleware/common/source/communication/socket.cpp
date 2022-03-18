@@ -65,13 +65,13 @@ namespace casual
       void Socket::set( socket::option::File option)
       {
          auto flags = ::fcntl( m_descriptor.value(), F_GETFL);
-         posix::result( ::fcntl( m_descriptor.value(), F_SETFL, flags | cast::underlying( option)), "fcntl");
+         posix::result( ::fcntl( m_descriptor.value(), F_SETFL, flags | cast::underlying( option)), "failed to set file option: ", option);
       }
 
       void Socket::unset( socket::option::File option)
       {
          auto flags = ::fcntl( m_descriptor.value(), F_GETFL);
-         posix::result( ::fcntl( m_descriptor.value(), F_SETFL, flags & ~cast::underlying( option)), "fcntl");
+         posix::result( ::fcntl( m_descriptor.value(), F_SETFL, flags & ~cast::underlying( option)), "failed to unset file option: ", option);
       }
 
 
@@ -80,11 +80,14 @@ namespace casual
          return m_descriptor;
       }
 
-      std::errc Socket::error() const
+      std::optional< std::errc> Socket::error() const
       {
          int optval{};
          socklen_t optlen = sizeof( optval);
          posix::result( ::getsockopt( m_descriptor.value(), SOL_SOCKET, SO_ERROR, &optval, &optlen));
+
+         if( optval == 0)
+            return {};
 
          return std::errc( optval);
       }

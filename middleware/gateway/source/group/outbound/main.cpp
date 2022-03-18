@@ -8,6 +8,8 @@
 #include "gateway/group/outbound/handle.h"
 #include "gateway/group/handle.h"
 #include "gateway/group/tcp.h"
+#include "gateway/group/tcp/logical/connect.h"
+#include "gateway/group/tcp/connect.h"
 #include "gateway/group/ipc.h"
 #include "gateway/message.h"
 
@@ -38,35 +40,11 @@ namespace casual
             // local state to keep additional stuff for the connections...
             struct State : outbound::State
             {
-               struct Connection
-               {
-                  Connection( configuration::model::gateway::outbound::Connection configuration)
-                     : configuration{ std::move( configuration)} {}
-
-                  configuration::model::gateway::outbound::Connection configuration;
-
-                  struct
-                  {
-                     platform::size::type attempts{};
-                     
-                     CASUAL_LOG_SERIALIZE( CASUAL_SERIALIZE( attempts);)
-                  } metric;
-
-                  CASUAL_LOG_SERIALIZE( 
-                     CASUAL_SERIALIZE( configuration);
-                     CASUAL_SERIALIZE( metric);
-                  )
-               };
-
-   
-               std::vector< Connection> unconnected;
-               std::vector< configuration::model::gateway::outbound::Connection> failed;
-
+               tcp::connect::state::Connect< configuration::model::gateway::outbound::Connection> connect;
 
                CASUAL_LOG_SERIALIZE(
                   outbound::State::serialize( archive);
-                  CASUAL_SERIALIZE( unconnected);
-                  CASUAL_SERIALIZE( failed);
+                  CASUAL_SERIALIZE( connect);
                )
             };
 
@@ -90,7 +68,7 @@ namespace casual
                {
                   Trace trace{ "gateway::group::outbound::local::external::connect"};
 
-                  group::tcp::connect< group::tcp::connector::Bound::out>( state, state.unconnected);
+                  group::tcp::connect::attempt< group::tcp::logical::connect::Bound::out>( state);
                   log::line( verbose::log, "state: ", state);
                }
 
@@ -101,7 +79,7 @@ namespace casual
                   if( state.runlevel == decltype( state.runlevel())::running)
                   {
                      log::line( log::category::information, code::casual::communication_unavailable, " lost connection ", configuration.address, " - action: try to reconnect");
-                     state.unconnected.emplace_back( std::move( configuration));
+                     state.connect.prospects.emplace_back( std::move( configuration));
                      external::connect( state);
                   }
                }
@@ -158,10 +136,8 @@ namespace casual
                            state.alias = message.model.alias;
                            state.order = message.order;
 
-                           state.unconnected = algorithm::transform( message.model.connections, []( auto& configuration)
-                           {
-                              return local::State::Connection{ std::move( configuration)};
-                           });
+                           for( auto& configuration : message.model.connections)
+                              state.connect.prospects.emplace_back( std::move( configuration));
 
 
                            // we might got some addresses to try...
@@ -182,25 +158,8 @@ namespace casual
                         return [&state]( message::outbound::state::Request& message)
                         {
                            Trace trace{ "gateway::group::outbound::local::handle::internal::state::request"};
-                           log::line( verbose::log, "message: ", message);
-                           log::line( verbose::log, "state: ", state);
 
-                           auto reply = state.reply( message);
-
-                           // add pending connections
-                           algorithm::transform( state.unconnected, std::back_inserter( reply.state.connections), []( auto& pending)
-                           {
-                              message::outbound::state::Connection result;
-                              result.configuration = pending.configuration;
-                              result.address.peer = pending.configuration.address;
-                              return result;
-                           });
-
-                           algorithm::copy( state.failed, reply.state.failed);
-
-                           log::line( verbose::log, "reply: ", reply);
-
-                           communication::device::blocking::optional::send( message.process.ipc, reply);
+                           communication::device::blocking::optional::send( message.process.ipc, tcp::connect::state::request( state, message));
                         };
                      }
 
@@ -236,7 +195,7 @@ namespace casual
                            log::line( verbose::log, "message: ", message);
 
                            // remove pending connections
-                           state.unconnected.clear();
+                           state.connect.prospects.clear();
 
                            outbound::handle::shutdown( state);
                         };
@@ -322,7 +281,9 @@ namespace casual
                   state.directive,
                   external::dispatch::create( state),
                   gateway::group::tcp::pending::send::dispatch( state),
-                  ipc::dispatch::create( state, &internal::handler)
+                  ipc::dispatch::create( state, &internal::handler),
+                  // takes care of multiplexing connects
+                  tcp::connect::dispatch::create( state, tcp::logical::connect::Bound::out)
                );
 
                abort_guard.release();

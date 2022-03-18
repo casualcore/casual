@@ -404,9 +404,6 @@ namespace casual
                         // we remove all 'groups' that are done.
                         algorithm::container::trim( groups, algorithm::remove_if( groups, [&state]( auto& group){ return group::done( state, group);}));
 
-                        // TODO remove!
-                        log::line( verbose::log, "groups", groups);
-
                         // we could be done directly
                         if( groups.empty())
                            return {};

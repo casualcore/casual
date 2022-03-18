@@ -105,23 +105,66 @@ namespace casual
             )
          };
 
+         namespace listener
+         {
+            enum struct Runlevel : std::uint8_t
+            {
+               listening,
+               failed,
+            };
+            constexpr std::string_view description( Runlevel value) noexcept
+            {
+               switch( value)
+               {
+                  case Runlevel::listening: return "listening";
+                  case Runlevel::failed: return "failed";
+               }
+               return "<unknown>";
+            }
+         } // listener
+
          struct Listener
          {
+            listener::Runlevel runlevel{};
             common::communication::tcp::Address address;
             common::strong::file::descriptor::id descriptor;
             platform::time::point::type created{};
 
             CASUAL_CONST_CORRECT_SERIALIZE(
+               CASUAL_SERIALIZE( runlevel);
                CASUAL_SERIALIZE( address);
                CASUAL_SERIALIZE( descriptor);
                CASUAL_SERIALIZE( created);
             )
          };
 
+         namespace connection
+         {
+            enum struct Runlevel : std::uint8_t
+            {
+               connecting,
+               pending,
+               connected,
+               failed,
+            };
+            constexpr std::string_view description( Runlevel value) noexcept
+            {
+               switch( value)
+               {
+                  case Runlevel::connecting: return "connecting";
+                  case Runlevel::pending: return "pending";
+                  case Runlevel::connected: return "connected";
+                  case Runlevel::failed: return "failed";
+               }
+               return "<unknown>";
+            }
+         } // connection
+
          template< typename Configuration>
          struct basic_connection
          {
             Address address;
+            connection::Runlevel runlevel{};
             common::strong::file::descriptor::id descriptor;
             common::domain::Identity domain;
             Configuration configuration;
@@ -152,6 +195,7 @@ namespace casual
 
             CASUAL_CONST_CORRECT_SERIALIZE(
                CASUAL_SERIALIZE( address);
+               CASUAL_SERIALIZE( runlevel);
                CASUAL_SERIALIZE( descriptor);
                CASUAL_SERIALIZE( domain);
                CASUAL_SERIALIZE( configuration);
@@ -176,7 +220,6 @@ namespace casual
             std::string note;
             casual::configuration::model::gateway::inbound::Limit limit;
             std::vector< state::Connection> connections;
-            std::vector< casual::configuration::model::gateway::inbound::Connection> failed;
 
             CASUAL_CONST_CORRECT_SERIALIZE(
             {
@@ -184,7 +227,6 @@ namespace casual
                CASUAL_SERIALIZE( note);
                CASUAL_SERIALIZE( limit);
                CASUAL_SERIALIZE( connections);
-               CASUAL_SERIALIZE( failed);
             })
          };
 
@@ -350,7 +392,6 @@ namespace casual
             platform::size::type order{};
 
             std::vector< state::Connection> connections;
-            std::vector< configuration::model::gateway::outbound::Connection> failed;
 
             state::Pending pending;
 
@@ -363,7 +404,6 @@ namespace casual
                CASUAL_SERIALIZE( connections);
                CASUAL_SERIALIZE( pending);
                CASUAL_SERIALIZE( correlation);
-               CASUAL_SERIALIZE( failed);
             )
          };
 

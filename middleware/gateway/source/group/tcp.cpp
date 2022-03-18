@@ -17,31 +17,6 @@ namespace casual
    {
       using namespace common;
 
-      namespace connector
-      {
-         std::ostream& operator << ( std::ostream& out, Bound value)
-         {
-            switch( value)
-            {
-               case Bound::in: return out << "in";
-               case Bound::out: return out << "out";
-            }
-            return out << "<unknown>";
-         }
-
-         Process spawn( Bound bound, const communication::Socket& socket)
-         {
-            auto path = process::path().parent_path() / "casual-gateway-group-tcp-connector";
-
-            return Process{ path, {
-               "--descriptor", std::to_string( socket.descriptor().value()),
-               "--ipc", string::compose( process::handle().ipc),
-               "--bound", string::compose( bound)
-            }};
-
-         }
-
-      } // connector
 
       void Connection::unsent( common::communication::select::Directive& directive)
       {

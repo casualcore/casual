@@ -154,6 +154,17 @@ namespace casual
 
             dispatch::detail::local::select( descriptor, &read, nullptr);
          }
+
+         void write( strong::file::descriptor::id descriptor)
+         {
+            ::fd_set write;
+            dispatch::detail::local::fd_zero( write);
+
+            assert( descriptor);
+            FD_SET( descriptor.value(), &write);
+
+            dispatch::detail::local::select( descriptor, nullptr, &write);
+         }
       } // block
 
 

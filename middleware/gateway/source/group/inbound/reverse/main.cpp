@@ -8,6 +8,7 @@
 #include "gateway/group/inbound/handle.h"
 #include "gateway/group/handle.h"
 #include "gateway/group/tcp.h"
+#include "gateway/group/tcp/connect.h"
 #include "gateway/group/ipc.h"
 #include "gateway/message.h"
 
@@ -38,33 +39,11 @@ namespace casual
             // local state to keep additional stuff for reverse connections...
             struct State : inbound::State
             {
-               struct Connection
-               {
-                  Connection( configuration::model::gateway::inbound::Connection configuration)
-                     : configuration{ std::move( configuration)} {}
-
-                  configuration::model::gateway::inbound::Connection configuration;
-
-                  struct
-                  {
-                     platform::size::type attempts{};
-                     
-                     CASUAL_LOG_SERIALIZE( CASUAL_SERIALIZE( attempts);)
-                  } metric;
-
-                  CASUAL_LOG_SERIALIZE( 
-                     CASUAL_SERIALIZE( configuration);
-                     CASUAL_SERIALIZE( metric);
-                  )
-               };
-
-               std::vector< Connection> unconnected;
-               std::vector< configuration::model::gateway::inbound::Connection> failed;
+               tcp::connect::state::Connect< configuration::model::gateway::inbound::Connection> connect;
 
                CASUAL_LOG_SERIALIZE(
                   inbound::State::serialize( archive);
-                  CASUAL_SERIALIZE( unconnected);
-                  CASUAL_SERIALIZE( failed);
+                  CASUAL_SERIALIZE( connect);
                )
             };
 
@@ -87,8 +66,8 @@ namespace casual
                void connect( State& state)
                {
                   Trace trace{ "gateway::group::inbound::reverse::local::external::connect"};
-
-                  group::tcp::connect< group::tcp::connector::Bound::in>( state, state.unconnected);
+                  
+                  tcp::connect::attempt< tcp::logical::connect::Bound::in>( state);
                   log::line( verbose::log, "state: ", state);
                }
 
@@ -99,7 +78,7 @@ namespace casual
                   if( state.runlevel == decltype( state.runlevel())::running)
                   {
                      log::line( log::category::information, code::casual::communication_unavailable, " lost connection ", configuration.address, " - action: try to reconnect");
-                     state.unconnected.emplace_back( std::move( configuration));
+                     state.connect.prospects.emplace_back( std::move( configuration));
                      external::connect( state);
                   }
                }
@@ -154,10 +133,8 @@ namespace casual
                            state.alias = message.model.alias;
                            state.pending.requests.limit( message.model.limit);
                            
-                           state.unconnected = algorithm::transform( message.model.connections, []( auto& configuration)
-                           {
-                              return local::State::Connection{ std::move( configuration)};
-                           });
+                           for( auto& configuration : message.model.connections)
+                              state.connect.prospects.emplace_back( std::move( configuration));
 
                            // we might got some addresses to try...
                            external::connect( state);
@@ -176,23 +153,8 @@ namespace casual
                         return [&state]( message::inbound::reverse::state::Request& message)
                         {
                            Trace trace{ "gateway::group::inbound::reverse::local::handle::internal::state::request"};
-                           log::line( verbose::log, "message: ", message);
-                           log::line( verbose::log, "state: ", state);
-                           
-                           auto reply = state.reply( message);
 
-                           // add reverse connections
-                           algorithm::transform( state.unconnected, reply.state.connections, []( auto& pending)
-                           {
-                              message::inbound::state::Connection result;
-                              result.configuration = pending.configuration;
-                              result.address.peer = pending.configuration.address;
-                              return result;
-                           });
-
-                           algorithm::copy( state.failed, reply.state.failed);
-
-                           ipc::flush::optional::send( message.process.ipc, reply);
+                           communication::device::blocking::optional::send( message.process.ipc, tcp::connect::state::request( state, message));
                         };
                      }
 
@@ -305,7 +267,9 @@ namespace casual
                   state.directive,
                   group::tcp::pending::send::dispatch( state),
                   ipc::dispatch::create( state, &internal::handler),
-                  external::dispatch::create( state)
+                  external::dispatch::create( state),
+                  // takes care of multiplexing connects
+                  tcp::connect::dispatch::create( state, tcp::logical::connect::Bound::in)
                );
 
                abort_guard.release();

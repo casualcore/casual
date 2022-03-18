@@ -533,7 +533,7 @@ domain:
          auto b = local::domain( local::configuration::inbound);
          auto a = local::domain( configuration);
 
-         auto state = unittest::fetch::until( unittest::fetch::predicate::outbound::connected());
+         auto state = unittest::fetch::until( unittest::fetch::predicate::outbound::connected( 10));
 
          using Bound = manager::admin::model::connection::Bound;
 
@@ -591,7 +591,7 @@ domain:
          auto b = local::domain( local::configuration::inbound);
          auto a = local::domain( configuration);
 
-         auto state = unittest::fetch::until( unittest::fetch::predicate::outbound::connected());
+         auto state = unittest::fetch::until( unittest::fetch::predicate::outbound::connected( 10));
 
          auto count_bound = []( auto bound)
          {
@@ -977,8 +977,32 @@ domain:
 
       }
 
+      namespace local
+      {
+         namespace
+         {
+            constexpr auto is_connecting = []( auto count)
+            {
+               return [count]( auto& state)
+               {
+                  return algorithm::count_if( state.connections,
+                        unittest::fetch::predicate::is::runlevel::connecting()) == count;
+               };
+            };
 
-      TEST( gateway_manager_outbound_connect, outbound_non_existent_address__expect_fail)
+            constexpr auto is_failed_listeners = []( auto count)
+            {
+               return [count]( auto& state)
+               {
+                  return algorithm::count_if( state.listeners, unittest::fetch::predicate::is::runlevel::failed()) == count;
+               };
+            };
+
+         } // <unnamed>
+      } // local
+
+
+      TEST( gateway_manager_outbound_connect, outbound_non_existent_address__expect_retry)
       {
          common::unittest::Trace trace;
 
@@ -994,13 +1018,10 @@ domain:
 
          auto a = local::domain( outbound);
 
-         unittest::fetch::until( []( auto& state)
-         {
-            return state.failed_connections.size() == 1;
-         });
+         unittest::fetch::until( local::is_connecting( 1));
       }
 
-      TEST( gateway_manager_outbound_connect, reverse_inbound_non_existent_address__expect_fail)
+      TEST( gateway_manager_outbound_connect, reverse_inbound_non_existent_address__expect_runlevel_connecting)
       {
          common::unittest::Trace trace;
 
@@ -1017,58 +1038,11 @@ domain:
 
          auto a = local::domain( reverse_inbound);
 
-         unittest::fetch::until( []( auto& state)
-         {
-            return state.failed_connections.size() == 1;
-         });
+         unittest::fetch::until( local::is_connecting( 1));
       }
 
-      TEST( gateway_manager_outbound_connect, outbound_empty_address__expect_fail)
-      {
-         common::unittest::Trace trace;
 
-         constexpr auto outbound = R"(
-domain: 
-   name: outbound
-   gateway:
-      outbound:
-         groups:
-            -  connections: 
-                  -  address: ${non_existent_environment}
-)";
-
-         auto a = local::domain( outbound);
-
-         unittest::fetch::until( []( auto& state)
-         {
-            return state.failed_connections.size() == 1;
-         });
-      }
-
-      TEST( gateway_manager_outbound_connect, reverse_inbound_empty_address__expect_fail)
-      {
-         common::unittest::Trace trace;
-
-         constexpr auto reverse_inbound = R"(
-domain: 
-   name: reverse_inbound
-   gateway:
-      reverse:
-         inbound:
-            groups:
-               -  connections: 
-                     -  address: ${non_existent_environment}
-)";
-
-         auto a = local::domain( reverse_inbound);
-
-         unittest::fetch::until( []( auto& state)
-         {
-            return state.failed_connections.size() == 1;
-         });
-      }
-
-      TEST( gateway_manager_inbound_connect, inbound_non_existent_address__expect_fail)
+      TEST( gateway_manager_inbound_listen, non_existent_address__expect_fail)
       {
          common::unittest::Trace trace;
 
@@ -1084,13 +1058,10 @@ domain:
 
          auto a = local::domain( inbound);
 
-         unittest::fetch::until( []( auto& state)
-         {
-            return state.failed_listeners.size() == 1;
-         });
+         unittest::fetch::until( local::is_failed_listeners( 1));
       }
 
-      TEST( gateway_manager_inbound_connect, reverse_outbound_non_existent_address__expect_fail)
+      TEST( gateway_manager_outbound, reverse___non_existent_address__expect_fail)
       {
          common::unittest::Trace trace;
 
@@ -1107,13 +1078,10 @@ domain:
 
          auto a = local::domain( reverse_outbound);
 
-         unittest::fetch::until( []( auto& state)
-         {
-            return state.failed_listeners.size() == 1;
-         });
+         unittest::fetch::until( local::is_failed_listeners( 1));
       }
 
-      TEST( gateway_manager_inbound_connect, inbound_address_in_use__expect_fail)
+      TEST( gateway_manager_inbound, address_in_use__expect_fail)
       {
          common::unittest::Trace trace;
          
@@ -1130,10 +1098,7 @@ domain:
 
          auto a = local::domain( inbound);
 
-         unittest::fetch::until( []( auto& state)
-         {
-            return state.failed_listeners.size() == 1;
-         });
+         unittest::fetch::until( local::is_failed_listeners( 1));
       }
 
    } // gateway

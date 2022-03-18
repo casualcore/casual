@@ -291,6 +291,9 @@ namespace casual
          //! block until descriptor is ready for read.
          void read( strong::file::descriptor::id descriptor);
 
+         //! block until descriptor is ready for write.
+         void write( strong::file::descriptor::id descriptor);
+
       } // block
    } // common::communication::select
 } // casual

@@ -8,6 +8,7 @@
 #include "gateway/group//handle.h"
 #include "gateway/group/outbound/state.h"
 #include "gateway/group/outbound/error/reply.h"
+#include "gateway/group/tcp/listen.h"
 #include "gateway/group/ipc.h"
 #include "gateway/message.h"
 
@@ -38,28 +39,11 @@ namespace casual
             // local state to keep additional stuff for reverse connections...
             struct State : outbound::State
             {
-               struct Listener
-               {
-                  communication::Socket socket;
-                  configuration::model::gateway::outbound::Connection configuration;
-                  platform::time::point::type created = platform::time::clock::type::now();
-
-                  inline friend bool operator == ( const Listener& lhs, common::strong::file::descriptor::id rhs) { return lhs.socket.descriptor() == rhs;}
-
-                  CASUAL_LOG_SERIALIZE( 
-                     CASUAL_SERIALIZE( socket);
-                     CASUAL_SERIALIZE( configuration);
-                     CASUAL_SERIALIZE( created);
-                  )
-               };
-
-               std::vector< Listener> listeners;
-               std::vector< configuration::model::gateway::outbound::Connection> failed;
-               
+               tcp::listen::state::Listen< configuration::model::gateway::outbound::Connection> listen;
+   
                CASUAL_LOG_SERIALIZE(
                   outbound::State::serialize( archive);
-                  CASUAL_SERIALIZE( listeners);
-                  CASUAL_SERIALIZE( failed);
+                  CASUAL_SERIALIZE( listen);
                )
             };
 
@@ -89,7 +73,7 @@ namespace casual
                   {
                      auto request( State& state)
                      {
-                        return [&state]( gateway::message::outbound::configuration::update::Request& message)
+                        return [&state]( gateway::message::outbound::configuration::update::Request&& message)
                         {
                            Trace trace{ "gateway::group::outbound::reverse::local::internal::handle::configuration::update::request"};
                            log::line( verbose::log, "message: ", message);
@@ -99,29 +83,7 @@ namespace casual
                            state.alias = message.model.alias;
                            state.order = message.order;
 
-                           auto try_connect_listener = [&state]( auto& configuration)
-                           {
-                              try
-                              {
-                                 auto result = State::Listener{
-                                    communication::tcp::socket::listen( configuration.address),
-                                    configuration};
-
-                                 // we need the socket to not block in 'accept'
-                                 result.socket.set( communication::socket::option::File::no_block);
-
-                                 state.listeners.push_back( std::move( result));
-                              }
-                              catch( ...)
-                              {
-                                 state.failed.push_back( configuration);
-                              } 
-                           };
-
-                           algorithm::for_each( message.model.connections, try_connect_listener);
-
-                           state.directive.read.add( 
-                              algorithm::transform( state.listeners, []( auto& listener){ return listener.socket.descriptor();}));
+                           tcp::listen::attempt( state, std::move( message.model.connections));
 
                            // send reply
                            communication::device::blocking::optional::send(
@@ -137,24 +99,8 @@ namespace casual
                         return [&state]( message::outbound::reverse::state::Request& message)
                         {
                            Trace trace{ "gateway::group::outbound::reverse::local::handle::internal::state::request"};
-                           log::line( verbose::log, "message: ", message);
-                           log::line( verbose::log, "state: ", state);
-
-                           auto reply = state.reply( message);
-
-                           reply.state.listeners = algorithm::transform( state.listeners, []( auto& listener)
-                           {
-                              message::state::Listener result;
-                              result.address = listener.configuration.address;
-                              result.descriptor = listener.socket.descriptor();
-                              result.created = listener.created;
-
-                              return result;
-                           });
-
-                           algorithm::copy( state.failed, reply.state.failed);
-
-                           communication::device::blocking::optional::send( message.process.ipc, reply);
+                        
+                           ipc::flush::optional::send( message.process.ipc, tcp::listen::state::request( state, message));
                         };
                      }
 
@@ -188,12 +134,7 @@ namespace casual
                            Trace trace{ "gateway::group::outbound::reverse::local::internal::handle::shutdown::request"};
                            log::line( verbose::log, "message: ", message);
 
-                           // remove all listeners
-                           {
-                              state.directive.read.remove( algorithm::transform( state.listeners, []( auto& listener){ return listener.socket.descriptor();}));
-                              state.listeners.clear();
-                           }
-                           
+                           state.listen.clear( state.directive);
 
                            outbound::handle::shutdown( state);
                         };
@@ -279,7 +220,7 @@ namespace casual
                   gateway::group::tcp::pending::send::dispatch( state),
                   external::dispatch::create( state),
                   ipc::dispatch::create( state, &internal::handler),
-                  tcp::listener::dispatch::create( state, tcp::connector::Bound::out)
+                  tcp::listen::dispatch::create( state, tcp::logical::connect::Bound::out)
                );
                
                abort_guard.release();

@@ -16,7 +16,7 @@
 
 namespace casual
 {
-   namespace gateway::group::tcp::connector
+   namespace gateway::group::tcp::locical::connect
    {
       using namespace common;
 
@@ -137,7 +137,7 @@ namespace casual
          } // <unnamed>
       } // local
       
-   } // gateway::group::tcp::connector
+   } // gateway::group::tcp::locical::connect
    
 } // casual
 
@@ -145,6 +145,6 @@ int main( int argc, char** argv)
 {
    return casual::common::exception::main::log::guard( [=]()
    {
-      casual::gateway::group::tcp::connector::local::main( argc, argv);
+      casual::gateway::group::tcp::locical::connect::local::main( argc, argv);
    });
 } // main

@@ -797,6 +797,8 @@ namespace casual
       {
          Trace trace{ "gateway::group::inbound::handle::shutdown"};
 
+         state.runlevel = decltype( state.runlevel())::shutdown;
+
          // try to do a 'soft' disconnect. copy - connection::disconnect mutates external
          for( auto descriptor : state.external.descriptors())
             handle::connection::disconnect( state, descriptor);

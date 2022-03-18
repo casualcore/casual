@@ -23,11 +23,34 @@ namespace casual
       using function = fu2::function< Signatures...>; 
 
 
+      namespace overload
+      {
+         namespace detail
+         {
+            //! Helper for overloading on lambdas (or other types)
+            template< typename... Ts> 
+            struct overload : Ts... { using Ts::operator()...; };
+            // explicit deduction guide (not needed as of C++20)
+            template< typename... Ts> 
+            overload( Ts...) -> overload< Ts...>;   
+         } // detail
+
+         //! @retuns a type with the sum of all _overloads_. Usefill with lambdas 
+         //!   but possible other types as well.
+         template< typename... Ts>
+         auto compose( Ts... ts)
+         {
+            return detail::overload< Ts...>{ ts...};
+         }
+
+      } // overload
+
 #if __cplusplus >= 201703L
       using std::apply;
       using std::invoke;
 #else 
 
+      // TODO: remove!!
       namespace detail
       {
          //! memberfunction

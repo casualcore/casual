@@ -142,6 +142,7 @@ namespace casual
                         switch( value.runlevel)
                         {
                            case Enum::connecting: return 10;
+                           case Enum::pending: return 7;
                            case Enum::connected: return 9;
                            case Enum::failed: return 6;
                         }
@@ -150,14 +151,15 @@ namespace casual
 
                      void print( std::ostream& out, const model::Connection& value, std::size_t width) const
                      {
-                        out << std::setfill( ' ');
+                        out << std::setfill( ' ') << std::left << std::setw( width);
 
                         using Enum = decltype( value.runlevel);
                         switch( value.runlevel)
                         {
-                           case Enum::connecting: out << std::left << std::setw( width) << terminal::color::white << "connecting"; break;
-                           case Enum::connected: out << std::left << std::setw( width) << terminal::color::green << "connected"; break;
-                           case Enum::failed: out << std::left << std::setw( width) << terminal::color::red << "failed"; break;
+                           case Enum::connecting: common::stream::write( out, terminal::color::white, value.runlevel); break;
+                           case Enum::pending: common::stream::write( out, terminal::color::yellow, value.runlevel); break;
+                           case Enum::connected: common::stream::write( out, terminal::color::green, value.runlevel); break;
+                           case Enum::failed: common::stream::write( out, terminal::color::red, value.runlevel); break;
                         }
                      }
                   };
@@ -187,6 +189,7 @@ namespace casual
                         {
                            using Enum = decltype( value.runlevel);
                            case Enum::connecting: return "connecting";
+                           case Enum::pending: return "pending";
                            case Enum::connected: return "online";
                            case Enum::failed: return "failed";
                         }
@@ -283,12 +286,15 @@ namespace casual
                         {
                            out << std::setfill( ' ');
 
-                           using Enum = decltype( value.runlevel);
-                           switch( value.runlevel)
+                           auto color = []( auto value)
                            {
-                              case Enum::listening: out << std::left << std::setw( width) << terminal::color::green << "listening"; break;
-                              case Enum::failed: out << std::left << std::setw( width) << terminal::color::red << "failed"; break;
-                           }
+                              using Enum = decltype( value);
+                              if( value == Enum::listening)
+                                 return terminal::color::green;
+                              return terminal::color::red;
+                           };
+
+                           common::stream::write( out, std::left, std::setw( width), color( value.runlevel), value.runlevel);
                         }
                      };
 
@@ -410,11 +416,7 @@ namespace casual
                   {
                      auto invoke = []()
                      {
-                        auto connections = call::state().connections;
-                        auto failed = call::state().failed_connections;
-                        connections.insert( std::end( connections), std::begin( failed), std::end( failed));
-
-                        format::connections().print( std::cout, connections);
+                        format::connections().print( std::cout, call::state().connections);
                      };
 
                      return argument::Option{ 
@@ -427,11 +429,7 @@ namespace casual
                   {
                      auto invoke = []()
                      {
-                        auto listeners = call::state().listeners;
-                        auto failed = call::state().failed_listeners;
-                        listeners.insert( std::end( listeners), std::begin( failed), std::end( failed));
-
-                        format::listeners().print( std::cout, listeners);
+                        format::listeners().print( std::cout, call::state().listeners);
                      };
 
                      return argument::Option{ 

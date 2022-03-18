@@ -408,8 +408,7 @@ domain:
             domain::message::discovery::Request request{ common::process::handle()};
             request.content.services = { "B"};
             domain::discovery::request( request);
-            auto reply = common::message::reverse::type( request);
-            common::communication::device::blocking::receive( common::communication::ipc::inbound::device(), reply);
+            auto reply = common::communication::ipc::receive< domain::message::discovery::Reply>();
 
             ASSERT_TRUE( reply.content.services.size() == 1) << CASUAL_NAMED_VALUE( reply);
             EXPECT_TRUE( reply.content.services.at( 0).name == "B") << CASUAL_NAMED_VALUE( reply);

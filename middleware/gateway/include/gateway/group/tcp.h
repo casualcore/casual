@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include "gateway/group/tcp/logical/connect.h"
 #include "gateway/common.h"
 #include "gateway/message.h"
 
@@ -21,135 +22,6 @@ namespace casual
 {
    namespace gateway::group::tcp
    {
-      namespace connector
-      {
-         enum class Bound
-         {
-            in,
-            out
-         };
-
-         std::ostream& operator << ( std::ostream& out, Bound value);
-         
-         common::Process spawn( Bound bound, const common::communication::Socket& socket);
-
-         template< typename Configuration>
-         struct Pending
-         {
-            struct Connector
-            {
-               Connector( common::Process process, common::communication::Socket socket, Configuration configuration)
-                  : process{ std::move( process)}, socket{ std::move( socket)}, configuration{ std::move( configuration)}
-               {}
-
-               common::Process process;
-               common::communication::Socket socket;
-               Configuration configuration;
-
-               friend bool operator == ( const Connector& lhs, common::strong::process::id rhs) { return lhs.process.pid == rhs;}
-
-               CASUAL_LOG_SERIALIZE( 
-                  CASUAL_SERIALIZE( process);
-                  CASUAL_SERIALIZE( socket);
-                  CASUAL_SERIALIZE( configuration);
-               )
-            };
-
-            void add( common::Process&& connector,
-               common::communication::Socket&& socket,
-               Configuration configuration)
-            {
-               m_connectors.emplace_back( std::move( connector), std::move( socket), std::move( configuration));
-            }
-
-            auto extract( common::strong::process::id pid)
-            {
-               if( auto found = common::algorithm::find( m_connectors, pid))
-                  return common::algorithm::container::extract( m_connectors, std::begin( found));
-
-               common::code::raise::error( common::code::casual::invalid_semantics, "failed to correlate pending connector for pid: ", pid);
-            }
-
-            //! removes the connection iff we've got it, and the exit is NOT
-            //! a clean exit (status 0)
-            //! @returns configuration for the connector if the connection failed, otherwise empty.
-            std::optional< Configuration> exit( const common::process::lifetime::Exit& exit)
-            {
-               if( exit.reason == decltype( exit.reason)::exited && exit.status == 0)
-                  return {};
-
-               if( auto found = common::algorithm::find( m_connectors, exit.pid))
-               {
-                  auto connector = common::algorithm::container::extract( m_connectors, std::begin( found));
-                  // we 'clear' the connector to not send unnecessary signals.
-                  connector.process.clear();
-                  return { std::move( connector.configuration)};
-               }
-               return {};
-            }
-
-            auto& connections() const noexcept { return m_connectors;}
-
-            CASUAL_LOG_SERIALIZE( 
-               CASUAL_SERIALIZE_NAME( m_connectors, "connectors");
-            )
-
-         private:
-            std::vector< Connector> m_connectors;
-
-         };
-
-      } // connector
-
-      namespace listener::dispatch
-      {
-         template< typename State>
-         auto create( State& state, connector::Bound bound)
-         {
-            return [&state, bound]( common::strong::file::descriptor::id descriptor, common::communication::select::tag::read)
-            {
-               Trace trace{ "gateway::group::tcp::listener::dispatch"};
-
-               if( auto found = common::algorithm::find( state.listeners, descriptor))
-               {
-                  common::log::line( verbose::log, "found: ", *found);
-
-                  auto accept = []( auto& socket)
-                  {
-                     try
-                     {
-                        return common::communication::tcp::socket::accept( socket);
-                     }
-                     catch( ...)
-                     {
-                        common::exception::sink();
-                        return common::communication::Socket{};
-                     }
-                  };
-
-                  if( auto socket = accept( found->socket))
-                  {
-                     // the socket needs to be 'no block'
-                     socket.set( common::communication::socket::option::File::no_block);
-                     common::log::line( verbose::log, "socket: ", socket);
-
-                     auto connector = connector::spawn( bound, socket);
-                     common::log::line( verbose::log, "connector: ", connector);
-
-                     state.external.pending().add(
-                        std::move( connector),
-                        std::move( socket),
-                        found->configuration);
-                  }
-
-                  return true;
-               }
-               return false;
-            };
-
-         }
-
-      } // listener::dispatch
 
       struct Connection
       {
@@ -292,6 +164,45 @@ namespace casual
 
          auto empty() const noexcept { return m_connections.empty();}
 
+         //! create a state reply and fill it with connections
+         template< typename M>
+         auto reply( M&& request) const noexcept
+         {
+            auto reply = common::message::reverse::type( request, common::process::handle());
+
+            using Connection = common::traits::iterable::value_t< decltype( reply.state.connections)>;
+
+            reply.state.connections = common::algorithm::transform( m_connections, [&]( auto& connection)
+            {
+               auto descriptor = connection.descriptor();
+               Connection result;
+               result.runlevel = decltype( result.runlevel)::connected;
+               result.descriptor = descriptor;
+               result.address.local = common::communication::tcp::socket::address::host( descriptor);
+               result.address.peer = common::communication::tcp::socket::address::peer( descriptor);
+
+               if( auto found = common::algorithm::find( m_information, descriptor))
+               {
+                  result.domain = found->domain;
+                  result.configuration = found->configuration;
+                  result.created = found->created;
+               }
+
+               return result;
+            });
+
+            common::algorithm::transform( m_pending.connections(), std::back_inserter( reply.state.connections), []( auto& connection)
+            {
+               Connection result;
+               result.runlevel = decltype( result.runlevel)::connected;
+               result.address.peer = connection.configuration.address;
+               return result;
+            });
+
+            return reply;
+         }
+
+
          CASUAL_LOG_SERIALIZE( 
             CASUAL_SERIALIZE_NAME( m_connections, "connections");
             CASUAL_SERIALIZE_NAME( m_information, "information");
@@ -302,74 +213,12 @@ namespace casual
 
          std::vector< Connection> m_connections;
          std::vector< Information> m_information;
-         connector::Pending< Configuration> m_pending;
+         logical::connect::Pending< Configuration> m_pending;
 
          //! holds the last external connection that was used
          common::strong::file::descriptor::id m_last;
       };
      
-      //! Tries to connect the provided connections, if connect success, add
-      //! to the state via `state.external.pending().add( ...)`
-      //! used by outbound and reverse inbound 
-      template< connector::Bound bound, typename State, typename C>
-      void connect( State& state, C& connections)
-      {
-         Trace trace{ "gateway::group::tcp::connect"};
-
-         // we don't want to be interupted during the connect phase.
-         common::signal::thread::scope::Block block;
-
-         auto connected = [&state]( auto& connection)
-         {
-            try
-            {
-               ++connection.metric.attempts;
-               if( auto socket = common::communication::tcp::connect( connection.configuration.address))
-               {
-                  socket.set( common::communication::socket::option::File::no_block);
-                  
-                  auto connector = connector::spawn( bound, socket);
-
-                  state.external.pending().add( 
-                     std::move( connector),
-                     std::move( socket),
-                     connection.configuration);
-
-                  return true;
-               }
-            }
-            catch( ...)
-            {
-               // make sure we don't try directly
-               connection.metric.attempts = std::max( connection.metric.attempts, platform::tcp::connect::attempts::threshhold);
-
-               auto error = common::exception::capture();
-               common::log::line( common::log::category::warning, error, " connect severely failed for address: '", connection.configuration.address, "' - action: try later");
-
-               state.failed.push_back( connection.configuration);
-               return true;
-            }
-
-            return false;
-         };
-
-         common::algorithm::container::trim( connections, common::algorithm::remove_if( connections, connected));
-
-         // check if we need to set a timeout to keep trying to connect
-
-         auto min_attempts = []( auto& l, auto& r){ return l.metric.attempts < r.metric.attempts;};
-
-         if( auto min = common::algorithm::min( connections, min_attempts))
-         {
-            // check if we're in unittest context or not.
-            if( common::environment::variable::exists( common::environment::variable::name::unittest::context))
-               common::signal::timer::set( std::chrono::milliseconds{ 10});
-            else
-               common::signal::timer::set( std::chrono::seconds{ 3});
-         }
-
-         common::log::line( verbose::log, "connections: ", connections);
-      }
 
       template< typename State, typename M, typename L>
       common::strong::correlation::id send( State& state, common::strong::file::descriptor::id descriptor, M&& message, L&& lost)

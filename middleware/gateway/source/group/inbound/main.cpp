@@ -8,6 +8,7 @@
 #include "gateway/group/inbound/state.h"
 #include "gateway/group/handle.h"
 #include "gateway/group/ipc.h"
+#include "gateway/group/tcp/listen.h"
 #include "gateway/message.h"
 
 #include "common/exception/guard.h"
@@ -36,30 +37,11 @@ namespace casual
             // local state to keep additional stuff for reverse connections...
             struct State : inbound::State
             {
-               struct Listener
-               {
-                  communication::Socket socket;
-                  configuration::model::gateway::inbound::Connection configuration;
-                  platform::time::point::type created = platform::time::clock::type::now();
-
-                  inline friend bool operator == ( const Listener& lhs, common::strong::file::descriptor::id rhs) { return lhs.socket.descriptor() == rhs;}
-
-                  CASUAL_LOG_SERIALIZE( 
-                     CASUAL_SERIALIZE( socket);
-                     CASUAL_SERIALIZE( configuration);
-                     CASUAL_SERIALIZE( created);
-                  )
-               };
-
-               std::vector< Listener> listeners;
-               std::vector< configuration::model::gateway::inbound::Connection> offline;
-               std::vector< configuration::model::gateway::inbound::Connection> failed;
+               tcp::listen::state::Listen< configuration::model::gateway::inbound::Connection> listen;
                
                CASUAL_LOG_SERIALIZE(
                   inbound::State::serialize( archive);
-                  CASUAL_SERIALIZE( listeners);
-                  CASUAL_SERIALIZE( offline);
-                  CASUAL_SERIALIZE( failed);
+                  CASUAL_SERIALIZE( listen);
                )
             };
 
@@ -89,7 +71,7 @@ namespace casual
                   {
                      auto request( State& state)
                      {
-                        return [&state]( gateway::message::inbound::configuration::update::Request& message)
+                        return [&state]( gateway::message::inbound::configuration::update::Request&& message)
                         {
                            Trace trace{ "gateway::group::inbound::local::internal::handle::configuration::update::request"};
                            log::line( verbose::log, "message: ", message);
@@ -99,29 +81,7 @@ namespace casual
                            state.alias = message.model.alias;
                            state.pending.requests.limit( message.model.limit);
 
-                           auto try_connect_listener = [&state]( auto& configuration)
-                           {
-                              try
-                              {
-                                 auto result = State::Listener{
-                                    communication::tcp::socket::listen( configuration.address),
-                                    configuration};
-
-                                 // we need the socket to not block in 'accept'
-                                 result.socket.set( communication::socket::option::File::no_block);
-
-                                 state.listeners.push_back( std::move( result));
-                              }
-                              catch( ...)
-                              {
-                                 state.failed.push_back( configuration);
-                              } 
-                           };
-
-                           algorithm::for_each( message.model.connections, try_connect_listener);
-
-                           state.directive.read.add( 
-                              algorithm::transform( state.listeners, []( auto& listener){ return listener.socket.descriptor();}));
+                           tcp::listen::attempt( state, std::move( message.model.connections));
 
                            log::line( verbose::log, "state: ", state);
 
@@ -140,26 +100,8 @@ namespace casual
                         return [&state]( message::inbound::state::Request& message)
                         {
                            Trace trace{ "gateway::group::inbound::local::handle::internal::state::request"};
-                           log::line( verbose::log, "message: ", message);
-                           log::line( verbose::log, "state: ", state);
-
-                           auto reply = state.reply( message);
                            
-                           reply.state.listeners = algorithm::transform( state.listeners, []( auto& listener)
-                           {
-                              message::state::Listener result;
-                              result.address = listener.configuration.address;
-                              result.descriptor = listener.socket.descriptor();
-                              result.created = listener.created;
-
-                              return result;
-                           });
-
-                           algorithm::copy( state.failed, reply.state.failed);
-
-                           log::line( verbose::log, "reply: ", reply);
-
-                           ipc::flush::optional::send( message.process.ipc, reply);
+                           ipc::flush::optional::send( message.process.ipc, tcp::listen::state::request( state, message));
                         };
                      }
 
@@ -192,14 +134,7 @@ namespace casual
                            Trace trace{ "gateway::group::inbound::local::handle::internal::shutdown::request"};
                            log::line( verbose::log, "message: ", message);
 
-                           state.runlevel = decltype( state.runlevel())::shutdown;
-
-                           // remove listeners
-                           state.directive.read.remove( 
-                              algorithm::transform( state.listeners, []( auto& listener){ return listener.socket.descriptor();}));
-
-                           state.offline = algorithm::transform( state.listeners, []( auto& listener){ return listener.configuration;});
-                           state.listeners.clear();
+                           state.listen.clear( state.directive);
 
                            inbound::handle::shutdown( state);
                         };
@@ -292,7 +227,7 @@ namespace casual
                      group::tcp::pending::send::dispatch( state),
                      ipc::dispatch::create( state, &internal::handler),
                      external::dispatch::create( state),
-                     tcp::listener::dispatch::create( state, tcp::connector::Bound::in)
+                     tcp::listen::dispatch::create( state, tcp::logical::connect::Bound::in)
                   );
                }
 

@@ -64,10 +64,24 @@ namespace casual
                {
                   algorithm::transform( reply.state.connections, result.connections, [&reply, connect, bound]( auto& connection)
                   {
+                     auto runlevel = []( auto runlevel)
+                     {
+                        using Enum = decltype( runlevel);
+                        switch( runlevel)
+                        {
+                           case Enum::connecting: return manager::admin::model::connection::Runlevel::connecting;
+                           case Enum::pending: return manager::admin::model::connection::Runlevel::pending;
+                           case Enum::connected: return manager::admin::model::connection::Runlevel::connected;
+                           case Enum::failed: return manager::admin::model::connection::Runlevel::failed;
+                        }
+                        return manager::admin::model::connection::Runlevel::failed;
+                     };
+
                      manager::admin::model::Connection result;
                      result.group = reply.state.alias;
                      result.connect = connect;
                      result.bound = bound;
+                     result.runlevel = runlevel( connection.runlevel);
                      result.descriptor = connection.descriptor;
                      result.address.local = connection.address.local;
                      result.address.peer = connection.address.peer;
@@ -97,26 +111,6 @@ namespace casual
 
             algorithm::sort( result.connections);
 
-            auto transform_failed = [&result]( auto connect, auto bound)
-            {
-               return [&result, connect, bound]( auto& reply)
-               {
-                  algorithm::transform( reply.state.failed, result.failed_connections, [&reply, connect, bound]( auto& connection)
-                  {
-                     manager::admin::model::Connection result;
-                     result.group = reply.state.alias;
-                     result.connect = connect;
-                     result.bound = bound;
-                     result.address.peer = connection.address;
-                     result.runlevel = manager::admin::model::connection::Runlevel::failed;
-
-                     return result;
-                  });
-               };
-            };
-
-            algorithm::for_each( std::get< 1>( inbounds), transform_failed( Phase::reversed, Bound::in));
-            algorithm::for_each( std::get< 0>( outbounds), transform_failed( Phase::regular, Bound::out));
          }
 
          // groups
@@ -164,12 +158,10 @@ namespace casual
                };
             };
             
-
             algorithm::transform( std::get< 0>( inbounds), std::back_inserter( result.inbound.groups), transform_inbound( Phase::regular));
             algorithm::transform( std::get< 1>( inbounds), std::back_inserter( result.inbound.groups), transform_inbound( Phase::reversed));
             algorithm::transform( std::get< 0>( outbounds), std::back_inserter( result.outbound.groups), transform_outbound( Phase::regular));
             algorithm::transform( std::get< 1>( outbounds), std::back_inserter( result.outbound.groups), transform_outbound( Phase::reversed));
-
          }
 
          // listeners
@@ -180,13 +172,24 @@ namespace casual
                {
                   algorithm::transform( reply.state.listeners, result.listeners, [&reply, bound]( auto& listener)
                   {
+                     auto runlevel = []( auto runlevel)
+                     {
+                        using Enum = decltype( runlevel);
+                        switch( runlevel)
+                        {
+                           case Enum::listening: return manager::admin::model::listener::Runlevel::listening;
+                           case Enum::failed: return manager::admin::model::listener::Runlevel::failed;
+                        }
+                        return manager::admin::model::listener::Runlevel::failed;
+                     };
+
                      manager::admin::model::Listener result;
                      result.group = reply.state.alias;
+                     result.runlevel = runlevel( listener.runlevel);
                      result.address.host = listener.address.host();
                      result.address.port = listener.address.port();
                      result.bound = bound;
                      result.created = listener.created;
-                     result.runlevel = manager::admin::model::listener::Runlevel::listening;
 
                      return result;
                   });
@@ -197,26 +200,6 @@ namespace casual
             algorithm::for_each( std::get< 1>( outbounds), transform( manager::admin::model::connection::Bound::out));
 
             algorithm::sort( result.listeners);
-
-            auto transform_failed = [&result]( auto bound)
-            {
-               return [&result, bound]( auto& reply)
-               {
-                  algorithm::transform( reply.state.failed, result.failed_listeners, [&reply, bound]( auto& listener)
-                  {
-                     manager::admin::model::Listener result;
-                     result.group = reply.state.alias;
-                     result.bound = bound;
-                     result.address.host = listener.address;
-                     result.runlevel = manager::admin::model::listener::Runlevel::failed;
-
-                     return result;
-                  });
-               };
-            };
-
-            algorithm::for_each( std::get< 0>( inbounds), transform_failed( manager::admin::model::connection::Bound::in));
-            algorithm::for_each( std::get< 1>( outbounds), transform_failed( manager::admin::model::connection::Bound::out));
          }
 
          // services
@@ -300,6 +283,7 @@ namespace casual
 
       configuration::model::gateway::Model configuration( const manager::State& state)
       {
+         Trace trace{ "gateway::manager::transform::configuration"};
          configuration::model::gateway::Model result;
 
          auto configuration = []( auto& group)
@@ -309,6 +293,8 @@ namespace casual
 
          result.inbound.groups = algorithm::transform( state.inbound.groups, configuration);
          result.outbound.groups = algorithm::transform( state.outbound.groups, configuration);
+
+         log::line( verbose::log, "result: ", result);
 
          return result;
       }

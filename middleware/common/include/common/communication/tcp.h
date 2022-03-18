@@ -21,6 +21,7 @@
 
 #include <string>
 #include <string_view>
+#include <variant>
 
 namespace casual
 {
@@ -70,8 +71,42 @@ namespace casual
 
       } // socket
       
-      //! @returns a connected socket if success, otherwise a 'nil' socket.
+      //! @returns a connected socket if success, otherwise:
+      //!   * if fatal, non recoverable, error -> an exception is raised
+      //!   * on non fatal errors a 'nil' socket is returned.
       Socket connect( const Address& address);
+
+      namespace non::blocking
+      {
+         struct Pending
+         {
+            inline explicit Pending( Socket socket) noexcept 
+               : m_socket{ std::move( socket)} {}
+
+            inline Socket socket() && noexcept { return std::exchange( m_socket, {});}
+
+         private:
+            Socket m_socket;
+         };
+
+         namespace error
+         {
+
+
+            bool recoverable( std::errc error) noexcept;
+            
+         } // error
+
+
+         //! @returns one of:
+         //!  * a socket
+         //!     * valid socket -> successful connection
+         //!     * 'nil'socket -> a recoverable error, worth trying to connect again.
+         //!  * a _pending_ socket, that will be completed some time later.
+         //!  * a fatal error (std::system_error), no point trying again
+         std::variant< Socket, Pending, std::system_error> connect( const Address& address) noexcept;   
+
+      } // non::blocking
 
       class Listener
       {

@@ -55,9 +55,12 @@ namespace casual
 
                         auto get_reply = []( auto& future){ return future.get( manager::ipc::inbound());};
 
-                        return transform::state( state, 
+                        auto result = transform::state( state, 
                            std::make_tuple( algorithm::transform( inbounds, get_reply), algorithm::transform( reverse_inbounds, get_reply)),
                            std::make_tuple( algorithm::transform( outbounds, get_reply), algorithm::transform( reverse_outbounds, get_reply)));
+
+                        log::line( verbose::log, "result: ", result);
+                        return result;
                      };
 
                      return serviceframework::service::user( 

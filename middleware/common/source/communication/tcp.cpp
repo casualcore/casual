@@ -94,7 +94,7 @@ namespace casual
                         Trace trace( "common::communication::tcp::local::socket::address::Native::Native");
                         log::line( verbose::log, "address: ", address, ", flags: ", flags);
 
-                        struct addrinfo hints{};
+                        ::addrinfo hints{};
 
                         // IPV4 or IPV6 doesn't matter
                         hints.ai_family = PF_UNSPEC;
@@ -107,18 +107,38 @@ namespace casual
                         std::string host{ address.host()};
                         std::string port{ address.port()};
 
+
                         // if not successful some errors will raise, the rest we log and keep the address::Native in an invalid state.
-                        if( const int result = ::getaddrinfo( host.data(), port.data(), &hints, &information.value))
+                        if( const int result = ::getaddrinfo( host.data(), port.data(), &hints, &m_information.value))
                         {
-                           switch ( result)
+                           auto compose_error = []( auto error)
                            {
+                              return string::compose( "[", error, ':', ::gai_strerror( error), ']');
+                           };
+
+                           switch( result)
+                           {
+                              // non fatal
+                              case EAI_ADDRFAMILY:
+                              case EAI_AGAIN:
+                              case EAI_NODATA:
+                              case EAI_NONAME:
+                                 log::line( verbose::log, "address: ", address, " - recoverable error: ", compose_error( result));
+                                 break;
+
+                              // fatal
+                              case EAI_BADFLAGS:
                               case EAI_FAIL:
                               case EAI_FAMILY:
-                              case EAI_NONAME:
-                                 code::raise::error( code::casual::communication_invalid_address, "result: ", result, " - ", ::gai_strerror( result));
-                              
+                              case EAI_MEMORY:
+                              case EAI_SERVICE:
+                              case EAI_SOCKTYPE:
+                                 code::raise::error( code::casual::communication_invalid_address, "address: ", address, " - fatal error: ", compose_error( result));
+                              case EAI_SYSTEM:
+                                 code::system::raise();
                               default:
-                                 log::line( verbose::log, ::gai_strerror( result), " address: ", address);
+                                 code::raise::error( code::casual::internal_unexpected_value, "unexpected result from getaddrinfo: ", compose_error( result));
+                                 
                            }
                         }  
                      }
@@ -127,14 +147,14 @@ namespace casual
 
                      ~Native()
                      {
-                        if( information)
-                           freeaddrinfo( information.value);
+                        if( m_information)
+                           freeaddrinfo( m_information.value);
                      }
 
                      Native( Native&&) noexcept = default;
                      Native& operator = ( Native&&) noexcept = default;
 
-                     explicit operator bool() const noexcept { return predicate::boolean( information);}
+                     explicit operator bool() const noexcept { return predicate::boolean( m_information);}
 
                      struct iterator
                      {
@@ -152,27 +172,30 @@ namespace casual
                         const addrinfo* data = nullptr;
                      };
 
-                     auto begin() { return iterator{ information.value};}
+                     auto begin() { return iterator{ m_information.value};}
                      auto end() { return iterator{};}
-                     auto begin() const { return iterator{ information.value};}
+                     auto begin() const { return iterator{ m_information.value};}
                      auto end() const { return iterator{};}
 
-                     bool empty() const noexcept { return information.value == nullptr;}
+                     bool empty() const noexcept { return m_information.value == nullptr;}
 
-                     common::move::Pointer< addrinfo> information;
+                  private:
+
+                     common::move::Pointer< addrinfo> m_information;
                   };
 
                } // address
 
                template< typename F>
-               Socket create( const Address& address, F binder, Flags< Flag> flags = {})
+               auto create( const Address& address, F binder, Flags< Flag> flags = {})
+                  -> decltype( binder( Socket{}, std::declval< const addrinfo&>()))
                {
                   Trace trace( "common::communication::tcp::local::socket::create");
 
                   address::Native native{ address, flags};
 
                   if( ! native)
-                     return {};
+                     return Socket{};
 
                   log::line( verbose::log, "native: ", native);
 
@@ -181,26 +204,27 @@ namespace casual
                      auto socket = Socket{ 
                         strong::socket::id{ ::socket( info.ai_family, info.ai_socktype, info.ai_protocol)}};
 
-                     if( socket && binder( socket, info))
+                     if( socket)
                      {
                         socket.set( local::socket::option::no_delay{});
-
                         // make sure we honour keepalive
                         socket.set( communication::socket::option::keepalive< true>{});
-                        return socket; 
+
+                        return binder( std::move( socket), info);
                      }
                   }
                   return {};
                }
 
-               Socket connect( const Address& address)
+               auto connect( const Address& address)
                {
                   Trace trace( "common::communication::tcp::local::socket::connect");
 
                   // We block all signals while we're doing one connect attempt
                   //common::signal::thread::scope::Block block;
 
-                  return create( address,[]( Socket& socket, const addrinfo& info)
+                  return create( address, []( Socket socket, const addrinfo& info) 
+                     -> std::variant< Socket, non::blocking::Pending, std::system_error>
                   {
                      Trace trace( "common::communication::tcp::local::socket::connect lambda");
 
@@ -208,56 +232,52 @@ namespace casual
                      socket.set( communication::socket::option::reuse_address< true>{});
                      socket.set( communication::socket::option::linger{ std::chrono::seconds{ 1}});
 
+                     // make sure we don't block
+                     socket.set( communication::socket::option::File::no_block);
+
                      if( ::connect( socket.descriptor().value(), info.ai_addr, info.ai_addrlen) == 0)
-                        return true;
+                        return socket;
 
                      auto error = code::system::last::error();
+
+                     log::line( verbose::log, "error: ", error);
+
+                     if( error == std::errc::operation_in_progress)
+                        return non::blocking::Pending{ std::move( socket)};
+
+                     if( non::blocking::error::recoverable( error))
+                        return Socket{};
+
+                     return exception::compose( code::convert::to::casual( error), "errno: ", error, ", socket: ", socket, ", info: ", info);
                      
-                     // some "error" has occur, some errors are ok, and the rest will raise 
-                     switch( error)
-                     {
-                        case std::errc::already_connected:
-                           return true;
-                        case std::errc::connection_refused:
-                        case std::errc::connection_reset:
-                        case std::errc::address_not_available:
-                        case std::errc::address_in_use:
-                        case std::errc::address_family_not_supported:
-                        case std::errc::network_unreachable:
-                        case std::errc::network_down:
-                        case std::errc::timed_out:
-                        case std::errc::host_unreachable:
-                           return false;
-                        
-                        default:
-                           code::raise::error( code::convert::to::casual( error), "errno: ", error, ", socket: ", socket, ", info: ", info);
-                     }
                   });
                }
 
-               auto local( const Address& address)
+               auto bind( const Address& address)
                {
-                  Trace trace( "common::communication::tcp::local::socket::local");
+                  Trace trace( "common::communication::tcp::local::socket::bind");
 
                   // We block all signals while we're trying to set up a listener...
                   //common::signal::thread::scope::Block block;
 
-                  static const Flags< Flag> flags{ Flag::address_config, Flag::passive};
+                  constexpr auto flags = flags::compose( Flag::address_config, Flag::passive);
 
-                  return create( address,[]( Socket& socket, const addrinfo& info)
+                  return create( address,[]( Socket socket, const addrinfo& info) -> Socket
                   {
-                     Trace trace( "common::communication::tcp::local::socket::local lambda");
+                     Trace trace( "common::communication::tcp::local::socket::bind lambda");
 
                      // To avoid possible TIME_WAIT from previous
                      // possible connections
-                     //
-                     // This might get not get desired results though
-                     //
+                     // This might not get desired results though
                      // Checkout SO_LINGER as well
                      socket.set( communication::socket::option::reuse_address< true>{});
                      socket.set( communication::socket::option::linger{ std::chrono::seconds{ 1}});
 
-                     return ::bind( socket.descriptor().value(), info.ai_addr, info.ai_addrlen) != -1;
+                     // TODO what about possible errors?
+                     if( ::bind( socket.descriptor().value(), info.ai_addr, info.ai_addrlen) == -1)
+                        return {};
+                     
+                     return socket;
                   }, flags);
                }
 
@@ -279,9 +299,9 @@ namespace casual
 
                Socket accept( const strong::socket::id descriptor)
                {
-                  auto result = ::accept( descriptor.value(), nullptr, nullptr);
+                  auto result = strong::socket::id{ ::accept( descriptor.value(), nullptr, nullptr)};
 
-                  if( result == -1)
+                  if( ! result)
                   {
                      if( algorithm::compare::any( code::system::last::error(), std::errc::resource_unavailable_try_again, std::errc::operation_would_block))
                         return {};
@@ -289,7 +309,7 @@ namespace casual
                      code::system::raise( "accept");
                   }
 
-                  Socket socket{ strong::socket::id{ result}};
+                  Socket socket{ std::move( result)};
                   socket.set( socket::option::no_delay{});
                   // make sure we honour keepalive.
                   socket.set( communication::socket::option::keepalive< true>{});
@@ -363,7 +383,7 @@ namespace casual
          {
             Trace trace( "common::communication::tcp::socket::listen");
 
-            auto result = local::socket::local( address);
+            auto result = local::socket::bind( address);
 
             // queuesize could (probably) be set to zero as well (in casual-context)
             if( auto error = posix::error( ::listen( result.descriptor().value(), platform::tcp::listen::backlog)))
@@ -380,17 +400,88 @@ namespace casual
          }
       } // socket
 
+
       Socket connect( const Address& address)
       {
          Trace trace( "common::communication::tcp::connect");
 
-         return local::socket::connect( address);
+         return std::visit( overload::compose(
+            []( Socket socket){ return socket;},
+            []( const std::system_error& error) 
+            {
+               log::line( verbose::log, "fatal error: ", error); 
+               throw error;
+               // dummy return that will never be returned...
+               // TODO c++20 add [[noreturn]] (not sure if std::visit will "understand" though..)
+               return Socket{};
+            },
+            []( non::blocking::Pending pending) -> Socket
+            {
+               Trace trace( "common::communication::tcp::connect pending");
+
+               auto socket = std::move( pending).socket();
+
+               // wait until ready
+               select::block::write( socket.descriptor());
+
+               if( auto error = socket.error())
+               {
+                  if( non::blocking::error::recoverable( error.value()))
+                     return {};
+                  else
+                     exception::compose( error.value(), "fatal error on connect");
+               }
+
+               return socket;
+            }
+         ), local::socket::connect( address));
       }
+
+      namespace non::blocking
+      {
+         namespace error
+         {
+            bool recoverable( std::errc error) noexcept
+            {
+               switch( error)
+               {
+                  case std::errc::operation_in_progress:
+                  case std::errc::already_connected: // will not happen
+                  case std::errc::connection_refused:
+                  case std::errc::connection_reset:
+                  case std::errc::address_not_available:
+                  case std::errc::address_in_use:
+                  case std::errc::address_family_not_supported:
+                  case std::errc::network_unreachable:
+                  case std::errc::network_down:
+                  case std::errc::timed_out:
+                  case std::errc::host_unreachable:
+                     return true;
+                  default:
+                     return false;
+               }
+            }
+            
+         } // error
+
+         std::variant< Socket, Pending, std::system_error> connect( const Address& address) noexcept
+         {
+            Trace trace( "common::communication::tcp::non::blocing::connect");
+            try
+            {
+               return local::socket::connect( address);
+            }
+            catch( ...)
+            {
+               return exception::capture();
+            }
+         }
+
+      } // non::blocking
 
 
       Listener::Listener( Address address) : m_listener{ socket::listen( address)}
-      {
-      }
+      {}
 
       Socket Listener::operator() () const
       {
