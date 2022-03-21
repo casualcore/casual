@@ -238,7 +238,7 @@ namespace casual
                      return algorithm::count_if( e.instances, []( auto& i)
                      {
                         using State = decltype( i.state);
-                        return algorithm::compare::any( i.state, State::running, State::spawned, State::scale_out, State::error);
+                        return algorithm::compare::any( i.state, State::running, State::spawned, State::scale_out, State::exit, State::error);
                      });
                   };
 

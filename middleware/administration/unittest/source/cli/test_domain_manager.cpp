@@ -65,6 +65,63 @@ domain:
 
       } // local
 
+      TEST( domain_manager_cli, scale_out_to_5__expected_configured_instances_5)
+      {
+         common::unittest::Trace trace;
+         
+         auto domain = local::domain( R"(
+domain:
+   servers:
+      -  alias: example-server
+         path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-server"
+         memberships: [ user]
+         instances: 1
+)");
+
+         {
+            auto output = administration::unittest::cli::command::execute( "casual domain -ls --porcelain true | grep example-server | cut -d '|' -f 2").string();
+            constexpr auto expected = R"(1
+)";
+            EXPECT_TRUE( output == expected) << "output:  " << output << "expected: " << expected;
+         }
+
+         administration::unittest::cli::command::execute( "casual domain -sa example-server 5");
+         auto output = administration::unittest::cli::command::execute( "casual domain -ls --porcelain true | grep example-server | cut -d '|' -f 2").string();
+         
+         constexpr auto expected = R"(5
+)";
+
+         EXPECT_TRUE( output == expected) << "output:  " << output << "expected: " << expected;
+      }
+
+      TEST( domain_manager_cli, 5_scale_in_to_1__expected_configured_instances_1)
+      {
+         common::unittest::Trace trace;
+         
+         auto domain = local::domain( R"(
+domain:
+   servers:
+      -  alias: example-server
+         path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-server"
+         memberships: [ user]
+         instances: 5
+)");
+
+         {
+            auto output = administration::unittest::cli::command::execute( "casual domain -ls --porcelain true | grep example-server | cut -d '|' -f 2").string();
+            constexpr auto expected = R"(5
+)";
+            EXPECT_TRUE( output == expected) << "output:  " << output << "expected: " << expected;
+         }
+
+         administration::unittest::cli::command::execute( "casual domain -sa example-server 1");
+         auto output = administration::unittest::cli::command::execute( "casual domain -ls --porcelain true | grep example-server | cut -d '|' -f 2").string();
+         
+         constexpr auto expected = R"(1
+)";
+
+         EXPECT_TRUE( output == expected) << "output:  " << output << "expected: " << expected;
+      }
 
       TEST( domain_manager_cli, failed_instances__scale_out_to_5__expected_configured_instances_5)
       {
@@ -83,7 +140,7 @@ domain:
          constexpr auto expected = R"(5
 )";
 
-         EXPECT_TRUE( output == expected) << output << expected;
+         EXPECT_TRUE( output == expected) << "output:  " << output << "expected: " << expected;
       }
 
       TEST( domain_manager_cli, failed_instances__scale_in_to_1__expected_configured_instances_1)
@@ -97,13 +154,20 @@ domain:
         instances: 5
 )");
 
+         {
+            auto output = administration::unittest::cli::command::execute( "casual domain -ls --porcelain true | grep non-existent-path | cut -d '|' -f 2").string();
+            constexpr auto expected = R"(5
+)";
+            EXPECT_TRUE( output == expected) << "output:  " << output << "expected: " << expected;
+         }
+
          administration::unittest::cli::command::execute( "casual domain -sa non-existent-path 1");
          auto output = administration::unittest::cli::command::execute( "casual domain -ls --porcelain true | grep non-existent-path | cut -d '|' -f 2").string();
          
          constexpr auto expected = R"(1
 )";
 
-         EXPECT_TRUE( output == expected) << output << expected;
+         EXPECT_TRUE( output == expected) << "output:  " << output << "expected: " << expected;
       }
 
       TEST( domain_manager_cli, running_instances__scale_out_to_5__expected_configured_instances_5)
@@ -147,7 +211,7 @@ domain:
          constexpr auto expected = R"(1
 )";
 
-         EXPECT_TRUE( output == expected) << output << expected;
+         EXPECT_TRUE( output == expected) << "output:  " << output << "expected: " << expected;
       }
 
      

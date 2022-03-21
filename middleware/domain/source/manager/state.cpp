@@ -227,13 +227,8 @@ namespace casual
 
             if( found->state == state_type::scale_in)
             {
-               found->state = state_type::exit;
-
-               // find and remove all 'exit' from the back. We need to keep
-               // the order of instances, hence we can only remove from the back 
-               // (since the semantics dictate instance index based on actual index)
-               if( ! algorithm::find_if( found, []( auto& i){ return i.state != state_type::exit;}))
-                  instances.erase( std::begin( found), std::end( found));
+               log::line( verbose::log, "remove: ", *found);
+               instances.erase( std::begin( found));
             }
             else 
                found->state = found->state == state_type::running && restart ? state_type::scale_out : state_type::exit;
