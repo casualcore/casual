@@ -3,6 +3,15 @@ This is the changelog for `casual` and all changes are listed in this document.
 
 ## [Unreleased]
 
+## [1.5.10] - 2022-03-21
+### Fixes
+- gateway - use multiplexing on the tcp-connection phase, no blocking if the
+  tcp-connect takes a long time.
+- cli - fix `casual domain --list-servers` to show correct number of configured instances
+- transaction - fix local transaction with multiple resources
+   - `casual` did not handle this correct (at all)
+- domain - fix shutdown if an instance of a server has died 
+
 ## [1.5.9] - 2022-02-18
 ### Fixes
 - discovery - propagate topology updates upstream
