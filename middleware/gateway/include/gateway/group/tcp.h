@@ -11,10 +11,13 @@
 #include "gateway/message.h"
 
 #include "common/communication/tcp.h"
+#include "common/communication/ipc.h"
 #include "common/communication/select.h"
 #include "common/algorithm.h"
 #include "common/signal/timer.h"
 #include "common/environment.h"
+
+#include "casual/assert.h"
 
 #include <chrono>
 
@@ -133,16 +136,19 @@ namespace casual
             return nullptr;
          }
 
-         std::optional< Configuration> remove( 
+         Configuration remove( 
             common::communication::select::Directive& directive, 
             common::strong::file::descriptor::id descriptor)
          {
+            casual::assertion( descriptor, "descriptor: ", descriptor);
+
             directive.read.remove( descriptor);
             common::algorithm::container::trim( m_connections, common::algorithm::remove( m_connections, descriptor));
-            if( auto found = common::algorithm::find( m_information, descriptor))
-               return common::algorithm::container::extract( m_information, std::begin( found)).configuration;
             
-            return {};
+            auto found = common::algorithm::find( m_information, descriptor);
+            casual::assertion( descriptor, "fail to find information for descriptor: ", descriptor);
+               
+            return common::algorithm::container::extract( m_information, std::begin( found)).configuration;
          }
 
          void clear( common::communication::select::Directive& directive)
@@ -218,33 +224,98 @@ namespace casual
          //! holds the last external connection that was used
          common::strong::file::descriptor::id m_last;
       };
-     
-
+     /*
       template< typename State, typename M, typename L>
       common::strong::correlation::id send( State& state, common::strong::file::descriptor::id descriptor, M&& message, L&& lost)
       {
-         try
+         using namespace common;
+
+         if( auto connection = state.external.connection( descriptor))
          {
-            if( auto connection = state.external.connection( descriptor))
+            try
             {
                return connection->send( state.directive, std::forward< M>( message));
             }
-            else
+            catch( ...)
             {
-               common::log::line( common::log::category::error, common::code::casual::internal_correlation, " failed to correlate descriptor: ", descriptor);
-               common::log::line( common::log::category::verbose::error, "state: ", state);
+               const auto error = exception::capture();
+
+               auto information = state.external.information( descriptor);
+               casual::assertion( information, code::casual::internal_correlation, " no information for descriptor: ", descriptor);
+
+               auto& category = error.code() == code::casual::communication_unavailable ? log::category::information : log::category::error;
+
+               log::line( category, "send failed to ", information->domain, " - error: ", error, " - action: remove connection");
+               
+               lost( state, descriptor);
             }
          }
-         catch( ...)
+         else
          {
-            if( common::exception::capture().code() != common::code::casual::communication_unavailable)
-               throw;
-            
-            lost( state, descriptor);
-                  
+            log::line( log::category::error, code::casual::internal_correlation, " failed to correlate descriptor: ", descriptor);
+            log::line( log::category::verbose::error, "state: ", state);
          }
+
          return {};
       }
+      */
+
+     namespace handle::dispatch
+     {
+         template< typename State, typename Handler, typename Lost>
+         auto create( State& state, Handler handler, Lost lost)
+         {
+            using namespace common;
+
+            return [ &state, handler = std::move( handler), lost = std::move( lost)]( strong::file::descriptor::id descriptor, communication::select::tag::read) mutable
+            {
+               constexpr auto is_outbound_v = std::is_same_v< decltype( lost( state, descriptor)), decltype( message::outbound::connection::Lost{}.configuration)>;
+
+               if( auto connection = state.external.connection( descriptor))
+               {
+                  try
+                  {
+                     // we need to handle outbound and inbound differently (should be the same?)
+                     if constexpr( is_outbound_v)
+                     {
+                        state.external.last( descriptor);
+                        handler( connection->next());
+                     }
+                     else
+                     {
+                        if( auto correlation = handler( connection->next()))
+                        {
+                           if( ! algorithm::find( state.correlations, correlation))
+                              state.correlations.emplace_back( std::move( correlation), descriptor);
+                        }
+                     }
+                  }
+                  catch( ...)
+                  {
+                     auto error = exception::capture();
+                     if( error.code() != code::casual::communication_unavailable)
+                     {
+                        auto information = state.external.information( descriptor);
+                        log::line( log::category::error, "failed to receive from: ", information->domain.name, ", configured address: ", information->configuration.address, " - error: ", error);
+                     }
+
+                     // we 'lost' the connection in some way - we put a connection::Lost on our own ipc-device, and handle it
+                     // later (and differently depending on if we're 'regular' or 'reversed')
+                     // we staticly decide witch message is appropriate.
+
+                     if constexpr( is_outbound_v)
+                        communication::ipc::inbound::device().push( 
+                           message::outbound::connection::Lost{ lost( state, descriptor)});
+                     else
+                        communication::ipc::inbound::device().push( 
+                           message::inbound::connection::Lost{ lost( state, descriptor)});
+                  }
+                  return true;
+               }
+               return false;
+            };
+         }
+     } // handle::dispatch
 
       namespace pending::send
       {

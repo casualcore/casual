@@ -33,9 +33,39 @@ namespace casual
             namespace tcp
             {
                template< typename M>
-               auto send( State& state, strong::file::descriptor::id descriptor, M&& message)
+               strong::correlation::id send( State& state, strong::file::descriptor::id descriptor, M&& message)
                {
-                  return group::tcp::send( state, descriptor, std::forward< M>( message), &handle::connection::lost);
+                  if( auto connection = state.external.connection( descriptor))
+                  {
+                     try
+                     {
+                        return connection->send( state.directive, std::forward< M>( message));
+                     }
+                     catch( ...)
+                     {
+                        const auto error = exception::capture();
+
+                        if( error.code() != code::casual::communication_unavailable)
+                        {
+                           auto information = casual::assertion( state.external.information( descriptor), 
+                              code::casual::internal_correlation, " no information for descriptor: ", descriptor);
+
+                           log::line( log::category::error, "send failed to ", information->domain, " - error: ", error, " - action: remove connection");
+                        }
+
+                        // we 'lost' the connection in some way - we put a connection::Lost on our own ipc-device, and handle it
+                        // later (and differently depending on if we're 'regular' or 'reversed')
+                        communication::ipc::inbound::device().push( 
+                           message::outbound::connection::Lost{ connection::lost( state, descriptor)});
+                     }
+                  }
+                  else
+                  {
+                     log::line( log::category::error, code::casual::internal_correlation, " failed to correlate descriptor: ", descriptor);
+                     log::line( log::category::verbose::error, "state: ", state);
+                  }
+
+                  return {};
                }     
             } // tcp
 
@@ -871,7 +901,7 @@ namespace casual
 
       namespace connection
       {
-         std::optional< configuration::model::gateway::outbound::Connection> lost( State& state, strong::file::descriptor::id descriptor)
+         configuration::model::gateway::outbound::Connection lost( State& state, strong::file::descriptor::id descriptor)
          {
             Trace trace{ "gateway::group::outbound::handle::connection::lost"};
             log::line( verbose::log, "descriptor: ", descriptor);
@@ -933,8 +963,7 @@ namespace casual
          std::vector< configuration::model::gateway::outbound::Connection> result;
 
          for( auto descriptor : algorithm::container::extract( state.disconnecting, algorithm::filter( state.disconnecting, no_pending)))
-            if( auto configuration = handle::connection::lost( state, descriptor))
-               result.push_back( std::move( configuration.value()));
+            result.push_back( handle::connection::lost( state, descriptor));
 
          return result;
       }

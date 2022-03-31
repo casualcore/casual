@@ -16,6 +16,7 @@
 #include "common/server/handle/call.h"
 #include "common/message/handle.h"
 #include "common/message/internal.h"
+#include "common/instance.h"
 #include "common/communication/instance.h"
 
 #include "common/event/send.h"
@@ -78,10 +79,12 @@ namespace casual
                   strong::process::id process( const std::string& alias, const std::string& path, const std::vector< std::string>& arguments)
                   {
                      try
-                     {                          
+                     { 
                         auto pid = common::process::spawn(
                            path,
-                           arguments);
+                           arguments,
+                           // To set the alias for the spawned process
+                           { instance::variable( instance::Information{ alias})});
 
                         // Send event
                         {

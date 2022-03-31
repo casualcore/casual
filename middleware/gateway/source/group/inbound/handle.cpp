@@ -35,21 +35,36 @@ namespace casual
                template< typename M>
                strong::file::descriptor::id send( State& state, M&& message)
                {
-                  try
+                  if( auto connection = state.consume( message.correlation))
                   {
-                     if( auto connection = state.consume( message.correlation))
+                     try
                      {
                         connection->send( state.directive, std::forward< M>( message));
                         return connection->descriptor();
                      }
-                     
-                     log::line( log::category::error, code::casual::communication_unavailable, " connection absent when trying to send reply - ", message.type());
-                     log::line( log::category::verbose::error, code::casual::communication_unavailable, " message: ", message);
+                     catch( ...)
+                     {
+                        const auto error = exception::capture();
+
+                        if( error.code() != code::casual::communication_unavailable)
+                        {
+                           auto information = casual::assertion( state.external.information( connection->descriptor()), 
+                              code::casual::internal_correlation, " no information for connection: ", *connection);
+
+                           log::line( log::category::error, "send failed to ", information->domain, " - error: ", error, " - action: remove connection");
+                        }
+
+                        // we 'lost' the connection in some way - we put a connection::Lost on our own ipc-device, and handle it
+                        // later (and differently depending on if we're 'regular' or 'reversed')
+                        communication::ipc::inbound::device().push( 
+                           message::inbound::connection::Lost{ connection::lost( state, connection->descriptor())});
+                     }
+                     return {};
                   }
-                  catch( ...)
-                  {
-                     log::line( log::category::error, exception::capture());
-                  }
+               
+                  log::line( log::category::error, code::casual::communication_unavailable, " connection absent when trying to send reply - ", message.type());
+                  log::line( log::category::verbose::error, "state: ", state);
+               
                   return {};
                }
                
@@ -708,7 +723,7 @@ namespace casual
 
       namespace connection
       {
-         std::optional< configuration::model::gateway::inbound::Connection> lost( State& state, common::strong::file::descriptor::id descriptor)
+         configuration::model::gateway::inbound::Connection lost( State& state, common::strong::file::descriptor::id descriptor)
          {
             Trace trace{ "gateway::group::inbound::handle::connection::lost"};
             log::line( verbose::log, "descriptor: ", descriptor);

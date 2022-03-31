@@ -84,37 +84,6 @@ namespace casual
                   }
                }
 
-
-               namespace dispatch
-               {
-                  auto create( State& state)
-                  {
-                     return [&state, handler = outbound::handle::external( state)]
-                        ( strong::file::descriptor::id descriptor, communication::select::tag::read) mutable
-                     {
-                        if( auto connection = state.external.connection( descriptor))
-                        {
-                           try
-                           {
-                              state.external.last( descriptor);
-                              handler( connection->next());  
-                           }
-                           catch( ...)
-                           {
-                              if( exception::capture().code() != code::casual::communication_unavailable)
-                                 throw;
-
-                              // Do we try to reconnect?
-                              if( auto configuration = handle::connection::lost( state, descriptor))
-                                 external::reconnect( state, std::move( configuration.value()));
-                           }
-                           return true;
-                        }
-
-                        return false;
-                     };
-                  }
-               } // dispatch
             } // external
 
             namespace internal
@@ -212,6 +181,20 @@ namespace casual
                      };
                   }
 
+                  namespace connection
+                  {
+                     auto lost( State& state)
+                     {
+                        return [&state]( message::outbound::connection::Lost message)
+                        {
+                           Trace trace{ "gateway::group::outbound::local::internal::handle::connection::lost"};
+                           log::line( verbose::log, "message: ", message);
+
+                           external::reconnect( state, std::move( message.configuration));
+                        };
+                     }
+                  } // connection
+
 
                } // handle
 
@@ -223,7 +206,8 @@ namespace casual
                      handle::state::request( state),
                      handle::event::process::exit( state),
                      handle::shutdown::request( state),
-                     handle::timeout( state));
+                     handle::timeout( state),
+                     handle::connection::lost( state));
                }
 
             } // internal
@@ -279,7 +263,7 @@ namespace casual
                communication::select::dispatch::pump( 
                   local::condition( state),
                   state.directive,
-                  external::dispatch::create( state),
+                  tcp::handle::dispatch::create( state, outbound::handle::external( state), &handle::connection::lost),
                   gateway::group::tcp::pending::send::dispatch( state),
                   ipc::dispatch::create( state, &internal::handler),
                   // takes care of multiplexing connects

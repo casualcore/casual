@@ -314,6 +314,25 @@ namespace casual
             } // state
          } // reverse
 
+         namespace connection
+         {
+            using base_lost = common::message::basic_message< common::message::Type::gateway_inbound_connection_lost>;
+            struct Lost : base_lost
+            {
+               Lost() = default;
+               Lost( casual::configuration::model::gateway::inbound::Connection configuration) 
+                  : configuration{ std::move( configuration)} {}
+
+               casual::configuration::model::gateway::inbound::Connection configuration;
+
+               CASUAL_CONST_CORRECT_SERIALIZE(
+                  base_lost::serialize( archive);
+                  CASUAL_SERIALIZE( configuration);
+               )
+            };
+            
+         } // connection
+
       } // inbound
 
       namespace outbound
@@ -486,6 +505,25 @@ namespace casual
                
             } // state
          } // resverse
+
+         namespace connection
+         {
+            using base_lost = common::message::basic_message< common::message::Type::gateway_outbound_connection_lost>;
+            struct Lost : base_lost
+            {
+               Lost() = default;
+               Lost( casual::configuration::model::gateway::outbound::Connection configuration) 
+                  : configuration{ std::move( configuration)} {}
+
+               casual::configuration::model::gateway::outbound::Connection configuration;
+
+               CASUAL_CONST_CORRECT_SERIALIZE(
+                  base_lost::serialize( archive);
+                  CASUAL_SERIALIZE( configuration);
+               )
+            };
+            
+         } // connection
          
       } // outbound
 

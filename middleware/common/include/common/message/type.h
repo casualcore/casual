@@ -247,7 +247,8 @@ namespace casual
          gateway_inbound_configuration_update_reply,
 
          gateway_inbound_state_request,
-         gateway_inbound_state_reply, 
+         gateway_inbound_state_reply,
+         gateway_inbound_connection_lost,
 
          // reverse inbounds have different state than 'regular' (no listeners)
          gateway_reverse_inbound_state_request,
@@ -261,7 +262,8 @@ namespace casual
          gateway_outbound_configuration_update_reply,
 
          gateway_outbound_state_request,
-         gateway_outbound_state_reply, 
+         gateway_outbound_state_reply,
+         gateway_outbound_connection_lost,
 
          // reverse outbounds have different state than 'regular' (listeners)
          gateway_reverse_outbound_state_request,

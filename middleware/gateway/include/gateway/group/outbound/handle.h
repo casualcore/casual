@@ -29,7 +29,7 @@ namespace casual
       {
          //! send error replies to all pending in-flight messages that is associated with the connection
          //! removes all state associated with the connection.
-         std::optional< configuration::model::gateway::outbound::Connection> lost( State& state, common::strong::file::descriptor::id descriptor);
+         configuration::model::gateway::outbound::Connection lost( State& state, common::strong::file::descriptor::id descriptor);
 
          //! unadvertise all associated resources to descriptor, mark the connection as 'disconnecting'
          void disconnect( State& state, common::strong::file::descriptor::id descriptor);

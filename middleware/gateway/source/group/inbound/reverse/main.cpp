@@ -83,36 +83,6 @@ namespace casual
                   }
                }
 
-               namespace dispatch
-               {
-                  auto create( State& state) 
-                  { 
-                     return [&state, handler = inbound::handle::external( state)]
-                        ( common::strong::file::descriptor::id descriptor, communication::select::tag::read) mutable
-                     {
-                        if( auto connection = state.external.connection( descriptor))
-                        {
-                           try
-                           {
-                              if( auto correlation = handler( connection->next()))
-                                 state.correlations.emplace_back( std::move( correlation), descriptor);
-                           }
-                           catch( ...)
-                           {
-                              if( exception::capture().code() != code::casual::communication_unavailable)
-                                 throw;
-                              
-                              // Do we try to reconnect?
-                              if( auto configuration = handle::connection::lost( state, descriptor))
-                                 external::reconnect( state, std::move( configuration.value()));
-                           }
-                           return true;
-                        }
-                        return false;
-                     };
-                  }
-               } // dispatch
-
             } // external
 
             namespace internal
@@ -205,6 +175,20 @@ namespace casual
                      };
                   }
 
+                  namespace connection
+                  {
+                     auto lost( State& state)
+                     {
+                        return [&state]( message::inbound::connection::Lost message)
+                        {
+                           Trace trace{ "gateway::group::inbound::reverse::local::internal::handle::connection::lost"};
+                           log::line( verbose::log, "message: ", message);
+
+                           external::reconnect( state, std::move( message.configuration));
+                        };
+                     }
+                  } // connection
+
                } // handle
 
                auto handler( State& state)
@@ -216,7 +200,8 @@ namespace casual
                      handle::state::request( state),
                      handle::event::process::exit( state),
                      handle::shutdown::request( state),
-                     handle::timeout( state)
+                     handle::timeout( state),
+                     handle::connection::lost( state)
                   );
                }
 
@@ -267,7 +252,7 @@ namespace casual
                   state.directive,
                   group::tcp::pending::send::dispatch( state),
                   ipc::dispatch::create( state, &internal::handler),
-                  external::dispatch::create( state),
+                  tcp::handle::dispatch::create( state, inbound::handle::external( state), &handle::connection::lost),
                   // takes care of multiplexing connects
                   tcp::connect::dispatch::create( state, tcp::logical::connect::Bound::in)
                );

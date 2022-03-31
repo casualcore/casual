@@ -141,6 +141,21 @@ namespace casual
                      }
                   } // shutdown
 
+                  namespace connection
+                  {
+                     auto lost()
+                     {
+                        return []( message::outbound::connection::Lost message)
+                        {
+                           Trace trace{ "gateway::group::outbound::reverse::local::internal::handle::connection::lost"};
+                           log::line( verbose::log, "message: ", message);
+
+                           // we just log the 'event'
+                           log::line( log::category::information, code::casual::communication_unavailable, " lost connection ", message.configuration.address);
+                        };
+                     }
+                  } // connection
+
                } // handle
 
                auto handler( State& state)
@@ -150,47 +165,12 @@ namespace casual
                      handle::configuration::update::request( state),
                      handle::state::request( state),
                      handle::event::process::exit( state),
-                     handle::shutdown::request( state)
+                     handle::shutdown::request( state),
+                     handle::connection::lost()
                   );
                }
 
             } // internal
-
-            namespace external
-            {
-               namespace dispatch
-               {
-                  auto create( State& state) 
-                  {
-                     return [&state, handler = gateway::group::outbound::handle::external( state)]
-                        ( strong::file::descriptor::id descriptor, communication::select::tag::read) mutable
-                     {
-                        Trace trace{ "gateway::group::outbound::reverse::local::external::dispatch"};
-
-                        if( auto connection = state.external.connection( descriptor))
-                        {
-                           try
-                           {
-                              state.external.last( descriptor);
-                              handler( connection->next());  
-                           }
-                           catch( ...)
-                           {
-                              if( exception::capture().code() != code::casual::communication_unavailable)
-                                 throw;
-
-                               outbound::handle::connection::lost( state, descriptor);
-                           }
-                           return true;
-                        }
-
-                        return false;
-                     };
-                  }
-               } // dispatch
-
-             
-            } // external
 
             auto condition( State& state)
             {
@@ -218,7 +198,7 @@ namespace casual
                   local::condition( state),
                   state.directive, 
                   gateway::group::tcp::pending::send::dispatch( state),
-                  external::dispatch::create( state),
+                  tcp::handle::dispatch::create( state, outbound::handle::external( state), &handle::connection::lost),
                   ipc::dispatch::create( state, &internal::handler),
                   tcp::listen::dispatch::create( state, tcp::logical::connect::Bound::out)
                );
