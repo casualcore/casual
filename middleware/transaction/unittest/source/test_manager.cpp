@@ -1630,8 +1630,6 @@ domain:
             EXPECT_TRUE( state_rm2.instances.at( 0).metrics.resource.count == 2) << CASUAL_NAMED_VALUE( state_rm2);
          }
 
-
-
          // unittest only...
          common::transaction::context().clear();
       }

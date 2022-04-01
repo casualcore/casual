@@ -108,6 +108,8 @@ namespace casual
          //! return true if the context holds no transactions, only (?) for unittest
          bool empty() const;
          
+         void resources_start( Transaction& transaction, flag::xa::Flags flags);
+         void resources_end( const Transaction& transaction, flag::xa::Flags flags);
 
       private:
 
@@ -156,8 +158,7 @@ namespace casual
          void commit( const Transaction& transaction);
          void rollback( const Transaction& transaction);
 
-         void resources_start( Transaction& transaction, flag::xa::Flags flags);
-         void resources_end( const Transaction& transaction, flag::xa::Flags flags);
+
          void resource_commit( strong::resource::id rm, const Transaction& transaction, flag::xa::Flags flags);
          void resource_rollback( strong::resource::id rm, const Transaction& transaction);
 

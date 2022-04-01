@@ -42,6 +42,13 @@ namespace casual
       {
          using xid_type = XID;
 
+
+         namespace xid
+         {
+            XID null() noexcept;
+            bool null( const XID& id) noexcept;
+         } // xid
+
          class ID
          {
          public:
@@ -58,7 +65,7 @@ namespace casual
 
             //! Initialize with null-xid
             //! @{
-            ID() noexcept;
+            ID() noexcept = default;
             explicit ID( const process::Handle& owner);
             //! @}
 
@@ -107,7 +114,7 @@ namespace casual
             //!
             //! We need to have access to the xid to communicate via xa and such,
             //! no reason to keep it private and have getters..
-            xid_type xid{};
+            xid_type xid = xid::null();
 
             friend std::ostream& operator << ( std::ostream& out, const ID& id);
 
@@ -131,7 +138,6 @@ namespace casual
             //! @return true if trid is null, false otherwise
             //! @{
             bool null( const ID& id);
-            bool null( const xid_type& id);
             //! @}
 
             //! Creates a new Id with same global transaction id but a new branch id.
@@ -173,6 +179,7 @@ namespace casual
 
             } // range
          } // id
+         
       } // transaction
 
       namespace serialize::customize::composit
@@ -186,7 +193,7 @@ namespace casual
             {
                CASUAL_SERIALIZE_NAME( xid.formatID, "formatID");
 
-               if( ! transaction::id::null( xid))
+               if( ! transaction::xid::null( xid))
                {
                   CASUAL_SERIALIZE_NAME( xid.gtrid_length, "gtrid_length");
                   CASUAL_SERIALIZE_NAME( xid.bqual_length, "bqual_length");

@@ -36,7 +36,7 @@ bool operator < ( const XID& lhs, const XID& rhs)
 
 std::ostream& operator << ( std::ostream& out, const XID& xid)
 {
-   if( ! casual::common::transaction::id::null( xid))
+   if( ! casual::common::transaction::xid::null( xid))
    {
       // TODO: hack to get rid of concurrent xid read/write in a
       // unittest environment - We should get rid of threads in unittest also...
@@ -65,179 +65,172 @@ std::ostream& operator << ( std::ostream& out, const XID& xid)
 
 namespace casual
 {
-   namespace common
+   namespace common::transaction
    {
-      namespace transaction
+
+      namespace xid
       {
-
-
-         namespace local
+         XID null() noexcept
          {
-            namespace
+            XID xid{};
+            xid.formatID = ID::Format::null;
+            return xid;
+         }
+
+         bool null( const XID& id) noexcept
+         {
+            return id.formatID == ID::Format::null;
+         }
+      } // xid
+
+      namespace local
+      {
+         namespace
+         {
+
+            void casual_xid( Uuid gtrid, Uuid bqual, XID& xid )
             {
+               xid.gtrid_length = memory::size( bqual.get());
+               xid.bqual_length = xid.gtrid_length;
 
-               void casual_xid( Uuid gtrid, Uuid bqual, XID& xid )
-               {
-                  xid.gtrid_length = memory::size( bqual.get());
-                  xid.bqual_length = xid.gtrid_length;
+               algorithm::copy( gtrid.get(), xid.data);
+               algorithm::copy( bqual.get(), xid.data + xid.gtrid_length);
 
-                  algorithm::copy( gtrid.get(), xid.data);
-                  algorithm::copy( bqual.get(), xid.data + xid.gtrid_length);
-
-                  xid.formatID = ID::Format::casual;
-               }
-
-            } // <unnamed>
-         } // local
-
-         ID::ID() noexcept
-         {
-            xid.formatID = Format::null;
-         }
-
-
-
-         ID::ID( const process::Handle& owner) : m_owner( std::move( owner))
-         {
-            xid.formatID = Format::null;
-         }
-
-         ID::ID( const xid_type& xid) : xid( xid)
-         {
-         }
-
-
-         ID::ID( Uuid gtrid, Uuid bqual, const process::Handle& owner) : m_owner( std::move( owner))
-         {
-            local::casual_xid( gtrid, bqual, xid);
-         }
-
-
-         ID::ID( ID&& rhs) noexcept
-         {
-            xid = rhs.xid;
-            m_owner = std::move( rhs.m_owner);
-            rhs.xid.formatID = Format::null;
-
-         }
-         ID& ID::operator = ( ID&& rhs) noexcept
-         {
-            xid = rhs.xid;
-            m_owner = std::move( rhs.m_owner);
-            rhs.xid.formatID = Format::null;
-
-            return *this;
-         }
-
-         bool ID::null() const
-         {
-            return xid.formatID == Format::null;
-         }
-
-         ID::operator bool() const
-         {
-            return ! id::null( xid);
-         }
-
-
-         const process::Handle& ID::owner() const
-         {
-            return m_owner;
-         }
-
-         void ID::owner( const process::Handle& handle)
-         {
-            m_owner = handle;
-         }
-
-         bool operator < ( const ID& lhs, const ID& rhs)
-         {
-            return lhs.xid < rhs.xid;
-         }
-
-         bool operator == ( const ID& lhs, const ID& rhs)
-         {
-            return lhs.xid == rhs.xid;
-         }
-
-         bool operator == ( const ID& lhs, const xid_type& rhs)
-         {
-            return lhs.xid == rhs;
-         }
-
-         std::ostream& operator << ( std::ostream& out, const ID& id)
-         {
-            if( out && id)
-            {
-               out << id.xid << ':' << id.m_owner.pid;
-            }
-            return out;
-         }
-
-         namespace id
-         {
-            ID create( const process::Handle& owner)
-            {
-               return { uuid::make(), uuid::make(), owner};
+               xid.formatID = ID::Format::casual;
             }
 
-            ID create()
+         } // <unnamed>
+      } // local
+
+      ID::ID( const process::Handle& owner) : m_owner( std::move( owner))
+      {}
+
+      ID::ID( const xid_type& xid) : xid( xid)
+      {
+      }
+
+      ID::ID( Uuid gtrid, Uuid bqual, const process::Handle& owner) : m_owner( std::move( owner))
+      {
+         local::casual_xid( gtrid, bqual, xid);
+      }
+
+      ID::ID( ID&& rhs) noexcept
+      {
+         xid = std::exchange( rhs.xid, xid);
+         m_owner = std::exchange( rhs.m_owner, {});
+
+      }
+      ID& ID::operator = ( ID&& rhs) noexcept
+      {
+         xid = std::exchange( rhs.xid, xid::null());
+         m_owner = std::exchange( rhs.m_owner, {});
+
+         return *this;
+      }
+
+      bool ID::null() const
+      {
+         return xid.formatID == Format::null;
+      }
+
+      ID::operator bool() const
+      {
+         return ! xid::null( xid);
+      }
+
+
+      const process::Handle& ID::owner() const
+      {
+         return m_owner;
+      }
+
+      void ID::owner( const process::Handle& handle)
+      {
+         m_owner = handle;
+      }
+
+      bool operator < ( const ID& lhs, const ID& rhs)
+      {
+         return lhs.xid < rhs.xid;
+      }
+
+      bool operator == ( const ID& lhs, const ID& rhs)
+      {
+         return lhs.xid == rhs.xid;
+      }
+
+      bool operator == ( const ID& lhs, const xid_type& rhs)
+      {
+         return lhs.xid == rhs;
+      }
+
+      std::ostream& operator << ( std::ostream& out, const ID& id)
+      {
+         if( out && id)
+            out << id.xid << ':' << id.m_owner.pid;
+         
+         return out;
+      }
+
+      namespace id
+      {
+         ID create( const process::Handle& owner)
+         {
+            return { uuid::make(), uuid::make(), owner};
+         }
+
+         ID create()
+         {
+            return { uuid::make(), uuid::make(), process::handle()};
+         }
+
+         bool null( const ID& id)
+         {
+            return xid::null( id.xid);
+         }
+
+         ID branch( const ID& id)
+         {
+            if( id.null())
+               return {};
+
+            ID result( id);
+
+            result.xid.formatID = ID::Format::branch;
+
+            auto uuid = uuid::make();
+            auto range = uuid::range( uuid);
+
+            algorithm::copy( range, result.xid.data + result.xid.gtrid_length);
+            result.xid.bqual_length = range.size();
+            
+            return result;
+         }
+
+         namespace range
+         {
+            range_type global( const xid_type& xid)
             {
-               return { uuid::make(), uuid::make(), process::handle()};
+               return range_type{ xid.data, xid.data + xid.gtrid_length};
             }
 
-            bool null( const ID& id)
+            range_type branch( const xid_type& xid)
             {
-               return null( id.xid);
+               return range_type{ xid.data + xid.gtrid_length,
+                     xid.data + xid.gtrid_length + xid.bqual_length};
             }
 
-            bool null( const xid_type& id)
+            range_type global( const ID& id)
             {
-               return id.formatID == ID::Format::null;
+               return global( id.xid);
             }
 
-            ID branch( const ID& id)
+            range_type branch( const ID& id)
             {
-               if( id.null())
-                  return {};
-
-               ID result( id);
-
-               result.xid.formatID = ID::Format::branch;
-
-               auto uuid = uuid::make();
-               auto range = uuid::range( uuid);
-
-               algorithm::copy( range, result.xid.data + result.xid.gtrid_length);
-               result.xid.bqual_length = range.size();
-               
-               return result;
+               return branch( id.xid);
             }
+         } // range
+      } // id
 
-            namespace range
-            {
-               range_type global( const xid_type& xid)
-               {
-                  return range_type{ xid.data, xid.data + xid.gtrid_length};
-               }
-
-               range_type branch( const xid_type& xid)
-               {
-                  return range_type{ xid.data + xid.gtrid_length,
-                        xid.data + xid.gtrid_length + xid.bqual_length};
-               }
-
-               range_type global( const ID& id)
-               {
-                  return global( id.xid);
-               }
-
-               range_type branch( const ID& id)
-               {
-                  return branch( id.xid);
-               }
-            } // range
-         } // id
-      } // transaction
-   } // common
+   } // common::transaction
 } // casual

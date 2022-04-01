@@ -848,7 +848,7 @@ namespace casual
             if( xid == nullptr)
                code::raise::error( code::tx::argument, "resume: argument xid is null");
 
-            if( id::null( *xid))
+            if( xid::null( *xid))
                code::raise::error( code::tx::argument, "resume: attempt to resume a 'null xid'");
 
             auto& ongoing = current();

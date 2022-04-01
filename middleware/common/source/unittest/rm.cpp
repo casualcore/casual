@@ -78,23 +78,23 @@ namespace casual
 
          namespace rm
          {
-            std::ostream& operator << ( std::ostream& out, State::Invoke value)
+            std::string_view description( State::Invoke value)
             {
                using Enum = State::Invoke;
                switch( value)
                {
-                  case Enum::xa_close_entry: return out << "xa_close_entry";
-                  case Enum::xa_commit_entry: return out << "xa_commit_entry";
-                  case Enum::xa_complete_entry: return out << "xa_complete_entry";
-                  case Enum::xa_end_entry: return out << "xa_end_entry";
-                  case Enum::xa_forget_entry: return out << "xa_forget_entry";
-                  case Enum::xa_open_entry: return out << "xa_open_entry";
-                  case Enum::xa_prepare_entry: return out << "xa_prepare_entry";
-                  case Enum::xa_recover_entry: return out << "xa_recover_entry";
-                  case Enum::xa_rollback_entry: return out << "xa_rollback_entry";
-                  case Enum::xa_start_entry: return out << "xa_start_entry";
+                  case Enum::xa_close_entry: return "xa_close_entry";
+                  case Enum::xa_commit_entry: return "xa_commit_entry";
+                  case Enum::xa_complete_entry: return "xa_complete_entry";
+                  case Enum::xa_end_entry: return "xa_end_entry";
+                  case Enum::xa_forget_entry: return "xa_forget_entry";
+                  case Enum::xa_open_entry: return "xa_open_entry";
+                  case Enum::xa_prepare_entry: return "xa_prepare_entry";
+                  case Enum::xa_recover_entry: return "xa_recover_entry";
+                  case Enum::xa_rollback_entry: return "xa_rollback_entry";
+                  case Enum::xa_start_entry: return "xa_start_entry";
                }
-               assert( ! "invalid State::Invoke");
+               return "<unknown>";
             }
 
             void registration( strong::resource::id id)

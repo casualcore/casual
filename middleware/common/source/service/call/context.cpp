@@ -135,9 +135,6 @@ namespace casual
             } // prepare
          } // <unnamed>
       } // local
-
-
-
       
       descriptor_type Context::async( service::Lookup&& service, common::buffer::payload::Send buffer, service::header::Fields header, async::Flags flags)
       {
@@ -289,11 +286,47 @@ namespace casual
          return result;
       }
 
+      namespace local
+      {
+         namespace
+         {
+            namespace suspend
+            {
+               auto wrapper( sync::Flags flags)
+               {
+                  auto scoped = []( common::transaction::Transaction* transaction)
+                  {
+                     return execute::scope( [ transaction]()
+                     {
+                        if( ! transaction)
+                           return;
+
+                        common::transaction::context().resources_start( *transaction, flag::xa::Flag::resume);
+                     });
+                  };
+
+                  auto& current = common::transaction::context().current();
+                  
+                  if( current && ! flags.exist( sync::Flag::no_transaction))
+                  {
+                     common::transaction::context().resources_end( current, flag::xa::Flag::suspend);
+                     return scoped( &current);   
+                  }
+
+                  return scoped( nullptr);
+               }
+            } // suspend
+
+         } // <unnamed>
+      } // local
 
       sync::Result Context::sync( const std::string& service, common::buffer::payload::Send buffer, sync::Flags flags)
       {
          // We can't have no-block when getting the reply
          flags -= sync::Flag::no_block;
+
+         // Suspend if ongoing transaction and no no_transaction flag.
+         auto guard = local::suspend::wrapper( flags);
 
          constexpr auto async_flags = ~async::Flags{};
 

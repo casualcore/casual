@@ -16,7 +16,10 @@
 #include "common/environment/scoped.h"
 #include "common/unittest/rm.h"
 
+#include "test/unittest/xatmi/buffer.h"
+
 #include "tx.h"
+#include "casual/xatmi.h"
 
 namespace casual
 {
@@ -84,7 +87,7 @@ domain:
                   void operator() () const
                   {
                      transaction::context().clear();
-                     unittest::rm::clear();
+                     common::unittest::rm::clear();
                   }
                };
 
@@ -98,12 +101,17 @@ domain:
                {
                   return { "rm-mockup", std::move( name), &casual_mockup_xa_switch_dynamic};
                }
+
+               transaction::resource::Link link_static( std::string name)
+               {
+                  return { "rm-mockup", std::move( name), &casual_mockup_xa_switch_static};
+               }
             } // <unnamed>
          } // local
 
          TEST( test_transaction, empty_configuration)
          {
-            unittest::Trace trace;
+            common::unittest::Trace trace;
             local::Clear clear;
 
             EXPECT_TRUE( ! transaction::context().current());
@@ -111,7 +119,7 @@ domain:
 
          TEST( test_transaction, dynamic_resource_configure)
          {
-            unittest::Trace trace;
+            common::unittest::Trace trace;
             local::Clear clear;
    
             constexpr auto configuration = R"(
@@ -134,7 +142,7 @@ domain:
 
          TEST( test_transaction, dynamic_resource_not_involved__transaction_commit__expect_no_xa_end_invokation)
          {
-            unittest::Trace trace;
+            common::unittest::Trace trace;
             local::Clear clear;
 
             constexpr auto configuration = R"(
@@ -156,16 +164,16 @@ domain:
             // no rm involvement
             EXPECT_TRUE( tx_commit() == TX_OK);
 
-            auto state = unittest::rm::state( local::id());
+            auto state = common::unittest::rm::state( local::id());
             EXPECT_TRUE( state.errors.empty()) << CASUAL_NAMED_VALUE( state.errors);
             // only open has been called
             ASSERT_TRUE( state.invocations.size() == 1) << CASUAL_NAMED_VALUE( state.invocations);
-            ASSERT_TRUE( state.invocations.at( 0) == unittest::rm::State::Invoke::xa_open_entry) << CASUAL_NAMED_VALUE( state.invocations);
+            ASSERT_TRUE( state.invocations.at( 0) == common::unittest::rm::State::Invoke::xa_open_entry) << CASUAL_NAMED_VALUE( state.invocations);
          }
 
          TEST( test_transaction, dynamic_resource_involved__transaction_commit__expect_xa_end_invokation)
          {
-            unittest::Trace trace;
+            common::unittest::Trace trace;
             local::Clear clear;
 
             constexpr auto configuration = R"(
@@ -187,13 +195,13 @@ domain:
             EXPECT_TRUE( id);
 
             EXPECT_TRUE( tx_begin() == TX_OK);
-            unittest::rm::registration( id);
+            common::unittest::rm::registration( id);
             EXPECT_TRUE( tx_commit() == TX_OK);
 
-            auto state = unittest::rm::state( id);
+            auto state = common::unittest::rm::state( id);
             EXPECT_TRUE( state.errors.empty()) << CASUAL_NAMED_VALUE( state.errors);
 
-            using Invoke = unittest::rm::State::Invoke;
+            using Invoke = common::unittest::rm::State::Invoke;
             
             // configure
             //   -> xa_open_entry
@@ -208,7 +216,51 @@ domain:
             const auto expected = std::vector< Invoke>{ Invoke::xa_open_entry, Invoke::xa_end_entry, Invoke::xa_commit_entry};
             EXPECT_TRUE( state.invocations == expected) << CASUAL_NAMED_VALUE( state.invocations);
          }
-         
+
+         TEST( test_transaction, suspend_resume_during_tpcall)
+         {
+            common::unittest::Trace trace;
+            local::Clear clear;
+
+            constexpr auto configuration = R"(
+domain: 
+   name: dynamic-rm
+
+   transaction:
+      resources:
+         -  key: rm-mockup
+            name: rm1
+            instances: 1
+
+
+)";
+
+            auto domain = local::domain( configuration);
+            transaction::context().configure( { local::link_static( "rm1")});
+
+            auto rm = local::id();
+            using Invoke = common::unittest::rm::State::Invoke;
+
+            EXPECT_TRUE( rm);
+            EXPECT_TRUE( tx_begin() == TX_OK);
+
+            {
+               auto state = common::unittest::rm::state( rm);
+               EXPECT_TRUE( algorithm::count( state.invocations, Invoke::xa_end_entry) == 0) << CASUAL_NAMED_VALUE( state);
+               EXPECT_TRUE( algorithm::count( state.invocations, Invoke::xa_start_entry) == 1) << CASUAL_NAMED_VALUE( state);
+
+               auto buffer = unittest::xatmi::buffer::x_octet{};
+               EXPECT_TRUE( ::tpcall( "casual/example/echo", buffer.data, buffer.size, &buffer.data, &buffer.size, 0) != -1);
+            }
+
+            auto state = common::unittest::rm::state( rm);
+            EXPECT_TRUE( state.transactions.all.size() == 1);
+            EXPECT_TRUE( algorithm::count( state.invocations, Invoke::xa_end_entry) == 1);
+            EXPECT_TRUE( algorithm::count( state.invocations, Invoke::xa_start_entry) == 2);
+
+            EXPECT_TRUE( tx_commit() == TX_OK);
+         }
+
       } // domain
    } // test
 } // casual

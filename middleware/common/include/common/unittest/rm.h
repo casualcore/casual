@@ -9,6 +9,8 @@
 #include "common/transaction/id.h"
 #include "common/code/xa.h"
 
+#include "common/serialize/macro.h"
+
 
 namespace casual
 {
@@ -24,6 +26,11 @@ namespace casual
                {
                   transaction::ID current;
                   std::vector< transaction::ID> all;
+
+                  CASUAL_LOG_SERIALIZE(
+                     CASUAL_SERIALIZE( current);
+                     CASUAL_SERIALIZE( all);
+                  )
 
                } transactions;
 
@@ -42,9 +49,15 @@ namespace casual
                   xa_forget_entry,
                   xa_complete_entry
                };
-               friend std::ostream& operator << ( std::ostream& out, Invoke value);
+               friend std::string_view description( Invoke value);
 
                std::vector< Invoke> invocations;
+
+               CASUAL_LOG_SERIALIZE(
+                  CASUAL_SERIALIZE( transactions);
+                  CASUAL_SERIALIZE( errors);
+                  CASUAL_SERIALIZE( invocations);
+               )
             };
 
             //! emulate a resource dynamic registration
