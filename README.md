@@ -63,4 +63,4 @@ with the exception of stuff under [thirdparty](thirdparty/readme.md), which have
 We show this by the file [licence.md](license.md). 
 
 ### Downloads
-
+http://casual.laz.se/release/

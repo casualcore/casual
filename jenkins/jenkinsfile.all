@@ -555,6 +555,7 @@ try
                for filename in \$( ls casual/casual-middleware-${version}*.rpm )
                do
                   curl -X POST --user "${USERPASS}" "https://api.bitbucket.org/2.0/repositories/casualcore/casual/downloads" --form files=@"\$filename"
+                  cp \$filename /var/www/release/.
                done
                """
             }
