@@ -335,7 +335,7 @@ try
                   }
                   dir("casual-documentation")
                   {
-                     git branch: 'master', url: 'https://bitbucket.org/casualcore/casual-documentation.git'
+                     git branch: 'master', url: 'https://github.com/casualcore/casual-documentation.git'
                      sh """
                         export CASUAL_BUILD_HOME=$WORKSPACE/casual
                         cd casual/casual-middleware
@@ -375,13 +375,13 @@ try
                   dir("casual-thirdparty")
                   {
                      // casual-thirdparty
-                     git branch: 'feature/new-casual-make', url: 'https://bitbucket.org/casualcore/casual-thirdparty.git'
+                     git branch: 'feature/new-casual-make', url: 'https://github.com/casualcore/casual-thirdparty.git'
                   }
 
                   dir("casual-make")
                   {
                      // casual-make
-                     git branch: 'feature/0.1/dev', url: 'https://bitbucket.org/casualcore/casual-make.git'
+                     git branch: 'feature/0.1/dev', url: 'https://github.com/casualcore/casual-make.git'
                   }
 
                   dir("casual")
@@ -481,13 +481,13 @@ try
                   dir("casual-thirdparty")
                   {
                      // casual-thirdparty
-                     git branch: 'feature/new-casual-make', url: 'https://bitbucket.org/casualcore/casual-thirdparty.git'
+                     git branch: 'feature/new-casual-make', url: 'https://github.com/casualcore/casual-thirdparty.git'
                   }
 
                   dir("casual-make")
                   {
                      // casual-make
-                     git branch: 'feature/0.1/dev', url: 'https://bitbucket.org/casualcore/casual-make.git'
+                     git branch: 'feature/0.1/dev', url: 'https://github.com/casualcore/casual-make.git'
                   }
 
                   dir("casual")
@@ -531,12 +531,12 @@ try
             {
                checkout scm
 
-               withCredentials([usernameColonPassword(credentialsId: '628eddfb-34f4-46de-9e61-c73b86ac681e', variable: 'USERPASS')])
+               withCredentials([usernameColonPassword(credentialsId: 'jenkins-github-tag-token', variable: 'USERPASS')])
                {
                   tag = totalVersion()
                   sh """
                   git tag -a -m "Jenkins" $tag
-                  git push https://${USERPASS}@bitbucket.org/casualcore/casual.git $tag
+                  git push https://${USERPASS}@github.com/casualcore/casual.git $tag
                   """
                }
             }
