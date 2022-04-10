@@ -165,7 +165,7 @@ namespace casual
    } // common::communication::ipc::message
 
    namespace common::serialize::native::customization
-   {
+   {     
       template<>
       struct point< communication::ipc::message::Complete>
       {

@@ -436,10 +436,13 @@ namespace casual
             };
          } // detail
 
+         template< typename T>
+         using type_t = typename type_traits< std::decay_t< T>>::reverse_type;
+
          template< typename T, typename... Ts>
          auto type( T&& message, Ts&&... ts)
          {
-            typename type_traits< typename std::decay<T>::type>::reverse_type result{ std::forward< Ts>( ts)...};
+            reverse::type_t< T> result{ std::forward< Ts>( ts)...};
 
             result.correlation = message.correlation;
             result.execution = message.execution;

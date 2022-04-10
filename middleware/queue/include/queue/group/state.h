@@ -60,7 +60,7 @@ namespace casual
             shutdown,
             error,
          };
-         std::ostream& operator << ( std::ostream& out, Runlevel value);
+         std::string_view description( Runlevel value);
          
       } // state
 

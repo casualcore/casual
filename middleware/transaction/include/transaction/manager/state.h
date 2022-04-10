@@ -86,8 +86,7 @@ namespace casual
                         error,
                         shutdown
                      };
-
-                     friend std::ostream& operator << ( std::ostream& out, const State& value);
+                     friend std::string_view description( State value);
 
 
                      common::strong::resource::id id;
@@ -286,8 +285,7 @@ namespace casual
                   commit,
                   rollback
                };
-
-               std::ostream& operator << ( std::ostream& out, Stage value);
+               std::string_view description( Stage value);
                
             } // transaction
 

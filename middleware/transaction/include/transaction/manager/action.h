@@ -28,8 +28,6 @@ namespace casual
 
          std::vector< admin::model::resource::Proxy> instances( State& state, std::vector< admin::model::scale::Instances> instances);
 
-         bool request( State& state, state::pending::Request& message);
-
       } // resource
    } // transaction::manager::action
 } // casual

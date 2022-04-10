@@ -224,41 +224,6 @@ namespace casual
          //! holds the last external connection that was used
          common::strong::file::descriptor::id m_last;
       };
-     /*
-      template< typename State, typename M, typename L>
-      common::strong::correlation::id send( State& state, common::strong::file::descriptor::id descriptor, M&& message, L&& lost)
-      {
-         using namespace common;
-
-         if( auto connection = state.external.connection( descriptor))
-         {
-            try
-            {
-               return connection->send( state.directive, std::forward< M>( message));
-            }
-            catch( ...)
-            {
-               const auto error = exception::capture();
-
-               auto information = state.external.information( descriptor);
-               casual::assertion( information, code::casual::internal_correlation, " no information for descriptor: ", descriptor);
-
-               auto& category = error.code() == code::casual::communication_unavailable ? log::category::information : log::category::error;
-
-               log::line( category, "send failed to ", information->domain, " - error: ", error, " - action: remove connection");
-               
-               lost( state, descriptor);
-            }
-         }
-         else
-         {
-            log::line( log::category::error, code::casual::internal_correlation, " failed to correlate descriptor: ", descriptor);
-            log::line( log::category::verbose::error, "state: ", state);
-         }
-
-         return {};
-      }
-      */
 
      namespace handle::dispatch
      {

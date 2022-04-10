@@ -41,7 +41,7 @@ namespace casual
          inline friend bool operator <= ( Machine lhs, Enum rhs) { return lhs.m_current <= rhs;}
          inline friend bool operator >= ( Machine lhs, Enum rhs) { return lhs.m_current >= rhs;}
 
-         inline friend std::ostream& operator << ( std::ostream& out, Machine value) { return out << value.m_current;}
+         inline friend std::ostream& operator << ( std::ostream& out, Machine value) { return out << description( value.m_current);}
 
       private:
          Enum m_current = initialize;

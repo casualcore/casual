@@ -140,33 +140,6 @@ namespace casual
             return result;
          }
 
-         bool request( State& state, state::pending::Request& message)
-         {
-            Trace trace{ "transaction::action::resource::request"};
-            log::line( verbose::log, "message: ", message);
-
-            if( state::resource::id::local( message.resource))
-            {
-               if( auto found = state.idle( message.resource))
-               {
-                  communication::ipc::flush::send( found->process.ipc, message.message);
-                  found->state( state::resource::Proxy::Instance::State::busy);
-                  found->metrics.requested = platform::time::clock::type::now();
-
-                  return true;
-               }
-      
-               log::line( log, "failed to find idle resource - action: wait");
-               return false;
-            }
-
-            // 'external' resource proxy
-            auto& resource = state.get_external( message.resource);
-            communication::ipc::flush::send( resource.process.ipc, message.message);
-            
-            return true;
-         }
-
       } // resource
          
    } //transaction::manager::action

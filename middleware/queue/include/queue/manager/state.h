@@ -37,7 +37,7 @@ namespace casual
                running,
                shutdown,
             };
-            std::ostream& operator << ( std::ostream& out, Lifetime value);
+            std::string_view description( Lifetime value);
             
          } // entity
 
@@ -120,7 +120,7 @@ namespace casual
             shutdown,
             error,
          };
-         std::ostream& operator << ( std::ostream& out, Runlevel value);
+         std::string_view description( Runlevel value);
          
       } // state
 

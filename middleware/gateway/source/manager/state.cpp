@@ -50,15 +50,15 @@ namespace casual
             
             } // executable
 
-            std::ostream& operator << ( std::ostream& out, Runlevel value)
+            std::string_view description( Runlevel value)
             {
                switch( value)
                {
-                  case Runlevel::startup: { return out << "startup";}
-                  case Runlevel::running: { return out << "running";}
-                  case Runlevel::shutdown: { return out << "shutdown";}
+                  case Runlevel::startup: { return "startup";}
+                  case Runlevel::running: { return "running";}
+                  case Runlevel::shutdown: { return "shutdown";}
                }
-               return out << "unknown";
+               return "unknown";
             }
 
          } // state

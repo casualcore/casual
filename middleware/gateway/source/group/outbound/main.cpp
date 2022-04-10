@@ -233,7 +233,7 @@ namespace casual
                   communication::select::dispatch::condition::done( [&state](){ return state.done();}),
                   communication::select::dispatch::condition::idle( [&state]()
                   {
-                     if( !  state.disconnecting.empty())
+                     if( ! state.disconnecting.empty())
                      {
                         // we might get some connection lost, and need to reconnect. 
                         for( auto& configuration : outbound::handle::idle( state))

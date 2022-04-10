@@ -138,8 +138,8 @@ namespace casual
                exit,
                error,
             };
+            std::string_view description( State value);
 
-            std::ostream& operator << ( std::ostream& out, State value);
 
          } // instance
 
@@ -296,7 +296,7 @@ namespace casual
             shutdown,
             error,
          };
-         std::ostream& operator << ( std::ostream& out, Runlevel value);
+         std::string_view description( Runlevel value);
 
       } // state
 
