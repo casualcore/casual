@@ -43,18 +43,18 @@ namespace casual
       {
          namespace instance
          {
-            std::ostream& operator << ( std::ostream& out, State value)
+            std::string_view description( State value)
             {
                switch( value)
                {
-                  case State::running: return out << "running";
-                  case State::spawned : return out << "spawned";
-                  case State::scale_out: return out << "scale-out";
-                  case State::scale_in: return out << "scale-in";
-                  case State::exit: return out << "exit";
-                  case State::error: return out << "error";
+                  case State::running: return "running";
+                  case State::spawned : return "spawned";
+                  case State::scale_out: return "scale-out";
+                  case State::scale_in: return "scale-in";
+                  case State::exit: return "exit";
+                  case State::error: return "error";
                }
-               return out << "unknown";
+               return "unknown";
             }
          } // instance
 
@@ -273,16 +273,16 @@ namespace casual
             return lhs.instance( rhs) != nullptr;
          }
 
-         std::ostream& operator << ( std::ostream& out, Runlevel value)
+         std::string_view description( Runlevel value)
          {
             switch( value)
             {
-               case Runlevel::error: return out << "error";
-               case Runlevel::running: return out << "running";
-               case Runlevel::shutdown: return out << "shutdown";
-               case Runlevel::startup: return out << "startup";
+               case Runlevel::error: return "error";
+               case Runlevel::running: return "running";
+               case Runlevel::shutdown: return "shutdown";
+               case Runlevel::startup: return "startup";
             }
-            return out << "<unknown>";
+            return "<unknown>";
          }
 
       } // state

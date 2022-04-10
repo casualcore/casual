@@ -74,6 +74,7 @@ namespace casual
                   idle,
                   busy,
                };
+               std::string_view description( State value);
 
                using base_instance::base_instance;
 
@@ -364,7 +365,7 @@ namespace casual
             shutdown,
             error,
          };
-         std::ostream& operator << ( std::ostream& out, Runlevel value);
+         std::string_view description( Runlevel value);
 
       } // state
 

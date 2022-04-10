@@ -79,23 +79,18 @@ namespace casual
                return false;
             }
 
-            std::ostream& operator << ( std::ostream& out, const Proxy::Instance::State& value)
+            std::string_view description( Proxy::Instance::State value)
             {
-               auto state_switch = [&]()
-                  {
-                     switch( value)
-                     {
-                        case Proxy::Instance::State::busy: return "busy";
-                        case Proxy::Instance::State::absent: return "absent";
-                        case Proxy::Instance::State::idle: return "idle";
-                        case Proxy::Instance::State::shutdown: return "shutdown";
-                        case Proxy::Instance::State::started: return "started";
-                        case Proxy::Instance::State::error: return "startup-error";
-                     }
-                     return "<unknown>";
-                  };
-
-               return out << state_switch();
+               switch( value)
+               {
+                  case Proxy::Instance::State::busy: return "busy";
+                  case Proxy::Instance::State::absent: return "absent";
+                  case Proxy::Instance::State::idle: return "idle";
+                  case Proxy::Instance::State::shutdown: return "shutdown";
+                  case Proxy::Instance::State::started: return "started";
+                  case Proxy::Instance::State::error: return "startup-error";
+               }
+               return "<unknown>";
             }
 
 
@@ -134,30 +129,30 @@ namespace casual
             {
                switch( code)
                {
-                  case xa::heuristic_hazard: return common::code::xa::heuristic_hazard; break;
-                  case xa::heuristic_mix: return common::code::xa::heuristic_mix; break;
-                  case xa::heuristic_commit: return common::code::xa::heuristic_commit; break;
-                  case xa::heuristic_rollback: return common::code::xa::heuristic_rollback; break;
-                  case xa::resource_fail: return common::code::xa::resource_fail; break;
-                  case xa::resource_error: return common::code::xa::resource_error; break;
-                  case xa::rollback_integrity: return common::code::xa::rollback_integrity; break;
-                  case xa::rollback_communication: return common::code::xa::rollback_communication; break;
-                  case xa::rollback_unspecified: return common::code::xa::rollback_unspecified; break;
-                  case xa::rollback_other: return common::code::xa::rollback_other; break;
-                  case xa::rollback_deadlock: return common::code::xa::rollback_deadlock; break;
-                  case xa::protocol: return common::code::xa::protocol; break;
-                  case xa::rollback_protocoll: return common::code::xa::rollback_protocoll; break;
-                  case xa::rollback_timeout: return common::code::xa::rollback_timeout; break;
-                  case xa::rollback_transient: return common::code::xa::rollback_transient; break;
-                  case xa::argument: return common::code::xa::argument; break;
-                  case xa::no_migrate: return common::code::xa::no_migrate; break;
-                  case xa::outside: return common::code::xa::outside; break;
-                  case xa::invalid_xid: return common::code::xa::invalid_xid; break;
-                  case xa::outstanding_async: return common::code::xa::outstanding_async; break;
-                  case xa::retry: return common::code::xa::retry; break;
-                  case xa::duplicate_xid: return common::code::xa::duplicate_xid; break;
-                  case xa::ok: return common::code::xa::ok; break;
-                  case xa::read_only: return common::code::xa::read_only; break;
+                  case xa::heuristic_hazard: return common::code::xa::heuristic_hazard;
+                  case xa::heuristic_mix: return common::code::xa::heuristic_mix;
+                  case xa::heuristic_commit: return common::code::xa::heuristic_commit;
+                  case xa::heuristic_rollback: return common::code::xa::heuristic_rollback;
+                  case xa::resource_fail: return common::code::xa::resource_fail;
+                  case xa::resource_error: return common::code::xa::resource_error;
+                  case xa::rollback_integrity: return common::code::xa::rollback_integrity;
+                  case xa::rollback_communication: return common::code::xa::rollback_communication;
+                  case xa::rollback_unspecified: return common::code::xa::rollback_unspecified;
+                  case xa::rollback_other: return common::code::xa::rollback_other;
+                  case xa::rollback_deadlock: return common::code::xa::rollback_deadlock;
+                  case xa::protocol: return common::code::xa::protocol;
+                  case xa::rollback_protocoll: return common::code::xa::rollback_protocoll;
+                  case xa::rollback_timeout: return common::code::xa::rollback_timeout;
+                  case xa::rollback_transient: return common::code::xa::rollback_transient;
+                  case xa::argument: return common::code::xa::argument;
+                  case xa::no_migrate: return common::code::xa::no_migrate;
+                  case xa::outside: return common::code::xa::outside;
+                  case xa::invalid_xid: return common::code::xa::invalid_xid;
+                  case xa::outstanding_async: return common::code::xa::outstanding_async;
+                  case xa::retry: return common::code::xa::retry;
+                  case xa::duplicate_xid: return common::code::xa::duplicate_xid;
+                  case xa::ok: return common::code::xa::ok;
+                  case xa::read_only: return common::code::xa::read_only;
                }
 
                casual::terminate( "invalid value for code::priority::xa: ", cast::underlying( code));
@@ -168,30 +163,30 @@ namespace casual
             {
                switch( code)
                {
-                  case common::code::xa::heuristic_hazard: return xa::heuristic_hazard; break;
-                  case common::code::xa::heuristic_mix: return xa::heuristic_mix; break;
-                  case common::code::xa::heuristic_commit: return xa::heuristic_commit; break;
-                  case common::code::xa::heuristic_rollback: return xa::heuristic_rollback; break;
-                  case common::code::xa::resource_fail: return xa::resource_fail; break;
-                  case common::code::xa::resource_error: return xa::resource_error; break;
-                  case common::code::xa::rollback_integrity: return xa::rollback_integrity; break;
-                  case common::code::xa::rollback_communication: return xa::rollback_communication; break;
-                  case common::code::xa::rollback_unspecified: return xa::rollback_unspecified; break;
-                  case common::code::xa::rollback_other: return xa::rollback_other; break;
-                  case common::code::xa::rollback_deadlock: return xa::rollback_deadlock; break;
-                  case common::code::xa::protocol: return xa::protocol; break;
-                  case common::code::xa::rollback_protocoll: return xa::rollback_protocoll; break;
-                  case common::code::xa::rollback_timeout: return xa::rollback_timeout; break;
-                  case common::code::xa::rollback_transient: return xa::rollback_transient; break;
-                  case common::code::xa::argument: return xa::argument; break;
-                  case common::code::xa::no_migrate: return xa::no_migrate; break;
-                  case common::code::xa::outside: return xa::outside; break;
-                  case common::code::xa::invalid_xid: return xa::invalid_xid; break;
-                  case common::code::xa::outstanding_async: return xa::outstanding_async; break;
-                  case common::code::xa::retry: return xa::retry; break;
-                  case common::code::xa::duplicate_xid: return xa::duplicate_xid; break;
-                  case common::code::xa::ok: return xa::ok; break;
-                  case common::code::xa::read_only: return xa::read_only; break;
+                  case common::code::xa::heuristic_hazard: return xa::heuristic_hazard;
+                  case common::code::xa::heuristic_mix: return xa::heuristic_mix;
+                  case common::code::xa::heuristic_commit: return xa::heuristic_commit;
+                  case common::code::xa::heuristic_rollback: return xa::heuristic_rollback;
+                  case common::code::xa::resource_fail: return xa::resource_fail;
+                  case common::code::xa::resource_error: return xa::resource_error;
+                  case common::code::xa::rollback_integrity: return xa::rollback_integrity;
+                  case common::code::xa::rollback_communication: return xa::rollback_communication;
+                  case common::code::xa::rollback_unspecified: return xa::rollback_unspecified;
+                  case common::code::xa::rollback_other: return xa::rollback_other;
+                  case common::code::xa::rollback_deadlock: return xa::rollback_deadlock;
+                  case common::code::xa::protocol: return xa::protocol;
+                  case common::code::xa::rollback_protocoll: return xa::rollback_protocoll;
+                  case common::code::xa::rollback_timeout: return xa::rollback_timeout;
+                  case common::code::xa::rollback_transient: return xa::rollback_transient;
+                  case common::code::xa::argument: return xa::argument;
+                  case common::code::xa::no_migrate: return xa::no_migrate;
+                  case common::code::xa::outside: return xa::outside;
+                  case common::code::xa::invalid_xid: return xa::invalid_xid;
+                  case common::code::xa::outstanding_async: return xa::outstanding_async;
+                  case common::code::xa::retry: return xa::retry;
+                  case common::code::xa::duplicate_xid: return xa::duplicate_xid;
+                  case common::code::xa::ok: return xa::ok;
+                  case common::code::xa::read_only: return xa::read_only;
                }
 
                casual::terminate( "invalid value for common::code::xa: ", cast::underlying( code));
@@ -201,16 +196,16 @@ namespace casual
 
          namespace transaction
          {
-            std::ostream& operator << ( std::ostream& out, Stage value)
+            std::string_view description( Stage value)
             {
                switch( value)
                {
-                  case Stage::involved: return out << "involved";
-                  case Stage::prepare: return out << "prepare";
-                  case Stage::commit: return out << "commit";
-                  case Stage::rollback: return out << "rollback";
+                  case Stage::involved: return "involved";
+                  case Stage::prepare: return "prepare";
+                  case Stage::commit: return "commit";
+                  case Stage::rollback: return "rollback";
                }
-               return out << "<unknown>";
+               return "<unknown>";
             }
          } // transaction
 

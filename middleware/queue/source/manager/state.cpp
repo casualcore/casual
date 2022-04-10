@@ -21,29 +21,29 @@ namespace casual
       {
          namespace entity
          {
-            std::ostream& operator << ( std::ostream& out, Lifetime value)
+            std::string_view description( Lifetime value)
             {
                switch( value)
                {
-                  case Lifetime::absent: return out << "absent";
-                  case Lifetime::spawned: return out << "spawned";
-                  case Lifetime::connected: return out << "connected";
-                  case Lifetime::running: return out << "running";
-                  case Lifetime::shutdown: return out << "shutdown";
+                  case Lifetime::absent: return "absent";
+                  case Lifetime::spawned: return "spawned";
+                  case Lifetime::connected: return "connected";
+                  case Lifetime::running: return "running";
+                  case Lifetime::shutdown: return "shutdown";
                }
-               return out << "<unknown>";
+               return "<unknown>";
             }  
          } // entity
 
-         std::ostream& operator << ( std::ostream& out, Runlevel value)
+         std::string_view description( Runlevel value)
          {
             switch( value)
             {
-               case Runlevel::running: return out << "running";
-               case Runlevel::shutdown:  return out << "shutdown";
-               case Runlevel::error: return out << "error";
+               case Runlevel::running: return "running";
+               case Runlevel::shutdown: return "shutdown";
+               case Runlevel::error: return "error";
             }
-            return out << "<unknown>";
+            return "<unknown>";
          }
       } // state
 

@@ -82,15 +82,15 @@ namespace casual
                      rollback = 2,
                   };
 
-                  inline std::ostream& operator << ( std::ostream& out, Stage value)
+                  inline constexpr std::string_view description( Stage value)
                   {
                      switch( value)
                      {
-                        case Stage::prepare: return out << "prepare";
-                        case Stage::commit: return out << "commit";
-                        case Stage::rollback: return out << "rollback";
+                        case Stage::prepare: return "prepare";
+                        case Stage::commit: return "commit";
+                        case Stage::rollback: return "rollback";
                      }
-                     return out << "unknown";
+                     return "<unknown>";
                   }
 
                   using base = basic_reply< code::tx, Type::transaction_commit_reply>;
@@ -134,6 +134,15 @@ namespace casual
                      rollback = 0,
                      error = 2,
                   };
+                  inline constexpr std::string_view description( Stage value)
+                  {
+                     switch( value)
+                     {
+                        case Stage::rollback: return "rollback";
+                        case Stage::error: return "error";
+                     }
+                     return "unknown";
+                  }
 
                   Stage stage = Stage::rollback;
 
@@ -141,16 +150,6 @@ namespace casual
                      base_reply::serialize( archive);
                      CASUAL_SERIALIZE( stage);
                   )
-
-                  inline friend std::ostream& operator << ( std::ostream& out, Stage value)
-                  {
-                     switch( value)
-                     {
-                        case Stage::rollback: return out << "rollback";
-                        case Stage::error: return out << "error";
-                     }
-                     return out << "unknown";
-                  }
                };
 
             } // rollback

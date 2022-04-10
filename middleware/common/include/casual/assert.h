@@ -17,6 +17,7 @@ namespace casual
    [[noreturn]] void terminate( Ts&&... context) noexcept
    {
       common::log::line( common::log::category::error, common::code::casual::fatal_terminate, ' ', std::forward< Ts>( context)...);
+      common::log::category::error.flush();
       std::terminate();
    }
 

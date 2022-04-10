@@ -36,8 +36,7 @@ namespace casual
             running,
             shutdown,
          };
-
-         std::ostream& operator << ( std::ostream& out, Runlevel value);
+         std::string_view description( Runlevel value);
 
          namespace forward
          {

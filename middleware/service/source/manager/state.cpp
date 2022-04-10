@@ -119,14 +119,14 @@ namespace casual
                   m_service = replacement;
             }
 
-            std::ostream& operator << ( std::ostream& out, Sequential::State value)
+            std::string_view description( Sequential::State value)
             {
                switch( value)
                {
-                  case Sequential::State::busy: return out << "busy";
-                  case Sequential::State::idle: return out << "idle";
+                  case Sequential::State::busy: return "busy";
+                  case Sequential::State::idle: return "idle";
                }
-               return out << "<unknown>";
+               return "<unknown>";
             }
 
             bool operator < ( const Concurrent& lhs, const Concurrent& rhs)
@@ -305,15 +305,15 @@ namespace casual
          }         
 
 
-         std::ostream& operator << ( std::ostream& out, Runlevel value)
+         std::string_view description( Runlevel value)
          {
             switch( value)
             {
-               case Runlevel::running: return out << "running";
-               case Runlevel::shutdown: return out << "shutdown";
-               case Runlevel::error: return out << "error";
+               case Runlevel::running: return "running";
+               case Runlevel::shutdown: return "shutdown";
+               case Runlevel::error: return "error";
             }
-            return out << "<unknown>";
+            return "<unknown>";
          }
 
       } // state

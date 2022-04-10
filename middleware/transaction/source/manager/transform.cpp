@@ -92,7 +92,7 @@ namespace casual
          } // <unnamed>
       } // local
 
-       State state( casual::configuration::Model model)
+      State state( casual::configuration::Model model)
       {
          Trace trace{ "transaction::manager::transform::state"};
 
