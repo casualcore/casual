@@ -78,7 +78,7 @@ namespace casual
 
                   if( state.runlevel == decltype( state.runlevel())::running)
                   {
-                     log::line( log::category::information, code::casual::communication_unavailable, " lost connection ", configuration.address, " - action: try to reconnect");
+                     log::line( log::category::information, "try to reconnect: '", configuration.address, "'");
                      state.connect.prospects.emplace_back( std::move( configuration));
                      external::connect( state);
                   }
@@ -190,6 +190,8 @@ namespace casual
                            Trace trace{ "gateway::group::outbound::local::internal::handle::connection::lost"};
                            log::line( verbose::log, "message: ", message);
 
+                           log::line( log::category::information, code::casual::communication_unavailable, " lost connection to domain: ", message.remote);
+
                            external::reconnect( state, std::move( message.configuration));
                         };
                      }
@@ -231,15 +233,7 @@ namespace casual
             {
                return communication::select::dispatch::condition::compose(
                   communication::select::dispatch::condition::done( [&state](){ return state.done();}),
-                  communication::select::dispatch::condition::idle( [&state]()
-                  {
-                     if( ! state.disconnecting.empty())
-                     {
-                        // we might get some connection lost, and need to reconnect. 
-                        for( auto& configuration : outbound::handle::idle( state))
-                           external::reconnect( state, std::move( configuration));
-                     }
-                  })
+                  communication::select::dispatch::condition::idle( [&state](){ outbound::handle::idle( state);})
                );
             }
 

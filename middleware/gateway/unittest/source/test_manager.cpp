@@ -807,14 +807,13 @@ domain:
 
             while( metrics.size() < count)
             {
-               common::message::event::service::Calls event;
-               common::communication::device::blocking::receive( common::communication::ipc::inbound::device(), event);
+               auto filter_metric = []( auto& metric){ return metric.service == "a";};
 
-               algorithm::append( event.metrics, metrics);
+               auto event = common::communication::ipc::receive< common::message::event::service::Calls>();
+
+               // filter out only metrics for service 'a' (could come metrics for .casual/gateway/state)
+               algorithm::append( algorithm::filter( event.metrics, filter_metric), metrics);
             }
-
-            // filter out only metrics for service 'a' (could come metrics for .casual/gateway/state)
-            algorithm::container::trim( metrics, algorithm::filter( metrics, []( auto& metric){ return metric.service == "a";}));
 
             auto order_pending = []( auto& lhs, auto& rhs){ return lhs.pending < rhs.pending;};
             algorithm::sort( metrics, order_pending);
@@ -822,7 +821,6 @@ domain:
             ASSERT_TRUE( metrics.size() == count) << CASUAL_NAMED_VALUE( metrics);
             // all should be 0 pending
             EXPECT_TRUE(( algorithm::all_of( metrics, []( auto& metric){ return metric.pending == platform::time::unit::zero();})));
-
          }
 
       }
@@ -1099,6 +1097,102 @@ domain:
          auto a = local::domain( inbound);
 
          unittest::fetch::until( local::is_failed_listeners( 1));
+      }
+
+      TEST( gateway_manager_outbound, transaction_resource_error_reply_on_connection_lost)
+      {
+         common::unittest::Trace trace;
+
+         auto b = casual::domain::unittest::manager( R"(
+domain: 
+   name: B
+   groups: 
+      -  name: base
+      -  name: user
+         dependencies: [ base]
+      -  name: gateway
+         dependencies: [ user]
+   
+   servers:
+      - path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/service/bin/casual-service-manager
+        memberships: [ base]
+      - path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-server
+        memberships: [ user]
+      - path: bin/casual-gateway-manager
+        memberships: [ gateway]
+
+   gateway:
+      inbound:
+         groups:
+            -  connections: 
+                  -  address: 127.0.0.1:7010
+)");
+
+         // We act as the TM for B
+         communication::instance::whitelist::connect( communication::instance::identity::transaction::manager);
+         auto inbound = unittest::fetch::until( unittest::fetch::predicate::listeners( 1)).inbound.groups.at( 0).process;
+         ASSERT_TRUE( inbound);
+
+         auto a = local::domain( R"(
+domain: 
+   name: A
+   gateway:
+      outbound:
+         groups:
+            -  connections:
+                  -  address: 127.0.0.1:7010
+                     services: [ casual/example/domain/echo/B]
+)");
+
+         constexpr auto rm = strong::resource::id{ -1};
+
+         unittest::fetch::until( unittest::fetch::predicate::outbound::connected( 1));
+         
+         // call service in B in transaction
+         {
+            using namespace std::literals;
+
+            transaction::context().begin();
+
+            buffer::Payload payload;
+            payload.type = "X_OCTET/";
+            common::algorithm::copy( "casual"sv, std::back_inserter( payload.memory));
+
+            auto result = common::service::call::context().sync( "casual/example/domain/echo/B", common::buffer::payload::Send{ payload}, {});
+
+            EXPECT_TRUE( result.buffer.memory == payload.memory);
+
+         }
+
+         // fake the commit message to A:s TM (current domain)
+         {
+            common::message::transaction::commit::Request request{ process::handle()};
+            request.trid = transaction::context().current().trid;
+            
+            communication::device::blocking::send( communication::instance::outbound::transaction::manager::device(), request);
+         }
+         
+         // consume the request as TM (in the other domain B)
+         {
+            auto request = common::communication::ipc::receive< common::message::transaction::resource::commit::Request>();
+            EXPECT_TRUE( request.resource == rm);
+            EXPECT_TRUE( transaction::id::range::global( request.trid) == transaction::id::range::global( transaction::context().current().trid)) << CASUAL_NAMED_VALUE( request);
+         }
+
+         // destroy inbound in B, and we should get an error reply
+         {
+            common::signal::send( inbound.pid, code::signal::terminate);
+         }
+         
+         // we should get an error commit reply
+         {
+            auto reply = common::communication::ipc::receive< common::message::transaction::commit::Reply>();
+            EXPECT_TRUE( reply.state == decltype( reply.state)::fail) << CASUAL_NAMED_VALUE( reply);
+            EXPECT_TRUE( reply.trid == transaction::context().current().trid);
+
+         }
+
+
       }
 
    } // gateway

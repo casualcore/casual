@@ -37,19 +37,24 @@ namespace casual
                      case xa::heuristic_commit:
                      case xa::heuristic_rollback:
                      case xa::heuristic_mix: return tx::mixed;
-                     case xa::retry:
+                     
                      case xa::read_only: return tx::ok;
                      case xa::ok: return tx::ok;
-                     case xa::outstanding_async:
-                     case xa::resource_error:
+                     
                      case xa::invalid_xid: return tx::no_begin;
                      case xa::argument:
                      case xa::protocol: return tx::protocol;
-                     case xa::resource_fail:
-                     case xa::duplicate_xid:
+
+                     case xa::resource_error:
+                     case xa::resource_fail: return tx::fail;
+                     
+                     case xa::retry:
+                     case xa::outstanding_async:
+                     case xa::duplicate_xid: return tx::argument;
+
                      case xa::outside: return tx::outside;
-                     default: return tx::fail;
                   }
+                  return tx::fail;
                }
 
                code::casual casual( std::errc code)

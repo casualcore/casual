@@ -154,6 +154,8 @@ domain:
                tpgetrply( &descriptor, &buffer, &len, 0);
                EXPECT_TRUE( tperrno == 0) << "tperrno: " << tperrnostring( tperrno);
 
+               common::log::line( verbose::log, "got reply from descriptor: ", descriptor);
+
                platform::binary::type result;
                algorithm::copy( range::make( buffer, len), std::back_inserter( result));
                tpfree( buffer);
@@ -1093,18 +1095,12 @@ domain:
             return local::acall( "sleepy", binary);
          });
 
-         // all calls will take at least 100ms, we need to 'make sure' that the calls are 
-         // in-flight. We'll sleep for 50ms to mitigate that calls did not make it to the service
-         // before scaling down. 50ms should be enough for even the slowest of systems.
-         // another way is to accept TPENOENT replies, but then we wouldn't really make sure
-         // we test the thing we want to test.
-         process::sleep( std::chrono::milliseconds{ 50});
-
+         // we'll wait until the outbound has 7 (or more) pending messages
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::pending( 7));
 
          // shutdown B 
          local::sink( std::move( b));
          // <-- b is down.
-
 
          // receive the 7 calls
          for( auto descriptor : descriptors)
@@ -1166,12 +1162,8 @@ domain:
             return local::acall( "casual/example/sleep", binary);
          });
 
-         // all calls will take at least 100ms, we need to 'make sure' that the calls are 
-         // in-flight. We'll sleep for 50ms to mitigate that calls did not make it to the service
-         // before scaling down. 50ms should be enough for even the slowest of systems.
-         // another way is to accept TPENOENT replies, but then we wouldn't really make sure
-         // we test the thing we want to test.
-         process::sleep( std::chrono::milliseconds{ 50});
+         // we'll wait until the outbound has 5 (or more) pending messages
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::pending( 5));
          
          {
             b.activate();

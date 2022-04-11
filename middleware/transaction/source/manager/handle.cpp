@@ -172,6 +172,8 @@ namespace casual
                            auto is_failed = []( auto& outcome){ return outcome.state == decltype( outcome.state)::failed;};
                            code = common::algorithm::any_of( outcome, is_failed) ? common::code::xa::heuristic_hazard : code;
 
+                           common::log::line( verbose::log, "code: ", code);
+
                            return state::code::priority::convert( common::algorithm::accumulate( range, state::code::priority::convert( code), []( auto result, auto& reply)
                            {
                               return std::min( result, state::code::priority::convert( reply.state));
@@ -230,6 +232,8 @@ namespace casual
                            template< typename M>
                            auto request( State& state, M&& request)
                            {
+                              casual::assertion( request.resource, "invalid resource id: ", request.resource);
+
                               if( state::resource::id::local( request.resource))
                               {
                                  if( auto found = state.idle( request.resource))
@@ -370,6 +374,7 @@ namespace casual
                               if constexpr( common::traits::is::any_v< Reply, common::message::transaction::commit::Reply>)
                                  reply.stage = decltype( reply.stage)::commit;
 
+                              common::log::line( verbose::log, "reply: ", reply);   
                               common::communication::ipc::flush::optional::send( destination.process.ipc, reply);
 
                               remove::transaction( state, common::transaction::id::range::global( origin));
@@ -390,6 +395,7 @@ namespace casual
                               if constexpr( common::traits::is::any_v< Reply, common::message::transaction::commit::Reply>)
                                  reply.stage = decltype( reply.stage)::rollback;
 
+                              common::log::line( verbose::log, "reply: ", reply);
                               common::communication::ipc::flush::optional::send( destination.process.ipc, reply);
 
                               remove::transaction( state, common::transaction::id::range::global( origin));

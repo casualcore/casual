@@ -5,7 +5,6 @@
 //!
 
 #include "gateway/group/outbound/handle.h"
-#include "gateway/group/outbound/error/reply.h"
 #include "gateway/group/tcp.h"
 #include "gateway/group/ipc.h"
 
@@ -45,18 +44,14 @@ namespace casual
                      {
                         const auto error = exception::capture();
 
-                        if( error.code() != code::casual::communication_unavailable)
-                        {
-                           auto information = casual::assertion( state.external.information( descriptor), 
-                              code::casual::internal_correlation, " no information for descriptor: ", descriptor);
+                        auto lost = connection::lost( state, descriptor);
 
-                           log::line( log::category::error, "send failed to ", information->domain, " - error: ", error, " - action: remove connection");
-                        }
+                        if( error.code() != code::casual::communication_unavailable)
+                           log::line( log::category::error, error, " send failed to remote: ", lost.remote, " - action: remove connection");
 
                         // we 'lost' the connection in some way - we put a connection::Lost on our own ipc-device, and handle it
                         // later (and differently depending on if we're 'regular' or 'reversed')
-                        communication::ipc::inbound::device().push( 
-                           message::outbound::connection::Lost{ connection::lost( state, descriptor)});
+                        communication::ipc::inbound::device().push( lost);
                      }
                   }
                   else
@@ -102,8 +97,21 @@ namespace casual
 
                               auto descriptor = state.lookup.connection( message.trid);
 
+                              // add the route and the error callback
+                              state.route.add( std::move( message), descriptor, [ rm = message.resource, trid = message.trid]( auto& destination)
+                              {
+                                 common::message::reverse::type_t< Message> reply;
+                                 reply.correlation = destination.correlation;
+                                 reply.execution = destination.execution;
+                                 reply.resource = rm;
+                                 reply.trid = trid;
+                                 reply.state = decltype( reply.state)::resource_error; // is this the best error code?
+
+                                 log::line( verbose::log, "reply: ", reply);
+                                 ipc::flush::send( destination.ipc, reply);
+                              });
+
                               tcp::send( state, descriptor, message);
-                              state.route.message.add( std::move( message), descriptor);
                            };
                         }
                      } // basic                       
@@ -129,43 +137,33 @@ namespace casual
                {
                   namespace call
                   {
-                     namespace reply
+                     auto metric( State& state, const state::route::Destination& destination, 
+                        const state::service::Pending::Call& call, const common::transaction::ID& trid, code::xatmi code)
                      {
-                        auto send( State& state, state::route::service::Point destination, const common::message::service::call::Reply& message)
-                        {
-                           Trace trace{ "gateway::group::outbound::handle::local::internal::service::call::reply::send"};
+                        Trace trace{ "gateway::group::outbound::handle::local::internal::service::call::metric"};
 
-                           ipc::flush::optional::send( destination.process.ipc, message);
-
-                           state.route.service.metric.metrics.push_back( [&]()
-                           {
-                              common::message::event::service::Metric metric;
-                              
-                              metric.process = common::process::handle();
-                              metric.correlation = message.correlation;
-                              metric.execution = message.execution;
-                              metric.service = std::move( destination.service);
-                              metric.parent = std::move( destination.parent);
-                              metric.type = decltype( metric.type)::concurrent;
-                              
-                              metric.trid = message.transaction.trid;
-                              metric.start = destination.start;
-                              metric.end = platform::time::clock::type::now();
-
-                              metric.code = message.code.result;
-
-                              return metric;
-                           }());
-
-                           // send service metrics if we don't have any more in-flight call request (this one
-                           // was the last, or only) OR we've accumulated enough metrics for a batch update
-                           if( state.route.service.message.empty() || state.route.service.metric.metrics.size() >= platform::batch::gateway::metrics)
-                           {
-                              ipc::flush::optional::send( ipc::manager::service(), state.route.service.metric);
-                              state.route.service.metric.metrics.clear();
-                           }
+                        common::message::event::service::Metric metric;
+                        {   
+                           metric.process = common::process::handle();
+                           metric.correlation = call.correlation;
+                           metric.execution = destination.execution;
+                           metric.service = std::move( call.service);
+                           metric.parent = std::move( call.parent);
+                           metric.type = decltype( metric.type)::concurrent;
+                           metric.code = code;
+                           
+                           metric.trid = trid;
+                           metric.start = call.start;
+                           metric.end = platform::time::clock::type::now();
                         }
-                     } // reply
+                        state.service.add( std::move( metric));
+
+                        // possible send metric
+                        state.service.maybe_metric( []( auto& message)
+                        {
+                           ipc::flush::optional::send( ipc::manager::service(), message);
+                        });
+                     }                  
 
                      auto request( State& state)
                      {
@@ -174,42 +172,40 @@ namespace casual
                            Trace trace{ "gateway::group::outbound::handle::local::internal::service::call::request"};
                            log::line( verbose::log, "message: ", message);
 
-                           auto send_error_reply = []( auto& state, auto route, auto& message, auto code)
-                           {
-                              // we can't send error reply if the caller using 'fire and forget'.
-                              if( message.flags.exist( common::message::service::call::request::Flag::no_reply))
-                                 return;
-
-                              auto reply = common::message::reverse::type( message);
-                              reply.code.result = code;
-                              reply.transaction.trid = message.trid;
-
-                              service::call::reply::send( state, std::move( route), reply);
-                           };
-
-
-                           auto now = platform::time::clock::type::now();
-
                            auto [ lookup, involved] = state.lookup.service( message.service.name, message.trid);
-
                            log::line( verbose::log, "lookup: ", lookup);
 
-                           auto route = state::route::service::Point{
-                              message.correlation,
-                              message.process,
-                              // we keep the requested if provided. Will be used for "metric-ack" to service-manager later.
-                              message.service.requested.value_or( message.service.name),
-                              message.parent,
-                              now,
-                              lookup.connection};
+                           state.service.add( message);
 
+                           auto create_error_callback = []( auto& state, auto& message) -> state::route::error::callback::type
+                           {
+                              if( message.flags.exist( common::message::service::call::request::Flag::no_reply))
+                                 return {};
+
+                              return [ &state, trid = message.trid]( auto& destination)
+                              {
+                                 common::message::service::call::Reply reply;
+                                 reply.correlation = destination.correlation;
+                                 reply.execution = destination.execution;
+                                 reply.transaction.trid = trid;
+                                 reply.code.result = decltype( reply.code.result)::system;
+
+                                 log::line( verbose::log, "reply: ", reply);
+                                 ipc::flush::optional::send( destination.ipc, reply);
+
+                                 service::call::metric( state, destination, state.service.consume( destination.correlation), trid, reply.code.result);
+                              };
+                           };
+
+                           auto route = state::route::Point{ message, lookup.connection, create_error_callback( state, message)};
 
                            // check if we've has been called with the same correlation id before, hence we are in a
                            // loop between gateways.
-                           if( state.route.service.message.contains( message.correlation))
+                           if( state.route.contains( message.correlation))
                            {
                               log::line( log, code::casual::invalid_semantics, " a call with the same correlation id is in flight - ", message.correlation, " - action: reply with ", code::xatmi::no_entry);
-                              send_error_reply( state, std::move( route), message, code::xatmi::no_entry);
+                              if( route.callback)
+                                 route.error();
                               return;
                            }
 
@@ -217,7 +213,8 @@ namespace casual
                            {
                               log::line( log::category::error, code::casual::invalid_semantics, " failed to look up service '", message.service.name, "' - action: reply with ", code::xatmi::system);
 
-                              send_error_reply( state, std::move( route), message, code::xatmi::system);
+                              if( route.callback)
+                                 route.error();
                               return;
                            }
 
@@ -229,7 +226,7 @@ namespace casual
                               transaction::involved( message);
                               
                            if( ! message.flags.exist( common::message::service::call::request::Flag::no_reply))
-                              state.route.service.message.add( std::move( route));
+                              state.route.add( std::move( route));
 
                            tcp::send( state, lookup.connection, message);
                         };
@@ -257,7 +254,15 @@ namespace casual
                            if( involved)
                               transaction::involved( message);
 
-                           state.route.message.add( message, lookup.connection);
+                           state.route.add( message, lookup.connection, []( auto& destination)
+                           {
+                              common::message::conversation::connect::Reply reply;
+                              reply.correlation = destination.correlation;
+                              reply.execution = destination.execution;
+                              reply.code.result = decltype( reply.code.result)::system;
+                              ipc::flush::send( destination.ipc, reply);
+                           });
+
                            tcp::send( state, lookup.connection, message);
                         };
                      }
@@ -272,14 +277,14 @@ namespace casual
                         Trace trace{ "gateway::group::outbound::handle::local::internal::conversation::disconnect"};
                         log::line( verbose::log, "message: ", message);
                         
-                        if( auto point = state.route.message.consume( message.correlation))
+                        if( auto point = state.route.consume( message.correlation))
                         {
                            tcp::send( state, point.connection, message);
                         }
                         else
                         {
                            log::line( log::category::error, code::casual::internal_correlation, " failed to correlate internal::conversation::send [", message.correlation, "] - action: ignore");
-                           log::line( verbose::log, "state.route.message: ", state.route.message);
+                           log::line( verbose::log, "state.route: ", state.route);
                         }
 
                      };
@@ -292,14 +297,14 @@ namespace casual
                         Trace trace{ "gateway::group::outbound::handle::local::internal::conversation::send"};
                         log::line( verbose::log, "message: ", message);
 
-                        if( auto found = algorithm::find( state.route.message.points(), message.correlation))
+                        if( auto found = algorithm::find( state.route.points(), message.correlation))
                         {
                            tcp::send( state, found->connection, message);
                         }
                         else
                         {
                            log::line( log::category::error, code::casual::internal_correlation, " failed to correlate internal::conversation::send [", message.correlation, "] - action: ignore");
-                           log::line( verbose::log, "state.route.message: ", state.route.message);
+                           log::line( verbose::log, "state.route: ", state.route);
                         }
                      };
                   }
@@ -507,13 +512,20 @@ namespace casual
 
                            auto [ lookup, involved] = state.lookup.queue( message.name, message.trid);
 
+                           auto route = state::route::Point{ message, lookup.connection, []( auto& destination)
+                           {
+                              common::message::reverse::type_t< Message> reply;
+                              reply.correlation = destination.correlation;
+                              reply.execution = destination.execution;
+                              ipc::flush::optional::send( destination.ipc, reply);
+                           }};
+
                            // check if we've has been called with the same correlation id before, hence we are in a
                            // loop between gateways.
-                           if( ! lookup.connection || state.route.message.contains( message.correlation))
+                           if( ! lookup.connection || state.route.contains( message.correlation))
                            {
                               log::line( log::category::error, code::casual::invalid_semantics, " failed to look up queue '", message.name);
-                              auto reply = common::message::reverse::type( message);
-                              ipc::flush::optional::send( message.process.ipc, reply);
+                              route.error();
                               return;
                            }
 
@@ -523,7 +535,7 @@ namespace casual
                            if( involved)
                               transaction::involved( message);
 
-                           state.route.message.add( message, lookup.connection);
+                           state.route.add( std::move( route));
                            tcp::send( state, lookup.connection, message);
                         };
                      }  
@@ -574,13 +586,15 @@ namespace casual
                            Trace trace{ "gateway::group::outbound::handle::local::external::service::call::reply"};
                            log::line( verbose::log, "message: ", message);
 
-                           if( auto destination = state.route.service.message.consume( message.correlation))
+                           if( auto route = state.route.consume( message.correlation))
                            {
+                              auto pending = state.service.consume( message.correlation);
+
                               // we unadvertise the service if we get no_entry, and we got 
                               // no connections left for the service
                               if( message.code.result == decltype( message.code.result)::no_entry)
                               {
-                                 auto services = state.lookup.remove( destination.connection, { destination.service}, {}).services;
+                                 auto services = state.lookup.remove( route.connection, { pending.service}, {}).services;
 
                                  if( ! services.empty())
                                  {                                 
@@ -594,12 +608,14 @@ namespace casual
                               // get the internal "un-branched" trid
                               message.transaction.trid = state.lookup.internal( message.transaction.trid);
 
-                              internal::service::call::reply::send( state, std::move( destination), message);
+                              ipc::flush::optional::send( route.destination.ipc, message);
+
+                              internal::service::call::metric( state, std::move( route.destination), pending, message.transaction.trid, message.code.result);
                            }
                            else
                            {
                               log::line( log::category::error, code::casual::internal_correlation, " failed to correlate [", message.correlation, "] reply with a destination - action: ignore");
-                              log::line( verbose::log, "state.route.service.message: ", state.route.service.message);
+                              log::line( verbose::log, "state.route.: ", state.route);
                            }
                         };
                      }
@@ -618,18 +634,18 @@ namespace casual
                            Trace trace{ "gateway::group::outbound::handle::local::external::conversation::connect::reply"};
                            log::line( verbose::log, "message: ", message);
 
-                           if( auto found = algorithm::find( state.route.message.points(), message.correlation))
+                           if( auto found = algorithm::find( state.route.points(), message.correlation))
                            {
                               log::line( verbose::log, "found: ", *found);
-                              ipc::flush::optional::send( found->process.ipc, message);
+                              ipc::flush::optional::send( found->destination.ipc, message);
                               
                               if( message.code.result != decltype( message.code.result)::absent)
-                                 state.route.message.remove( message.correlation);
+                                 state.route.remove( message.correlation);
                            }
                            else
                            {
                               log::line( log::category::error, code::casual::internal_correlation, " failed to correlate external::conversation::connect::reply [", message.correlation, "] - action: ignore");
-                              log::line( verbose::log, "state.route.message: ", state.route.message);
+                              log::line( verbose::log, "state.route: ", state.route);
                            }
 
                         };
@@ -643,18 +659,17 @@ namespace casual
                         Trace trace{ "gateway::group::outbound::handle::local::external::conversation::send"};
                         log::line( verbose::log, "message: ", message);
 
-
-                        if( auto found = algorithm::find( state.route.message.points(), message.correlation))
+                        if( auto found = algorithm::find( state.route.points(), message.correlation))
                         {
-                           ipc::flush::optional::send( found->process.ipc, message);
+                           ipc::flush::optional::send( found->destination.ipc, message);
 
                            if( message.code.result != decltype( message.code.result)::absent)
-                                 state.route.message.remove( message.correlation);
+                                 state.route.remove( message.correlation);
                         }
                         else
                         {
                            log::line( log::category::error, code::casual::internal_correlation, " failed to correlate external::conversation::send [", message.correlation, "] - action: ignore");
-                           log::line( verbose::log, "state.route.message: ", state.route.message);
+                           log::line( verbose::log, "state.route: ", state.route);
                         }
 
                      };
@@ -673,9 +688,9 @@ namespace casual
                            Trace trace{ "gateway::group::outbound::handle::local::external::queue::basic::reply"};
                            log::line( verbose::log, "message: ", message);
 
-                           if( auto destination = state.route.message.consume( message.correlation))
+                           if( auto point = state.route.consume( message.correlation))
                            {
-                              ipc::flush::optional::send( destination.process.ipc, message);
+                              ipc::flush::optional::send( point.destination.ipc, message);
                            }
                            else
                               log::line( log::category::error, code::casual::internal_correlation, " failed to correlate [", message.correlation, "] reply with a destination - action: ignore");
@@ -703,10 +718,10 @@ namespace casual
                         template< typename M>
                         void send( State& state, M&& message)
                         {
-                           if( auto destination = state.route.message.consume( message.correlation))
+                           if( auto point = state.route.consume( message.correlation))
                            {
                               message.process = process::handle();
-                              ipc::flush::optional::send( destination.process.ipc, message);
+                              ipc::flush::optional::send( point.destination.ipc, message);
                            }
                            else
                               log::line( log::category::error, code::casual::internal_correlation, " failed to correlate [", message.correlation, "] reply with a destination - action: ignore");
@@ -901,7 +916,7 @@ namespace casual
 
       namespace connection
       {
-         configuration::model::gateway::outbound::Connection lost( State& state, strong::file::descriptor::id descriptor)
+         message::outbound::connection::Lost lost( State& state, strong::file::descriptor::id descriptor)
          {
             Trace trace{ "gateway::group::outbound::handle::connection::lost"};
             log::line( verbose::log, "descriptor: ", descriptor);
@@ -912,17 +927,17 @@ namespace casual
             // take care of aggregated replies, if any.
             state.coordinate.discovery.failed( descriptor);
 
-            auto error_reply = []( auto& point){ error::reply::point( point);};
+            auto error_reply = []( auto& point){ point.error();};
 
             // consume routs associated with the 'connection', and try to send 'error-replies'
-            algorithm::for_each( state.route.message.consume( descriptor), error_reply);
-            algorithm::for_each( state.route.service.message.consume( descriptor), error_reply);
+            algorithm::for_each( state.route.consume( descriptor), error_reply);
 
             // connection might have been in 'disconnecting phase'
             algorithm::container::trim( state.disconnecting, algorithm::remove( state.disconnecting, descriptor));
 
             // remove the information about the 'connection'.
-            return state.external.remove( state.directive, descriptor);
+            auto information = state.external.remove( state.directive, descriptor);
+            return { std::move( information.configuration), std::move( information.domain)};
          }
 
          void disconnect( State& state, common::strong::file::descriptor::id descriptor)
@@ -933,39 +948,20 @@ namespace casual
             // unadvertise all 'orphanage' services and queues, if any.
             handle::unadvertise( state.lookup.remove( descriptor));
 
-            // take care of aggregated replies, if any.
-            state.coordinate.discovery.failed( descriptor);
-
             state.disconnecting.push_back( descriptor);
          }
          
       } // connection
 
-
-      std::vector< configuration::model::gateway::outbound::Connection> idle( State& state)
+      void idle( State& state)
       {
+         Trace trace{ "gateway::group::outbound::handle::idle"};
+
          // we need to check metric, we don't know when we're about to be called again.
-         if( ! state.route.service.metric.metrics.empty())
+         state.service.force_metric( []( auto& message)
          {
-            ipc::flush::optional::send( ipc::manager::service(), state.route.service.metric);
-            state.route.service.metric.metrics.clear();
-         }
-
-         if( state.disconnecting.empty())
-            return {};
-
-         auto no_pending = [&state]( auto& descriptor)
-         {
-            return ! state.route.service.message.associated( descriptor) 
-               && ! state.route.message.associated( descriptor);
-         };
-
-         std::vector< configuration::model::gateway::outbound::Connection> result;
-
-         for( auto descriptor : algorithm::container::extract( state.disconnecting, algorithm::filter( state.disconnecting, no_pending)))
-            result.push_back( handle::connection::lost( state, descriptor));
-
-         return result;
+            ipc::flush::optional::send( ipc::manager::service(), message);
+         });
       }
 
       void shutdown( State& state)
@@ -977,12 +973,11 @@ namespace casual
          // unadvertise all resources
          handle::unadvertise( state.lookup.resources());
 
-         // send metric for good measure 
-         if( ! state.route.service.metric.metrics.empty())
+         // send metric for good measure
+         state.service.force_metric( []( auto& message)
          {
-            ipc::flush::optional::send( ipc::manager::service(), state.route.service.metric);
-            state.route.service.metric.metrics.clear();
-         }
+            ipc::flush::optional::send( ipc::manager::service(), message);
+         });
 
          for( auto descriptor : state.external.descriptors())
             handle::connection::disconnect( state, descriptor);
@@ -1001,8 +996,8 @@ namespace casual
 
          state.external.clear( state.directive);
 
-         auto error_reply = []( auto& point){ error::reply::point( point);};
-         algorithm::for_each( state.route.message.consume(), error_reply);
+         auto error_reply = []( auto& point){ point.error();};
+         algorithm::for_each( state.route.consume(), error_reply);
       }
 
    } // gateway::group::outbound::handle

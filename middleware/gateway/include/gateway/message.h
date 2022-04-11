@@ -320,14 +320,16 @@ namespace casual
             struct Lost : base_lost
             {
                Lost() = default;
-               Lost( casual::configuration::model::gateway::inbound::Connection configuration) 
-                  : configuration{ std::move( configuration)} {}
+               Lost( casual::configuration::model::gateway::inbound::Connection configuration, common::domain::Identity remote)
+                  : configuration{ std::move( configuration)}, remote{ std::move( remote)} {}
 
                casual::configuration::model::gateway::inbound::Connection configuration;
+               common::domain::Identity remote;
 
                CASUAL_CONST_CORRECT_SERIALIZE(
                   base_lost::serialize( archive);
                   CASUAL_SERIALIZE( configuration);
+                  CASUAL_SERIALIZE( remote);
                )
             };
             
@@ -345,14 +347,14 @@ namespace casual
             {
                struct Message
                {
-                  common::message::Type type{};
-                  platform::size::type count{};
-
-                  inline friend bool operator == ( const Message& lhs, common::message::Type rhs) { return lhs.type == rhs;}
+                  common::strong::correlation::id correlation;
+                  common::strong::ipc::id target;
+                  common::strong::file::descriptor::id connection;
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
-                     CASUAL_SERIALIZE( type);
-                     CASUAL_SERIALIZE( count);
+                     CASUAL_SERIALIZE( correlation);
+                     CASUAL_SERIALIZE( target);
+                     CASUAL_SERIALIZE( connection);
                   )
                };
             } // pending
@@ -512,14 +514,16 @@ namespace casual
             struct Lost : base_lost
             {
                Lost() = default;
-               Lost( casual::configuration::model::gateway::outbound::Connection configuration) 
-                  : configuration{ std::move( configuration)} {}
+               Lost( casual::configuration::model::gateway::outbound::Connection configuration, common::domain::Identity remote)
+                  : configuration{ std::move( configuration)}, remote{ std::move( remote)} {}
 
                casual::configuration::model::gateway::outbound::Connection configuration;
+               common::domain::Identity remote;
 
                CASUAL_CONST_CORRECT_SERIALIZE(
                   base_lost::serialize( archive);
                   CASUAL_SERIALIZE( configuration);
+                  CASUAL_SERIALIZE( remote);
                )
             };
             
