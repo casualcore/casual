@@ -137,7 +137,25 @@ namespace casual
                         && common::algorithm::includes( state.queues, queues);
                   };
                }
+
+               //! keep trying until the sum of all groups pending messages is >= count
+               inline auto pending( platform::size::type count)
+               {
+                  return [ count]( auto& state)
+                  {
+                     return common::algorithm::accumulate( state.outbound.groups, platform::size::type{}, []( auto result, auto& group)
+                     {
+                        return result + group.pending.messages.size();
+                     }) >= count;
+                  };
+               }
             } // outbound
+
+            namespace inbound
+            {
+
+               
+            } // inbound
 
             inline auto listeners( platform::size::type count = 1)
             {

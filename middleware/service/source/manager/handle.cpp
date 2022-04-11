@@ -426,8 +426,11 @@ namespace casual
                                  reply.service.timeout.duration = message.deadline.value() - platform::time::clock::type::now();
                               }                             
 
-                              // TODO maintainence: if the message is not sent, we need to unreserve
-                              local::optional::send( message.process.ipc, reply);
+                              // send reply, if caller gone, we discard the reservation.
+                              if( ! local::optional::send( message.process.ipc, reply))
+                                 if( auto found = algorithm::find( state.instances.sequential, handle.pid))
+                                    found->second.discard();
+
                            }
                            else if( service->instances.empty())
                            {
@@ -663,7 +666,7 @@ namespace casual
                               {
                                  return instance.process;
                               });
-                              handle::local::eventually::send( message.process, reply);
+                              local::optional::send( message.process.ipc, reply);
                            }
 
                            if( busy)
@@ -705,7 +708,7 @@ namespace casual
                                     }
                                  }); 
                                  
-                                 handle::local::eventually::send( destination, message);
+                                 local::optional::send( destination.ipc, message);
 
                               };
 
@@ -747,7 +750,7 @@ namespace casual
                            return result;
                         });
 
-                        communication::device::blocking::send( message.process.ipc, reply);
+                        local::optional::send( message.process.ipc, reply);
                      };
                   }
 

@@ -167,6 +167,79 @@ namespace casual
             std::unordered_map< std::string, std::vector< lookup::resource::Connection>> m_queues;
          };
 
+         namespace service
+         {
+            struct Pending
+            {
+               struct Call
+               {
+                  Call( const common::message::service::call::callee::Request& message)
+                     : correlation{ message.correlation}, service{ message.service.requested.value_or( message.service.name)}, parent{ message.parent}
+                  {}
+
+                  common::strong::correlation::id correlation;
+                  std::string service;
+                  std::string parent;
+                  platform::time::point::type start = platform::time::clock::type::now();
+
+                  inline friend bool operator == ( const Call& lhs, const common::strong::correlation::id& rhs) { return lhs.correlation == rhs;}
+               };
+
+               inline void add( const common::message::service::call::callee::Request& message)
+               {
+                  assert( ! common::algorithm::find( m_calls, message.correlation));
+                  m_calls.emplace_back( message);
+               }
+
+
+               inline auto consume( const common::strong::correlation::id& correlation)
+               {
+                  auto found = common::algorithm::find( m_calls, correlation);
+                  assert( found);
+                  return common::algorithm::container::extract( m_calls, std::begin( found));
+               }
+
+               inline void add( common::message::event::service::Metric metric)
+               {
+                  m_metric.metrics.push_back( std::move( metric));
+               }
+               
+               //! "force" metric callback if there are metric to send
+               template< typename CB>
+               void force_metric( CB&& callback)
+               {
+                  if( m_metric.metrics.empty())
+                     return;
+                  
+                  callback( m_metric);
+                  m_metric.metrics.clear();
+               }
+
+               //! send service metrics if we don't have any more in-flight call request (this one
+               //! was the last, or only) OR we've accumulated enough metrics for a batch update               
+               template< typename CB>
+               void maybe_metric( CB&& callback)
+               {
+                  if( m_calls.empty() || m_metric.metrics.size() >= platform::batch::gateway::metrics)
+                     force_metric( std::forward< CB>( callback));
+               }
+
+               inline explicit operator bool() const noexcept { return ! m_calls.empty();}
+
+               CASUAL_LOG_SERIALIZE( 
+                  CASUAL_SERIALIZE_NAME( m_calls, "calls");
+                  CASUAL_SERIALIZE_NAME( m_metric, "metric");
+               )
+
+            private:
+               std::vector< Call> m_calls;
+               common::message::event::service::Calls m_metric{ common::process::handle()};
+            };
+
+            
+            
+         } // service
+
       } // state
 
       struct State
@@ -175,30 +248,9 @@ namespace casual
          common::communication::select::Directive directive;
          group::tcp::External< configuration::model::gateway::outbound::Connection> external;
 
-         struct 
-         {
-            struct
-            {
-               state::route::service::Message message;
-               common::message::event::service::Calls metric{ common::process::handle()};
+         state::Route route;
 
-               CASUAL_LOG_SERIALIZE( 
-                  CASUAL_SERIALIZE( message);
-                  CASUAL_SERIALIZE( metric);
-               )
-            } service;
-
-            state::route::Message message;
-
-            inline bool empty() const { return message.empty() && service.message.empty();}
-
-            CASUAL_LOG_SERIALIZE( 
-               CASUAL_SERIALIZE( service);
-               CASUAL_SERIALIZE( message);
-            )
-         } route;
-
-         
+         state::service::Pending service;
          state::Lookup lookup;
 
          //! holds all connections that has been requested to disconnect.
@@ -246,26 +298,14 @@ namespace casual
             common::algorithm::transform( lookup.queues(), reply.state.correlation.queues, transform);
 
             // pending
+            reply.state.pending.messages = common::algorithm::transform( route.points(), []( auto& point)
             {
-               reply.state.pending.messages = common::algorithm::accumulate( route.message.points(), std::vector< message::outbound::state::pending::Message>{}, []( auto result, auto& point)
-               {
-                  if( auto found = common::algorithm::find( result, point.type))
-                     ++found->count;
-                  else
-                     result.push_back( message::outbound::state::pending::Message{ point.type, 1});
-
-                  return result;
-               });
-               
-               if( ! route.service.message.empty())
-               {
-                  reply.state.pending.messages.push_back( 
-                     message::outbound::state::pending::Message{
-                        common::message::Type::service_call, 
-                        route.service.message.size()});
-               }
-
-            }
+               message::outbound::state::pending::Message result;
+               result.connection = point.connection;
+               result.correlation = point.destination.correlation;
+               result.target = point.destination.ipc;
+               return result;
+            });
 
             return reply;
          }

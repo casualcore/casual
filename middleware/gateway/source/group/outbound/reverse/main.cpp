@@ -7,7 +7,6 @@
 #include "gateway/group/outbound/handle.h"
 #include "gateway/group//handle.h"
 #include "gateway/group/outbound/state.h"
-#include "gateway/group/outbound/error/reply.h"
 #include "gateway/group/tcp/listen.h"
 #include "gateway/group/ipc.h"
 #include "gateway/message.h"
@@ -151,7 +150,7 @@ namespace casual
                            log::line( verbose::log, "message: ", message);
 
                            // we just log the 'event'
-                           log::line( log::category::information, code::casual::communication_unavailable, " lost connection ", message.configuration.address);
+                           log::line( log::category::information, code::casual::communication_unavailable, " lost connection to domain: ", message.remote);
                         };
                      }
                   } // connection

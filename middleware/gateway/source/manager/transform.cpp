@@ -149,8 +149,9 @@ namespace casual
                   result.pending.messages = algorithm::transform( reply.state.pending.messages, []( auto& message)
                   {
                      return manager::admin::model::outbound::pending::Message{
-                        message.type,
-                        message.count
+                        message.correlation,
+                        message.target,
+                        message.connection
                      };
                   });
 

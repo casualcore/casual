@@ -136,7 +136,7 @@ namespace casual
             return nullptr;
          }
 
-         Configuration remove( 
+         Information remove( 
             common::communication::select::Directive& directive, 
             common::strong::file::descriptor::id descriptor)
          {
@@ -148,7 +148,7 @@ namespace casual
             auto found = common::algorithm::find( m_information, descriptor);
             casual::assertion( descriptor, "fail to find information for descriptor: ", descriptor);
                
-            return common::algorithm::container::extract( m_information, std::begin( found)).configuration;
+            return common::algorithm::container::extract( m_information, std::begin( found));
          }
 
          void clear( common::communication::select::Directive& directive)
@@ -234,26 +234,14 @@ namespace casual
 
             return [ &state, handler = std::move( handler), lost = std::move( lost)]( strong::file::descriptor::id descriptor, communication::select::tag::read) mutable
             {
-               constexpr auto is_outbound_v = std::is_same_v< decltype( lost( state, descriptor)), decltype( message::outbound::connection::Lost{}.configuration)>;
+               constexpr auto is_outbound_v = std::is_same_v< decltype( lost( state, descriptor)), decltype( message::outbound::connection::Lost{})>;
 
                if( auto connection = state.external.connection( descriptor))
                {
                   try
                   {
-                     // we need to handle outbound and inbound differently (should be the same?)
-                     if constexpr( is_outbound_v)
-                     {
-                        state.external.last( descriptor);
-                        handler( connection->next());
-                     }
-                     else
-                     {
-                        if( auto correlation = handler( connection->next()))
-                        {
-                           if( ! algorithm::find( state.correlations, correlation))
-                              state.correlations.emplace_back( std::move( correlation), descriptor);
-                        }
-                     }
+                     state.external.last( descriptor);
+                     handler( connection->next());
                   }
                   catch( ...)
                   {
@@ -261,7 +249,7 @@ namespace casual
                      if( error.code() != code::casual::communication_unavailable)
                      {
                         auto information = state.external.information( descriptor);
-                        log::line( log::category::error, "failed to receive from: ", information->domain.name, ", configured address: ", information->configuration.address, " - error: ", error);
+                        log::line( log::category::error, "failed to receive from domain: ", information->domain, ", configured address: ", information->configuration.address, " - error: ", error);
                      }
 
                      // we 'lost' the connection in some way - we put a connection::Lost on our own ipc-device, and handle it

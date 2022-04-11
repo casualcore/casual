@@ -151,7 +151,7 @@ namespace casual
                            log::line( verbose::log, "message: ", message);
 
                            // we just log the 'event'
-                           log::line( log::category::information, code::casual::communication_unavailable, " lost connection ", message.configuration.address);
+                           log::line( log::category::information, code::casual::communication_unavailable, " lost connection to domain: ", message.remote);
                         };
                      }
                   } // connection

@@ -29,7 +29,7 @@ namespace casual
       {
          //! send error replies to all pending in-flight messages that is associated with the connection
          //! removes all state associated with the connection.
-         configuration::model::gateway::outbound::Connection lost( State& state, common::strong::file::descriptor::id descriptor);
+         message::outbound::connection::Lost lost( State& state, common::strong::file::descriptor::id descriptor);
 
          //! unadvertise all associated resources to descriptor, mark the connection as 'disconnecting'
          void disconnect( State& state, common::strong::file::descriptor::id descriptor);
@@ -37,7 +37,7 @@ namespace casual
       } // connection
 
       //! take care of pending tasks, when message dispatch is idle.
-      std::vector< configuration::model::gateway::outbound::Connection> idle( State& state);
+      void idle( State& state);
 
       //! soft shutdown - tries to disconnect all connections
       void shutdown( State& state);

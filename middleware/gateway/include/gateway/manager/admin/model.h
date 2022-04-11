@@ -187,12 +187,14 @@ namespace casual
             {
                struct Message
                {
-                  common::message::Type type{};
-                  platform::size::type count{};
+                  common::strong::correlation::id correlation;
+                  common::strong::ipc::id target;
+                  common::strong::file::descriptor::id connection;
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
-                     CASUAL_SERIALIZE( type);
-                     CASUAL_SERIALIZE( count);
+                     CASUAL_SERIALIZE( correlation);
+                     CASUAL_SERIALIZE( target);
+                     CASUAL_SERIALIZE( connection);
                   )
                };
             } // pending

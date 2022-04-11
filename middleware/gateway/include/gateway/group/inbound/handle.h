@@ -25,7 +25,7 @@ namespace casual
       namespace connection
       {
          //! tries to compensate for the lost connection
-         configuration::model::gateway::inbound::Connection lost( State& state, common::strong::file::descriptor::id descriptor);
+         message::inbound::connection::Lost lost( State& state, common::strong::file::descriptor::id descriptor);
 
          //! will try to disconnect the socket, depending on the protocoll version it's either 'smooth' or 'abrupt'
          void disconnect( State& state, common::strong::file::descriptor::id descriptor);

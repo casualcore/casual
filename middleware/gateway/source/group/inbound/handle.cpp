@@ -46,18 +46,14 @@ namespace casual
                      {
                         const auto error = exception::capture();
 
-                        if( error.code() != code::casual::communication_unavailable)
-                        {
-                           auto information = casual::assertion( state.external.information( connection->descriptor()), 
-                              code::casual::internal_correlation, " no information for connection: ", *connection);
+                        auto lost = connection::lost( state, connection->descriptor());
 
-                           log::line( log::category::error, "send failed to ", information->domain, " - error: ", error, " - action: remove connection");
-                        }
+                        if( error.code() != code::casual::communication_unavailable)
+                           log::line( log::category::error, error, " send failed to remote: ", lost.remote, " - action: remove connection");
 
                         // we 'lost' the connection in some way - we put a connection::Lost on our own ipc-device, and handle it
                         // later (and differently depending on if we're 'regular' or 'reversed')
-                        communication::ipc::inbound::device().push( 
-                           message::inbound::connection::Lost{ connection::lost( state, connection->descriptor())});
+                        communication::ipc::inbound::device().push( lost);
                      }
                      return {};
                   }
@@ -299,32 +295,6 @@ namespace casual
 
                   namespace discovery
                   {
-                     auto request( State& state)
-                     {
-                        //! comes from external and handled here.
-                        return [&state]( casual::domain::message::discovery::Request& message)
-                        {
-                           Trace trace{ "gateway::group::inbound::handle::local::internal::domain::discovery::request"};
-                           common::log::line( verbose::log, "message: ", message);
-
-                           if( auto found = algorithm::find( state.correlations, message.correlation))
-                           {
-                              common::log::line( verbose::log, "correlation: ", *found);
-
-                              // Set 'sender' so we get the reply
-                              message.process = common::process::handle();
-
-                              auto information = state.external.information( found->descriptor);
-                              assert( information);
-
-                              if( information->configuration.discovery == decltype( information->configuration.discovery)::forward)
-                                  message.directive = decltype( message.directive)::forward;
-
-                              casual::domain::discovery::request( message);
-                           }
-                        };
-                     }
-
                      auto reply = basic_forward< casual::domain::message::discovery::Reply>;
 
                      namespace topology
@@ -388,6 +358,13 @@ namespace casual
 
             namespace external
             {
+               template< typename M>
+               auto correlate( State& state, const M& message)
+               {
+                  state.correlations.emplace_back( message.correlation, state.external.last());
+                  return state.external.last();
+               }
+
                namespace disconnect
                {
                   auto reply( State& state)
@@ -455,6 +432,9 @@ namespace casual
                         return [&state]( common::message::service::call::callee::Request& message)
                         {
                            Trace trace{ "gateway::group::inbound::handle::local::external::service::call::request"};
+                           log::line( verbose::log, "message: ", message);
+                           
+                           external::correlate( state, message);
                            
                            detail::lookup( state, message);
                         };
@@ -471,6 +451,9 @@ namespace casual
                         return [&state]( common::message::conversation::connect::callee::Request& message)
                         {
                            Trace trace{ "gateway::group::inbound::handle::local::external::conversation::connect::request"};
+                           log::line( verbose::log, "message: ", message);
+                           
+                           external::correlate( state, message);
 
                            service::detail::lookup( state, message);
                         };
@@ -553,6 +536,8 @@ namespace casual
                            Trace trace{ "gateway::group::inbound::handle::local::external::queue::enqueue::Request"};
                            common::log::line( verbose::log, "message: ", message);
 
+                           external::correlate( state, message);
+
                            // Send lookup
                            if( ! queue::lookup::send( state, message))
                            {
@@ -578,8 +563,9 @@ namespace casual
                         return [&state]( casual::queue::ipc::message::group::dequeue::Request& message)
                         {
                            Trace trace{ "gateway::group::inbound::handle::queue::dequeue::Request::operator()"};
-
                            common::log::line( verbose::log, "message: ", message);
+
+                           external::correlate( state, message);
 
                            // Send lookup
                            if( ! queue::lookup::send( state, message))
@@ -606,16 +592,23 @@ namespace casual
                   {
                      auto request( State& state)
                      {
-                        return []( casual::domain::message::discovery::Request& message)
+                        return [&state]( casual::domain::message::discovery::Request& message)
                         {
                            Trace trace{ "gateway::inbound::handle::local::external::domain::discovery::request"};
                            common::log::line( verbose::log, "message: ", message);
 
-                           // we push it to the internal side, so it's possible to correlate the message.
-                           // We don't know which external socket has sent this message at this moment.
-                           // when we're done here, the 'external-dispatch' will correlate the socket descriptor
-                           // and the correlation id of the message, so we can access it from the internal part.
-                           ipc::inbound().push( std::move( message));                         
+                           auto descriptor = external::correlate( state, message);
+
+                           // Set 'sender' so we get the reply
+                           message.process = common::process::handle();
+
+                           auto information = state.external.information( descriptor);
+                           assert( information);
+
+                           if( information->configuration.discovery == decltype( information->configuration.discovery)::forward)
+                              message.directive = decltype( message.directive)::forward;
+
+                           casual::domain::discovery::request( message);                    
                         };
                      }
                   } // discovery
@@ -626,10 +619,15 @@ namespace casual
                   namespace resource
                   {
                      template< typename Message>
-                     auto basic_request()
+                     auto basic_request( State& state)
                      {
-                        return []( Message& message)
+                        return [&state]( Message& message)
                         {
+                           Trace trace{ "gateway::inbound::handle::local::external::transaction::basic_request"};
+                           common::log::line( verbose::log, "message: ", message);
+
+                           external::correlate( state, message);
+
                            // Set 'sender' so we get the reply
                            message.process = common::process::handle();
                            ipc::flush::send( ipc::manager::transaction(), message);
@@ -679,7 +677,6 @@ namespace casual
             local::internal::queue::enqueue::reply( state),
 
             // domain discovery
-            local::internal::domain::discovery::request( state),
             local::internal::domain::discovery::reply( state),
             local::internal::domain::discovery::topology::update( state),
 
@@ -710,25 +707,25 @@ namespace casual
             local::external::queue::enqueue::request( state),
             local::external::queue::dequeue::request( state),
 
-            // domain discover
+            // discover
             local::external::domain::discovery::request( state),
 
             // transaction
-            local::external::transaction::resource::prepare::request(),
-            local::external::transaction::resource::commit::request(),
-            local::external::transaction::resource::rollback::request()
+            local::external::transaction::resource::prepare::request( state),
+            local::external::transaction::resource::commit::request( state),
+            local::external::transaction::resource::rollback::request( state)
          };
       }
 
 
       namespace connection
       {
-         configuration::model::gateway::inbound::Connection lost( State& state, common::strong::file::descriptor::id descriptor)
+         message::inbound::connection::Lost lost( State& state, common::strong::file::descriptor::id descriptor)
          {
             Trace trace{ "gateway::group::inbound::handle::connection::lost"};
             log::line( verbose::log, "descriptor: ", descriptor);
 
-            auto result = state.external.remove( state.directive, descriptor);
+            auto information = state.external.remove( state.directive, descriptor);
 
             // find possible pending 'lookup' requests
             auto lost = algorithm::container::extract( state.correlations, algorithm::filter( state.correlations, predicate::value::equal( descriptor)));
@@ -752,7 +749,7 @@ namespace casual
 
             // There is no other pending we need to discard at the moment.
 
-            return result;
+            return { std::move( information.configuration), std::move( information.domain)};
          }
 
          void disconnect( State& state, common::strong::file::descriptor::id descriptor)
@@ -791,6 +788,8 @@ namespace casual
 
       void idle( State& state)
       {
+         Trace trace{ "gateway::group::inbound::handle::idle"};
+
          // take care of pending disconnects
          if( ! state.pending.disconnects.empty())
          {
