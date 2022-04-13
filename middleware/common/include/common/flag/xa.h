@@ -12,47 +12,45 @@
 
 namespace casual 
 {
-   namespace common 
+   namespace common::flag::xa 
    {
-      namespace flag
+      //! Flag definition for the RM switch
+      namespace resource 
       {
-         namespace xa 
-         {
-            //! Flag definition for the RM switch
-            namespace resource 
-            {
-               enum class Flag : long
-               {  
-                  no_flags = TMNOFLAGS,
-                  dynamic = TMREGISTER,
-                  no_migrate = TMNOMIGRATE,
-                  asynchronous = TMUSEASYNC
-               };
-               using Flags = common::Flags< resource::Flag>;
-            } // resource 
+         enum class Flag : long
+         {  
+            no_flags = TMNOFLAGS,
+            dynamic = TMREGISTER,
+            no_migrate = TMNOMIGRATE,
+            asynchronous = TMUSEASYNC
+         };
+         std::string_view description( Flag value);
+         
+         using Flags = common::Flags< resource::Flag>;
+      } // resource 
 
 
-            enum class Flag : long
-            {
-               no_flags = TMNOFLAGS,
-               asynchronous = TMASYNC,
-               one_phase = TMONEPHASE,
-               fail = TMFAIL,
-               no_wait = TMNOWAIT,
-               resume = TMRESUME,
-               success = TMSUCCESS,
-               suspend = TMSUSPEND,
-               start_scan = TMSTARTRSCAN,
-               end_scan = TMENDRSCAN,
-               wait_any = TMMULTIPLE,
-               join = TMJOIN,
-               migrate = TMMIGRATE
-            };
-            using Flags = common::Flags< xa::Flag>;
+      enum class Flag : long
+      {
+         no_flags = TMNOFLAGS,
+         asynchronous = TMASYNC,
+         one_phase = TMONEPHASE,
+         fail = TMFAIL,
+         no_wait = TMNOWAIT,
+         resume = TMRESUME,
+         success = TMSUCCESS,
+         suspend = TMSUSPEND,
+         start_scan = TMSTARTRSCAN,
+         end_scan = TMENDRSCAN,
+         wait_any = TMMULTIPLE,
+         join = TMJOIN,
+         migrate = TMMIGRATE
+      };
+      std::string_view description( Flag value);
 
-         } // xa 
-      } // flag
-   } // common 
+      using Flags = common::Flags< xa::Flag>;
+
+   } // common::flag::xa 
 } // casual 
 
 //
