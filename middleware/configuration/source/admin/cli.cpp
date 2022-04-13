@@ -57,7 +57,7 @@ On success exit with 0, on error not 0, and message printed to stderr)"
                      // load the user model, transform to model and back again...
                      auto domain = model::transform( model::transform( local::load( std::move( globs))));
                      auto writer = serialize::create::writer::from( state.format);
-                     writer << CASUAL_NAMED_VALUE( domain);
+                     writer << domain;
                      writer.consume( std::cout);
                   };
 
