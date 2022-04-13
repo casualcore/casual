@@ -16,6 +16,7 @@
 #include "common/transaction/context.h"
 #include "common/flag.h"
 #include "common/exception/capture.h"
+#include "common/algorithm/compare.h"
 
 
 
@@ -119,6 +120,9 @@ namespace casual
 
          int xa_open_entry( const char* c_openinfo, int rmid, long flags)
          {
+            common::Trace trace{ "xa_open_entry"};
+            log::line( log, "rmid: ", rmid, " flags: ", flag::xa::Flags{ flags});
+
             auto& state = local::state( rmid, rm::State::Invoke::xa_open_entry);
 
             // clear
@@ -162,8 +166,12 @@ namespace casual
             log::line( log, "xa_open_entry - openinfo: ", openinfo, " rmid: ", rmid, " flags: ", flags);
             return cast::underlying( state.result.open);
          }
+
          int xa_close_entry( const char* closeinfo, int rmid, long flags)
          {
+            common::Trace trace{ "xa_close_entry"};
+            log::line( log, "rmid: ", rmid, " flags: ", flag::xa::Flags{ flags});
+
             auto& state = local::state( rmid, rm::State::Invoke::xa_close_entry);
 
             if( ! state.transactions.all.empty())
@@ -171,20 +179,23 @@ namespace casual
                log::line( log::category::error, "xa_close_entry - rmid: ", rmid, " has associated transactions ", state.transactions.all);
                return state.error( code::xa::protocol);
             }
-            log::line( log, "xa_close_entry - closeinfo: ", closeinfo, " rmid: ", rmid, " flags: ", flags);
+            log::line( log, "closeinfo: ", closeinfo, " rmid: ", rmid, " flags: ", flags);
 
             return cast::underlying( state.result.close);
          }
+
          int xa_start_entry( XID* xid, int rmid, long flags)
          {
+            common::Trace trace{ "xa_end_entry"};
+
             transaction::ID trid{ *xid};
-            log::line( log, "xa_start_entry - trid: ", trid, " rmid: ", rmid, " flags: ", flags);
+            log::line( log, "trid: ", trid, " rmid: ", rmid, " flags: ", flag::xa::Flags{ flags});
 
             auto& state = local::state( rmid, rm::State::Invoke::xa_start_entry);
 
             if( state.transactions.current)
             {
-               log::line( log::category::error, "XAER_PROTO: xa_start_entry - a transaction is active - ", state.transactions.current);
+               log::line( log::category::error, code::xa::protocol, ": xa_start_entry - a transaction is active - ", state.transactions.current);
                return state.error( code::xa::protocol);
             }
 
@@ -213,14 +224,24 @@ namespace casual
 
          int xa_end_entry( XID* xid, int rmid, long flags)
          {
+            common::Trace trace{ "xa_end_entry"};
+            
             transaction::ID trid{ *xid};
-            log::line( log, "xa_end_entry - xid: ", trid, " rmid: ", rmid, " flags: ", flags);
+            log::line( log, "xid: ", trid, " rmid: ", rmid, " flags: ", flag::xa::Flags{ flags});
 
             auto& state = local::state( rmid, rm::State::Invoke::xa_end_entry);
 
+            constexpr auto required = common::flags::compose( flag::xa::Flag::success, flag::xa::Flag::suspend, flag::xa::Flag::fail);
+
+            if( ( flag::xa::Flags{ flags} & required).bits() != 1)
+            {
+               log::line( log::category::error, code::xa::protocol, ": xa_end_entry - xa_end flags has to have exactly one of: ", required, ", flags: ", flag::xa::Flags{ flags});
+               return state.error( code::xa::protocol);
+            }
+
             if( state.transactions.current != trid)
             {
-               log::line( log::category::error, "XAER_NOTA: xa_end_entry - transaction not associated with RM");
+               log::line( log::category::error, code::xa::invalid_xid, ": xa_end_entry - transaction not associated with RM");
                return state.error( code::xa::invalid_xid);
             }
 
@@ -236,8 +257,10 @@ namespace casual
 
          int xa_rollback_entry( XID* xid, int rmid, long flags)
          {
+            common::Trace trace{ "xa_rollback_entry"};
+
             transaction::ID transaction{ *xid};
-            log::line( log, "xa_rollback_entry - xid: ", transaction, " rmid: ", rmid, " flags: ", flags);
+            log::line( log, "xid: ", transaction, " rmid: ", rmid, " flags: ", flag::xa::Flags{ flags});
 
             auto& state = local::state( rmid, rm::State::Invoke::xa_rollback_entry);
 
@@ -246,8 +269,10 @@ namespace casual
 
          int xa_prepare_entry( XID* xid, int rmid, long flags)
          {
+            common::Trace trace{ "xa_prepare_entry"};
+
             transaction::ID transaction{ *xid};
-            log::line( log, "xa_prepare_entry - xid: ", transaction, " rmid: ", rmid, " flags: ", flags);
+            log::line( log, "xid: ", transaction, " rmid: ", rmid, " flags: ", flag::xa::Flags{ flags});
 
             auto& state = local::state( rmid, rm::State::Invoke::xa_prepare_entry);
 
@@ -256,8 +281,10 @@ namespace casual
 
          int xa_commit_entry( XID* xid, int rmid, long flags)
          {
+            common::Trace trace{ "xa_commit_entry"};
+
             transaction::ID transaction{ *xid};
-            log::line( log, "xa_commit_entry - xid: ", transaction, " rmid: ", rmid, " flags: ", flags);
+            log::line( log, "xid: ", transaction, " rmid: ", rmid, " flags: ", flag::xa::Flags{ flags});
 
             auto& state = local::state( rmid, rm::State::Invoke::xa_commit_entry);
 
@@ -269,9 +296,7 @@ namespace casual
                auto found = algorithm::find( state.transactions.all, transaction);
 
                if( found)
-               {
                   state.transactions.all.erase( std::begin( found));
-               }
             }
 
             return cast::underlying( state.result.commit);
@@ -279,8 +304,10 @@ namespace casual
 
          int xa_recover_entry( XID* xid, long count, int rmid, long flags)
          {
+            common::Trace trace{ "xa_recover_entry"};
+
             transaction::ID transaction{ *xid};
-            log::line( log, "xa_recover_entry - xid: ", transaction, " count: ", count, " rmid: ", rmid, " flags: ", flags);
+            log::line( log, "xid: ", transaction, " count: ", count, " rmid: ", rmid, " flags: ", flag::xa::Flags{ flags});
 
 
             return 0;
@@ -288,15 +315,19 @@ namespace casual
 
          int xa_forget_entry( XID* xid, int rmid, long flags)
          {
+            common::Trace trace{ "xa_forget_entry"};
+
             transaction::ID transaction{ *xid};
-            log::line( log, "xa_forget_entry - xid: ", transaction, " rmid: ", rmid, " flags: ", flags);
+            log::line( log, "xid: ", transaction, " rmid: ", rmid, " flags: ", flag::xa::Flags{ flags});
 
             return XA_OK;
          }
 
          int xa_complete_entry( int* handle, int* retval, int rmid, long flags)
          {
-            log::line( log, "xa_complete_entry - handle:", handle, " retval: ", retval, " rmid: ", rmid, " flags: ", flags);
+            common::Trace trace{ "xa_complete_entry"};
+
+            log::line( log, "handle:", handle, " retval: ", retval, " rmid: ", rmid, " flags: ", flag::xa::Flags{ flags});
 
             return XA_OK;
          }
