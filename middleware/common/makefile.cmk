@@ -50,6 +50,7 @@ install_headers = []
 casual_common_objectfiles = [
 
     make.Compile( 'source/strong/id.cpp'),
+    make.Compile( 'source/flag/xa.cpp'),
 
     make.Compile( 'source/server/context.cpp'),
     make.Compile( 'source/server/lifetime.cpp'),
