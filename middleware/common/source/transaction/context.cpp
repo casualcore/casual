@@ -902,7 +902,7 @@ namespace casual
 
                auto xa_end = [&transaction]( auto& result)
                {
-                  result.resource->end( transaction.trid, flag::xa::Flag::no_flags);
+                  result.resource->end( transaction.trid, flag::xa::Flag::success);
                };
 
                // xa_end on the succeeded.

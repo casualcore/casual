@@ -49,9 +49,9 @@ namespace casual
          constexpr Flags() = default;
 
          template< typename... Enums>
-         constexpr Flags( enum_type e, Enums... enums) : Flags( bitmask( e, enums...)) {}
+         constexpr Flags( enum_type e, Enums... enums) noexcept : Flags( bitmask( e, enums...)) {}
  
-         constexpr explicit Flags( underlaying_type flags) : m_flags( flags) {}
+         constexpr explicit Flags( underlaying_type flags) noexcept : m_flags( flags) {}
 
          constexpr Flags convert( underlaying_type flags) const
          {
@@ -71,30 +71,36 @@ namespace casual
 
          constexpr explicit operator bool() const noexcept { return ! empty();}
 
-         constexpr bool exist( enum_type flag) const
+         constexpr bool exist( enum_type flag) const noexcept
          {
             return ( m_flags & cast::underlying( flag)) == cast::underlying( flag);
          }
 
+         platform::size::type bits() const noexcept
+         {
+            return std::bitset< std::numeric_limits< underlaying_type>::digits>{ static_cast< unsigned long long>( m_flags)}.count();
+         }
+
+
 
          constexpr underlaying_type underlaying() const noexcept { return m_flags;}
 
-         constexpr friend Flags& operator |= ( Flags& lhs, Flags rhs) { lhs.m_flags |= rhs.m_flags; return lhs;}
-         constexpr friend Flags operator | ( Flags lhs, Flags rhs) { return Flags( lhs.m_flags | rhs.m_flags);}
+         constexpr friend Flags& operator |= ( Flags& lhs, Flags rhs) noexcept { lhs.m_flags |= rhs.m_flags; return lhs;}
+         constexpr friend Flags operator | ( Flags lhs, Flags rhs) noexcept { return Flags( lhs.m_flags | rhs.m_flags);}
          
-         constexpr friend Flags& operator &= ( Flags& lhs, Flags rhs) { lhs.m_flags &= rhs.m_flags; return lhs;}
-         constexpr friend Flags operator & ( Flags lhs, Flags rhs) { return Flags( lhs.m_flags & rhs.m_flags);}
+         constexpr friend Flags& operator &= ( Flags& lhs, Flags rhs) noexcept { lhs.m_flags &= rhs.m_flags; return lhs;}
+         constexpr friend Flags operator & ( Flags lhs, Flags rhs) noexcept { return Flags( lhs.m_flags & rhs.m_flags);}
 
-         constexpr friend Flags& operator ^= ( Flags& lhs, Flags rhs) { lhs.m_flags ^= rhs.m_flags; return lhs;}
-         constexpr friend Flags operator ^ ( Flags lhs, Flags rhs) { return Flags( lhs.m_flags ^ rhs.m_flags);}
+         constexpr friend Flags& operator ^= ( Flags& lhs, Flags rhs) noexcept { lhs.m_flags ^= rhs.m_flags; return lhs;}
+         constexpr friend Flags operator ^ ( Flags lhs, Flags rhs) noexcept { return Flags( lhs.m_flags ^ rhs.m_flags);}
 
-         constexpr friend Flags operator ~ ( Flags lhs) { return Flags{ ~lhs.m_flags};}
+         constexpr friend Flags operator ~ ( Flags lhs) noexcept { return Flags{ ~lhs.m_flags};}
 
-         constexpr friend bool operator == ( Flags lhs, Flags rhs) { return lhs.m_flags == rhs.m_flags;}
-         constexpr friend bool operator != ( Flags lhs, Flags rhs) { return ! ( lhs == rhs);}
+         constexpr friend bool operator == ( Flags lhs, Flags rhs) noexcept { return lhs.m_flags == rhs.m_flags;}
+         constexpr friend bool operator != ( Flags lhs, Flags rhs) noexcept { return ! ( lhs == rhs);}
 
-         constexpr friend Flags operator - ( Flags lhs, Flags rhs) { return Flags{ lhs.m_flags & ~rhs.m_flags};}
-         constexpr friend Flags& operator -= ( Flags& lhs, Flags rhs) { lhs.m_flags &= ~rhs.m_flags; return lhs;}
+         constexpr friend Flags operator - ( Flags lhs, Flags rhs) noexcept { return Flags{ lhs.m_flags & ~rhs.m_flags};}
+         constexpr friend Flags& operator -= ( Flags& lhs, Flags rhs) noexcept { lhs.m_flags &= ~rhs.m_flags; return lhs;}
 
 
          constexpr friend std::ostream& operator << ( std::ostream& out, Flags flags)
