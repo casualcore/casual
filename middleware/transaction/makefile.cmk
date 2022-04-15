@@ -2,6 +2,7 @@ import casual.make.api as make
 import casual.middleware.make.api as dsl
     
 make.IncludePaths( ['include',
+    'unittest/include',
     '../common/include',
     '../xatmi/include',
     '../configuration/include',
@@ -105,7 +106,7 @@ install_bin.append( target)
 
 unittest_library = make.LinkLibrary( 'bin/casual-transaction-unittest',
     [ 
-        make.Compile( 'source/unittest/utility.cpp')
+        make.Compile( 'unittest/source/utility.cpp')
     ],
     [
         'casual-common',

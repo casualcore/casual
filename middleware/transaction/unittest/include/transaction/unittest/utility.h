@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include "common/unittest.h"
+
 #include "transaction/manager/admin/model.h"
 
 namespace casual
@@ -13,6 +15,11 @@ namespace casual
    namespace transaction::unittest
    {
       manager::admin::model::State state();
+
+      namespace fetch
+      {
+         constexpr auto until = common::unittest::fetch::until( &unittest::state);
+      }
       
    } // transaction::unittest
    
