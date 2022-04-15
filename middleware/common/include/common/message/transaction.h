@@ -239,10 +239,12 @@ namespace casual
 
                      //! potentially new resources involved
                      std::vector< strong::resource::id> involved;
+                     bool reply = true;
 
                      CASUAL_CONST_CORRECT_SERIALIZE(
                         base_request::serialize( archive);
                         CASUAL_SERIALIZE( involved);
+                        CASUAL_SERIALIZE( reply);
                      )
                   };
 

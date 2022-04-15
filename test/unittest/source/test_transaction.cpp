@@ -18,6 +18,10 @@
 
 #include "test/unittest/xatmi/buffer.h"
 
+#include "service/unittest/utility.h"
+
+#include "transaction/unittest/utility.h"
+
 #include "tx.h"
 #include "casual/xatmi.h"
 
@@ -86,23 +90,23 @@ domain:
 
                   void operator() () const
                   {
-                     transaction::context().clear();
+                     common::transaction::context().clear();
                      common::unittest::rm::clear();
                   }
                };
 
                auto id()
                {
-                  auto ids = transaction::context().resources();
+                  auto ids = common::transaction::context().resources();
                   return ids.empty() ? strong::resource::id{} : ids.front();
                }
 
-               transaction::resource::Link link( std::string name)
+               common::transaction::resource::Link link( std::string name)
                {
                   return { "rm-mockup", std::move( name), &casual_mockup_xa_switch_dynamic};
                }
 
-               transaction::resource::Link link_static( std::string name)
+               common::transaction::resource::Link link_static( std::string name)
                {
                   return { "rm-mockup", std::move( name), &casual_mockup_xa_switch_static};
                }
@@ -114,7 +118,7 @@ domain:
             common::unittest::Trace trace;
             local::Clear clear;
 
-            EXPECT_TRUE( ! transaction::context().current());
+            EXPECT_TRUE( ! common::transaction::context().current());
          }
 
          TEST( test_transaction, dynamic_resource_configure)
@@ -135,7 +139,7 @@ domain:
 )";
 
             auto domain = local::domain( configuration);
-            transaction::context().configure( { local::link( "rm1")});
+            common::transaction::context().configure( { local::link( "rm1")});
 
             EXPECT_TRUE( local::id() == strong::resource::id{ 1}) << "local::id(): " << local::id(); 
          }
@@ -158,7 +162,7 @@ domain:
 )";
 
             auto domain = local::domain( configuration);
-            transaction::context().configure( { local::link( "rm2")});
+            common::transaction::context().configure( { local::link( "rm2")});
 
             EXPECT_TRUE( tx_begin() == TX_OK);
             // no rm involvement
@@ -189,7 +193,7 @@ domain:
 )";
 
             auto domain = local::domain( configuration);
-            transaction::context().configure( { local::link( "rm3")});
+            common::transaction::context().configure( { local::link( "rm3")});
 
             auto id = local::id();
             EXPECT_TRUE( id);
@@ -236,7 +240,7 @@ domain:
 )";
 
             auto domain = local::domain( configuration);
-            transaction::context().configure( { local::link_static( "rm1")});
+            common::transaction::context().configure( { local::link_static( "rm1")});
 
             auto rm = local::id();
             using Invoke = common::unittest::rm::State::Invoke;
@@ -257,6 +261,50 @@ domain:
             EXPECT_TRUE( state.transactions.all.size() == 1);
             EXPECT_TRUE( algorithm::count( state.invocations, Invoke::xa_end_entry) == 1);
             EXPECT_TRUE( algorithm::count( state.invocations, Invoke::xa_start_entry) == 2);
+
+            EXPECT_TRUE( tx_commit() == TX_OK);
+         }
+
+         TEST( test_transaction, two_resources__tpcall_to_our_self__expekt_involved_rm_to_TM)
+         {
+            common::unittest::Trace trace;
+            local::Clear clear;
+
+            constexpr auto configuration = R"(
+domain: 
+   name: dynamic-rm
+
+   transaction:
+      resources:
+         -  key: rm-mockup
+            name: rm1
+            instances: 1
+         -  key: rm-mockup
+            name: rm2
+            instances: 1
+
+
+)";
+
+            auto domain = local::domain( configuration);
+
+            common::transaction::context().configure( { local::link_static( "rm1"), local::link_static( "rm2")});
+            const auto resources = common::transaction::context().resources();
+
+
+            EXPECT_TRUE( tx_begin() == TX_OK);
+
+            {
+               auto buffer = unittest::xatmi::buffer::x_octet{};
+               EXPECT_TRUE( ::tpcall( "casual/example/echo", buffer.data, buffer.size, &buffer.data, &buffer.size, 0) != -1);
+            }
+
+            {               
+               auto state = casual::transaction::unittest::state();
+               auto& branch = state.transactions.at( 0).branches.at( 0);
+
+               EXPECT_TRUE( algorithm::includes( branch.resources, resources));
+            }
 
             EXPECT_TRUE( tx_commit() == TX_OK);
          }
