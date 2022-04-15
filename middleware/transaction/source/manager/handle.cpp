@@ -640,13 +640,18 @@ namespace casual
 
                               auto& branch = local::detail::branch::find_or_add( state, message);
 
-                              // prepare and send the reply
-                              auto reply = common::message::reverse::type( message);
-                              reply.involved = common::algorithm::transform( branch.resources, []( auto& resource){ return resource.id;});
-                              common::communication::device::blocking::optional::send( message.process.ipc, reply);
+                              auto branch_resources = common::algorithm::transform( branch.resources, []( auto& resource){ return resource.id;});
+
+                              if( message.reply)
+                              {
+                                 // prepare and send the reply
+                                 auto reply = common::message::reverse::type( message);
+                                 reply.involved = branch_resources;
+                                 common::communication::device::blocking::optional::send( message.process.ipc, reply);
+                              }
 
                               // partition what we don't got since before
-                              auto involved = std::get< 1>( common::algorithm::intersection( message.involved, reply.involved));
+                              auto involved = std::get< 1>( common::algorithm::intersection( message.involved, branch_resources));
 
                               // partition the new involved based on which we've got configured resources for
                               auto [ known, unknown] = common::algorithm::partition( involved, [&]( auto& resource)

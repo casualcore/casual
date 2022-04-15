@@ -53,7 +53,7 @@ namespace casual
             inline const std::string& key() const { return m_key;}
             inline strong::resource::id id() const { return m_id;}
             inline const char* name() const { return m_xa->name;}
-
+         
 
             friend std::ostream& operator << ( std::ostream& out, const Resource& resource);
             friend bool operator == ( const Resource& lhs, strong::resource::id rhs) { return lhs.m_id == rhs;}
