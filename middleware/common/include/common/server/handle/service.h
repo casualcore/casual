@@ -111,12 +111,7 @@ namespace casual
          auto found = algorithm::find( state.services, message.service.name);
 
          if( ! found)
-         {
-            code::raise::error( 
-               code::xatmi::system, 
-               message.service.name, " not present at server - inconsistency between service-manager and server");
-         }
-
+            code::raise::error( code::xatmi::system, message.service.name, " not present at server - inconsistency between service-manager and server");
 
          auto& service = found->second;
 

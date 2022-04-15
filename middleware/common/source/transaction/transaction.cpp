@@ -21,9 +21,8 @@ namespace casual
 
          Transaction::Transaction() = default;
          Transaction::Transaction( ID trid) : trid( std::move( trid)) {}
-
+         
          Transaction::operator bool() const { return static_cast< bool>( trid);}
-
 
          void Transaction::associate( const correlation_type& correlation)
          {
@@ -49,9 +48,7 @@ namespace casual
 
          bool Transaction::disassociate_dynamic( strong::resource::id id)
          {
-            auto found = common::algorithm::find( m_dynamic, id);
-
-            if( found)
+            if( auto found = common::algorithm::find( m_dynamic, id))
             {
                m_dynamic.erase( std::begin( found));
                return true;
@@ -92,17 +89,16 @@ namespace casual
 
          bool operator == ( const Transaction& lhs, const XID& rhs) { return lhs.trid.xid == rhs;}
 
-
-         std::ostream& operator << ( std::ostream& out, Transaction::State value)
+         std::string_view description( Transaction::State value) noexcept
          {
             using Enum = Transaction::State;
             switch( value)
             {
-               case Enum::active: return out << "active";
-               case Enum::rollback: return out << "rollback";
-               case Enum::timeout: return out << "timeout";
+               case Enum::active: return "active";
+               case Enum::rollback: return "rollback";
+               case Enum::timeout: return "timeout";
             }
-            return out << "<unknown>";
+            return "<unknown>";
          }
 
 
