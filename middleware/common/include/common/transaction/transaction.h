@@ -31,8 +31,7 @@ namespace casual
             timeout = TX_TIMEOUT_ROLLBACK_ONLY,
             rollback = TX_ROLLBACK_ONLY,
          };
-
-         friend std::ostream& operator << ( std::ostream& out, State value);
+         std::string_view description( State value) noexcept;
 
 
          Transaction();

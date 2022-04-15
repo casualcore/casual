@@ -126,6 +126,18 @@ namespace casual
                error,
             };
 
+            constexpr std::string_view description( Transaction::State value) noexcept
+            {
+               switch( value)
+               {
+                  case Transaction::State::error: return "error";
+                  case Transaction::State::active: return "active";
+                  case Transaction::State::rollback: return "rollback";
+                  case Transaction::State::timeout: return "timeout";
+               }
+               return "<unknown>";
+            }
+
             common::transaction::ID trid;
             State state = State::active;
 
@@ -133,18 +145,6 @@ namespace casual
                CASUAL_SERIALIZE( trid);
                CASUAL_SERIALIZE( state);
             )
-
-            inline friend std::ostream& operator << ( std::ostream& out, Transaction::State value)
-            {
-               switch( value)
-               {
-                  case Transaction::State::error: return out << "error";
-                  case Transaction::State::active: return out << "active";
-                  case Transaction::State::rollback: return out << "rollback";
-                  case Transaction::State::timeout: return out << "timeout";
-               }
-               return out << "unknown";
-            }
          };
 
          namespace advertise
@@ -198,14 +198,14 @@ namespace casual
                         discovered,
                      };
 
-                     inline std::ostream& operator << ( std::ostream& out, Type value)
+                     constexpr std::string_view description( Type value) noexcept
                      {
                         switch( value)
                         {
-                           case Type::configured: return out << "configured";
-                           case Type::discovered: return out << "discovered";
+                           case Type::configured: return "configured";
+                           case Type::discovered: return "discovered";
                         }
-                        return out << "<unknown>";
+                        return "<unknown>";
                      }
                   } // property
 
@@ -296,17 +296,17 @@ namespace casual
                   wait,
                };
 
-               inline friend std::ostream& operator << ( std::ostream& out, const Request::Context& value)
+               constexpr std::string_view description( Context value) noexcept
                {
                   switch( value)
                   {
-                     case Request::Context::regular: return out << "regular";
-                     case Request::Context::forward: return out << "forward";
-                     case Request::Context::no_busy_intermediate: return out << "no-busy-intermediate";
-                     case Request::Context::wait: return out << "wait";
+                     case Request::Context::regular: return "regular";
+                     case Request::Context::forward: return "forward";
+                     case Request::Context::no_busy_intermediate: return "no-busy-intermediate";
+                     case Request::Context::wait: return "wait";
                      
                   }
-                  return out << "unknown";
+                  return "<unknown>";
                }
 
                std::string requested;
@@ -334,15 +334,15 @@ namespace casual
                   idle
                };
 
-               inline friend std::ostream& operator << ( std::ostream& out, State value)
+               constexpr std::string_view description( State value) noexcept
                {
                   switch( value)
                   {
-                     case Reply::State::absent: return out << "absent";
-                     case Reply::State::idle: return out << "idle";
-                     case Reply::State::busy: return out << "busy";
+                     case Reply::State::absent: return "absent";
+                     case Reply::State::idle: return "idle";
+                     case Reply::State::busy: return "busy";
                   }
-                  return out << "unknown";
+                  return "<unknown>";
                }
 
                call::Service service;
@@ -388,15 +388,15 @@ namespace casual
                      replied
                   };
 
-                  inline friend std::ostream& operator << ( std::ostream& out, State value)
+                  constexpr std::string_view description( State value) noexcept
                   {
                      switch( value)
                      {
-                        case Reply::State::absent: return out << "absent";
-                        case Reply::State::discarded: return out << "discarded";
-                        case Reply::State::replied: return out << "replied";
+                        case Reply::State::absent: return "absent";
+                        case Reply::State::discarded: return "discarded";
+                        case Reply::State::replied: return "replied";
                      }
-                     return out << "unknown";
+                     return "<unknown>";
                   }
 
                   State state = State::absent;
@@ -465,12 +465,10 @@ namespace casual
                      : base_request( std::forward< Args>( args)...), buffer( std::move( buffer))
                   {}
                   
-                  request::Flags flags;
                   common::buffer::payload::Send buffer;
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
                      base_request::serialize( archive);
-                     CASUAL_SERIALIZE( flags);
                      CASUAL_SERIALIZE( buffer);
                   )
                };
@@ -486,12 +484,10 @@ namespace casual
                {   
                   using base_request::base_request;
 
-                  request::Flags flags;
                   common::buffer::Payload buffer;
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
                      base_request::serialize( archive);
-                     CASUAL_SERIALIZE( flags);
                      CASUAL_SERIALIZE( buffer);
                   )
                };

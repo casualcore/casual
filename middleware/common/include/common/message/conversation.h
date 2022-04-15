@@ -64,6 +64,7 @@ namespace casual
                common::transaction::ID trid;
                common::service::header::Fields header;
 
+
                //! pending time, only to be return in the "ACK", to collect
                //! metrics
                platform::time::unit pending{};

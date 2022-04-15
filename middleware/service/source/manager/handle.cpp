@@ -973,12 +973,9 @@ namespace casual
                   {
                      local::ack( *m_state)( ack);
                   }
-
-                  void transaction(
-                        const common::transaction::ID& trid,
-                        const common::server::Service& service,
-                        const platform::time::unit& timeout,
-                        const platform::time::point::type& now)
+                  
+                  template< typename... Ts>
+                  void transaction( Ts&&...)
                   {
                      // service-manager doesn't bother with transactions...
                   }

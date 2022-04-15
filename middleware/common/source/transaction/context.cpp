@@ -33,6 +33,31 @@ namespace casual
    {
       namespace transaction
       {
+         std::string_view description( Control value) noexcept
+         {
+            switch( value)
+            {
+               case Control::unchained: return "unchained";
+               case Control::chained: return "chained";
+               case Control::stacked: return "stacked";
+            }
+            return "<unknown>";
+         };
+
+         namespace commit
+         {
+            std::string_view description( Return value) noexcept
+            {
+               switch( value)
+               {
+                  case Return::completed: return "completed";
+                  case Return::logged: return "logged";
+               }
+               return "<unknown>";
+            }
+
+         } // commit
+
          struct Trace : common::log::Trace
          {
             template< typename T>
@@ -190,12 +215,12 @@ namespace casual
 
                namespace start
                {
-                  Transaction transaction( const platform::time::point::type& start, TRANSACTION_TIMEOUT timeout)
+                  Transaction transaction( const platform::time::point::type& start, platform::time::unit timeout)
                   {
                      Transaction transaction{ common::transaction::id::create( process::handle())};
                      transaction.state = Transaction::State::active;
-                     if( timeout > 0)
-                        transaction.deadline = platform::time::clock::type::now() + std::chrono::seconds{ timeout};
+                     if( timeout > platform::time::unit{})
+                        transaction.deadline = platform::time::clock::type::now() + timeout;
 
                      return transaction;
                   }
@@ -745,57 +770,26 @@ namespace casual
 
 
 
-         void Context::set_commit_return( COMMIT_RETURN value)
+         void Context::set_commit_return( commit::Return value) noexcept
          {
-            switch( value)
-            {
-               case TX_COMMIT_COMPLETED:
-               case TX_COMMIT_DECISION_LOGGED:
-               {
-                  m_commit_return = static_cast< Commit_Return>( value);
-                  break;
-               }
-               default:
-               {
-                  code::raise::error( code::tx::argument, "set_commit_return");
-               }
-            }
+            log::line( verbose::log, "set_commit_return: ", value);
+            m_commit_return = value;
          }
 
-         COMMIT_RETURN Context::get_commit_return() noexcept
+         commit::Return Context::get_commit_return() const noexcept
          {
-            return static_cast< COMMIT_RETURN>( m_commit_return);
+            return m_commit_return;
          }
 
-         void Context::set_transaction_control( TRANSACTION_CONTROL control)
+         void Context::set_transaction_control( transaction::Control control)
          {
-            switch( control)
-            {
-               case TX_UNCHAINED:
-               {
-                  m_control = Control::unchained;
-                  break;
-               }
-               case TX_CHAINED:
-               {
-                  m_control = Control::chained;
-                  break;
-               }
-               case TX_STACKED:
-               {
-                  m_control = Control::stacked;
-                  break;
-               }
-               default:
-               {
-                  code::raise::error( code::tx::argument, "set_transaction_control");
-               }
-            }
+            log::line( verbose::log, "set_transaction_control: ", control);
+            m_control = control;
          }
 
-         void Context::set_transaction_timeout( TRANSACTION_TIMEOUT timeout)
+         void Context::set_transaction_timeout( platform::time::unit timeout)
          {
-            if( timeout < 0)
+            if( timeout < platform::time::unit{})
                code::raise::error( code::tx::argument, "timeout value has to be 0 or greater");
 
             m_timeout = timeout;
@@ -809,8 +803,8 @@ namespace casual
             {
                info->xid = transaction.trid.xid;
                info->transaction_state = static_cast< decltype( info->transaction_state)>( transaction.state);
-               info->transaction_timeout = m_timeout;
-               info->transaction_control = static_cast< control_type>( m_control);
+               info->transaction_timeout = std::chrono::duration_cast< std::chrono::seconds>( m_timeout).count();
+               info->transaction_control = cast::underlying( m_control);
             }
             return static_cast< bool>( transaction);
          }
