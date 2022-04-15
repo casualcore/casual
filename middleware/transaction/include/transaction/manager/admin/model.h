@@ -161,6 +161,8 @@ namespace casual
                common::strong::resource::id id;
                common::code::xa code = common::code::xa::ok;
 
+               inline friend bool operator == ( const Resource& lhs, common::strong::resource::id rhs) { return lhs.id == rhs;};
+
                CASUAL_CONST_CORRECT_SERIALIZE(
                   CASUAL_SERIALIZE( id);
                   CASUAL_SERIALIZE( code);

@@ -226,34 +226,209 @@ namespace casual
                   }
                } // start
 
-               namespace resource
-               {
-                  auto involved( const transaction::ID& trid, std::vector< strong::resource::id> resources)
-                  {
-                     Trace trace{ "transaction::local::resource::involved"};
-
-                     // we don't bother the TM if there's no resources involved...
-                     if( resources.empty())
-                        return resources;
-
-                     message::transaction::resource::involved::Request message;
-                     message.process = process::handle();
-                     message.trid = trid;
-                     message.involved = std::move( resources);
-
-                     log::line( log::category::transaction, "involved message: ", message);
-
-                     auto reply = communication::ipc::call( communication::instance::outbound::transaction::manager::device(), message);
-
-                     return std::move( reply.involved);
-                  }
-               } // resource
-
                auto raise_if_not_ok = []( auto code, auto&& context)
                {
                   if( code != decltype( code)::ok)
                      code::raise::error( code, context);
                };
+
+               namespace resources::start
+               {
+                  namespace check
+                  {
+                     struct Result
+                     {
+                        transaction::Resource* resource{};
+                        code::xa code = code::xa::ok;
+                     };
+
+                     void results( const transaction::ID& trid, std::vector< Result> results)
+                     {
+                        auto [ failed, succeeded] = algorithm::partition( results, []( auto& result){ return result.code != code::xa::ok;});
+
+                        if( ! failed)
+                           return;
+
+                        auto xa_end = [&trid]( auto& result)
+                        {
+                           result.resource->end( trid, flag::xa::Flag::success);
+                        };
+
+                        // xa_end on the succeeded.
+                        algorithm::for_each( succeeded, xa_end);
+
+                        code::raise::error( range::front( failed).code, "resource start failed: ", algorithm::transform( failed, []( auto& fail)
+                        { 
+                           return std::make_tuple( fail.resource->id(), fail.code);
+                        }));
+                     };
+                     
+                  } // check
+
+                  namespace involved
+                  {
+                     auto future( const transaction::ID& trid, std::vector< strong::resource::id> resources)
+                     {
+                        Trace trace{ "transaction::local::resources::involved::future"};
+
+                        message::transaction::resource::involved::Request message;
+                        message.process = process::handle();
+                        message.trid = trid;
+                        message.involved = std::move( resources);
+
+                        log::line( log::category::transaction, "involved message: ", message);
+
+                        return communication::device::async::call( communication::instance::outbound::transaction::manager::device(), message);
+                     } 
+                  } // involved
+
+                  namespace transform
+                  {
+                     template< typename R>
+                     auto ids( R&& resources)
+                     {
+                        return algorithm::transform( resources, []( auto& resource){ return resource.id();});
+                     }
+                  } // transform
+
+                  template< typename P, typename R>
+                  void invoke( P&& policy, Transaction& transaction, R&& resources)
+                  {
+                     Trace trace{ "transaction::local::resources::start"};
+
+                     if( resources.empty())
+                        return; // nothing to do...
+
+                     policy( transaction, resources);
+                  }
+
+                  namespace policy
+                  {
+                     struct Join
+                     {
+                        //! When a service invocation joins a transaction
+                        template< typename R>
+                        auto operator() ( Transaction& transaction, R&& resources)
+                        {
+                           // We absolutely know that this is a distributed transaction, since we've been invoked
+                           // with a transaction that we shall join...
+                           // We need to correlate with TM if we've going to use join our not.
+                           auto future = involved::future( transaction.trid, transform::ids( resources));
+
+                           auto start_functor = []( auto& trid, auto&& future)
+                           {
+                              return [ &trid, involved = std::move( future.get( communication::ipc::inbound::device()).involved)]( auto& resource)
+                              {
+                                 auto deduce_flag = []( auto id, auto& involved)
+                                 {
+                                    if( algorithm::find( involved, id))
+                                       return flag::xa::Flag::join;
+
+                                    return flag::xa::Flag::no_flags;
+                                 };
+
+                                 return check::Result{ &resource, resource.start( trid, deduce_flag( resource.id(), involved))}; 
+                              };
+                           };
+
+                           check::results( transaction.trid, algorithm::transform( resources, start_functor( transaction.trid, future)));
+
+                           // involve all static resources
+                           transaction.involve( transform::ids( resources));
+                        }
+                     };
+
+                     //! When a service invocation starts a transaction
+                     struct Start
+                     {
+                        template< typename R>
+                        auto operator() ( Transaction& transaction, R&& resources)
+                        {
+                           auto start_functor = []( auto& trid)
+                           {
+                              return [ &trid]( auto& resource)
+                              {
+                                 return check::Result{ &resource, resource.start( trid, flag::xa::Flag::no_flags)};
+                              };
+                           };
+
+                           check::results( transaction.trid, algorithm::transform( resources, start_functor( transaction.trid)));
+
+                           // involve all static resources
+                           transaction.involve( transform::ids( resources));
+                        }
+                     };
+
+                     struct Resume
+                     {
+                        template< typename R>
+                        auto operator() ( Transaction& transaction, R&& resources)
+                        {
+                           auto start_functor = []( auto& trid)
+                           {
+                              return [ &trid]( auto& resource)
+                              {
+                                 return check::Result{ &resource, resource.start( trid, flag::xa::Flag::resume)};
+                              };
+                           };
+
+                           check::results( transaction.trid, algorithm::transform( resources, start_functor( transaction.trid)));
+
+                           // involve all static resources. This is probably not needed...
+                           transaction.involve( transform::ids( resources));
+                        }
+
+                     };
+                     
+                  } // policy
+               } // resources::start
+
+               namespace resources::end
+               {
+                  template< typename P, typename R>
+                  void invoke( P&& policy, const Transaction& transaction, R& resources)
+                  {
+                     Trace trace{ "transaction::local::resources::start"};
+                     log::line( verbose::log, "transaction: ", transaction, ", resources: ", resources);
+
+                     if( resources.empty())
+                        return; // nothing to do...
+
+                     policy( transaction, resources);
+                  }
+
+                  namespace policy
+                  {
+                     template< typename R>
+                     auto end( const Transaction& transaction, R& resources, flag::xa::Flags flags)
+                     {  
+                        for( auto id : transaction.involved())
+                           if( auto found = algorithm::find( resources, id))
+                              found->end( transaction.trid, flags);
+
+                     }
+
+                     struct Suspend
+                     {
+                        template< typename R>
+                        auto operator() ( const Transaction& transaction, R& resources)
+                        {
+                           policy::end( transaction, resources, flag::xa::Flag::suspend);
+                        }
+                     };
+
+                     struct Success
+                     {
+                        template< typename R>
+                        auto operator() ( const Transaction& transaction, R& resources)
+                        {
+                           policy::end( transaction, resources, flag::xa::Flag::success);
+                        }
+                     };
+
+                  } // policy
+                  
+               } // resources::end
 
             } // <unnamed>
          } // local
@@ -270,7 +445,7 @@ namespace casual
             auto& transaction = m_transactions.emplace_back( trid);
 
             if( trid)
-               resources_start( transaction, flag::xa::Flag::no_flags);
+               local::resources::start::invoke( local::resources::start::policy::Join{}, transaction, m_resources.fixed);
 
             return transaction;
          }
@@ -281,7 +456,7 @@ namespace casual
 
             auto transaction = local::start::transaction( start, m_timeout);
 
-            resources_start( transaction, flag::xa::Flag::no_flags);
+            local::resources::start::invoke( local::resources::start::policy::Start{}, transaction, m_resources.fixed);
 
             m_transactions.push_back( std::move( transaction));
             return m_transactions.back();
@@ -294,7 +469,7 @@ namespace casual
             auto& transaction = m_transactions.emplace_back( id::branch( trid));
 
             if( transaction)
-               resources_start( transaction, flag::xa::Flag::no_flags);
+               local::resources::start::invoke( local::resources::start::policy::Start{}, transaction, m_resources.fixed);
 
             return transaction;
          }
@@ -448,27 +623,10 @@ namespace casual
                   result.state = transform_state( not_owner->state);
 
                   if( ! commit && result.state == message::service::Transaction::State::active)
-                  {
                      result.state = message::service::Transaction::State::rollback;
-                  }
-
-
-                  // Notify TM about resources involved in this transaction
-                  /*
-                  {
-                     auto& transaction = found.front();
-                     auto involved = resources();
-                     algorithm::append( transaction.resources, involved);
-
-                     if( transaction && ! involved.empty())
-                     {
-                        Context::involved( transaction.trid, std::move( involved));
-                     }
-                  }
-                  */
 
                   // end resource
-                  resources_end( *not_owner, flag::xa::Flag::success);
+                  local::resources::end::invoke( local::resources::end::policy::Success{}, *not_owner, m_resources.all);                  
                }
 
 
@@ -508,8 +666,8 @@ namespace casual
                   return code::ax::ok;
 
                // we need to correlate with TM
-               auto involved = local::resource::involved( transaction.trid, { rmid});
-               return algorithm::find( involved, rmid).empty() ? code::ax::ok : code::ax::join;
+               auto reply = local::resources::start::involved::future( transaction.trid, { rmid}).get( communication::ipc::inbound::device());
+               return algorithm::find( reply.involved, rmid).empty() ? code::ax::ok : code::ax::join;
             }
 
             return code::ax::ok;
@@ -540,7 +698,7 @@ namespace casual
                   code::raise::error( code::tx::protocol, "begin - already in transaction mode - ", transaction);
 
                // Tell the RM:s to suspend
-               resources_end( transaction, flag::xa::Flag::suspend);
+               local::resources::end::invoke( local::resources::end::policy::Suspend{}, transaction, m_resources.all);
 
             }
             else if( ! transaction.dynamic().empty())
@@ -629,7 +787,7 @@ namespace casual
                code::raise::error( code::tx::protocol, "commit - pending replies associated with transaction: ", transaction.trid);
 
             // end resources
-            resources_end( transaction, flag::xa::Flag::success);
+            local::resources::end::invoke( local::resources::end::policy::Success{}, transaction, m_resources.all);
 
 
             if( transaction.local() && transaction.involved().size() <= 1)
@@ -731,7 +889,7 @@ namespace casual
                code::raise::error( code::tx::protocol, "current process not owner of transaction: ", transaction.trid);
 
             // end resources
-            resources_end( transaction, flag::xa::Flag::success);
+            local::resources::end::invoke( local::resources::end::policy::Success{}, transaction, m_resources.all);
 
             if( transaction.local())
             {
@@ -828,7 +986,7 @@ namespace casual
             ongoing.suspend();
 
             // Tell the RM:s to suspend
-            resources_end( ongoing, flag::xa::Flag::suspend);
+            local::resources::end::invoke( local::resources::end::policy::Suspend{}, ongoing, m_resources.all);
 
             *xid = ongoing.trid.xid;
          }
@@ -867,118 +1025,32 @@ namespace casual
                found->resume();
 
                // Tell the RM:s to resume
-               resources_start( *found, flag::xa::Flag::resume);
+               local::resources::start::invoke( local::resources::start::policy::Resume{}, *found, m_resources.fixed);
 
                // We rotate the wanted to end;
                algorithm::rotate( m_transactions, ++found);
             }
          }
 
-         void Context::resources_start( Transaction& transaction, flag::xa::Flags flags)
+         void Context::resources_resume( Transaction& transaction)
          {
             Trace trace{ "transaction::Context::resources_start"};
 
             if( ! transaction)
                return; // nothing to do
 
-            struct Result
-            {
-               transaction::Resource* resource{};
-               code::xa code = code::xa::ok;
-            };
-
-            auto check_results = [&transaction]( auto results)
-            {
-               auto [ failed, succeeded] = algorithm::partition( results, []( auto& result){ return result.code != code::xa::ok;});
-
-               if( ! failed)
-                  return;
-
-               auto xa_end = [&transaction]( auto& result)
-               {
-                  result.resource->end( transaction.trid, flag::xa::Flag::success);
-               };
-
-               // xa_end on the succeeded.
-               algorithm::for_each( succeeded, xa_end);
-
-               code::raise::error( range::front( failed).code, "resource start failed: ", algorithm::transform( failed, []( auto& f){ return std::make_tuple( f.resource->id(), f.code);}));
-            };
-
-            auto start_functor = [&]( auto& involved)
-            {
-               return [&trid = transaction.trid, flags = flags, &involved]( auto& resource)
-               {
-                  auto deduce_flag = []( auto id, auto flags, auto& involved)
-                  {
-                     if( ! flags.exist( flag::xa::Flag::resume))
-                        return algorithm::find( involved, id).empty() ? flags : flags | flag::xa::Flag::join;
-
-                     return flags;
-                  };
-
-                  return Result{ &resource, resource.start( trid, deduce_flag( resource.id(), flags, involved))}; 
-               };
-            };
-
-            constexpr auto transform_rmid = []( auto& resource){ return resource.id();};
-
-            if( transaction.local())
-            {
-               log::line( log::category::transaction, "local transaction: ", transaction, " - flags: ", flags);
-               
-               // local transaction, we don't need to corralate with TM
-               check_results( algorithm::transform( m_resources.fixed, start_functor( transaction.involved())));
-            }
-            else 
-            {
-               log::line( log::category::transaction, "distributed transaction: ", transaction, " - flags: ", flags);
-
-               // coordinate with TM, so we know if we need to add `join` flag or not.
-               auto involved = local::resource::involved( transaction.trid, 
-                  algorithm::transform( m_resources.fixed, transform_rmid));
-
-               check_results( algorithm::transform( m_resources.fixed, start_functor( involved)));
-            }
-
-            // involve all static resources
-            transaction.involve( algorithm::transform( m_resources.fixed, transform_rmid));
-
-            // TODO semantics: throw if some of the rm:s report an error?
-            //   don't think so. prepare, commit or rollback will take care of possible errors.
+            local::resources::start::invoke( local::resources::start::policy::Resume{}, transaction, m_resources.fixed);
          }
 
-         void Context::resources_end( const Transaction& transaction, flag::xa::Flags flags)
+         void Context::resources_suspend( Transaction& transaction)
          {
-            Trace trace{ "transaction::Context::resources_end"};
+            Trace trace{ "transaction::Context::resources_suspend"};
 
             if( ! transaction)
                return;
-            
-            log::line( log::category::transaction, "transaction: ", transaction, " - flags: ", flags);
 
-            auto xa_end = [&transaction, flags]( auto& resource)
-            {
-               resource.end( transaction.trid, flags);
-            };
-
-            // We call end on all static resources
-            algorithm::for_each( m_resources.fixed, xa_end);
-
-            auto has_registred = [&]( auto& resource)
-            {
-               return ! algorithm::find( transaction.dynamic(), resource.id()).empty();
-            };
-
-            // We call end only on the dynamic resources that has registred them self 
-            // to the transaction
-            // note: we could partition dynamic first on `has_registred`, but if we can 
-            // keep the order of the resources it won't hurt (be as nice as possible to the resources).
-            algorithm::for_each_if( m_resources.dynamic, xa_end, has_registred);
-
-            // TODO semantics: throw if some of the rm:s report an error?
-            //   don't think so. prepare, commit or rollback will take care of eventual errors.
-            
+            // Tell the RM:s to suspend
+            local::resources::end::invoke( local::resources::end::policy::Suspend{}, transaction, m_resources.all);      
          }
 
          void Context::resource_commit( strong::resource::id rm, const Transaction& transaction, flag::xa::Flags flags)
@@ -1035,7 +1107,7 @@ namespace casual
                   if( auto& current = Context::current())
                   {
                      // Tell the RM:s to resume
-                     resources_end( current, flag::xa::Flag::resume);
+                     local::resources::start::invoke( local::resources::start::policy::Resume{}, current, m_resources.all);
                   }
 
                   break;
