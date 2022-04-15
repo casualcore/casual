@@ -125,8 +125,8 @@ namespace casual
          //! return true if the context holds no transactions, only (?) for unittest
          bool empty() const;
          
-         void resources_start( Transaction& transaction, flag::xa::Flags flags);
-         void resources_end( const Transaction& transaction, flag::xa::Flags flags);
+         void resources_suspend( Transaction& transaction);
+         void resources_resume( Transaction& transaction);
 
       private:
 

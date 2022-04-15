@@ -106,21 +106,24 @@ namespace casual
                   message.flags = request_flags.convert( flags);
                   message.header = std::move( header);
 
+                  auto& transaction = common::transaction::context().current();
+
                   // Check if we should associate descriptor with message-correlation and transaction
                   if( flags.exist( async::Flag::no_reply))
                   {
+                     if( transaction && ! flags.exist( async::Flag::no_transaction))
+                        code::raise::error( code::xatmi::argument, "flag ", async::Flag::no_reply, " used within a transaction context without ", async::Flag::no_transaction);
+
                      log::line( log::debug, "no_reply - no descriptor reservation");
 
                      // No reply, hence no descriptor and no transaction (we validated this before)
-                     return Reply{ 0, std::move( message) };
+                     return Reply{ 0, std::move( message)};
                   }
                   else
                   {
                      log::line( log::debug, "descriptor reservation - flags: ", flags);
 
                      auto& descriptor = state.pending.reserve( message.correlation);
-
-                     auto& transaction = common::transaction::context().current();
 
                      if( ! flags.exist( async::Flag::no_transaction) && transaction)
                      {
@@ -251,12 +254,11 @@ namespace casual
 
 
          reply::Result result;
-         auto prepared = get_reply();
+         auto [ reply, desc] = get_reply();
 
-         auto& reply = std::get< 0>( prepared);
          log::line( log::debug, "reply: ", reply);
 
-         result.descriptor = std::get< 1>( prepared);
+         result.descriptor = desc;
          result.user = reply.code.user;
          result.buffer = std::move( reply.buffer);
 
@@ -265,7 +267,7 @@ namespace casual
          auto discard = execute::scope( [&](){ m_state.pending.unreserve( result.descriptor);});
 
          // Update transaction state
-         common::transaction::Context::instance().update( reply);
+         common::transaction::context().update( reply);
 
          // Check any errors
          switch( reply.code.result)
@@ -294,6 +296,8 @@ namespace casual
             {
                auto wrapper( sync::Flags flags)
                {
+                  Trace trace{ "service::call::local::suspend::wrapper"};
+                  
                   auto scoped = []( common::transaction::Transaction* transaction)
                   {
                      return execute::scope( [ transaction]()
@@ -301,7 +305,7 @@ namespace casual
                         if( ! transaction)
                            return;
 
-                        common::transaction::context().resources_start( *transaction, flag::xa::Flag::resume);
+                        common::transaction::context().resources_resume( *transaction);
                      });
                   };
 
@@ -309,7 +313,17 @@ namespace casual
                   
                   if( current && ! flags.exist( sync::Flag::no_transaction))
                   {
-                     common::transaction::context().resources_end( current, flag::xa::Flag::suspend);
+                     if( ! current.involved().empty())
+                     {
+                        // Let TM know about our involved resources, to enable the callee to synchronize
+                        message::transaction::resource::involved::Request request{ process::handle()};
+                        request.trid = current.trid;
+                        request.involved = current.involved();
+                        request.reply = false; // we don't need a reply
+                        communication::device::blocking::send( communication::instance::outbound::transaction::manager::device(), request);
+                     }
+
+                     common::transaction::context().resources_suspend( current);
                      return scoped( &current);   
                   }
 
