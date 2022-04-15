@@ -28,6 +28,25 @@ namespace casual
 {
    namespace common::transaction
    {
+      enum class Control : TRANSACTION_CONTROL
+      {
+         unchained = TX_UNCHAINED,
+         chained = TX_CHAINED,
+         stacked = TX_STACKED
+      };
+      std::string_view description( Control value) noexcept;
+
+      namespace commit
+      {
+         enum class Return : COMMIT_RETURN
+         {
+            completed = TX_COMMIT_COMPLETED,
+            logged = TX_COMMIT_DECISION_LOGGED
+         };
+         std::string_view description( Return value) noexcept;
+
+      } // commit
+
       struct Context
       {
          static Context& instance();
@@ -41,13 +60,11 @@ namespace casual
          void commit();
          void rollback();
 
-
-
-         void set_commit_return( COMMIT_RETURN value);
-         COMMIT_RETURN get_commit_return() noexcept;
+         void set_commit_return( commit::Return value) noexcept;
+         commit::Return get_commit_return() const noexcept;
          
-         void set_transaction_control( TRANSACTION_CONTROL control);
-         void set_transaction_timeout( TRANSACTION_TIMEOUT timeout);
+         void set_transaction_control( transaction::Control control);
+         void set_transaction_timeout( platform::time::unit timeout);
          
          bool info( TXINFO* info);
          //! @}
@@ -118,26 +135,8 @@ namespace casual
          //! 'null' transaction, used when no transaction present...
          Transaction m_empty;
 
-         using control_type = TRANSACTION_CONTROL;
-         enum class Control : control_type
-         {
-            unchained = TX_UNCHAINED,
-            chained = TX_CHAINED,
-            stacked = TX_STACKED
-         };
-
          Control m_control = Control::unchained;
-
-         using commit_return_type = COMMIT_RETURN;
-
-         // TODO: change name
-         enum class Commit_Return : commit_return_type
-         {
-            completed = TX_COMMIT_COMPLETED,
-            logged = TX_COMMIT_DECISION_LOGGED
-         };
-
-         Commit_Return m_commit_return = Commit_Return::completed;
+         commit::Return m_commit_return = commit::Return::completed;
 
          struct resources_type
          {
@@ -150,7 +149,7 @@ namespace casual
          } m_resources;
 
 
-         TRANSACTION_TIMEOUT m_timeout = 0;
+         platform::time::unit m_timeout{};
 
          Context();
          ~Context();

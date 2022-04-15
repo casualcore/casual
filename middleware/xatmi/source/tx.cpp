@@ -13,6 +13,7 @@
 #include "common/code/category.h"
 #include "common/exception/capture.h"
 #include "common/cast.h"
+#include "common/algorithm/compare.h"
 
 namespace local
 {
@@ -90,24 +91,37 @@ int tx_rollback()
    });
 }
 
-int tx_set_commit_return(COMMIT_RETURN value)
+int tx_set_commit_return( COMMIT_RETURN value)
 {
-   return local::wrap( []( auto value){
-      casual::common::transaction::Context::instance().set_commit_return( value);
+   return local::wrap( []( auto value)
+   {
+      using Return = casual::common::transaction::commit::Return;
+      auto commit_return = Return{ value};
+      if( ! casual::common::algorithm::compare::any( commit_return, Return::completed, Return::logged))
+         casual::common::code::raise::error( casual::common::code::tx::argument);
+
+      casual::common::transaction::Context::instance().set_commit_return( commit_return);
    }, value);
 }
 
-int tx_set_transaction_control(TRANSACTION_CONTROL control)
+int tx_set_transaction_control( TRANSACTION_CONTROL value)
 {
-   return local::wrap( []( auto value){
-      casual::common::transaction::Context::instance().set_transaction_control( value);
-   }, control);
+   return local::wrap( []( auto value)
+   {
+      using Control = casual::common::transaction::Control; 
+      auto control = Control{ value};
+
+      if( ! casual::common::algorithm::compare::any( control, Control::chained, Control::unchained, Control::stacked))
+         casual::common::code::raise::error( casual::common::code::tx::argument);
+      
+      casual::common::transaction::Context::instance().set_transaction_control( control);
+   }, value);
 }
 
-int tx_set_transaction_timeout(TRANSACTION_TIMEOUT timeout)
+int tx_set_transaction_timeout( TRANSACTION_TIMEOUT timeout)
 {
    return local::wrap( []( auto value){
-      casual::common::transaction::Context::instance().set_transaction_timeout( value);
+      casual::common::transaction::Context::instance().set_transaction_timeout( std::chrono::seconds{ value});
    }, timeout);
 }
 
@@ -146,7 +160,7 @@ int tx_resume( const XID* xid)
 
 COMMIT_RETURN tx_get_commit_return()
 {
-   return casual::common::transaction::Context::instance().get_commit_return();
+   return casual::common::cast::underlying( casual::common::transaction::Context::instance().get_commit_return());
 }
 
 

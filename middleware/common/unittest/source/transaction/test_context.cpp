@@ -125,7 +125,7 @@ namespace casual
             Context::instance().finalize( false);
          }
 
-         TEST( common_transaction_context, begin_commont__expect_context_empty)
+         TEST( common_transaction_context, begin_commit__expect_context_empty)
          {
             common::unittest::Trace trace;
 
