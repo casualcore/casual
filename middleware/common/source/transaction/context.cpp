@@ -319,15 +319,10 @@ namespace casual
                            {
                               return [ &trid, involved = std::move( future.get( communication::ipc::inbound::device()).involved)]( auto& resource)
                               {
-                                 auto deduce_flag = []( auto id, auto& involved)
-                                 {
-                                    if( algorithm::find( involved, id))
-                                       return flag::xa::Flag::join;
-
-                                    return flag::xa::Flag::no_flags;
-                                 };
-
-                                 return check::Result{ &resource, resource.start( trid, deduce_flag( resource.id(), involved))}; 
+                                 if( algorithm::find( involved, resource.id()))
+                                    return check::Result{ &resource, resource.start( trid, flag::xa::Flag::join)};
+                                 else
+                                    return check::Result{ &resource, resource.start( trid, flag::xa::Flag::no_flags)};
                               };
                            };
 
@@ -364,7 +359,7 @@ namespace casual
                         template< typename R>
                         auto operator() ( Transaction& transaction, R&& resources)
                         {
-                           auto start_functor = []( auto& trid)
+                           auto resume = []( auto& trid)
                            {
                               return [ &trid]( auto& resource)
                               {
@@ -372,7 +367,7 @@ namespace casual
                               };
                            };
 
-                           check::results( transaction.trid, algorithm::transform( resources, start_functor( transaction.trid)));
+                           check::results( transaction.trid, algorithm::transform( resources, resume( transaction.trid)));
 
                            // involve all static resources. This is probably not needed...
                            transaction.involve( transform::ids( resources));
