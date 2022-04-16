@@ -8,8 +8,6 @@
 #pragma once
 
 
-
-
 #include "tx.h"
 
 #include "common/transaction/resource/link.h"
@@ -37,22 +35,24 @@ namespace casual
 
             Resource( resource::Link link, strong::resource::id id, std::string openinfo, std::string closeinfo);
             
-            code start( const transaction::ID& transaction, Flags flags);
-            code end( const transaction::ID& transaction, Flags flags);
+            code start( const transaction::ID& transaction, Flags flags) noexcept;
+            code end( const transaction::ID& transaction, Flags flags) noexcept;
 
-            code open( Flags flags = Flag::no_flags);
-            code close( Flags flags = Flag::no_flags);
+            code open( Flags flags = Flag::no_flags) noexcept;
+            code close( Flags flags = Flag::no_flags) noexcept;
 
-            code prepare( const transaction::ID& transaction, Flags flags);
+            code prepare( const transaction::ID& transaction, Flags flags) noexcept;
 
-            code commit( const transaction::ID& transaction, Flags flags);
-            code rollback( const transaction::ID& transaction, Flags flags);
+            code commit( const transaction::ID& transaction, Flags flags) noexcept;
+            code rollback( const transaction::ID& transaction, Flags flags) noexcept;
 
-            bool dynamic() const;
+            bool dynamic() const noexcept;
 
-            inline const std::string& key() const { return m_key;}
-            inline strong::resource::id id() const { return m_id;}
-            inline const char* name() const { return m_xa->name;}
+            inline const std::string& key() const noexcept { return m_key;}
+            inline strong::resource::id id() const noexcept { return m_id;}
+            inline std::string_view name() const noexcept { return m_xa->name;}
+
+            bool migrate() const noexcept;
          
 
             friend std::ostream& operator << ( std::ostream& out, const Resource& resource);

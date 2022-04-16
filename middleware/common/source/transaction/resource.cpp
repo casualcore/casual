@@ -21,6 +21,15 @@
 
 #include <array>
 
+
+// stream operator for the xa struct
+static std::ostream& operator << ( std::ostream& out, const xa_switch_t& xa)
+{
+   auto flags = casual::common::flag::xa::resource::Flags{ xa.flags};
+   return casual::common::stream::write( out,  "{ name: ", xa.name, ", flags: ", flags, ", version: ", xa.version, "}");
+}
+
+
 namespace casual
 {
    namespace common
@@ -56,7 +65,7 @@ namespace casual
          }
 
 
-         Resource::code Resource::start( const transaction::ID& transaction, Flags flags)
+         Resource::code Resource::start( const transaction::ID& transaction, Flags flags) noexcept
          {
             log::line( log::category::transaction, "start resource: ", m_id, " transaction: ", transaction, " flags: ", flags);
 
@@ -65,7 +74,10 @@ namespace casual
                return local::convert( m_xa->xa_start_entry( local::non_const_xid( transaction), m_id.value(), flags.underlaying()));
             });
 
-            if( result == code::duplicate_xid)
+            // this is an extra fallback/try to mitigate possible race-conditions when 
+            // A a-calls B and C ( B, C with same rm) within same transaction and synchronisation is done with TM
+            // still the last one to get reply might do xa_start first (depending on OS context switches and so on...) 
+            if( result == code::duplicate_xid && ! flags.exist( Flag::join))
             {
                // Transaction is already associated with this thread of control, we try to join instead
                log::line( log::category::transaction, result, " - action: try to join instead");
@@ -76,12 +88,12 @@ namespace casual
             }
 
             if( result != code::ok)
-               log::line( log::category::error, result, " failed to start resource - ", m_id, " - trid: ", transaction);
+               log::line( log::category::error, result, " failed to start resource - ", m_id, " - trid: ", transaction, ", flags, ", flags);
 
             return result;
          }
 
-         Resource::code Resource::end( const transaction::ID& transaction, Flags flags)
+         Resource::code Resource::end( const transaction::ID& transaction, Flags flags) noexcept
          {
             log::line( log::category::transaction, "end resource: ", m_id, " transaction: ", transaction, " flags: ", flags);
 
@@ -91,12 +103,12 @@ namespace casual
             });
 
             if( result != code::ok)
-               log::line( log::category::error, result, " failed to end resource - ", m_id, " - trid: ", transaction);
+               log::line( log::category::error, result, " failed to end resource - ", m_id, " - trid: ", transaction, ", flags: ", flags);
 
             return result;
          }
 
-         Resource::code Resource::open( Flags flags)
+         Resource::code Resource::open( Flags flags) noexcept
          {
             log::line( log::category::transaction, "open resource: ", m_id, " openinfo: ", m_openinfo, " flags: ", flags);
 
@@ -111,7 +123,7 @@ namespace casual
             return result;
          }
 
-         Resource::code Resource::close( Flags flags)
+         Resource::code Resource::close( Flags flags) noexcept
          {
             log::line( log::category::transaction, "close resource: ", m_id, " closeinfo: ", m_closeinfo, " flags: ", flags);
 
@@ -125,12 +137,13 @@ namespace casual
             return result;
          }
 
-         Resource::code Resource::prepare( const transaction::ID& transaction, Flags flags)
+         Resource::code Resource::prepare( const transaction::ID& transaction, Flags flags) noexcept
          {
+            log::line( log::category::transaction, "prepare resource: ", m_id, " transaction: ", transaction, " flags: ", flags);
+
             auto result = reopen_guard( [&]()
             {
-               return local::convert( m_xa->xa_prepare_entry( 
-                  local::non_const_xid( transaction), m_id.value(), flags.underlaying()));
+               return local::convert( m_xa->xa_prepare_entry( local::non_const_xid( transaction), m_id.value(), flags.underlaying()));
             });
 
             if( result == common::code::xa::protocol)
@@ -150,9 +163,9 @@ namespace casual
             return result;
          }
 
-         Resource::code Resource::commit( const transaction::ID& transaction, Flags flags)
+         Resource::code Resource::commit( const transaction::ID& transaction, Flags flags) noexcept
          {
-            log::line( log::category::transaction, "commit resource: ", m_id, " flags: ", flags);
+            log::line( log::category::transaction, "commit resource: ", m_id, " transaction: ", transaction, " flags: ", flags);
 
             return reopen_guard( [&]()
             {
@@ -160,9 +173,9 @@ namespace casual
             });
          }
 
-         Resource::code Resource::rollback( const transaction::ID& transaction, Flags flags)
+         Resource::code Resource::rollback( const transaction::ID& transaction, Flags flags) noexcept
          {
-            log::line( log::category::transaction, "rollback resource: ", m_id, " flags: ", flags);
+            log::line( log::category::transaction, "rollback resource: ", m_id, " transaction: ", transaction, " flags: ", flags);
 
             return reopen_guard( [&]()
             {
@@ -170,10 +183,14 @@ namespace casual
             });
          }
 
-         bool Resource::dynamic() const
+         bool Resource::dynamic() const noexcept
          {
-            return static_cast< flag::xa::resource::Flags>( 
-               m_xa->flags).exist( flag::xa::resource::Flag::dynamic);
+            return static_cast< flag::xa::resource::Flags>( m_xa->flags).exist( flag::xa::resource::Flag::dynamic);
+         }
+
+         bool Resource::migrate() const noexcept
+         {
+            return ! flag::xa::resource::Flags{ m_xa->flags}.exist( flag::xa::resource::Flag::no_migrate);
          }
 
          Resource::code Resource::reopen()
@@ -241,14 +258,12 @@ namespace casual
 
          std::ostream& operator << ( std::ostream& out, const Resource& resource)
          {
-            return out << "{ key: " << resource.m_key 
-               << ", id: " << resource.m_id 
-               << ", openinfo: " << resource.m_openinfo
-               << ", closeinfo: " << resource.m_closeinfo 
-               << ", xa: { name: " << resource.m_xa->name
-               << ", flags: " << resource.m_xa->flags
-               << ", version: " << resource.m_xa->version
-               << "}}";
+            return stream::write( out, "{ key: ", resource.m_key,
+               ", id: ", resource.m_id,
+               ", openinfo: ", resource.m_openinfo,
+               ", closeinfo: ", resource.m_closeinfo,
+               ", xa: ", *resource.m_xa, 
+               '}');
          }
 
 
