@@ -81,9 +81,8 @@ namespace casual
             return std::bitset< std::numeric_limits< underlaying_type>::digits>{ static_cast< unsigned long long>( m_flags)}.count();
          }
 
-
-
          constexpr underlaying_type underlaying() const noexcept { return m_flags;}
+
 
          constexpr friend Flags& operator |= ( Flags& lhs, Flags rhs) noexcept { lhs.m_flags |= rhs.m_flags; return lhs;}
          constexpr friend Flags operator | ( Flags lhs, Flags rhs) noexcept { return Flags( lhs.m_flags | rhs.m_flags);}
@@ -99,8 +98,14 @@ namespace casual
          constexpr friend bool operator == ( Flags lhs, Flags rhs) noexcept { return lhs.m_flags == rhs.m_flags;}
          constexpr friend bool operator != ( Flags lhs, Flags rhs) noexcept { return ! ( lhs == rhs);}
 
+         //! More _easy to reason about_  operators that does what one thinks they do.
+         //! @{
          constexpr friend Flags operator - ( Flags lhs, Flags rhs) noexcept { return Flags{ lhs.m_flags & ~rhs.m_flags};}
          constexpr friend Flags& operator -= ( Flags& lhs, Flags rhs) noexcept { lhs.m_flags &= ~rhs.m_flags; return lhs;}
+
+         constexpr friend Flags operator + ( Flags lhs, Flags rhs) noexcept { return lhs | rhs;}
+         constexpr friend Flags& operator += ( Flags lhs, Flags rhs) noexcept { return lhs |= rhs;}
+         //! @}
 
 
          constexpr friend std::ostream& operator << ( std::ostream& out, Flags flags)
@@ -168,7 +173,8 @@ namespace casual
          template< typename Enum, typename... Enums>
          constexpr auto compose( Enum flag, Enums... flags)
          {
-            static_assert( traits::is::same_v< Enum, Enums...> && std::is_enum_v< Enum>, "flags::compose only accepts enums of the same type");
+            // TODO fix is::same so it can take only one Type.
+            static_assert( traits::is::same_v< Enum, Enum, Enums...> && std::is_enum_v< Enum>, "flags::compose only accepts enums of the same type");
             return Flags< Enum>{ flag, flags...};
          }
       } // flags

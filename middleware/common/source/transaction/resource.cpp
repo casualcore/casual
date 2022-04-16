@@ -56,16 +56,19 @@ namespace casual
          }
 
 
-         Resource::code Resource::start( const transaction::ID& transaction, Flags flags)
+         Resource::code Resource::start( const transaction::ID& transaction, Flags flags) noexcept
          {
             log::line( log::category::transaction, "start resource: ", m_id, " transaction: ", transaction, " flags: ", flags);
+
+            if( flags.exist( Flag::join) && migrate())
+               flags = ( flags - Flag::join) + Flag::resume;
 
             auto result = reopen_guard( [&]()
             { 
                return local::convert( m_xa->xa_start_entry( local::non_const_xid( transaction), m_id.value(), flags.underlaying()));
             });
 
-            if( result == code::duplicate_xid)
+            if( result == code::duplicate_xid && ! flags.exist( Flag::join))
             {
                // Transaction is already associated with this thread of control, we try to join instead
                log::line( log::category::transaction, result, " - action: try to join instead");
@@ -81,9 +84,13 @@ namespace casual
             return result;
          }
 
-         Resource::code Resource::end( const transaction::ID& transaction, Flags flags)
+         Resource::code Resource::end( const transaction::ID& transaction, Flags flags) noexcept
          {
             log::line( log::category::transaction, "end resource: ", m_id, " transaction: ", transaction, " flags: ", flags);
+
+            // if the resource support migrate, we add migrate to flags
+            if( flags.exist( Flag::suspend) && migrate())
+               flags |= Flag::migrate;
 
             auto result = reopen_guard( [&]()
             {
@@ -96,7 +103,7 @@ namespace casual
             return result;
          }
 
-         Resource::code Resource::open( Flags flags)
+         Resource::code Resource::open( Flags flags) noexcept
          {
             log::line( log::category::transaction, "open resource: ", m_id, " openinfo: ", m_openinfo, " flags: ", flags);
 
@@ -111,7 +118,7 @@ namespace casual
             return result;
          }
 
-         Resource::code Resource::close( Flags flags)
+         Resource::code Resource::close( Flags flags) noexcept
          {
             log::line( log::category::transaction, "close resource: ", m_id, " closeinfo: ", m_closeinfo, " flags: ", flags);
 
@@ -125,7 +132,7 @@ namespace casual
             return result;
          }
 
-         Resource::code Resource::prepare( const transaction::ID& transaction, Flags flags)
+         Resource::code Resource::prepare( const transaction::ID& transaction, Flags flags) noexcept
          {
             auto result = reopen_guard( [&]()
             {
@@ -150,7 +157,7 @@ namespace casual
             return result;
          }
 
-         Resource::code Resource::commit( const transaction::ID& transaction, Flags flags)
+         Resource::code Resource::commit( const transaction::ID& transaction, Flags flags) noexcept
          {
             log::line( log::category::transaction, "commit resource: ", m_id, " flags: ", flags);
 
@@ -160,7 +167,7 @@ namespace casual
             });
          }
 
-         Resource::code Resource::rollback( const transaction::ID& transaction, Flags flags)
+         Resource::code Resource::rollback( const transaction::ID& transaction, Flags flags) noexcept
          {
             log::line( log::category::transaction, "rollback resource: ", m_id, " flags: ", flags);
 
@@ -170,10 +177,14 @@ namespace casual
             });
          }
 
-         bool Resource::dynamic() const
+         bool Resource::dynamic() const noexcept
          {
-            return static_cast< flag::xa::resource::Flags>( 
-               m_xa->flags).exist( flag::xa::resource::Flag::dynamic);
+            return static_cast< flag::xa::resource::Flags>( m_xa->flags).exist( flag::xa::resource::Flag::dynamic);
+         }
+
+         bool Resource::migrate() const noexcept
+         {
+            return ! flag::xa::resource::Flags{ m_xa->flags}.exist( flag::xa::resource::Flag::no_migrate);
          }
 
          Resource::code Resource::reopen()
