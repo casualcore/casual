@@ -663,7 +663,7 @@ namespace casual
                   namespace legend
                   {
                      const std::map< std::string, const char*> legends{
-                        { "list-service", action::list::services::legend},
+                        { "list-services", action::list::services::legend},
                         { "list-admin-services", action::list::services::legend},
                      };
                
@@ -673,6 +673,10 @@ namespace casual
 
                         if( found)
                            std::cout << found->second;
+                        else if( option == "list-service") // Only for backward compatibility
+                           std::cout << action::list::services::legend;
+                        else
+                           code::raise::error( code::casual::invalid_argument, "not a valid argument to --legend: ", option);
                      }
 
                      auto complete() 
