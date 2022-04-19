@@ -3,6 +3,17 @@ This is the changelog for `casual` and all changes are listed in this document.
 
 ## [Unreleased]
 
+## [1.5.11] - 2022-04-19
+### Fixes
+- cli - fix confusing arguments for casual service --legend
+- cli - remove extra root `domain` - casual configuration --normalize
+- gateway - make gateway more robust in error situations
+- xatmi - suspend involved resources during tpcall
+- gateway - absorb tcp errors and only effect the relevant tcp-connection
+
+### Changes
+- `casual` has moved to GitHub
+
 ## [1.5.10] - 2022-03-21
 ### Fixes
 - gateway - use multiplexing on the tcp-connection phase, no blocking if the
