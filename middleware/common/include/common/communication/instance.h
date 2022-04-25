@@ -124,8 +124,6 @@ namespace casual
                base_connector();
 
                inline const Socket& socket() const { return m_socket;}
-
-               inline const process::Handle& process() const { return m_process;}
                inline const ipc::Address& destination() const { return m_connector.destination();}
 
                CASUAL_LOG_SERIALIZE(
@@ -148,6 +146,7 @@ namespace casual
                basic_connector( instance::Identity identity);
                
                void reconnect();
+               const process::Handle& process();
 
                //! clear the connector
                void clear();
@@ -217,6 +216,7 @@ namespace casual
             struct Connector : detail::base_connector
             {
                void reconnect();
+               const process::Handle& process();
                void clear();
             };
             using Device = communication::device::Outbound< Connector>;
@@ -227,6 +227,7 @@ namespace casual
                struct Connector : detail::base_connector
                {
                   void reconnect();
+                  const process::Handle& process();
                   void clear();
                };
 

@@ -306,16 +306,16 @@ namespace casual
                   template< typename H> 
                   auto relaxed( H& handler)
                   {
-                     return [&handler, types = handler.types()]( auto& device, auto policy)
+                     return [ &handler, types = handler.types()]( auto& device, auto policy)
                      {
                         return handler( device.next( types, policy));
-                     };
+                     };                    
                   }
 
                   template< typename H> 
                   auto strict( H& handler)
                   {
-                     return [&handler]( auto& device, auto policy)
+                     return [ &handler]( auto& device, auto policy)
                      {
                         return handler( device.next( policy));
                      };

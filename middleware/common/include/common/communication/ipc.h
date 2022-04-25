@@ -25,127 +25,6 @@ namespace casual
 {
    namespace common::communication::ipc
    {
-      namespace message
-      {
-         namespace transport
-         {
-            struct Header
-            {
-               //! Which logical type of message this transport is carrying
-               //! @attention has to be the first bytes in the message
-               common::message::Type type;
-
-               using correlation_type = Uuid::uuid_type;
-
-               //! The message correlation id
-               correlation_type correlation;
-
-               //! which offset this transport message represent of the complete message
-               std::int64_t offset;
-
-               //! Size of payload in this transport message
-               std::int64_t count;
-
-               //! size of the logical complete message
-               std::int64_t size;
-
-               friend std::ostream& operator << ( std::ostream& out, const Header& value);
-            };
-
-            constexpr std::int64_t max_message_size() { return platform::ipc::transport::size;}
-            constexpr std::int64_t header_size() { return sizeof( Header);}
-            constexpr std::int64_t max_payload_size() { return max_message_size() - header_size();}
-
-         } // transport
-
-         struct Transport
-         {
-            using correlation_type = Uuid::uuid_type;
-
-            using payload_type = std::array< char, transport::max_payload_size()>;
-            using range_type = range::type_t< payload_type>;
-            using const_range_type = range::const_type_t< payload_type>;
-
-            struct message_t
-            {
-               transport::Header header;
-               payload_type payload;
-
-            } message{}; // note the {} which initialize the memory to 0:s
-
-
-            static_assert( transport::max_message_size() - transport::max_payload_size() < transport::max_payload_size(), "Payload is to small");
-            static_assert( std::is_trivially_copyable< message_t>::value, "Message has to be trivially copyable");
-            static_assert( ( transport::header_size() + transport::max_payload_size()) == transport::max_message_size(), "something is wrong with padding");
-
-
-            inline Transport() = default;
-
-            inline Transport( common::message::Type type, platform::size::type size)
-            {
-               message.header.type = type;
-               message.header.size = size;
-            }
-
-            //! @return the message type
-            inline common::message::Type type() const { return static_cast< common::message::Type>( message.header.type);}
-
-            inline const_range_type payload() const
-            {
-               return range::make( std::begin( message.payload), message.header.count);
-            }
-
-            inline const auto& correlation() const { return message.header.correlation;}
-            inline auto& correlation() { return message.header.correlation;}
-
-            //! @return payload size
-            inline platform::size::type payload_size() const { return message.header.count;}
-
-            //! @return the offset of the logical complete message this transport
-            //!    message represent.
-            inline platform::size::type payload_offset() const { return message.header.offset;}
-
-            //! @return the size of the complete logical message
-            inline platform::size::type complete_size() const { return message.header.size;}
-
-            //! @return the total size of the transport message including header.
-            inline platform::size::type size() const { return transport::header_size() + payload_size();}
-
-            inline void* data() { return static_cast< void*>( &message);}
-            inline const void* data() const { return static_cast< const void*>( &message);}
-
-            inline void* header_data() { return static_cast< void*>( &message.header);}
-            inline void* payload_data() { return static_cast< void*>( &message.payload);}
-
-
-            //! Indication if this transport message is the last of the logical message.
-            //!
-            //! @return true if this transport message is the last of the logical message.
-            //! @attention this does not give any guarantees that no more transport messages will arrive...
-            inline bool last() const { return message.header.offset + message.header.count == message.header.size;}
-
-            auto begin() { return std::begin( message.payload);}
-            inline auto begin() const { return std::begin( message.payload);}
-            auto end() { return begin() + message.header.count;}
-            auto end() const { return begin() + message.header.count;}
-
-            template< typename R>
-            void assign( R&& range)
-            {
-               message.header.count = range.size();
-               assert( message.header.count <=  transport::max_payload_size());
-
-               algorithm::copy( range, std::begin( message.payload));
-            }
-
-            friend std::ostream& operator << ( std::ostream& out, const Transport& value);
-         };
-
-         inline platform::size::type offset( const Transport& value) { return value.message.header.offset;}
-
-      } // message
-
-
       struct Handle
       {
 
@@ -191,13 +70,11 @@ namespace casual
       {
          namespace detail
          {
-            namespace create
+            namespace create::domain
             {
-               namespace domain
-               {
-                  Socket socket();
-               } // domain
-            } // create
+               Socket socket();
+            } // create::domain
+
             namespace outbound
             {
                const Socket& socket();
@@ -230,16 +107,16 @@ namespace casual
       } // native
 
 
+
       namespace policy
       {
-         using complete_type = message::Complete;
-         using cache_type = std::vector< complete_type>;
+         using cache_type = std::vector< message::Complete>;
          using cache_range_type = range::type_t< cache_type>;
 
          namespace blocking
          {
             cache_range_type receive( Handle& handle, cache_type& cache);
-            strong::correlation::id send( const Socket& socket, const Address& destination, const complete_type& complete);
+            strong::correlation::id send( const Socket& socket, const Address& destination, const message::Complete& complete);
          } // blocking
 
 
@@ -253,7 +130,7 @@ namespace casual
             }
 
             template< typename Connector>
-            auto send( Connector&& connector, const complete_type& complete)
+            auto send( Connector&& connector, const message::Complete& complete)
             {
                return policy::blocking::send( connector.socket(), connector.destination(), complete);
             }
@@ -264,7 +141,7 @@ namespace casual
             namespace blocking
             {
                cache_range_type receive( Handle& handle, cache_type& cache);
-               strong::correlation::id send( const Socket& socket, const Address& destination, const complete_type& complete);
+               strong::correlation::id send( const Socket& socket, const Address& destination, const message::Complete& complete);
             } // blocking
 
             struct Blocking
@@ -276,7 +153,7 @@ namespace casual
                }
 
                template< typename Connector>
-               auto send( Connector&& connector, const complete_type& complete)
+               auto send( Connector&& connector, const message::Complete& complete)
                {
                   return policy::non::blocking::send( connector.socket(), connector.destination(), complete);
                }
@@ -332,7 +209,7 @@ namespace casual
             using transport_type = message::Transport;
             using blocking_policy = policy::Blocking;
             using non_blocking_policy = policy::non::Blocking;
-            using complete_type = policy::complete_type;
+            using complete_type = message::Complete;
 
             Connector() = default;
             Connector( strong::ipc::id destination);
@@ -357,6 +234,36 @@ namespace casual
          using basic_device = device::Outbound< Connector, S>;
 
          using Device = device::Outbound< Connector>;
+
+
+         namespace partial
+         { 
+            struct Destination
+            {
+               inline Destination( const strong::ipc::id& ipc)
+                  : m_ipc{ ipc}, m_socket{ ipc::native::detail::create::domain::socket()}, m_address{ ipc} {}
+
+               inline auto& ipc() const noexcept { return m_ipc;}
+               inline auto& socket() const noexcept { return m_socket;}
+               inline auto& address() const noexcept { return m_address;}
+               
+               CASUAL_LOG_SERIALIZE(
+                  CASUAL_SERIALIZE_NAME( m_ipc, "ipc");
+                  CASUAL_SERIALIZE_NAME( m_socket, "socket");
+                  CASUAL_SERIALIZE_NAME( m_address, "address");
+               )
+
+            private:
+               strong::ipc::id m_ipc;
+               Socket m_socket;
+               Address m_address;
+            }; 
+
+            //! tries to send as much as possible of whats left in the complete send message
+            //! @returns true if the complete send message
+            bool send( const Destination& destination, message::complete::Send& complete);
+            
+         } // partial
 
       } // outbound
 

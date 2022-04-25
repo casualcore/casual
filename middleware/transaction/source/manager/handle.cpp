@@ -392,6 +392,17 @@ namespace casual
                               
                               auto reply = create::reply< Reply>( origin, destination, detail::accumulate::code( replies, outcome, code));
 
+                              // check if we are the instigator for rollback (a process has _died_, and such)
+                              if( destination.process == common::process::handle())
+                              {
+                                 common::log::line( verbose::log, "local rollback - reply: ", reply);
+                                 if( reply.state == decltype( reply.state)::ok)
+                                    remove::transaction( state, common::transaction::id::range::global( origin));
+                                 else
+                                    common::log::line( common::log::category::error, reply.state, " rollback from transaction-manager failed - action: keep transaction");
+                                 return;
+                              }
+
                               if constexpr( common::traits::is::any_v< Reply, common::message::transaction::commit::Reply>)
                                  reply.stage = decltype( reply.stage)::rollback;
 

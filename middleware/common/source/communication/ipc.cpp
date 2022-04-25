@@ -32,32 +32,6 @@ namespace casual
    namespace common::communication::ipc
    {
 
-      namespace message
-      {
-         namespace transport
-         {
-            std::ostream& operator << ( std::ostream& out, const Header& value)
-            {
-               return stream::write( out, "{ type: ", description( value.type), ", correlation: ", transcode::hex::stream::wrapper( value.correlation),
-                  ", offset: ", value.offset, ", count: ", value.count, ", size: ", value.size, '}');
-            }
-            
-            static_assert( max_message_size() <= platform::ipc::transport::size, "ipc message is too big'");
-         } // transport
-         
-
-         std::ostream& operator << ( std::ostream& out, const Transport& value)
-         {
-            return stream::write( out, 
-               "{ header: " , value.message.header
-               , ", payload.size: " , value.payload_size()
-               , ", header-size: " , transport::header_size()
-               , ", transport-size: " ,  value.size()
-               , ", max-size: " , transport::max_message_size() 
-               , '}');
-         }
-      } // message
-
       Handle::Handle( Socket&& socket, strong::ipc::id ipc) : m_socket( std::move( socket)), m_ipc(std::move( ipc))
       {
          log::line( communication::verbose::log, "created handle: ", *this);
@@ -332,9 +306,7 @@ namespace casual
 
             strong::correlation::id send( const Socket& socket, const Address& destination, const ipc::message::Complete& complete)
             {
-               message::Transport transport{ complete.type(), complete.size()};
-
-               complete.correlation().value().copy( transport.correlation());
+               message::Transport transport{ complete.type(), complete.size(), complete.correlation()};
 
                auto part_begin = std::begin( complete.payload);
 
@@ -398,7 +370,7 @@ namespace casual
 
                strong::correlation::id send( const Socket& socket, const Address& destination, const ipc::message::Complete& complete)
                {
-                  message::Transport transport{ complete.type(), complete.size()};
+                  message::Transport transport{ complete.type(), complete.size(), complete.correlation()};
 
                   complete.correlation().value().copy( transport.correlation());
 
@@ -424,6 +396,7 @@ namespace casual
                }
             } // blocking
          } // non
+
 
 
       } // policy
@@ -488,6 +461,31 @@ namespace casual
             : m_destination{ ipc}
          {
          }
+
+
+         namespace partial
+         {
+            bool send( const Destination& destination, message::complete::Send& complete)
+            {
+               Trace trace{ "common::communication::ipc::outbound::partial::send"};
+               log::line( verbose::log, "destination: ", destination, ", complete: ", complete);
+
+               auto transport = complete.transport();
+
+               while( auto front = complete.front())
+               {
+                  transport.assign( front.range, front.offset);
+                  log::line( verbose::log, "transport: ", transport);
+
+                  if( ! native::non::blocking::send( destination.socket(), destination.address(), transport))
+                     return false;
+
+                  complete.pop();
+               }
+               return true;
+            }
+            
+         } // partial
 
       } // outbound
 

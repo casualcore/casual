@@ -101,6 +101,7 @@ namespace casual
                      return message::dispatch::handler( communication::ipc::inbound::device(),
                         [&tasks]( message::event::Task& event)
                         {
+                           log::line( verbose::log, "event: ", event);
                            if( event.done())
                               algorithm::container::trim( tasks, algorithm::remove( tasks, event.correlation));
                         },
@@ -113,6 +114,8 @@ namespace casual
 
                   auto tasks = communication::ipc::call(
                       manager.ipc, common::message::domain::manager::shutdown::Request{ process::handle()}).tasks;
+                  
+                  log::line( verbose::log, "tasks: ", tasks);
 
                   auto condition = common::message::dispatch::condition::compose(
                      common::event::condition::done( [&tasks]()

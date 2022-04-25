@@ -8,8 +8,11 @@
 #include "common/unittest.h"
 
 #include "common/communication/ipc.h"
+#include "common/communication/ipc/send.h"
+#include "common/communication/select.h"
 #include "common/message/domain.h"
 #include "common/message/service.h"
+
 #include "common/unittest/eventually/send.h"
 
 #include <random>
@@ -94,38 +97,10 @@ namespace casual
          auto complete = local::payload::complete( local::payload::parts( 100, common::message::Type::event_service_call));
 
          EXPECT_TRUE( static_cast< bool>( complete));
-         EXPECT_TRUE( complete.complete()) << "complete.unhandled().size()" << complete.unhandled().size();
-         if( ! complete.complete())
-         {
-            for( auto a : complete.unhandled())
-            {
-               std::cerr << "size: " << a.size() << '\n';
-            }
-         }
+         EXPECT_TRUE( complete.complete()) << "complete: " << complete;
 
          EXPECT_TRUE( complete.payload == local::payload::get());
       }
-
-      TEST( casual_common_communication_message, complete_add__reverse_ordered)
-      {
-         common::unittest::Trace trace;
-
-         auto parts = local::payload::parts( 100, common::message::Type::event_service_call);
-         algorithm::reverse( parts);
-         auto complete = local::payload::complete( parts);
-
-         EXPECT_TRUE( static_cast< bool>( complete));
-         EXPECT_TRUE( complete.complete()) << "complete.unhandled().size()" << complete.unhandled().size();
-         if( ! complete.complete())
-         {
-            for( auto a : complete.unhandled())
-            {
-               std::cerr << "size: " << a.size() << '\n';
-            }
-         }
-         EXPECT_TRUE( complete.payload == local::payload::get());
-      }
-
 
       TEST( common_communication_ipc, instantiate)
       {
@@ -364,6 +339,81 @@ namespace casual
          EXPECT_TRUE( receive_message.transaction.trid == message.transaction.trid);
          EXPECT_TRUE( receive_message.transaction.state == message.transaction.state);
          EXPECT_TRUE( receive_message.buffer.memory == message.buffer.memory);
+      }
+
+      TEST( common_communication_ipc, send_multiplex__10_destinations__10__10K__messages)
+      {
+         common::unittest::Trace trace;
+         
+         // the state for the unittest.
+         struct State
+         {
+            State()
+            {
+               // add all inbounds to read directive
+               for( auto& device : destinations)
+                  directive.read.add( device.connector().descriptor());
+            }
+
+            communication::select::Directive directive;
+            communication::ipc::send::Coordinator coordinator{ directive};
+            std::array< communication::ipc::inbound::Device, 10> destinations;
+
+            struct
+            {
+               using map_type = std::map< strong::ipc::id, std::vector< strong::correlation::id>>;
+               map_type sent;
+               map_type receive;
+            } correlation;
+
+         };
+
+         State state; 
+
+         const auto message = unittest::Message{ 10 * 1024};
+
+
+         // send 10 messages to each destination
+         algorithm::for_n< 10>( [&]()
+         {
+            for( auto& destination : state.destinations)
+            {
+               const auto& ipc = destination.connector().handle().ipc();
+               state.correlation.sent[ ipc].push_back( state.coordinator.send( ipc, message));
+            }
+         });
+
+         auto conditions = []( auto& state)
+         {
+            return communication::select::dispatch::condition::compose(
+               // we're done when we've received all messages that was sent.
+               communication::select::dispatch::condition::done( [ &state]() { return state.correlation.sent == state.correlation.receive;})
+            );
+         };
+
+         [[maybe_unused]] constexpr auto consumer = []( auto& state)
+         {
+            return [&state]( strong::file::descriptor::id descriptor, communication::select::tag::read)
+            {
+               common::Trace trace{ "consumer operator()"};
+               common::log::line( common::verbose::log, "descriptor: ", descriptor);
+               if( auto found = algorithm::find( state.destinations, descriptor))
+               {
+                  common::log::line( common::verbose::log, "found: ", *found);
+                  if( auto complete = communication::device::non::blocking::next( *found))
+                     state.correlation.receive[ found->connector().handle().ipc()].push_back( complete.correlation());
+                  return true;
+               }
+               return false;
+            };
+         };
+
+         communication::select::dispatch::pump(
+            conditions( state),
+            state.directive, 
+            consumer( state), 
+            state.coordinator
+         );
       }
 
       namespace local

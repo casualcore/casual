@@ -660,7 +660,10 @@ namespace casual
 
       void Queuebase::persist() 
       { 
+         Trace trace{ "queue::Queuebase::persist"};
+         log::line( log, "commit");
          m_connection.commit();
+         log::line( log, "exclusive_begin");
          m_connection.exclusive_begin();
       }
       void Queuebase::rollback() 

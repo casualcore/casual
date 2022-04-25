@@ -751,14 +751,15 @@ domain:
 
             local::send::tm( event);
          }
-
+         
+         // TODO unittest replace with fetch and predicate
          // should be more than enough for TM to complete the rollback.
          process::sleep( std::chrono::milliseconds{ 10});
 
          auto state = unittest::state();
 
          // transaction should be rolled back and removed
-         EXPECT_TRUE( state.transactions.empty());
+         EXPECT_TRUE( state.transactions.empty()) << CASUAL_NAMED_VALUE( state.transactions);
 
          EXPECT_TRUE( local::rollback() == common::code::tx::ok);
       }
