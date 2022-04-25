@@ -232,6 +232,15 @@ namespace casual
                log::line( verbose::log, "connector: ", *this);
             }
 
+            template< fetch::Directive directive>
+            const process::Handle& basic_connector< directive>::process() 
+            { 
+               if( ! m_process)
+                  reconnect();
+
+               return m_process;
+            }
+
 
             template< fetch::Directive directive>
             void basic_connector< directive>::reconnect()
@@ -396,6 +405,13 @@ namespace casual
                   log::line( verbose::log, "connector: ", *this);
                }
 
+               const process::Handle& Connector::process()
+               {
+                  if( ! m_process)
+                     reconnect();
+                  return m_process;
+               }
+
                void Connector::clear()
                {
                   Trace trace{ "communication::instance::outbound::domain::manager::Connector::clear"};
@@ -422,6 +438,13 @@ namespace casual
                      }));
 
                      log::line( verbose::log, "connector: ", *this);
+                  }
+
+                  const process::Handle& Connector::process()
+                  {
+                     if( ! m_process)
+                        reconnect();
+                     return m_process;
                   }
 
                   void Connector::clear()

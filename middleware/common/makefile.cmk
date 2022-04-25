@@ -83,6 +83,7 @@ casual_common_objectfiles = [
     
     make.Compile( 'source/communication/ipc.cpp'),
     make.Compile( 'source/communication/ipc/message.cpp'),
+    make.Compile( 'source/communication/ipc/send.cpp'),
     make.Compile( 'source/communication/socket.cpp'),
     make.Compile( 'source/communication/tcp.cpp'),
     make.Compile( 'source/communication/tcp/message.cpp'),

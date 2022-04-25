@@ -117,6 +117,19 @@ namespace casual
             return {};
          }
 
+         //! @return the first complete message from the cache that has
+         //!    a type that is in the set _types_
+         template< typename R>
+         [[nodiscard]] complete_type cached( R&& types)
+         {
+            auto is_relevant = [ &types]( auto& message){ return algorithm::find( types, message.type()) && message.complete();};
+
+            if( auto found = algorithm::find_if( m_cache, is_relevant))
+               return algorithm::container::extract( m_cache, std::begin( found));
+
+            return {};
+         }
+
          //! @return true if message with `type` exists in the cache, and is a complete message.
          bool cached( common::message::Type type)
          {
@@ -166,10 +179,10 @@ namespace casual
             // `types` is a temple to enable other forms of containers than std::vector
             -> std::enable_if_t< traits::is::same_v< traits::remove_cvref_t< decltype( *std::begin( types))>, common::message::Type>, complete_type>
          {
-            return select(
-               [&types, &correlation]( auto& complete){ return (! common::algorithm::find( types, complete.type()).empty()) 
-                                                  && complete.correlation() == correlation;},
-               std::forward< P>( policy));
+            return select( [ &types, &correlation]( auto& complete){ 
+                  return ( ! common::algorithm::find( types, complete.type()).empty()) 
+                     && complete.correlation() == correlation;},
+                     std::forward< P>( policy));
          }
 
          //! Tries to find the logic complete message with correlation @p correlation
@@ -321,9 +334,12 @@ namespace casual
             });
          }
 
-         Connector& connector() { return m_connector;}
-         const Connector& connector() const { return m_connector;}
+         Connector& connector() noexcept { return m_connector;}
+         const Connector& connector() const noexcept { return m_connector;}
 
+         auto descriptor() const noexcept { return m_connector.descriptor();}
+
+         inline friend bool operator == ( const Inbound& lhs, strong::file::descriptor::id rhs) noexcept { return lhs.descriptor() == rhs;}
 
          CASUAL_LOG_SERIALIZE(
             CASUAL_SERIALIZE_NAME( m_connector, "connector");
