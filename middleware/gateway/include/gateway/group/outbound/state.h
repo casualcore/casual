@@ -13,6 +13,7 @@
 #include "common/serialize/macro.h"
 #include "common/communication/select.h"
 #include "common/communication/tcp.h"
+#include "common/communication/ipc/send.h"
 #include "common/domain.h"
 #include "common/message/coordinate.h"
 #include "common/state/machine.h"
@@ -253,8 +254,7 @@ namespace casual
          state::service::Pending service;
          state::Lookup lookup;
 
-         //! holds all connections that has been requested to disconnect.
-         std::vector< common::strong::file::descriptor::id> disconnecting;
+         common::communication::ipc::send::Coordinator multiplex{ directive};
          
          struct
          {
@@ -264,6 +264,9 @@ namespace casual
                CASUAL_SERIALIZE( discovery);
             )
          } coordinate;
+
+         //! holds all connections that has been requested to disconnect.
+         std::vector< common::strong::file::descriptor::id> disconnecting;
 
          std::string alias;
          platform::size::type order{};

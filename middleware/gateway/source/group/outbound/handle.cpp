@@ -98,7 +98,7 @@ namespace casual
                               auto descriptor = state.lookup.connection( message.trid);
 
                               // add the route and the error callback
-                              state.route.add( std::move( message), descriptor, [ rm = message.resource, trid = message.trid]( auto& destination)
+                              state.route.add( std::move( message), descriptor, [ &state, rm = message.resource, trid = message.trid]( auto& destination)
                               {
                                  common::message::reverse::type_t< Message> reply;
                                  reply.correlation = destination.correlation;
@@ -108,7 +108,7 @@ namespace casual
                                  reply.state = decltype( reply.state)::resource_error; // is this the best error code?
 
                                  log::line( verbose::log, "reply: ", reply);
-                                 ipc::flush::send( destination.ipc, reply);
+                                 state.multiplex.send( destination.ipc, reply);
                               });
 
                               tcp::send( state, descriptor, message);
@@ -159,9 +159,9 @@ namespace casual
                         state.service.add( std::move( metric));
 
                         // possible send metric
-                        state.service.maybe_metric( []( auto& message)
+                        state.service.maybe_metric( [ &state]( auto& message)
                         {
-                           ipc::flush::optional::send( ipc::manager::service(), message);
+                           state.multiplex.send( ipc::manager::service(), message);
                         });
                      }                  
 
@@ -191,7 +191,7 @@ namespace casual
                                  reply.code.result = decltype( reply.code.result)::system;
 
                                  log::line( verbose::log, "reply: ", reply);
-                                 ipc::flush::optional::send( destination.ipc, reply);
+                                 state.multiplex.send( destination.ipc, reply);
 
                                  service::call::metric( state, destination, state.service.consume( destination.correlation), trid, reply.code.result);
                               };
@@ -254,13 +254,13 @@ namespace casual
                            if( involved)
                               transaction::involved( message);
 
-                           state.route.add( message, lookup.connection, []( auto& destination)
+                           state.route.add( message, lookup.connection, [ &state]( auto& destination)
                            {
                               common::message::conversation::connect::Reply reply;
                               reply.correlation = destination.correlation;
                               reply.execution = destination.execution;
                               reply.code.result = decltype( reply.code.result)::system;
-                              ipc::flush::send( destination.ipc, reply);
+                              state.multiplex.send( destination.ipc, reply);
                            });
 
                            tcp::send( state, lookup.connection, message);
@@ -347,7 +347,7 @@ namespace casual
                                     request.order = state.order;
                                     algorithm::copy( services, request.services.add);
 
-                                    ipc::flush::send( ipc::manager::service(), request);
+                                    state.multiplex.send( ipc::manager::service(), request);
                                  }
 
                                  if( auto queues = std::get< 0>( algorithm::intersection( reply.content.queues, advertise.queues, equal_name)))
@@ -359,7 +359,7 @@ namespace casual
                                        return casual::queue::ipc::message::advertise::Queue{ queue.name, queue.retries};
                                     });
 
-                                    ipc::flush::send( ipc::manager::optional::queue(), request);
+                                    state.multiplex.send( ipc::manager::optional::queue(), request);
                                  }
                               };
 
@@ -383,9 +383,7 @@ namespace casual
                            {
                               log::line( log, "outbound is in shutdown mode - action: reply with empty discovery");
 
-                              ipc::flush::optional::send( 
-                                 message.process.ipc, 
-                                 common::message::reverse::type( message, common::process::handle()));
+                              state.multiplex.send( message.process.ipc, common::message::reverse::type( message, common::process::handle()));
                               return;
                            }
 
@@ -432,7 +430,7 @@ namespace casual
                                  return result + reply.content;
                               });
 
-                              ipc::flush::optional::send( destination, message);
+                              state.multiplex.send( destination, message);
                            };
                            
                            state.coordinate.discovery( 
@@ -512,12 +510,12 @@ namespace casual
 
                            auto [ lookup, involved] = state.lookup.queue( message.name, message.trid);
 
-                           auto route = state::route::Point{ message, lookup.connection, []( auto& destination)
+                           auto route = state::route::Point{ message, lookup.connection, [ &state]( auto& destination)
                            {
                               common::message::reverse::type_t< Message> reply;
                               reply.correlation = destination.correlation;
                               reply.execution = destination.execution;
-                              ipc::flush::optional::send( destination.ipc, reply);
+                              state.multiplex.send( destination.ipc, reply);
                            }};
 
                            // check if we've has been called with the same correlation id before, hence we are in a
@@ -601,14 +599,14 @@ namespace casual
                                     common::message::service::Advertise unadvertise{ common::process::handle()};
                                     unadvertise.alias = instance::alias();
                                     unadvertise.services.remove = std::move( services);
-                                    ipc::flush::optional::send( ipc::manager::service(), unadvertise);
+                                    state.multiplex.send( ipc::manager::service(), unadvertise);
                                  }
                               }
 
                               // get the internal "un-branched" trid
                               message.transaction.trid = state.lookup.internal( message.transaction.trid);
 
-                              ipc::flush::optional::send( route.destination.ipc, message);
+                              state.multiplex.send( route.destination.ipc, message);
 
                               internal::service::call::metric( state, std::move( route.destination), pending, message.transaction.trid, message.code.result);
                            }
@@ -637,7 +635,7 @@ namespace casual
                            if( auto found = algorithm::find( state.route.points(), message.correlation))
                            {
                               log::line( verbose::log, "found: ", *found);
-                              ipc::flush::optional::send( found->destination.ipc, message);
+                              state.multiplex.send( found->destination.ipc, message);
                               
                               if( message.code.result != decltype( message.code.result)::absent)
                                  state.route.remove( message.correlation);
@@ -661,7 +659,7 @@ namespace casual
 
                         if( auto found = algorithm::find( state.route.points(), message.correlation))
                         {
-                           ipc::flush::optional::send( found->destination.ipc, message);
+                           state.multiplex.send( found->destination.ipc, message);
 
                            if( message.code.result != decltype( message.code.result)::absent)
                                  state.route.remove( message.correlation);
@@ -690,7 +688,7 @@ namespace casual
 
                            if( auto point = state.route.consume( message.correlation))
                            {
-                              ipc::flush::optional::send( point.destination.ipc, message);
+                              state.multiplex.send( point.destination.ipc, message);
                            }
                            else
                               log::line( log::category::error, code::casual::internal_correlation, " failed to correlate [", message.correlation, "] reply with a destination - action: ignore");
@@ -721,7 +719,7 @@ namespace casual
                            if( auto point = state.route.consume( message.correlation))
                            {
                               message.process = process::handle();
-                              ipc::flush::optional::send( point.destination.ipc, message);
+                              state.multiplex.send( point.destination.ipc, message);
                            }
                            else
                               log::line( log::category::error, code::casual::internal_correlation, " failed to correlate [", message.correlation, "] reply with a destination - action: ignore");

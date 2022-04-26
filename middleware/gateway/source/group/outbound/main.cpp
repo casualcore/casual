@@ -54,6 +54,7 @@ namespace casual
 
                // 'connect' to gateway-manager - will send configuration-update-request as soon as possible
                // that we'll handle in the main message pump
+               // We use blocking send, since it is no point going on until gateway-manager has got this message.
                communication::device::blocking::send( ipc::manager::gateway(), gateway::message::outbound::Connect{ process::handle()});
 
                // 'connect' to our local domain
@@ -113,8 +114,7 @@ namespace casual
                            external::connect( state);
                            
                            // send reply
-                           communication::device::blocking::optional::send(
-                              message.process.ipc, common::message::reverse::type( message, common::process::handle()));
+                           state.multiplex.send( message.process.ipc, common::message::reverse::type( message, common::process::handle()));
                            
                         };
                      }
@@ -128,7 +128,7 @@ namespace casual
                         {
                            Trace trace{ "gateway::group::outbound::local::handle::internal::state::request"};
 
-                           communication::device::blocking::optional::send( message.process.ipc, tcp::connect::state::request( state, message));
+                           state.multiplex.send( message.process.ipc, tcp::connect::state::request( state, message));
                         };
                      }
 
@@ -261,7 +261,8 @@ namespace casual
                   gateway::group::tcp::pending::send::dispatch( state),
                   ipc::dispatch::create( state, &internal::handler),
                   // takes care of multiplexing connects
-                  tcp::connect::dispatch::create( state, tcp::logical::connect::Bound::out)
+                  tcp::connect::dispatch::create( state, tcp::logical::connect::Bound::out),
+                  state.multiplex
                );
 
                abort_guard.release();

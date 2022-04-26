@@ -54,6 +54,7 @@ namespace casual
 
                // 'connect' to gateway-manager - will send configuration-update-request as soon as possible
                // that we'll handle in the main message pump
+               // TODO multiplex send?
                ipc::flush::send( ipc::manager::gateway(), gateway::message::inbound::Connect{ process::handle()});
 
                // 'connect' to our local domain
@@ -86,8 +87,7 @@ namespace casual
                            log::line( verbose::log, "state: ", state);
 
                            // send reply
-                           ipc::flush::optional::send(
-                              message.process.ipc, common::message::reverse::type( message, common::process::handle()));
+                           state.multiplex.send( message.process.ipc, common::message::reverse::type( message, common::process::handle()));
                         };
                      }
                   } // configuration::update
@@ -101,7 +101,7 @@ namespace casual
                         {
                            Trace trace{ "gateway::group::inbound::local::handle::internal::state::request"};
                            
-                           ipc::flush::optional::send( message.process.ipc, tcp::listen::state::request( state, message));
+                           state.multiplex.send( message.process.ipc, tcp::listen::state::request( state, message));
                         };
                      }
 
@@ -205,7 +205,8 @@ namespace casual
                      group::tcp::pending::send::dispatch( state),
                      ipc::dispatch::create( state, &internal::handler),
                      tcp::handle::dispatch::create( state, inbound::handle::external( state), &handle::connection::lost),
-                     tcp::listen::dispatch::create( state, tcp::logical::connect::Bound::in)
+                     tcp::listen::dispatch::create( state, tcp::logical::connect::Bound::in),
+                     state.multiplex
                   );
                }
 

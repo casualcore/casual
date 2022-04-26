@@ -110,8 +110,7 @@ namespace casual
                            external::connect( state);
 
                            // send reply
-                           ipc::flush::optional::send(
-                              message.process.ipc, common::message::reverse::type( message, common::process::handle()));
+                           state.multiplex.send( message.process.ipc, common::message::reverse::type( message, common::process::handle()));
                         };
                      }
                   } // configuration::update
@@ -124,7 +123,7 @@ namespace casual
                         {
                            Trace trace{ "gateway::group::inbound::reverse::local::handle::internal::state::request"};
 
-                           communication::device::blocking::optional::send( message.process.ipc, tcp::connect::state::request( state, message));
+                           state.multiplex.send( message.process.ipc, tcp::connect::state::request( state, message));
                         };
                      }
 
@@ -256,7 +255,8 @@ namespace casual
                   ipc::dispatch::create( state, &internal::handler),
                   tcp::handle::dispatch::create( state, inbound::handle::external( state), &handle::connection::lost),
                   // takes care of multiplexing connects
-                  tcp::connect::dispatch::create( state, tcp::logical::connect::Bound::in)
+                  tcp::connect::dispatch::create( state, tcp::logical::connect::Bound::in),
+                  state.multiplex
                );
 
                abort_guard.release();
