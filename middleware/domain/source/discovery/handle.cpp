@@ -60,7 +60,7 @@ namespace casual
                namespace send
                {
                   template< typename Result, typename P, typename M>
-                  auto requests( Result result, P&& providers, const M& message)
+                  auto requests( State& state, Result result, P&& providers, const M& message)
                   {
                      Trace trace{ "discovery::handle::local::detail::send::requests"};
                      log::line( verbose::log, "providers: ", providers);
@@ -69,9 +69,9 @@ namespace casual
 
                      log::line( verbose::log, "message: ", message);
 
-                     result = algorithm::accumulate( providers, std::move( result), [&message]( auto result, const auto& provider)
+                     result = algorithm::accumulate( providers, std::move( result), [ &state, &message]( auto result, const auto& provider)
                      {
-                        if( auto correlation = communication::ipc::flush::optional::send( provider.process.ipc, message))
+                        if( auto correlation = state.multiplex.send( provider.process.ipc, message))
                            result.emplace_back( correlation, provider.process.pid);
 
                         return result;
@@ -121,7 +121,7 @@ namespace casual
                      Trace trace{ "discovery::handle::local::detail::collect::needs::then::discover"};
 
                      // send request to all with the discover ability, if any.
-                     auto pending = detail::send::requests( state.coordinate.needs.empty_pendings(), 
+                     auto pending = detail::send::requests( state, state.coordinate.needs.empty_pendings(), 
                         state.providers.filter( state::provider::Ability::needs), message::discovery::needs::Request{ process::handle()});
 
                      // note: everything captured needs to by value (besides State if used)
@@ -142,7 +142,7 @@ namespace casual
                         }
                         else
                         {
-                           auto pending = detail::send::requests( state.coordinate.discovery.empty_pendings(), 
+                           auto pending = detail::send::requests( state, state.coordinate.discovery.empty_pendings(), 
                               state.providers.filter( state::provider::Ability::discover_external), request);
 
                            // let caller continuation do it's thing...
@@ -167,7 +167,7 @@ namespace casual
                         log::line( verbose::log, "message: ", message);
 
                         // send reply and registrate
-                        if( communication::ipc::flush::optional::send( message.process.ipc, common::message::reverse::type( message)))
+                        if( state.multiplex.send( message.process.ipc, common::message::reverse::type( message)))
                            state.providers.registration( message);
                      };
                   }
@@ -183,7 +183,7 @@ namespace casual
                      if( state.runlevel > decltype( state.runlevel())::running || ! message.content)
                      {
                         // we don't take any more request, or the request is empty
-                        communication::ipc::flush::optional::send( message.process.ipc, common::message::reverse::type( message));
+                        state.multiplex.send( message.process.ipc, common::message::reverse::type( message));
                         return;
                      }
 
@@ -197,18 +197,18 @@ namespace casual
                      log::line( verbose::log, "state.providers: ", state.providers);
 
                      // send request to all with the discover ability, if any.
-                     auto pending = detail::send::requests( state.coordinate.discovery.empty_pendings(), 
+                     auto pending = detail::send::requests( state, state.coordinate.discovery.empty_pendings(), 
                         state.providers.filter( state::provider::Ability::discover_external), request);
 
                      // note: everything captured needs to by value (besides State if used)
-                     state.coordinate.discovery( std::move( pending), [destination]( auto replies, auto outcome)
+                     state.coordinate.discovery( std::move( pending), [ &state, destination]( auto replies, auto outcome)
                      {
                         Trace trace{ "discovery::handle::local::api::request coordinate"};
 
                         message::discovery::api::Reply message;
                         message.correlation = destination.correlation;
 
-                        communication::ipc::flush::optional::send( destination.ipc, message);
+                        state.multiplex.send( destination.ipc, message);
                      });
                   };
                }
@@ -226,7 +226,7 @@ namespace casual
                         auto destination = local::extract::destination( message);
 
                         // collect needs and discover then use our continuation
-                        detail::collect::needs::then::discover( state, [ destination = std::move( destination)]( auto replies, auto outcome)
+                        detail::collect::needs::then::discover( state, [ &state, destination = std::move( destination)]( auto replies, auto outcome)
                         {
                            Trace trace{ "discovery::handle::local::rediscovery::request continuation"};
                            log::line( verbose::log, "replies: ", replies, "outcome: ", outcome);
@@ -243,7 +243,7 @@ namespace casual
                               return result;
                            });
 
-                           communication::ipc::flush::optional::send( destination.ipc, reply);
+                           state.multiplex.send( destination.ipc, reply);
                         });
                      };
                   }
@@ -274,7 +274,7 @@ namespace casual
                   if( state.runlevel > decltype( state.runlevel())::running)
                   {
                      // we don't take any more request.
-                     communication::ipc::flush::optional::send( message.process.ipc, common::message::reverse::type( message));
+                     state.multiplex.send( message.process.ipc, common::message::reverse::type( message));
                      return;
                   }
 
@@ -284,10 +284,10 @@ namespace casual
                      auto destination = local::extract::destination( message);
                      log::line( verbose::log, "destination: ", destination);
 
-                     auto pending = detail::send::requests( state.coordinate.discovery.empty_pendings(), range, message);
+                     auto pending = detail::send::requests( state, state.coordinate.discovery.empty_pendings(), range, message);
 
                      // note: everything captured needs to by value (besides State if used)
-                     state.coordinate.discovery( std::move( pending), [destination]( auto replies, auto outcome)
+                     state.coordinate.discovery( std::move( pending), [ &state, destination]( auto replies, auto outcome)
                      {
                         Trace trace{ "discovery::handle::local::request coordinate"};
 
@@ -300,7 +300,7 @@ namespace casual
                         local::detail::normalize::content( message.content);
                         log::line( verbose::log, "message: ", message);
 
-                        communication::ipc::flush::optional::send( destination.ipc, message);
+                        state.multiplex.send( destination.ipc, message);
                      });
                   };
 
@@ -357,7 +357,7 @@ namespace casual
                         message.domains = std::move( domains);
 
                         for( auto& provider : state.providers.filter( state::provider::Ability::topology))
-                           communication::ipc::flush::optional::send( provider.process.ipc, message);
+                           state.multiplex.send( provider.process.ipc, message);
                      });
                   };
                }

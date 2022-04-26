@@ -50,6 +50,12 @@ namespace casual
 
 
       } // state
+
+      State::State()
+      {
+         // make sure we add the inbound ipc for read.
+         directive.read.add( communication::ipc::inbound::device().descriptor());
+      }
       
       bool State::done() const noexcept
       {

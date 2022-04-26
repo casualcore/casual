@@ -12,6 +12,8 @@
 #include "common/serialize/macro.h"
 #include "common/process.h"
 #include "common/message/coordinate.h"
+#include "common/communication/select.h"
+#include "common/communication/ipc/send.h"
 
 #include <iosfwd>
 
@@ -79,7 +81,10 @@ namespace casual
 
       struct State
       {
+         State();
+         
          common::state::Machine< state::Runlevel> runlevel;
+         common::communication::select::Directive directive;
          
          struct 
          {
@@ -98,6 +103,8 @@ namespace casual
          
          state::Providers providers;
 
+         common::communication::ipc::send::Coordinator multiplex{ directive};
+
 
          bool done() const noexcept;
 
@@ -105,6 +112,7 @@ namespace casual
             CASUAL_SERIALIZE( runlevel);
             CASUAL_SERIALIZE( coordinate);
             CASUAL_SERIALIZE( providers);
+            CASUAL_SERIALIZE( multiplex);
          )
 
       };
