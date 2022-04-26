@@ -398,7 +398,7 @@ try
                   
                   legacy_build( 'centoscompile', 'casual/centos-builder'.concat(':').concat(retrieve_major_minor()), backend_builder_centos)
 
-                  step([$class: 'XUnitBuilder',
+                  step([$class: 'XUnitPublisher',
                      thresholds: [[$class: 'FailedThreshold', failureThreshold: '1']],
                      tools: [[$class: 'GoogleTestType', pattern: '**/report.xml']]])
 
