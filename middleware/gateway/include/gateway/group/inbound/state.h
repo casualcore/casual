@@ -13,6 +13,7 @@
 #include "common/communication/select.h"
 #include "common/communication/tcp.h"
 #include "common/communication/ipc.h"
+#include "common/communication/ipc/send.h"
 #include "common/domain.h"
 #include "common/message/service.h"
 #include "common/state/machine.h"
@@ -159,6 +160,8 @@ namespace casual
                CASUAL_SERIALIZE( disconnects);
             )
          } pending;
+
+         common::communication::ipc::send::Coordinator multiplex{ directive};
          
 
          std::vector< state::Correlation> correlations;

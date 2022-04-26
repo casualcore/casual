@@ -234,7 +234,7 @@ namespace casual
 
                            if( message.process)
                            {
-                              ipc::flush::send( message.process.ipc, request);
+                              state.multiplex.send( message.process.ipc, std::move( request));
                               return;
                            }
 
@@ -421,7 +421,7 @@ namespace casual
                         state.pending.requests.add( std::move( message));
 
                         // Send lookup
-                        ipc::flush::send( ipc::manager::service(), request); 
+                        state.multiplex.send( ipc::manager::service(), request); 
 
                      }
                   } // detail
@@ -470,7 +470,7 @@ namespace casual
 
                         if( auto found = algorithm::find( state.conversations, message.correlation))
                         {
-                           ipc::flush::send( found->process.ipc, message);
+                           state.multiplex.send( found->process.ipc, message);
 
                            // we're done with this connection, regardless of what callee thinks...
                            state.conversations.erase( std::begin( found));
@@ -486,7 +486,7 @@ namespace casual
                         common::log::line( verbose::log, "message: ", message);
 
                         if( auto found = algorithm::find( state.conversations, message.correlation))
-                           ipc::flush::send( found->process.ipc, message);
+                           state.multiplex.send( found->process.ipc, message);
                         else
                            common::log::line( common::log::category::error, "(external) failed to correlate conversation: ", message.correlation);
                      };
@@ -511,7 +511,7 @@ namespace casual
                            request.name = message.name;
                         }
 
-                        if( ipc::flush::optional::send( ipc::manager::optional::queue(), request))
+                        if( state.multiplex.send( ipc::manager::optional::queue(), request))
                         {
                            // Change 'sender' so we get the reply
                            message.process = common::process::handle();
@@ -630,7 +630,7 @@ namespace casual
 
                            // Set 'sender' so we get the reply
                            message.process = common::process::handle();
-                           ipc::flush::send( ipc::manager::transaction(), message);
+                           state.multiplex.send(ipc::manager::transaction(), message);
                         };
                      }
 

@@ -195,11 +195,12 @@ namespace casual
                // start the message dispatch
                communication::select::dispatch::pump( 
                   local::condition( state),
-                  state.directive, 
+                  state.directive,
                   gateway::group::tcp::pending::send::dispatch( state),
                   tcp::handle::dispatch::create( state, outbound::handle::external( state), &handle::connection::lost),
                   ipc::dispatch::create( state, &internal::handler),
-                  tcp::listen::dispatch::create( state, tcp::logical::connect::Bound::out)
+                  tcp::listen::dispatch::create( state, tcp::logical::connect::Bound::out),
+                  state.multiplex
                );
                
                abort_guard.release();
