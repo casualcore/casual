@@ -375,13 +375,14 @@ try
                   dir("casual-thirdparty")
                   {
                      // casual-thirdparty
-                     git branch: 'feature/new-casual-make', url: 'https://github.com/casualcore/casual-thirdparty.git'
+                     MAJOR_MINOR = retrieve_major_minor()
+                     checkout scm: [$class: 'GitSCM', userRemoteConfigs: [[url: 'https://github.com/casualcore/casual-thirdparty.git']], branches: [[name: 'refs/tags/' + MAJOR_MINOR ]]], poll: false
                   }
 
                   dir("casual-make")
                   {
                      // casual-make
-                     git branch: 'feature/0.1/dev', url: 'https://github.com/casualcore/casual-make.git'
+                     git branch: 'master', url: 'https://github.com/casualcore/casual-make.git'
                   }
 
                   dir("casual")
@@ -481,13 +482,14 @@ try
                   dir("casual-thirdparty")
                   {
                      // casual-thirdparty
-                     git branch: 'feature/new-casual-make', url: 'https://github.com/casualcore/casual-thirdparty.git'
+                     MAJOR_MINOR = retrieve_major_minor()
+                     checkout scm: [$class: 'GitSCM', userRemoteConfigs: [[url: 'https://github.com/casualcore/casual-thirdparty.git']], branches: [[name: 'refs/tags/' + MAJOR_MINOR ]]], poll: false
                   }
 
                   dir("casual-make")
                   {
                      // casual-make
-                     git branch: 'feature/0.1/dev', url: 'https://github.com/casualcore/casual-make.git'
+                     git branch: 'master', url: 'https://github.com/casualcore/casual-make.git'
                   }
 
                   dir("casual")
