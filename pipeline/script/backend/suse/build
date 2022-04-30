@@ -1,0 +1,13 @@
+#! /bin/bash
+
+if (( $# < 1 ))
+then
+    echo "usage: $0 casual_make_build_version"
+    exit -1
+fi
+
+CURRENT_DIRECTORY=$( cd "$(dirname "$0")" ; pwd -P )
+
+export CASUAL_MAKE_BUILD_VERSION=$1
+
+bash ${CURRENT_DIRECTORY}/../common/build

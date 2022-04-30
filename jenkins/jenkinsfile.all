@@ -130,7 +130,7 @@ try
 
            major_minor = retrieve_major_minor()
            build_type = type_of_build()
-           version = sh(returnStdout: true, script: "jenkins/version.py $major_minor $build_type").trim()
+           version = sh(returnStdout: true, script: "pipeline/script/version.py $major_minor $build_type").trim()
            println version
        }
    }
@@ -145,133 +145,6 @@ catch (Exception e)
    currentBuild.result = 'FAILURE'
    return
 }
-
-def common_backend_builder = '''
-umask 000
-export CASUAL_REPOSITORY_ROOT=/git/casual/casual
-export CASUAL_TOOLS_HOME=$CASUAL_REPOSITORY_ROOT
-export CASUAL_MAKE_HOME=$CASUAL_REPOSITORY_ROOT/../casual-make/source
-export PYTHONPATH=$CASUAL_MAKE_HOME:$CASUAL_REPOSITORY_ROOT/make
-export CASUAL_THIRDPARTY=/git/casual/casual-thirdparty
-export CASUAL_BUILD_HOME=$CASUAL_REPOSITORY_ROOT
-export CASUAL_MAKE_OPTIONAL_INCLUDE_PATHS="${CASUAL_THIRDPARTY}/googletest/include"
-export CASUAL_MAKE_OPTIONAL_LIBRARY_PATHS="${CASUAL_THIRDPARTY}/googletest/bin"
-export CASUAL_HOME=/opt/casual
-export PATH=$CASUAL_MAKE_HOME:$CASUAL_BUILD_HOME/middleware/tools/bin:$CASUAL_TOOLS_HOME/bin:$CASUAL_HOME/bin:$PATH
-export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CASUAL_HOME/lib:$CASUAL_BUILD_HOME/middleware/buffer/bin:$CASUAL_BUILD_HOME/middleware/configuration/bin:$CASUAL_BUILD_HOME/middleware/domain/bin:$CASUAL_BUILD_HOME/middleware/event/bin:$CASUAL_BUILD_HOME/middleware/service/bin:$CASUAL_BUILD_HOME/middleware/common/bin:$CASUAL_BUILD_HOME/middleware/serviceframework/bin:$CASUAL_BUILD_HOME/middleware/xatmi/bin:$CASUAL_BUILD_HOME/middleware/queue/bin:$CASUAL_BUILD_HOME/middleware/transaction/bin:/usr/local/lib
-
-find $CASUAL_REPOSITORY_ROOT -name "*.gc*" -print | xargs rm > /dev/null
-find $CASUAL_REPOSITORY_ROOT -name "report.xml" -print | xargs rm > /dev/null
-rm -rf $CASUAL_REPOSITORY_ROOT/middleware/.casual/unittest/.singleton/.domain-singleton > /dev/null
-
-cd $CASUAL_REPOSITORY_ROOT && \
-      casual-make --stat --no-colors clean && \
-      casual-make --stat --quiet --no-colors compile && \
-      casual-make --stat --no-colors link && \
-      casual-make --no-colors test --gtest_color=no --gtest_output='xml:report.xml' && \
-      mkdir -p $CASUAL_REPOSITORY_ROOT/coverage && \
-      casual-make --no-colors clean && \
-      casual-make --no-colors --quiet compile && \
-      casual-make --no-colors link && \
-      casual-make --no-colors install && \
-      casual-make nginx && \
-      cp $CASUAL_REPOSITORY_ROOT/package/casual-middleware.spec /root/rpmbuild/SPECS/. && \
-      rpmbuild -bb --noclean --define "casual_version $CASUAL_VERSION" --define "casual_release $CASUAL_RELEASE" --define "distribution $DISTRIBUTION" /root/rpmbuild/SPECS/casual-middleware.spec  && \
-      cp /root/rpmbuild/RPMS/x86_64/casual-middleware*.rpm $CASUAL_REPOSITORY_ROOT/. && \
-      performCoverageMeasuring && \
-      cd $CASUAL_REPOSITORY_ROOT && \
-      casual-make --no-colors clean
-returncode=$?
-
-cd /git/casual/
-find $CASUAL_REPOSITORY_ROOT/.. -user root | xargs chmod 777
- 
-exit $returncode
-'''
-
-// Script for the backend builder centos
-def backend_builder_centos = '''#! /bin/sh
-CASUAL_VERSION=''' + env.CASUAL_VERSION + '''
-CASUAL_RELEASE=''' + rpmRelease() + '''
-DISTRIBUTION="centos"
-BRANCH=''' + env.BRANCH_NAME + '''
-export CASUAL_MAKE_BUILD_VERSION=''' + totalVersion() + '''
-
-performCoverageMeasuring()
-{
-   echo "Perform no coverage measuring"
-   # cd /git/casual && \
-   # mkdir -p /git/casual/coverage && \
-   # gcovr -r . --html --html-details --gcov-exclude='.*thirdparty.*|.*test_.*' -o coverage/index.html
-}
-
-source scl_source enable devtoolset-9
-
-''' + common_backend_builder
-
-// Script for the backend builder suse
-def backend_builder_suse = '''#! /bin/sh
-CASUAL_VERSION=''' + env.CASUAL_VERSION + '''
-CASUAL_RELEASE=''' + rpmRelease() + '''
-DISTRIBUTION="suse"
-BRANCH=''' + env.BRANCH_NAME + '''
-export CASUAL_MAKE_BUILD_VERSION=''' + totalVersion() + '''
-
-performCoverageMeasuring()
-{
-   echo "Perform no coverage measuring"
-}
-
-
-''' + common_backend_builder
-
-// Script for the frontend builder
-def frontend_builder = '''#! /bin/sh
-umask 000
-cd /git/casual/webapp
-bower update --allow-root
-touch bower_components/app-route/app-location.html
-polymer build
-cd ..
-zip -q -r casual-webapp.zip webapp
-chmod a+w -R .
-'''
-
-// Dockerfile for creating testcontainer
-def dockerfile = '''FROM centos:latest
-MAINTAINER flurig <flurig@localhost>
-
-RUN yum  -y install wget cmake make python rsync libuuid-devel sqlite-devel gcc-c++ zlib-devel unzip rpm-build
-#RUN wget http://dl.fedoraproject.org/pub/epel/7/x86_64/Packages/e/epel-release-7-13.noarch.rpm
-#RUN rpm -Uvh epel-release*rpm
-#RUN yum -y install pugixml yaml-cpp03
-
-ARG CASUAL_RPM
-COPY ${CASUAL_RPM} /tmp/casual-middleware.rpm
-RUN rpm -i -p /tmp/casual-middleware.rpm
-
-RUN useradd -ms /bin/bash casual
-
-ENV CASUAL_HOME /opt/casual
-ENV PATH $CASUAL_HOME/bin:$PATH
-ENV LD_LIBRARY_PATH $LD_LIBRARY_PATH:$CASUAL_HOME/lib
-ENV CASUAL_DOMAIN_HOME /test/casual
-ENV CASUAL_LOG_PATH $CASUAL_DOMAIN_HOME/casual.log
-ENV CASUAL_LOG '(error|warning|information)'
-
-RUN mkdir -p $CASUAL_DOMAIN_HOME/logs
-RUN cp -r /opt/casual/documentation/example/domain/single/* $CASUAL_DOMAIN_HOME/.
-RUN chown -R casual $CASUAL_DOMAIN_HOME
-RUN chown -R casual $CASUAL_HOME/nginx
-RUN ln -s /dev/stdout /test/casual/casual.log
-RUN chgrp -Rf root $CASUAL_DOMAIN_HOME $CASUAL_HOME/nginx && chmod -Rf g+w $CASUAL_DOMAIN_HOME $CASUAL_HOME/nginx
-
-EXPOSE 8080 7771
-USER casual
-WORKDIR $CASUAL_DOMAIN_HOME
-
-ENTRYPOINT ["casual-domain-manager", "-c", "configuration/domain.yaml"]
-'''
 
 def legacy_build( name, image, content)
 {
@@ -295,6 +168,44 @@ def build( name, image, content)
    }
 }
 
+def build_casual( distribution)
+{
+   stage('Build backend - Unittest/CodeCoverage - ' + distribution)
+   {
+      unstash 'frontend'
+
+      BUILD_VERSION=totalVersion()
+      CASUAL_VERSION=env.CASUAL_VERSION
+      CASUAL_RELEASE=rpmRelease()
+      DISTRIBUTION=distribution
+      
+      legacy_build( distribution + 'compile', 'casual/' + distribution + '-builder'.concat(':').concat(retrieve_major_minor()), 
+"""#!/bin/bash
+SCRIPT_ROOT=/git/casual
+
+set -e
+
+source \$SCRIPT_ROOT/casual/pipeline/script/pipeline.env
+
+bash \$SCRIPT_ROOT/casual/pipeline/script/pre/cleanup
+
+bash \$SCRIPT_ROOT/casual/pipeline/script/backend/$DISTRIBUTION/build $BUILD_VERSION
+bash \$SCRIPT_ROOT/casual/pipeline/script/package $CASUAL_VERSION $CASUAL_RELEASE $DISTRIBUTION
+
+bash \$SCRIPT_ROOT/casual/pipeline/script/post/cleanup
+""")
+
+      if ( distribution == 'centos' )
+         step([$class: 'XUnitPublisher',
+            thresholds: [[$class: 'FailedThreshold', failureThreshold: '1']],
+            tools: [[$class: 'GoogleTestType', pattern: '**/report.xml']]])
+
+      archive includes: '**/casual-middleware*.rpm'
+
+      stash includes: '**/casual-middleware*.rpm', name: distribution + '_backend'
+   }
+}
+
 try
 {
    echo totalVersion()
@@ -310,7 +221,12 @@ try
             {
                checkout scm
                
-               legacy_build( 'casualfrontend', 'casual/frontend-builder', frontend_builder)
+               legacy_build( 'casualfrontend', 'casual/frontend-builder', 
+"""#!/bin/bash
+SCRIPT_ROOT=/git
+bash \$SCRIPT_ROOT/casual/pipeline/script/frontend/build
+"""
+               )
 
                stash includes: '**/casual-webapp.zip', name: 'frontend'
             }
@@ -392,40 +308,14 @@ try
                   }
                }
 
-               stage('Build backend - Unittest/CodeCoverage - Centos')
-               {
-                  unstash 'frontend'
-                  
-                  legacy_build( 'centoscompile', 'casual/centos-builder'.concat(':').concat(retrieve_major_minor()), backend_builder_centos)
-
-                  step([$class: 'XUnitPublisher',
-                     thresholds: [[$class: 'FailedThreshold', failureThreshold: '1']],
-                     tools: [[$class: 'GoogleTestType', pattern: '**/report.xml']]])
-
-                  archive includes: '**/casual-middleware*.rpm'
-
-                  stash includes: '**/casual-middleware*.rpm', name: 'centos_backend'
-/*
-                  publishHTML (target: [
-                     allowMissing: false,
-                     alwaysLinkToLastBuild: false,
-                     keepAll: true,
-                     reportDir: 'coverage',
-                     reportFiles: '*.html',
-                     reportName: "GCOV Report"
-                  ])
-*/
-               }
+               build_casual( 'centos')
 
                if ( isPublishable() )
                {
                   stage('Create container - Centos')
                   {
-                     // Setup files
-                     writeFile file: 'Dockerfile', text: dockerfile
-
                      sh '''
-                     docker build -t casual/middleware-centos --build-arg CASUAL_RPM=$(ls -t casual/casual-middleware-*.rpm|head -1) -f Dockerfile .
+                     docker build -t casual/middleware-centos --build-arg CASUAL_RPM=$(ls -t casual/casual-middleware-*.rpm|head -1) -f pipeline/docker/Dockerfile .
                      '''
                   }
 
@@ -499,16 +389,8 @@ try
                   }
                }
 
-               stage('Build backend - Unittest - Suse')
-               {
-                  unstash 'frontend'
-                  
-                  legacy_build( 'susecompile', 'casual/suse-builder'.concat(':').concat(retrieve_major_minor()), backend_builder_suse)
+               build_casual( 'suse')
 
-                  archive includes: '**/casual-middleware*.rpm'
-                  
-                  stash includes: '**/casual-middleware*.rpm', name: 'suse_backend'
-               }
             }
             catch (Exception e)
             {
