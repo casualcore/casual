@@ -1,0 +1,17 @@
+#! /bin/bash
+#
+# note: REPOSITORY_ROOT and RPM_BUILD_ROOT need to be set
+if (( $# < 3 ))
+then
+    echo "usage: $0 casual_version casual_release distribution"
+    exit -1
+fi
+
+BUILD_ROOT=$( rpmbuild --eval '%_topdir')
+if [[ ! -e $BUILD_ROOT/SPECS ]]
+then
+    mkdir $BUILD_ROOT/SPECS
+fi
+cp ${REPOSITORY_ROOT}/package/casual-middleware.spec ${BUILD_ROOT}/SPECS/. && \
+    rpmbuild -bb --noclean --define "casual_version $1" --define "casual_release $2" --define "distribution $3" ${BUILD_ROOT}/SPECS/casual-middleware.spec  && \
+    find ${BUILD_ROOT} -name "casual-middleware-$1-$2.*.rpm" | xargs -I {} cp {} ${REPOSITORY_ROOT}/.

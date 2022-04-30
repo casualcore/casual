@@ -20,14 +20,14 @@ This is the core package for casual-middleware
 %build
 %install
 install -m 0755 -d $RPM_BUILD_ROOT/opt/casual
-cp -r /opt/casual/* $RPM_BUILD_ROOT/opt/casual/.
+cp -r ${CASUAL_HOME}/* $RPM_BUILD_ROOT/opt/casual/.
 find $RPM_BUILD_ROOT/opt/casual | xargs chmod 0755
 install -m 0755 -d $RPM_BUILD_ROOT/etc/bash_completion.d/
-ln -sf /opt/casual/etc/bash_completion.d/casual $RPM_BUILD_ROOT/etc/bash_completion.d/casual
-ln -sf /opt/casual/etc/bash_completion.d/casual-log $RPM_BUILD_ROOT/etc/bash_completion.d/casual-log
-ln -sf /opt/casual/include/casual/buffer $RPM_BUILD_ROOT/opt/casual/include/buffer
-install -m 0644 -d $RPM_BUILD_ROOT/etc/casual/
-install -m 0644 /opt/casual/configuration/example/resources.yaml $RPM_BUILD_ROOT/etc/casual/
+ln -sf ${CASUAL_HOME}/etc/bash_completion.d/casual $RPM_BUILD_ROOT/etc/bash_completion.d/casual
+ln -sf ${CASUAL_HOME}/etc/bash_completion.d/casual-log $RPM_BUILD_ROOT/etc/bash_completion.d/casual-log
+ln -sf ${CASUAL_HOME}/include/casual/buffer $RPM_BUILD_ROOT/opt/casual/include/buffer
+install -m 0755 -d $RPM_BUILD_ROOT/etc/casual/
+install -m 0755 ${CASUAL_HOME}/configuration/example/resources.yaml $RPM_BUILD_ROOT/etc/casual/
 
 %files
 /opt/casual
