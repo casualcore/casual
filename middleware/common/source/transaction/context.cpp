@@ -279,7 +279,24 @@ namespace casual
                         log::line( log::category::transaction, "involved message: ", message);
 
                         return communication::device::async::call( communication::instance::outbound::transaction::manager::device(), message);
-                     } 
+                     }
+
+                     void send( const transaction::ID& trid, std::vector< strong::resource::id> resources)
+                     {
+                        Trace trace{ "transaction::local::resources::involved::send"};
+
+                        message::transaction::resource::involved::Request message;
+                        message.process = process::handle();
+                        message.trid = trid;
+                        message.involved = std::move( resources);
+                        message.reply = false;
+
+                        log::line( log::category::transaction, "involved send-and-forget message: ", message);
+
+                        communication::device::blocking::send( communication::instance::outbound::transaction::manager::device(), message);
+                     }
+
+
                   } // involved
 
                   namespace transform
@@ -354,6 +371,30 @@ namespace casual
                         }
                      };
 
+                     struct Branch
+                     {
+                        template< typename R>
+                        auto operator() ( Transaction& transaction, R&& resources)
+                        {
+                           // We absolutely know that this is a distributed transaction (non-local gtrid)
+                           auto start_functor = []( auto& trid)
+                           {
+                              return [ &trid]( auto& resource)
+                              {
+                                 return check::Result{ &resource, resource.start( trid, flag::xa::Flag::no_flags)};
+                              };
+                           };
+                           
+                           // we let the TM know about our resources
+                           involved::send( transaction.trid, transform::ids( resources));
+
+                           check::results( transaction.trid, algorithm::transform( resources, start_functor( transaction.trid)));
+
+                           // involve all static resources.
+                           transaction.involve( transform::ids( resources));
+                        }
+                     };
+
                      struct Resume
                      {
                         template< typename R>
@@ -383,7 +424,7 @@ namespace casual
                   template< typename P, typename R>
                   void invoke( P&& policy, const Transaction& transaction, R& resources)
                   {
-                     Trace trace{ "transaction::local::resources::start"};
+                     Trace trace{ "transaction::local::resources::end::invoke"};
                      log::line( verbose::log, "transaction: ", transaction, ", resources: ", resources);
 
                      if( resources.empty())
@@ -464,7 +505,7 @@ namespace casual
             auto& transaction = m_transactions.emplace_back( id::branch( trid));
 
             if( transaction)
-               local::resources::start::invoke( local::resources::start::policy::Start{}, transaction, m_resources.fixed);
+               local::resources::start::invoke( local::resources::start::policy::Branch{}, transaction, m_resources.fixed);
 
             return transaction;
          }
