@@ -254,11 +254,11 @@ namespace casual
 
 
          reply::Result result;
-         auto [ reply, desc] = get_reply();
+         auto [ reply, xatmi_descriptor] = get_reply();
 
          log::line( log::debug, "reply: ", reply);
 
-         result.descriptor = desc;
+         result.descriptor = xatmi_descriptor;
          result.user = reply.code.user;
          result.buffer = std::move( reply.buffer);
 

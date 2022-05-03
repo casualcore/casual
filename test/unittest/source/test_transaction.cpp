@@ -71,6 +71,8 @@ domain:
         memberships: [ example]
       - path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-server
         memberships: [ example]
+      - path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-resource-server
+        memberships: [ example]
 )";
 
            
@@ -307,6 +309,67 @@ domain:
             }
 
             EXPECT_TRUE( tx_commit() == TX_OK);
+         }
+
+         TEST( test_transaction, tx_begin__call_to_branch_service__expect_TM_to_know_about_the_branch_and_resource)
+         {
+            common::unittest::Trace trace;
+            local::Clear clear;
+
+            constexpr auto configuration = R"(
+domain: 
+   name: branch
+   transaction:
+      resources:
+         -  key: rm-mockup
+            name: example-resource-server
+            instances: 1
+
+)";
+
+            auto domain = local::domain( configuration);
+
+            EXPECT_TRUE( tx_begin() == TX_OK);
+
+            {
+               auto buffer = unittest::xatmi::buffer::x_octet{};
+               EXPECT_TRUE( ::tpcall( "casual/example/resource/branch/echo", buffer.data, buffer.size, &buffer.data, &buffer.size, 0) != -1);
+            }
+
+            auto state = casual::transaction::unittest::fetch::until( []( auto& state)
+            {
+               return state.transactions.size() == 1;
+            });
+
+            {
+               auto& trid = common::transaction::context().current().trid;
+               auto& transaction = state.transactions.front();
+
+               EXPECT_TRUE( transaction.global.id == common::string::compose( common::transaction::id::range::global( trid))) 
+                  << CASUAL_NAMED_VALUE( common::transaction::id::range::global( trid)) << '\n' << CASUAL_NAMED_VALUE( transaction.global.id);
+
+               ASSERT_TRUE( transaction.branches.size() == 1);
+               auto& branch = transaction.branches.front();
+
+               // expect a different branch
+               EXPECT_TRUE( branch.trid.branch != common::string::compose( common::transaction::id::range::branch( trid)));
+               
+               ASSERT_TRUE( branch.resources.size() == 1);
+               auto& resource = branch.resources.front();
+
+               EXPECT_TRUE( resource.id == strong::resource::id{ 1});
+               EXPECT_TRUE( resource.code == decltype( resource.code)::ok);
+            }
+
+            EXPECT_TRUE( tx_commit() == TX_OK);
+
+            {  
+               EXPECT_TRUE( common::transaction::id::null( common::transaction::context().current().trid));
+
+               auto state = casual::transaction::unittest::state();
+
+               EXPECT_TRUE( state.transactions.empty());
+            }
          }
 
       } // domain
