@@ -196,7 +196,7 @@ namespace casual
                communication::select::dispatch::pump( 
                   local::condition( state),
                   state.directive,
-                  gateway::group::tcp::pending::send::dispatch( state),
+                  tcp::pending::send::dispatch::create( state, &handle::connection::lost),
                   tcp::handle::dispatch::create( state, outbound::handle::external( state), &handle::connection::lost),
                   ipc::dispatch::create( state, &internal::handler),
                   tcp::listen::dispatch::create( state, tcp::logical::connect::Bound::out),

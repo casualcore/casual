@@ -258,7 +258,7 @@ namespace casual
                   local::condition( state),
                   state.directive,
                   tcp::handle::dispatch::create( state, outbound::handle::external( state), &handle::connection::lost),
-                  gateway::group::tcp::pending::send::dispatch( state),
+                  tcp::pending::send::dispatch::create( state, &handle::connection::lost),
                   ipc::dispatch::create( state, &internal::handler),
                   // takes care of multiplexing connects
                   tcp::connect::dispatch::create( state, tcp::logical::connect::Bound::out),
