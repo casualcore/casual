@@ -225,17 +225,49 @@ namespace casual
          common::strong::file::descriptor::id m_last;
       };
 
-     namespace handle::dispatch
-     {
+      namespace detail::handle::communication
+      {
+         template< typename State, typename Lost>
+         void exception( State& state, common::strong::file::descriptor::id descriptor, Lost lost) noexcept
+         {
+            try
+            {
+               throw;
+            }
+            catch( ...)
+            {
+               using namespace common;
+
+               auto error = exception::capture();
+               if( error.code() != code::casual::communication_unavailable)
+               {
+                  auto information = state.external.information( descriptor);
+                  log::line( log::category::error, "failed to communicate with domain: ", information->domain, ", configured address: ", information->configuration.address, " - error: ", error);
+               }
+
+               constexpr auto is_outbound_v = std::is_same_v< decltype( lost( state, descriptor)), decltype( message::outbound::connection::Lost{})>;
+
+               // we 'lost' the connection in some way - we put a connection::Lost on our own ipc-device, and handle it
+               // later (and differently depending on if we're 'regular' or 'reversed')
+               // we staticly decide witch message is appropriate.
+
+               if constexpr( is_outbound_v)
+                  common::communication::ipc::inbound::device().push( 
+                     message::outbound::connection::Lost{ lost( state, descriptor)});
+               else
+                  common::communication::ipc::inbound::device().push( 
+                     message::inbound::connection::Lost{ lost( state, descriptor)});
+            }
+         }
+      } // detail::handle::communication
+
+      namespace handle::dispatch
+      {
          template< typename State, typename Handler, typename Lost>
          auto create( State& state, Handler handler, Lost lost)
          {
-            using namespace common;
-
-            return [ &state, handler = std::move( handler), lost = std::move( lost)]( strong::file::descriptor::id descriptor, communication::select::tag::read) mutable
+            return [ &state, handler = std::move( handler), lost = std::move( lost)]( common::strong::file::descriptor::id descriptor, common::communication::select::tag::read) mutable
             {
-               constexpr auto is_outbound_v = std::is_same_v< decltype( lost( state, descriptor)), decltype( message::outbound::connection::Lost{})>;
-
                if( auto connection = state.external.connection( descriptor))
                {
                   try
@@ -245,52 +277,42 @@ namespace casual
                   }
                   catch( ...)
                   {
-                     auto error = exception::capture();
-                     if( error.code() != code::casual::communication_unavailable)
-                     {
-                        auto information = state.external.information( descriptor);
-                        log::line( log::category::error, "failed to receive from domain: ", information->domain, ", configured address: ", information->configuration.address, " - error: ", error);
-                     }
-
-                     // we 'lost' the connection in some way - we put a connection::Lost on our own ipc-device, and handle it
-                     // later (and differently depending on if we're 'regular' or 'reversed')
-                     // we staticly decide witch message is appropriate.
-
-                     if constexpr( is_outbound_v)
-                        communication::ipc::inbound::device().push( 
-                           message::outbound::connection::Lost{ lost( state, descriptor)});
-                     else
-                        communication::ipc::inbound::device().push( 
-                           message::inbound::connection::Lost{ lost( state, descriptor)});
+                     detail::handle::communication::exception( state, descriptor, lost);
                   }
                   return true;
                }
                return false;
             };
          }
-     } // handle::dispatch
+      } // handle::dispatch
 
-      namespace pending::send
-      {
-         template< typename State>
-         auto dispatch( State& state)
-         {
-            return [&state]( common::strong::file::descriptor::id descriptor, common::communication::select::tag::write)
+      namespace pending::send::dispatch
+      { 
+         template< typename State, typename Lost>
+         auto create( State& state, Lost lost)
+         {  
+            return [ &state, lost = std::move( lost)]( common::strong::file::descriptor::id descriptor, common::communication::select::tag::write) noexcept
             {
                Trace trace{ "gateway::group::tcp::pending::send::dispatch"};
                common::log::line( verbose::log, "descriptor: ", descriptor);
 
                if( auto connection = state.external.connection( descriptor))
                {
-                  connection->unsent( state.directive);
+                  try
+                  {
+                     connection->unsent( state.directive);
+                  }
+                  catch( ...)
+                  {
+                     detail::handle::communication::exception( state, descriptor, lost);
+                  }
                   return true;
                }
-
                return false;
-
             };
          }
-      } // pending::send
+
+      } // pending::send::dispatch
       
    } // gateway::tcp
 } // casual
