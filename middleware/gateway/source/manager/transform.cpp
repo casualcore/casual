@@ -155,6 +155,17 @@ namespace casual
                      };
                   });
 
+                  result.pending.transactions = common::algorithm::transform( reply.state.pending.transactions, []( auto& transaction)
+                  {
+                     return manager::admin::model::outbound::pending::Transaction{
+                        transaction.internal,
+                        common::algorithm::transform( transaction.externals, []( auto& external)
+                        {
+                           return manager::admin::model::outbound::pending::Transaction::External{ external.trid, external.connection};
+                        })
+                     };
+                  });
+
                   return result;
                };
             };

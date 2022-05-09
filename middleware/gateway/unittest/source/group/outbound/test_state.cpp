@@ -93,7 +93,7 @@ namespace casual
          EXPECT_TRUE( lookup.services().at( "a").front().hops == 1);
       }
 
-      TEST( gateway_outbound_state, lookup_service_a__nil_xic__expect_round_robin)
+      TEST( gateway_outbound_state, lookup_service_a__nil_xid__expect_round_robin)
       {
          auto lookup = local::lookup();
 
@@ -159,6 +159,28 @@ namespace casual
 
          // same xid as before - expect same fd as before - hence xid-correlation
          EXPECT_TRUE( local::get_connection( lookup, "a", xid) == local::fd( 100));
+      }
+
+      TEST( gateway_outbound_state, add_calls_to_4_services_times_4_xids__remove_all_external_xids__expect_empty_transactions_mapping)
+      {
+         auto lookup = local::lookup();
+
+         auto internal_xids = array::make( transaction::id::create(), transaction::id::create(), transaction::id::create(), transaction::id::create());
+         auto external_xids = std::vector< transaction::ID>{};
+
+
+         // add 'calls' to a, b, c, d, with all the internal xids
+         {
+            for( auto& xid : internal_xids)
+               for( auto& name : array::make( "a", "b", "c", "d"))
+                  external_xids.push_back( std::get< 0>( lookup.service( name, xid)).trid);
+         }
+
+         // remove all externals (simulate that we've got commit/rollback for them)
+         for( auto& xid : external_xids)
+            lookup.remove( xid);
+
+         EXPECT_TRUE( lookup.transactions().empty()) << CASUAL_NAMED_VALUE( lookup);
       }
 
       TEST( gateway_outbound_state, remove_x__expect_x_unadvertised)
