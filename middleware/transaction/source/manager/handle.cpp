@@ -738,96 +738,21 @@ namespace casual
 
                                  return common::predicate::boolean( common::communication::ipc::flush::optional::send( message.process.ipc, reply));
                               }
-                              
-                           } // send
 
-                           
-                           namespace prepare::commit
-                           {
-                              //! This phase are 'exactly' the same for external prepare and commit, except for the
-                              //! reply message/type (of course), which we deduce from the request message.
-                              template< typename M>
-                              void phase( State& state, M&& message)
+                              namespace read::only
                               {
-                                 Trace trace{ "transaction::manager::handle::local::resource::external::detail::prepare::commit::phase"};
-                                 common::log::line( verbose::log, "message: ", message);
-
-                                 // reply type, will be different for prepare and commit
-                                 using Reply = decltype( common::message::reverse::type( message));
-
-                                 auto transaction = common::algorithm::find( state.transactions, message.trid);
-
-                                 if( ! transaction || transaction->stage > decltype( transaction->stage())::involved)
+                                 template< typename M>
+                                 auto reply( const M& message)
                                  {
-                                    // Either the transaction is absent (???) or we're already in at least the prepare stage.
-                                    // Eitherway we reply with read_only
                                     detail::send::reply( message, []( auto& reply)
                                     {
                                        reply.statistics.start = platform::time::clock::type::now();
                                        reply.statistics.end = reply.statistics.start;
                                        reply.state = decltype( reply.state)::read_only;
                                     });
-                                    return;
                                  }
-
-                                 // external TM is running the show, let's oblige
-                                 transaction->owner = message.process;
-
-                                 switch( transaction->resource_count())
-                                 {
-                                    case 0:
-                                    {
-                                       common::log::line( log, transaction->global, " no resources involved: ");
-
-                                       // We can remove this transaction
-                                       state.transactions.erase( std::begin( transaction));
-
-                                       detail::send::reply( message, [ transaction]( auto& reply)
-                                       { 
-                                          reply.statistics.start = transaction->started;
-                                          reply.statistics.end = platform::time::clock::type::now();
-                                          reply.state = decltype( reply.state)::read_only;
-                                          
-                                       });
-
-                                       break;
-                                    }
-                                    case 1:
-                                    {
-                                       // Only one resource involved, we do a one-phase-commit optimization.
-                                       common::log::line( log, "global: ", transaction->global, " - only one resource involved");
-                                       transaction->stage = decltype( transaction->stage())::commit;
-
-                                       auto pending = local::detail::coordinate::pending::branches< common::message::transaction::resource::commit::Request>( 
-                                          state, transaction->branches, state.coordinate.commit.empty_pendings(), common::flag::xa::Flag::one_phase);
-
-                                       // different reply, depending on prepare or commit phase, below
-                                       local::detail::coordinate::commit< Reply>( 
-                                          state, std::move( pending), message.trid, local::detail::coordinate::destination( message));
-
-                                       break;
-                                    }
-                                    default:
-                                    {
-                                       // More than one resource involved, we do the prepare stage
-                                       common::log::line( log, "global: ", transaction->global, " more than one resource involved");
-                                       transaction->stage = decltype( transaction->stage())::prepare;
-
-                                       auto pending = local::detail::coordinate::pending::branches< common::message::transaction::resource::prepare::Request>( 
-                                          state, transaction->branches, state.coordinate.prepare.empty_pendings());
-                                       
-                                       // different reply, depending on prepare or commit phase, below
-                                       local::detail::coordinate::prepare< Reply>( 
-                                          state, std::move( pending), message.trid, local::detail::coordinate::destination( message));
-
-                                       break;
-                                    }
-                                 }
-                              }
-                              
-                           } // prepare::commit
-
-
+                              } // read::only
+                           } // send
                         } // detail
 
                         namespace involved
@@ -853,8 +778,46 @@ namespace casual
                            {
                               return [&state]( const common::message::transaction::resource::prepare::Request& message)
                               {
-                                 // we use the generic prepare/commit phase
-                                 detail::prepare::commit::phase( state, message);
+                                 Trace trace{ "transaction::manager::handle::local::resource::external::prepare::request"};
+                                 common::log::line( log, "message: ", message);
+
+                                 auto transaction = common::algorithm::find( state.transactions, message.trid);
+
+                                 if( ! transaction)
+                                 {
+                                    common::log::line( log, "failed to find trid: ", message.trid, " - action: reply with read-only");
+                                    detail::send::read::only::reply( message);
+                                    return;
+                                 }
+
+                                 if( transaction->stage > decltype( transaction->stage())::involved)
+                                 {
+                                    common::log::line( log, "transaction stage is passed the _involved_ - stage: ", transaction->stage, " - action: reply with read-only");
+                                    detail::send::read::only::reply( message);
+                                    return;
+                                 }
+
+                                 if( transaction->resource_count() == 0)
+                                 {
+                                    common::log::line( log, transaction->global, " no resources involved: ");
+
+                                    // We can remove this transaction
+                                    state.transactions.erase( std::begin( transaction));
+
+                                    detail::send::read::only::reply( message);
+                                    return;
+                                 }
+
+                                 // we can't do any _one phase commit optimization_, since we're not the on in charge.
+                                 common::log::line( log, "global: ", transaction->global, " preparing");
+                                 transaction->stage = decltype( transaction->stage())::prepare;
+
+                                 auto pending = local::detail::coordinate::pending::branches< common::message::transaction::resource::prepare::Request>( 
+                                    state, transaction->branches, state.coordinate.prepare.empty_pendings());
+                                 
+                                 local::detail::coordinate::prepare< common::message::transaction::resource::prepare::Reply>( 
+                                    state, std::move( pending), message.trid, local::detail::coordinate::destination( message));
+
                               };
                            }
                         } // prepare
@@ -865,8 +828,67 @@ namespace casual
                            {
                               return [&state]( const common::message::transaction::resource::commit::Request& message)
                               {
-                                 // we use the generic prepare/commit phase
-                                 detail::prepare::commit::phase( state, message);
+                                 Trace trace{ "transaction::manager::handle::local::resource::external::commit::request"};
+                                 common::log::line( log, "message: ", message);
+
+                                 auto transaction = common::algorithm::find( state.transactions, message.trid);
+
+                                 if( ! transaction)
+                                 {
+                                    common::log::line( log, "failed to find trid: ", message.trid, " - action: reply with read-only");
+                                    detail::send::read::only::reply( message);
+                                    return;
+                                 }
+
+                                 if( transaction->stage > decltype( transaction->stage())::commit)
+                                 {
+                                    common::log::line( log, "transaction stage is passed the _commit_ - stage: ", transaction->stage, " - action: reply with read-only");
+                                    detail::send::read::only::reply( message);
+                                    return;
+                                 }
+
+                                 switch( transaction->resource_count())
+                                 {
+                                    case 0:
+                                    {
+                                       common::log::line( log, transaction->global, " no resources involved: ");
+                                       // We can remove this transaction
+                                       state.transactions.erase( std::begin( transaction));
+
+                                       detail::send::read::only::reply( message);
+                                       break;
+                                    }
+                                    case 1:
+                                    {
+                                       // Only one resource involved, we do a one-phase-commit optimization.
+                                       common::log::line( log, "global: ", transaction->global, " - only one resource involved");
+                                       transaction->stage = decltype( transaction->stage())::commit;
+
+                                       auto pending = local::detail::coordinate::pending::branches< common::message::transaction::resource::commit::Request>( 
+                                          state, transaction->branches, state.coordinate.commit.empty_pendings(), common::flag::xa::Flag::one_phase);
+
+                                       // different reply, depending on prepare or commit phase, below
+                                       local::detail::coordinate::commit< common::message::transaction::resource::commit::Reply>( 
+                                          state, std::move( pending), message.trid, local::detail::coordinate::destination( message));
+
+                                       break;
+                                    }
+                                    default:
+                                    {
+                                       // More than one resource involved, we do the prepare stage
+                                       common::log::line( log, "global: ", transaction->global, " more than one resource involved");
+                                       transaction->stage = decltype( transaction->stage())::prepare;
+
+                                       auto pending = local::detail::coordinate::pending::branches< common::message::transaction::resource::prepare::Request>( 
+                                          state, transaction->branches, state.coordinate.prepare.empty_pendings());
+                                       
+                                       // different reply, depending on prepare or commit phase, below
+                                       local::detail::coordinate::prepare< common::message::transaction::resource::commit::Reply>( 
+                                          state, std::move( pending), message.trid, local::detail::coordinate::destination( message));
+
+                                       break;
+                                    }
+                                 }
                               };
                            }
                            
