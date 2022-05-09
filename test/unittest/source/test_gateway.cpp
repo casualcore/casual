@@ -12,8 +12,9 @@
 
 #include "domain/unittest/manager.h"
 #include "domain/manager/admin/cli.h"
-
 #include "common/communication/instance.h"
+#include "common/environment/scoped.h"
+
 #include "serviceframework/service/protocol/call.h"
 
 #include "gateway/unittest/utility.h"
@@ -55,7 +56,7 @@ domain:
       resources:
          -  name: example-resource-server
             key: rm-mockup
-            openinfo: foo
+            openinfo: ${CASUAL_UNITTEST_OPEN_INFO_RM}
             instances: 1
 
    groups: 
@@ -1706,6 +1707,7 @@ domain:
       {
          common::unittest::Trace trace;
 
+
          constexpr auto A = R"(
 domain:
    name: A
@@ -1723,7 +1725,6 @@ domain:
          constexpr auto B = R"(
 domain: 
    name: B
-
    servers:
       -  path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-resource-server"
          memberships: [ user]
@@ -1738,7 +1739,6 @@ domain:
          constexpr auto GW = R"(
 domain: 
    name: GW
-
    gateway:
       outbound:
          groups:
@@ -1758,7 +1758,6 @@ domain:
          constexpr auto C = R"(
 domain: 
    name: C
-
    gateway:
       outbound:
          groups:
@@ -1769,6 +1768,10 @@ domain:
 
          // sink child signals 
          signal::callback::registration< code::signal::child>( [](){});
+         
+         // resources will treat all transactions as _read-only_ (in the prepare phase)
+         auto scope = common::environment::variable::scoped::set( "CASUAL_UNITTEST_OPEN_INFO_RM", 
+            common::string::compose( "--prepare ", XA_RDONLY));
 
          auto b = local::domain( B);
          auto a = local::domain( A);
@@ -1802,10 +1805,15 @@ domain:
          auto check_transaction_state = []( )
          {
             auto state = casual::transaction::unittest::state();
-
             EXPECT_TRUE( state.pending.persistent.replies.empty()) << CASUAL_NAMED_VALUE( state);
             EXPECT_TRUE( state.pending.requests.empty()) << CASUAL_NAMED_VALUE( state);
             EXPECT_TRUE( state.transactions.empty()) << CASUAL_NAMED_VALUE( state);
+
+            {
+               auto state = casual::gateway::unittest::state();
+               for( auto& outbound : state.outbound.groups)
+                  EXPECT_TRUE( outbound.pending.transactions.empty()) << CASUAL_NAMED_VALUE( outbound.pending.transactions);
+            }
 
             return state;
          };

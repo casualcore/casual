@@ -163,7 +163,7 @@ namespace casual
                return state.error( code::xa::protocol);
             }
 
-            log::line( log, "xa_open_entry - openinfo: ", openinfo, " rmid: ", rmid, " flags: ", flags);
+            log::line( log, "xa_open_entry - openinfo: ", openinfo, ", rmid: ", rmid, " flags: ", flags);
             return cast::underlying( state.result.open);
          }
 
@@ -186,7 +186,7 @@ namespace casual
 
          int xa_start_entry( XID* xid, int rmid, long flags)
          {
-            common::Trace trace{ "xa_end_entry"};
+            common::Trace trace{ "xa_start_entry"};
 
             transaction::ID trid{ *xid};
             log::line( log, "trid: ", trid, " rmid: ", rmid, " flags: ", flag::xa::Flags{ flags});

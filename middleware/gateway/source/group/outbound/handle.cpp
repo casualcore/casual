@@ -129,7 +129,7 @@ namespace casual
                      namespace rollback
                      {
                         auto request = basic::request< common::message::transaction::resource::rollback::Request>;
-                     } // commit
+                     } // rollback
                   } // resource
                } // transaction
 
@@ -737,7 +737,10 @@ namespace casual
                               // We have register the external branch with the TM so it knows about it, hence
                               // can communicate directly with the external branched trid
 
-                              // this trid is NOT done, we have to wait until commit or rollback
+                              // if the prepare is a _read-only_, the transaction is done.
+                              if( message.state == decltype( message.state)::read_only)
+                                 state.lookup.remove( message.trid);
+
 
                               detail::send( state, message);
                            };

@@ -357,14 +357,39 @@ namespace casual
                      CASUAL_SERIALIZE( connection);
                   )
                };
+
+               struct Transaction
+               {
+                  struct External
+                  {
+                     common::transaction::ID trid;
+                     common::strong::file::descriptor::id connection;
+
+                     CASUAL_CONST_CORRECT_SERIALIZE(
+                        CASUAL_SERIALIZE( trid);
+                        CASUAL_SERIALIZE( connection);
+                     )
+                  };
+
+                  common::transaction::ID internal;
+                  std::vector< External> externals;
+
+                  CASUAL_CONST_CORRECT_SERIALIZE(
+                     CASUAL_SERIALIZE( internal);
+                     CASUAL_SERIALIZE( externals);
+                  )
+               };
+
             } // pending
 
             struct Pending
             {
                std::vector< pending::Message> messages;
+               std::vector< pending::Transaction> transactions;
 
                CASUAL_CONST_CORRECT_SERIALIZE(
                   CASUAL_SERIALIZE( messages);
+                  CASUAL_SERIALIZE( transactions);
                )
             };
 

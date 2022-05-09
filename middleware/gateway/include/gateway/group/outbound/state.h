@@ -310,6 +310,20 @@ namespace casual
                return result;
             });
 
+            reply.state.pending.transactions = common::algorithm::transform( lookup.transactions(), []( auto& transaction)
+            {
+               message::outbound::state::pending::Transaction result;
+               result.internal = transaction.internal;
+               result.externals = common::algorithm::transform( transaction.externals, []( auto& external)
+               {
+                  message::outbound::state::pending::Transaction::External result;
+                  result.trid = external.trid;
+                  result.connection = external.connection;
+                  return result;
+               });
+               return result;
+            });
+
             return reply;
          }
          
@@ -327,5 +341,5 @@ namespace casual
          )
       };
 
-      } // gateway::group::outbound
+   } // gateway::group::outbound
 } // casual
