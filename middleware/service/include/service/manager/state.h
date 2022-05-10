@@ -15,6 +15,8 @@
 #include "common/event/dispatch.h"
 #include "common/state/machine.h"
 #include "common/message/coordinate.h"
+#include "common/communication/select.h"
+#include "common/communication/ipc/send.h"
 
 #include "configuration/model.h"
 
@@ -371,8 +373,10 @@ namespace casual
 
       struct State
       {
+         State();
 
          common::state::Machine< state::Runlevel> runlevel;
+         common::communication::select::Directive directive;
 
          //! holds the total known services, including routes
          std::unordered_map< std::string, state::Service> services;
@@ -441,6 +445,8 @@ namespace casual
          //! holds all alias restrictions.
          std::vector< casual::configuration::model::service::Restriction> restrictions;
 
+         common::communication::ipc::send::Coordinator multiplex{ directive};
+
          //! @returns true if we're ready to shutdown
          bool done() const noexcept;
 
@@ -498,6 +504,7 @@ namespace casual
             CASUAL_SERIALIZE( timeout);
             CASUAL_SERIALIZE( routes);
             CASUAL_SERIALIZE( restrictions);
+            CASUAL_SERIALIZE( multiplex);
          ) 
 
       };
