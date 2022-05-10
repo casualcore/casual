@@ -318,6 +318,11 @@ namespace casual
 
       } // state
 
+      State::State()
+      {
+         directive.read.add( communication::ipc::inbound::device().descriptor());
+      }
+
       bool State::done() const noexcept
       {
          return runlevel > decltype( runlevel())::running;

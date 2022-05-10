@@ -13,6 +13,7 @@
 #include "domain/configuration/fetch.h"
 #include "domain/discovery/api.h"
 
+#include "common/communication/select.h"
 #include "common/exception/capture.h"
 #include "common/argument.h"
 #include "common/environment.h"
@@ -102,6 +103,22 @@ namespace casual
                );
             }
 
+            namespace dispatch
+            {
+               auto handler( State& state)
+               {
+                  return [ handler = manager::handler( state)]( common::strong::file::descriptor::id descriptor, common::communication::select::tag::read) mutable
+                  {
+                     auto& inbound = common::communication::ipc::inbound::device();
+                     if( inbound.descriptor() != descriptor)
+                        return false;
+
+                     handler( common::communication::device::non::blocking::next( inbound));
+                     return true;
+                  };
+               }
+            } // dispatch
+
             void start( State state)
             {
                Trace trace( "service::manager:local::start");
@@ -120,10 +137,12 @@ namespace casual
                log::line( common::log::category::information, "casual-service-manager is on-line");
                log::line( verbose::log, "state: ", state);
 
-               common::message::dispatch::pump(
+               communication::select::dispatch::pump(
                   local::condition( state),
-                  handler, 
-                  ipc::device());
+                  state.directive,
+                  dispatch::handler( state),
+                  state.multiplex
+               );
             }
 
             void main( int argc, char** argv)

@@ -46,7 +46,7 @@ namespace casual
                      reply.code.result = code;
                      reply.buffer = buffer::Payload{ nullptr};
                      
-                     communication::ipc::flush::optional::send( message.process.ipc, reply);
+                     state.multiplex.send( message.process.ipc, reply);
                   }
 
                }
@@ -92,12 +92,11 @@ namespace casual
 
                         log::line( log, "send request - to: ", message.process, " - request: ", request);
 
-                        if( ! communication::ipc::flush::optional::send( message.process.ipc, request))
+                        state.multiplex.send( message.process.ipc, request, [ &state, request, service_name = message.service.name]( auto& destination, auto& complete) mutable
                         {
-                           log::line( log::category::error, "call to service ", std::quoted( message.service.name), " failed - action: send error reply");
+                           log::line( log::category::error, "call to service ", std::quoted( service_name), " failed - action: send error reply");
                            send::error::reply( state, request, common::code::xatmi::no_entry);
-                           return;
-                        }
+                        });
                      };
                   }
                }
@@ -117,7 +116,7 @@ namespace casual
                            request.requested = message.service.name;
                            request.correlation = message.correlation;
                            request.context = decltype( request.context)::no_busy_intermediate;
-                           communication::ipc::flush::send( communication::instance::outbound::service::manager::device(), request);
+                           state.multiplex.send( communication::instance::outbound::service::manager::device(), request);
                         }
 
                         state.pending.push_back( std::move( message));
@@ -138,12 +137,12 @@ namespace casual
 
                      state.runlevel = state::Runlevel::shutdown;
 
-                     auto send_discard = []( auto& pending)
+                     auto send_discard = [&state]( auto& pending)
                      {
                         message::service::lookup::discard::Request request{ process::handle()};
                         request.reply = false;
                         request.correlation = pending.correlation;
-                        communication::ipc::flush::send( communication::instance::outbound::service::manager::device(), request);
+                        state.multiplex.send( communication::instance::outbound::service::manager::device(), request);
                      };
 
                      algorithm::for_each( state.pending, send_discard);

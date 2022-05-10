@@ -58,44 +58,16 @@ namespace casual
                namespace optional
                {
                   template< typename D, typename M>
-                  auto send( D&& device, M&& message)
+                  auto send( State& state, D&& device, M&& message)
                   {
                      log::line( verbose::log, "send message: ", message);
-                     return communication::device::blocking::optional::send( device, message);
+                     return state.multiplex.send( device, message);
                   }
                } // optional
 
-               namespace eventually
-               {
-                  template<  typename M>
-                  bool send( const common::process::Handle& destination, M&& message)
-                  {
-                     Trace trace{ "service::manager::handle::local::eventually::send"};
-                     log::line( verbose::log, "message: ", message);
-
-                     try
-                     {
-                        if( ! communication::device::non::blocking::send( destination.ipc, message))
-                           casual::domain::pending::message::send( destination, std::forward< M>( message));
-
-                        return true;
-                     }
-                     catch( ...)
-                     {
-                        auto error = exception::capture();
-                        if( error.code() != code::casual::communication_unavailable)
-                           throw;
-                           
-                        log::line( log, error, " destination unavailable - ", destination);
-                        return false;
-                     }
-
-                  }
-               } // eventually
-
                namespace error
                {
-                  auto reply( const state::instance::Caller& caller, common::code::xatmi code)
+                  auto reply( State& state, const state::instance::Caller& caller, common::code::xatmi code)
                   {
                      Trace trace{ "service::manager::handle::local::error::reply"};
                      log::line( verbose::log, "caller: ", caller, ", code: ", code);
@@ -104,7 +76,7 @@ namespace casual
                      message.correlation = caller.correlation;
                      message.code.result = code; 
 
-                     handle::local::eventually::send( caller.process, std::move( message));
+                     state.multiplex.send( caller.process.ipc, std::move( message));
                   }
                } // error
 
@@ -180,11 +152,11 @@ namespace casual
             auto expired = state.pending.deadline.expired( now);
             log::line( verbose::log, "expired: ", expired);
 
-            auto send_error_reply = []( auto& entry)
+            auto send_error_reply = [&state]( auto& entry)
             {
                if( auto caller = entry.service->consume( entry.correlation))
                {
-                  local::error::reply( caller, common::code::xatmi::timeout);
+                  local::error::reply( state, caller, common::code::xatmi::timeout);
 
                   // send event, at least domain-manager want's to know...
                   common::message::event::process::Assassination event{ common::process::handle()};
@@ -258,7 +230,7 @@ namespace casual
 
                                  log::line( common::log::category::verbose::error, "instance: ", instance);
 
-                                 local::error::reply( instance.caller(), common::code::xatmi::service_error);
+                                 local::error::reply( state, instance.caller(), common::code::xatmi::service_error);
                               }
                            }
 
@@ -370,7 +342,7 @@ namespace casual
                            reply.service.name = message.requested;
                            reply.state = decltype( reply.state)::absent;
 
-                           local::optional::send( message.process.ipc, reply);
+                           local::optional::send( state, message.process.ipc, reply);
                         });
 
                         {
@@ -427,10 +399,10 @@ namespace casual
                               }                             
 
                               // send reply, if caller gone, we discard the reservation.
-                              if( ! local::optional::send( message.process.ipc, reply))
-                                 if( auto found = algorithm::find( state.instances.sequential, handle.pid))
+                              state.multiplex.send( message.process.ipc, reply, [ &state, pid = handle.pid]( auto& destination, auto& complete){
+                                 if( auto found = algorithm::find( state.instances.sequential, pid))
                                     found->second.discard();
-
+                              });
                            }
                            else if( service->instances.empty())
                            {
@@ -455,7 +427,7 @@ namespace casual
                                     // with our forward.
                                     reply.state = decltype( reply.state)::idle;
 
-                                    local::optional::send( message.process.ipc, reply);
+                                    local::optional::send( state, message.process.ipc, reply);
 
                                     break;
                                  }
@@ -478,7 +450,7 @@ namespace casual
                                     // send busy-message to caller, to set timeouts and stuff
                                     reply.state = decltype( reply.state)::busy;
 
-                                    if( local::optional::send( message.process.ipc, reply))
+                                    if( local::optional::send( state, message.process.ipc, reply))
                                     {
                                        // All instances are busy, we stack the request
                                        state.pending.lookups.emplace_back( std::move( message), platform::time::clock::type::now());
@@ -557,7 +529,7 @@ namespace casual
 
                            // We only send reply if caller want's it
                            if( message.reply)
-                              local::optional::send( message.process.ipc, reply);
+                              local::optional::send( state, message.process.ipc, reply);
                         };
                      }
                   } // discard
@@ -667,7 +639,7 @@ namespace casual
                               {
                                  return instance.process;
                               });
-                              local::optional::send( message.process.ipc, reply);
+                              local::optional::send( state, message.process.ipc, reply);
                            }
 
                            if( busy)
@@ -682,6 +654,7 @@ namespace casual
                               });
 
                               auto callback = [ 
+                                 &state,
                                  message = common::message::reverse::type( message, common::process::handle()), 
                                  instances = range::to_vector( busy),
                                  destination = message.process]
@@ -696,7 +669,7 @@ namespace casual
                                  // take care of failed, if any
                                  for( auto& failed : failed)
                                     if( auto found = algorithm::find( instances, failed.id))
-                                       local::error::reply( found->caller(), code::xatmi::service_error);
+                                       local::error::reply( state, found->caller(), code::xatmi::service_error);
 
                                  // take care of replies
                                  algorithm::for_each( replies, [&]( auto& reply)
@@ -709,7 +682,7 @@ namespace casual
                                     }
                                  }); 
                                  
-                                 local::optional::send( destination.ipc, message);
+                                 local::optional::send( state, destination.ipc, message);
 
                               };
 
@@ -751,7 +724,7 @@ namespace casual
                            return result;
                         });
 
-                        local::optional::send( message.process.ipc, reply);
+                        local::optional::send( state, message.process.ipc, reply);
                      };
                   }
 
@@ -785,7 +758,7 @@ namespace casual
                               reply.service.name = pending.request.requested;
                               reply.state = decltype( reply.state)::absent;
 
-                              communication::device::blocking::send( pending.request.process.ipc, reply);
+                              state.multiplex.send( pending.request.process.ipc, reply);
                            }
                         }
                      };
@@ -793,8 +766,8 @@ namespace casual
 
                   namespace needs
                   {
-                     //! reply with needs, what we're waiting for.
-                     auto request( const State& state)
+                     //! reply with all known external and what we're waiting for.
+                     auto request( State& state)
                      {
                         return [&state]( const casual::domain::message::discovery::needs::Request& message)
                         {
@@ -819,7 +792,7 @@ namespace casual
                   namespace known
                   {
                      //! reply with all "remote" service we know of.
-                     auto request( const State& state)
+                     auto request( State& state)
                      {
                         return [&state]( const casual::domain::message::discovery::known::Request& message)
                         {
@@ -847,7 +820,7 @@ namespace casual
                            algorithm::container::trim( reply.content.services, algorithm::unique( algorithm::sort( reply.content.services)));
 
                            log::line( verbose::log, "reply: ", reply);
-                           communication::device::blocking::optional::send( message.process.ipc, reply);
+                           state.multiplex.send( message.process.ipc, reply);
                         };
                      }
                   } // needs
@@ -937,12 +910,12 @@ namespace casual
                            manager::configuration::conform( state, transform::configuration( state), std::move( message.model.service));
 
                            auto reply = message::reverse::type( message);
-                           eventually::send( message.process, reply);
+                           state.multiplex.send( message.process.ipc, reply);
                         };
                      }
                   } // update
 
-                  auto request( const State& state)
+                  auto request( State& state)
                   {
                      return [&state]( casual::configuration::message::Request& message)
                      {
@@ -952,7 +925,7 @@ namespace casual
                         auto reply = message::reverse::type( message);
 
                         reply.model.service = transform::configuration( state);
-                        eventually::send( message.process, reply);
+                        state.multiplex.send( message.process.ipc, reply);
                      };
                   }
 

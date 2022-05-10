@@ -8,6 +8,8 @@
 
 #include "common/message/service.h"
 #include "common/state/machine.h"
+#include "common/communication/select.h"
+#include "common/communication/ipc/send.h"
 
 #include <vector>
 #include <string>
@@ -37,9 +39,17 @@ namespace casual
       
       struct State
       {
+         inline State()
+         {
+            directive.read.add( common::communication::ipc::inbound::device().descriptor());
+         }
+
          common::state::Machine< state::Runlevel> runlevel;
+         common::communication::select::Directive directive;
 
          std::vector< common::message::service::call::callee::Request> pending;
+
+         common::communication::ipc::send::Coordinator multiplex{ directive};
 
          inline bool done() const noexcept
          {
@@ -49,6 +59,7 @@ namespace casual
          CASUAL_LOG_SERIALIZE(
             CASUAL_SERIALIZE( runlevel);
             CASUAL_SERIALIZE( pending);
+            CASUAL_SERIALIZE( multiplex);
          )
       };
 
