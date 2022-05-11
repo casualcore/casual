@@ -343,36 +343,44 @@ namespace casual
       {
          namespace address
          {
-            Address host( const strong::socket::id descriptor)
+            Address host( const strong::socket::id descriptor) noexcept
             {
-               struct sockaddr info{ };
-               socklen_t size = sizeof( info);
-
-               posix::result(
-                  getsockname(
-                     descriptor.value(), &info, &size));
-
-               return local::socket::names( info, size);
+               try
+               {
+                  ::sockaddr info{};
+                  ::socklen_t size = sizeof( info);
+                  posix::result( getsockname( descriptor.value(), &info, &size));
+                  return local::socket::names( info, size);
+               }
+               catch( ...)
+               {
+                  log::line( communication::log, exception::capture(), " - failed to get host address from: ", descriptor);
+                  return {};
+               }
             }
 
-            Address host( const Socket& socket)
+            Address host( const Socket& socket) noexcept
             {
                return host( socket.descriptor());
             }
 
-            Address peer( const strong::socket::id descriptor)
+            Address peer( const strong::socket::id descriptor) noexcept
             {
-               struct sockaddr info{ };
-               socklen_t size = sizeof( info);
-
-               posix::result(
-                  getpeername(
-                     descriptor.value(), &info, &size));
-
-               return local::socket::names( info, size);
+               try
+               {
+                  ::sockaddr info{};
+                  ::socklen_t size = sizeof( info);
+                  posix::result( getpeername( descriptor.value(), &info, &size));
+                  return local::socket::names( info, size);
+               }
+               catch( ...)
+               {
+                  log::line( communication::log, exception::capture(), " - failed to get peer address from: ", descriptor);
+                  return {};
+               }
             }
 
-            Address peer( const Socket& socket)
+            Address peer( const Socket& socket) noexcept
             {
                return peer( socket.descriptor());
             }

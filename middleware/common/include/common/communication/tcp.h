@@ -50,12 +50,12 @@ namespace casual
          namespace address
          {
             //! @return The address to which the socket is bound to on local host
-            Address host( strong::socket::id descriptor);
-            Address host( const Socket& socket);
+            Address host( strong::socket::id descriptor) noexcept;
+            Address host( const Socket& socket) noexcept;
 
             //! @return The address of the peer connected to the socket
-            Address peer( strong::socket::id descriptor);
-            Address peer( const Socket& socket);
+            Address peer( strong::socket::id descriptor) noexcept;
+            Address peer( const Socket& socket) noexcept;
 
          } // address
 
@@ -91,12 +91,9 @@ namespace casual
 
          namespace error
          {
-
-
-            bool recoverable( std::errc error) noexcept;
-            
+            //! answers if the errc is a tcp recoverable error, or not.
+            bool recoverable( std::errc error) noexcept;  
          } // error
-
 
          //! @returns one of:
          //!  * a socket
