@@ -7,6 +7,7 @@
 #pragma once
 
 #include "common/range.h"
+#include "common/algorithm.h"
 
 #include <algorithm>
 
@@ -101,6 +102,50 @@ namespace casual
       auto bound( R&& range, T&& value)
       {
          return bound( std::forward< R>( range), value, std::less<>{});
+      }
+
+      //! Divide `a` in two parts [a-first, intersection-end), [intersection-end, a-last).
+      //! @returns a tuple with two ranges (from `a`), where: 
+      //!     * index 0 is the (sorted) _intersection_ of `a` and `b`
+      //!     * index 1 is the (sorted) _difference_ of `a` and `b` 
+      //! @attention both `a` and `b` has to be sorted. `a` is of course not guaranteed to be sorted after.
+      template< typename A, typename B>
+      auto intersection( A& a, B&& b) noexcept
+      {
+         auto source = range::make( a);
+
+         constexpr auto make_result = []( auto& range, auto& source) noexcept
+         {
+            std::sort( std::begin( source), std::end( range));
+            return std::make_tuple( 
+               range::make( std::begin( range), std::begin( source)), 
+               range::make( std::begin( source), std::end( range)));
+         };
+
+         for( auto& value : b)
+         {
+            if( auto found = std::get< 1>( lower_bound( source, value)))
+            {
+               auto last = std::rotate( std::begin( source), std::begin( found), std::end( source));
+               auto first = std::find_if( std::begin( source), last, [ &origin = value]( auto& value){ return value != origin;});
+               source = range::make( first, last);
+            }
+            else
+               return make_result( a, source);
+         }
+         return make_result( a, source);
+      }
+      
+      //! Get the unique difference between `source` `target`, and appends 
+      //! this to `target`
+      //! @returns perfect forward `target`.
+      //! @attention `source` is most likely mutated during this algorithm.
+      template< typename S, typename T>
+      auto append_unique( S&& source, T&& target) -> decltype( algorithm::sort( std::forward< T>( target)))
+      {
+         auto difference = algorithm::unique( std::get< 1>( sorted::intersection( source, target)));  
+         algorithm::append( difference, target);
+         return algorithm::sort( std::forward< T>( target));
       }
 
 

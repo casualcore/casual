@@ -11,7 +11,9 @@
 #include "common/algorithm/container.h"
 #include "common/algorithm/compare.h"
 #include "common/algorithm/coalesce.h"
+#include "common/algorithm/sorted.h"
 #include "common/algorithm/is.h"
+#include "common/array.h"
 
 namespace casual
 {
@@ -801,6 +803,81 @@ namespace casual
          std::vector< int> range{ 5, 6, 7, 1, 2, 3, 4, 42, 42};
 
          EXPECT_TRUE( ! algorithm::is::unique( range));
+      }
+
+      TEST( common_algorithm_sorted, intersection_value)
+      {
+         auto range_1 = algorithm::sort( array::make( 1, 2, 3, 4, 42, 43));
+         auto range_2 = algorithm::sort( array::make( 1, 3, 4, 5, 42));
+         
+         auto [ intersection, difference] = algorithm::sorted::intersection( range_1, range_2);
+
+         EXPECT_TRUE( intersection == array::make( 1, 3, 4, 42));
+         EXPECT_TRUE( difference == array::make( 2, 43)) << CASUAL_NAMED_VALUE( difference);
+      }
+
+      TEST( common_algorithm_sorted, intersection_value_multiple_same_value)
+      {
+         auto range_1 = algorithm::sort( array::make( 1, 2, 2, 2, 4, 42, 43));
+         auto range_2 = algorithm::sort( array::make( 1, 3, 4, 5, 5, 5, 42));
+         
+         auto [ intersection, difference] = algorithm::sorted::intersection( range_1, range_2);
+
+         EXPECT_TRUE( intersection == array::make( 1, 4, 42));
+         EXPECT_TRUE( difference == array::make( 2, 2, 2, 43)) << CASUAL_NAMED_VALUE( difference);
+      }
+
+      TEST( common_algorithm_sorted, intersection_value_empty_source)
+      {
+         auto range_1 = std::array< int, 0>{};
+         auto range_2 = algorithm::sort( array::make( 1, 3, 4, 5, 5, 5, 42));
+         
+         auto [ intersection, difference] = algorithm::sorted::intersection( range_1, range_2);
+
+         EXPECT_TRUE( intersection.empty());
+         EXPECT_TRUE( difference.empty()) << CASUAL_NAMED_VALUE( difference);
+      }
+
+      TEST( common_algorithm_sorted, intersection_value_empty_lookup)
+      {
+         auto range_1 = algorithm::sort( array::make( 1, 2, 2, 2, 4, 42, 43));
+         auto range_2 = std::array< int, 0>{};
+         
+         auto [ intersection, difference] = algorithm::sorted::intersection( range_1, range_2);
+
+         EXPECT_TRUE( intersection.empty());
+         EXPECT_TRUE( difference == array::make( 1, 2, 2, 2, 4, 42, 43)) << CASUAL_NAMED_VALUE( difference);
+      }
+
+      TEST( common_algorithm_sorted, intersection_same_one_in_source_and_lookup)
+      {
+         auto range_1 = algorithm::sort( array::make( 42));
+         auto range_2 = algorithm::sort( array::make( 42));
+         
+         auto [ intersection, difference] = algorithm::sorted::intersection( range_1, range_2);
+
+         EXPECT_TRUE( intersection == array::make( 42));
+         EXPECT_TRUE( difference.empty()) << CASUAL_NAMED_VALUE( difference);
+      }
+
+      TEST( common_algorithm_sorted, append_unique__ame_one_in_source_and_target)
+      {
+         auto source = algorithm::sort( array::make( 42));
+         auto target = std::vector< int>{ 42};
+
+         algorithm::sorted::append_unique( source, target);
+
+         EXPECT_TRUE( range::make( target) == array::make( 42)) << CASUAL_NAMED_VALUE( target);
+      }
+
+      TEST( common_algorithm_sorted, append_unique__large_difference__expect_sorted_unique)
+      {
+         auto a = std::vector< int>{ 1, 2, 10, 11, 12, 13};
+         auto b = algorithm::sort( array::make( 1, 3, 10, 21, 22, 23));
+
+         algorithm::sorted::append_unique( b, a);
+         // only 10 is in the 
+         EXPECT_TRUE( range::make( a) == array::make( 1, 2, 3, 10, 11, 12, 13, 21, 22, 23)) << CASUAL_NAMED_VALUE( a);
       }
    } // common
 

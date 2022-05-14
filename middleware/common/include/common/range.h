@@ -23,6 +23,15 @@ namespace casual
 {
    namespace common 
    {
+      namespace range::detail
+      {
+         template< typename L, typename R> 
+         constexpr auto equal( L&& lhs, R&& rhs) -> decltype( std::equal( std::begin( lhs), std::end( lhs), std::begin( rhs), std::end( rhs)))
+         { 
+            return std::equal( std::begin( lhs), std::end( lhs), std::begin( rhs), std::end( rhs));
+         }
+      } // range::detail
+
       
       template< typename Iter>
       struct Range
@@ -101,28 +110,20 @@ namespace casual
 
          friend constexpr Range operator + ( Range range, difference_type value) { return Range( range.m_first + value, range.m_last);}
 
-         friend constexpr bool operator == ( const Range& lhs, const Range& rhs) 
+         friend constexpr auto operator == ( const Range& lhs, const Range& rhs)
          {
-            return equal( lhs, rhs);
+            return range::detail::equal( lhs, rhs);
          };
-         friend constexpr bool operator != ( const Range& lhs, const Range& rhs) { return !( lhs == rhs);}
+         friend constexpr bool operator != ( const Range& lhs, const Range& rhs) { return ! ( lhs == rhs);}
 
-         template< typename C, std::enable_if_t< traits::is::container::like_v< C>, int> = 0>
-         friend constexpr bool operator == ( const Range& lhs, const C& rhs)
+         template< typename C>
+         friend constexpr auto operator == ( const Range& lhs, const C& rhs) 
+            -> std::enable_if_t< ! std::is_same_v< Range, C>, decltype( range::detail::equal( lhs, rhs))> 
          {
-            return equal( lhs, rhs);
-         }
-
-         template< typename C, std::enable_if_t< traits::is::container::like_v< C>, int> = 0>
-         friend constexpr bool operator == ( C& lhs, const Range< Iter>& rhs)
-         {
-            return equal( lhs, rhs);
+            return range::detail::equal( lhs, rhs);
          }
 
       private:
-
-         template< typename L, typename R> 
-         constexpr static bool equal( L&& lhs, R&& rhs) { return std::equal( std::begin( lhs), std::end( lhs), std::begin( rhs), std::end( rhs));}
 
          constexpr static pointer data( iterator first, iterator last) noexcept
          {
@@ -143,6 +144,7 @@ namespace casual
       };
 
       static_assert( ! std::is_trivial< Range< int*>>::value, "trivially copyable");
+
 
 
       //! This is not intended to be a serious attempt at a range-library
