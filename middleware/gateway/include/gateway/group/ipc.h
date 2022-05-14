@@ -56,7 +56,11 @@ namespace casual
                   if( ipc::inbound().connector().descriptor() != descriptor)
                      return false;
 
-                  m_handler( common::communication::device::non::blocking::next( ipc::inbound()));
+                  auto count = platform::batch::gateway::message::pump::next;
+
+                  while( count-- != 0 && m_handler( common::communication::device::non::blocking::next( ipc::inbound())))
+                     ; // no-op
+
                   return true;
                }
 
