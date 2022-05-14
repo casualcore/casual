@@ -81,8 +81,7 @@ namespace casual
 
          message::discovery::api::Request request{ common::process::handle()};
          request.correlation = correlation;
-         request.content.services = std::move( services);
-         request.content.queues = std::move( queues);
+         request.content = message::discovery::request::Content{ std::move( services), std::move( queues)};
 
          return communication::ipc::flush::optional::send( local::instance::device(), request);
       }

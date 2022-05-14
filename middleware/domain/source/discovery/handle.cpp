@@ -14,7 +14,8 @@
 #include "common/event/listen.h"
 #include "common/algorithm.h"
 #include "common/event/send.h"
-#include "common/communication/ipc/flush/send.h"
+#include "common/message/internal.h"
+#include "common/algorithm/sorted.h"
 
 #include "casual/assert.h"
 
@@ -82,35 +83,6 @@ namespace casual
                   }
 
                } // send
-
-               namespace normalize
-               {
-                  void content( message::discovery::reply::Content& content)
-                  {
-                     auto equal_name = []( auto& l, auto& r)
-                     {
-                        return l.name == r.name;
-                     };
-
-                     auto service_order = []( auto& l, auto& r)
-                     {
-                        auto tie = []( auto& value){ return std::tie( value.name, value.type, value.transaction);};
-                        return tie( l) < tie( r);
-                     };
-
-                     algorithm::container::trim( content.services, algorithm::unique( algorithm::sort( content.services, service_order), equal_name));
-
-
-                     auto queue_order = []( auto& l, auto& r)
-                     {
-                        auto tie = []( auto& value){ return std::tie( value.name, value.retries);};
-                        return tie( l) < tie( r);
-                     };
-
-                     algorithm::container::trim( content.queues, algorithm::unique( algorithm::sort( content.queues, queue_order), equal_name));
-
-                  }
-               } // normalize
 
                namespace collect::needs::then
                {
@@ -237,10 +209,9 @@ namespace casual
                            {
                               auto transform_names = []( auto& range){ return algorithm::transform( range, []( auto& value){ return value.name;});};
 
-                              algorithm::append_unique( transform_names( reply.content.services), result.services);
-                              algorithm::append_unique( transform_names( reply.content.queues), result.queues);
-
-                              return result;
+                              return result + decltype( result){
+                                 transform_names( reply.content.services),
+                                 transform_names( reply.content.queues)};
                            });
 
                            state.multiplex.send( destination.ipc, reply);
@@ -290,14 +261,14 @@ namespace casual
                      state.coordinate.discovery( std::move( pending), [ &state, destination]( auto replies, auto outcome)
                      {
                         Trace trace{ "discovery::handle::local::request coordinate"};
+                        log::line( verbose::log, "replies: ", replies);
 
                         message::discovery::Reply message{ process::handle()};
                         message.correlation = destination.correlation;
-
+                        
                         for( auto& reply : replies)
                            message.content += std::move( reply.content);
 
-                        local::detail::normalize::content( message.content);
                         log::line( verbose::log, "message: ", message);
 
                         state.multiplex.send( destination.ipc, message);
@@ -411,7 +382,8 @@ namespace casual
             local::request( state),
             local::reply( state),
             local::topology::update( state),
-            local::shutdown::request( state)
+            local::shutdown::request( state),
+            common::message::internal::dump::state::handle( state)
          };
       }
 

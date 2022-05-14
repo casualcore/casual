@@ -76,6 +76,21 @@ namespace casual
             std::vector< state::Provider> m_providers;
          };
 
+         namespace accumulate
+         {
+            struct Request
+            {
+               struct Destination
+               {
+                  common::strong::correlation::id correlation;
+                  common::strong::ipc::id ipc;
+               };
+
+               message::discovery::Request content;
+               std::vector< Destination> destinations;
+            };
+         } // accumulate
+
       } // state
 
 

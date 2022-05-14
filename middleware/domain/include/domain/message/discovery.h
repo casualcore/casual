@@ -9,6 +9,7 @@
 #include "common/message/type.h"
 
 #include "common/message/service.h"
+#include "common/algorithm/sorted.h"
 
 #include <iosfwd>
 
@@ -36,15 +37,22 @@ namespace casual
 
          struct Content
          {
+            Content() = default;
+            Content( std::vector< std::string> services, std::vector< std::string> queues)
+               : services{ common::algorithm::sort( std::move( services))}, queues{ common::algorithm::sort( std::move( queues))}
+            {}
+
             std::vector< std::string> services;
             std::vector< std::string> queues;
 
             inline Content& operator += ( Content rhs)
             {
-               common::algorithm::append_unique( std::move( rhs.services), services);
-               common::algorithm::append_unique( std::move( rhs.queues), queues);
+               common::algorithm::sorted::append_unique( common::algorithm::sort( rhs.services), services);
+               common::algorithm::sorted::append_unique( common::algorithm::sort( rhs.queues), queues);
                return *this;
             };
+
+            inline friend Content operator + ( Content lhs, Content rhs) { lhs += rhs; return lhs;}
 
             inline explicit operator bool() const noexcept { return ! services.empty() || ! queues.empty();}
 
@@ -58,13 +66,15 @@ namespace casual
 
       namespace reply
       {
-         struct Queue
+         struct Queue : common::Compare< Queue>
          {
             Queue() = default;
             inline Queue( std::string name) : name{ std::move( name)} {}
 
             std::string name;
             platform::size::type retries{};
+
+            inline auto tie() const noexcept { return std::tie( name);}
 
             CASUAL_CONST_CORRECT_SERIALIZE(
                CASUAL_SERIALIZE( name);
@@ -76,6 +86,11 @@ namespace casual
 
          struct Content
          {
+            Content() = default;
+            Content( std::vector< Service> services, std::vector< Queue> queues)
+               : services{ common::algorithm::sort( std::move( services))}, queues{ common::algorithm::sort( std::move( queues))}
+            {}
+
             std::vector< Service> services;
             std::vector< Queue> queues;
 
@@ -83,8 +98,8 @@ namespace casual
 
             inline Content& operator += ( Content other)
             {
-               common::algorithm::append( std::move( other.services), services);
-               common::algorithm::append( std::move( other.queues), queues);
+               common::algorithm::sorted::append_unique( common::algorithm::sort( std::move( other.services)), services);
+               common::algorithm::sorted::append_unique( common::algorithm::sort( std::move( other.queues)), queues);
                return *this;
             }
 

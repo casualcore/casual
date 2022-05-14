@@ -44,7 +44,7 @@ namespace casual
             concurrent = 2,
          };
 
-         struct Base
+         struct Base : common::Compare < Base>
          {
             Base() = default;
 
@@ -62,6 +62,8 @@ namespace casual
             service::Type type = service::Type::sequential;
 
             inline friend bool operator == ( const Base& lhs, const std::string& rhs) { return lhs.name == rhs;}
+
+            inline auto tie() const noexcept { return std::tie( name);}
 
             CASUAL_CONST_CORRECT_SERIALIZE(
                CASUAL_SERIALIZE( name);
