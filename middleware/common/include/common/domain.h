@@ -22,7 +22,7 @@ namespace casual
    namespace common::domain
    {
 
-      struct Identity
+      struct Identity : common::Compare< Identity>
       {
          Identity();
          Identity( const strong::domain::id& id, std::string name);
@@ -38,11 +38,9 @@ namespace casual
 
          inline explicit operator bool() const noexcept { return predicate::boolean( id);}
 
-         friend bool operator == ( const Identity& lhs, const Identity& rhs);
-         inline friend bool operator != ( const Identity& lhs, const Identity& rhs) { return ! ( lhs == rhs);}
-         friend bool operator < ( const Identity& lhs, const Identity& rhs);
-
          inline friend bool operator == ( const Identity& lhs, std::string_view rhs) { return lhs.name == rhs;}
+
+         inline auto tie() const noexcept { return std::tie( id);}
 
       };
 

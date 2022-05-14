@@ -17,6 +17,7 @@ namespace casual
    {
       using dispatch_type = decltype( common::message::dispatch::handler( common::communication::ipc::inbound::device()));
 
+      void idle( State& state);
 
       dispatch_type create( State& state);
 

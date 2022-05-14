@@ -27,25 +27,11 @@ namespace casual
 
       Identity::Identity( const strong::domain::id& id, std::string name)
          : id{ id}, name{ std::move( name)}
-      {
-      }
+      {}
 
       Identity::Identity( std::string name)
          : Identity{ strong::domain::id{ uuid::make()}, std::move( name)}
-      {
-      }
-
-
-      bool operator == ( const Identity& lhs, const Identity& rhs)
-      {
-         return lhs.id == rhs.id;
-      }
-
-      bool operator < ( const Identity& lhs, const Identity& rhs)
-      {
-         return lhs.id < rhs.id;
-      }
-
+      {}
 
       namespace local
       {

@@ -74,18 +74,19 @@ namespace casual
             constexpr auto path = PATH_MAX;
          } // max
 
-         namespace by
+         namespace by::value
          {
-            namespace value
-            {
-               //! max size of type suitable for passing by value ("pods" only)
-               constexpr auto max = 16;
-            } // value
-         } // by
+            //! max size of type suitable for passing by value ("pods" only)
+            constexpr auto max = 16;
+         } // by::value
       } // size
 
       namespace batch
       {
+         namespace message::pump
+         {
+            constexpr size::type next = 200;
+         } // message::pump
 
          namespace transaction
          {
@@ -148,15 +149,26 @@ namespace casual
 
          namespace http
          {
-            namespace outbound
+            namespace outbound::concurrent
             {
-               namespace concurrent
-               {
-                  //! max number of 'cached' metrics.
-                  constexpr size::type metrics = 100;
-               } // concurrent
-            } // outbound
+               //! max number of 'cached' metrics.
+               constexpr size::type metrics = 100;
+            } // outbound::concurrent
          } // http
+
+         namespace discovery
+         {
+            namespace message::pump
+            {
+               constexpr size::type next = batch::message::pump::next;
+            } // message::pump
+
+            namespace topology
+            {
+               constexpr size::type updates = 100;
+            } // topology
+            
+         } // discovery
 
       } // batch
 

@@ -22,8 +22,6 @@ namespace casual
             }
             return "<unknown>";
          }
-
-
             
          void Providers::registration( const message::discovery::api::provider::registration::Request& message)
          {
@@ -48,7 +46,29 @@ namespace casual
             common::algorithm::container::trim( m_providers, common::algorithm::remove( m_providers, pid));
          }
 
+         namespace accumulate
+         {
+            void Topology::add( std::vector< common::domain::Identity> domains)
+            {
+               // add this domain, since we by definition has seen this topology update (or others before)
+               if( auto position = std::get< 1>( algorithm::sorted::lower_bound( m_domains, common::domain::identity())))
+               {
+                  if( *position != common::domain::identity())
+                     m_domains.insert( std::begin( position), common::domain::identity());
+               }
+               else
+                  m_domains.push_back( common::domain::identity());
 
+               algorithm::sorted::append_unique( algorithm::sort( domains), m_domains);
+            }
+
+            std::vector< common::domain::Identity> Topology::extract() noexcept
+            {
+               m_count = 0;
+               return std::exchange( m_domains, {});
+            }
+
+         } // accumulate
       } // state
 
       State::State()

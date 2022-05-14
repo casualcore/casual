@@ -299,6 +299,28 @@ namespace casual
 
             namespace topology
             {
+               void apply( State& state)
+               {
+                  Trace trace{ "discovery::handle::local::topology::apply"};
+
+                  // collect needs from this domain and discover - then use our continuation and propagate the 
+                  // topology update _upstream_
+                  detail::collect::needs::then::discover( state, [ &state, domains = state.accumulate.topology.extract()]( auto&& replies, auto&& outcome)
+                  {
+                     Trace trace{ "discovery::handle::local::topology::apply coordinate continuation"};
+
+                     // we're not interested in the replies, we just propagate the topology::Update to 
+                     // all with that ability, if any.
+
+                     message::discovery::topology::Update message;
+                     message.domains = std::move( domains);
+                     log::line( verbose::log, "message: ", message);
+
+                     for( auto& provider : state.providers.filter( state::provider::Ability::topology))
+                        state.multiplex.send( provider.process.ipc, message);
+                  });
+               }
+
                auto update( State& state)
                {
                   return [ &state]( message::discovery::topology::Update&& message)
@@ -313,23 +335,12 @@ namespace casual
                      if( algorithm::find( message.domains, common::domain::identity()))
                         return;
 
-                     message.domains.push_back( common::domain::identity());
+                     // accumulate for later....
+                     state.accumulate.topology.add( std::move( message.domains));
 
-                     // collect needs and discover then use our continuation (mutable to enable move from captured)
-                     detail::collect::needs::then::discover( state, [ &state, domains = std::move( message.domains)]( auto replies, auto outcome) mutable
-                     {
-                        Trace trace{ "discovery::handle::local::topology::update coordinate continuation"};
-                        log::line( verbose::log, "replies: ", replies, "outcome: ", outcome);
-
-                        // we're not interested in the replies, we just propagate the topology::Update to 
-                        // all with that ability, if any.
-
-                        message::discovery::topology::Update message;
-                        message.domains = std::move( domains);
-
-                        for( auto& provider : state.providers.filter( state::provider::Ability::topology))
-                           state.multiplex.send( provider.process.ipc, message);
-                     });
+                     // check if we've reach the "accumulate limit" and need to apply.
+                     if( state.accumulate.topology.limit())
+                        topology::apply( state);
                   };
                }
             } // topology
@@ -369,6 +380,16 @@ namespace casual
 
          } // <unnamed>
       } // local
+
+      void idle( State& state)
+      {
+         Trace trace{ "discovery::handle::idle"};
+
+         if( state.accumulate.topology)
+            local::topology::apply( state);
+
+
+      }
 
       dispatch_type create( State& state)
       {

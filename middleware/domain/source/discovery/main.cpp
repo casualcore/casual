@@ -41,7 +41,8 @@ namespace casual
             auto condition( State& state)
             {
                return common::message::dispatch::condition::compose(
-                  common::message::dispatch::condition::done( [&state]() { return state.done();})
+                  common::message::dispatch::condition::done( [&state]() { return state.done();}),
+                  common::message::dispatch::condition::idle( [&state]() { return handle::idle( state);})
                );
             }
 
@@ -55,7 +56,10 @@ namespace casual
                      if( inbound.descriptor() != descriptor)
                         return false;
                      
-                     handler( common::communication::device::non::blocking::next( inbound));
+                     auto count = platform::batch::discovery::message::pump::next;
+                     while( count-- != 0 && handler( common::communication::device::non::blocking::next( inbound)))
+                        ; // no-op
+                     
                      return true;
                   };
                }

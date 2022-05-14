@@ -89,7 +89,35 @@ namespace casual
                message::discovery::Request content;
                std::vector< Destination> destinations;
             };
+
+            struct Topology
+            {
+               void add( std::vector< common::domain::Identity> domains);
+
+               inline explicit operator bool() const noexcept { return ! m_domains.empty();}
+
+               std::vector< common::domain::Identity> extract() noexcept;
+
+               inline bool limit() const noexcept { return m_count > platform::batch::discovery::topology::updates;}
+
+               CASUAL_LOG_SERIALIZE(
+                  CASUAL_SERIALIZE_NAME( m_domains, "domains");
+               )
+
+            private:
+               platform::size::type m_count{};
+               std::vector< common::domain::Identity> m_domains;
+            };
          } // accumulate
+
+         struct Accumulate
+         {
+            accumulate::Topology topology;
+
+            CASUAL_LOG_SERIALIZE(
+               CASUAL_SERIALIZE( topology);
+            )
+         };
 
       } // state
 
@@ -115,6 +143,8 @@ namespace casual
             )
 
          } coordinate;
+
+         state::Accumulate accumulate;
          
          state::Providers providers;
 
@@ -126,6 +156,7 @@ namespace casual
          CASUAL_LOG_SERIALIZE(
             CASUAL_SERIALIZE( runlevel);
             CASUAL_SERIALIZE( coordinate);
+            CASUAL_SERIALIZE( accumulate);
             CASUAL_SERIALIZE( providers);
             CASUAL_SERIALIZE( multiplex);
          )
