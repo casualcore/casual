@@ -819,8 +819,8 @@ namespace casual
       {
          common::unittest::Trace trace;
 
-         // start time so we can make sure that available will be later thant this + 1h
-         auto now = platform::time::clock::type::now();
+         // start time so we can make sure that available will be later than this + 1h
+         auto start = platform::time::clock::type::now();
 
          auto path = local::file();
          group::Queuebase database( path);
@@ -839,11 +839,12 @@ namespace casual
             EXPECT_TRUE( info.messages.at( 0).id == message.message.id);
             EXPECT_TRUE( info.messages.at( 0).origin == queue.id);
             EXPECT_TRUE( info.messages.at( 0).queue == queue.id);
-            EXPECT_TRUE( info.messages.at( 0).available > now + std::chrono::hours{ 1}) 
+            // duration is converted to us, and could be rounded so it's less then _start_ + 1h, we use 59min to be safe.
+            EXPECT_TRUE( info.messages.at( 0).available > start + std::chrono::minutes{ 59}) 
                << "available: " << common::chronology::utc::offset( info.messages.at( 0).available) 
-               << "\nlimit: " << common::chronology::utc::offset( now + std::chrono::hours{ 1});
-            // check that we've not over-delayed it ( 2s to be safe on really slow machines)
-            EXPECT_TRUE( info.messages.at( 0).available < now + std::chrono::hours{ 1} + std::chrono::seconds{ 2});
+               << "\nlimit: " << common::chronology::utc::offset( start + std::chrono::hours{ 1});
+            // check that we've not over-delayed it ( 2s should be safe on really slow machines)
+            EXPECT_TRUE( info.messages.at( 0).available < start + std::chrono::hours{ 1} + std::chrono::seconds{ 2});
          }
 
          // message is not availiable until next hour
