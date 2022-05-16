@@ -341,6 +341,68 @@ namespace casual
          EXPECT_TRUE( receive_message.buffer.memory == message.buffer.memory);
       }
 
+      TEST( common_communication_ipc, send_multiplex_to_absent_ipc__expect_callback_invocation__and_empty_state_when_done)
+      {
+         common::unittest::Trace trace;
+
+         select::Directive directive;
+         communication::ipc::send::Coordinator coordinator{ directive};
+
+         auto absent_ipc = strong::ipc::id{ uuid::make()};
+
+         platform::size::type invocations{};
+
+         algorithm::for_n< 10>( [&]()
+         {
+            coordinator.send( absent_ipc, unittest::Message{ 1 * 1024}, [ &invocations]()
+            {
+               ++invocations;
+            });
+         });
+
+         EXPECT_TRUE( invocations == 10) << "invocations: " << invocations << "\n" << CASUAL_NAMED_VALUE( coordinator);
+         EXPECT_TRUE( coordinator.empty());
+      }
+
+      TEST( common_communication_ipc, send_multiplex_to_inbound__fill_the_ipc__and_cache_the_rest__sink_the_inbounds__expect_callback_invocation__and_empty_state_when_done)
+      {
+         common::unittest::Trace trace;
+
+         select::Directive directive;
+         communication::ipc::send::Coordinator coordinator{ directive};
+
+         std::vector< communication::ipc::inbound::Device> destinations( 10);
+
+         const auto message = unittest::Message{ platform::ipc::transport::size * 8};
+         platform::size::type errors{};
+
+         algorithm::for_n< 10>( [&]()
+         {
+            for( auto& destination : destinations)
+            {
+               auto ipc = destination.connector().handle().ipc();
+               coordinator.send( ipc, message, [ &errors]()
+               {
+                  ++errors;
+               });
+            }
+         });
+         
+         // should hold state for the (part of) messages that did not get any room.
+         EXPECT_TRUE( ! coordinator.empty());
+         
+         const auto count = coordinator.pending();
+         EXPECT_TRUE( count > 0);
+
+         unittest::sink( std::move( destinations));
+
+         // try send the cached messages, which will of course fail, and _errors_ will increase.
+         coordinator.send();
+
+         EXPECT_TRUE( errors == count) << "invocations: " << errors;
+         EXPECT_TRUE( coordinator.empty()) << CASUAL_NAMED_VALUE( coordinator);
+      }
+
       TEST( common_communication_ipc, send_multiplex__10_destinations__10__10K__messages)
       {
          common::unittest::Trace trace;

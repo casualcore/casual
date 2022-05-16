@@ -29,9 +29,12 @@ namespace casual
 
       struct Coordinator
       {
+         using callback_type = common::unique_function< void()>;
+
          inline Coordinator( select::Directive& directive) : m_directive{ &directive} {}
          
-         //! Tries to send a message to the destination ipc
+         //! Tries to send a message to the destination ipc, and an optional callback that will be
+         //! invoked if the destination is _lost_
          //!   * If there are pending messages to the ipc, the message (complete) will be
          //!     pushed back in the queue, and each message in the queue is tried to send, until one "fails"
          //!   * If there are no messages pendinging for the ipc, the message will be
@@ -39,9 +42,11 @@ namespace casual
          //!     the message ( possible partial message) will be pushed back in the queue
          //! @returns the correlation for the message, regardless if the message was sent directly or not.
          //! @{
-         template< typename D, typename M>
-         strong::correlation::id send( D& destination, M&& message)
+         template< typename D, typename M, typename... C>
+         strong::correlation::id send( D& destination, M&& message, C&&... callback)
          {
+            static_assert( sizeof...(C) <= 1, "[0..1] callbacks required");
+
             // Destination can be:
             //   * an ipc id
             //   * an outbound device 
@@ -54,16 +59,24 @@ namespace casual
 
 
             if constexpr( std::is_same_v< traits::remove_cvref_t< M>, ipc::message::Complete>)
-               return send( detail::coordinator::deduce::destination( destination), 
-                  ipc::message::complete::Send{ std::forward< M>( message)});
+            {
+               return send( 
+                  detail::coordinator::deduce::destination( destination), 
+                  Message{ ipc::message::complete::Send{ std::forward< M>( message)}, std::forward< C>( callback)...});
+            }
             else if constexpr( std::is_same_v< traits::remove_cvref_t< M>, ipc::message::complete::Send>)
-               return send( detail::coordinator::deduce::destination( destination), std::forward< M>( message));
+            {
+               return send( 
+                  detail::coordinator::deduce::destination( destination), 
+                  Message{ std::forward< M>( message), std::forward< C>( callback)...});
+            }
             else
-               return send( detail::coordinator::deduce::destination( destination), 
-                  ipc::message::complete::Send{ serialize::native::complete< ipc::message::Complete>( std::forward< M>( message))});
+            {
+               return send( 
+                  detail::coordinator::deduce::destination( destination), 
+                  Message{ ipc::message::complete::Send{ serialize::native::complete< ipc::message::Complete>( std::forward< M>( message))}, std::forward< C>( callback)...});
+            }
          }
-
-         strong::correlation::id send( const strong::ipc::id& ipc, ipc::message::complete::Send&& complete);
          //! @}
 
          //! Function operator to be used with communication::select:dispatch::pump for writes.
@@ -71,33 +84,62 @@ namespace casual
          //!   needed to try (possible) other _dispatchers_)
          bool operator () ( strong::file::descriptor::id descriptor, communication::select::tag::write) &;
 
+         //! try to send all pending messages, if any.
+         //! @return `empty()`
+         bool send() noexcept;
+
+         //! @return the accumulated count of all pending messages
+         platform::size::type pending() const noexcept;
+
          inline bool empty() const noexcept { return m_destinations.empty();}
 
          CASUAL_LOG_SERIALIZE(
             CASUAL_SERIALIZE_NAME( m_destinations, "destinations");
          )
 
-
       private:
+
+         struct Message
+         {
+            inline Message( ipc::message::complete::Send&& complete)
+               : complete{ std::move( complete)}
+            {}
+
+            inline Message( ipc::message::complete::Send&& complete, callback_type&& callback)
+               : complete{ std::move( complete)}, callback{ std::move( callback)}
+            {}
+
+            ipc::message::complete::Send complete;
+            callback_type callback;
+
+            CASUAL_LOG_SERIALIZE(
+               CASUAL_SERIALIZE( complete);
+               CASUAL_SERIALIZE_NAME( predicate::boolean( callback), "callback");
+            )
+         };
+
          struct Remote
          {
-            using queue_type = std::deque< ipc::message::complete::Send>;
+            using queue_type = std::deque< Message>;
 
-            inline Remote( select::Directive& directive, ipc::outbound::partial::Destination&& destination, ipc::message::complete::Send&& complete)
-               : m_destination{ std::move( destination)}, m_queue{ algorithm::container::emplace::initialize< queue_type>( std::move( complete))}
+            inline Remote( select::Directive& directive, ipc::outbound::partial::Destination&& destination, Message&& message)
+               : m_destination{ std::move( destination)}
             {
+               m_queue.emplace_back( std::move( message));
                directive.write.add( descriptor());
             }
 
             strong::file::descriptor::id descriptor() const noexcept { return m_destination.socket().descriptor();}
 
-            bool send( select::Directive& directive);
+            bool send( select::Directive& directive) noexcept;
 
-            inline Remote& push( ipc::message::complete::Send&& complete)
+            inline Remote& push( Message&& message)
             {
-               m_queue.push_back( std::move( complete));
+               m_queue.push_back( std::move( message));
                return *this;
             }
+
+            inline platform::size::type size() const noexcept { return m_queue.size();}
 
 
             inline friend bool operator == ( const Remote& lhs, const strong::ipc::id& rhs) { return lhs.m_destination.ipc() == rhs;}
@@ -115,6 +157,8 @@ namespace casual
             strong::ipc::id m_ipc;
             queue_type m_queue;
          };
+
+         strong::correlation::id send( const strong::ipc::id& ipc, Message&& message);
 
          std::vector< Remote> m_destinations;
 
