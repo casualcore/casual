@@ -1017,7 +1017,7 @@ depending on what parts are updated.
                            const auto command = string::compose( editor, ' ', file);
                            common::log::line( verbose::log, "command: ", command);
                            
-                           posix::result( ::system( command.data()));
+                           posix::result( ::system( command.data()), "::system( ", command, ')');
                         };
 
                         // sink child signal from _editor_

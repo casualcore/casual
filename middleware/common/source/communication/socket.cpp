@@ -84,7 +84,7 @@ namespace casual
       {
          int optval{};
          socklen_t optlen = sizeof( optval);
-         posix::result( ::getsockopt( m_descriptor.value(), SOL_SOCKET, SO_ERROR, &optval, &optlen));
+         posix::result( ::getsockopt( m_descriptor.value(), SOL_SOCKET, SO_ERROR, &optval, &optlen), "::getsockopt descriptor: ", m_descriptor);
 
          if( optval == 0)
             return {};
@@ -120,13 +120,13 @@ namespace casual
 
       void Socket::set_option( int level, int optname, const void *optval, platform::size::type optlen)
       {
-         posix::result( ::setsockopt( m_descriptor.value(), level, optname, optval, optlen), "setsockopt");
+         posix::result( ::setsockopt( m_descriptor.value(), level, optname, optval, optlen), "::setsockopt - descriptor: ", m_descriptor);
       }
 
       void Socket::get_option( int level, int optname, void* optval, platform::size::type optlen) const
       {
          ::socklen_t socklen = optlen;
-         posix::result( ::getsockopt( m_descriptor.value(), level, optname, optval, &socklen), "getsockopt");
+         posix::result( ::getsockopt( m_descriptor.value(), level, optname, optval, &socklen), "::getsockopt - descriptor: ", m_descriptor);
       }
 
    } // common::communication

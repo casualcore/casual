@@ -101,10 +101,10 @@ namespace casual
 #endif 
                   
                      case std::errc::invalid_argument:
-                        code::raise::error( code::casual::invalid_argument);
+                        code::raise::error( code::casual::invalid_argument, "ipc");
 
                      case std::errc::no_such_file_or_directory:
-                        code::raise::error( code::casual::communication_unavailable);
+                        code::raise::error( code::casual::communication_unavailable, "ipc - errno:", code);
 
                      default:
                         // will allways throw
@@ -126,7 +126,7 @@ namespace casual
                {
                   Socket socket()
                   {
-                     auto result = Socket{ strong::socket::id{ posix::result( ::socket(AF_UNIX, SOCK_DGRAM, 0))}};
+                     auto result = Socket{ strong::socket::id{ posix::result( ::socket(AF_UNIX, SOCK_DGRAM, 0), "::socket(AF_UNIX, SOCK_DGRAM, 0)")}};
                      result.set( socket::option::File::close_in_child);
                      return result;
                   }
@@ -421,11 +421,11 @@ namespace casual
                         socket.descriptor().value(),
                         address.native_pointer(),
                         address.native_size()
-                     ));
+                     ), "bind socket: ", socket, " to address: ", address);
 
                      return Handle{ std::move( socket), ipc};
                   }
-               } // create
+               } // create 
             } // <unnamed>
          } // local
 

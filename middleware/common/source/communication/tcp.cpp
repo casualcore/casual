@@ -288,11 +288,11 @@ namespace casual
                   const int flags{ NI_NUMERICHOST | NI_NUMERICSERV};
 
                   posix::result(
-                     getnameinfo(
+                     ::getnameinfo(
                         &info, size,
                         host, NI_MAXHOST,
                         serv, NI_MAXSERV,
-                        flags));
+                        flags), "::getnameinfo - ", __FILE__, ':', __LINE__);
 
                   return { string::compose( host, ':', serv)};
                }
@@ -349,7 +349,7 @@ namespace casual
                {
                   ::sockaddr info{};
                   ::socklen_t size = sizeof( info);
-                  posix::result( getsockname( descriptor.value(), &info, &size));
+                  posix::result( ::getsockname( descriptor.value(), &info, &size));
                   return local::socket::names( info, size);
                }
                catch( ...)
@@ -370,7 +370,7 @@ namespace casual
                {
                   ::sockaddr info{};
                   ::socklen_t size = sizeof( info);
-                  posix::result( getpeername( descriptor.value(), &info, &size));
+                  posix::result( ::getpeername( descriptor.value(), &info, &size));
                   return local::socket::names( info, size);
                }
                catch( ...)

@@ -84,7 +84,7 @@ namespace casual
                      posix::result( 
                         // will set previous signal mask atomically 
                         // note: first argument: nfds is the highest-numbered file descriptor in any of the three sets, plus 1.
-                        ::pselect( highest.value() + 1, read, write, nullptr, nullptr, &block.previous().set));
+                        ::pselect( highest.value() + 1, read, write, nullptr, nullptr, &block.previous().set), "pselect ", __FILE__, ':', __LINE__);
                   }
 
                } // <unnamed>
