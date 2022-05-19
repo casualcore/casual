@@ -409,24 +409,12 @@ namespace casual
 
                               auto reply = common::message::reverse::type( message);
 
-                              // get all our known "remote" queues
-                              reply.content.queues = algorithm::accumulate( state.queues, std::move( reply.content.queues), []( auto result, const auto& pair)
-                              {
-                                 if( algorithm::any_of( pair.second, []( auto& instance){ return instance.remote();}))
-                                    result.push_back( pair.first);
-                                 
-                                 return result;
-                              });
-
                               // add the pending _wait for ever_ requests
-                              reply.content.queues = algorithm::accumulate( state.pending.lookups, std::move( reply.content.queues), []( auto result, const auto& pending)
-                              {
+                              for( auto& pending : state.pending.lookups)
                                  if( pending.context == decltype( pending.context)::wait)
-                                    result.push_back( pending.name);
-
-                                 return result;
-                              });
-
+                                    reply.content.queues.push_back( pending.name);
+                              
+                              algorithm::container::trim( reply.content.queues, algorithm::unique( algorithm::sort( reply.content.queues)));
                               common::log::line( verbose::log, "reply: ", reply);
 
                               ipc::flush::optional::send( message.process.ipc, reply);
@@ -434,6 +422,44 @@ namespace casual
                            };
                         }
                      } // needs
+
+                     namespace known
+                     {
+                        auto request( State& state)
+                        {
+                           return [&state]( casual::domain::message::discovery::known::Request& message)
+                           {
+                              Trace trace{ "queue::manager::handle::local::domain::discover::known::request"};
+                              common::log::line( verbose::log, "message: ", message);
+
+                              auto reply = common::message::reverse::type( message);
+
+
+                              // all known "remote" queues
+                              reply.content.queues = algorithm::accumulate( state.queues, std::move( reply.content.queues), []( auto result, auto& pair)
+                              {
+                                 auto is_remote = []( auto& queue){ return queue.remote();};
+                                 if( algorithm::find_if( std::get< 1>( pair), is_remote))
+                                    result.push_back( std::get< 0>( pair));
+
+                                 return result;
+                              });
+
+                              // all 'wait for ever'
+                              for( auto& pending : state.pending.lookups)
+                                 if( pending.context == decltype( pending.context)::wait)
+                                    reply.content.queues.push_back( pending.name);
+
+                              algorithm::container::trim( reply.content.queues, algorithm::unique( algorithm::sort( reply.content.queues)));
+
+                              common::log::line( verbose::log, "reply: ", reply);
+
+                              ipc::flush::optional::send( message.process.ipc, reply);
+                              
+                           };
+                        }
+                        
+                     } // known
 
                   } // discover
                } // domain 
@@ -530,6 +556,7 @@ namespace casual
             handle::local::domain::discover::request( state),
             handle::local::domain::discover::reply( state),
             handle::local::domain::discover::needs::request( state),
+            handle::local::domain::discover::known::request( state),
 
             handle::local::shutdown::request( state),
             common::event::listener( handle::local::event::process::exit( state)),

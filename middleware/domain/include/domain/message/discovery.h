@@ -25,14 +25,14 @@ namespace casual
             forward
          };
 
-         inline std::ostream& operator << ( std::ostream& out, Directive value)
+         constexpr std::string_view description( Directive value) noexcept
          {
             switch( value)
             {
-               case Directive::local: return out << "local";
-               case Directive::forward: return out << "forward";
+               case Directive::local: return "local";
+               case Directive::forward: return "forward";
             }
-            return out << "<unknown>";
+            return "<unknown>";
          }
 
          struct Content
@@ -149,39 +149,50 @@ namespace casual
 
       namespace topology
       {
-         using base_update = common::message::basic_message< common::message::Type::domain_discovery_topology_update>;
-         struct Update : base_update
+         namespace implicit
          {
-            using base_update::base_update;
+            using base_update = common::message::basic_message< common::message::Type::domain_discovery_topology_implicit_update>;
+            struct Update : base_update
+            {
+               using base_update::base_update;
 
-            //! domains that has seen/handled the message.
-            std::vector< common::domain::Identity> domains;
+               //! domains that has seen/handled the message.
+               std::vector< common::domain::Identity> domains;
 
-            CASUAL_CONST_CORRECT_SERIALIZE(
-               base_update::serialize( archive);
-               CASUAL_SERIALIZE( domains);
-            )
-         };
+               CASUAL_CONST_CORRECT_SERIALIZE(
+                  base_update::serialize( archive);
+                  CASUAL_SERIALIZE( domains);
+               )
+            };
+         } // implicit
+
+         namespace direct
+         {
+            using base_update = common::message::basic_message< common::message::Type::domain_discovery_topology_direct_update>;
+            struct Update : base_update
+            {
+               using base_update::base_update;
+
+               // filled with the configured "resources" (that outbound could have)
+               discovery::request::Content content;
+
+               CASUAL_CONST_CORRECT_SERIALIZE(
+                  base_update::serialize( archive);
+                  CASUAL_SERIALIZE( content);
+               )
+            };
+         } // direct
       
       } // topology
 
       namespace needs
       {
-         using base_request = common::message::basic_request< common::message::Type::domain_discovery_needs_request>;
-         struct Request : base_request
-         {
-            using base_request::base_request;
-
-            CASUAL_CONST_CORRECT_SERIALIZE(
-               base_request::serialize( archive);
-            )
-         };
-
+         using Request = common::message::basic_request< common::message::Type::domain_discovery_needs_request>;
 
          using base_reply = common::message::basic_request< common::message::Type::domain_discovery_needs_reply>;
          using Content = discovery::request::Content;
 
-         //! Contains what externals needs the requested has (advertised and _waiting lookups_)
+         //! contains ONLY _waiting lookups_. The needs not yet fullfilled. 
          struct Reply : base_reply
          {
             using base_reply::base_reply;
@@ -195,6 +206,27 @@ namespace casual
 
       } // needs
 
+      namespace known
+      {
+         using Request = common::message::basic_request< common::message::Type::domain_discovery_known_request>;
+
+         using base_reply = common::message::basic_request< common::message::Type::domain_discovery_known_reply>;
+         using Content = discovery::request::Content;
+
+         //! Contains all "resources" that each provider knows about
+         struct Reply : base_reply
+         {
+            using base_reply::base_reply;
+            Content content;
+
+            CASUAL_CONST_CORRECT_SERIALIZE(
+               base_reply::serialize( archive);
+               CASUAL_SERIALIZE( content);
+            )
+         };
+         
+      } // known
+
       namespace api
       {
          namespace provider::registration
@@ -204,19 +236,23 @@ namespace casual
                discover_internal = 1,
                discover_external = 2,
                needs = 4,
-               topology = 8,
+               known = 8,
+               topology = 16,
             };
 
-            constexpr auto description( Ability value)
+            using Abilites = common::Flags< registration::Ability>;
+
+            constexpr std::string_view description( Ability value)
             {
                switch( value)
                {
-                  case Ability::discover_internal: return std::string_view{ "discover_internal"};
-                  case Ability::discover_external: return std::string_view{ "discover_external"};
-                  case Ability::needs: return std::string_view{ "needs"};
-                  case Ability::topology: return std::string_view{ "topology"};
+                  case Ability::discover_internal: return "discover_internal";
+                  case Ability::discover_external: return "discover_external";
+                  case Ability::needs: return "needs";
+                  case Ability::known: return "known";
+                  case Ability::topology: return "topology";
                }
-               return std::string_view{ "<unknown>"};
+               return "<unknown>";
             }
             
             using base_request = common::message::basic_request< common::message::Type::domain_discovery_api_provider_registration_request>;
@@ -224,7 +260,7 @@ namespace casual
             {
                using base_request::base_request;
 
-               common::Flags< registration::Ability> abilities;
+               Abilites abilities;
 
                CASUAL_CONST_CORRECT_SERIALIZE(
                   base_request::serialize( archive);
@@ -302,6 +338,9 @@ namespace casual
 
       template<>
       struct type_traits< casual::domain::message::discovery::needs::Request> : detail::type< casual::domain::message::discovery::needs::Reply> {};
+
+      template<>
+      struct type_traits< casual::domain::message::discovery::known::Request> : detail::type< casual::domain::message::discovery::known::Reply> {};
       
    } // common::message::reverse
 } // casual

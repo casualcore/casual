@@ -566,7 +566,7 @@ namespace casual
          struct version_traits< domain::disconnect::Reply> : version_helper< Version::v1_1> {};
 
          template<>
-         struct version_traits< casual::domain::message::discovery::topology::Update> : version_helper< Version::v1_2> {};
+         struct version_traits< casual::domain::message::discovery::topology::implicit::Update> : version_helper< Version::v1_2> {};
 
       } // protocol
 
@@ -676,7 +676,7 @@ template< typename A> struct Value< type, A, std::enable_if_t< common::serialize
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( content.queues);
          })
          
-         CASUAL_CUSTOMIZATION_POINT_NETWORK( casual::domain::message::discovery::topology::Update,
+         CASUAL_CUSTOMIZATION_POINT_NETWORK( casual::domain::message::discovery::topology::implicit::Update,
          {
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( execution);
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( domains);

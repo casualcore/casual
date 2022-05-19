@@ -86,18 +86,30 @@ namespace casual
          return communication::ipc::flush::optional::send( local::instance::device(), request);
       }
 
+
       namespace topology
       {
-         void update()
+         namespace direct
          {
-            update( message::discovery::topology::Update{});
-         }
+            void update( Send& multiplex)
+            {
+               multiplex.send( local::instance::device(), message::discovery::topology::direct::Update{});
+            }
 
-         void update( const message::discovery::topology::Update& message)
+            void update( Send& multiplex, const message::discovery::topology::direct::Update& message)
+            {
+               multiplex.send( local::instance::device(), message);
+            }
+
+         } // direct
+
+         namespace implicit
          {
-            Trace trace{ "domain::discovery::rediscovery::topology::update"};
-            communication::ipc::flush::optional::send( local::instance::device(), message);
-         }
+            void update( Send& multiplex, const message::discovery::topology::implicit::Update& message)
+            {
+               multiplex.send( local::instance::device(), message);
+            }
+         } // implicit
       } // topology
 
       namespace rediscovery

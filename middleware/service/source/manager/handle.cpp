@@ -790,32 +790,22 @@ namespace casual
                      };
                   }
 
-                  namespace external::needs
+                  namespace needs
                   {
-                     //! reply with all known external and what we're waiting for.
+                     //! reply with needs, what we're waiting for.
                      auto request( const State& state)
                      {
                         return [&state]( const casual::domain::message::discovery::needs::Request& message)
                         {
-                           Trace trace{ "service::manager::handle::domain::discovery::external::needs::request"};
+                           Trace trace{ "service::manager::handle::domain::discovery::needs::request"};
                            log::line( verbose::log, "message: ", message);
 
                            auto reply = common::message::reverse::type( message, common::process::handle());
 
-                           // all pending
-                           reply.content.services = algorithm::transform( state.pending.lookups, []( auto& value)
-                           {
-                              return value.request.requested;
-                           });
-
-                           // all "external" we know of.
-                           reply.content.services = algorithm::accumulate( state.services, std::move( reply.content.services), []( auto result, auto& value)
-                           {
-                              if( ! value.second.instances.concurrent.empty())
-                                 result.push_back( value.first);
-                                 
-                              return result;
-                           });
+                           // only 'wait' pending
+                           for( auto& pending : state.pending.lookups)
+                              if( pending.request.context == decltype( pending.request.context)::wait)
+                                 reply.content.services.push_back( pending.request.requested);
 
                            algorithm::container::trim( reply.content.services, algorithm::unique( algorithm::sort( reply.content.services)));
 
@@ -823,7 +813,43 @@ namespace casual
                            communication::device::blocking::optional::send( message.process.ipc, reply);
                         };
                      }
-                  } // external::needs
+                  } // needs
+
+                  namespace known
+                  {
+                     //! reply with all "remote" service we know of.
+                     auto request( const State& state)
+                     {
+                        return [&state]( const casual::domain::message::discovery::known::Request& message)
+                        {
+                           Trace trace{ "service::manager::handle::domain::discovery::known::request"};
+                           log::line( verbose::log, "message: ", message);
+
+                           auto reply = common::message::reverse::type( message, common::process::handle());
+
+                           // all known "remote" services
+                           reply.content.services = algorithm::accumulate( state.services, std::move( reply.content.services), []( auto result, auto& pair)
+                           {
+                              if( std::get< 1>( pair).instances.sequential.empty() && ! std::get< 1>( pair).instances.concurrent.empty())
+                                 result.push_back( std::get< 0>( pair));
+
+                              return result;
+                           });
+
+                           // append all waiting requests
+                           for( auto& pending : state.pending.lookups)
+                              if( pending.request.context == decltype( pending.request.context)::wait)
+                                 reply.content.services.push_back( pending.request.requested);
+                           
+
+                           // groom the content to be unique and sorted
+                           algorithm::container::trim( reply.content.services, algorithm::unique( algorithm::sort( reply.content.services)));
+
+                           log::line( verbose::log, "reply: ", reply);
+                           communication::device::blocking::optional::send( message.process.ipc, reply);
+                        };
+                     }
+                  } // needs
 
                } // domain::discovery
 
@@ -1028,7 +1054,8 @@ namespace casual
             handle::local::Call{ admin::services( state), state},
             handle::local::domain::discovery::request( state),
             handle::local::domain::discovery::reply( state),
-            handle::local::domain::discovery::external::needs::request( state),
+            handle::local::domain::discovery::needs::request( state),
+            handle::local::domain::discovery::known::request( state),
             handle::local::configuration::update::request( state),
             handle::local::configuration::request( state),
             handle::local::shutdown::request( state),

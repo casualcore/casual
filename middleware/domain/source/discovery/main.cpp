@@ -70,8 +70,6 @@ namespace casual
                Trace trace{ "domain::discovery::local::start"};
                log::line( verbose::log, "state: ", state);
 
-               auto handler = handle::create( state);
-
                // start the message dispatch
                communication::select::dispatch::pump( 
                   local::condition( state),
@@ -79,6 +77,8 @@ namespace casual
                   dispatch::handler( state),
                   state.multiplex
                );
+
+               log::line( verbose::log, "state: ", state);
             }
 
             void main( int argc, char** argv)

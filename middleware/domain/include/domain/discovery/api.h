@@ -9,11 +9,13 @@
 #include "domain/message/discovery.h"
 
 #include "common/process.h"
+#include "common/communication/ipc/send.h"
 
 namespace casual
 {
    namespace domain::discovery
    {
+      using Send = common::communication::ipc::send::Coordinator;
 
       using Request = message::discovery::Request;
       using Reply = message::discovery::Reply;
@@ -40,8 +42,17 @@ namespace casual
 
       namespace topology
       {
-         void update();
-         void update( const message::discovery::topology::Update& message);
+         namespace direct
+         {
+            void update( Send& multiplex);
+            void update( Send& multiplex, const message::discovery::topology::direct::Update& message);
+
+         } // direct
+
+         namespace implicit
+         {
+            void update( Send& multiplex, const message::discovery::topology::implicit::Update& message);
+         } // implicit
       } // topology
       
       namespace rediscovery

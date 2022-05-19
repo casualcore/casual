@@ -76,21 +76,9 @@ namespace casual
             std::vector< state::Provider> m_providers;
          };
 
-         namespace accumulate
+         namespace accumulate::topology
          {
-            struct Request
-            {
-               struct Destination
-               {
-                  common::strong::correlation::id correlation;
-                  common::strong::ipc::id ipc;
-               };
-
-               message::discovery::Request content;
-               std::vector< Destination> destinations;
-            };
-
-            struct Topology
+            struct Implicit
             {
                void add( std::vector< common::domain::Identity> domains);
 
@@ -101,6 +89,7 @@ namespace casual
                inline bool limit() const noexcept { return m_count > platform::batch::discovery::topology::updates;}
 
                CASUAL_LOG_SERIALIZE(
+                  CASUAL_SERIALIZE_NAME( m_count, "count");
                   CASUAL_SERIALIZE_NAME( m_domains, "domains");
                )
 
@@ -108,14 +97,39 @@ namespace casual
                platform::size::type m_count{};
                std::vector< common::domain::Identity> m_domains;
             };
-         } // accumulate
+
+            struct Direct
+            {
+               void add( message::discovery::request::Content content) noexcept;
+
+               inline explicit operator bool() const noexcept { return m_count > 0;}
+
+               message::discovery::request::Content extract() noexcept;
+
+               inline bool limit() const noexcept { return m_count > platform::batch::discovery::topology::updates;}
+
+               CASUAL_LOG_SERIALIZE(
+                  CASUAL_SERIALIZE_NAME( m_count, "count");
+               )
+            private:
+               platform::size::type m_count{};
+               message::discovery::request::Content m_content;
+            };
+
+            using Upstream = topology::Implicit;
+
+         } // accumulate::topology
 
          struct Accumulate
          {
-            accumulate::Topology topology;
+            accumulate::topology::Implicit implicit;
+            accumulate::topology::Direct direct;
+            accumulate::topology::Upstream upstream;
 
             CASUAL_LOG_SERIALIZE(
-               CASUAL_SERIALIZE( topology);
+               CASUAL_SERIALIZE( implicit);
+               CASUAL_SERIALIZE( direct);
+               CASUAL_SERIALIZE( upstream);
             )
          };
 
@@ -133,13 +147,15 @@ namespace casual
          {
             common::message::coordinate::fan::Out< message::discovery::Reply, common::strong::process::id> discovery;
             common::message::coordinate::fan::Out< message::discovery::needs::Reply, common::strong::process::id> needs;
+            common::message::coordinate::fan::Out< message::discovery::known::Reply, common::strong::process::id> known;
 
             inline void failed( common::strong::process::id pid) { discovery.failed( pid); needs.failed( pid);}
-            inline bool empty() const noexcept { return discovery.empty() && needs.empty();}
+            inline bool empty() const noexcept { return discovery.empty() && needs.empty() && known.empty();}
 
             CASUAL_LOG_SERIALIZE(
                CASUAL_SERIALIZE( discovery);
                CASUAL_SERIALIZE( needs);
+               CASUAL_SERIALIZE( known);
             )
 
          } coordinate;

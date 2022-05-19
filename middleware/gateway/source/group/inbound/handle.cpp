@@ -297,13 +297,13 @@ namespace casual
                   {
                      auto reply = basic_forward< casual::domain::message::discovery::Reply>;
 
-                     namespace topology
+                     namespace topology::implicit
                      {
                         auto update( State& state)
                         {
-                           return [&state]( const casual::domain::message::discovery::topology::Update& message)
+                           return [&state]( const casual::domain::message::discovery::topology::implicit::Update& message)
                            {
-                              Trace trace{ "gateway::group::inbound::handle::local::internal::domain::discovery::topology::update"};
+                              Trace trace{ "gateway::group::inbound::handle::local::internal::domain::discovery::topology::implicit::update"};
                               common::log::line( verbose::log, "message: ", message);
 
                               auto send_if_compatible = [ &state, &message]( auto& connection)
@@ -311,8 +311,8 @@ namespace casual
                                  if( ! message::protocol::compatible( message, connection.protocol()))
                                     return;
 
-                                 auto information = state.external.information( connection.descriptor());
-                                 casual::assertion( information, "information not valid for descriptor: ", connection.descriptor());
+                                 auto information = casual::assertion( state.external.information( connection.descriptor()), 
+                                    "failed to find information for descriptor: ", connection.descriptor());
 
                                  if( information->configuration.discovery != decltype( information->configuration.discovery)::forward)
                                     return;
@@ -329,7 +329,7 @@ namespace casual
                            };
                         }
 
-                     } // topology
+                     } // topology::implicit
 
                   } // discovery
                } // domain
@@ -678,7 +678,7 @@ namespace casual
 
             // domain discovery
             local::internal::domain::discovery::reply( state),
-            local::internal::domain::discovery::topology::update( state),
+            local::internal::domain::discovery::topology::implicit::update( state),
 
             // transaction
             local::internal::transaction::resource::prepare::reply( state),

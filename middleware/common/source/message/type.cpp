@@ -48,6 +48,8 @@ namespace casual
             case Type::domain_discovery_api_rediscovery_reply: return "domain_discovery_api_rediscovery_reply";
             case Type::domain_discovery_needs_request: return "domain_discovery_needs_request";
             case Type::domain_discovery_needs_reply: return "domain_discovery_needs_reply";
+            case Type::domain_discovery_known_request: return "domain_discovery_known_request";
+            case Type::domain_discovery_known_reply: return "domain_discovery_known_reply";
             case Type::server_connect_request: return "server_connect_request";
             case Type::server_connect_reply: return "server_connect_reply";
             case Type::server_disconnect: return "server_disconnect";
@@ -169,7 +171,8 @@ namespace casual
             case Type::gateway_domain_connected: return "gateway_domain_connected";
             case Type::domain_discovery_request: return "domain_discovery_request";
             case Type::domain_discovery_reply: return "domain_discovery_reply";
-            case Type::domain_discovery_topology_update: return "domain_discovery_topology_update";
+            case Type::domain_discovery_topology_implicit_update: return "domain_discovery_topology_implicit_update";
+            case Type::domain_discovery_topology_direct_update: return "domain_discovery_topology_direct_update";
             case Type::configuration_request: return "configuration_request";
             case Type::configuration_reply: return "configuration_reply";
             case Type::configuration_supplier_registration: return "configuration_supplier_registration";

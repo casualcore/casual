@@ -425,10 +425,8 @@ namespace casual
                               casual::domain::message::discovery::Reply message{ common::process::handle()};
                               message.correlation = correlation;
                               
-                              message.content = algorithm::accumulate( replies, decltype( message.content){}, []( auto result, auto& reply)
-                              {
-                                 return result + reply.content;
-                              });
+                              for( auto& reply : replies)
+                                 message.content += reply.content;
 
                               state.multiplex.send( destination, message);
                            };
@@ -443,7 +441,6 @@ namespace casual
 
                   } // discovery
 
-      
                   auto connected( State& state)
                   {
                      return [&state]( const gateway::message::domain::Connected& message)
@@ -451,46 +448,23 @@ namespace casual
                         Trace trace{ "gateway::group::outbound::handle::local::internal::domain::connected"};
                         common::log::line( verbose::log, "message: ", message);
 
+                        casual::domain::message::discovery::topology::direct::Update update;
+
                         auto descriptor = state.external.connected( state.directive, message);
-
-                        if( auto information = algorithm::find( state.external.information(), descriptor))
+                        const auto information = casual::assertion( algorithm::find( state.external.information(), descriptor), "failed to find information for descriptor: ", descriptor);
+                        
+                        // should we add content
+                        if( information->configuration)
                         {
-                           // should we do discovery
-                           if( information->configuration)
-                           {
-                              auto send_request = []( auto& state, auto& message, auto& configuration, auto descriptor)
-                              {
-                                 auto result = state.coordinate.discovery.empty_pendings();
-
-                                 casual::domain::message::discovery::Request request{ common::process::handle()};
-                                 request.correlation = message.correlation;
-                                 request.domain = common::domain::identity();
-                                 request.content.services = configuration.services;
-                                 request.content.queues = configuration.queues;
-                                 result.emplace_back( tcp::send( state, descriptor, request), descriptor);
-
-                                 return result;
-                              };
-
-                              auto callback = [&state]( auto&& replies, auto&& outcome)
-                              {
-                                 Trace trace{ "gateway::group::outbound::handle::local::internal::domain::connected callback"};
-
-                                 // since we've instigated the request, we just advertise and we're done.
-                                 discovery::detail::advertise::replies( state, replies, outcome);
-                              };
-                              
-                              state.coordinate.discovery( 
-                                 send_request( state, message, information->configuration, descriptor),
-                                 std::move( callback)
-                              );
-                           }
-
-                           // let the _discovery_ know that the topology has been updated
-                           casual::domain::discovery::topology::update();
-
-                           log::line( verbose::log, "information: ", *information);
+                           auto& configuration = information->configuration;
+                           update.content.services = configuration.services;
+                           update.content.queues = configuration.queues;
                         }
+
+                        // let the _discovery_ know that the topology has been updated
+                        casual::domain::discovery::topology::direct::update( state.multiplex, update);
+
+                        log::line( verbose::log, "information: ", *information);
                      };
                   }
 
@@ -811,9 +785,9 @@ namespace casual
                   {
                      //! we get this from inbounds that are configured with _discovery forward_ and the domain topology has 
                      //! been updated.
-                     auto update()
+                     auto update( State& state)
                      {
-                        return []( casual::domain::message::discovery::topology::Update&& message)
+                        return [ &state]( casual::domain::message::discovery::topology::implicit::Update&& message)
                         {
                            Trace trace{ "gateway::group::outbound::handle::local::external::domain::discover::topology::update"};
                            log::line( verbose::log, "message: ", message);
@@ -822,7 +796,7 @@ namespace casual
                            if( algorithm::find( message.domains, common::domain::identity()))
                               return;
 
-                           casual::domain::discovery::topology::update( message);
+                           casual::domain::discovery::topology::implicit::update( state.multiplex, message);
                         };
                      }
                   } // topology
@@ -890,7 +864,7 @@ namespace casual
 
             // discover
             local::external::domain::discovery::reply( state),
-            local::external::domain::discovery::topology::update()
+            local::external::domain::discovery::topology::update( state)
          };
       }
 

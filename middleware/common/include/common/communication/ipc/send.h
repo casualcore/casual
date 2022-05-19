@@ -92,6 +92,7 @@ namespace casual
          platform::size::type pending() const noexcept;
 
          inline bool empty() const noexcept { return m_destinations.empty();}
+         inline operator bool() const noexcept { return ! empty();}
 
          CASUAL_LOG_SERIALIZE(
             CASUAL_SERIALIZE_NAME( m_destinations, "destinations");
@@ -147,14 +148,12 @@ namespace casual
 
             CASUAL_LOG_SERIALIZE(
                CASUAL_SERIALIZE_NAME( m_destination, "destination");
-               CASUAL_SERIALIZE_NAME( m_ipc, "ipc");
                CASUAL_SERIALIZE_NAME( m_queue, "queue");
             )
 
          private:
 
             ipc::outbound::partial::Destination m_destination;
-            strong::ipc::id m_ipc;
             queue_type m_queue;
          };
 

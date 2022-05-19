@@ -81,6 +81,9 @@ namespace casual
          domain_discovery_needs_request,
          domain_discovery_needs_reply,
 
+         domain_discovery_known_request,
+         domain_discovery_known_reply,
+
          // Server
          SERVER_BASE = 2000,
          server_connect_request = SERVER_BASE,
@@ -279,7 +282,10 @@ namespace casual
          // part of domain-discovery, but we need to keep the pinned values.         
          domain_discovery_request   = 7300,
          domain_discovery_reply     = 7301,
-         domain_discovery_topology_update = 7302, // 1.2
+         domain_discovery_topology_implicit_update = 7302, // 1.2
+
+         //! sent to _discovery_ when current domain gets a new outbound connection
+         domain_discovery_topology_direct_update,
 
          //! sent from the connector when the logical connected is established
          gateway_domain_connected,

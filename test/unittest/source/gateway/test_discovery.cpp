@@ -345,7 +345,7 @@ domain:
          a.activate();
 
          {
-            auto update = common::communication::ipc::receive< casual::domain::message::discovery::topology::Update>();
+            auto update = common::communication::ipc::receive< casual::domain::message::discovery::topology::implicit::Update>();
             EXPECT_TRUE( algorithm::find( update.domains, "B")) << CASUAL_NAMED_VALUE( update.domains);
             EXPECT_TRUE( algorithm::find( update.domains, "A")) << CASUAL_NAMED_VALUE( update.domains);
          }
