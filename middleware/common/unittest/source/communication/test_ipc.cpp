@@ -354,7 +354,7 @@ namespace casual
 
          algorithm::for_n< 10>( [&]()
          {
-            coordinator.send( absent_ipc, unittest::Message{ 1 * 1024}, [ &invocations]()
+            coordinator.send( absent_ipc, unittest::Message{ 1 * 1024}, [ &invocations]( auto&, auto&)
             {
                ++invocations;
             });
@@ -381,7 +381,7 @@ namespace casual
             for( auto& destination : destinations)
             {
                auto ipc = destination.connector().handle().ipc();
-               coordinator.send( ipc, message, [ &errors]()
+               coordinator.send( ipc, message, [ &errors]( auto&, auto&)
                {
                   ++errors;
                });

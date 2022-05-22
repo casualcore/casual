@@ -29,7 +29,7 @@ namespace casual
 
       struct Coordinator
       {
-         using callback_type = common::unique_function< void()>;
+         using callback_type = common::unique_function< void( const strong::ipc::id&, ipc::message::complete::Send&)>;
 
          inline Coordinator( select::Directive& directive) : m_directive{ &directive} {}
          
@@ -109,6 +109,12 @@ namespace casual
             inline Message( ipc::message::complete::Send&& complete, callback_type&& callback)
                : complete{ std::move( complete)}, callback{ std::move( callback)}
             {}
+
+            inline void error( const strong::ipc::id& destination)
+            {
+               if( callback)
+                  callback( destination, complete);
+            }
 
             ipc::message::complete::Send complete;
             callback_type callback;

@@ -71,8 +71,7 @@ namespace casual
             catch( ...)
             {
                log::line( log::category::error, exception::capture(), " failed to send to ipc: ", ipc, " - action: invoke error callback (if any) on the message");
-               if( message.callback)
-                  message.callback();
+               message.error( ipc);
 
                return {};
             }
@@ -96,12 +95,11 @@ namespace casual
          {
             log::line( log::category::error, exception::capture(), " failed to send to destination: ", m_destination, " - action: invoke callback (if any) and discard for all pending messages to the destination");
 
-            auto invoke_callback = []( auto& message)
+            auto invoke_callback = [ &destination = m_destination.ipc()]( auto& message)
             {
                try
                {
-                  if( message.callback)
-                     message.callback();
+                  message.error( destination);
                }
                catch( ...)
                {
