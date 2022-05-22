@@ -29,6 +29,17 @@ namespace casual
 {
    namespace gateway::group::outbound
    {
+      struct Policy
+      {
+         struct next
+         {
+            //! max count of consumed messages 
+            static constexpr platform::size::type ipc = 10;
+            //! max count of consumed messages
+            static constexpr platform::size::type tcp = 50;
+         };
+      };
+
       namespace state
       {
 
@@ -206,23 +217,23 @@ namespace casual
                }
                
                //! "force" metric callback if there are metric to send
-               template< typename CB>
-               void force_metric( CB&& callback)
+               template< typename State, typename CB>
+               void force_metric( State& state, CB&& callback)
                {
                   if( m_metric.metrics.empty())
                      return;
                   
-                  callback( m_metric);
+                  callback( state, m_metric);
                   m_metric.metrics.clear();
                }
 
                //! send service metrics if we don't have any more in-flight call request (this one
                //! was the last, or only) OR we've accumulated enough metrics for a batch update               
-               template< typename CB>
-               void maybe_metric( CB&& callback)
+               template< typename State, typename CB>
+               void maybe_metric( State& state, CB&& callback)
                {
                   if( m_calls.empty() || m_metric.metrics.size() >= platform::batch::gateway::metrics)
-                     force_metric( std::forward< CB>( callback));
+                     force_metric( state, std::forward< CB>( callback));
                }
 
                inline explicit operator bool() const noexcept { return ! m_calls.empty();}

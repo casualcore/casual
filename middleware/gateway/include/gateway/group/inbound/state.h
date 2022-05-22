@@ -27,6 +27,17 @@ namespace casual
 {
    namespace gateway::group::inbound
    {
+      struct Policy
+      {
+         struct next
+         {
+            //! max count of consumed messages 
+            static constexpr platform::size::type ipc = 100;
+            //! max count of consumed messages
+            static constexpr platform::size::type tcp = 10;
+         };
+      };
+
       namespace state
       {
          enum struct Runlevel : short

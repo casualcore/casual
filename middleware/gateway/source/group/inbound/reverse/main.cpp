@@ -51,14 +51,17 @@ namespace casual
             {
                Trace trace{ "gateway::group::inbound::reverse::local::initialize"};
 
+               State state;
+
                // 'connect' to gateway-manager - will send configuration-update-request as soon as possible
                // that we'll handle in the main message pump
-               ipc::flush::send( ipc::manager::gateway(), gateway::message::inbound::Connect{ process::handle()});
+
+               state.multiplex.send( ipc::manager::gateway(), gateway::message::inbound::Connect{ process::handle()});
 
                // 'connect' to our local domain
                common::communication::instance::whitelist::connect();
 
-               return {};
+               return state;
             }
 
             namespace external
@@ -252,8 +255,8 @@ namespace casual
                   local::condition( state),
                   state.directive,
                   tcp::pending::send::dispatch::create( state, &handle::connection::lost),
-                  ipc::dispatch::create( state, &internal::handler),
-                  tcp::handle::dispatch::create( state, inbound::handle::external( state), &handle::connection::lost),
+                  ipc::dispatch::create< inbound::Policy>( state, &internal::handler),
+                  tcp::handle::dispatch::create< inbound::Policy>( state, inbound::handle::external( state), &handle::connection::lost),
                   // takes care of multiplexing connects
                   tcp::connect::dispatch::create( state, tcp::logical::connect::Bound::in),
                   state.multiplex

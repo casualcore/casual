@@ -115,11 +115,6 @@ namespace casual
             //! send to service-manager
             constexpr size::type metrics = 20;
 
-            namespace message::pump
-            {
-               //! Max number of inbound messag pump consumptions
-               constexpr size::type next = 100;
-            } // message::pump
          } // gateway
 
          namespace domain

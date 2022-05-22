@@ -263,7 +263,7 @@ namespace casual
 
       namespace handle::dispatch
       {
-         template< typename State, typename Handler, typename Lost>
+         template< typename Policy, typename State, typename Handler, typename Lost>
          auto create( State& state, Handler handler, Lost lost)
          {
             return [ &state, handler = std::move( handler), lost = std::move( lost)]( common::strong::file::descriptor::id descriptor, common::communication::select::tag::read) mutable
@@ -273,7 +273,10 @@ namespace casual
                   try
                   {
                      state.external.last( descriptor);
-                     handler( connection->next());
+
+                     auto count = Policy::next::tcp;
+                     while( count-- > 0 && handler( connection->next()))
+                        ; // no-op
                   }
                   catch( ...)
                   {

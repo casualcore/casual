@@ -95,23 +95,23 @@ namespace casual
                               using Enum = decltype( lookup.state);
                               case Enum::idle:
                               {
-                                 if( ! ipc::flush::optional::send( lookup.process.ipc, request))
+                                 state.multiplex.send( lookup.process.ipc, std::forward< R>( request), [ &state, send_error]( auto& destination, auto& message)
                                  {
-                                    log::line( common::log::category::error, common::code::xatmi::service_error, " server: ", lookup.process, " has been terminated during interdomain call - action: reply with: ", common::code::xatmi::service_error);
-                                    send_error( state, lookup, common::code::xatmi::service_error);
-                                 }
+                                    log::line( common::log::category::error, common::code::xatmi::service_error, " destination: ", destination, " has been 'removed' during interdomain call - action: reply with: ", common::code::xatmi::service_error);
+                                    send_error( state, message.correlation(), common::code::xatmi::service_error);
+                                 });
                                  break;
                               }
                               case Enum::absent:
                               {
                                  log::line( common::log::category::error, common::code::xatmi::no_entry, " service: ", lookup.service, " is not handled by this domain (any more) - action: reply with: ", common::code::xatmi::no_entry);
-                                 send_error( state, lookup, common::code::xatmi::no_entry);
+                                 send_error( state, lookup.correlation, common::code::xatmi::no_entry);
                                  break;
                               }
                               default:
                               {
                                  log::line( common::log::category::error, common::code::xatmi::system, " unexpected state on lookup reply: ", lookup, " - action: reply with: ", common::code::xatmi::service_error);
-                                 send_error( state, lookup, common::code::xatmi::system);
+                                 send_error( state, lookup.correlation, common::code::xatmi::system);
                                  break;
                               }
                            }
@@ -134,10 +134,10 @@ namespace casual
 
                               case Type::service_call:
 
-                                 detail::reply( state, request, lookup, []( auto& state, auto& lookup, auto code)
+                                 detail::reply( state, std::move( request), lookup, []( auto& state, auto& correlation, auto code)
                                  {
                                     common::message::service::call::Reply reply;
-                                    reply.correlation = lookup.correlation;
+                                    reply.correlation = correlation;
                                     reply.code.result = code;
                                     tcp::send( state, reply);
                                  });
@@ -146,10 +146,10 @@ namespace casual
 
                               case Type::conversation_connect_request:
                                  
-                                 detail::reply( state, request, lookup, []( auto& state, auto& lookup, auto code)
+                                 detail::reply( state, std::move( request), lookup, []( auto& state, auto& correlation, auto code)
                                  {
                                     common::message::conversation::connect::Reply reply;
-                                    reply.correlation = lookup.correlation;
+                                    reply.correlation = correlation;
                                     reply.code.result = code;
                                     tcp::send( state, reply);
                                  });

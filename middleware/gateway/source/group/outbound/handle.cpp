@@ -77,6 +77,9 @@ namespace casual
                         Trace trace{ "gateway::group::outbound::handle::local::internal::transaction::involved"};
                         log::line( verbose::log, "message: ", message);
 
+                        // We can't really get rid of this (now), We need to make sure TM get's the involve message
+                        // before we do anything else. Otherwise the transaction might get committed and TM does not know
+                        // about this _involved external resource_.
                         ipc::flush::send( 
                            ipc::manager::transaction(),
                            common::message::transaction::resource::external::involved::create( message));
@@ -159,7 +162,7 @@ namespace casual
                         state.service.add( std::move( metric));
 
                         // possible send metric
-                        state.service.maybe_metric( [ &state]( auto& message)
+                        state.service.maybe_metric( state, []( auto& state, auto& message)
                         {
                            state.multiplex.send( ipc::manager::service(), message);
                         });
@@ -868,7 +871,7 @@ namespace casual
          };
       }
 
-      void unadvertise( state::lookup::Resources resources)
+      void unadvertise( State& state, state::lookup::Resources resources)
       {
          Trace trace{ "gateway::group::outbound::handle::unadvertise"};
          log::line( verbose::log, "resources: ", resources);
@@ -878,14 +881,14 @@ namespace casual
             common::message::service::concurrent::Advertise request{ common::process::handle()};
             request.alias = instance::alias();
             request.services.remove = std::move( resources.services);
-            ipc::flush::send( ipc::manager::service(), request);
+            state.multiplex.send( ipc::manager::service(), request);
          }
 
          if( ! resources.queues.empty())
          {
             casual::queue::ipc::message::Advertise request{ common::process::handle()};
             request.queues.remove = std::move( resources.queues);
-            ipc::flush::send( ipc::manager::optional::queue(), request);
+            state.multiplex.send( ipc::manager::optional::queue(), request);
          }
       }
 
@@ -897,7 +900,7 @@ namespace casual
             log::line( verbose::log, "descriptor: ", descriptor);
 
             // unadvertise all 'orphanage' services and queues, if any.
-            handle::unadvertise( state.lookup.remove( descriptor));
+            handle::unadvertise( state, state.lookup.remove( descriptor));
 
             // take care of aggregated replies, if any.
             state.coordinate.discovery.failed( descriptor);
@@ -921,7 +924,7 @@ namespace casual
             log::line( verbose::log, "descriptor: ", descriptor);
 
             // unadvertise all 'orphanage' services and queues, if any.
-            handle::unadvertise( state.lookup.remove( descriptor));
+            handle::unadvertise( state, state.lookup.remove( descriptor));
 
             state.disconnecting.push_back( descriptor);
          }
@@ -933,9 +936,9 @@ namespace casual
          Trace trace{ "gateway::group::outbound::handle::idle"};
 
          // we need to check metric, we don't know when we're about to be called again.
-         state.service.force_metric( []( auto& message)
+         state.service.force_metric( state, []( auto& state, auto& message)
          {
-            ipc::flush::optional::send( ipc::manager::service(), message);
+            state.multiplex.send( ipc::manager::service(), message);
          });
       }
 
@@ -946,12 +949,12 @@ namespace casual
          state.runlevel = state::Runlevel::shutdown;
 
          // unadvertise all resources
-         handle::unadvertise( state.lookup.resources());
+         handle::unadvertise( state, state.lookup.resources());
 
          // send metric for good measure
-         state.service.force_metric( []( auto& message)
+         state.service.force_metric( state, []( auto& state, auto& message)
          {
-            ipc::flush::optional::send( ipc::manager::service(), message);
+            state.multiplex.send( ipc::manager::service(), message);
          });
 
          for( auto descriptor : state.external.descriptors())
@@ -967,7 +970,7 @@ namespace casual
 
          state.runlevel = state::Runlevel::error;
 
-         handle::unadvertise( state.lookup.resources());
+         handle::unadvertise( state, state.lookup.resources());
 
          state.external.clear( state.directive);
 

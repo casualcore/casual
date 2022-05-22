@@ -53,14 +53,16 @@ namespace casual
                Trace trace{ "gateway::group::outbound::reverse::local::initialize"};
                log::line( verbose::log, "arguments: ", arguments);
 
+               State state;
+
                // 'connect' to gateway-manager - will send configuration-update-request as soon as possible
                // that we'll handle in the main message pump
-               communication::device::blocking::send( ipc::manager::gateway(), gateway::message::outbound::Connect{ process::handle()});
+               state.multiplex.send( ipc::manager::gateway(), gateway::message::outbound::Connect{ process::handle()});
 
                // 'connect' to our local domain
                common::communication::instance::whitelist::connect();
 
-               return {};
+               return state;
             }
 
             namespace internal
@@ -85,8 +87,7 @@ namespace casual
                            tcp::listen::attempt( state, std::move( message.model.connections));
 
                            // send reply
-                           communication::device::blocking::optional::send(
-                              message.process.ipc, common::message::reverse::type( message, common::process::handle()));
+                           state.multiplex.send( message.process.ipc, common::message::reverse::type( message, common::process::handle()));
                         };
                      }
                   } // configuration::update
@@ -98,8 +99,8 @@ namespace casual
                         return [&state]( message::outbound::reverse::state::Request& message)
                         {
                            Trace trace{ "gateway::group::outbound::reverse::local::handle::internal::state::request"};
-                        
-                           ipc::flush::optional::send( message.process.ipc, tcp::listen::state::request( state, message));
+
+                           state.multiplex.send( message.process.ipc, tcp::listen::state::request( state, message));
                         };
                      }
 
@@ -197,8 +198,8 @@ namespace casual
                   local::condition( state),
                   state.directive,
                   tcp::pending::send::dispatch::create( state, &handle::connection::lost),
-                  tcp::handle::dispatch::create( state, outbound::handle::external( state), &handle::connection::lost),
-                  ipc::dispatch::create( state, &internal::handler),
+                  tcp::handle::dispatch::create< outbound::Policy>( state, outbound::handle::external( state), &handle::connection::lost),
+                  ipc::dispatch::create< outbound::Policy>( state, &internal::handler),
                   tcp::listen::dispatch::create( state, tcp::logical::connect::Bound::out),
                   state.multiplex
                );

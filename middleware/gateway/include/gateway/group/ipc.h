@@ -40,7 +40,7 @@ namespace casual
       {
          namespace detail
          {
-            template< typename H>
+            template< typename H, typename Policy>
             struct select_handler
             {
                select_handler( H handler) : m_handler{ std::move( handler)} {}
@@ -56,9 +56,8 @@ namespace casual
                   if( ipc::inbound().connector().descriptor() != descriptor)
                      return false;
 
-                  auto count = platform::batch::gateway::message::pump::next;
-
-                  while( count-- != 0 && m_handler( common::communication::device::non::blocking::next( ipc::inbound())))
+                  auto count = Policy::next::ipc;
+                  while( count-- > 0 && m_handler( common::communication::device::non::blocking::next( ipc::inbound())))
                      ; // no-op
 
                   return true;
@@ -69,7 +68,7 @@ namespace casual
             };
          } // detail
 
-         template< typename State, typename HC>
+         template< typename Policy, typename State, typename HC>
          auto create( State& state, HC&& handler_creator)
          {
             using handler_type = decltype( handler_creator( state));
@@ -77,7 +76,7 @@ namespace casual
             // make sure we set the select fd-set
             state.directive.read.add( ipc::inbound().connector().descriptor());
 
-            return detail::select_handler< handler_type>( handler_creator( state));
+            return detail::select_handler< handler_type, Policy>( handler_creator( state));
          }
          
       } // dispatch
