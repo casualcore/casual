@@ -345,7 +345,14 @@ domain:
          a.activate();
 
          {
-            auto update = common::communication::ipc::receive< casual::domain::message::discovery::topology::implicit::Update>();
+            // we need to _fetch until_ since we could get topology-implicit-update from the A -> B connect established first.
+            constexpr auto fetch_topology_until = common::unittest::fetch::until( &common::communication::ipc::receive< casual::domain::message::discovery::topology::implicit::Update>);
+
+            auto update = fetch_topology_until( []( auto& update)
+            {
+               return update.domains.size() == 2;
+            });
+
             EXPECT_TRUE( algorithm::find( update.domains, "B")) << CASUAL_NAMED_VALUE( update.domains);
             EXPECT_TRUE( algorithm::find( update.domains, "A")) << CASUAL_NAMED_VALUE( update.domains);
          }

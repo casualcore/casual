@@ -43,10 +43,6 @@ namespace casual
 
                common::algorithm::copy( common::uuid::string( common::uuid::make()), result.message.payload);
 
-
-               result.message.available = std::chrono::time_point_cast< std::chrono::microseconds>( platform::time::clock::type::now());
-               //result.message.timestamp = platform::time::clock::type::now();
-
                return result;
             }
 
@@ -656,10 +652,11 @@ namespace casual
          auto origin = local::message( queue);
 
          {
-            common::transaction::ID xid = common::transaction::id::create();
+            common::transaction::ID trid = common::transaction::id::create();
+            origin.trid = trid;
 
             database.enqueue( origin);
-            database.commit( xid);
+            database.commit( trid);
 
             auto info = local::get_queue( database, queue.id).value();
 
