@@ -4,6 +4,8 @@ import sys
 import re
 import subprocess
 
+matcher = re.compile("^.*\.(.*)$")
+
 def retrieve_tags(base_version):
    command = ['git','tag','--list']
    command.append( base_version + '*')
@@ -17,6 +19,12 @@ def retrieve_tags(base_version):
 def normal():
    return "normal"
 
+def beta():
+   return "beta"
+
+def alpha():
+   return "alpha"
+
 def assemble_filter(base_version, version_type):
    match_string = "^" + base_version
    if version_type == normal():
@@ -28,47 +36,60 @@ def assemble_filter(base_version, version_type):
 
    return match_string
 
-def extract_current_version(base_version, version_type = normal()):
-
-   matcher = re.compile("^.*\.(.*)$")
+def retrieve_latest( r, versions):
 
    def sorter( item):
       found = matcher.match( item)
       if found:
          return int( found.group(1))
 
-   match_string = assemble_filter(base_version, version_type)
-
-   r = re.compile(match_string)
-
-   version = retrieve_tags( base_version)
-
-   answer = list(filter( r.match, version))
+   answer = list(filter( r.match, versions))
 
    sort_answer = sorted( answer, reverse = True, key = sorter)
 
    if sort_answer:
-      return base_version, version_type, sort_answer[0]
+      return sort_answer[0]
 
-   return base_version, version_type, None
+def extract_current_release_version(base_version, versions):
 
-def generate_new_version( current_version, base_version, version_type):
+   match_string = assemble_filter(base_version, normal())
 
-   if not current_version:
-      if version_type == normal():
-         return base_version + ".0"
+   version_finder = re.compile(match_string)
+
+   return retrieve_latest( version_finder, versions)
+
+def generate_new_version( current_release_version, base_version, version_type, versions):
+
+   version_to_change_finder = re.compile("^(.*\.)([0-9]+)$")
+
+   if not current_release_version:
+      next_release_version =  base_version + ".0"
+
+   else:
+      found = version_to_change_finder.match( current_release_version)
+
+      if found:
+         next_release_version = found.group(1) + str( int( found.group(2)) + 1)
       else:
-         return base_version + "-" + version_type + ".0"
+         raise SystemError("Could not generate new number")
 
-   r = re.compile("^(.*\.)([0-9]+)$")
+   if version_type == normal():
+      return next_release_version
 
-   found = r.match( current_version)
+   if version_type == beta():
+      version_finder = re.compile("^.*-beta\.([0-9]+)$")
+      latest = retrieve_latest( version_finder, versions)
+      found = version_to_change_finder.match( latest)
 
-   if found:
-      return found.group(1) + str( int( found.group(2)) + 1)
+      if found:
+         return next_release_version + "-beta." + str( int( found.group(2)) + 1)
+      else:
+         raise SystemError("Could not generate new number")
+
+   if version_type == alpha():
+      return next_release_version + "-alpha."
 
    raise SystemError("Could not generate new number")
-
 
 def main():
 
@@ -83,9 +104,11 @@ def main():
    else:
       version_type = normal()
 
-   dummy, dummy, current_version = extract_current_version( base_version, version_type)
+   versions = retrieve_tags( base_version)
 
-   new_version = generate_new_version(current_version, base_version, version_type)
+   current_release_version = extract_current_release_version( base_version, versions)
+
+   new_version = generate_new_version( current_release_version, base_version, version_type, versions)
 
    print( new_version)
 

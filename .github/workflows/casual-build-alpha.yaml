@@ -1,0 +1,267 @@
+name: Build Casual - Alpha
+on: 
+  push:
+    branches:
+      - 'feature/**'
+      - '!**/dev'
+      - 'patch/**'
+      - '!**/dev'
+      - '!**/main'
+env:
+  build_type: alpha
+  centos_image: casual/centos-builder
+  suse_image: casual/suse-builder
+
+jobs:
+  calculate-version: 
+    runs-on: self-hosted
+    outputs:
+      major_minor: ${{ steps.major_minor.outputs.value }}
+      base_version: ${{ steps.base_version.outputs.value }}
+      build_version: ${{ steps.build_version.outputs.value }}
+      casual_version: ${{ steps.casual_version.outputs.value }}
+      casual_release: ${{ steps.casual_release.outputs.value }}
+    steps:
+      - name: check out repository casual
+        uses: actions/checkout@v3
+        with:
+          path: 'casual'
+          fetch-depth: 0
+
+      - name: retrieve major/minor from branch
+        uses: actions-ecosystem/action-regex-match@v2
+        id: regex-match
+        with:
+          text: ${{ github.ref }}
+          regex: '^.*/([0-9.]+)/.*$'
+
+      - name: set major/minor-version
+        id: major_minor
+        run: echo "::set-output name=value::${{ steps.regex-match.outputs.group1 }}" 
+
+      - name: set base_version
+        id: base_version
+        run: |
+          cd ${{ github.workspace }}/casual
+          echo "::set-output name=value::$( ${{ github.workspace }}/casual/pipeline/script/version.py ${{ steps.regex-match.outputs.group1 }} ${{ env.build_type}} )"
+
+      - name: normalized branch
+        id: normalized_branch
+        run: echo "::set-output name=value::$( echo ${{ github.ref }} | sed -E -e 's/refs\/heads\/feature\/[0-9.]+\///g' -e 's/-/_/g' -e 's/\//_/g' )"
+
+      - name: set build_version
+        id: build_version
+        run: |
+          echo "::set-output name=value::${{ steps.base_version.outputs.value }}${{ steps.normalized_branch.outputs.value }}.${{ github.run_number }}"
+
+      - name: set casual_version
+        id: casual_version
+        run: |
+          echo "::set-output name=value::$( echo ${{ steps.build_version.outputs.value }} | awk -F'-' '{ print $1 }' )"
+
+      - name: set casual_release
+        id: casual_release
+        run: |
+          echo "::set-output name=value::$( echo ${{ steps.build_version.outputs.value }} | awk -F'-' '{ print $2 }' )"
+  
+  notification-start:
+    runs-on: ubuntu-latest
+    needs: [calculate-version]
+    steps:  
+      - name: Discord notification
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+        uses: Ilshidur/action-discord@0.3.2
+        with:
+          args: "Starting a new build, Repo: ${{ github.repository }}, Branch: ${{ github.ref_name }}, Version: ${{ needs.calculate-version.outputs.build_version }}, URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"           
+
+  build-frontend:
+    runs-on: self-hosted
+    needs: [calculate-version,notification-start]
+    steps:
+      - name: check out repository casual
+        uses: actions/checkout@v3
+        with:
+          path: 'casual'
+          fetch-depth: 0
+
+      - name: prepare build-script
+        run: |
+          cat << EOD > builder.sh
+          #! /bin/bash
+
+          set -e
+
+          bash /git/casual/casual/pipeline/script/frontend/build
+
+          EOD
+
+          chmod +x builder.sh
+
+      - name: Build
+        run: |
+          docker run --rm -v ${{ github.workspace }}:/git/casual:Z -i casual/frontend-builder:latest
+
+      - name: Save artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: frontend
+          path: './**/casual-webapp.zip'
+  
+  build-centos:
+    runs-on: self-hosted
+    if: success()
+    needs: [calculate-version,build-frontend]
+    env:
+      DISTRIBUTION: 'centos'
+    steps:
+      - name: check out repository casual
+        uses: actions/checkout@v3
+        with:
+          path: 'casual'
+          fetch-depth: 0
+
+      - name: check out casual-thirdparty 
+        uses: actions/checkout@v3
+        with:
+          repository: 'casualcore/casual-thirdparty'
+          ref: ${{ needs.calculate-version.outputs.major_minor }}
+          path: 'casual-thirdparty'
+
+      - name: check out casual-make 
+        uses: actions/checkout@v3
+        with:
+          repository: 'casualcore/casual-make'
+          ref: 'master'
+          path: 'casual-make'
+
+      - name: download frontend
+        uses: actions/download-artifact@v3
+        with:
+          name: frontend
+
+      - name: prepare build-script
+        run: |
+          cat << EOD > builder.sh
+          #! /bin/bash
+
+          set -e
+
+          source /git/casual/casual/pipeline/script/pipeline.env
+
+          bash /git/casual/casual/pipeline/script/pre/cleanup
+
+          bash /git/casual/casual/pipeline/script/backend/$DISTRIBUTION/build ${{ needs.calculate-version.outputs.build_version }}
+          bash /git/casual/casual/pipeline/script/package ${{ needs.calculate-version.outputs.casual_version }} ${{ needs.calculate-version.outputs.casual_release }} $DISTRIBUTION
+
+          bash /git/casual/casual/pipeline/script/post/cleanup
+
+          EOD
+
+          chmod +x builder.sh
+
+
+      - name: Build
+        run: |
+          docker run --rm -v ${{ github.workspace }}:/git/casual:Z -i ${{ env.centos_image}}:${{ needs.calculate-version.outputs.major_minor }}
+
+      - name: Test Report
+        uses: dorny/test-reporter@v1
+        if: success() || failure()    # run this step even if previous step failed
+        with:
+          name: Google Tests - Centos # Name of the check run which will be created
+          path: ./**/report.xml       # Path to test results
+          reporter: java-junit        # Format of test result
+          working-directory: casual
+
+      - name: Save artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: centos_rpm
+          path: ./**/casual-middleware*.rpm
+
+  build-suse:
+    runs-on: self-hosted
+    if: success()
+    needs: [calculate-version,build-frontend]
+    env:
+      DISTRIBUTION: 'suse'
+    steps:
+      - name: check out repository casual
+        uses: actions/checkout@v3
+        with:
+          path: 'casual'
+          fetch-depth: 0
+
+      - name: check out casual-thirdparty 
+        uses: actions/checkout@v3
+        with:
+          repository: 'casualcore/casual-thirdparty'
+          ref: ${{ needs.calculate-version.outputs.major_minor }}
+          path: 'casual-thirdparty'
+
+      - name: check out casual-make 
+        uses: actions/checkout@v3
+        with:
+          repository: 'casualcore/casual-make'
+          ref: 'master'
+          path: 'casual-make'
+
+      - name: download frontend
+        uses: actions/download-artifact@v3
+        with:
+          name: frontend
+
+      - name: prepare build-script
+        run: |
+          cat << EOD > builder.sh
+          #! /bin/bash
+
+          set -e
+
+          source /git/casual/casual/pipeline/script/pipeline.env
+
+          bash /git/casual/casual/pipeline/script/pre/cleanup
+
+          bash /git/casual/casual/pipeline/script/backend/$DISTRIBUTION/build ${{ needs.calculate-version.outputs.build_version }}
+          bash /git/casual/casual/pipeline/script/package ${{ needs.calculate-version.outputs.casual_version }} ${{ needs.calculate-version.outputs.casual_release }} $DISTRIBUTION
+
+          bash /git/casual/casual/pipeline/script/post/cleanup
+
+          EOD
+
+          chmod +x builder.sh
+
+
+      - name: Build
+        run: |
+          docker run --rm -v ${{ github.workspace }}:/git/casual:Z -i ${{ env.suse_image}}:${{ needs.calculate-version.outputs.major_minor }}
+
+      - name: Test Report
+        uses: dorny/test-reporter@v1
+        if: success() || failure()   # run this step even if previous step failed
+        with:
+          name: Google Tests - Suse  # Name of the check run which will be created
+          path: ./**/report.xml      # Path to test results
+          reporter: java-junit       # Format of test result
+          working-directory: casual
+
+      - name: Save artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: suse_rpm
+          path: ./**/casual-middleware*.rpm
+
+  notification-end:
+    runs-on: ubuntu-latest
+    needs: [build-centos,build-suse]
+    if: always()
+    steps: 
+      - uses: martialonline/workflow-status@v2
+        id: check
+      - name: Discord notification
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+        uses: Ilshidur/action-discord@0.3.2
+        with:
+          args: "Build status ${{ steps.check.outputs.status }}, Repo: ${{ github.repository }}, Branch: ${{ github.ref_name }}, Version: ${{ needs.calculate-version.outputs.build_version }}, URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"           
