@@ -18,11 +18,20 @@ namespace casual
 {
    namespace service::unittest
    {
-      //! advertise `service` to service-manager as current process
+      //! advertise `services` to service-manager as current process
       void advertise( std::vector< std::string> services);
 
-      //! unadvertise `service` to service-manager as current process
+      //! unadvertise `services` to service-manager as current process
       void unadvertise( std::vector< std::string> services);
+
+      namespace concurrent
+      {
+         //! advertise concurrent/remote `services` to service-manager as current process
+         void advertise( std::vector< std::string> services);
+
+         //! unadvertise concurrent/remote `services` to service-manager as current process
+         void unadvertise( std::vector< std::string> services);
+      } // concurrent
 
       namespace send
       {

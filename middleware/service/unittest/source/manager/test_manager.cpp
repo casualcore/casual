@@ -121,6 +121,16 @@ domain:
                }
             } // instance
 
+            //! send to service-manager
+            template< typename M>
+            auto send( M&& message)
+            {
+               return common::communication::device::blocking::send( 
+                  common::communication::instance::outbound::service::manager::device(),
+                  std::forward< M>( message));
+            }
+
+
          } // <unnamed>
       } // local
 
@@ -917,6 +927,78 @@ domain:
          ASSERT_TRUE( instances.size() == 1) << CASUAL_NAMED_VALUE( instances);
          EXPECT_TRUE( instances.at( 0).pid == common::process::id());
   
+      }
+
+      TEST( service_manager, concurrent_service_lookup__absent_service__expect_service_lookup_forget_with_state_discarded)
+      {
+         common::unittest::Trace trace;
+
+         auto domain = local::domain();
+
+
+         common::strong::correlation::id correlation;
+
+         // non existent service a, we wait forever.
+         {
+            common::message::service::lookup::Request message{ common::process::handle()};
+            message.requested = "a";
+            message.context = decltype( message.context)::wait;
+
+            correlation = local::send( message);
+         }
+
+         auto create_discard_request = []( auto& correlation)
+         {
+            common::message::service::lookup::discard::Request message{ common::process::handle()};
+            message.reply = true;
+            message.requested = "a";
+            message.correlation = correlation;
+            return message;
+         };
+
+         // discard the lookup
+         auto reply = common::communication::ipc::call( common::communication::instance::outbound::service::manager::device(), create_discard_request( correlation));
+
+         EXPECT_TRUE( reply.correlation == correlation);
+         EXPECT_TRUE( reply.state == decltype( reply.state)::discarded) << trace.compose( "reply: ", reply);
+      }
+
+      TEST( service_manager, concurrent_service_lookup__remote_service__expect_service_lookup_forget_with_state_replied)
+      {
+         common::unittest::Trace trace;
+
+         auto domain = local::domain();
+
+         service::unittest::concurrent::advertise( { "a", "b"});
+
+
+         // non existent service a, we wait forever.
+         auto create_lookup_request = []()
+         {
+            common::message::service::lookup::Request message{ common::process::handle()};
+            message.requested = "a";
+            message.context = decltype( message.context)::wait;
+            return message;
+         };
+
+         auto lookup = common::communication::ipc::call( common::communication::instance::outbound::service::manager::device(), create_lookup_request());
+
+         auto create_discard_request = []( auto& correlation)
+         {
+            common::message::service::lookup::discard::Request message{ common::process::handle()};
+            message.reply = true;
+            message.requested = "a";
+            message.correlation = correlation;
+            return message;
+         };
+
+         // discard the lookup
+         auto reply = common::communication::ipc::call( 
+            common::communication::instance::outbound::service::manager::device(), 
+            create_discard_request( lookup.correlation));
+
+         EXPECT_TRUE( reply.correlation == lookup.correlation);
+         EXPECT_TRUE( reply.state == decltype( reply.state)::replied) << trace.compose( "reply.state: ", reply.state);
       }
 
    } // service

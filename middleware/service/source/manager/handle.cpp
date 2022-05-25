@@ -549,9 +549,10 @@ namespace casual
                                  log::line( verbose::log, "instance: ", instance);
 
                                  instance.discard();
-
-                                 reply.state = decltype( reply.state)::replied;
                               }
+
+                              // regardless, we assume we've already replied.
+                              reply.state = decltype( reply.state)::replied;
                            }
 
                            // We only send reply if caller want's it

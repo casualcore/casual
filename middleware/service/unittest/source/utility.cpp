@@ -48,6 +48,29 @@ namespace casual
          communication::device::blocking::send( local::ipc::manager(), message);
       }
 
+      namespace concurrent
+      {
+         void advertise( std::vector< std::string> services)
+         {
+            message::service::concurrent::Advertise message{ process::handle()};
+            message.alias = instance::alias();
+            message.services.add = algorithm::transform( services, []( auto& service)
+            {
+               return message::service::concurrent::advertise::Service{ std::move( service), "remote", common::service::transaction::Type::automatic};
+            });
+
+            communication::device::blocking::send( local::ipc::manager(), message);
+         }
+
+         void unadvertise( std::vector< std::string> services)
+         {
+            message::service::concurrent::Advertise message{ process::handle()};
+            message.alias = instance::alias();
+            message.services.remove = std::move( services);
+            communication::device::blocking::send( local::ipc::manager(), message);
+         }
+      } // concurrent
+
       manager::admin::model::State state()
       {
          serviceframework::service::protocol::binary::Call call;
