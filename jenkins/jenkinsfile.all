@@ -500,7 +500,7 @@ try
                }
 
                stage('Build backend - Unittest - Suse')
-               {                  
+               {
                   unstash 'frontend'
                   
                   legacy_build( 'susecompile', 'casual/suse-builder'.concat(':').concat(retrieve_major_minor()), backend_builder_suse)
