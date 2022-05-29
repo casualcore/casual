@@ -375,13 +375,14 @@ try
                   dir("casual-thirdparty")
                   {
                      // casual-thirdparty
-                     git branch: 'feature/new-casual-make', url: 'https://github.com/casualcore/casual-thirdparty.git'
+                     MAJOR_MINOR = retrieve_major_minor()
+                     checkout scm: [$class: 'GitSCM', userRemoteConfigs: [[url: 'https://github.com/casualcore/casual-thirdparty.git']], branches: [[name: 'refs/tags/' + MAJOR_MINOR ]]], poll: false
                   }
 
                   dir("casual-make")
                   {
                      // casual-make
-                     git branch: 'feature/0.1/dev', url: 'https://github.com/casualcore/casual-make.git'
+                     git branch: 'master', url: 'https://github.com/casualcore/casual-make.git'
                   }
 
                   dir("casual")
@@ -397,7 +398,7 @@ try
                   
                   legacy_build( 'centoscompile', 'casual/centos-builder'.concat(':').concat(retrieve_major_minor()), backend_builder_centos)
 
-                  step([$class: 'XUnitBuilder',
+                  step([$class: 'XUnitPublisher',
                      thresholds: [[$class: 'FailedThreshold', failureThreshold: '1']],
                      tools: [[$class: 'GoogleTestType', pattern: '**/report.xml']]])
 
@@ -481,13 +482,14 @@ try
                   dir("casual-thirdparty")
                   {
                      // casual-thirdparty
-                     git branch: 'feature/new-casual-make', url: 'https://github.com/casualcore/casual-thirdparty.git'
+                     MAJOR_MINOR = retrieve_major_minor()
+                     checkout scm: [$class: 'GitSCM', userRemoteConfigs: [[url: 'https://github.com/casualcore/casual-thirdparty.git']], branches: [[name: 'refs/tags/' + MAJOR_MINOR ]]], poll: false
                   }
 
                   dir("casual-make")
                   {
                      // casual-make
-                     git branch: 'feature/0.1/dev', url: 'https://github.com/casualcore/casual-make.git'
+                     git branch: 'master', url: 'https://github.com/casualcore/casual-make.git'
                   }
 
                   dir("casual")
@@ -498,7 +500,7 @@ try
                }
 
                stage('Build backend - Unittest - Suse')
-               {                  
+               {
                   unstash 'frontend'
                   
                   legacy_build( 'susecompile', 'casual/suse-builder'.concat(':').concat(retrieve_major_minor()), backend_builder_suse)

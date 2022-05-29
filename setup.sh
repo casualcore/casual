@@ -27,9 +27,9 @@ function checkout()
 }
 
 MAKE_PATH="casual-make"
-MAKE_BRANCH="feature/0.1/dev"
+MAKE_BRANCH="master"
 THIRDPARTY_PATH="casual-thirdparty"
-THIRDPARTY_BRANCH="feature/new-casual-make"
+THIRDPARTY_BRANCH="master"
 
 checkout $MAKE_PATH $MAKE_BRANCH
 checkout $THIRDPARTY_PATH $THIRDPARTY_BRANCH
