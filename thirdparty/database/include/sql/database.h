@@ -56,9 +56,10 @@ namespace sql
                   return sqlite3_errstr( code);
                }
             };
-            inline const Category& category()
+            inline static const Category& category()
             {
-               return casual::common::code::serialize::registration< Category>( 0xa5fb63c2e7f343c3a8b0147f3f0a667a_uuid);
+               static auto& category = casual::common::code::serialize::registration< Category>( 0xa5fb63c2e7f343c3a8b0147f3f0a667a_uuid);
+               return category;
             }
          } // detail
 
