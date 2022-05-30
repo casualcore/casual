@@ -13,47 +13,42 @@
 
 namespace casual
 {
-   namespace common
+   namespace common::code::serialize
    {
-      namespace code
+      namespace lookup
       {
-         namespace serialize
+         namespace detail
          {
-            namespace detail
+            struct Entry
             {
-               namespace lookup
-               {
-                  struct Entry
-                  {
-                     const std::error_category* category;
-                     Uuid id;
-                  };
+               const std::error_category* category;
+               Uuid id;
+            };
 
-                  void registration( Entry entry);
+            std::ostream& operator << ( std::ostream& out, const Entry& value);
 
-               } // lookup
-               
-            } // detail
+            void registration( Entry entry);
 
-            namespace lookup
-            {
-               const Uuid& id( const std::error_category& category);
-               
-            } // lookup
+            //! unittest only
+            const std::vector< Entry>& state() noexcept;
+                                       
+         } // detail
 
-            std::error_code create( const Uuid& id, int code);
+         const Uuid& id( const std::error_category& category);
+         
+      } // lookup
 
+      std::error_code create( const Uuid& id, int code);
 
-            template< typename Category>
-            const Category& registration( const Uuid& id)
-            {
-               static const Category category;
-               detail::lookup::registration( { &category, id});
-               return category;
-            }
+      //! register the Category to an uuid, fpr serialization.
+      //! @attention can only be used once per `Category` 
+      template< typename Category>
+      const Category& registration( const Uuid& id)
+      {
+         static const Category category;
+         lookup::detail::registration( { &category, id});
+         return category;
+      }
 
-            
-         } // serialize 
-      } // code
-   } // common
+   } // common::code::serialize
 } // casual
