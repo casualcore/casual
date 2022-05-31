@@ -142,7 +142,8 @@ namespace casual
          {
             casual::assertion( descriptor, "descriptor: ", descriptor);
 
-            directive.read.remove( descriptor);
+            // make sure we remove from read and write
+            directive.remove( descriptor);
             common::algorithm::container::trim( m_connections, common::algorithm::remove( m_connections, descriptor));
             
             auto found = common::algorithm::find( m_information, descriptor);
@@ -153,7 +154,7 @@ namespace casual
 
          void clear( common::communication::select::Directive& directive)
          {
-            directive.read.remove( descriptors());
+            directive.remove( descriptors());
             m_connections.clear();
             m_information.clear();
          }
@@ -241,22 +242,13 @@ namespace casual
                auto error = exception::capture();
                if( error.code() != code::casual::communication_unavailable)
                {
-                  auto information = state.external.information( descriptor);
+                  auto information = casual::assertion( state.external.information( descriptor), "failed to find information for descriptor: ", descriptor);
                   log::line( log::category::error, "failed to communicate with domain: ", information->domain, ", configured address: ", information->configuration.address, " - error: ", error);
                }
 
-               constexpr auto is_outbound_v = std::is_same_v< decltype( lost( state, descriptor)), decltype( message::outbound::connection::Lost{})>;
-
                // we 'lost' the connection in some way - we put a connection::Lost on our own ipc-device, and handle it
                // later (and differently depending on if we're 'regular' or 'reversed')
-               // we staticly decide witch message is appropriate.
-
-               if constexpr( is_outbound_v)
-                  common::communication::ipc::inbound::device().push( 
-                     message::outbound::connection::Lost{ lost( state, descriptor)});
-               else
-                  common::communication::ipc::inbound::device().push( 
-                     message::inbound::connection::Lost{ lost( state, descriptor)});
+               common::communication::ipc::inbound::device().push( lost( state, descriptor));
             }
          }
       } // detail::handle::communication

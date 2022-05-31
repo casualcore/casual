@@ -389,8 +389,13 @@ namespace casual
                            {
                               // connection is 'idle', we just 'loose' the connection
                               handle::connection::lost( state, descriptor);
+
+                              // we return false to tell the dispatch not to try consume any more messages on
+                              // this connection
+                              return false;
                            }
                         }
+                        return true;
                      };
                   }
                   
@@ -734,7 +739,7 @@ namespace casual
             auto pending = state.pending.requests.consume( algorithm::transform( lost, []( auto& lost){ return lost.correlation;}));
             
             // discard service lookup
-            algorithm::for_each( pending.services, []( auto& call)
+            algorithm::for_each( pending.services, [ &state]( auto& call)
             {
                common::message::service::lookup::discard::Request request{ process::handle()};
                request.correlation = call.correlation;
@@ -742,7 +747,7 @@ namespace casual
                // we don't need the reply
                request.reply = false;
 
-               ipc::flush::optional::send( ipc::manager::service(), request);
+               state.multiplex.send( ipc::manager::service(), request);
             });
 
             algorithm::container::trim( state.pending.disconnects, algorithm::remove( state.pending.disconnects, descriptor));

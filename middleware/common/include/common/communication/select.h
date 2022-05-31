@@ -96,6 +96,14 @@ namespace casual
          directive::Set read;
          directive::Set write;
 
+         //! removes `descriptor` from _read_ and _write_
+         template< typename D>
+         void remove( D&& descriptors) noexcept 
+         { 
+            read.remove( descriptors);
+            write.remove( descriptors);
+         }
+
          //! @returns the highest value descriptor in the `Directive`, 'nil' descriptor if empty.
          inline auto highest() const noexcept { return std::max( read.highest(), write.highest());}
 

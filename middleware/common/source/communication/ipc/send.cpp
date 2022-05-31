@@ -95,7 +95,7 @@ namespace casual
          {
             log::line( log::category::error, exception::capture(), " failed to send to destination: ", m_destination, " - action: invoke callback (if any) and discard for all pending messages to the destination");
 
-            auto invoke_callback = [ &destination = m_destination.ipc()]( auto& message)
+            auto invoke_callback = [ &destination = m_destination.ipc()]( auto& message) noexcept
             {
                try
                {
