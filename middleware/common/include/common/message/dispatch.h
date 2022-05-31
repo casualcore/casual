@@ -85,22 +85,24 @@ namespace casual
 
       private:
 
-         auto dispatch( complete_type& complete) -> std::decay_t< decltype( complete.correlation())>
+         strong::correlation::id dispatch( complete_type& complete)
          {
             if( ! complete)
                return {};
 
             if( auto found = algorithm::find( m_handlers, complete.type()))
             {
-               found->second( complete);
-               return complete.correlation();
+               if( found->second( complete))
+                  return complete.correlation();
+               else
+                  return {};
             }
 
             log::line( log::category::error, code::casual::internal_unexpected_value, " message type: ", complete.type(), " not recognized - action: discard");
             return {};
          }
 
-         using concept_t = common::unique_function< void( complete_type&)>;
+         using concept_t = common::unique_function< bool( complete_type&)>;
 
 
          template< typename H>
@@ -111,9 +113,8 @@ namespace casual
 
             static_assert( traits_type::arguments() == 1, "handlers has to have this signature: void( <some message>), can be declared const");
             static_assert(
-                  std::is_same< typename traits_type::result_type, void>::value
-                  || std::is_same< typename traits_type::result_type, bool>::value, 
-                  "handlers has to have this signature: void|bool( <some message>), can be declared const");
+               traits::is::any_v< typename traits_type::result_type, void, bool>,
+               "handlers has to have this signature: void|bool( <some message>), can be declared const");
 
             using message_type = std::decay_t< typename traits_type::template argument< 0>::type>;
 
@@ -123,28 +124,38 @@ namespace casual
 
             model( handler_type&& handler) : m_handler( std::move( handler)) {}
 
-            void operator() ( complete_type& complete)
+            bool operator() ( complete_type& complete)
             {
                message_type message;
 
                serialize::native::complete( complete, message);
                execution::id( message.execution);
-
-               model::invoke( m_handler, message, traits::priority::tag< 1>{});
+               
+               // if the handler returns bool, we return it
+               if constexpr( std::is_same_v< typename traits_type::result_type, bool>)
+               {
+                  return model::invoke( m_handler, message, traits::priority::tag< 1>{});
+               }
+               else
+               {
+                  // if not, we return true.
+                  model::invoke( m_handler, message, traits::priority::tag< 1>{});
+                  return true;
+               }
             }
 
          private:
 
             template< typename M>
-            static auto invoke( handler_type& handler, M& message, traits::priority::tag< 1>) -> decltype( void( handler( std::move( message))))
+            static auto invoke( handler_type& handler, M& message, traits::priority::tag< 1>) -> decltype( handler( std::move( message)))
             {
-               handler( std::move( message));
+               return handler( std::move( message));
             }
 
             template< typename M>
-            static auto invoke( handler_type& handler, M& message, traits::priority::tag< 0>) -> decltype( void( handler( message)))
+            static auto invoke( handler_type& handler, M& message, traits::priority::tag< 0>) -> decltype( handler( message))
             {
-               handler( message);
+               return handler( message);
             }
 
             handler_type m_handler;
