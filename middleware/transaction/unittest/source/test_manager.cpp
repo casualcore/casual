@@ -1634,6 +1634,262 @@ domain:
          // unittest only...
          common::transaction::context().clear();
       }
+
+      TEST( transaction_manager, two_resources__send_prepare_request__one_external_resource__send_one_phase_commit__expect_ok)
+      {
+         common::unittest::Trace trace;
+
+         auto domain = local::domain( local::configuration::system, local::configuration::base);
+
+         local::involved::Process rm1;
+         local::involved::Process rm2;
+
+         auto trid = common::transaction::id::create( process::handle());
+         auto branch = common::transaction::id::branch( trid);
+
+         // involve resource 1 and 2, resource 2 is an outbound
+         {
+            common::message::transaction::resource::external::Involved message;
+            
+            message.process = rm1.process;
+            message.trid = trid;
+            local::send::tm( message);
+
+            message.process = rm2.process;
+            message.trid = branch;
+            local::send::tm( message);
+         }
+
+         // act as "user" and send commit::Request to transaction manager
+         {
+            common::message::transaction::commit::Request message;
+            message.trid = trid;
+            message.process = process::handle();
+
+            local::send::tm( message);
+         }
+
+         // resource 1 receives a resource::prepare::Request from transaction manager
+         // and sends a resource::prepare::Reply xa::ok back to transaction manager
+         {
+            common::message::transaction::resource::prepare::Request message;
+            communication::device::blocking::receive( rm1.inbound, message);
+
+            auto reply = common::message::reverse::type( message);
+
+            reply.resource = message.resource;
+            reply.state = common::code::xa::ok;
+            reply.trid = message.trid;
+
+            local::send::tm( reply);
+         }
+
+         {
+            // resource 2 (outbound) receives a resource::prepare::Request from transaction manager
+            common::message::transaction::resource::prepare::Request message;
+            communication::device::blocking::receive( rm2.inbound, message);
+
+            // act as another domains transaction manager that got a resource::prepare::Request
+            // and send a resource::commit::Request (one-phase-optimization) to the first transaction manager
+            {
+               common::message::transaction::resource::commit::Request message;
+               message.trid = branch;
+               message.process = process::handle();
+               message.flags = common::flag::xa::Flag::one_phase;
+
+               local::send::tm( message);
+            }
+
+            // receive resource::commit::Reply from transaction manager
+            {
+               auto message = communication::ipc::receive< common::message::transaction::resource::commit::Reply>();
+
+               EXPECT_TRUE( message.trid == branch);
+               EXPECT_TRUE( message.state == decltype( message.state)::read_only);
+            }
+
+            // send resource::prepare::Reply xa::ok from resource 2 (outbound) to transaction manager
+            auto reply = common::message::reverse::type( message);
+
+            reply.resource = message.resource;
+            reply.state = common::code::xa::ok;
+            reply.trid = message.trid;
+
+            local::send::tm( reply);
+         }
+
+         // commit::Reply from transaction manager
+         {
+            auto message = communication::ipc::receive< common::message::transaction::commit::Reply>();
+
+            EXPECT_TRUE( message.trid == trid) << CASUAL_NAMED_VALUE( message);
+            EXPECT_TRUE( message.state == decltype( message.state)::ok) << CASUAL_NAMED_VALUE( message.state);
+         }
+
+      }
+
+      TEST( transaction_manager, two_resources__send_prepare_request__one_external_resource__send_prepare_request__expect_ok)
+      {
+         common::unittest::Trace trace;
+
+         auto domain = local::domain( local::configuration::system, local::configuration::base);
+
+         local::involved::Process rm1;
+         local::involved::Process rm2;
+
+         auto trid = common::transaction::id::create( process::handle());
+         auto branch = common::transaction::id::branch( trid);
+
+         // involve resource 1 and 2, resource 2 is an outbound
+         {
+            common::message::transaction::resource::external::Involved message;
+            
+            message.process = rm1.process;
+            message.trid = trid;
+            local::send::tm( message);
+
+            message.process = rm2.process;
+            message.trid = branch;
+            local::send::tm( message);
+         }
+
+         // act as "user" and send commit::Request to transaction manager
+         {
+            common::message::transaction::commit::Request message;
+            message.trid = trid;
+            message.process = process::handle();
+
+            local::send::tm( message);
+         }
+
+         // resource 1 receives a resource::prepare::Request from transaction manager
+         // and sends a resource::prepare::Reply xa::ok back to transaction manager
+         {
+            common::message::transaction::resource::prepare::Request message;
+            communication::device::blocking::receive( rm1.inbound, message);
+
+            auto reply = common::message::reverse::type( message);
+
+            reply.resource = message.resource;
+            reply.state = common::code::xa::ok;
+            reply.trid = message.trid;
+
+            local::send::tm( reply);
+         }
+
+         {
+            // resource 2 (outbound) receives a resource::prepare::Request from transaction manager
+            common::message::transaction::resource::prepare::Request message;
+            communication::device::blocking::receive( rm2.inbound, message);
+
+            // act as another domains transaction manager that got a resource::prepare::Request
+            // and send a resource::prepare::Request to the first transaction manager
+            {
+               common::message::transaction::resource::prepare::Request message;
+               message.trid = branch;
+               message.process = process::handle();
+
+               local::send::tm( message);
+            }
+
+            // receive resource::prepare::Reply from transaction manager
+            {
+               auto message = communication::ipc::receive< common::message::transaction::resource::prepare::Reply>();
+
+               EXPECT_TRUE( message.trid == branch);
+               EXPECT_TRUE( message.state == decltype( message.state)::read_only);
+            }
+
+            // send resource::prepare::Reply xa::ok from resource 2 (outbound) to transaction manager
+            auto reply = common::message::reverse::type( message);
+
+            reply.resource = message.resource;
+            reply.state = common::code::xa::ok;
+            reply.trid = message.trid;
+
+            local::send::tm( reply);
+         }
+
+         // commit::Reply from transaction manager
+         {
+            auto message = communication::ipc::receive< common::message::transaction::commit::Reply>();
+
+            EXPECT_TRUE( message.trid == trid) << CASUAL_NAMED_VALUE( message);
+            EXPECT_TRUE( message.state == decltype( message.state)::ok) << CASUAL_NAMED_VALUE( message.state);
+         }
+
+      }
+
+      TEST( transaction_manager, one_resources__send_commit_request__one_external_resource__send_prepare_request__expect_ok)
+      {
+         common::unittest::Trace trace;
+
+         auto domain = local::domain( local::configuration::system, local::configuration::base);
+
+         local::involved::Process rm1;
+
+         auto trid = common::transaction::id::create( process::handle());
+
+         // involve resource 1, resource 1 is an outbound
+         {
+            common::message::transaction::resource::external::Involved message;
+            
+            message.process = rm1.process;
+            message.trid = trid;
+            local::send::tm( message);
+         }
+
+         // act as "user" and send commit::Request to transaction manager
+         {
+            common::message::transaction::commit::Request message;
+            message.trid = trid;
+            message.process = process::handle();
+
+            local::send::tm( message);
+         }
+
+         {
+            // resource 1 (outbound) receives a resource::commit::Request from transaction manager
+            common::message::transaction::resource::commit::Request message;
+            communication::device::blocking::receive( rm1.inbound, message);
+
+            // act as another domains transaction manager that got a resource::prepare::Request
+            // and send a resource::prepare::Request to the first transaction manager
+            {
+               common::message::transaction::resource::prepare::Request message;
+               message.trid = trid;
+               message.process = process::handle();
+
+               local::send::tm( message);
+            }
+
+            // receive resource::prepare::Reply from transaction manager
+            {
+               auto message = communication::ipc::receive< common::message::transaction::resource::prepare::Reply>();
+
+               EXPECT_TRUE( message.trid == trid);
+               EXPECT_TRUE( message.state == decltype( message.state)::read_only);
+            }
+
+            // send resource::commit::Reply xa::ok from resource 1 (outbound) to transaction manager
+            auto reply = common::message::reverse::type( message);
+
+            reply.resource = message.resource;
+            reply.state = common::code::xa::ok;
+            reply.trid = message.trid;
+
+            local::send::tm( reply);
+         }
+
+         // commit::Reply from transaction manager
+         {
+            auto message = communication::ipc::receive< common::message::transaction::commit::Reply>();
+
+            EXPECT_TRUE( message.trid == trid) << CASUAL_NAMED_VALUE( message);
+            EXPECT_TRUE( message.state == decltype( message.state)::ok) << CASUAL_NAMED_VALUE( message.state);
+         }
+
+      }
    
    } // transaction
 

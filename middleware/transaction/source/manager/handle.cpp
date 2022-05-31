@@ -840,9 +840,9 @@ namespace casual
                                     return;
                                  }
 
-                                 if( transaction->stage > decltype( transaction->stage())::commit)
+                                 if( transaction->stage > decltype( transaction->stage())::involved)
                                  {
-                                    common::log::line( log, "transaction stage is passed the _commit_ - stage: ", transaction->stage, " - action: reply with read-only");
+                                    common::log::line( log, "transaction stage is passed the _involved_ - stage: ", transaction->stage, " - action: reply with read-only");
                                     detail::send::read::only::reply( message);
                                     return;
                                  }
