@@ -44,7 +44,7 @@ namespace casual
                   return argument::Option{
                      argument::option::one::many( std::move( invoke)),
                      { "--validate"},
-                     R"(validates configuration from suplied glob patterns
+                     R"(validates configuration from supplied glob patterns
 
 On success exit with 0, on error not 0, and message printed to stderr)"
                   };
@@ -64,9 +64,9 @@ On success exit with 0, on error not 0, and message printed to stderr)"
                   return argument::Option{
                      argument::option::one::many( std::move( invoke)),
                      { "--normalize"},
-                     R"(normalizes the suplied configuration glob pattern to stdout
+                     R"(normalizes the supplied configuration glob pattern to stdout
 
-The format is default yaml, but could be suplied via the --format option)"
+The format is default yaml, but could be supplied via the --format option)"
                   };
                }
 

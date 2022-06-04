@@ -531,7 +531,7 @@ namespace casual
                };
                
             } // state
-         } // resverse
+         } // reverse
 
          namespace connection
          {
@@ -601,7 +601,7 @@ namespace casual
          struct type_traits< casual::gateway::message::inbound::reverse::state::Request> : detail::type< casual::gateway::message::inbound::reverse::state::Reply> {};
       } // message::reverse
 
-      namespace serialize::customize::composit
+      namespace serialize::customize::composite
       {
 
 //! customization macro to make it easier to define customization points for all interdomain messages
@@ -821,7 +821,7 @@ template< typename A> struct Value< type, A, std::enable_if_t< common::serialize
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( message);
          })
          
-      } // serialize::customize::composit
+      } // serialize::customize::composite
    } // common
 } // casual
 

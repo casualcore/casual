@@ -135,7 +135,7 @@ namespace casual
       //! Depending on the connect outcome:
       //!   * Socket -> success and we start the logical connection phase (unlikely)
       //!   * _pending connect_ -> the connection phase has started, we multiplex on when it's done
-      //!   * recoverable error -> we keep the connection in prosepcts and try later
+      //!   * recoverable error -> we keep the connection in prospects and try later
       //!   * non-recoverable error -> we move it to failed and don't try again.
       //!
       //! used by outbound and reverse inbound 
@@ -145,7 +145,7 @@ namespace casual
          Trace trace{ "gateway::group::tcp::connect::attempt"};
          using namespace common;
 
-         // we don't want to be interupted during the connect phase.
+         // we don't want to be interrupted during the connect phase.
          common::signal::thread::scope::Block block;
 
          auto try_connect = [ &state]( auto& prospect)

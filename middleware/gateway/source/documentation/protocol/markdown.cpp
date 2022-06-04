@@ -26,7 +26,7 @@
 
 namespace casual
 {
-   namespace common::serialize::customize::composit
+   namespace common::serialize::customize::composite
    {
       //! just a local marshaler to help format Header...
       template< typename A>
@@ -41,7 +41,7 @@ namespace casual
          }
       };
 
-   } // common::serialize::customize::composit
+   } // common::serialize::customize::composite
 
    namespace gateway::documentation::protocol
    {
@@ -473,7 +473,7 @@ data is part of an element in a container. You should read it as `container.elem
 ## sizes 
 
 `casual` it self does not impose any size restriction on anything. Whatever the platform supports,`casual` is fine with.
-There are however restrictions from the `xatmi` specifcation, regarding service names and such.
+There are however restrictions from the `xatmi` specification, regarding service names and such.
 
 `casual` will not apply restriction on sizes unless some specification dictates it, or we got some
 sort of proof that a size limitation is needed.
@@ -869,7 +869,7 @@ Represent enqueue request.
                         { "message.properties.data", "data of message properties"},
                         { "message.reply.size", "length of the reply queue"},
                         { "message.reply.data", "data of reply queue"},
-                        { "message.available", "when the message is available for dequeue (us since epoc)"},
+                        { "message.available", "when the message is available for dequeue (us since epoch)"},
                         { "message.type.size", "length of the type string"},
                         { "message.type.data", "data of the type string"},
                         { "message.payload.size", "size of the payload"},
@@ -949,13 +949,13 @@ Represent dequeue reply.
                         { "message.element.properties.data", "data of message properties"},
                         { "message.element.reply.size", "length of the reply queue"},
                         { "message.element.reply.data", "data of reply queue"},
-                        { "message.element.available", "when the message was available for dequeue (us since epoc)"},
+                        { "message.element.available", "when the message was available for dequeue (us since epoch)"},
                         { "message.element.type.size", "length of the type string"},
                         { "message.element.type.data", "data of the type string"},
                         { "message.element.payload.size", "size of the payload"},
                         { "message.element.payload.data", "data of the payload"},
                         { "message.element.redelivered", "how many times the message has been redelivered"},
-                        { "message.element.timestamp", "when the message was enqueued (us since epoc)"},
+                        { "message.element.timestamp", "when the message was enqueued (us since epoch)"},
                      });
             }
          }

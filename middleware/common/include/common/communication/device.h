@@ -511,7 +511,7 @@ namespace casual
                      // Let connector take a crack at resolving this problem, if implemented...
                      reconnect( Base::connector(), traits::priority::tag< 1>{});
                   }
-                  else if( error.code() == code::casual::interupted)
+                  else if( error.code() == code::casual::interrupted)
                      signal::dispatch();
                   else
                      throw;

@@ -489,7 +489,7 @@ namespace casual
          } // <unnamed>
       } // local
 
-      TYPED_TEST( common_serialize_write_read, unnamed_type_composit)
+      TYPED_TEST( common_serialize_write_read, unnamed_type_composite)
       {
          unittest::Trace trace;
 
@@ -521,7 +521,7 @@ namespace casual
          ) << CASUAL_NAMED_VALUE( value);
       }
 
-      TYPED_TEST( common_serialize_write_read, unnamed_type_vector_composit)
+      TYPED_TEST( common_serialize_write_read, unnamed_type_vector_composite)
       {
          unittest::Trace trace;
 

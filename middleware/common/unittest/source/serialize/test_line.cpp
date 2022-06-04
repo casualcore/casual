@@ -150,7 +150,7 @@ namespace casual
             EXPECT_TRUE( archive.consume< std::string>() == R"(tuple: [ 1, foo, true])") << CASUAL_NAMED_VALUE( tuple);
          }
 
-         TEST( casual_serialize_line, write_composit_with_path)
+         TEST( casual_serialize_line, write_composite_with_path)
          {
             common::unittest::Trace trace;
 
@@ -163,7 +163,7 @@ namespace casual
             EXPECT_TRUE( out.str() == R"(value: { id: 42, path: "/a/b/c/d.txt"})") << "out: " << out.str();
          }
 
-         TEST( casual_serialize_line, write_composit_with_code)
+         TEST( casual_serialize_line, write_composite_with_code)
          {
             common::unittest::Trace trace;
 

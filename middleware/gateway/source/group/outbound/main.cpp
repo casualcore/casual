@@ -101,7 +101,7 @@ namespace casual
                            Trace trace{ "gateway::group::outbound::local::internal::handle::configuration::update::request"};
                            log::line( verbose::log, "message: ", message);
 
-                           // TODO maintainece - make sure we can handle runtime updates...
+                           // TODO maintainence - make sure we can handle runtime updates...
 
                            state.alias = message.model.alias;
                            state.order = message.order;

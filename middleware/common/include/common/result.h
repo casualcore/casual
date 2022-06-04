@@ -41,7 +41,7 @@ namespace casual
 
          //! checks posix result, if -1 or nullptr 
          //! if errno is one of the provided codes, `alternative` is returned. 
-         /// if not, errno is transformed  to `code::casual` and throwned
+         /// if not, errno is transformed  to `code::casual` and thrown
          template< typename R, typename A, typename... Codes>
          auto alternative( R result, A alternative, Codes&&... codes) -> std::common_type_t< R, A>
          {

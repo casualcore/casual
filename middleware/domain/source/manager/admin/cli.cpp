@@ -541,7 +541,7 @@ namespace casual
 
                      constexpr auto description = R"(set an environment variable for explicit aliases
                      
-if 0 aliases are provided, the environment virable will be set 
+if 0 aliases are provided, the environment variable will be set 
 for all servers and executables 
                      )";
 

@@ -298,7 +298,7 @@ namespace casual
             connection::Bound bound{};
             platform::time::point::type created{};
          
-            //@ deprecared
+            //@ deprecated
             struct
             {
                std::string note = "NOT USED";

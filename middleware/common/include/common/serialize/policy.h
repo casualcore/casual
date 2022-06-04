@@ -77,7 +77,7 @@ namespace casual
             {
                // Note:  this is the only place where we actually create a canonical name. 
 
-               // if the stack is empty, we 'fake' a composit, to have a 'logical' placeholder for the attribute
+               // if the stack is empty, we 'fake' a composite, to have a 'logical' placeholder for the attribute
                if( m_stack.empty())
                      m_stack.emplace_back( "{}");
 
@@ -98,18 +98,18 @@ namespace casual
             template< typename T>
             inline void container_start( T&& name)
             {
-               container_composit_start( std::forward< T>( name), "[]");
+               container_composite_start( std::forward< T>( name), "[]");
             }
 
-            inline void container_end() { container_composit_end();}
+            inline void container_end() { container_composite_end();}
 
             template< typename T>
             inline void composite_start( T&& name)
             {
-               container_composit_start( std::forward< T>( name), "{}");
+               container_composite_start( std::forward< T>( name), "{}");
             }
 
-            inline void composite_end() { container_composit_end();}
+            inline void composite_end() { container_composite_end();}
 
          private:
 
@@ -126,12 +126,12 @@ namespace casual
             }
 
             template< typename T>
-            inline void container_composit_start( T&& name, std::string_view postfix)
+            inline void container_composite_start( T&& name, std::string_view postfix)
             {
                auto view = Representation::view( name);
                if( ! view.empty())
                {
-                  // if the stack is empty, we 'fake' a composit, to have a 'logical' placeholder for the name
+                  // if the stack is empty, we 'fake' a composite, to have a 'logical' placeholder for the name
                   if( m_stack.empty())
                      m_stack.emplace_back( "{}");
 
@@ -141,7 +141,7 @@ namespace casual
                   m_stack.emplace_back( postfix);
             }
 
-            inline void container_composit_end()
+            inline void container_composite_end()
             {
                assert( ! m_stack.empty());
                m_stack.pop_back();

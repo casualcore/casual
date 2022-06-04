@@ -363,7 +363,7 @@ namespace casual
 
                         state.alias = message.model.alias;
 
-                        // TOOD maintenance we only update instances
+                        // TODO maintenance we only update instances
                         auto add_or_update = []( auto& source, auto& target, auto transform)
                         {
                            auto handle_source = [&]( auto& forward)

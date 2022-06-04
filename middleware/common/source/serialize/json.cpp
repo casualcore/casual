@@ -278,7 +278,7 @@ namespace casual
                            if( auto node = named_child( name))
                            {
                               // we push it to promote the node to 'current scope'. 
-                              // composit_end/container_end will pop it.
+                              // composite_end/container_end will pop it.
                               m_stack.push_back( node);
                               return m_stack.back();
                            }
@@ -313,7 +313,7 @@ namespace casual
                               check::read( node, &rapidjson::Value::IsString, &rapidjson::Value::GetString));
                            
                            if( range::size( binary) != range::size( value))
-                              code::raise::error( code::casual::invalid_node, "binary size missmatch - wanted: ", range::size( value), " got: ", range::size( binary));
+                              code::raise::error( code::casual::invalid_node, "binary size mismatch - wanted: ", range::size( value), " got: ", range::size( binary));
 
                            algorithm::copy( binary, std::begin( value));
                         }

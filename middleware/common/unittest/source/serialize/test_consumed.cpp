@@ -284,7 +284,7 @@ namespace casual
 
                   std::string name = "charlie";
                   long age = 42;
-                  Nested composit = { 423, 56, true};
+                  Nested composite= { 423, 56, true};
                   std::vector< Nested> nested = { { 43, 345, false}, { 6666, 232, true}};
 
                   std::vector< long> plain_sequence = { 3, 43, 4, 543, 5, 34, 345, 3};
@@ -292,7 +292,7 @@ namespace casual
                   CASUAL_CONST_CORRECT_SERIALIZE(
                      CASUAL_SERIALIZE( name);
                      CASUAL_SERIALIZE( age);
-                     CASUAL_SERIALIZE( composit);
+                     CASUAL_SERIALIZE( composite);
                      CASUAL_SERIALIZE( nested);
                      CASUAL_SERIALIZE( plain_sequence);
                   )

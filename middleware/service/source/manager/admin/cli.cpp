@@ -703,9 +703,9 @@ note: not all options has legend, use 'auto complete' to find out which legends 
                      {
                         auto state = admin::api::state();
 
-                        auto catetory_predicate = []( auto category){ return [=]( auto& service){ return service.category == category;};};
+                        auto category_predicate = []( auto category){ return [=]( auto& service){ return service.category == category;};};
 
-                        auto split = algorithm::partition( state.services, catetory_predicate( ".admin"));
+                        auto split = algorithm::partition( state.services, category_predicate( ".admin"));
                         auto admin = std::get< 0>( split);
                         auto services = std::get< 1>( split);
 
@@ -760,11 +760,11 @@ note: not all options has legend, use 'auto complete' to find out which legends 
                            { "service.manager.service.count", string::compose( services.size())},
                            { "service.manager.service.metric.invoked.count", string::compose( invoked_count( services))},
                            { "service.manager.service.metric.invoked.total", string::compose( invoked_total( services))},
-                           { "service.manager.service.metric.invoked.everage", string::compose( average( invoked_total( services), invoked_count( services)))},
+                           { "service.manager.service.metric.invoked.average", string::compose( average( invoked_total( services), invoked_count( services)))},
                            { "service.manager.service.metric.remote", string::compose( remote_count( services))},
                            { "service.manager.service.metric.pending.count", string::compose( pending_count( services))},
                            { "service.manager.service.metric.pending.total", string::compose( pending_total( services))},
-                           { "service.manager.service.metric.pending.everage", string::compose( average( pending_total( services), pending_count( services)))},
+                           { "service.manager.service.metric.pending.average", string::compose( average( pending_total( services), pending_count( services)))},
                         };
                      }
 

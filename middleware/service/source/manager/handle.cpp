@@ -216,11 +216,11 @@ namespace casual
                            Trace trace{ "service::manager::handle::local::event::process::detail::exit"};
                            log::line( verbose::log, "event: ", event);
 
-                           // we need to check if the dead process has anyone wating for a reply
+                           // we need to check if the dead process has anyone waiting for a reply
                            if( auto found = common::algorithm::find( state.instances.sequential, event.state.pid))
                            {
                               // if the callee (instance) is busy and the caller is not 'consumed' (due to a timeout and a 'timeout' reply has
-                              // allready been sent) we send error reply
+                              // already been sent) we send error reply
                               if( found->second.state() == decltype( found->second.state())::busy && found->second.caller())
                               {
                                  auto& instance = found->second;
@@ -610,8 +610,8 @@ namespace casual
                            Trace trace{ "service::manager::handle::local::process::prepare::shutdown"};
                            log::line( verbose::log, "message: ", message);
 
-                           // all requested processess need to be replied some way or another. We can split them
-                           // to several replies if we need to, which we do. All processses that we don't know and the ones 
+                           // all requested processes need to be replied some way or another. We can split them
+                           // to several replies if we need to, which we do. All processes that we don't know and the ones 
                            // with no current 'reservation' we can reply directly. 
                            // 'reserved' need to be done/unreserved before we can reply them.
 
@@ -875,7 +875,7 @@ namespace casual
 
                         if( auto found = common::algorithm::find_if( state.pending.lookups, has_pending))
                         {
-                           log::line( verbose::log, "found pendig: ", *found);
+                           log::line( verbose::log, "found pending: ", *found);
 
                            auto pending = algorithm::container::extract( state.pending.lookups, std::begin( found));
 

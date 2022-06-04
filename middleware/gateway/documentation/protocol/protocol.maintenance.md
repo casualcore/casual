@@ -31,7 +31,7 @@ data is part of an element in a container. You should read it as `container.elem
 ## sizes 
 
 `casual` it self does not impose any size restriction on anything. Whatever the platform supports,`casual` is fine with.
-There are however restrictions from the `xatmi` specifcation, regarding service names and such.
+There are however restrictions from the `xatmi` specification, regarding service names and such.
 
 `casual` will not apply restriction on sizes unless some specification dictates it, or we got some
 sort of proof that a size limitation is needed.
@@ -300,7 +300,7 @@ message.properties.size | uint64         |            8 | length of message prop
 message.properties.data | dynamic string |       [0..*] | data of message properties                                         
 message.reply.size      | uint64         |            8 | length of the reply queue                                          
 message.reply.data      | dynamic string |       [0..*] | data of reply queue                                                
-message.available       | uint64         |            8 | when the message is available for dequeue (us since epoc)          
+message.available       | uint64         |            8 | when the message is available for dequeue (us since epoch)         
 message.type.size       | uint64         |            8 | length of the type string                                          
 message.type.data       | dynamic string |       [0..*] | data of the type string                                            
 message.payload.size    | uint64         |            8 | size of the payload                                                
@@ -340,22 +340,22 @@ block                    | uint8          |            1 | dictates if this is a
 
 Represent dequeue reply.
 
-role name                       | network type   | network size | description                                               
-------------------------------- | -------------- | ------------ | ----------------------------------------------------------
-execution                       | (fixed) binary |           16 | uuid of the current execution context (breadcrumb)        
-message.size                    | uint64         |            8 | number of messages dequeued                               
-message.element.id              | (fixed) binary |           16 | id of the message                                         
-message.element.properties.size | uint64         |            8 | length of message properties                              
-message.element.properties.data | dynamic string |       [0..*] | data of message properties                                
-message.element.reply.size      | uint64         |            8 | length of the reply queue                                 
-message.element.reply.data      | dynamic string |       [0..*] | data of reply queue                                       
-message.element.available       | uint64         |            8 | when the message was available for dequeue (us since epoc)
-message.element.type.size       | uint64         |            8 | length of the type string                                 
-message.element.type.data       | dynamic string |       [0..*] | data of the type string                                   
-message.element.payload.size    | uint64         |            8 | size of the payload                                       
-message.element.payload.data    | dynamic binary |       [0..*] | data of the payload                                       
-message.element.redelivered     | uint64         |            8 | how many times the message has been redelivered           
-message.element.timestamp       | uint64         |            8 | when the message was enqueued (us since epoc)             
+role name                       | network type   | network size | description                                                
+------------------------------- | -------------- | ------------ | -----------------------------------------------------------
+execution                       | (fixed) binary |           16 | uuid of the current execution context (breadcrumb)         
+message.size                    | uint64         |            8 | number of messages dequeued                                
+message.element.id              | (fixed) binary |           16 | id of the message                                          
+message.element.properties.size | uint64         |            8 | length of message properties                               
+message.element.properties.data | dynamic string |       [0..*] | data of message properties                                 
+message.element.reply.size      | uint64         |            8 | length of the reply queue                                  
+message.element.reply.data      | dynamic string |       [0..*] | data of reply queue                                        
+message.element.available       | uint64         |            8 | when the message was available for dequeue (us since epoch)
+message.element.type.size       | uint64         |            8 | length of the type string                                  
+message.element.type.data       | dynamic string |       [0..*] | data of the type string                                    
+message.element.payload.size    | uint64         |            8 | size of the payload                                        
+message.element.payload.data    | dynamic binary |       [0..*] | data of the payload                                        
+message.element.redelivered     | uint64         |            8 | how many times the message has been redelivered            
+message.element.timestamp       | uint64         |            8 | when the message was enqueued (us since epoch)             
 
 
 ## conversation_connect_request - **#3210** - _[1.0, 1.1, 1.2]_

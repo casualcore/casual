@@ -182,7 +182,7 @@ namespace casual
          
       } // transaction
 
-      namespace serialize::customize::composit
+      namespace serialize::customize::composite
       {
          //! specialization for XID
          template< typename A>
@@ -202,7 +202,7 @@ namespace casual
             }
          };
 
-      } // serialize::customize::composit
+      } // serialize::customize::composite
 
    } // common
 } // casual

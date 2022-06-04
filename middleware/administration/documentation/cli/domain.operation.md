@@ -51,7 +51,7 @@ host# casual --help domain
       --set-environment [0..*]  (<variable>, <value>, [<alias>*]) [2..*]
             set an environment variable for explicit aliases
                                  
-            if 0 aliases are provided, the environment virable will be set 
+            if 0 aliases are provided, the environment variable will be set 
             for all servers and executables 
                                  
 
@@ -101,5 +101,8 @@ host# casual --help domain
 
       --state [0..1]  (json, yaml, xml, ini) [0..1]
             domain state (as provided format)
+
+      --log-reopen [0..1]
+            reopen casual.log by sending SIGHUP to all servers, and outputs all running executables
 
 ```

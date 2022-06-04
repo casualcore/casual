@@ -107,7 +107,7 @@ namespace casual
                         code::raise::error( code::casual::communication_unavailable, "ipc - errno:", code);
 
                      default:
-                        // will allways throw
+                        // will always throw
                         code::raise::error( code::casual::internal_unexpected_value, "ipc - errno: ", code);
                   }
                }

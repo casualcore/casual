@@ -269,7 +269,7 @@ namespace casual
 
          state.runlevel = state::Runlevel::shutdown;
 
-         // abort all abortble running or pending task
+         // abort all abortable running or pending task
          state.tasks.abort( state);
 
          // prepare scaling to 0
@@ -484,14 +484,14 @@ namespace casual
                         Trace trace{ "domain::manager::handle::manager::shutdown"};
                         log::line( verbose::log, "message: ", message);
 
-                        // register event subscripion for caller
+                        // register event subscription for caller
                         {
-                           common::message::event::subscription::Begin subscripton{ message.process};
-                           subscripton.types = { 
+                           common::message::event::subscription::Begin subscription{ message.process};
+                           subscription.types = { 
                               common::message::event::Task::type(),
                               common::message::event::Error::type()
                            };
-                           state.event.subscription( subscripton);
+                           state.event.subscription( subscription);
                         }
 
                         auto reply = common::message::reverse::type( message);
@@ -603,12 +603,12 @@ namespace casual
                            else
                               log::line( log::category::information, "process exited: ", message.state);
 
-                           auto [ server, executabe] = state.remove( message.state.pid);
+                           auto [ server, executable] = state.remove( message.state.pid);
 
                            if( server)
                               handle::scale::instances( state, *server);
-                           if( executabe)
-                              handle::scale::instances( state, *executabe);
+                           if( executable)
+                              handle::scale::instances( state, *executable);
 
                            // dispatch to tasks
                            state.tasks.event( state, message);
@@ -832,7 +832,7 @@ namespace casual
                      }
 
                      //! @returns true if it's a singleton process that tries to connect and this function takes
-                     //! responsibility for all the connnetion actions
+                     //! responsibility for all the connection actions
                      bool connect( State& state, const common::message::domain::process::connect::Request& message)
                      {
                         Trace trace{ "domain::manager::handle::local::process::detail::singleton::connect"};
@@ -925,7 +925,7 @@ namespace casual
 
                      detail::connect( state, message);
                      
-                     // alllow the server to start.
+                     // allow the server to start.
                      detail::send::reply( state, Directive::approved, message);
                   };
                }

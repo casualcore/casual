@@ -42,7 +42,7 @@ parent    | string  | name of the parent service, if any.
 pid       | integer | process id of the invoked instance 
 execution | uuid    | unique _execution id_, like _breadcrumbs_ 
 trid      | xid     | transaction id
-start     | integer | when the service was invoked, `us` since epoc.
+start     | integer | when the service was invoked, `us` since epoch.
 end       | integer | when the service was done, `us` since epoc
 code      | string  | outcoume of the service call `OK` if ok, otherwise the reported error from the service
 

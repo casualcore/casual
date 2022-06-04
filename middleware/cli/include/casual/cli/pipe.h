@@ -87,7 +87,7 @@ namespace casual
             template< typename M>
             void message( const M& message)
             {
-               common::log::line( verbose::log, "cli::pipe::discare::message: ", message);
+               common::log::line( verbose::log, "cli::pipe::discard::message: ", message);
             }
 
             namespace handle
@@ -172,7 +172,7 @@ namespace casual
                   return Association{ cli::message::transaction::directive::single(), {}};
                }
 
-               inline auto compund()
+               inline auto compound()
                {
                   return Association{ cli::message::transaction::directive::compound(), {}};
                }

@@ -23,7 +23,7 @@ host# casual --help service
       --list-admin-services [0..1]
             list casual administration services
 
-      --legend [0..1]  (list-admin-services, list-service) [1]
+      --legend [0..1]  (list-admin-services, list-services) [1]
             the legend for the supplied option
             
             Documentation and description for abbreviations and acronyms used as columns in output

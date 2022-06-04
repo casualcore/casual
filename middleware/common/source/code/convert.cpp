@@ -73,7 +73,7 @@ namespace casual
                      
                      case std::errc::no_such_process: return code::casual::domain_instance_unavailable;
                      
-                     case std::errc::interrupted:        return code::casual::interupted;
+                     case std::errc::interrupted:        return code::casual::interrupted;
 
                      default: 
                        stream::write( log::debug, "no explict conversion for ", code, "(", cast::underlying( code), ") - using: ", code::casual::internal_unexpected_value, '\n'); 

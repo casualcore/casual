@@ -466,19 +466,19 @@ namespace casual
    count:
       number of messages on the queue
    size:
-      the current size of the queue, aggregated message sizies
+      the current size of the queue, aggregated message sizes
    avg:
-      avarage message size in the queue
+      average message size in the queue
    EQ: 
-      enqueued - total number of successfully enqueued messages on the queue (committet), over time.
+      enqueued - total number of successfully enqueued messages on the queue (committed), over time.
       note: this also include moved and restored messages.
    DQ: 
-      dequeued - total number of successfully dequeued messages on the queue (committet), over time. 
+      dequeued - total number of successfully dequeued messages on the queue (comitted), over time. 
       note: this also includes when a message is moved to an error queue if a retry-count is reached.   
    UC:
       number of currently uncommitted messages.
    last:
-      the timetamp of the newest message on the queue, or has been on the queue if the queue is empty.
+      the timestamp of the newest message on the queue, or has been on the queue if the queue is empty.
 )";
 
                constexpr auto messages =  R"(legend: list messages 
@@ -486,9 +486,9 @@ namespace casual
       the id of the message
    S:
       the state of the message
-         E: enqueued - not visable until commit
-         C: committed - visable
-         D: dequeued - not visable, removed on commit, back to state 'committed' if rolled back
+         E: enqueued - not visible until commit
+         C: committed - visible
+         D: dequeued - not visible, removed on commit, back to state 'committed' if rolled back
    size:
       the size of the message
    trid:

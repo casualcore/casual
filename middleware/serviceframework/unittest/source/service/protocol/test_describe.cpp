@@ -18,7 +18,7 @@ namespace casual
 {
    namespace serviceframework
    {
-      TEST( serviceframework_service_model, instansiate)
+      TEST( serviceframework_service_model, instantiate)
       {
          common::unittest::Trace trace;
 
@@ -104,7 +104,7 @@ namespace casual
 
             bool operator < ( const Composite& lhs, const Composite& rhs) { return true;}
 
-            namespace composit
+            namespace composite
             {
                void validate( const service::Model::Type& type)
                {
@@ -121,7 +121,7 @@ namespace casual
                   EXPECT_TRUE( type.attribues.at( 4).category == service::model::type::Category::floatingpoint);
                }
 
-            } // composit
+            } // composite
 
          } // <unnamed>
       } // local
@@ -142,7 +142,7 @@ namespace casual
          EXPECT_TRUE( model.arguments.input.at( 0).role == "some_composite");
          EXPECT_TRUE( model.arguments.input.at( 0).category == service::model::type::Category::composite) << model.arguments.input.at( 0).category;
 
-         local::composit::validate( model.arguments.input.at( 0));
+         local::composite::validate( model.arguments.input.at( 0));
       }
 
       namespace local
@@ -188,7 +188,7 @@ namespace casual
 
             {
                auto& first = map.attribues.at( 0);
-               local::composit::validate( first);
+               local::composite::validate( first);
             }
 
             {
@@ -215,7 +215,7 @@ namespace casual
                   ASSERT_TRUE( some_composites.attribues.size() == 1) << CASUAL_NAMED_VALUE( some_composites);
 
 
-                  local::composit::validate( some_composites.attribues.at( 0));
+                  local::composite::validate( some_composites.attribues.at( 0));
                }
             }
 

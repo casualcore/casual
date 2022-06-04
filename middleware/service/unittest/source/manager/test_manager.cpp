@@ -228,7 +228,7 @@ domain:
 
 )");
 
-         // make sure the wanted differs (otherwise we're not testing anyting...)
+         // make sure the wanted differs (otherwise we're not testing anything...)
          ASSERT_TRUE( wanted.service != casual::configuration::model::transform( casual::domain::unittest::configuration::get()).service);
 
          // post the wanted model (in transformed user representation)

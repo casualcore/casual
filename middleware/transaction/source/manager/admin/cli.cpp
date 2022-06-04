@@ -285,7 +285,7 @@ namespace casual
                            },
                            complete,
                            { "--state"},
-                           R"("view current state in optional format")"
+                           R"(view current state in optional format)"
                         };
                      }
                   } // state
@@ -468,11 +468,11 @@ namespace casual
                            { "transaction.manager.resource.instance.count", string::compose( instance_count())},
                            { "transaction.manager.resource.metrics.resource.count", string::compose( metric_resource_count( state.resources))},
                            { "transaction.manager.resource.metrics.resource.total", string::compose( metric_resource_total( state.resources))},
-                           { "transaction.manager.resource.metrics.resource.avarage", 
+                           { "transaction.manager.resource.metrics.resource.average", 
                               string::compose( average( metric_resource_total( state.resources), metric_resource_count( state.resources)))},
                            { "transaction.manager.resource.metrics.roundtrip.count", string::compose( metric_roundtrip_count( state.resources))},
                            { "transaction.manager.resource.metrics.roundtrip.total", string::compose( metric_roundtrip_total( state.resources))},
-                           { "transaction.manager.resource.metrics.roundtrip.avarage", 
+                           { "transaction.manager.resource.metrics.roundtrip.average", 
                               string::compose( average( metric_roundtrip_total( state.resources), metric_roundtrip_count( state.resources)))},
 
                            { "transaction.manager.log.writes", string::compose( state.log.writes)},
@@ -784,7 +784,7 @@ hence, only one 'directive' can be in flight within a link in the casual-pipe.
                         auto option()
                         {
                            return argument::Option{
-                              begin::invoke( casual::cli::pipe::transaction::association::compund()),
+                              begin::invoke( casual::cli::pipe::transaction::association::compound()),
                               { "--compound"},
                               R"(creates a compound transaction directive 
 
@@ -923,8 +923,8 @@ hence, only one 'directive' can be in flight within a link in the casual-pipe.
                            { "--commit"},
                             R"(sends transaction finalize request to the 'owners' of upstream transactions
 
-* all commitable associated transaction will be sent for commit.
-* all NOT commitable associated transactions will be sent for rollback
+* all committable associated transaction will be sent for commit.
+* all NOT committable associated transactions will be sent for rollback
 * all transaction directives from upstream will be 'terminated', that is, notify the upstream 'owner' and not forward the directive
 * all 'forward' 'payloads' downstream will not have any transaction associated
 

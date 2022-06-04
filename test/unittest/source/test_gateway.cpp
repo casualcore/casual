@@ -409,7 +409,7 @@ domain:
          
       }
 
-      TEST( test_gateway, domain_A_to_B_C_D__D_to__E__expect_call_to_only_B_C___shutdown_B_C__exepct_call_to_D_forward_to_E)
+      TEST( test_gateway, domain_A_to_B_C_D__D_to__E__expect_call_to_only_B_C___shutdown_B_C__expect_call_to_D_forward_to_E)
       {
          common::unittest::Trace trace;
 
@@ -479,7 +479,7 @@ domain:
 
       }
 
-      TEST( test_gateway, domain_A_to_B__shutdown_B__boot_B__exepct_connection_to_B_again)
+      TEST( test_gateway, domain_A_to_B__shutdown_B__boot_B__expects_connection_to_B_again)
       {
          common::unittest::Trace trace;
 
@@ -525,7 +525,7 @@ domain:
 
       }
 
-      TEST( test_gateway, domain_A_to_B_reverse_connection_shutdown_A__boot_A__exepct_connection_to_B_again)
+      TEST( test_gateway, domain_A_to_B_reverse_connection_shutdown_A__boot_A__expect_connection_to_B_again)
       {
          common::unittest::Trace trace;
 

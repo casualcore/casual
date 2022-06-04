@@ -92,12 +92,12 @@ namespace casual
          //! connect a whitelisted process, that casual will "protect" more than not whitelisted.
          void connect();
 
-         //! @{ connect 'singelton' 'manager' to casual local domain
+         //! @{ connect 'singleton' 'manager' to casual local domain
          void connect( const instance::Identity& identity, const process::Handle& process);
          void connect( const instance::Identity& identity);
          //! @{
          
-         //! connect without _environemnt state_, usefull for 'singletons' that is not known to others. 
+         //! connect without _environemnt state_, useful for 'singletons' that is not known to others. 
          void connect( const Uuid& id);
          
       } // whitelist

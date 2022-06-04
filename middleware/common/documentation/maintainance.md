@@ -1,12 +1,12 @@
 
 # common 
 
-Some maintainance discussions regarding `common`
+Some maintenance discussions regarding `common`
 
 
 ## name
 
-`common` does not really say anyting. I can live with it, but it's not optimal.
+`common` does not really say anything. I can live with it, but it's not optimal.
 
 One way of thinking about it is to have `common` (or another name) to be a _holder_ for 
 _sub-components_ that are not a _real_ component, in a `casual` _component sense_. 

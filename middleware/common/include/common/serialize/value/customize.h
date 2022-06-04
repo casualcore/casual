@@ -22,7 +22,7 @@ namespace casual
          using value_t = customize::Value< common::traits::remove_cvref_t< T>, common::traits::remove_cvref_t< A>>;
       } // traits
 
-      namespace composit
+      namespace composite
       {
          //! customization point for serialization
          template< typename T, typename A, typename Enable = void> 
@@ -31,10 +31,10 @@ namespace casual
          namespace traits
          {
             template< typename T, typename A>
-            using value_t = composit::Value< common::traits::remove_cvref_t< T>, common::traits::remove_cvref_t< A>>;
+            using value_t = composite::Value< common::traits::remove_cvref_t< T>, common::traits::remove_cvref_t< A>>;
          } // traits
          
-      } // composit
+      } // composite
 
       namespace forward
       {
@@ -45,10 +45,10 @@ namespace casual
          namespace traits
          {
             template< typename T, typename A>
-            using value_t = composit::Value< common::traits::remove_cvref_t< T>, common::traits::remove_cvref_t< A>>;
+            using value_t = composite::Value< common::traits::remove_cvref_t< T>, common::traits::remove_cvref_t< A>>;
          } // traits
          
-      } // composit
+      } // forward
 
    } // common::serialize::customize
 } // casual

@@ -28,10 +28,10 @@ namespace casual
                   }
                   catch( ...)
                   {
-                     if( exception::capture().code() != code::casual::interupted)
+                     if( exception::capture().code() != code::casual::interrupted)
                         throw;
 
-                     log::line( verbose::log, "device interupted");
+                     log::line( verbose::log, "device interrupted");
                      signal::dispatch();
                   }
                }

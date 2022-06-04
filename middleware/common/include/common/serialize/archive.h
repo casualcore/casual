@@ -179,7 +179,7 @@ namespace casual
          inline void composite_end(  const char* name) { m_protocol->composite_end( name);}
 
 
-         //! restricted write, so we don't consume convertable types by mistake
+         //! restricted write, so we don't consume convertible types by mistake
          //! binary types, such as char[16] that easily converts to const std::string& 
          template< typename T>
          auto write( const T& value, const char* name)

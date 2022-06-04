@@ -37,7 +37,7 @@ namespace casual
                         case Enum::idle: return manager::admin::model::instance::Sequential::State::idle;
                         case Enum::busy: return manager::admin::model::instance::Sequential::State::busy;
                      }
-                     assert( ! "missmatch in enum transformation");
+                     assert( ! "mismatch in enum transformation");
                   };
 
                   result.state = transform_state( instance.state());

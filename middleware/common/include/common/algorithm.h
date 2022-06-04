@@ -554,7 +554,7 @@ namespace casual
             return for_each( range::make( std::begin( range), n), functor);
       }
 
-      //! applies `functor` on all occurencies, and call `interleave` between each
+      //! applies `functor` on all occurrences, and call `interleave` between each
       template< typename R, typename F, typename I>
       decltype( auto) for_each_interleave( R&& range, F&& functor, I&& interleave)
       {
@@ -679,7 +679,7 @@ namespace casual
          }
       } // detail
 
-      //! @returns true if `value` is found in `range` - false othervise
+      //! @returns true if `value` is found in `range` - false otherwise
       template< typename R, typename T>
       auto contains( R&& range, const T& value)
          -> decltype( detail::contains( std::forward< R>( range), value, traits::priority::tag< 2>{}))
@@ -734,7 +734,7 @@ namespace casual
          }
       } // detail
 
-      //! push_back `value` to `output` if it's not allready present
+      //! push_back `value` to `output` if it's not already present
       //! @return true if push_back
       //! @{
       template< typename T, typename O, typename P> 
@@ -850,7 +850,7 @@ namespace casual
             return std::make_tuple( range::make( std::begin( range), middle), range::make( middle, std::end( range)));
          }
 
-         //! @returns std::get< 0>( algorithm::statple::partition( range, predicate));
+         //! @returns std::get< 0>( algorithm::stable::partition( range, predicate));
          template< typename R, typename P>
          auto filter( R&& range, P predicate) -> traits::remove_cvref_t< decltype( std::get< 0>( partition( range, predicate)))>
          {

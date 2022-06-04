@@ -140,7 +140,7 @@ namespace casual
 
    }
 
-   struct Serializible
+   struct Serializable
    {
 
 
@@ -161,7 +161,7 @@ namespace casual
       auto writer = common::serialize::native::binary::writer();
 
       {
-         Serializible value;
+         Serializable value;
          value.someLong = 23;
          value.someString = "kdjlfskjf";
 
@@ -172,7 +172,7 @@ namespace casual
          auto buffer = writer.consume();
          auto reader = common::serialize::native::binary::reader( buffer);
 
-         Serializible value;
+         Serializable value;
          reader >> CASUAL_NAMED_VALUE( value);
 
          EXPECT_TRUE( value.someLong == 23);

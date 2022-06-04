@@ -36,7 +36,7 @@ namespace casual
 
          } // traits
 
-         namespace composit
+         namespace composite
          {
             //! customization point for serialization
             template< typename T, typename A, typename Enable = void> 
@@ -45,10 +45,10 @@ namespace casual
             namespace traits
             {
                template< typename T, typename A>
-               using value_t = composit::Value< common::traits::remove_cvref_t< T>, common::traits::remove_cvref_t< A>>;
+               using value_t = composite::Value< common::traits::remove_cvref_t< T>, common::traits::remove_cvref_t< A>>;
             } // traits
             
-         } // composit
+         } // composite
          //! @}
 
          namespace value
@@ -136,16 +136,16 @@ namespace casual
                // highest priority
                template< typename A, typename T>
                auto serialize( A& archive, T&& value, traits::priority::tag< 2>) -> 
-                  decltype( customize::composit::traits::value_t<T, A>::serialize( archive, std::forward< T>( value)))
+                  decltype( customize::composite::traits::value_t<T, A>::serialize( archive, std::forward< T>( value)))
                {
-                  customize::composit::traits::value_t<T, A>::serialize( archive, std::forward< T>( value));
+                  customize::composite::traits::value_t<T, A>::serialize( archive, std::forward< T>( value));
                }
                
                template< typename A, typename T>
                auto serialize( A& archive, T&& value, traits::priority::tag< 1>) -> 
-                  decltype( composit::traits::value_t<T, A>::serialize( archive, std::forward< T>( value)))
+                  decltype( composite::traits::value_t<T, A>::serialize( archive, std::forward< T>( value)))
                {
-                  composit::traits::value_t<T, A>::serialize( archive, std::forward< T>( value));
+                  composite::traits::value_t<T, A>::serialize( archive, std::forward< T>( value));
                }
 
                template< typename A, typename T>
@@ -187,7 +187,7 @@ namespace casual
                return detail::read( archive, std::forward< T>( value), name);
             }
 
-            //! take care of read that returns void -> and allways return true
+            //! take care of read that returns void -> and always return true
             template< typename A, typename T>
             auto read( A& archive, T&& value, const char* name) -> std::enable_if_t<
                ! std::is_same< 

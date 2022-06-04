@@ -45,7 +45,7 @@ namespace casual
                   //! This is conceptually tied to `File` below, but we can't 
                   //! keep it in that state, since this variable is set from a 
                   //! signal-handler, and we have no guaranties when it will be 
-                  //! invoked and set. We cant instansiate the File singleton just
+                  //! invoked and set. We cant instantiate the File singleton just
                   //! to set the state from within a signal-handler.
                   //! Hence, this has to be a 'global' outside `File`.
                   std::atomic< bool> reopen{ false};

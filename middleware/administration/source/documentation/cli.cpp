@@ -32,7 +32,7 @@ namespace casual
                template< typename H, typename F>
                void generate( 
                   const std::vector< std::string>& options, 
-                  const std::string& path,
+                  const std::filesystem::path& path,
                   H&& header,
                   F&& footer)
                {
@@ -40,7 +40,7 @@ namespace casual
                   terminal::output::directive().plain();
 
                   // make sure we create directories if not present
-                  common::directory::create( std::filesystem::path{ path}.parent_path());
+                  common::directory::create( path.parent_path());
                   std::ofstream out{ path};
                   header( out);
 
@@ -52,7 +52,7 @@ namespace casual
                   footer( out);
                }
 
-               void generate( const std::string& root)
+               void generate( const std::filesystem::path& root)
                {
                   auto footer = []( auto& out)
                   {
@@ -73,7 +73,7 @@ namespace casual
 
                      generate( 
                         { "--help", option}, 
-                        string::compose( root, "/cli/", option, ".operation.md"),
+                        root / "cli" / common::string::compose( option, ".operation.md"),
                         header,
                         footer);
                   };
@@ -101,7 +101,7 @@ namespace casual
 
                      generate( 
                         { "--help"}, 
-                        string::compose( root, "/cli/", "casual.operation.md"),
+                        root / "cli" / "casual.operation.md",
                         header,
                         footer);
                   }
@@ -111,7 +111,7 @@ namespace casual
                
                void main( int argc, char** argv)
                {
-                  std::string root;
+                  std::filesystem::path root;
 
                   argument::Parse{ "generate cli documentation",
                      argument::Option{ std::tie( root), { "--root"}, "root for the generated markdown files"}

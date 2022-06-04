@@ -33,7 +33,8 @@ configuration  ?                                          configuration utility 
 --block        ?  [true, false]                        1  set/unset blocking - if false return control to user as soon as possible (default: true)
 --verbose      ?  [true, false]                        1  verbose output (default: false)                                                         
 --porcelain    ?  [true, false]                        1  easy to parse output format (default: false)                                            
-internal       ?                                          internal casual stuff for trubleshoting etc...                                          
+internal       ?                                          internal casual stuff for troubleshooting etc...                                        
+--version      ?                                          display version information                                                             
 --help         ?  <value>                              *  use --help <option> to see further details                                              
 
 ```

@@ -169,7 +169,7 @@ valid directives:
                   };
                  
                   return common::argument::Group{
-                     [](){}, { "internal"}, "internal casual stuff for trubleshoting etc...",
+                     [](){}, { "internal"}, "internal casual stuff for troubleshooting etc...",
                      state_dump()
                   };
 

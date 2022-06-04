@@ -55,7 +55,7 @@ namespace casual
       {
          template< typename F, typename B> 
          auto guard( F&& callable, B&& fallback, traits::priority::tag< 1>) 
-            -> decltype( common::traits::convertable::type( callable(), std::forward< B>( fallback)))
+            -> decltype( common::traits::convertible::type( callable(), std::forward< B>( fallback)))
          {
             try 
             {
@@ -70,7 +70,7 @@ namespace casual
 
          template< typename F, typename B> 
          auto guard( F&& callable, B&& fallback, traits::priority::tag< 0>) 
-            -> decltype( common::traits::convertable::type( callable(), fallback()))
+            -> decltype( common::traits::convertible::type( callable(), fallback()))
          {
             try 
             {

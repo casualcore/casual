@@ -54,7 +54,7 @@ namespace casual
             && std::is_integral< Size>::value >* dummy = nullptr>
          explicit constexpr Range( convertible_iterator first, Size size) : m_first( first), m_last( first + size) {}
 
-         //! conversion from Range with convertable iterators
+         //! conversion from Range with convertible iterators
          template< typename convertible_iterator, std::enable_if_t< std::is_convertible< convertible_iterator, iterator>::value>* dummy = nullptr>
          constexpr Range( Range< convertible_iterator> range) :  m_first( std::begin( range)), m_last( std::end( range)) {}
          

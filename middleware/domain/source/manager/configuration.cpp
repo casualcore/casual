@@ -228,13 +228,13 @@ namespace casual
                {
                   std::vector< state::dependency::Group> groups;
 
-                  auto add_singleton = [&]( auto& id, std::string descripton)
+                  auto add_singleton = [&]( auto& id, std::string description)
                   {
                      if( auto handle = state.singleton( id))
                         if( auto server = state.server( handle.pid))
                         {
                            auto& group = groups.emplace_back();
-                           group.description = std::move( descripton);
+                           group.description = std::move( description);
                            group.servers.push_back( server->id);
                         }
                   };

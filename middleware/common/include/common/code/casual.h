@@ -21,7 +21,7 @@ namespace casual
          {
             //ok = 0,
             shutdown = 1,
-            interupted,
+            interrupted,
 
             invalid_configuration,
             invalid_document,

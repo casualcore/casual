@@ -15,8 +15,8 @@ make.LibraryPaths([
     make.optional_library_paths()
    )
 
-intall_lib = []
-intall_bin = []
+install_lib = []
+install_bin = []
 
 
 
@@ -30,12 +30,12 @@ lib_cli = make.LinkLibrary( 'bin/casual-cli',
     ])
 
 
-intall_lib.append( lib_cli)
+install_lib.append( lib_cli)
 
 
 
 # Install
-make.Install( intall_lib, dsl.paths().install + '/lib')
-make.Install( intall_bin, dsl.paths().install + '/bin')
+make.Install( install_lib, dsl.paths().install + '/lib')
+make.Install( install_bin, dsl.paths().install + '/bin')
 
 

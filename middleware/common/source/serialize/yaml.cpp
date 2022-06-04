@@ -231,7 +231,7 @@ namespace casual
                         if( auto node = current_map_node( name))
                         {
                            // we push it to promote the node to 'current scope'. 
-                           // composit_end/container_end will pop it.
+                           // composite_end/container_end will pop it.
                            m_stack.push_back( node);
                            return m_stack.back();
                         }

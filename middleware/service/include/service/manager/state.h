@@ -97,7 +97,7 @@ namespace casual
                bool service( const std::string& name) const;
 
                //! removes this instance from all services
-               //! @returns all associated service names that after the detach has no innstances (this instance was the last/only)
+               //! @returns all associated service names that after the detach has no instances (this instance was the last/only)
                std::vector< std::string> detach();
 
                void add( state::Service& service);
@@ -469,8 +469,8 @@ namespace casual
 
 
          using prepare_shutdown_result = std::tuple< std::vector< std::string>, std::vector< state::instance::Sequential>, std::vector< common::process::Handle>>;
-         //! removes and extract all instancees (deduced from `pid`) from all services
-         //! @returns a tuple of (origin) services with no instances - extracted sequential instancess - unknown processes
+         //! removes and extract all instances (deduced from `pid`) from all services
+         //! @returns a tuple of (origin) services with no instances - extracted sequential instances - unknown processes
          [[nodiscard]] prepare_shutdown_result prepare_shutdown( std::vector< common::process::Handle> processes);
 
          //! adds or "updates" service

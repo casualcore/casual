@@ -529,11 +529,11 @@ namespace casual
 
       //! should be called `common::type` but the name clashes on 
       //! 'common' is to severe.
-      namespace convertable
+      namespace convertible
       {
          template< typename... Ts>
          constexpr auto type( Ts&&... ts) -> std::common_type_t< Ts...>;
-      } // convertable
+      } // convertible
 
 
    } // common::traits

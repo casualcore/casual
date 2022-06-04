@@ -39,8 +39,8 @@ host# casual --help transaction
       --commit [0..1]
             sends transaction finalize request to the 'owners' of upstream transactions
             
-            * all commitable associated transaction will be sent for commit.
-            * all NOT commitable associated transactions will be sent for rollback
+            * all committable associated transaction will be sent for commit.
+            * all NOT committable associated transactions will be sent for rollback
             * all transaction directives from upstream will be 'terminated', that is, notify the upstream 'owner' and not forward the directive
             * all 'forward' 'payloads' downstream will not have any transaction associated
             

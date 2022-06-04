@@ -206,7 +206,7 @@ domain:
                   -  address: 127.0.0.1:7001
 )");
 
-         // make sure the wanted differs (otherwise we're not testing anyting...)
+         // make sure the wanted differs (otherwise we're not testing anything...)
          ASSERT_TRUE( wanted.gateway != casual::configuration::model::transform( casual::domain::unittest::configuration::get()).gateway);
 
          // post the wanted model (with transformed user representation)

@@ -352,9 +352,9 @@ extern "C"
       return local::wrap( local::message::attribute::reply::set, -1, local::message::descriptor::id{ message}, queue);
    }
 
-   int casual_queue_message_attribute_set_available( casual_message_descriptor_t message, long ms_since_epoc)
+   int casual_queue_message_attribute_set_available( casual_message_descriptor_t message, long ms_since_epoch)
    {
-      return local::wrap( local::message::attribute::available::set, -1, local::message::descriptor::id{ message}, std::chrono::milliseconds{ ms_since_epoc});
+      return local::wrap( local::message::attribute::available::set, -1, local::message::descriptor::id{ message}, std::chrono::milliseconds{ ms_since_epoch});
    }
 
    int casual_queue_message_set_buffer( casual_message_descriptor_t message, casual_buffer_t buffer)

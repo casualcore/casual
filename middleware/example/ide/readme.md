@@ -1,9 +1,13 @@
+# Ide project examples
 
-Ide project examples
-====================
+## vscode
 
-Copy your preferred ide-settings to the root of casual, and
-start up the project.
+Examples of vscode settings
+
+### user
+
+**settings.json** 
+Represent "global/user" settings to add to vscode. The content are mostly regarding spelling.
 
 
 

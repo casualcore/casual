@@ -129,7 +129,7 @@ namespace casual
 
       }
 
-      TEST( common_serialize_json, composit_write_read)
+      TEST( common_serialize_json, composite_write_read)
       {
          common::unittest::Trace trace;
          std::string json;

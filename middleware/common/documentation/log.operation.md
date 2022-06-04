@@ -8,7 +8,7 @@ An arbitrary category model is used and can be activated with regular expression
 
 category             | description
 ---------------------|----------------------------------
-error                | logs any kind of error, allways on
+error                | logs any kind of error, always on
 warning              | should not be used, either it's an error or it's not
 information          | logs information about "big things", 'domain has started', and so on...
 parameter            | logs input/output parameters for a casual-sf service

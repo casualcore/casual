@@ -95,7 +95,7 @@ namespace casual
          //! process::sleep( std::chrono::minutes( 2));
          //! ~~~~~~~~~~~~~~~
          //!
-         //! @throws exception::system::Interupted if a signal is received
+         //! @throws exception::system::interrupted if a signal is received
          template< typename R, typename P>
          void sleep( std::chrono::duration< R, P> time)
          {

@@ -401,9 +401,9 @@ namespace casual
 
          database.enqueue( origin);
 
-         auto reqest = local::request( queue);
-         reqest.selector.id = origin.message.id;
-         auto fetched = database.dequeue( reqest, platform::time::clock::type::now());
+         auto request = local::request( queue);
+         request.selector.id = origin.message.id;
+         auto fetched = database.dequeue( request, platform::time::clock::type::now());
 
 
          ASSERT_TRUE( fetched.message.size() == 1);
@@ -425,9 +425,9 @@ namespace casual
          origin.message.properties = "some: properties";
          database.enqueue( origin);
 
-         auto reqest = local::request( queue);
-         reqest.selector.properties = origin.message.properties;
-         auto fetched = database.dequeue( reqest, platform::time::clock::type::now());
+         auto request = local::request( queue);
+         request.selector.properties = origin.message.properties;
+         auto fetched = database.dequeue( request, platform::time::clock::type::now());
 
 
          ASSERT_TRUE( fetched.message.size() == 1);
@@ -451,9 +451,9 @@ namespace casual
          origin.message.properties = "some: properties";
          database.enqueue( origin);
 
-         auto reqest = local::request( queue);
-         reqest.selector.properties = "some other properties";
-         auto fetched = database.dequeue( reqest, platform::time::clock::type::now());
+         auto request = local::request( queue);
+         request.selector.properties = "some other properties";
+         auto fetched = database.dequeue( request, platform::time::clock::type::now());
 
          EXPECT_TRUE( fetched.message.size() == 0);
       }
@@ -844,7 +844,7 @@ namespace casual
             EXPECT_TRUE( info.messages.at( 0).available < start + std::chrono::hours{ 1} + std::chrono::seconds{ 2});
          }
 
-         // message is not availiable until next hour
+         // message is not available until next hour
          EXPECT_TRUE( database.dequeue( local::request( queue), platform::time::clock::type::now()).message.empty());
       }
       

@@ -145,7 +145,7 @@ namespace casual
          //! actual peek of messages
          queue::ipc::message::group::message::peek::Reply peek( const queue::ipc::message::group::message::peek::Request& request);
 
-         //! @returns all queues that is found in `queues` and has messages potentially avaliable for dequeue
+         //! @returns all queues that is found in `queues` and has messages potentially available for dequeue
          std::vector< queuebase::message::Available> available( std::vector< common::strong::queue::id> queues) const;
 
          //! @returns the earliest available message in the queue, if any.
@@ -155,7 +155,7 @@ namespace casual
          platform::size::type restore( common::strong::queue::id id);
 
          //! @returns number of 'deleted' messages for the queue
-         //! @note: only `enqueued` messages are deleted (no pending for commmit)
+         //! @note: only `enqueued` messages are deleted (no pending for commit)
          platform::size::type clear( common::strong::queue::id queue);
 
          //! @returns id:s of the messages that was removed

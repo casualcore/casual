@@ -48,7 +48,7 @@ namespace casual
                      case casual::shutdown: 
                         return condition == code::log::information;
 
-                     case casual::interupted:
+                     case casual::interrupted:
                      case casual::domain_instance_unavailable: 
                         return condition == code::log::user;
 
@@ -74,7 +74,7 @@ namespace casual
          switch( code)
          {
             case casual::shutdown: return "shutdown";
-            case casual::interupted: return "interupted";
+            case casual::interrupted: return "interrupted";
             case casual::invalid_configuration: return "invalid-configuration";
             case casual::invalid_document: return "invalid-document";
             case casual::invalid_node: return "invalid-node";

@@ -94,7 +94,7 @@ namespace casual
       //! normalizes `value` with regards to environment variables
       //!
       //! in essence, traverse the type and apply environment::expand to all
-      //! found strings in the datastructure
+      //! found strings in the data structure
       //!
       //! @returns the `value` (depending on invocation, either rvalue or lvalue)
       template< typename T>
@@ -109,7 +109,7 @@ namespace casual
       //! real environment.
       //!
       //! in essence, traverse the type and apply environment::expand to all
-      //! found strings in the datastructure
+      //! found strings in the data structure
       //!
       //! @returns the `value` (depending on invocation, either rvalue or lvalue)
       template< typename T>

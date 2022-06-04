@@ -37,8 +37,8 @@ namespace casual
          //! invoked if the destination is _lost_
          //!   * If there are pending messages to the ipc, the message (complete) will be
          //!     pushed back in the queue, and each message in the queue is tried to send, until one "fails"
-         //!   * If there are no messages pendinging for the ipc, the message will be
-         //!     tried to send directly. If not successfull (the whole complete message is sent), 
+         //!   * If there are no messages pending for the ipc, the message will be
+         //!     tried to send directly. If not successful (the whole complete message is sent), 
          //!     the message ( possible partial message) will be pushed back in the queue
          //! @returns the correlation for the message, regardless if the message was sent directly or not.
          //! @{
