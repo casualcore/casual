@@ -9,6 +9,9 @@
 
 #include "common/code/raise.h"
 #include "common/code/casual.h"
+#include "common/message/service.h"
+#include "common/communication/ipc.h"
+#include "common/communication/instance.h"
 
 
 // std
@@ -38,6 +41,32 @@ namespace casual
          }
          
       } // message::transport
+
+      namespace service
+      {
+         strong::correlation::id send( std::string service, platform::binary::type payload)
+         {
+            {
+               common::message::service::lookup::Request request{ process::handle()};
+               request.requested = std::move( service);
+               request.context = decltype( request.context)::no_busy_intermediate;
+               communication::device::blocking::send( communication::instance::outbound::service::manager::device(), request);
+            }
+            
+            auto lookup = communication::ipc::receive< common::message::service::lookup::Reply>();
+            
+            if( lookup.state != decltype( lookup.state)::idle)
+               code::raise::error( code::xatmi::no_entry);
+
+            common::message::service::call::callee::Request message{ process::handle()};
+            message.service = std::move( lookup.service);
+            message.buffer.memory = std::move( payload);
+            message.buffer.type = common::buffer::type::x_octet();
+
+            return communication::device::blocking::send( lookup.process.ipc, message);
+         }
+
+      } // service
 
 
       namespace random

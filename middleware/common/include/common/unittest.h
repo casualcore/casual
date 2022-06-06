@@ -16,6 +16,7 @@
 #include "common/exception/capture.h"
 #include "common/code/raise.h"
 #include "common/compare.h"
+#include "common/communication/ipc.h"
 
 #include <array>
 #include <iostream>
@@ -58,6 +59,23 @@ namespace casual
          unittest::Message size( platform::size::type size);
          
       } // message::transport
+
+      namespace service
+      {
+         [[nodiscard]] strong::correlation::id send( std::string service, platform::binary::type payload);
+
+         //! @returns the received message of type `R`
+         template< typename R, typename... Ts>
+         R receive( communication::ipc::inbound::Device& device, Ts&&... ts)
+         {
+            R reply;
+            communication::device::blocking::receive( device, reply, std::forward< Ts>( ts)...);
+            return reply;
+         }
+         
+         // not implemented yet.
+         // platform::binary::type receive( const strong::correlation::id& correlation);
+      } // service
 
 
       namespace random

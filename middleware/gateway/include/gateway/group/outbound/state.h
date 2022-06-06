@@ -197,6 +197,8 @@ namespace casual
                   inline friend bool operator == ( const Call& lhs, const common::strong::correlation::id& rhs) { return lhs.correlation == rhs;}
                };
 
+               inline void add( Call call) { m_calls.push_back( std::move( call));}
+
                inline void add( const common::message::service::call::callee::Request& message)
                {
                   assert( ! common::algorithm::find( m_calls, message.correlation));

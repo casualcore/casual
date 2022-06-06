@@ -140,8 +140,9 @@ namespace casual
                {
                   namespace call
                   {
-                     auto metric( State& state, const state::route::Destination& destination, 
-                        const state::service::Pending::Call& call, const common::transaction::ID& trid, code::xatmi code)
+                     template< typename D>
+                     auto metric( State& state, const D& destination, 
+                        state::service::Pending::Call call, const common::transaction::ID& trid, code::xatmi code)
                      {
                         Trace trace{ "gateway::group::outbound::handle::local::internal::service::call::metric"};
 
@@ -166,7 +167,37 @@ namespace casual
                         {
                            state.multiplex.send( ipc::manager::service(), message);
                         });
-                     }                  
+                     }
+
+                     namespace detail::send::error
+                     {
+                        template< typename V>
+                        auto ipc( const V& value) -> decltype( ( value.process.ipc)) { return value.process.ipc;}
+                        template< typename V>
+                        auto ipc( const V& value) -> decltype( ( value.ipc)) { return value.ipc;}
+
+                        template< typename M, typename P>
+                        void reply( State& state, M&& destination, P&& pending, const common::transaction::ID& trid, code::xatmi code)
+                        {
+                           common::message::service::call::Reply reply;
+                           reply.correlation = destination.correlation;
+                           reply.execution = destination.execution;
+                           
+                           if( trid)
+                           {
+                              reply.transaction.trid = trid;
+                              reply.transaction.state = decltype( reply.transaction.state)::error;
+                           }
+
+                           reply.code.result = code;
+
+                           log::line( verbose::log, "reply: ", reply);
+                           state.multiplex.send( detail::send::error::ipc( destination), reply);
+
+                           service::call::metric( state, destination, std::move( pending), trid, code);
+                        };
+                        
+                     } // detail::send::error                
 
                      auto request( State& state)
                      {
@@ -175,10 +206,29 @@ namespace casual
                            Trace trace{ "gateway::group::outbound::handle::local::internal::service::call::request"};
                            log::line( verbose::log, "message: ", message);
 
+                           //! TODO maintainence - this need to be simplified
+
+                           auto pending = state::service::Pending::Call{ message};
+
                            auto [ lookup, involved] = state.lookup.service( message.service.name, message.trid);
                            log::line( verbose::log, "lookup: ", lookup);
 
-                           state.service.add( message);
+                           // check if we've has been called with the same correlation id before, hence we are in a
+                           // loop between gateways.
+                           if( state.route.contains( message.correlation))
+                           {
+                              log::line( log::category::error, code::casual::invalid_semantics, " a call with the same correlation id is in flight - ", message.correlation, " - action: reply with ", code::xatmi::system   );
+                              detail::send::error::reply( state, message, std::move( pending), message.trid, code::xatmi::system);
+                              return;
+                           }
+
+                           if( ! lookup.connection)
+                           {
+                              log::line( log::category::error, code::casual::invalid_semantics, " failed to look up service '", message.service.name, "' - action: reply with ", code::xatmi::no_entry);
+                              detail::send::error::reply( state, message, std::move( pending), message.trid, code::xatmi::no_entry);
+                              return;
+                           }
+
 
                            auto create_error_callback = []( auto& state, auto& message) -> state::route::error::callback::type
                            {
@@ -187,39 +237,13 @@ namespace casual
 
                               return [ &state, trid = message.trid]( auto& destination)
                               {
-                                 common::message::service::call::Reply reply;
-                                 reply.correlation = destination.correlation;
-                                 reply.execution = destination.execution;
-                                 reply.transaction.trid = trid;
-                                 reply.code.result = decltype( reply.code.result)::system;
-
-                                 log::line( verbose::log, "reply: ", reply);
-                                 state.multiplex.send( destination.ipc, reply);
-
-                                 service::call::metric( state, destination, state.service.consume( destination.correlation), trid, reply.code.result);
+                                 auto pending = state.service.consume( destination.correlation);
+                                 detail::send::error::reply( state, destination, std::move( pending), trid, code::xatmi::system);;
                               };
                            };
 
                            auto route = state::route::Point{ message, lookup.connection, create_error_callback( state, message)};
 
-                           // check if we've has been called with the same correlation id before, hence we are in a
-                           // loop between gateways.
-                           if( state.route.contains( message.correlation))
-                           {
-                              log::line( log, code::casual::invalid_semantics, " a call with the same correlation id is in flight - ", message.correlation, " - action: reply with ", code::xatmi::no_entry);
-                              if( route.callback)
-                                 route.error();
-                              return;
-                           }
-
-                           if( ! lookup.connection)
-                           {
-                              log::line( log::category::error, code::casual::invalid_semantics, " failed to look up service '", message.service.name, "' - action: reply with ", code::xatmi::system);
-
-                              if( route.callback)
-                                 route.error();
-                              return;
-                           }
 
                            // set the branched trid for the message, if any.
                            std::exchange( message.trid, lookup.trid);
@@ -229,7 +253,10 @@ namespace casual
                               transaction::involved( message);
                               
                            if( ! message.flags.exist( common::message::service::call::request::Flag::no_reply))
+                           {
+                              state.service.add( std::move( pending));
                               state.route.add( std::move( route));
+                           }
 
                            tcp::send( state, lookup.connection, message);
                         };

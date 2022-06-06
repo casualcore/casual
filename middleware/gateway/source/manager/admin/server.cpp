@@ -38,9 +38,20 @@ namespace casual
                      {
                         auto request_state = []( auto&& range, auto&& message)
                         {
-                           return algorithm::transform( range, [&message]( auto& reverse)
+                           using result_type = decltype( communication::device::async::call( strong::ipc::id{}, message));
+                           return algorithm::accumulate( range, std::vector< result_type>{}, [&message]( auto result, auto& reverse)
                            {
-                              return communication::device::async::call( reverse.process.ipc, message);
+                              try 
+                              {
+                                 auto future = communication::device::async::call( reverse.process.ipc, message);
+                                 result.push_back( std::move( future));
+                              }
+                              catch( ...)
+                              {
+                                 log::line( log::category::error, exception::capture(), " failed to send to process: ", reverse.process, " - action: ignore");
+                              }
+                              
+                              return result;
                            });
                         };
 
