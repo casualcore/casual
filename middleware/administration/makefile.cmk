@@ -95,7 +95,8 @@ unittest_lib = make.LinkLibrary( 'bin/casual-administration-unittest',
 make.LinkUnittest( 'unittest/bin/test-casual-administration',
    [
       make.Compile( 'unittest/source/cli/test_call.cpp'),
-      make.Compile( 'unittest/source/cli/test_domain_manager.cpp')
+      make.Compile( 'unittest/source/cli/test_domain_manager.cpp'),
+      make.Compile( 'unittest/source/cli/test_configuration_normalize.cpp')
    ],
    [ 
       unittest_lib,

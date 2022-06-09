@@ -54,8 +54,8 @@ On success exit with 0, on error not 0, and message printed to stderr)"
                {
                   auto invoke = [&state]( std::vector< std::string> globs)
                   {
-                     // load the user model, transform to model and back again...
-                     auto domain = model::transform( model::transform( local::load( std::move( globs))));
+                     // load the model, transform back to user model...
+                     auto domain = model::transform( local::load( std::move( globs)));
                      auto writer = serialize::create::writer::from( state.format);
                      writer << domain;
                      writer.consume( std::cout);
