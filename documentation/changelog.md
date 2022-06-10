@@ -3,6 +3,25 @@ This is the changelog for `casual` and all changes are listed in this document.
 
 ## [Unreleased]
 
+## [1.5.12] - 2022-05-10
+### Fixes
+- cli - fix configuration --normalize
+- gateway - fix outbound to handle 'gateway loop'
+- gateway - fix inbound to stop consume from a removed connection
+- service - use multiplex send as much as possible
+- service - fix lookup-forget-reply has _replied_ for remote services
+- gateway - improve multiplex send, and consume ratio between ipc and tcp
+- discovery - reduce amount of topology related discoveries
+- discovery - use batch topology update, semantics for performance
+- tcp - guard errors in socket::address::host/peer
+- gateway - fix outbound to always remove transaction state
+- transaction - fix external resource prepare/commit request
+- gateway - handle lost connection in tcp send correctly
+- transaction - fix notification to TM for services with branch semantics
+- transaction - fix problem when to use TMJOIN in xa_start
+- transaction - be conformant with flags to xa_end
+- discovery - use multiplex send as much as possible
+
 ## [1.5.11] - 2022-04-19
 ### Fixes
 - cli - fix confusing arguments for casual service --legend
