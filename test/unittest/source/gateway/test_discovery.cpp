@@ -203,6 +203,70 @@ domain:
          }
       }
 
+      TEST( test_gateway_discovery, domain_chain_A_B_C__C_has_echo_with_route_x__B_has_forward__call_x_from_A___expect_able_to_call_x)
+      {
+         common::unittest::Trace trace;
+
+          auto c = local::manager( local::configuration::base, R"(
+domain: 
+   name: C
+   servers:
+      -  path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-server"
+         memberships: [ user]
+
+   services:
+      -  name: casual/example/echo
+         routes: [ echo]
+   gateway:
+      inbound:
+         groups:
+            -  connections:
+               -  address: 127.0.0.1:7710
+)");
+
+         auto b = local::manager( local::configuration::base, R"(
+domain: 
+   name: B
+   services:
+      -  name: echo
+         routes: [ x]
+   gateway:
+      outbound:
+         groups:
+            -  connections:
+               -  address: 127.0.0.1:7710
+      inbound:
+         groups:
+            -  connections:
+               -  address: 127.0.0.1:7720
+                  discovery:
+                     forward: true
+)");
+
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected( "C"));
+
+         auto a = local::manager( local::configuration::base, R"(
+domain: 
+   name: A
+   gateway:
+      outbound:
+         groups:
+            -  connections:
+               -  address: 127.0.0.1:7720
+)");
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected( "B"));
+
+
+         {
+            auto buffer = local::allocate( 128);
+            auto len = tptypes( buffer, nullptr, nullptr);
+
+            EXPECT_TRUE( tpcall( "x", buffer, 128, &buffer, &len, 0) == 0) << "tperrno: " << tperrnostring( tperrno);
+
+            tpfree( buffer);
+         }
+      }
+
       TEST( test_gateway_discovery, A_to_B_C__C_is_down__expect_B___boot_C__expect_discovery_to_C__alternate_between_B_and_C)
       {
          common::unittest::Trace trace;

@@ -284,6 +284,9 @@ namespace casual
          domain_discovery_reply     = 7301,
          domain_discovery_topology_implicit_update = 7302, // 1.2
 
+         domain_discovery_internal_request,
+         domain_discovery_internal_reply,
+
          //! sent to _discovery_ when current domain gets a new outbound connection
          domain_discovery_topology_direct_update,
 

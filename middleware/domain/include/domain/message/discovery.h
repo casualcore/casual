@@ -52,7 +52,7 @@ namespace casual
                return *this;
             };
 
-            inline friend Content operator + ( Content lhs, Content rhs) { lhs += rhs; return lhs;}
+            inline friend Content operator + ( Content lhs, Content rhs) { lhs += std::move( rhs); return lhs;}
 
             inline explicit operator bool() const noexcept { return ! services.empty() || ! queues.empty();}
 
@@ -146,6 +146,89 @@ namespace casual
             CASUAL_SERIALIZE( content);
          )
       };
+
+      namespace internal
+      {
+         using base_request = common::message::basic_request< common::message::Type::domain_discovery_internal_request>;
+         struct Request : base_request
+         {
+            using base_request::base_request;
+            
+            discovery::request::Content content;
+
+            CASUAL_CONST_CORRECT_SERIALIZE(
+               base_request::serialize( archive);
+               CASUAL_SERIALIZE( content);
+            )
+         };
+
+         namespace reply::service  
+         {
+            struct Route : common::Compare< Route>
+            {
+               Route() = default;
+               Route( std::string name, std::string origin) : name{ std::move( name)}, origin{ std::move( origin)} {}
+
+               std::string name;
+               std::string origin;
+
+               inline auto tie() const noexcept { return std::tie( name);}
+
+
+               CASUAL_CONST_CORRECT_SERIALIZE(
+                  CASUAL_SERIALIZE( name);
+                  CASUAL_SERIALIZE( origin);
+               )
+            };
+
+            struct Routes
+            {
+               //! only services, for now...
+               std::vector< Route> services;
+
+               inline Routes& operator += ( Routes other)
+               {
+                  common::algorithm::sorted::append_unique( common::algorithm::sort( std::move( other.services)), services);
+                  return *this;
+               }
+
+               explicit operator bool() const noexcept { return ! services.empty();}
+
+               auto find_name( const std::string& value) const noexcept 
+               {
+                  return common::algorithm::find_if( services, [ &value]( const Route& route){ return route.name == value;});
+               }
+
+               auto find_origin( const std::string& value) const noexcept 
+               {
+                  return common::algorithm::find_if( services, [ &value]( const Route& route){ return route.origin == value;});
+               }
+
+
+               CASUAL_CONST_CORRECT_SERIALIZE(
+                  CASUAL_SERIALIZE( services);
+               )
+            };
+         } // reply::service 
+
+         using base_reply = common::message::basic_reply< common::message::Type::domain_discovery_internal_reply>;
+         struct Reply : base_reply
+         {
+            using base_reply::base_reply;
+
+            discovery::reply::Content content;
+
+            //! holds mapping between requested services that are routes, to the real (origin) name
+            reply::service::Routes routes;
+
+            CASUAL_CONST_CORRECT_SERIALIZE(
+               base_reply::serialize( archive);
+               CASUAL_SERIALIZE( content);
+               CASUAL_SERIALIZE( routes);
+            )
+         };
+
+      } // internal
 
       namespace topology
       {
@@ -335,6 +418,9 @@ namespace casual
 
       template<>
       struct type_traits< casual::domain::message::discovery::Request> : detail::type< casual::domain::message::discovery::Reply> {};
+
+      template<>
+      struct type_traits< casual::domain::message::discovery::internal::Request> : detail::type< casual::domain::message::discovery::internal::Reply> {};
 
       template<>
       struct type_traits< casual::domain::message::discovery::needs::Request> : detail::type< casual::domain::message::discovery::needs::Reply> {};

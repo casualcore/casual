@@ -94,9 +94,9 @@ namespace casual
          request.content.services = { "a"};
          auto correlation = discovery::request( request);
 
-         // wait for the request, and send reply reply
+         // wait for the internal request, and send reply reply
          {
-            message::discovery::Request request;
+            message::discovery::internal::Request request;
             communication::device::blocking::receive( communication::ipc::inbound::device(), request);
             EXPECT_TRUE( algorithm::equal( request.content.services, array::make( "a")));
             auto reply = common::message::reverse::type( request, process::handle());
@@ -114,7 +114,7 @@ namespace casual
       }
 
 
-      TEST( domain_discovery, register_as_discover_provieder_x2__send_outbound_request___expect_2_request__then_reply)
+      TEST( domain_discovery, register_as_discover_provider_x2__send_outbound_request___expect_2_request__then_reply)
       {
          common::unittest::Trace trace;
 
@@ -173,7 +173,7 @@ namespace casual
          };
 
          // handle the means request and the discovery request
-         handle_request( message::discovery::Request{});
+         handle_request( message::discovery::internal::Request{});
          handle_request( message::discovery::Request{});
 
          // wait for the reply

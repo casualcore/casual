@@ -99,9 +99,9 @@ domain:
                auto len = tptypes( buffer, nullptr, nullptr);
 
                if( tpcall( service.data(), buffer, 128, &buffer, &len, 0) == -1)
-                  EXPECT_TRUE( tperrno == code) << "tpcall - expected: " << tperrnostring( code) << " got: " << tperrnostring( tperrno);
+                  EXPECT_TRUE( tperrno == code) << "tpcall to '" << service << " - expected: " << tperrnostring( code) << " got: " << tperrnostring( tperrno);
                else
-                  EXPECT_TRUE( code == 0) << "tpcall - expected: " << tperrnostring( code) << " got: " << tperrnostring( 0);
+                  EXPECT_TRUE( code == 0) << "tpcall to '" << service << " - expected: " << tperrnostring( code) << " got: " << tperrnostring( 0);
 
                tpfree( buffer);
             };
@@ -353,7 +353,6 @@ domain:
          auto b = local::domain( R"(
 domain: 
    name: B
-
    servers:
       - path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-server"
         memberships: [ user]
@@ -375,7 +374,6 @@ domain:
          auto a = local::domain( R"(
 domain: 
    name: A
-  
    gateway:
       outbound:
          groups:
@@ -408,6 +406,62 @@ domain:
          }
          
       }
+
+      TEST( test_gateway, domain_A_to_B_to_C__a_lot_of_routes__expect_discovery_on_route_names)
+      {
+         common::unittest::Trace trace;
+
+         // sink child signals 
+         signal::callback::registration< code::signal::child>( [](){});
+
+         auto c = local::example::domain( "C", "7002");
+         auto b = local::domain( R"(
+domain: 
+   name: B
+   servers:
+      - path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-server"
+        memberships: [ user]
+   services:
+      -  name: casual/example/domain/echo/C
+         routes: [ c]
+   gateway:
+      inbound:
+         groups:
+            -  connections: 
+               -  address: 127.0.0.1:7001
+                  discovery:
+                     forward: true
+      outbound:
+         groups:
+            -  connections:
+               -  address: 127.0.0.1:7002
+
+)"); 
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected());
+         
+         auto a = local::domain( R"(
+domain: 
+   name: A
+   services:
+      -  name: casual/example/domain/echo/B
+         routes: [ b]
+      -  name: c
+         routes: [ c-indirect]
+   gateway:
+      outbound:
+         groups:
+            -  connections:
+                  -  address: 127.0.0.1:7001
+)");
+
+
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected());
+
+         // call the two domain services to get discovery
+         local::call( "b", 0);
+         local::call( "c-indirect", 0);
+      }
+
 
       TEST( test_gateway, domain_A_to_B_C_D__D_to__E__expect_call_to_only_B_C___shutdown_B_C__expect_call_to_D_forward_to_E)
       {

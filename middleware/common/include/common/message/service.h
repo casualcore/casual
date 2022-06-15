@@ -62,6 +62,7 @@ namespace casual
             service::Type type = service::Type::sequential;
 
             inline friend bool operator == ( const Base& lhs, const std::string& rhs) { return lhs.name == rhs;}
+            inline friend bool operator == ( const std::string& lhs, const Base& rhs) { return rhs == lhs;}
 
             inline auto tie() const noexcept { return std::tie( name);}
 

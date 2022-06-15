@@ -146,14 +146,16 @@ namespace casual
          struct 
          {
             common::message::coordinate::fan::Out< message::discovery::Reply, common::strong::process::id> discovery;
+            common::message::coordinate::fan::Out< message::discovery::internal::Reply, common::strong::process::id> internal;
             common::message::coordinate::fan::Out< message::discovery::needs::Reply, common::strong::process::id> needs;
             common::message::coordinate::fan::Out< message::discovery::known::Reply, common::strong::process::id> known;
 
-            inline void failed( common::strong::process::id pid) { discovery.failed( pid); needs.failed( pid);}
-            inline bool empty() const noexcept { return discovery.empty() && needs.empty() && known.empty();}
+            inline void failed( common::strong::process::id pid) { discovery.failed( pid); internal.failed( pid); needs.failed( pid); known.failed( pid);}
+            inline bool empty() const noexcept { return discovery.empty() && internal.empty() && needs.empty() && known.empty();}
 
             CASUAL_LOG_SERIALIZE(
                CASUAL_SERIALIZE( discovery);
+               CASUAL_SERIALIZE( internal);
                CASUAL_SERIALIZE( needs);
                CASUAL_SERIALIZE( known);
             )

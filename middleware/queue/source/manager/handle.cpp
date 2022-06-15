@@ -345,19 +345,18 @@ namespace casual
                   }; 
                }
 
-               namespace domain
+               namespace domain::discover
                {
-                  namespace discover
+                  namespace internal
                   {
                      auto request( State& state)
                      {
-                        return [&state]( casual::domain::message::discovery::Request&& message)
+                        return [&state]( casual::domain::message::discovery::internal::Request&& message)
                         {
-                           Trace trace{ "queue::manager::handle::local::domain::discover::request"};
+                           Trace trace{ "queue::manager::handle::local::domain::discovery::internal::request"};
                            common::log::line( verbose::log, "message: ", message);
 
                            auto reply = common::message::reverse::type( message, common::process::handle());
-                           reply.domain = std::move( message.domain);
 
                            auto is_local = [&state]( auto& name)
                            {
@@ -376,12 +375,15 @@ namespace casual
                            ipc::flush::optional::send( message.process.ipc, reply);
                         };
                      }
+                  } // internal
 
+                  namespace api
+                  {
                      auto reply( State& state)
                      {
                         return [&state]( casual::domain::message::discovery::api::Reply& message)
                         {
-                           Trace trace{ "queue::manager::handle::local::domain::discover::reply"};
+                           Trace trace{ "queue::manager::handle::local::domain::discovery::api::reply"};
                            common::log::line( verbose::log, "message: ", message);
 
                            pending::lookups::check( state);
@@ -398,72 +400,72 @@ namespace casual
                         };
                      }
 
-                     namespace needs
-                     { 
-                        auto request( State& state)
-                        {
-                           return [&state]( casual::domain::message::discovery::needs::Request& message)
-                           {
-                              Trace trace{ "queue::manager::handle::local::domain::discover::needs::request"};
-                              common::log::line( verbose::log, "message: ", message);
+                  } // api
 
-                              auto reply = common::message::reverse::type( message);
-
-                              // add the pending _wait for ever_ requests
-                              for( auto& pending : state.pending.lookups)
-                                 if( pending.context == decltype( pending.context)::wait)
-                                    reply.content.queues.push_back( pending.name);
-                              
-                              algorithm::container::trim( reply.content.queues, algorithm::unique( algorithm::sort( reply.content.queues)));
-                              common::log::line( verbose::log, "reply: ", reply);
-
-                              ipc::flush::optional::send( message.process.ipc, reply);
-                              
-                           };
-                        }
-                     } // needs
-
-                     namespace known
+                  namespace needs
+                  { 
+                     auto request( State& state)
                      {
-                        auto request( State& state)
+                        return [&state]( casual::domain::message::discovery::needs::Request& message)
                         {
-                           return [&state]( casual::domain::message::discovery::known::Request& message)
+                           Trace trace{ "queue::manager::handle::local::domain::discover::needs::request"};
+                           common::log::line( verbose::log, "message: ", message);
+
+                           auto reply = common::message::reverse::type( message);
+
+                           // add the pending _wait for ever_ requests
+                           for( auto& pending : state.pending.lookups)
+                              if( pending.context == decltype( pending.context)::wait)
+                                 reply.content.queues.push_back( pending.name);
+                           
+                           algorithm::container::trim( reply.content.queues, algorithm::unique( algorithm::sort( reply.content.queues)));
+                           common::log::line( verbose::log, "reply: ", reply);
+
+                           ipc::flush::optional::send( message.process.ipc, reply);
+                           
+                        };
+                     }
+                  } // needs
+
+                  namespace known
+                  {
+                     auto request( State& state)
+                     {
+                        return [&state]( casual::domain::message::discovery::known::Request& message)
+                        {
+                           Trace trace{ "queue::manager::handle::local::domain::discover::known::request"};
+                           common::log::line( verbose::log, "message: ", message);
+
+                           auto reply = common::message::reverse::type( message);
+
+
+                           // all known "remote" queues
+                           reply.content.queues = algorithm::accumulate( state.queues, std::move( reply.content.queues), []( auto result, auto& pair)
                            {
-                              Trace trace{ "queue::manager::handle::local::domain::discover::known::request"};
-                              common::log::line( verbose::log, "message: ", message);
+                              auto is_remote = []( auto& queue){ return queue.remote();};
+                              if( algorithm::find_if( std::get< 1>( pair), is_remote))
+                                 result.push_back( std::get< 0>( pair));
 
-                              auto reply = common::message::reverse::type( message);
+                              return result;
+                           });
 
+                           // all 'wait for ever'
+                           for( auto& pending : state.pending.lookups)
+                              if( pending.context == decltype( pending.context)::wait)
+                                 reply.content.queues.push_back( pending.name);
 
-                              // all known "remote" queues
-                              reply.content.queues = algorithm::accumulate( state.queues, std::move( reply.content.queues), []( auto result, auto& pair)
-                              {
-                                 auto is_remote = []( auto& queue){ return queue.remote();};
-                                 if( algorithm::find_if( std::get< 1>( pair), is_remote))
-                                    result.push_back( std::get< 0>( pair));
+                           algorithm::container::trim( reply.content.queues, algorithm::unique( algorithm::sort( reply.content.queues)));
 
-                                 return result;
-                              });
+                           common::log::line( verbose::log, "reply: ", reply);
 
-                              // all 'wait for ever'
-                              for( auto& pending : state.pending.lookups)
-                                 if( pending.context == decltype( pending.context)::wait)
-                                    reply.content.queues.push_back( pending.name);
+                           ipc::flush::optional::send( message.process.ipc, reply);
+                           
+                        };
+                     }
+                     
+                  } // known
 
-                              algorithm::container::trim( reply.content.queues, algorithm::unique( algorithm::sort( reply.content.queues)));
-
-                              common::log::line( verbose::log, "reply: ", reply);
-
-                              ipc::flush::optional::send( message.process.ipc, reply);
-                              
-                           };
-                        }
-                        
-                     } // known
-
-                  } // discover
-               } // domain 
-
+               } // domain::discover
 
                namespace configuration
                {
@@ -553,8 +555,8 @@ namespace casual
             
             handle::local::advertise( state),
             
-            handle::local::domain::discover::request( state),
-            handle::local::domain::discover::reply( state),
+            handle::local::domain::discover::internal::request( state),
+            handle::local::domain::discover::api::reply( state),
             handle::local::domain::discover::needs::request( state),
             handle::local::domain::discover::known::request( state),
 

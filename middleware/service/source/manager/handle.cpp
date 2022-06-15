@@ -697,72 +697,87 @@ namespace casual
 
                namespace domain::discovery
                {
-                  auto request( State& state)
+                  namespace internal
                   {
-                     return [&state]( casual::domain::message::discovery::Request& message)
+                     auto request( State& state)
                      {
-                        Trace trace{ "service::manager::handle::domain::discovery::request"};
-                        common::log::line( verbose::log, "message: ", message);
-
-                        auto reply = common::message::reverse::type( message, common::process::handle());
-                        reply.domain = common::domain::identity();
-                        
-                        reply.content.services = algorithm::accumulate( message.content.services, decltype( reply.content.services){}, [&state]( auto result, auto& name)
+                        return [&state]( casual::domain::message::discovery::internal::Request& message)
                         {
-                           auto service = state.service( name);
+                           Trace trace{ "service::manager::handle::domain::discovery::internal::request"};
+                           common::log::line( verbose::log, "message: ", message);
 
-                           // * We only answer with sequential (local) services
-                           // * We don't allow other domains to access or know about our admin services.
-                           if( service && ! service->instances.sequential.empty() && service->information.category != common::service::category::admin)
+                           auto reply = common::message::reverse::type( message, common::process::handle());
+
+                           // accumulate our internal/local services intersected with the requested
                            {
-                              result.emplace_back(
-                                 name,
-                                 service->information.category,
-                                 service->information.transaction);
+                              auto service_accumulate = [ &state]( auto result, auto& name)
+                              {
+                                 auto service = state.service( name);
+
+                                 // * We only answer with sequential (local) services
+                                 // * We don't allow other domains to access or know about our admin services.
+                                 if( service && ! service->instances.sequential.empty() && service->information.category != common::service::category::admin)
+                                 {
+                                    result.emplace_back(
+                                       name,
+                                       service->information.category,
+                                       service->information.transaction);
+                                 }
+
+                                 return result;
+                              };
+                              
+                              reply.content.services = algorithm::sort( algorithm::accumulate( algorithm::sort( message.content.services), decltype( reply.content.services){}, service_accumulate));
                            }
 
-                           return result;
-                        });
+                           // check if some of the rest has _routes_
+                           for( auto& name : std::get< 1>( algorithm::sorted::intersection( message.content.services, reply.content.services)))
+                              if( auto found = algorithm::find( state.reverse_routes, name))
+                                 reply.routes.services.emplace_back( found->first, found->second);
 
-                        local::optional::send( state, message.process.ipc, reply);
-                     };
-                  }
+                           local::optional::send( state, message.process.ipc, reply);
+                        };
+                     }
+                  } // internal
 
-                  auto reply( State& state)
+                  namespace api
                   {
-                     return [&state]( casual::domain::message::discovery::api::Reply& message)
+                     auto reply( State& state)
                      {
-                        Trace trace{ "service::manager::handle::domain::discovery::external::reply"};
-                        common::log::line( verbose::log, "message: ", message);
-
-                        if( auto found = algorithm::find( state.pending.lookups, message.correlation))
+                        return [&state]( casual::domain::message::discovery::api::Reply& message)
                         {
-                           auto pending = algorithm::container::extract( state.pending.lookups, std::begin( found));
+                           Trace trace{ "service::manager::handle::domain::discovery::external::reply"};
+                           common::log::line( verbose::log, "message: ", message);
 
-                           auto service = state.service( pending.request.requested);
+                           if( auto found = algorithm::find( state.pending.lookups, message.correlation))
+                           {
+                              auto pending = algorithm::container::extract( state.pending.lookups, std::begin( found));
 
-                           if( service && ! service->instances.empty())
-                           {
-                              // The requested service is now available, use
-                              // the lookup to decide how to progress.
-                              service::lookup( state)( pending.request);
-                           }
-                           else if( pending.request.context == decltype( pending.request.context)::wait)
-                           {
-                              // we put the pending back. In front to be as fair as possible
-                              state.pending.lookups.push_front( std::move( pending));
-                           }
-                           else 
-                           {
-                              auto reply = common::message::reverse::type( pending.request);
-                              reply.service.name = pending.request.requested;
-                              reply.state = decltype( reply.state)::absent;
+                              auto service = state.service( pending.request.requested);
 
-                              state.multiplex.send( pending.request.process.ipc, reply);
+                              if( service && ! service->instances.empty())
+                              {
+                                 // The requested service is now available, use
+                                 // the lookup to decide how to progress.
+                                 service::lookup( state)( pending.request);
+                              }
+                              else if( pending.request.context == decltype( pending.request.context)::wait)
+                              {
+                                 // we put the pending back. In front to be as fair as possible
+                                 state.pending.lookups.push_front( std::move( pending));
+                              }
+                              else 
+                              {
+                                 auto reply = common::message::reverse::type( pending.request);
+                                 reply.service.name = pending.request.requested;
+                                 reply.state = decltype( reply.state)::absent;
+
+                                 state.multiplex.send( pending.request.process.ipc, reply);
+                              }
                            }
-                        }
-                     };
-                  }
+                        };
+                     }
+                  } // api
 
                   namespace needs
                   {
@@ -1026,8 +1041,8 @@ namespace casual
             handle::local::event::subscription::begin( state),
             handle::local::event::subscription::end( state),
             handle::local::Call{ admin::services( state), state},
-            handle::local::domain::discovery::request( state),
-            handle::local::domain::discovery::reply( state),
+            handle::local::domain::discovery::internal::request( state),
+            handle::local::domain::discovery::api::reply( state),
             handle::local::domain::discovery::needs::request( state),
             handle::local::domain::discovery::known::request( state),
             handle::local::configuration::update::request( state),
