@@ -12,6 +12,7 @@
 #include "common/environment.h"
 #include "common/chronology.h"
 #include "common/buffer/type.h"
+#include "common/unittest/file.h"
 
 
 namespace casual
@@ -777,6 +778,38 @@ namespace casual
 
          auto restored = database.restore( queue.id);
          EXPECT_TRUE( restored == 0) << "restored: " << restored;
+      }
+
+      TEST( casual_queue_group_database, pre_statements)
+      {
+         common::unittest::Trace trace;
+
+         auto directory = common::unittest::directory::temporary::Scoped{};
+
+         auto content = common::unittest::file::content( directory.path() / "a.pre.statements", R"(
+PRAGMA foreign_keys;
+PRAGMA journal_mode;
+)");
+
+         EXPECT_NO_THROW( 
+            group::Queuebase database( directory.path() / "a.qb"))
+         ;
+      }
+
+      TEST( casual_queue_group_database, post_statements)
+      {
+         common::unittest::Trace trace;
+
+         auto directory = common::unittest::directory::temporary::Scoped{};
+
+         auto content = common::unittest::file::content( directory.path() / "a.post.statements", R"(
+PRAGMA foreign_keys;
+PRAGMA journal_mode;
+)");
+
+         EXPECT_NO_THROW( 
+            group::Queuebase database( directory.path() / "a.qb"))
+         ;
       }
 
       TEST( casual_queue_group_database, restore__1_message_in_error_queue__expect_1_affected)

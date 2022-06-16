@@ -80,10 +80,10 @@ namespace casual
          common::unittest::Trace trace;
 
          unittest::directory::temporary::Scoped dir;
-         file::Output a{ dir.path() + "/a_foo.yaml"};
-         file::Output b{ dir.path() + "/b_foo.yaml"};
+         file::Output a{ dir.path() / "a_foo.yaml"};
+         file::Output b{ dir.path() / "b_foo.yaml"};
          
-         auto paths = common::file::find( { dir.path() + "/b*.yaml", dir.path() + "/a*.yaml"});
+         auto paths = common::file::find( { dir.path() / "b*.yaml", dir.path() / "a*.yaml"});
          ASSERT_TRUE( paths.size() == 2) << trace.compose( "paths: ", paths);
          EXPECT_TRUE( paths.at( 0) == b.path()) << trace.compose( "paths: ", paths);
          EXPECT_TRUE( paths.at( 1) == a.path()) << trace.compose( "paths: ", paths);
@@ -94,10 +94,10 @@ namespace casual
          common::unittest::Trace trace;
 
          unittest::directory::temporary::Scoped dir;
-         file::Output b{ dir.path() + "/b_foo.yaml"};
-         file::Output a{ dir.path() + "/a_foo.yaml"};
+         file::Output b{ dir.path() / "b_foo.yaml"};
+         file::Output a{ dir.path() / "a_foo.yaml"};
          
-         auto paths = common::file::find( dir.path() + "/*.yaml");
+         auto paths = common::file::find( ( dir.path() / "*.yaml").string());
          ASSERT_TRUE( paths.size() == 2) << trace.compose( "paths: ", paths);
          EXPECT_TRUE( paths.at( 0) == a.path()) << trace.compose( "paths: ", paths);
          EXPECT_TRUE( paths.at( 1) == b.path()) << trace.compose( "paths: ", paths);

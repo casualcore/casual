@@ -22,6 +22,7 @@
 #include <memory>
 #include <chrono>
 #include <filesystem>
+#include <fstream>
 
 
 #include <cstring>
@@ -537,7 +538,6 @@ namespace sql
 
          inline Connection( std::filesystem::path file) : m_handle( open( file)), m_file( std::move( file))
          {
-            //sqlite3_exec( m_handle.get(), "PRAGMA journal_mode = WAL;", 0, 0, 0);
          }
 
          inline explicit operator bool() const noexcept { return m_handle && true;}
@@ -610,6 +610,18 @@ namespace sql
             return sqlite3_changes( m_handle.get());
          }
 
+         inline auto pre_statements_path() const { return m_file.parent_path() / casual::common::string::compose( m_file.stem().string(), ".pre.statements");}
+
+         inline void pre_statements( std::ostream& out)
+         {
+            statements( pre_statements_path(), out);
+         }
+
+         inline void post_statements( std::ostream& out)
+         {
+            statements( m_file.parent_path() / casual::common::string::compose( m_file.stem().string(), ".post.statements"), out);
+         }
+
          inline void begin() const { sqlite3_exec( m_handle.get(), "BEGIN", 0, 0, 0); }
          inline void exclusive_begin() const { sqlite3_exec( m_handle.get(), "BEGIN EXCLUSIVE", 0, 0, 0); }
          inline void rollback() const { sqlite3_exec( m_handle.get(), "ROLLBACK", 0, 0, 0); }
@@ -618,6 +630,18 @@ namespace sql
          inline friend std::ostream& operator << ( std::ostream& out, const Connection& value) { return out << "{ file: " << value.m_file << '}';}
 
       private:
+
+         inline void statements( std::filesystem::path path, std::ostream& out)
+         {
+            if( ! std::filesystem::exists( path))
+               return;
+
+            std::ifstream file( path);
+            std::stringstream stream;
+            stream << file.rdbuf();
+
+            statement( std::move( stream).str(), out);
+         }
          
          inline static std::shared_ptr< sqlite3> open( const std::filesystem::path& file)
          {

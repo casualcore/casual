@@ -46,6 +46,14 @@ namespace casual
             }
 
          } // temporary
+
+         common::file::scoped::Path content( const std::filesystem::path& path, std::string_view content)
+         {
+            std::ofstream file{ path};
+            file << content;
+            return { path};
+         }
+
       } // file
 
       namespace directory

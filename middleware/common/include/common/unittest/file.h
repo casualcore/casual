@@ -28,9 +28,11 @@ namespace casual
                return result;
             }
 
-
             common::file::scoped::Path name( std::string_view extension);
          } // temporary
+
+         common::file::scoped::Path content( const std::filesystem::path& file, std::string_view content);
+
       } // file
 
       namespace directory
@@ -50,13 +52,14 @@ namespace casual
                Scoped( const Scoped&) = delete;
                Scoped& operator =( const Scoped&) = delete;
 
-               inline const std::string& path() const & { return m_path;}
-               inline operator const std::string&() const & { return m_path;}
+               inline auto& path() const & { return m_path;}
+               inline auto string() const { return m_path.string();}
+               inline operator const std::filesystem::path&() const & { return m_path;}
 
                friend std::ostream& operator << ( std::ostream& out, const Scoped& value);
 
             private:
-               std::string m_path;
+               std::filesystem::path m_path;
             };
             
          } // temporary

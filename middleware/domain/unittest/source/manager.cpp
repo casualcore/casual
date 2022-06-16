@@ -290,7 +290,7 @@ domain:
                environment::variable::set( "CASUAL_DOMAIN_HOME", home);
                
                if( callback)
-                  callback( home);
+                  callback( home.string());
 
                // reset all (hopefolly) environment based 'values' 
                environment::reset();

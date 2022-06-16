@@ -194,6 +194,10 @@ namespace casual
          // Make sure we set WAL-mode.
          m_connection.statement( "PRAGMA journal_mode=WAL;");
 
+         log::line( verbose::log, "pre_statements_path: ", m_connection.pre_statements_path());
+         m_connection.pre_statements( log::category::information);
+
+
          {
             Trace trace{ "queue::group::Queuebase::Queuebase create table queue"};
          
@@ -226,8 +230,14 @@ namespace casual
       {
          Trace trace{ "queue::group::Queuebase::~Queuebase"};
 
-         if( m_connection)
+         if( ! m_connection)
+            return;
+
+         common::exception::guard( [ this]()
+         {
             m_connection.commit();
+            m_connection.post_statements( log::category::information);
+         });
       }
 
       const std::filesystem::path& Queuebase::file() const
