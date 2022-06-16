@@ -15,6 +15,7 @@
 
 #include "domain/unittest/manager.h"
 #include "domain/discovery/api.h"
+#include "service/unittest/utility.h"
 
 
 #include "casual/xatmi.h"
@@ -47,6 +48,8 @@ http:
       -  name: discard/transaction
          url: a.example/discard/transaction
          discard_transaction: true
+      -  name: foo
+         url: foo.example
 
 )");
                   common::environment::variable::set( "CASUAL_UNITTEST_HTTP_CONFIGURATION", result.string());
@@ -107,6 +110,19 @@ domain:
          EXPECT_TRUE( tx_rollback() == TX_OK);
 
          tpfree( buffer);
+      }
+
+      TEST( http_outbound, service_instance_order)
+      {
+         common::unittest::Trace trace;
+         local::Domain domain;
+
+         auto state = casual::service::unittest::state();
+         auto service = common::algorithm::find( state.services, "foo");
+         ASSERT_TRUE( service);
+         auto& instance = service->instances.concurrent.at( 0);
+         EXPECT_TRUE( instance.order == 0);
+         EXPECT_TRUE( instance.hops == 0);
       }
 
       TEST( http_outbound, in_transaction_call_discard__expect_rollback)

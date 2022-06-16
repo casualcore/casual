@@ -114,11 +114,13 @@ namespace casual
             struct Concurrent
             {
                common::strong::process::id pid;
-               platform::size::type hops;
+               platform::size::type hops{};
+               platform::size::type order{};
 
                CASUAL_CONST_CORRECT_SERIALIZE(
                   CASUAL_SERIALIZE( pid);
                   CASUAL_SERIALIZE( hops);
+                  CASUAL_SERIALIZE( order);
                )
             };
 

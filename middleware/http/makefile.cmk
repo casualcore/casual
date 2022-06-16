@@ -9,6 +9,9 @@ make.IncludePaths([
     '../buffer/include',
     '../domain/include',
     '../domain/unittest/include',
+    '../service/include',
+    '../service/unittest/include',
+    '../configuration/include',
     ]
     + make.optional_include_paths()
     + dsl.paths().include.gtest
@@ -21,6 +24,7 @@ make.LibraryPaths([
     '../buffer/bin',
     '../xatmi/bin',
     '../domain/bin',
+    '../service/bin',
     '../configuration/bin',
     '../serviceframework/bin']
     + make.optional_library_paths()
@@ -87,6 +91,7 @@ make.LinkUnittest( 'unittest/bin/test-http',
       common_archive,
       'casual-common',
       'casual-domain-unittest',
+      'casual-service-unittest',
       'casual-unittest',
       'casual-xatmi',
       'casual-domain-discovery',

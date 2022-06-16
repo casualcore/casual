@@ -50,8 +50,8 @@ namespace casual
                   common::message::service::concurrent::Advertise message{ process::handle()};
                   message.alias = instance::alias();
 
-                  // highest possible order
-                  message.order = std::numeric_limits< std::decay_t< decltype( message.order)>>::max();
+                  // lowest possible order
+                  message.order = 0;
 
                   algorithm::transform( state.lookup, message.services.add, []( auto& l){
                      message::service::concurrent::advertise::Service service;

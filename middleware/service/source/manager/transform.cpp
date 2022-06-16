@@ -50,6 +50,7 @@ namespace casual
                   manager::admin::model::instance::Concurrent result;
 
                   result.process = instance.process;
+                  
 
                   return result;
                }
@@ -112,7 +113,8 @@ namespace casual
                   {
                      return manager::admin::model::service::instance::Concurrent{
                         value.process().pid,
-                        value.property.hops
+                        value.property.hops,
+                        value.get().order
                      };
                   };
 

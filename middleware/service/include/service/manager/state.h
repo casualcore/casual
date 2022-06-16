@@ -136,7 +136,7 @@ namespace casual
             {
                using base_instance::base_instance;
                
-               platform::size::type order;
+               platform::size::type order{};
                
                friend bool operator < ( const Concurrent& lhs, const Concurrent& rhs);
 
