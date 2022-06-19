@@ -586,7 +586,7 @@ namespace casual
                auto receive( const Socket& socket, policy::complete_type& complete, common::Flags< Flag> flags)
                {
                   Trace trace{ "common::communication::tcp::policy::local::receive"};
-                  log::line( verbose::log, "complete: ", complete, ", flags: ", flags);
+                  log::line( verbose::log, "socket: ", socket, ", flags: ", flags);
 
                   try
                   {
@@ -608,7 +608,7 @@ namespace casual
 
                      if( complete.offset >= message::header::size)
                      {
-                        // we receive the paylad (or the rest of it).
+                        // we receive the payload (or the rest of it).
                         auto offset = complete.offset - message::header::size;
                         auto first = complete.payload.data() + offset;
                         
@@ -622,7 +622,7 @@ namespace casual
 
                         if( complete.offset == message::header::size)
                         {
-                           // we've got the header, set up the paylad
+                           // we've got the header, set up the payload
                            complete.payload.resize( complete.size());
 
                            // try to get the payload (or part of it).

@@ -29,21 +29,12 @@ namespace casual
       {
          namespace
          {
-            struct Domain
+            namespace configuration
             {
                
-               Domain( std::string configuration) : domain{ { std::move( configuration)}} 
-               {
-               }
-
-               Domain() : Domain( Domain::configuration) {}
-
-               casual::domain::unittest::Manager domain;
-
-               static constexpr auto configuration = R"(
+               static constexpr auto base = R"(
 domain: 
-   name: gateway-reverse
-
+   name: base
    groups: 
       - name: base
       - name: gateway
@@ -56,16 +47,29 @@ domain:
         memberships: [ base]
       - path: bin/casual-gateway-manager
         memberships: [ gateway]
+)";
+
+            } // configuration
+
+            template< typename... C>
+            auto domain( C&&... configurations)
+            {
+               return casual::domain::unittest::manager( configuration::base, std::forward< C>( configurations)...);
+            }
+
+
+         } // unnamed
+      } // local
+
+      TEST( gateway_manager_reverse, four_inbounds_outbounds_connections_127_0_0_1__6669)
+      {
+         common::unittest::Trace trace;
+
+         auto b = local::domain( R"(
+domain:
+   name: B
    gateway:
       reverse:
-         outbound:
-            groups:
-               -  connections:
-                  -  address: 127.0.0.1:6669
-                     services:
-                        - a
-                        - b
-
          inbound:
             groups:
                -  connections: 
@@ -73,179 +77,125 @@ domain:
                   - address: 127.0.0.1:6669
                   - address: 127.0.0.1:6669
                   - address: 127.0.0.1:6669
-)";
 
-            };
+)");
 
-            namespace call
-            {
-               auto state()
-               {
-                  serviceframework::service::protocol::binary::Call call;
-                  auto reply = call( manager::admin::service::name::state);
+         auto a = local::domain( R"(
+domain:
+   name: A
+   gateway:
+      reverse:
+         outbound:
+            groups:
+               -  connections:
+                  -  address: 127.0.0.1:6669
+)");
 
-                  manager::admin::model::State result;
-                  reply >> CASUAL_NAMED_VALUE( result);
-
-                  return result;
-               }
-            }
-
-            namespace state
-            {
-               template< typename P>
-               auto until( P&& predicate)
-               {
-                  auto state = call::state();
-
-                  auto count = 1000;
-
-                  while( ! predicate( state) && count-- > 0)
-                  {
-                     process::sleep( std::chrono::milliseconds{ 2});
-                     state = call::state();
-                  }
-
-                  return state;
-               }
-               
-            } // state
-
-
-         } // unnamed
-      } // local
-
-      TEST( gateway_manager_reverse, inbounds_outbounds_127_0_0_1__6669)
-      {
-         common::unittest::Trace trace;
-
-         local::Domain domain;
-
-         auto state = local::state::until( []( auto& state)
-         { 
-            return ! state.connections.empty() && ! state.connections[ 0].remote.name.empty();
-         });
-
-         ASSERT_TRUE( ! state.connections.empty()) << CASUAL_NAMED_VALUE( state);
-         EXPECT_TRUE( state.connections[ 0].remote.name == "gateway-reverse");
+         auto state = gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected( 4));
+         EXPECT_TRUE( gateway::unittest::fetch::predicate::outbound::connected( "B")( state));
       }
 
-      TEST( gateway_manager_reverse, advertise_a__discovery__expect_to_find_a)
+      TEST( gateway_manager_reverse, advertise_b__discovery__expect_to_find_b)
       {
          common::unittest::Trace trace;
 
-         local::Domain domain;
+         auto b = local::domain( R"(
+domain:
+   name: B
+   gateway:
+      reverse:
+         inbound:
+            groups:
+               -  connections: 
+                  - address: 127.0.0.1:6669
+)");
 
-         casual::service::unittest::advertise( { "a"});
+         casual::service::unittest::advertise( { "b"});
 
-         auto state = local::state::until( []( auto& state)
-         { 
-            return ! state.connections.empty() && ! state.connections[ 0].remote.name.empty();
-         });
+         auto a = local::domain( R"(
+domain:
+   name: A
+   gateway:
+      reverse:
+         outbound:
+            groups:
+               -  connections:
+                  -  address: 127.0.0.1:6669
+)");
 
-         casual::domain::unittest::discover( { "a"}, {});
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected( "B"));
+
+         casual::domain::unittest::discover( { "b"}, {});
 
          // check that service has concurrent instances
          {
             auto service = casual::service::unittest::state();
-            auto found = algorithm::find( service.services, "a");
-            ASSERT_TRUE( found);
+            auto found = algorithm::find( service.services, "b");
+            ASSERT_TRUE( found) << CASUAL_NAMED_VALUE( service);
             EXPECT_TRUE( ! found->instances.concurrent.empty()) << CASUAL_NAMED_VALUE( *found);
          }
 
       }
 
-      namespace local
-      {
-         namespace
-         {
-            namespace service
-            {
-               void echo() 
-               {
-                  common::message::service::call::callee::Request request;
-                  communication::device::blocking::receive( communication::ipc::inbound::device(), request);
-                  
-                  auto reply = message::reverse::type( request);
-                  reply.buffer = std::move( request.buffer);
-                  reply.transaction.trid = std::move( request.trid);
-
-                  communication::device::blocking::send( request.process.ipc, reply);
-
-                  {
-                     common::message::service::call::ACK ack;
-                     ack.metric.process = process::handle();
-                     ack.metric.trid = reply.transaction.trid;
-                     ack.metric.pending = request.pending;
-                     ack.metric.start = platform::time::clock::type::now();
-                     ack.metric.end = platform::time::clock::type::now();
-                     ack.metric.service = request.service.name;
-
-                     communication::device::blocking::send( communication::instance::outbound::service::manager::device(), ack);
-                  }
-               };
-            } // service
-         } // <unnamed>
-      } // local
-
-      TEST( gateway_manager_reverse, advertise_a__discovery__call_outbound)
+      TEST( gateway_manager_reverse, advertise_b__discovery__call_b_10_times)
       {
          common::unittest::Trace trace;
 
-         local::Domain domain;
+         auto b = local::domain( R"(
+domain:
+   name: B
+   gateway:
+      reverse:
+         inbound:
+            groups:
+               -  connections: 
+                  - address: 127.0.0.1:6669
+)");
 
-         casual::service::unittest::advertise( { "a"});
+         casual::service::unittest::advertise( { "b"});
+
+         auto a = local::domain( R"(
+domain:
+   name: A
+   gateway:
+      reverse:
+         outbound:
+            groups:
+               -  connections:
+                  -  address: 127.0.0.1:6669
+)");
+
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected( "B"));
+
+         const auto payload = common::unittest::random::binary( 512);
 
 
-         auto state = local::state::until( []( auto& state)
-         { 
-            return ! state.connections.empty() && ! state.connections[ 0].remote.name.empty();
+         // call b a few times
+         auto correlations = algorithm::generate_n< 10>( [ &payload](){
+            return common::unittest::service::send( "b", payload);
          });
 
-         casual::domain::unittest::discover( { "a"}, {});
+         // we enter B and reply to to the request
+         b.activate();
 
-
-         auto outbound_processes = []() -> std::vector< process::Handle>
+         for( auto& correlation : correlations)
          {
-            auto state = casual::service::unittest::state();
-            if( auto found = algorithm::find( state.services, "a"))
-            {
-               return algorithm::accumulate( found->instances.concurrent, std::vector< process::Handle>{}, [&state]( auto result, auto& instance)
-               {
-                  if( auto found = algorithm::find( state.instances.concurrent, instance.pid))
-                     result.push_back( found->process);
-                  return result;
-               });
-            }
+            auto request = common::unittest::service::receive< common::message::service::call::callee::Request>( communication::ipc::inbound::device(), correlation);
+            casual::service::unittest::send::ack( request);
 
-            return {};
-         };
+            auto reply = common::message::reverse::type( request);
+            reply.buffer = std::move( request.buffer);
+            communication::device::blocking::send( request.process.ipc, reply);
+         }
 
-         
-         auto outbounds = outbound_processes();
-         ASSERT_TRUE( ! outbounds.empty()) << CASUAL_NAMED_VALUE( outbounds);
+         // we enter A and receive the replies
+         a.activate();
 
-         const auto data = common::unittest::random::binary( 128);
-
-         algorithm::for_n< 10>( [&]()
+         for( auto& correlation : correlations)
          {
-            algorithm::rotate( outbounds, std::begin( outbounds) + 1);
-            auto& process = range::front( outbounds);
-
-            common::message::service::call::callee::Request request{ common::process::handle()};
-            request.service.name = "a";
-            request.buffer.memory = data;
-            
-            common::communication::device::blocking::send( process.ipc, request);
-
-            // echo the call
-            local::service::echo();
-
-            common::message::service::call::Reply reply;
-            common::communication::device::blocking::receive( common::communication::ipc::inbound::device(), reply);
-
-            EXPECT_TRUE( reply.buffer.memory ==  data);
-         });
+            auto reply = common::unittest::service::receive< common::message::service::call::Reply>( communication::ipc::inbound::device(), correlation);
+            EXPECT_TRUE( reply.buffer.memory == payload);
+         }
       }
 
    } // gateway

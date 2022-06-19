@@ -14,30 +14,37 @@ namespace casual
 {
    namespace common::predicate
    {
+      //! @returns a composite predicate of all `predicates`, when invoked
+      //!    return _logical AND_ for all `predicates`
       template< typename... Ps>
-      auto make_and( Ps&&... predicates)
+      auto conjunction( Ps&&... predicates)
       {
-         return [=]( auto&&... param){
+         return [=]( auto&&... param)
+         {
             return ( ... && predicates( param...));
          };
       }
 
+      //! @returns a composite predicate of all `predicates`, when invoked
+      //!    return _logical OR_ for all `predicates`
       template< typename... Ps>
-      auto make_or( Ps&&... predicates)
+      auto disjunction( Ps&&... predicates)
       {
-         return [=]( auto&&... param){
+         return [=]( auto&&... param)
+         {
             return ( ... || predicates( param...));
          };
       }
 
       template< typename P>
-      auto make_nested( P&& predicate) { return std::forward< P>( predicate);}
+      auto composition( P&& predicate) { return std::forward< P>( predicate);}
 
       template< typename P, typename... Ts>
-      auto make_nested( P&& predicate, Ts&&... ts)
+      auto composition( P&& predicate, Ts&&... ts)
       {
-         return [=]( auto&& value){
-            return predicate( make_nested( std::move( ts)...)( std::forward< decltype( value)>( value)));
+         return [=]( auto&& value)
+         {
+            return predicate( composition( std::move( ts)...)( std::forward< decltype( value)>( value)));
          };
       }
 

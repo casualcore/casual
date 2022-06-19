@@ -19,7 +19,8 @@ make.IncludePaths( ['include',
     '../middleware/xatmi/include',
     '../middleware/queue/include',
     '../middleware/queue/unittest/include',
-    '../middleware/buffer/include']
+    '../middleware/buffer/include',
+    '../middleware/administration/unittest/include']
     + make.optional_include_paths()
     + dsl.paths().include.gtest
    )
@@ -35,7 +36,9 @@ make.LibraryPaths( [ 'bin',
     '../middleware/gateway/bin',
     '../middleware/serviceframework/bin',
     '../middleware/configuration/bin',
-    '../middleware/http/bin']
+    '../middleware/http/bin',
+    '../middleware/administration/bin',
+    '../middleware/cli/bin']
     + make.optional_library_paths()
     + dsl.paths().library.gtest
    )
@@ -88,6 +91,7 @@ make.LinkUnittest( 'unittest/bin/test-casual',
       'casual-service-unittest',
       'casual-transaction-unittest',
       'casual-gateway-unittest',
+      'casual-administration-unittest',
       'casual-configuration',
       'casual-domain-admin-cli',
       'casual-serviceframework',

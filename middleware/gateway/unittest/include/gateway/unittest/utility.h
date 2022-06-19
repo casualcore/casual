@@ -77,10 +77,12 @@ namespace casual
                {
                   inline auto outbound()
                   { 
-                     return []( auto& connection)
-                     {
-                        return ( ! is::outbound()( connection)) || connection.remote.id;
-                     };
+                     return common::predicate::conjunction( is::outbound(), is::runlevel::connected());
+                  }
+
+                  inline auto inbound()
+                  { 
+                     return common::predicate::conjunction( is::inbound(), is::runlevel::connected());
                   }
                } // connected
 
@@ -92,7 +94,8 @@ namespace casual
                {
                   return []( auto& state)
                   {
-                     return common::algorithm::all_of( state.connections, is::connected::outbound());
+                     auto outbounds = common::algorithm::filter( state.connections, is::outbound());
+                     return common::algorithm::all_of( outbounds, is::runlevel::connected());
                   };
                }
 
@@ -153,7 +156,13 @@ namespace casual
 
             namespace inbound
             {
-
+               inline auto connected( platform::size::type count)
+               {
+                  return [count]( auto& state)
+                  {
+                     return common::algorithm::count_if( state.connections, is::connected::inbound()) == count;
+                  };
+               }
                
             } // inbound
 

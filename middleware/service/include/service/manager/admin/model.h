@@ -162,6 +162,8 @@ namespace casual
             std::vector< service::instance::Sequential> sequential;
             std::vector< service::instance::Concurrent> concurrent;
 
+            inline platform::size::type size() const noexcept { return sequential.size() + concurrent.size();}
+
             CASUAL_CONST_CORRECT_SERIALIZE(
                CASUAL_SERIALIZE( sequential);
                CASUAL_SERIALIZE( concurrent);

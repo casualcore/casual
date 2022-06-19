@@ -176,7 +176,7 @@ namespace casual
                }
 
                if( count == 0)
-                  code::raise::error( code::casual::invalid_semantics, "unittest::fetch::until failed to fullfill the predicate after ", total_count, " tries");
+                  code::raise::error( code::casual::invalid_semantics, "unittest::fetch::until failed to fulfill the predicate after ", total_count, " tries - state: ", state);
 
                return state;
             };

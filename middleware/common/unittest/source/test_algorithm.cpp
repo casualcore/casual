@@ -716,7 +716,7 @@ namespace casual
          EXPECT_TRUE(( algorithm::remove( range::make( container), range::make( std::begin( container) + 1, 2)) == std::vector< int>{ 1, 4}));
       }
 
-      TEST( common_algorithm_append_unique, empty__exepct_empty)
+      TEST( common_algorithm_append_unique, empty__expect_empty)
       {
          common::unittest::Trace trace;
 
@@ -728,7 +728,7 @@ namespace casual
          EXPECT_TRUE( target.empty());
       }
 
-      TEST( common_algorithm_append_unique, unique_values__exepct_all)
+      TEST( common_algorithm_append_unique, unique_values__expect_all)
       {
          common::unittest::Trace trace;
 
@@ -740,16 +740,16 @@ namespace casual
          EXPECT_TRUE( target == source);
       }
 
-      TEST( common_algorithm_append_unique, not_unique_values__exepct_some)
+      TEST( common_algorithm_append_unique, not_unique_values__expect_unique_values)
       {
          common::unittest::Trace trace;
 
-         const std::vector< int> source{ 1, 2, 4, 3, 1, 1, 3, 3, 4, 4, 4, 4, 4, 2, 2, 2, 2, 2, 2};
+         const std::vector< int> source{ 1, 2, 4, 4, 4, 3, 1, 1, 3, 3, 4, 4, 4, 2, 2, 2, 2, 2, 2};
          std::vector< int> target;
 
          algorithm::append_unique( source, target);
 
-         EXPECT_TRUE(( target == std::vector< int>{ 1, 2, 4, 3}));
+         EXPECT_TRUE(( target == std::vector< int>{ 1, 2, 4, 3})) << CASUAL_NAMED_VALUE( target);
       }
 
       TEST( common_algorithm_transform_if, rvalue)

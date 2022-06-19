@@ -366,8 +366,11 @@ namespace casual
 
                         if( auto service = state.service( message.requested))
                         {
+                           log::line( verbose::log, "found service: ", *service);
                            if( auto handle = service->reserve( message.process, message.correlation))
                            {
+                              log::line( verbose::log, "'reserved' instance: ", handle);
+
                               auto reply = common::message::reverse::type( message);
                               reply.service = service->information;
                               reply.state = decltype( reply.state)::idle;

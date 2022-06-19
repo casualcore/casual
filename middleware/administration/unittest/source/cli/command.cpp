@@ -26,6 +26,9 @@ namespace casual
          signal::callback::registration< code::signal::child>( [](){});
 
          environment::variable::set( "PATH", environment::expand( string::compose( "${CASUAL_MAKE_SOURCE_ROOT}/middleware/administration/bin:${PATH}")));
+         log::line( verbose::log, "PATH: ", environment::variable::get( "PATH"));
+         
+         log::line( verbose::log, "executing command: ", command);
          m_stream = posix::result( ::popen( command.data(), "r"));
       }
 

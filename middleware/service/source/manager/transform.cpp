@@ -143,10 +143,10 @@ namespace casual
          manager::admin::model::State result;
 
          common::algorithm::transform( state.instances.sequential, result.instances.sequential,
-               common::predicate::make_nested( local::Instance{}, common::predicate::adapter::second()));
+               common::predicate::composition( local::Instance{}, common::predicate::adapter::second()));
 
          common::algorithm::transform( state.instances.concurrent, result.instances.concurrent,
-               common::predicate::make_nested( local::Instance{}, common::predicate::adapter::second()));
+               common::predicate::composition( local::Instance{}, common::predicate::adapter::second()));
 
          common::algorithm::transform( state.pending.lookups, result.pending, local::pending());
 

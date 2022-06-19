@@ -41,7 +41,7 @@ namespace casual
 
                auto is_external( const transaction::ID& external)
                {
-                  return common::predicate::make_and(
+                  return common::predicate::conjunction(
                      is_global( external),
                      [&external]( auto& mapping)
                      {

@@ -1251,11 +1251,10 @@ domain:
          auto b = local::domain(  R"(
 domain: 
    name: B
-
    servers:
-      -  path: "${CASUAL_REPOSITORY_ROOT}/middleware/example/server/bin/casual-example-server"
+      -  path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-server"
          memberships: [ user]
-         arguments: [ --sleep, 100ms]
+         arguments: [ --sleep, 10ms]
          instances: 1
    gateway:
       inbound:
@@ -1274,7 +1273,6 @@ domain:
          auto a = local::domain( R"(
 domain: 
    name: A
-
    gateway:
       inbound:
          groups:
@@ -1284,21 +1282,26 @@ domain:
          groups:
             -  connections:
                   -  address: 127.0.0.1:7001
-                     services: [ casual/example/sleep]
 )");
 
 
-         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected());
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected( 1));
+
+         local::call( "casual/example/sleep", TPOK);
          
          // jump in to B
          b.activate();
 
-         casual::domain::manager::admin::cli cli;
-         common::argument::Parse parse{ "", cli.options()};
-         parse( { "domain", "--scale-instances", "casual-example-server", "0"});
+         {
+            casual::domain::manager::admin::cli cli;
+            common::argument::Parse{ "", cli.options()}( { "domain", "--scale-instances", "casual-example-server", "0"});
+         }
 
+         // wait for the unadvertise
+         casual::service::unittest::fetch::until( casual::service::unittest::fetch::predicate::instances( "casual/example/sleep", 0));
 
-         // calls to get TPENOENT
+         a.activate();
+         // call expect TPENOENT
          local::call( "casual/example/sleep", TPENOENT);
       }
 

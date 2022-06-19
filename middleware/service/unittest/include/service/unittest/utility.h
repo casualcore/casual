@@ -47,7 +47,23 @@ namespace casual
       namespace fetch
       {
          constexpr auto until = common::unittest::fetch::until( &unittest::state);
+
+         namespace predicate
+         {
+            inline auto instances( std::string_view service, platform::size::type count)
+            {
+               return [ service, count]( auto& state)
+               {
+                  if( auto found = common::algorithm::find( state.services, service))
+                     return found->instances.size() == count;
+
+                  return false;
+               };
+            }
+         } // predicate
       }
+
+
 
    
    } // common::unittest

@@ -235,7 +235,7 @@ namespace casual
 
             Inbound& Inbound::operator += ( Inbound rhs)
             {
-               local::range::update( std::move( rhs.groups), groups, predicate::make_and( local::predicate::equal::alias(), local::predicate::equal::connect()));
+               local::range::update( std::move( rhs.groups), groups, predicate::conjunction( local::predicate::equal::alias(), local::predicate::equal::connect()));
                return *this;
             }
 
@@ -264,7 +264,7 @@ namespace casual
 
             Outbound& Outbound::operator += ( Outbound rhs)
             {
-               local::range::update( std::move( rhs.groups), groups, predicate::make_and( local::predicate::equal::alias(), local::predicate::equal::connect()));
+               local::range::update( std::move( rhs.groups), groups, predicate::conjunction( local::predicate::equal::alias(), local::predicate::equal::connect()));
 
                return *this;
             }

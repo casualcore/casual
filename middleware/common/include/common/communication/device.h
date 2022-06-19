@@ -218,7 +218,7 @@ namespace casual
          {
             auto found = find(
                   std::forward< Policy>( policy),
-                  predicate::make_and(
+                  predicate::conjunction(
                         []( const auto& message){ return message.complete();},
                         std::forward< Predicate>( predicate)));
 

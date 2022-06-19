@@ -10,6 +10,7 @@
 #include "common/unittest.h"
 #include "common/predicate.h"
 #include "common/algorithm/is.h"
+#include "common/array.h"
 
 
 namespace casual
@@ -30,11 +31,11 @@ namespace casual
          EXPECT_TRUE( pred( 2));
       }
 
-      TEST( casual_common_predicate, and__one_lambda)
+      TEST( casual_common_predicate_conjunction, one_lambda)
       {
          common::unittest::Trace trace;
 
-         auto pred = predicate::make_and(
+         auto pred = predicate::conjunction(
             []( int l, int r){ return l < r;}
          ); 
 
@@ -43,11 +44,11 @@ namespace casual
          EXPECT_FALSE( pred( 2, 1));
       }
 
-      TEST( casual_common_predicate, and__two_lambda)
+      TEST( casual_common_predicate_conjunction, two_lambda)
       {
          common::unittest::Trace trace;
 
-         auto pred = predicate::make_and(
+         auto pred = predicate::conjunction(
             []( int l, int r){ return l < r;},
             []( int l, int r){ return ( l + r) % 2 == 0;}
          ); 
@@ -57,11 +58,11 @@ namespace casual
          EXPECT_FALSE( pred( 2, 2));
       }
 
-      TEST( casual_common_predicate, or__one_lambda)
+      TEST( casual_common_predicate_disjunction, one_lambda)
       {
          common::unittest::Trace trace;
 
-         auto pred = predicate::make_or(
+         auto pred = predicate::disjunction(
             []( int l, int r){ return l < r;}
          ); 
 
@@ -70,11 +71,11 @@ namespace casual
          EXPECT_FALSE( pred( 2, 1));
       }
 
-      TEST( casual_common_predicate, or__two_lambda)
+      TEST( casual_common_predicate_disjunction, two_lambda)
       {
          common::unittest::Trace trace;
 
-         auto pred = predicate::make_or(
+         auto pred = predicate::disjunction(
             []( int l, int r){ return l < r;},
             []( int l, int r){ return ( l + r) % 2 == 0;}
          ); 
@@ -85,11 +86,11 @@ namespace casual
          EXPECT_TRUE( pred( 4, 2));
       }
 
-      TEST( casual_common_predicate, order__one_lambda)
+      TEST( casual_common_predicate_disjunction, order__one_lambda)
       {
          common::unittest::Trace trace;
 
-         auto pred = predicate::make_or(
+         auto pred = predicate::disjunction(
             []( int l, int r){ return l < r;}
          ); 
 
@@ -106,72 +107,50 @@ namespace casual
       {
          namespace
          {
-            struct State
+            struct State : Compare< State>
             {
-               int a = 0;
-               int b = 0;
-               friend bool operator == ( const State& l, const State& r) { return l.a == r.a && l.b == r.b;}
+               State( int a, int b) : a{ a}, b{ b} {}
+               
+               int a{};
+               int b{};
+               
+               auto tie() const noexcept { return std::tie( a, b);}
                friend std::ostream& operator << ( std::ostream& out, const State& s) { return out << "{ a: " << s.a << ", b: " << s.b << '}';}
             };
 
             namespace filter 
             {
-               struct base
+               auto a( int value)
                {
-                  base( int value) : value( value) {};
-                  int value = 0;
-               };
+                  return [ value]( auto& state){ return state.a == value;};
+               }
 
-               struct A : base
+               auto b( int value)
                {
-                  using base::base;
-                  bool operator () ( const State& state) const { return value == state.a;}
-               };
+                  return [ value]( auto& state){ return state.b == value;};
+               }
 
-               struct B : base
+               auto even()
                {
-                  using base::base;
-                  bool operator () ( const State& state) const { return value == state.b;}
-               };
+                  return []( auto value){ return value % 2 == 0;};
+               }
+
             } // filter 
 
-         /*
-         namespace detail 
-         {
-            template< typename P>
-            auto variadic_predicate( P&& predicate)
-            {
-               return [=]( auto&&... param){
-                  return predicate( std::forward< decltype( param)>( param)...);
-               };
-            }
-         } // detail 
-         
-         template< typename P>
-         auto make_and( P&& predicate) { return detail::variadic_predicate( std::forward< P>( predicate));}
 
-         template< typename P, typename... Ts>
-         auto make_and( P&& predicate, Ts&&... ts)
-         {
-            return [=]( auto&&... param){
-               return predicate( param...) && make_and( std::move( ts)...)( param...);
-            };
-         }
-         */
-         
-
+      
          } // <unnamed>
       } // local
 
-      TEST( casual_common_predicate, and__rvalue_lambdas__a__b)
+      TEST( casual_common_predicate_conjunction, rvalue_lambdas__a__b)
       {
          common::unittest::Trace trace;
 
          auto values = std::vector< local::State>{ { 1, 2}, { 1, 3}, { 1, 2}, { 2, 2}, { 1, 2}, { 4, 7}};
 
-         auto pred = predicate::make_and(
-            []( const local::State& s){ return s.a == 1;},
-            []( const local::State& s){ return s.b == 2;}
+         auto pred = predicate::conjunction(
+            []( const auto& s){ return s.a == 1;},
+            []( const auto& s){ return s.b == 2;}
          ); 
 
          auto filtered = std::get< 0>( algorithm::partition( values, pred));
@@ -180,7 +159,7 @@ namespace casual
          EXPECT_TRUE( filtered == expected) << trace.compose( "filtered: ", filtered);
       }
 
-      TEST( casual_common_predicate, and__lvalue_lambdas__a__b)
+      TEST( casual_common_predicate_conjunction, lvalue_lambdas__a__b)
       {
          common::unittest::Trace trace;
 
@@ -189,7 +168,7 @@ namespace casual
          const auto a = []( const local::State& s){ return s.a == 1;};
          const auto b = []( const local::State& s){ return s.b == 2;};
          
-         auto pred = predicate::make_and( a, b); 
+         auto pred = predicate::conjunction( a, b); 
 
          auto filtered = std::get< 0>( algorithm::partition( values, pred));
 
@@ -203,22 +182,22 @@ namespace casual
 
          auto values = std::vector< local::State>{ { 1, 2}, { 1, 3}, { 1, 2}, { 2, 2}, { 1, 2}, { 4, 7}};
 
-         auto filtered = std::get< 0>( algorithm::partition( values, local::filter::A{ 1}));
-         filtered = std::get< 0>( algorithm::partition( filtered, local::filter::B{ 2}));
+         auto filtered = std::get< 0>( algorithm::partition( values, local::filter::a( 1)));
+         filtered = std::get< 0>( algorithm::partition( filtered, local::filter::b( 2)));
 
          auto expected = std::vector< local::State>{ { 1, 2}, { 1, 2}, { 1, 2}};
          EXPECT_TRUE( filtered == expected) << trace.compose( "filtered: ", filtered);
       }
 
-      TEST( casual_common_predicate, and__rvalue_functors__a__b)
+      TEST( casual_common_predicate_conjunction, rvalue_functors__a__b)
       {
          common::unittest::Trace trace;
 
          auto values = std::vector< local::State>{ { 1, 2}, { 1, 3}, { 1, 2}, { 2, 2}, { 1, 2}, { 4, 7}};
 
-         auto pred = predicate::make_and(
-            local::filter::A{ 1},
-            local::filter::B{ 2}
+         auto pred = predicate::conjunction(
+            local::filter::a( 1),
+            local::filter::b( 2)
          ); 
 
          auto filtered = std::get< 0>( algorithm::partition( values, pred));
@@ -227,19 +206,16 @@ namespace casual
          EXPECT_TRUE( filtered == expected) << trace.compose( "filtered: ", filtered);
       }
 
-      TEST( casual_common_predicate, and__lvalue_functors__a__b)
+      TEST( casual_common_predicate_conjunction, lvalue_functors__a__b)
       {
          common::unittest::Trace trace;
 
          auto values = std::vector< local::State>{ { 1, 2}, { 1, 3}, { 1, 2}, { 2, 2}, { 1, 2}, { 4, 7}};
 
-         auto a = local::filter::A{ 1};
-         auto b = local::filter::B{ 2};
+         auto a = local::filter::a( 1);
+         auto b = local::filter::b( 2);
 
-         EXPECT_TRUE( a.value == 1);
-         EXPECT_TRUE( b.value == 2);
-
-         auto pred = predicate::make_and( a, b); 
+         auto pred = predicate::conjunction( a, b); 
 
          auto filtered = std::get< 0>( algorithm::partition( values, pred));
 
@@ -248,6 +224,16 @@ namespace casual
       }
 
       
+      TEST( casual_common_predicate, composition__even_a)
+      {
+         common::unittest::Trace trace;
+
+         auto values = std::vector< local::State>{ { 1, 2}, { 1, 3}, { 1, 2}, { 2, 2}, { 1, 2}, { 4, 7}};
+
+         auto filtered = algorithm::sort( algorithm::filter( values, predicate::composition( local::filter::even(), []( auto& state){ return state.a;})));
+
+         EXPECT_TRUE( filtered == array::make( local::State{ 2, 2}, local::State{ 4, 7})) << CASUAL_NAMED_VALUE( filtered);
+      }
    
    } // common
 } // casual
