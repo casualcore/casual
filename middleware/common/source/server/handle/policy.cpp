@@ -202,7 +202,7 @@ namespace casual
 
                   common::service::Lookup lookup{
                      forward.parameter.service.name,
-                     common::service::Lookup::Context::forward};
+                     decltype( common::service::Lookup::Context::semantic)::forward};
 
                   auto request = message;
 

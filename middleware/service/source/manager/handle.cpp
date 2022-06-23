@@ -332,6 +332,8 @@ namespace casual
                      {
                         Trace trace{ "service::manager::handle::local::service::detail::discover"};
 
+                        log::line( verbose::log, "failed to find service: ", name, " - action: discover");
+
                         auto send_reply = execute::scope( [&]()
                         {
                            log::line( log, "no instances found for service: ", name);
@@ -348,7 +350,7 @@ namespace casual
                         {
                            log::line( log, "no instances found for service: ", name, " - action: ask neighbor domains");
 
-                           if( local::discovery::send( { name}, message.correlation) || message.context == decltype( message.context)::wait)
+                           if( local::discovery::send( { name}, message.correlation) || message.context.semantic == decltype( message.context.semantic)::wait)
                            {
                               // we sent the request OR the caller is willing to wait for future 
                               // advertised services
@@ -359,120 +361,183 @@ namespace casual
                         }
                      }
 
+                     namespace dispatch::lookup
+                     {
+                        void no_entry( State& state, common::message::service::lookup::Request& message)
+                        {
+                           log::line( verbose::log, "failed to find service: ", message.requested, " - action: reply with ", code::xatmi::no_entry);
+                           auto reply = common::message::reverse::type( message);
+                           reply.service.name = message.requested;
+                           reply.state = decltype( reply.state)::absent;
+
+                           state.multiplex.send( message.process.ipc, reply);
+                        }
+
+                        void reply( State& state, state::Service& service, const common::process::Handle& destination, common::message::service::lookup::Request& message, platform::time::unit pending)
+                        {
+                           log::line( verbose::log, "'reserved' instance: ", destination);
+
+                           auto reply = common::message::reverse::type( message);
+                           reply.service = service.information;
+                           reply.state = decltype( reply.state)::idle;
+                           reply.process = destination;
+                           reply.pending = pending;
+
+                           if( service.information.name != message.requested)
+                              reply.service.requested = message.requested;
+
+                           if( service.timeoutable())
+                           {
+                              auto now = platform::time::clock::type::now();
+
+                              reply.service.timeout.duration = service.timeout.duration.value();
+
+                              auto next = state.pending.deadline.add( {
+                                 now + reply.service.timeout.duration,
+                                 message.correlation,
+                                 destination.pid,
+                                 &service});
+
+                              if( next)
+                                 signal::timer::set( next.value() - now);
+                           }
+                           else if( message.deadline)
+                           {
+                              reply.service.timeout.duration = message.deadline.value() - platform::time::clock::type::now();
+                           }                             
+
+                           // send reply, if caller gone, we discard the reservation.
+                           state.multiplex.send( message.process.ipc, reply, [ &state, pid = destination.pid]( auto& destination, auto& complete)
+                           {
+                              if( auto found = algorithm::find( state.instances.sequential, pid))
+                                 found->second.discard();
+                           });
+                        }
+
+                        void pending( State& state, const state::Service& service, common::message::service::lookup::Request& message)
+                        {
+                           auto reply = common::message::reverse::type( message);
+                           reply.service = service.information;
+
+                           switch( message.context.semantic)
+                           {
+                              using Semantic = decltype( message.context.semantic);
+
+                              case Semantic::forward:
+                              {
+                                 // The intention is "send and forget", or a plain forward, we use our forward-cache for this
+                                 reply.process = state.forward;
+
+                                 // Caller will think that service is idle, that's the whole point
+                                 // with our forward.
+                                 reply.state = decltype( reply.state)::idle;
+
+                                 local::optional::send( state, message.process.ipc, reply);
+
+                                 break;
+                              }
+                              case Semantic::no_busy_intermediate:
+                              {
+                                 // the caller does not want to get a busy intermediate, only want's to wait until
+                                 // the service is idle. That is, we don't need to send timeout and
+                                 // stuff to the caller.
+                                 //
+                                 // If this is from another domain the actual timeouts and stuff can differ
+                                 // and this might be a problem?
+                                 // TODO semantics: something we need to address? probably not,
+                                 // since we can't make it 100% any way...)
+                                 state.pending.lookups.emplace_back( std::move( message), platform::time::clock::type::now());
+
+                                 break;
+                              }
+                              case Semantic::regular:
+                              {
+                                 // send busy-message to caller, to set timeouts and stuff
+                                 reply.state = decltype( reply.state)::busy;
+
+                                 if( local::optional::send( state, message.process.ipc, reply))
+                                 {
+                                    // All instances are busy, we stack the request
+                                    state.pending.lookups.emplace_back( std::move( message), platform::time::clock::type::now());
+                                 }
+
+                                 break;
+                              }
+                              case Semantic::wait:
+                              {
+                                 // we know the service exists, and it got instances, we do a regular pending.
+                                 state.pending.lookups.emplace_back( std::move( message), platform::time::clock::type::now());
+
+                                 break;
+                              }
+                           }
+                        }
+
+                        bool internal_only( State& state, state::Service& service, common::message::service::lookup::Request& message, platform::time::unit pending)
+                        {  
+                           if( service.sequential())
+                           {
+                              if( auto destination = service.reserve_sequential( message.process, message.correlation))
+                                 dispatch::lookup::reply( state, service, destination, message, pending);
+                              else
+                                 dispatch::lookup::pending( state, service, message);
+                              return true;
+                           }
+                           return false;
+                        }
+
+                        bool external_internal( State& state, state::Service& service, common::message::service::lookup::Request& message, platform::time::unit pending)
+                        {
+                           if( dispatch::lookup::internal_only( state, service, message, pending))
+                              return true;
+
+                           if( auto destination = service.reserve_concurrent( message.process, message.correlation))
+                           {
+                              dispatch::lookup::reply( state, service, destination, message, pending);
+                              return true;
+                           }
+
+                           return false;
+                        }
+                        
+                     } // dispatch::lookup
+
                      void lookup( State& state, common::message::service::lookup::Request& message, platform::time::unit pending)
                      {
                         Trace trace{ "service::manager::handle::local::service::detail::lookup"};
                         log::line( verbose::log, "message: ", message, ", pending: ", pending);
 
+                        using Enum = decltype( message.context.requester);
+
                         if( auto service = state.service( message.requested))
                         {
-                           log::line( verbose::log, "found service: ", *service);
-                           if( auto handle = service->reserve( message.process, message.correlation))
+                           log::line( verbose::log, "service: ", service);
+
+                           switch( message.context.requester)
                            {
-                              log::line( verbose::log, "'reserved' instance: ", handle);
-
-                              auto reply = common::message::reverse::type( message);
-                              reply.service = service->information;
-                              reply.state = decltype( reply.state)::idle;
-                              reply.process = handle;
-                              reply.pending = pending;
-
-                              if( service->information.name != message.requested)
-                                 reply.service.requested = message.requested;
-
-                              // note: concurrent instances are not subject to timeout within the domain
-                              if( service->timeoutable())
-                              {
-                                 auto now = platform::time::clock::type::now();
-
-                                 reply.service.timeout.duration = service->timeout.duration.value();
-
-                                 auto next = state.pending.deadline.add( {
-                                    now + reply.service.timeout.duration,
-                                    message.correlation,
-                                    handle.pid,
-                                    service});
-
-                                 if( next)
-                                    signal::timer::set( next.value() - now);
-                              }
-                              else if( message.deadline)
-                              {
-                                 reply.service.timeout.duration = message.deadline.value() - platform::time::clock::type::now();
-                              }                             
-
-                              // send reply, if caller gone, we discard the reservation.
-                              state.multiplex.send( message.process.ipc, reply, [ &state, pid = handle.pid]( auto& destination, auto& complete){
-                                 if( auto found = algorithm::find( state.instances.sequential, pid))
-                                    found->second.discard();
-                              });
+                              case Enum::external:
+                                 if( ! dispatch::lookup::internal_only( state, *service, message, pending))
+                                    dispatch::lookup::no_entry( state, message);
+                                 break;
+                              case Enum::external_discovery:
+                                 if( ! dispatch::lookup::external_internal( state, *service, message, pending))
+                                    dispatch::lookup::no_entry( state, message);
+                                 break;
+                              case Enum::internal:
+                                  if( ! dispatch::lookup::external_internal( state, *service, message, pending))
+                                    discover( state, std::move( message), service->information.name);
+                                 break;
                            }
-                           else if( service->instances.empty())
-                           {
-                              // note: vi discover on the "real service name", in case it's a route
-                              discover( state, std::move( message), service->information.name);
-                           }
-                           else
-                           {
-                              auto reply = common::message::reverse::type( message);
-                              reply.service = service->information;
-
-                              switch( message.context)
-                              {
-                                 using Context = decltype( message.context);
-
-                                 case Context::forward:
-                                 {
-                                    // The intention is "send and forget", or a plain forward, we use our forward-cache for this
-                                    reply.process = state.forward;
-
-                                    // Caller will think that service is idle, that's the whole point
-                                    // with our forward.
-                                    reply.state = decltype( reply.state)::idle;
-
-                                    local::optional::send( state, message.process.ipc, reply);
-
-                                    break;
-                                 }
-                                 case Context::no_busy_intermediate:
-                                 {
-                                    // the caller does not want to get a busy intermediate, only want's to wait until
-                                    // the service is idle. That is, we don't need to send timeout and
-                                    // stuff to the caller.
-                                    //
-                                    // If this is from another domain the actual timeouts and stuff can differ
-                                    // and this might be a problem?
-                                    // TODO semantics: something we need to address? probably not,
-                                    // since we can't make it 100% any way...)
-                                    state.pending.lookups.emplace_back( std::move( message), platform::time::clock::type::now());
-
-                                    break;
-                                 }
-                                 case Context::regular:
-                                 {
-                                    // send busy-message to caller, to set timeouts and stuff
-                                    reply.state = decltype( reply.state)::busy;
-
-                                    if( local::optional::send( state, message.process.ipc, reply))
-                                    {
-                                       // All instances are busy, we stack the request
-                                       state.pending.lookups.emplace_back( std::move( message), platform::time::clock::type::now());
-                                    }
-
-                                    break;
-                                 }
-                                 case Context::wait:
-                                 {
-                                    // we know the service exists, and it got instances, we do a regular pending.
-                                    state.pending.lookups.emplace_back( std::move( message), platform::time::clock::type::now());
-                                 }
-                              }
-                           }
+                        }
+                        else if( message.context.requester == Enum::internal)
+                        {
+                           // we always discover, if 'requester' is internal.
+                           auto name = message.requested;
+                           discover( state, std::move( message), name);
                         }
                         else
                         {
-                           auto name = message.requested;
-                           discover( state, std::move( message), name);
+                           dispatch::lookup::no_entry( state, message);
                         }
                      }
 
@@ -553,7 +618,7 @@ namespace casual
                            auto lookup = [&state, now = platform::time::clock::type::now()]( auto& pending)
                            {
                               // context::wait is not relevant for pending time.
-                              if( pending.request.context == decltype( pending.request.context)::wait)
+                              if( pending.request.context.semantic == decltype( pending.request.context.semantic)::wait)
                                  service::detail::lookup( state, pending.request, {});
                               else                              
                                  service::detail::lookup( state, pending.request, platform::time::clock::type::now() - pending.when);
@@ -764,7 +829,7 @@ namespace casual
                                  // the lookup to decide how to progress.
                                  service::lookup( state)( pending.request);
                               }
-                              else if( pending.request.context == decltype( pending.request.context)::wait)
+                              else if( pending.request.context.semantic == decltype( pending.request.context.semantic)::wait)
                               {
                                  // we put the pending back. In front to be as fair as possible
                                  state.pending.lookups.push_front( std::move( pending));
@@ -796,7 +861,7 @@ namespace casual
 
                            // only 'wait' pending
                            for( auto& pending : state.pending.lookups)
-                              if( pending.request.context == decltype( pending.request.context)::wait)
+                              if( pending.request.context.semantic == decltype( pending.request.context.semantic)::wait)
                                  reply.content.services.push_back( pending.request.requested);
 
                            algorithm::container::trim( reply.content.services, algorithm::unique( algorithm::sort( reply.content.services)));
@@ -830,7 +895,7 @@ namespace casual
 
                            // append all waiting requests
                            for( auto& pending : state.pending.lookups)
-                              if( pending.request.context == decltype( pending.request.context)::wait)
+                              if( pending.request.context.semantic == decltype( pending.request.context.semantic)::wait)
                                  reply.content.services.push_back( pending.request.requested);
                            
 
@@ -908,7 +973,6 @@ namespace casual
                         // assume pending shutdown
                         state.pending.shutdown( message);
                      }
-
                   };
                }
 

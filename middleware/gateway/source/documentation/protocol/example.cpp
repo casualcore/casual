@@ -176,7 +176,7 @@ namespace casual
             message.code.result = common::code::xatmi::service_fail;
             message.code.user = 42;
             message.transaction.trid = local::trid();
-            message.transaction.state = common::message::service::Transaction::State::active;
+            message.transaction.state = decltype( message.transaction.state)::active;
 
             message.buffer.type = ".binary/";
             message.buffer.memory = local::binary::value( 128);

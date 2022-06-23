@@ -342,11 +342,19 @@ namespace casual
 
             void add( state::instance::Sequential& instance);
             void add( state::instance::Concurrent& instance, state::service::instance::Concurrent::Property property);
-            
-            //! @return a reserved instance or 'null-handle' if no one is found.
-            common::process::Handle reserve( 
+
+            inline bool sequential() const noexcept { return ! instances.sequential.empty();}
+
+            common::process::Handle reserve_sequential( 
                const common::process::Handle& caller, 
                const common::strong::correlation::id& correlation);
+            
+            //! @return a reserved instance or 'null-handle' if no one is found.
+            common::process::Handle reserve_concurrent( 
+               const common::process::Handle& caller, 
+               const common::strong::correlation::id& correlation);
+
+
 
             bool timeoutable() const noexcept;
 

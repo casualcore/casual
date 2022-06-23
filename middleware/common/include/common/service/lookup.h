@@ -22,9 +22,9 @@ namespace casual
       {
          struct Lookup
          {
-            using Context = message::service::lookup::Request::Context;
+            using Context = message::service::lookup::request::Context;
             using Reply = message::service::lookup::Reply;
-            using State = Reply::State;
+            using State = message::service::lookup::reply::State;
 
             Lookup() noexcept;
                            

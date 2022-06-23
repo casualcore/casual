@@ -124,14 +124,13 @@ namespace casual
             {
                namespace detail
                {
-                  auto lookup( const std::string& service)
+                  auto lookup( std::string service)
                   {
                      Trace trace{ "tools::service::call::local::handle::detail::lookup"};
 
                      common::message::service::lookup::Request request{ process::handle()};
-                     request.requested = service;
-                     // we will wait 'for ever'.
-                     request.context = decltype( request.context)::no_busy_intermediate;
+                     request.requested = std::move( service);
+                     request.context.semantic = decltype( request.context.semantic)::no_busy_intermediate;
                      auto correlation = local::flush::send( communication::instance::outbound::service::manager::device(), request);
 
                      auto reply = common::message::reverse::type( request);

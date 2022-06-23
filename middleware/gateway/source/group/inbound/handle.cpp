@@ -406,7 +406,7 @@ namespace casual
                   namespace detail
                   {
                      template< typename M>
-                     auto lookup( State& state, M&& message)
+                     auto lookup( State& state, strong::file::descriptor::id descriptor, M&& message, common::message::service::lookup::request::context::Semantic semantic)
                      {
                         Trace trace{ "gateway::group::inbound::handle::local::external::service::detail::lookup"};
                         common::log::line( verbose::log, "message: ", message);
@@ -417,9 +417,14 @@ namespace casual
                         // Prepare lookup
                         common::message::service::lookup::Request request{ common::process::handle()};
                         {
+                           // get the information (with an assertion)
+                           auto information = casual::assertion( state.external.information( descriptor), "invalid descriptor: ", descriptor, ", message: ", message);
                            request.correlation = message.correlation;
                            request.requested = message.service.name;
-                           request.context = decltype( request.context)::no_busy_intermediate;
+                           request.context.semantic = semantic;
+
+                           request.context.requester = information->configuration.discovery == decltype( information->configuration.discovery)::forward ?
+                              decltype( request.context.requester)::external_discovery : decltype( request.context.requester)::external;
                         }
 
                         // Add message to pending
@@ -439,9 +444,12 @@ namespace casual
                            Trace trace{ "gateway::group::inbound::handle::local::external::service::call::request"};
                            log::line( verbose::log, "message: ", message);
                            
-                           external::correlate( state, message);
+                           auto descriptor = external::correlate( state, message);
+
+                           using namespace common::message::service::lookup::request;
                            
-                           detail::lookup( state, message);
+                           detail::lookup( state, descriptor, message, message.flags.exist( decltype( message.flags.type())::no_reply) ? 
+                              context::Semantic::forward : context::Semantic::no_busy_intermediate);
                         };
                      }
                   } // call
@@ -458,9 +466,9 @@ namespace casual
                            Trace trace{ "gateway::group::inbound::handle::local::external::conversation::connect::request"};
                            log::line( verbose::log, "message: ", message);
                            
-                           external::correlate( state, message);
+                           auto descriptor = external::correlate( state, message);
 
-                           service::detail::lookup( state, message);
+                           service::detail::lookup( state, descriptor, message, common::message::service::lookup::request::context::Semantic::no_busy_intermediate);
                         };
                      }
                      

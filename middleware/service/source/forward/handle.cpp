@@ -64,7 +64,7 @@ namespace casual
                         Trace trace{ "service::forward::handle::local::service::name::lookup::reply"};
                         log::line( verbose::log, "message: ", message);
 
-                        if( message.state == message::service::lookup::Reply::State::busy)
+                        if( message.state == decltype( message.state)::busy)
                         {
                            log::line( log, "service is busy - action: wait for idle");
                            return;
@@ -115,7 +115,7 @@ namespace casual
                            message::service::lookup::Request request{ process::handle()};
                            request.requested = message.service.name;
                            request.correlation = message.correlation;
-                           request.context = decltype( request.context)::no_busy_intermediate;
+                           request.context.semantic = decltype( request.context.semantic)::no_busy_intermediate;
                            state.multiplex.send( communication::instance::outbound::service::manager::device(), request);
                         }
 

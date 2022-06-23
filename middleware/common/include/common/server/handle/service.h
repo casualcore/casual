@@ -161,8 +161,7 @@ namespace casual
          // - commit/rollback transaction if service has "auto-transaction"
          auto execute_transaction = execute::scope( [&]()
          {
-            reply.transaction = policy.transaction(
-                  reply.transaction.state == message::service::Transaction::State::active);
+            reply.transaction = policy.transaction( reply.transaction.state == decltype( reply.transaction.state)::active);
          });
 
          // Nothing did go wrong

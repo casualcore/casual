@@ -282,21 +282,26 @@ namespace casual
             instances.concurrent.emplace_back( instance, std::move( property));
             instances.partition();
          }
-
-         common::process::Handle Service::reserve( 
+ 
+         common::process::Handle Service::reserve_sequential(
             const common::process::Handle& caller, 
             const strong::correlation::id& correlation)
          {
             if( auto found = algorithm::find_if( instances.sequential, []( auto& i){ return i.idle();}))
                return found->reserve( this, caller, correlation);
 
-            if( instances.sequential.empty() && ! instances.concurrent.empty())
-            {
-               ++metric.remote;
-               return instances.concurrent.front().process();
-            }
-
             return {};
+         }
+
+         common::process::Handle Service::reserve_concurrent( 
+            const common::process::Handle& caller, 
+            const strong::correlation::id& correlation)
+         {
+            if( instances.concurrent.empty())
+               return {};
+
+            ++metric.remote;
+            return instances.concurrent.front().process();
          }
 
          bool Service::timeoutable() const noexcept

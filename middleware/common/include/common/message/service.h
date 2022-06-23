@@ -117,7 +117,7 @@ namespace casual
             };
          } // call
 
-         struct Transaction
+         namespace transaction
          {
             // TODO: major-version change to short 
             enum class State : char
@@ -129,20 +129,24 @@ namespace casual
                error,
             };
 
-            constexpr std::string_view description( Transaction::State value) noexcept
+            inline constexpr std::string_view description( State value) noexcept
             {
                switch( value)
                {
-                  case Transaction::State::error: return "error";
-                  case Transaction::State::active: return "active";
-                  case Transaction::State::rollback: return "rollback";
-                  case Transaction::State::timeout: return "timeout";
+                  case State::error: return "error";
+                  case State::active: return "active";
+                  case State::rollback: return "rollback";
+                  case State::timeout: return "timeout";
                }
                return "<unknown>";
             }
+            
+         } // transaction
 
+         struct Transaction
+         {
             common::transaction::ID trid;
-            State state = State::active;
+            transaction::State state = transaction::State::active;
 
             CASUAL_CONST_CORRECT_SERIALIZE(
                CASUAL_SERIALIZE( trid);
@@ -285,35 +289,78 @@ namespace casual
 
          namespace lookup
          {
+            namespace request
+            {
+               namespace context
+               {
+                  enum class Semantic : short
+                  {
+                     regular,
+                     forward,
+                     no_busy_intermediate,
+                     wait,
+                  };
+
+                  inline constexpr std::string_view description( Semantic value) noexcept
+                  {
+                     switch( value)
+                     {
+                        case Semantic::regular: return "regular";
+                        case Semantic::forward: return "forward";
+                        case Semantic::no_busy_intermediate: return "no-busy-intermediate";
+                        case Semantic::wait: return "wait";
+                        
+                     }
+                     return "<unknown>";
+                  }
+
+                  enum class Requester : short
+                  {
+                     internal,
+                     external,
+                     // connection configured with discovery.forward 
+                     external_discovery,
+                  };
+                  
+                  inline constexpr std::string_view description( Requester value) noexcept
+                  {
+                     switch( value)
+                     {
+                        case Requester::internal: return "internal";
+                        case Requester::external: return "external"; 
+                        case Requester::external_discovery: return "external_discovery";                     
+                     }
+                     return "<unknown>";
+                  }
+               } // context
+
+               struct Context
+               {
+                  Context() = default;
+                  inline Context( context::Semantic semantic, context::Requester requester) 
+                     : semantic{ semantic}, requester{ requester} {}
+
+                  inline Context( context::Semantic semantic) : Context( semantic, context::Requester{}) {}
+
+                  context::Semantic semantic{};
+                  context::Requester requester{};
+
+               CASUAL_CONST_CORRECT_SERIALIZE(
+                  CASUAL_SERIALIZE( semantic);
+                  CASUAL_SERIALIZE( requester);
+               )
+
+               };
+            } // request
+
             //! Represent "service-name-lookup" request.
             using base_request = basic_request< message::Type::service_name_lookup_request>; 
             struct Request : base_request
             {
                using base_request::base_request;
 
-               enum class Context : short
-               {
-                  regular,
-                  forward,
-                  no_busy_intermediate,
-                  wait,
-               };
-
-               constexpr std::string_view description( Context value) noexcept
-               {
-                  switch( value)
-                  {
-                     case Request::Context::regular: return "regular";
-                     case Request::Context::forward: return "forward";
-                     case Request::Context::no_busy_intermediate: return "no-busy-intermediate";
-                     case Request::Context::wait: return "wait";
-                     
-                  }
-                  return "<unknown>";
-               }
-
                std::string requested;
-               Context context = Context::regular;
+               request::Context context;
                std::optional< platform::time::point::type> deadline{};
 
                CASUAL_CONST_CORRECT_SERIALIZE(
@@ -324,12 +371,8 @@ namespace casual
                )
             };
 
-            //! Represent "service-name-lookup" response.
-            using base_reply = basic_reply< message::Type::service_name_lookup_reply>; 
-            struct Reply : base_reply
+            namespace reply
             {
-               using base_reply::base_reply;
-
                enum class State : short
                {
                   absent,
@@ -337,23 +380,30 @@ namespace casual
                   idle
                };
 
-               constexpr std::string_view description( State value) noexcept
+               inline constexpr std::string_view description( State value) noexcept
                {
                   switch( value)
                   {
-                     case Reply::State::absent: return "absent";
-                     case Reply::State::idle: return "idle";
-                     case Reply::State::busy: return "busy";
+                     case State::absent: return "absent";
+                     case State::idle: return "idle";
+                     case State::busy: return "busy";
                   }
                   return "<unknown>";
                }
+            } // reply
+
+            //! Represent "service-name-lookup" response.
+            using base_reply = basic_reply< message::Type::service_name_lookup_reply>; 
+            struct Reply : base_reply
+            {
+               using base_reply::base_reply;
 
                call::Service service;
                //! represent how long this request was pending (busy);
                platform::time::unit pending{};
-               State state = State::idle;
+               reply::State state = reply::State::idle;
                
-               inline bool busy() const { return state == State::busy;}
+               inline bool busy() const { return state == reply::State::busy;}
 
                CASUAL_CONST_CORRECT_SERIALIZE(
                   base_reply::serialize( archive);

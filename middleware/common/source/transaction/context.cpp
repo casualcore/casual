@@ -559,7 +559,7 @@ namespace casual
 
             message::service::Transaction result;
             result.trid = std::move( caller);
-            result.state = message::service::Transaction::State::active;
+            result.state = message::service::transaction::State::active;
 
             auto pending_check = [&]( Transaction& transaction)
             {
@@ -571,7 +571,7 @@ namespace casual
                      log::line( log::category::transaction, transaction);
 
                      transaction.state = Transaction::State::rollback;
-                     result.state = message::service::Transaction::State::error;
+                     result.state = message::service::transaction::State::error;
                   }
 
                   // Discard pending
@@ -590,7 +590,7 @@ namespace casual
                }
                catch( ...)
                {
-                  result.state = message::service::Transaction::State::error;
+                  result.state = message::service::transaction::State::error;
                   log::line( log::category::error, exception::capture(), " failed to rollback transaction: ", transaction.trid);
                }
             };
@@ -605,7 +605,7 @@ namespace casual
                   }
                   catch( ...)
                   {
-                     result.state = message::service::Transaction::State::error;
+                     result.state = message::service::transaction::State::error;
                      log::line( log::category::error, exception::capture(), " failed to commit transaction: ", transaction.trid);
                   } 
                }
@@ -645,10 +645,10 @@ namespace casual
                auto transform_state = []( Transaction::State state){
                   switch( state)
                   {
-                     case Transaction::State::active: return message::service::Transaction::State::active;
-                     case Transaction::State::rollback: return message::service::Transaction::State::rollback;
-                     case Transaction::State::timeout: return message::service::Transaction::State::timeout;
-                     default: return message::service::Transaction::State::error;
+                     case Transaction::State::active: return message::service::transaction::State::active;
+                     case Transaction::State::rollback: return message::service::transaction::State::rollback;
+                     case Transaction::State::timeout: return message::service::transaction::State::timeout;
+                     default: return message::service::transaction::State::error;
                   }
                };
 
@@ -658,8 +658,8 @@ namespace casual
 
                   result.state = transform_state( not_owner->state);
 
-                  if( ! commit && result.state == message::service::Transaction::State::active)
-                     result.state = message::service::Transaction::State::rollback;
+                  if( ! commit && result.state == message::service::transaction::State::active)
+                     result.state = message::service::transaction::State::rollback;
 
                   // end resource
                   local::resources::end::invoke( local::resources::end::policy::Success{}, *not_owner, m_resources.all);                  

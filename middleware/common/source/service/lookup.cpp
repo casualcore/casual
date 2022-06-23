@@ -31,7 +31,7 @@ namespace casual
          }
 
          Lookup::Lookup( std::string service, std::optional< platform::time::point::type> deadline) 
-            : Lookup( std::move( service), Context::regular, std::move( deadline)) 
+            : Lookup( std::move( service), Context{}, std::move( deadline)) 
          {}
 
          Lookup::~Lookup()

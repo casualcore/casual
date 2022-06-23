@@ -321,7 +321,7 @@ namespace casual
             message.correlation = strong::correlation::id::emplace( uuid::make());
             message.execution = strong::execution::id::emplace( uuid::make());
             message.transaction.trid = transaction::id::create( process::handle());
-            message.transaction.state = common::message::service::Transaction::State::rollback;
+            message.transaction.state = decltype( message.transaction.state)::rollback;
             message.buffer.type = ".binary";
             message.code.result = common::code::xatmi::ok;
             message.code.user = 0;

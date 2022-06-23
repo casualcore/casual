@@ -64,7 +64,7 @@ namespace casual
                message::service::lookup::Request message;
 
                message.process = common::process::handle();
-               message.context = decltype( message.context)::forward;
+               message.context.semantic = decltype( message.context.semantic)::forward;
                message.requested = "foo";
 
                return message;

@@ -468,7 +468,7 @@ namespace casual
                            request.correlation = pending.correlation;
                            request.requested = forward->target.service;
                            // we'll wait 'forever'
-                           request.context = decltype( request.context)::wait;
+                           request.context.semantic = decltype( request.context.semantic)::wait;
 
                            ipc::flush::send( ipc::service::manager(), request);
 

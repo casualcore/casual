@@ -518,7 +518,7 @@ domain:
             auto service = common::service::Lookup{ "service1"}();
             EXPECT_TRUE( service.service.name == "service1");
             EXPECT_TRUE( service.process == common::process::handle());
-            EXPECT_TRUE( service.state == decltype( service)::State::idle);
+            EXPECT_TRUE( service.state == decltype( service.state)::idle);
          }
 
          {
@@ -526,7 +526,7 @@ domain:
             EXPECT_TRUE( service.service.name == "service2");
 
             // we only have one instance, we expect this to be busy
-            EXPECT_TRUE( service.state == decltype( service)::State::busy);
+            EXPECT_TRUE( service.state == decltype( service.state)::busy);
          }
       }
 
@@ -574,7 +574,7 @@ domain:
             auto service = common::service::Lookup{ "service1"}();
             EXPECT_TRUE( service.service.name == "service1");
             EXPECT_TRUE( service.process == common::process::handle());
-            EXPECT_TRUE( service.state == decltype( service)::State::idle);
+            EXPECT_TRUE( service.state == decltype( service.state)::idle);
          }
 
          common::service::Lookup lookup{ "service2"};
@@ -583,7 +583,7 @@ domain:
             EXPECT_TRUE( service.service.name == "service2");
 
             // we only have one instance, we expect this to be busy
-            EXPECT_TRUE( service.state == decltype( service)::State::busy);
+            EXPECT_TRUE( service.state == decltype( service.state)::busy);
          }
 
          {
@@ -600,7 +600,7 @@ domain:
             // get next pending reply
             auto service = lookup();
 
-            EXPECT_TRUE( service.state == decltype( service)::State::idle);
+            EXPECT_TRUE( service.state == decltype( service.state)::idle);
          }
       }
 
@@ -619,17 +619,17 @@ domain:
             auto service = common::service::Lookup{ "service1"}();
             EXPECT_TRUE( service.service.name == "service1");
             EXPECT_TRUE( service.process == common::process::handle());
-            EXPECT_TRUE( service.state == decltype( service)::State::idle);
+            EXPECT_TRUE( service.state == decltype( service.state)::idle);
          }
 
 
          {
-            common::service::Lookup lookup{ "service1", common::service::Lookup::Context::forward};
+            common::service::Lookup lookup{ "service1", decltype(common::service::Lookup::Context::semantic)::forward};
             auto service = lookup();
             EXPECT_TRUE( service.service.name == "service1");
 
             // service-manager will let us think that the service is idle, and send us the process-handle to the forward-cache
-            EXPECT_TRUE( service.state == decltype( service)::State::idle);
+            EXPECT_TRUE( service.state == decltype( service.state)::idle);
             EXPECT_TRUE( service.process);
             EXPECT_TRUE( service.process == forward);
          }
@@ -648,7 +648,7 @@ domain:
             auto service = common::service::Lookup{ "service1"}();
             EXPECT_TRUE( service.service.name == "service1");
             EXPECT_TRUE( service.process == common::process::handle());
-            EXPECT_TRUE( service.state == decltype( service)::State::idle);
+            EXPECT_TRUE( service.state == decltype( service.state)::idle);
             
             return service.correlation;
          }();
@@ -864,7 +864,7 @@ domain:
             auto service = common::service::Lookup{ "service1"}();
             EXPECT_TRUE( service.service.name == "service1");
             EXPECT_TRUE( service.process == common::process::handle());
-            EXPECT_TRUE( service.state == decltype( service)::State::idle);
+            EXPECT_TRUE( service.state == decltype( service.state)::idle);
          }
 
          // subscribe to metric event
@@ -942,7 +942,7 @@ domain:
          {
             common::message::service::lookup::Request message{ common::process::handle()};
             message.requested = "a";
-            message.context = decltype( message.context)::wait;
+            message.context.semantic = decltype( message.context.semantic)::wait;
 
             correlation = local::send( message);
          }
@@ -977,7 +977,7 @@ domain:
          {
             common::message::service::lookup::Request message{ common::process::handle()};
             message.requested = "a";
-            message.context = decltype( message.context)::wait;
+            message.context.semantic = decltype( message.context.semantic)::wait;
             return message;
          };
 

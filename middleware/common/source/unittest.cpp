@@ -49,7 +49,7 @@ namespace casual
             {
                common::message::service::lookup::Request request{ process::handle()};
                request.requested = std::move( service);
-               request.context = decltype( request.context)::no_busy_intermediate;
+               request.context.semantic = decltype( request.context.semantic)::no_busy_intermediate;
                communication::device::blocking::send( communication::instance::outbound::service::manager::device(), request);
             }
             

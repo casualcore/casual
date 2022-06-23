@@ -125,12 +125,12 @@ namespace casual
 
             if( result.transaction == common::service::invoke::Result::Transaction::commit)
             {
-               reply.transaction.state = message::service::Transaction::State::active;
+               reply.transaction.state = decltype( reply.transaction.state)::active;
                reply.code.result = code::xatmi::ok;
             }
             else
             {
-               reply.transaction.state = message::service::Transaction::State::rollback;
+               reply.transaction.state = decltype( reply.transaction.state)::rollback;
                reply.code.result = code::xatmi::service_fail;
             }
 
