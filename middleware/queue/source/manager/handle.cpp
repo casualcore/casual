@@ -24,12 +24,15 @@
 #include "common/algorithm/compare.h"
 #include "common/message/handle.h"
 #include "common/message/internal.h"
-
+#include "common/communication/instance.h"
 
 #include "common/code/raise.h"
 #include "common/code/casual.h"
 
-#include "common/communication/instance.h"
+#include "casual/assert.h"
+
+
+
 
 
 namespace casual
@@ -93,15 +96,6 @@ namespace casual
 
                } // pending::lookups
 
-
-               namespace discovery
-               {
-                  auto send( std::vector< std::string> queues, const strong::correlation::id& correlation = strong::correlation::id::generate())
-                  {
-                     Trace trace{ "queue::manager::handle::local::discovery::send"};
-                     return casual::domain::discovery::request( {}, std::move( queues), correlation);
-                  }
-               }
             } // <unnamed>
          } // local
 
@@ -175,47 +169,98 @@ namespace casual
 
                namespace lookup
                {
+                  namespace detail::dispatch::lookup
+                  {
+                     void absent_queue( State& state, queue::ipc::message::lookup::Request& message)
+                     {
+                        using Enum = decltype( message.context.semantic);
+
+                        switch( message.context.semantic)
+                        {
+                           case Enum::direct:
+                           {
+                              auto reply = common::message::reverse::type( message);
+                              reply.name = message.name;
+                              ipc::flush::optional::send( message.process.ipc, reply);
+                              return;
+                           }
+                           case Enum::wait:
+                           {
+                              // either we've sent a discovery or the lookup want's to wait (possible for ever).
+                              state.pending.lookups.push_back( std::move( message));
+                              return;
+                           }
+                        }
+                        casual::terminate( "unknown value for message.context.semantic: ", cast::underlying( message.context.semantic));
+                     }
+
+                     void discovery( State& state, queue::ipc::message::lookup::Request& message)
+                     {                     
+                        Trace trace{ "queue::manager::handle::local::detail::dispatch::lookup::discovery"};
+                        
+                        casual::domain::discovery::request( {}, { message.name}, message.correlation);
+                        state.pending.lookups.push_back( std::move( message));
+                     }
+
+                     void reply( State& state, const casual::queue::manager::state::Queue& queue, queue::ipc::message::lookup::Request& message)
+                     {
+                        auto reply = common::message::reverse::type( message);
+                        reply.name = message.name;
+                        reply.queue = queue.queue;
+                        reply.process = queue.process;
+                        reply.order = queue.order;
+                        ipc::flush::optional::send( message.process.ipc, reply);
+                     }
+
+                     bool internal_only( State& state, queue::ipc::message::lookup::Request& message)
+                     {
+                        if( auto queue = state.local_queue( message.name))
+                        {
+                           dispatch::lookup::reply( state, *queue, message);
+                           return true;
+                        }
+
+                        return false;
+                     }
+
+                     bool internal_external( State& state, queue::ipc::message::lookup::Request& message)
+                     {
+                        if( auto queue = state.queue( message.name))
+                        {
+                           dispatch::lookup::reply( state, *queue, message);
+                           return true;
+                        }
+
+                        return false;
+                     }
+
+                  } // detail::dispatch::lookup
+
                   auto request( State& state)
                   {
                      return [&state]( queue::ipc::message::lookup::Request& message)
                      {
-                        Trace trace{ "handle::local::lookup::request"};
+                        Trace trace{ "queue::manager::local::handle::lookup::request"};
                         common::log::line( verbose::log, "message: ", message);
 
-                        auto reply = common::message::reverse::type( message);
-                        reply.name = message.name;
+                        using Enum = decltype( message.context.requester);
 
-                        auto send_reply = common::execute::scope( [&]()
+                        switch( message.context.requester)
                         {
-                           common::log::line( verbose::log, "reply.execution: ", reply.execution);
-                           ipc::flush::optional::send( message.process.ipc, reply);
-                        });
-
-                        if( auto queue = state.queue( message.name))
-                        {
-                           log::line( log, "queue provider found: ", *queue);
-                           reply.queue = queue->queue;
-                           reply.process = queue->process;
-                           reply.order = queue->order;
+                           case Enum::internal:
+                              if( ! detail::dispatch::lookup::internal_only( state, message))
+                                 detail::dispatch::lookup::discovery( state, message);
+                              return;
+                           case Enum::external:
+                              if( ! detail::dispatch::lookup::internal_only( state, message))
+                                 detail::dispatch::lookup::absent_queue( state, message);
+                              return;
+                           case Enum::external_discovery:
+                              if( ! detail::dispatch::lookup::internal_external( state, message))
+                                 detail::dispatch::lookup::absent_queue( state, message);
+                              return;
                         }
-                        else
-                        {
-                           // We didn't find the queue, let's try to ask our neighbors.
-
-                           common::log::line( log, "queue not found - ", message.name);
-
-                           if( local::discovery::send( { message.name}, message.correlation)
-                              || message.context == decltype( message.context)::wait)
-                           {
-                              // either we've sent a discovery or the lookup want's to wait (possible for ever).
-                              state.pending.lookups.push_back( std::move( message));
-
-                              log::line( log, "pending request added: " , state.pending);
-
-                              // We don't send the 'absent reply'.
-                              send_reply.release();
-                           }
-                        }
+                        casual::terminate( "unknown value for message.context.requester: ", cast::underlying( message.context.requester));
                      };
                   }
 
@@ -390,7 +435,7 @@ namespace casual
 
                            // we need to reply to the caller that instigated the discovery, if the 
                            // context is direct  (and the lookup did not find what the caller wants, via check::pending::lookups)
-                           if( auto found = algorithm::find( state.pending.lookups, message.correlation); found && found->context == decltype( found->context)::direct)
+                           if( auto found = algorithm::find( state.pending.lookups, message.correlation); found && found->context.semantic == decltype( found->context.semantic)::direct)
                            {
                               auto pending = algorithm::container::extract( state.pending.lookups, std::begin( found));
                               auto reply = common::message::reverse::type( pending);
@@ -415,7 +460,7 @@ namespace casual
 
                            // add the pending _wait for ever_ requests
                            for( auto& pending : state.pending.lookups)
-                              if( pending.context == decltype( pending.context)::wait)
+                              if( pending.context.semantic == decltype( pending.context.semantic)::wait)
                                  reply.content.queues.push_back( pending.name);
                            
                            algorithm::container::trim( reply.content.queues, algorithm::unique( algorithm::sort( reply.content.queues)));
@@ -451,7 +496,7 @@ namespace casual
 
                            // all 'wait for ever'
                            for( auto& pending : state.pending.lookups)
-                              if( pending.context == decltype( pending.context)::wait)
+                              if( pending.context.semantic == decltype( pending.context.semantic)::wait)
                                  reply.content.queues.push_back( pending.name);
 
                            algorithm::container::trim( reply.content.queues, algorithm::unique( algorithm::sort( reply.content.queues)));

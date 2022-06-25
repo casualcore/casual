@@ -133,7 +133,7 @@ namespace casual
                   {
                      ipc::message::lookup::Request request{ process::handle()};
                      request.name = name;
-                     request.context = decltype( request.context)::wait;
+                     request.context.semantic = decltype( request.context.semantic)::wait;
 
                      common::log::line( verbose::log, "request: ", request);
 

@@ -155,6 +155,8 @@ namespace casual
          //! @{
          const state::Queue* queue( const std::string& name) const noexcept;
          const state::Queue* queue( common::strong::queue::id id) const noexcept;
+
+         const state::Queue* local_queue( const std::string& name) const noexcept;
          //! @}
 
          void update( queue::ipc::message::group::configuration::update::Reply group);

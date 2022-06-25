@@ -56,6 +56,15 @@ namespace casual
          return nullptr;
       }
 
+      const state::Queue* State::local_queue( const std::string& name) const noexcept
+      {
+         if( auto found = algorithm::find( queues, name))
+            if( ! found->second.empty() && range::front( found->second).local())
+               return &range::front( found->second);
+
+         return nullptr;
+      }
+
       void State::update( queue::ipc::message::group::configuration::update::Reply reply)
       {
          Trace trace{ "queue::manager::State::update"};

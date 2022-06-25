@@ -78,21 +78,58 @@ namespace casual
       {
          namespace request
          {
-            enum class Context : short
+            namespace context
             {
-               direct,
-               wait
+               enum class Semantic : short
+               {
+                  direct,
+                  wait
+               };
+
+               inline constexpr std::string_view description( Semantic value) noexcept
+               {
+                  switch( value)
+                  {
+                     case Semantic::direct: return "direct";
+                     case Semantic::wait: return "wait";
+                  }
+                  return "unknown";
+               }
+
+               enum class Requester : short
+               {
+                  internal,
+                  external,
+                  // connection configured with discovery.forward 
+                  external_discovery,
+               };
+               
+               inline constexpr std::string_view description( Requester value) noexcept
+               {
+                  switch( value)
+                  {
+                     case Requester::internal: return "internal";
+                     case Requester::external: return "external"; 
+                     case Requester::external_discovery: return "external_discovery";                     
+                  }
+                  return "<unknown>";
+               }
+
+            } // context
+
+            struct Context
+            {
+               context::Semantic semantic = context::Semantic::direct;
+               context::Requester requester = context::Requester::internal;
+
+               CASUAL_CONST_CORRECT_SERIALIZE(
+                  CASUAL_SERIALIZE( semantic);
+                  CASUAL_SERIALIZE( requester);
+               )
             };
 
-            inline std::ostream& operator << ( std::ostream& out, const Context& value)
-            {
-               switch( value)
-               {
-                  case Context::direct: return out << "direct";
-                  case Context::wait: return out << "wait";
-               }
-               return out << "unknown";
-            }
+
+
          } // request
 
          using base_request = common::message::basic_request< common::message::Type::queue_manager_queue_lookup_request>;
@@ -100,7 +137,7 @@ namespace casual
          {
             using base_request::base_request;
 
-            request::Context context = request::Context::direct;
+            request::Context context;
             std::string name;
 
             inline friend bool operator == ( const Request& lhs, const std::string& name) { return lhs.name == name;}
@@ -147,14 +184,14 @@ namespace casual
                   discarded,
                };
 
-               inline std::ostream& operator << ( std::ostream& out, State value)
+               inline constexpr std::string_view description( State value) noexcept
                {
                   switch( value)
                   {
-                     case State::discarded: return out << "discarded";
-                     case State::replied: return out << "replied";
+                     case State::discarded: return "discarded";
+                     case State::replied: return "replied";
                   }
-                  return out << "unknown";
+                  return "unknown";
                }
             } // reply
 
@@ -503,6 +540,15 @@ namespace casual
                   queue = 1,
                   error_queue = 2,
                };
+               inline constexpr std::string_view description( Type type) noexcept
+               {
+                  switch( type)
+                  {
+                     case Type::queue: return "queue";
+                     case Type::error_queue: return "error_queue";
+                  }
+                  return "<unknown>";
+               }
 
                struct Metric
                {
@@ -581,6 +627,17 @@ namespace casual
                committed = 2,
                dequeued = 3,
             };
+            inline constexpr std::string_view description( State state) noexcept
+            {
+               switch( state)
+               {
+                  case State::enqueued: return "enqueued";
+                  case State::committed: return "committed";
+                  case State::dequeued: return "dequeued";
+               }
+               return "<unknown>";
+            }
+
 
             struct Meta
             {

@@ -513,7 +513,7 @@ namespace casual
                   namespace lookup
                   {
                      template< typename M>
-                     bool send( State& state, M&& message)
+                     bool send( State& state, strong::file::descriptor::id descriptor, M&& message)
                      {
                         Trace trace{ "gateway::group::inbound::handle::local::external::queue::lookup::send"};
 
@@ -522,6 +522,13 @@ namespace casual
                         {
                            request.correlation = message.correlation;
                            request.name = message.name;
+
+                           auto information = casual::assertion( state.external.information( descriptor), "invalid descriptor: ", descriptor, ", message: ", message);
+
+                           using Enum = decltype( request.context.requester);
+                           request.context.requester = information->configuration.discovery == decltype( information->configuration.discovery)::forward ?
+                              Enum::external_discovery : Enum::external;
+                           
                         }
 
                         if( state.multiplex.send( ipc::manager::optional::queue(), request))
@@ -552,7 +559,7 @@ namespace casual
                            external::correlate( state, message);
 
                            // Send lookup
-                           if( ! queue::lookup::send( state, message))
+                           if( ! queue::lookup::send( state, state.external.last(), message))
                            {
                               common::log::line( common::log::category::error, "failed to lookup queue - action: send error reply");
 
@@ -581,7 +588,7 @@ namespace casual
                            external::correlate( state, message);
 
                            // Send lookup
-                           if( ! queue::lookup::send( state, message))
+                           if( ! queue::lookup::send( state, state.external.last(), message))
                            {
                               common::log::line( common::log::category::error, "failed to lookup queue - action: send error reply");
 
