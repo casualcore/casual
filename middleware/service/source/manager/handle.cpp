@@ -84,20 +84,16 @@ namespace casual
                {
                   void send( State& state)
                   {
-                     auto pending = state.events( state.metric.message());
-                     state.metric.clear();
-
-                     if( ! common::message::pending::non::blocking::send( pending))
-                        casual::domain::pending::message::send( pending);
+                     state.events( state.multiplex, state.metric.extract());
                   }
                } // metric
 
                namespace discovery
                {
-                  auto send( std::vector< std::string> services, const strong::correlation::id& correlation = strong::correlation::id::generate())
+                  auto send( State& state, std::vector< std::string> services, const strong::correlation::id& correlation = strong::correlation::id::generate())
                   {
                      Trace trace{ "service::manager::handle::local::discovery::send"};
-                     return casual::domain::discovery::request( std::move( services), {}, correlation);
+                     return casual::domain::discovery::request( state.multiplex, std::move( services), {}, correlation);
                   }
                }
 
@@ -350,7 +346,7 @@ namespace casual
                         {
                            log::line( log, "no instances found for service: ", name, " - action: ask neighbor domains");
 
-                           if( local::discovery::send( { name}, message.correlation) || message.context.semantic == decltype( message.context.semantic)::wait)
+                           if( local::discovery::send( state, { name}, message.correlation) || message.context.semantic == decltype( message.context.semantic)::wait)
                            {
                               // we sent the request OR the caller is willing to wait for future 
                               // advertised services

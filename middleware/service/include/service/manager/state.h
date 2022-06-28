@@ -427,8 +427,7 @@ namespace casual
             void add( metric_type metric);
             void add( std::vector< metric_type> metrics);
 
-            inline auto& message() const noexcept { return m_message;}
-            inline void clear() { m_message.metrics.clear();}
+            inline auto extract() noexcept { return std::exchange( m_message, {});}
 
             inline auto size() const noexcept { return m_message.metrics.size();}
             inline explicit operator bool() const noexcept { return ! m_message.metrics.empty();}

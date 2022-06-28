@@ -27,15 +27,23 @@ namespace casual
       //! @attention will _flush::send_ using ipc::inbound::device()
       common::strong::correlation::id request( const Request& request);
 
+      common::strong::correlation::id request( Send& multiplex, const Request& request);
+
       namespace provider
       {
          using Ability = message::discovery::api::provider::registration::Ability;
          void registration( common::Flags< Ability> abilities);
          void registration( const common::process::Handle& process, common::Flags< Ability> abilities);
       } // provider
+
+      common::strong::correlation::id request(
+         std::vector< std::string> services, 
+         std::vector< std::string> queues, 
+         common::strong::correlation::id correlation = common::strong::correlation::id::generate());
       
 
-      common::strong::correlation::id request( 
+      common::strong::correlation::id request(
+         Send& multiplex,
          std::vector< std::string> services, 
          std::vector< std::string> queues, 
          common::strong::correlation::id correlation = common::strong::correlation::id::generate());
