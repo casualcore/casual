@@ -80,9 +80,16 @@ namespace casual
 
          explicit operator bool () const { return ! m_subscribers.empty();}
 
-         common::message::pending::Message create( const Event& event) const
+         common::message::pending::Message operator ()( const Event& event) const
          {
             return pending( serialize::native::complete< complete_type>( event));
+         }
+
+         template< typename MS>
+         void operator ()( MS& multiplex, const Event& event) const
+         {
+            for( auto subscriber : m_subscribers)
+               multiplex.send( subscriber.ipc, event);
          }
 
          CASUAL_LOG_SERIALIZE(
@@ -127,14 +134,6 @@ namespace casual
             void remove( strong::process::id pid)
             {
                do_remove( pid, Events{}...);
-            }
-            
-            template< typename E>
-            common::message::pending::Message operator () ( const E& event) const
-            {
-               // hack: gcc 5.4 thinks overloading is ambiguous, so we need to have a 
-               // level of indirection, and an explicit call.
-               return event::Dispatch< E>::create( event);
             }
 
             friend std::ostream& operator << ( std::ostream& out, const Collection& value)

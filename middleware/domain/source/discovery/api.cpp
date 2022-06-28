@@ -44,6 +44,14 @@ namespace casual
                   }
                }
             } // flush
+
+            auto request( std::vector< std::string> services, std::vector< std::string> queues, common::strong::correlation::id correlation)
+            {
+               message::discovery::api::Request request{ common::process::handle()};
+               request.correlation = correlation;
+               request.content = message::discovery::request::Content{ std::move( services), std::move( queues)};
+               return request;
+            }
          } // <unnamed>
       } // local
 
@@ -65,7 +73,7 @@ namespace casual
          }
 
       } // provider
-      
+
       common::strong::correlation::id request( const Request& request)
       {
          Trace trace{ "domain::discovery::request"};
@@ -73,17 +81,36 @@ namespace casual
          
          return communication::ipc::flush::optional::send( local::instance::device(), request);
       }
+      
+      common::strong::correlation::id request( Send& multiplex, const Request& request)
+      {
+         Trace trace{ "domain::discovery::request"};
+         log::line( verbose::log, "request: ", request);
+         
+         return multiplex.send( local::instance::device(), request);
+      }
 
-      common::strong::correlation::id request( std::vector< std::string> services, std::vector< std::string> queues, common::strong::correlation::id correlation)
+      common::strong::correlation::id request(
+         std::vector< std::string> services, 
+         std::vector< std::string> queues, 
+         common::strong::correlation::id correlation)
       {
          Trace trace{ "domain::discovery::request"};
          log::line( verbose::log, "services: ", services, ", queues: ", queues);
 
-         message::discovery::api::Request request{ common::process::handle()};
-         request.correlation = correlation;
-         request.content = message::discovery::request::Content{ std::move( services), std::move( queues)};
+         return communication::ipc::flush::optional::send( local::instance::device(), local::request( std::move( services), std::move( queues), correlation));
+      }
 
-         return communication::ipc::flush::optional::send( local::instance::device(), request);
+      common::strong::correlation::id request( 
+         Send& multiplex, 
+         std::vector< std::string> services, 
+         std::vector< std::string> queues, 
+         common::strong::correlation::id correlation)
+      {
+         Trace trace{ "domain::discovery::request"};
+         log::line( verbose::log, "services: ", services, ", queues: ", queues);
+         
+         return multiplex.send( local::instance::device(), local::request( std::move( services), std::move( queues), correlation));
       }
 
 
