@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - '**/dev'
+      - '**/main'
 env:
   build_type: beta
   centos_image: casual/centos-builder
@@ -53,7 +54,7 @@ jobs:
       - name: set build_version
         id: build_version
         run: |
-          echo "::set-output name=value::${{ steps.major_minor.outputs.value }}-${{ steps.casual_release.outputs.value }}"
+          echo "::set-output name=value::${{ steps.base_version.outputs.value }}-${{ steps.casual_release.outputs.value }}"
 
     
   build-centos:
@@ -109,11 +110,11 @@ jobs:
 
       - name: Test Report
         uses: dorny/test-reporter@v1
-        if: success() || failure()   # run this step even if previous step failed
+        if: success() || failure()    # run this step even if previous step failed
         with:
-          name: Google Tests - Centos  # Name of the check run which will be created
-          path: ./**/report.xml      # Path to test results
-          reporter: java-junit       # Format of test result
+          name: Google Tests - Centos # Name of the check run which will be created
+          path: ./**/report.xml       # Path to test results
+          reporter: java-junit        # Format of test result
           working-directory: casual
 
       - name: Save artifact
@@ -177,7 +178,7 @@ jobs:
         uses: dorny/test-reporter@v1
         if: success() || failure()   # run this step even if previous step failed
         with:
-          name: Google Tests - Suse       # Name of the check run which will be created
+          name: Google Tests - Suse  # Name of the check run which will be created
           path: ./**/report.xml      # Path to test results
           reporter: java-junit       # Format of test result
           working-directory: casual

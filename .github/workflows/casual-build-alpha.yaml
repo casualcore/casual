@@ -6,6 +6,7 @@ on:
       - '!**/dev'
       - 'patch/**'
       - '!**/dev'
+      - '!**/main'
 env:
   build_type: alpha
   centos_image: casual/centos-builder
@@ -56,12 +57,44 @@ jobs:
       - name: set build_version
         id: build_version
         run: |
-          echo "::set-output name=value::${{ steps.major_minor.outputs.value }}-${{ steps.casual_release.outputs.value }}"
+          echo "::set-output name=value::${{ steps.base_version.outputs.value }}-${{ steps.casual_release.outputs.value }}"
 
-    
-  build-centos:
+  build-frontend:
     runs-on: self-hosted
     needs: [calculate-version]
+    steps:
+      - name: check out repository casual
+        uses: actions/checkout@v3
+        with:
+          path: 'casual'
+          fetch-depth: 0
+
+      - name: prepare build-script
+        run: |
+          cat << EOD > builder.sh
+          #! /bin/bash
+
+          set -e
+
+          bash /git/casual/casual/pipeline/script/frontend/build
+
+          EOD
+
+          chmod +x builder.sh
+
+      - name: Build
+        run: |
+          docker run --rm -v ${{ github.workspace }}:/git/casual:Z -i casual/frontend-builder:latest
+
+      - name: Save artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: frontend
+          path: './**/casual-webapp.zip'
+  
+  build-centos:
+    runs-on: self-hosted
+    needs: [calculate-version,build-frontend]
     env:
       DISTRIBUTION: 'centos'
     steps:
@@ -84,6 +117,11 @@ jobs:
           repository: 'casualcore/casual-make'
           ref: 'master'
           path: 'casual-make'
+
+      - name: download frontend
+        uses: actions/download-artifact@v3
+        with:
+          name: frontend
 
       - name: prepare build-script
         run: |
@@ -112,11 +150,11 @@ jobs:
 
       - name: Test Report
         uses: dorny/test-reporter@v1
-        if: success() || failure()   # run this step even if previous step failed
+        if: success() || failure()    # run this step even if previous step failed
         with:
-          name: Google Tests - Centos  # Name of the check run which will be created
-          path: ./**/report.xml      # Path to test results
-          reporter: java-junit       # Format of test result
+          name: Google Tests - Centos # Name of the check run which will be created
+          path: ./**/report.xml       # Path to test results
+          reporter: java-junit        # Format of test result
           working-directory: casual
 
       - name: Save artifact
@@ -127,7 +165,7 @@ jobs:
 
   build-suse:
     runs-on: self-hosted
-    needs: [calculate-version]
+    needs: [calculate-version,build-frontend]
     env:
       DISTRIBUTION: 'suse'
     steps:
@@ -150,6 +188,11 @@ jobs:
           repository: 'casualcore/casual-make'
           ref: 'master'
           path: 'casual-make'
+
+      - name: download frontend
+        uses: actions/download-artifact@v3
+        with:
+          name: frontend
 
       - name: prepare build-script
         run: |
@@ -180,7 +223,7 @@ jobs:
         uses: dorny/test-reporter@v1
         if: success() || failure()   # run this step even if previous step failed
         with:
-          name: Google Tests - Suse       # Name of the check run which will be created
+          name: Google Tests - Suse  # Name of the check run which will be created
           path: ./**/report.xml      # Path to test results
           reporter: java-junit       # Format of test result
           working-directory: casual
@@ -190,3 +233,5 @@ jobs:
         with:
           name: suse_rpm
           path: ./**/casual-middleware*.rpm
+
+
