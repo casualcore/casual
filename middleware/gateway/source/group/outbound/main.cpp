@@ -21,6 +21,7 @@
 #include "common/message/internal.h"
 
 #include "common/communication/instance.h"
+#include "common/communication/select/ipc.h"
 
 namespace casual
 {
@@ -259,7 +260,7 @@ namespace casual
                   state.directive,
                   tcp::handle::dispatch::create< outbound::Policy>( state, outbound::handle::external( state), &handle::connection::lost),
                   tcp::pending::send::dispatch::create( state, &handle::connection::lost),
-                  ipc::dispatch::create< outbound::Policy>( state, &internal::handler),
+                  communication::select::ipc::dispatch::create< outbound::Policy>( state, &internal::handler),
                   // takes care of multiplexing connects
                   tcp::connect::dispatch::create( state, tcp::logical::connect::Bound::out),
                   state.multiplex

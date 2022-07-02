@@ -141,7 +141,7 @@ namespace casual
                         {
                            void send( State& state)
                            {  
-                              // check if we've reach our "batch-limit", if so, persit and send replies
+                              // check if we've reach our "batch-limit", if so, persist and send replies
                               if( state.persistent.replies.size() >= platform::batch::transaction::persistence)
                                  detail::persist::send( state);  
                            }
@@ -218,13 +218,13 @@ namespace casual
                      namespace send
                      {
                         template< typename M, typename C>
-                        bool reply( const M& message, C custom)
+                        void reply( State& state, const M& message, C custom)
                         {
                            auto reply = common::message::reverse::type( message);
                            reply.trid = message.trid;
                            custom( reply);
 
-                           return common::predicate::boolean( common::communication::ipc::flush::optional::send( message.process.ipc, reply));
+                           state.multiplex.send( message.process.ipc, reply);
                         }
 
                         namespace resource
@@ -238,7 +238,7 @@ namespace casual
                               {
                                  if( auto found = state.idle( request.resource))
                                  {
-                                    auto correlation = common::communication::ipc::flush::send( found->process.ipc, request);
+                                    auto correlation = state.multiplex.send( found->process.ipc, request);
                                     found->state( state::resource::Proxy::Instance::State::busy);
                                     found->metrics.requested = platform::time::clock::type::now();
                                     return correlation;
@@ -249,7 +249,7 @@ namespace casual
                               }
 
                               auto& resource = state.get_external( request.resource);
-                              return common::communication::ipc::flush::send( resource.process.ipc, request);
+                              return state.multiplex.send( resource.process.ipc, request);
                            }
 
                         } // resource
@@ -375,7 +375,7 @@ namespace casual
                                  reply.stage = decltype( reply.stage)::commit;
 
                               common::log::line( verbose::log, "reply: ", reply);   
-                              common::communication::ipc::flush::optional::send( destination.process.ipc, reply);
+                              state.multiplex.send( destination.process.ipc, reply);
 
                               remove::transaction( state, common::transaction::id::range::global( origin));
                            });
@@ -407,7 +407,7 @@ namespace casual
                                  reply.stage = decltype( reply.stage)::rollback;
 
                               common::log::line( verbose::log, "reply: ", reply);
-                              common::communication::ipc::flush::optional::send( destination.process.ipc, reply);
+                              state.multiplex.send( destination.process.ipc, reply);
 
                               remove::transaction( state, common::transaction::id::range::global( origin));
                            });
@@ -443,11 +443,11 @@ namespace casual
                                  if constexpr( common::traits::is::any_v< Reply, common::message::transaction::commit::Reply>)
                                     reply.stage = decltype( reply.stage)::commit;
                                  
-                                 common::communication::ipc::flush::optional::send( destination.process.ipc, reply);
+                                 state.multiplex.send( destination.process.ipc, reply);
                               }
                               else if( code == decltype( code)::ok)
                               {
-                                 // Prepare has gone ok. Log persistant state
+                                 // Prepare has gone ok. Log persistent state
                                  state.persistent.log.prepare( *transaction);
                                  
                                  // add _commit-prepare_ message to persistent reply, if reply is the commit reply type
@@ -496,7 +496,7 @@ namespace casual
                            if( transaction->stage > decltype( transaction->stage())::involved)
                            {
                               // transaction is not in the correct 'stage'
-                              detail::send::reply( message, []( auto& reply)
+                              detail::send::reply( state, message, []( auto& reply)
                               { 
                                  reply.state = decltype( reply.state)::protocol;
                                  reply.stage = decltype( reply.stage)::commit;
@@ -517,7 +517,7 @@ namespace casual
                                  // We can remove this transaction
                                  state.transactions.erase( std::begin( transaction));
 
-                                 detail::send::reply( message, []( auto& reply)
+                                 detail::send::reply( state, message, []( auto& reply)
                                  { 
                                     reply.state = decltype( reply.state)::ok;
                                     reply.stage = decltype( reply.stage)::commit;
@@ -597,14 +597,13 @@ namespace casual
 
                               instance.state( state::resource::Proxy::Instance::State::idle);
 
-                              if( auto request = common::algorithm::find( state.pending.requests, instance.id))
+                              if( auto found = common::algorithm::find( state.pending.requests, instance.id))
                               {
+                                 auto request = common::algorithm::container::extract( state.pending.requests, std::begin( found));
+
                                  // We got a pending request for this resource, let's oblige
-                                 if( common::communication::ipc::flush::optional::send( instance.process.ipc, request->message))
-                                 {
+                                 if( state.multiplex.send( instance.process.ipc, std::move( request.message)))
                                     instance.state( state::resource::Proxy::Instance::State::busy);
-                                    state.pending.requests.erase( std::begin( request));
-                                 }
                                  else
                                     common::log::line( common::log::category::error, "the instance: ", instance , " - does not seem to be running");
                               }
@@ -647,7 +646,7 @@ namespace casual
                                  // prepare and send the reply
                                  auto reply = common::message::reverse::type( message);
                                  reply.involved = branch_resources;
-                                 common::communication::device::blocking::optional::send( message.process.ipc, reply);
+                                 state.multiplex.send( message.process.ipc, reply);
                               }
 
                               // partition what we don't got since before
@@ -729,22 +728,22 @@ namespace casual
                            namespace send
                            {
                               template< typename M, typename C>
-                              bool reply( const M& message, C custom)
+                              void reply( State& state, const M& message, C custom)
                               {
                                  auto reply = common::message::reverse::type( message);
                                  reply.trid = message.trid;
                                  reply.resource = message.resource;
                                  custom( reply);
 
-                                 return common::predicate::boolean( common::communication::ipc::flush::optional::send( message.process.ipc, reply));
+                                 state.multiplex.send( message.process.ipc, reply);
                               }
 
                               namespace read::only
                               {
                                  template< typename M>
-                                 auto reply( const M& message)
+                                 auto reply( State& state, const M& message)
                                  {
-                                    detail::send::reply( message, []( auto& reply)
+                                    detail::send::reply( state, message, []( auto& reply)
                                     {
                                        reply.statistics.start = platform::time::clock::type::now();
                                        reply.statistics.end = reply.statistics.start;
@@ -786,14 +785,14 @@ namespace casual
                                  if( ! transaction)
                                  {
                                     common::log::line( log, "failed to find trid: ", message.trid, " - action: reply with read-only");
-                                    detail::send::read::only::reply( message);
+                                    detail::send::read::only::reply( state, message);
                                     return;
                                  }
 
                                  if( transaction->stage > decltype( transaction->stage())::involved)
                                  {
                                     common::log::line( log, "transaction stage is passed the _involved_ - stage: ", transaction->stage, " - action: reply with read-only");
-                                    detail::send::read::only::reply( message);
+                                    detail::send::read::only::reply( state, message);
                                     return;
                                  }
 
@@ -804,7 +803,7 @@ namespace casual
                                     // We can remove this transaction
                                     state.transactions.erase( std::begin( transaction));
 
-                                    detail::send::read::only::reply( message);
+                                    detail::send::read::only::reply( state, message);
                                     return;
                                  }
 
@@ -836,14 +835,14 @@ namespace casual
                                  if( ! transaction)
                                  {
                                     common::log::line( log, "failed to find trid: ", message.trid, " - action: reply with read-only");
-                                    detail::send::read::only::reply( message);
+                                    detail::send::read::only::reply( state, message);
                                     return;
                                  }
 
                                  if( transaction->stage > decltype( transaction->stage())::involved)
                                  {
                                     common::log::line( log, "transaction stage is passed the _involved_ - stage: ", transaction->stage, " - action: reply with read-only");
-                                    detail::send::read::only::reply( message);
+                                    detail::send::read::only::reply( state, message);
                                     return;
                                  }
 
@@ -855,7 +854,7 @@ namespace casual
                                        // We can remove this transaction
                                        state.transactions.erase( std::begin( transaction));
 
-                                       detail::send::read::only::reply( message);
+                                       detail::send::read::only::reply( state, message);
                                        break;
                                     }
                                     case 1:
@@ -908,8 +907,8 @@ namespace casual
                                  if( ! transaction || transaction->stage > decltype( transaction->stage())::involved)
                                  {
                                     // Either the transaction is absent (???) or we're already in at least the prepare stage.
-                                    // Eitherway we reply with read_only
-                                    detail::send::reply( message, []( auto& reply)
+                                    // Either way we reply with read_only
+                                    detail::send::reply( state, message, []( auto& reply)
                                     {
                                        reply.statistics.start = platform::time::clock::type::now();
                                        reply.statistics.end = reply.statistics.start;
@@ -955,7 +954,7 @@ namespace casual
                                  reply.resource.closeinfo = resource.configuration.closeinfo;
                               }
 
-                              common::communication::device::blocking::optional::send( message.process.ipc, reply);
+                              state.multiplex.send( message.process.ipc, reply);
                            };
 
                         }
@@ -988,8 +987,7 @@ namespace casual
                            // Check if it's a resource proxy instance
                            if( state.remove_instance( message.state.pid))
                            {
-                              common::communication::device::blocking::send( 
-                                 common::communication::instance::outbound::domain::manager::device(), message);
+                              state.multiplex.send( common::communication::instance::outbound::domain::manager::device(), message);
                               return;
                            }
 
@@ -1031,7 +1029,7 @@ namespace casual
                               auto reply = state.configuration( message);
                               common::log::line( verbose::log, "reply: ", reply);
 
-                              common::communication::device::blocking::optional::send( message.process.ipc, reply);
+                              state.multiplex.send( message.process.ipc, reply);
                            };
                         }
                      } // alias
@@ -1045,7 +1043,7 @@ namespace casual
 
                            auto reply = common::message::reverse::type( message);
                            reply.model.transaction = state.configuration();
-                           common::communication::device::blocking::optional::send( message.process.ipc, reply);
+                           state.multiplex.send( message.process.ipc, reply);
                         };
                      }
 
