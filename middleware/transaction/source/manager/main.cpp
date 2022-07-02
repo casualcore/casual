@@ -12,11 +12,13 @@
 
 #include "domain/configuration/fetch.h"
 
+
 #include "common/argument.h"
 #include "common/process.h"
 #include "common/exception/guard.h"
 #include "common/environment.h"
 #include "common/communication/instance.h"
+#include "common/communication/select/ipc.h"
 
 
 
@@ -76,8 +78,8 @@ namespace casual
                      manager::handle::startup::handlers( state),
                      manager::ipc::device());
                }
-
             }
+
 
             auto condition( State& state)
             {
@@ -97,9 +99,6 @@ namespace casual
 
                setup( state);
 
-                  // prepare message dispatch handlers...
-               auto handler = handle::handlers( state);
-
                // we can supply configuration
                casual::domain::configuration::supplier::registration();
 
@@ -109,10 +108,14 @@ namespace casual
                log::line( common::log::category::information, "casual-transaction-manager is on-line");
                log::line( verbose::log, "state: ", state);
 
-               message::dispatch::pump(
+               communication::select::dispatch::pump(
                   local::condition( state),
-                  handler,
-                  manager::ipc::device());
+                  state.directive,
+                  communication::select::ipc::dispatch::create( state, &handle::handlers),
+                  state.multiplex
+               );
+
+               abort_guard.release();
             }
 
             void main( int argc, char** argv)
@@ -120,9 +123,10 @@ namespace casual
                Trace trace( "transaction::manager:local::main");
 
                Settings settings;
-
-               argument::Parse{ "transaction manager",
-               }( argc, argv);
+               {
+                  argument::Parse{ "transaction manager",
+                  }( argc, argv);
+               }
 
                start( initialize( std::move( settings)));
             }

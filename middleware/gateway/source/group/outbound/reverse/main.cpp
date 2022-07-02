@@ -14,6 +14,7 @@
 #include "common/exception/guard.h"
 #include "common/log/stream.h"
 #include "common/communication/instance.h"
+#include "common/communication/select/ipc.h"
 #include "common/argument.h"
 #include "common/message/internal.h"
 
@@ -199,7 +200,7 @@ namespace casual
                   state.directive,
                   tcp::pending::send::dispatch::create( state, &handle::connection::lost),
                   tcp::handle::dispatch::create< outbound::Policy>( state, outbound::handle::external( state), &handle::connection::lost),
-                  ipc::dispatch::create< outbound::Policy>( state, &internal::handler),
+                  communication::select::ipc::dispatch::create< outbound::Policy>( state, &internal::handler),
                   tcp::listen::dispatch::create( state, tcp::logical::connect::Bound::out),
                   state.multiplex
                );

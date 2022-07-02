@@ -14,6 +14,7 @@
 #include "common/exception/guard.h"
 #include "common/log/stream.h"
 #include "common/communication/instance.h"
+#include "common/communication/select/ipc.h"
 #include "common/argument.h"
 #include "common/message/internal.h"
 
@@ -44,8 +45,6 @@ namespace casual
                   CASUAL_SERIALIZE( listen);
                )
             };
-
- 
 
             State initialize( Arguments arguments)
             {
@@ -78,7 +77,7 @@ namespace casual
                            Trace trace{ "gateway::group::inbound::local::internal::handle::configuration::update::request"};
                            log::line( verbose::log, "message: ", message);
 
-                           // TODO maintainece - make sure we can handle runtime updates...
+                           // TODO maintainence - make sure we can handle runtime updates...
 
                            state.alias = message.model.alias;
                            state.pending.requests.limit( message.model.limit);
@@ -204,7 +203,7 @@ namespace casual
                      local::condition( state),
                      state.directive,
                      tcp::pending::send::dispatch::create( state, &handle::connection::lost),
-                     ipc::dispatch::create< inbound::Policy>( state, &internal::handler),
+                     communication::select::ipc::dispatch::create< inbound::Policy>( state, &internal::handler),
                      tcp::handle::dispatch::create< inbound::Policy>( state, inbound::handle::external( state), &handle::connection::lost),
                      tcp::listen::dispatch::create( state, tcp::logical::connect::Bound::in),
                      state.multiplex

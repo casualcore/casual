@@ -16,6 +16,8 @@
 #include "common/message/type.h"
 #include "common/log.h"
 
+#include "casual/overloaded.h"
+
 #include <map>
 #include <memory>
 
@@ -248,9 +250,6 @@ namespace casual
 
                C callable;
             };
-            
-            template< typename... Ts> struct overloaded : Ts... { using Ts::operator()...;};
-            template< typename... Ts> overloaded( Ts...) -> overloaded<Ts...>;
 
             namespace dispatch
             {
@@ -357,7 +356,7 @@ namespace casual
          template< typename... Ts> 
          auto compose( Ts&&... ts) 
          {
-            return detail::overloaded{ std::forward< Ts>( ts)...};
+            return casual::overloaded{ std::forward< Ts>( ts)...};
          };
 
       } // condition

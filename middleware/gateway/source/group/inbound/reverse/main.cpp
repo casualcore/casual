@@ -19,6 +19,7 @@
 #include "common/message/internal.h"
 
 #include "common/communication/instance.h"
+#include "common/communication/select/ipc.h"
 
 namespace casual
 {
@@ -255,7 +256,7 @@ namespace casual
                   local::condition( state),
                   state.directive,
                   tcp::pending::send::dispatch::create( state, &handle::connection::lost),
-                  ipc::dispatch::create< inbound::Policy>( state, &internal::handler),
+                  communication::select::ipc::dispatch::create< inbound::Policy>( state, &internal::handler),
                   tcp::handle::dispatch::create< inbound::Policy>( state, inbound::handle::external( state), &handle::connection::lost),
                   // takes care of multiplexing connects
                   tcp::connect::dispatch::create( state, tcp::logical::connect::Bound::in),

@@ -36,51 +36,6 @@ namespace casual
 
       } // flush
 
-      namespace dispatch
-      {
-         namespace detail
-         {
-            template< typename H, typename Policy>
-            struct select_handler
-            {
-               select_handler( H handler) : m_handler{ std::move( handler)} {}
-               
-               bool operator () ( common::communication::select::tag::consume)
-               {
-                  // we consume the cache.
-                  return common::predicate::boolean( m_handler( ipc::inbound().cached()));
-               }
-
-               bool operator() ( common::strong::file::descriptor::id descriptor, common::communication::select::tag::read)
-               {
-                  if( ipc::inbound().connector().descriptor() != descriptor)
-                     return false;
-
-                  auto count = Policy::next::ipc;
-                  while( count-- > 0 && m_handler( common::communication::device::non::blocking::next( ipc::inbound())))
-                     ; // no-op
-
-                  return true;
-               }
-
-            private:
-               H m_handler;
-            };
-         } // detail
-
-         template< typename Policy, typename State, typename HC>
-         auto create( State& state, HC&& handler_creator)
-         {
-            using handler_type = decltype( handler_creator( state));
-
-            // make sure we set the select fd-set
-            state.directive.read.add( ipc::inbound().connector().descriptor());
-
-            return detail::select_handler< handler_type, Policy>( handler_creator( state));
-         }
-         
-      } // dispatch
-
 
    } // gateway::group::ipc
 } // casual

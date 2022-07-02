@@ -227,7 +227,6 @@ namespace casual
 
       } // state
 
-
       bool State::booted() const
       {
          return common::algorithm::all_of( resources, []( const auto& p){ return p.booted();});
