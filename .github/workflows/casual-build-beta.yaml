@@ -16,7 +16,7 @@ jobs:
       major_minor: ${{ steps.major_minor.outputs.value }}
       base_version: ${{ steps.base_version.outputs.value }}
       build_version: ${{ steps.build_version.outputs.value }}
-      casual_version: ${{ steps.major_minor.outputs.value }}
+      casual_version: ${{ steps.casual_version.outputs.value }}
       casual_release: ${{ steps.casual_release.outputs.value }}
     steps:
       - name: check out repository casual
@@ -25,7 +25,7 @@ jobs:
           path: 'casual'
           fetch-depth: 0
 
-      - name: retrieve baseversion from branch
+      - name: retrieve major/minor from branch
         uses: actions-ecosystem/action-regex-match@v2
         id: regex-match
         with:
@@ -46,20 +46,58 @@ jobs:
         id: normalized_branch
         run: echo "::set-output name=value::$( echo ${{ github.ref }} | sed -E -e 's/refs\/heads\/feature\/[0-9.]+\///g' -e 's/-/_/g' -e 's/\//_/g' )"
 
-      - name: set casual_release
-        id: casual_release
-        run: |
-          echo "::set-output name=value::${{ env.build_type }}.${{ github.run_number }}"
-
       - name: set build_version
         id: build_version
         run: |
-          echo "::set-output name=value::${{ steps.base_version.outputs.value }}-${{ steps.casual_release.outputs.value }}"
+          echo "::set-output name=value::${{ steps.base_version.outputs.value }}${{ steps.normalized_branch.outputs.value }}.${{ github.run_number }}"
 
-    
-  build-centos:
+      - name: set casual_version
+        id: casual_version
+        run: |
+          echo "::set-output name=value::$( echo ${{ steps.build_version.outputs.value }} | awk -F'-' '{ print $1 }' )"
+
+      - name: set casual_release
+        id: casual_release
+        run: |
+          echo "::set-output name=value::$( echo ${{ steps.build_version.outputs.value }} | awk -F'-' '{ print $2 }' )"
+
+
+  build-frontend:
     runs-on: self-hosted
     needs: [calculate-version]
+    steps:
+      - name: check out repository casual
+        uses: actions/checkout@v3
+        with:
+          path: 'casual'
+          fetch-depth: 0
+
+      - name: prepare build-script
+        run: |
+          cat << EOD > builder.sh
+          #! /bin/bash
+
+          set -e
+
+          bash /git/casual/casual/pipeline/script/frontend/build
+
+          EOD
+
+          chmod +x builder.sh
+
+      - name: Build
+        run: |
+          docker run --rm -v ${{ github.workspace }}:/git/casual:Z -i casual/frontend-builder:latest
+
+      - name: Save artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: frontend
+          path: './**/casual-webapp.zip'
+  
+  build-centos:
+    runs-on: self-hosted
+    needs: [calculate-version,build-frontend]
     env:
       DISTRIBUTION: 'centos'
     steps:
@@ -82,6 +120,11 @@ jobs:
           repository: 'casualcore/casual-make'
           ref: 'master'
           path: 'casual-make'
+
+      - name: download frontend
+        uses: actions/download-artifact@v3
+        with:
+          name: frontend
 
       - name: prepare build-script
         run: |
@@ -125,7 +168,7 @@ jobs:
 
   build-suse:
     runs-on: self-hosted
-    needs: [calculate-version]
+    needs: [calculate-version,build-frontend]
     env:
       DISTRIBUTION: 'suse'
     steps:
@@ -148,6 +191,11 @@ jobs:
           repository: 'casualcore/casual-make'
           ref: 'master'
           path: 'casual-make'
+
+      - name: download frontend
+        uses: actions/download-artifact@v3
+        with:
+          name: frontend
 
       - name: prepare build-script
         run: |
@@ -188,3 +236,4 @@ jobs:
         with:
           name: suse_rpm
           path: ./**/casual-middleware*.rpm
+

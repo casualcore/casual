@@ -19,7 +19,7 @@ jobs:
       major_minor: ${{ steps.major_minor.outputs.value }}
       base_version: ${{ steps.base_version.outputs.value }}
       build_version: ${{ steps.build_version.outputs.value }}
-      casual_version: ${{ steps.major_minor.outputs.value }}
+      casual_version: ${{ steps.casual_version.outputs.value }}
       casual_release: ${{ steps.casual_release.outputs.value }}
     steps:
       - name: check out repository casual
@@ -28,7 +28,7 @@ jobs:
           path: 'casual'
           fetch-depth: 0
 
-      - name: retrieve baseversion from branch
+      - name: retrieve major/minor from branch
         uses: actions-ecosystem/action-regex-match@v2
         id: regex-match
         with:
@@ -49,19 +49,35 @@ jobs:
         id: normalized_branch
         run: echo "::set-output name=value::$( echo ${{ github.ref }} | sed -E -e 's/refs\/heads\/feature\/[0-9.]+\///g' -e 's/-/_/g' -e 's/\//_/g' )"
 
-      - name: set casual_release
-        id: casual_release
-        run: |
-          echo "::set-output name=value::${{ env.build_type }}.${{ steps.normalized_branch.outputs.value }}.${{ github.run_number }}"
-
       - name: set build_version
         id: build_version
         run: |
-          echo "::set-output name=value::${{ steps.base_version.outputs.value }}-${{ steps.casual_release.outputs.value }}"
+          echo "::set-output name=value::${{ steps.base_version.outputs.value }}${{ steps.normalized_branch.outputs.value }}.${{ github.run_number }}"
+
+      - name: set casual_version
+        id: casual_version
+        run: |
+          echo "::set-output name=value::$( echo ${{ steps.build_version.outputs.value }} | awk -F'-' '{ print $1 }' )"
+
+      - name: set casual_release
+        id: casual_release
+        run: |
+          echo "::set-output name=value::$( echo ${{ steps.build_version.outputs.value }} | awk -F'-' '{ print $2 }' )"
+  
+  notification-start:
+    runs-on: ubuntu-latest
+    needs: [calculate-version]
+    steps:  
+      - name: Discord notification
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+        uses: Ilshidur/action-discord@0.3.2
+        with:
+          args: "Starting a new build, Repo: ${{ github.repository }}, Branch: ${{ github.ref_name }}, Version: ${{ needs.calculate-version.outputs.build_version }}, URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"           
 
   build-frontend:
     runs-on: self-hosted
-    needs: [calculate-version]
+    needs: [calculate-version,notification-start]
     steps:
       - name: check out repository casual
         uses: actions/checkout@v3
@@ -234,4 +250,29 @@ jobs:
           name: suse_rpm
           path: ./**/casual-middleware*.rpm
 
+  tag-repo:
+    runs-on: ubuntu-latest
+    needs: [calculate-version,build-centos,build-suse]
+    steps:
+      - uses: actions/checkout@v2
+      - name: Bump version and push tag
+        id: tag_version
+        uses: mathieudutour/github-tag-action@v6.0
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          custom_tag: ${{ needs.calculate-version.outputs.build_version }}
+          tag_prefix: ""
 
+  notification-end:
+    runs-on: ubuntu-latest
+    needs: [build-centos,build-suse,tag-repo]
+    if: always()
+    steps: 
+      - uses: martialonline/workflow-status@v2
+        id: check
+      - name: Discord notification
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+        uses: Ilshidur/action-discord@0.3.2
+        with:
+          args: "Build status ${{ steps.check.outputs.status }}, Repo: ${{ github.repository }}, Branch: ${{ github.ref_name }}, Version: ${{ needs.calculate-version.outputs.build_version }}, URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"           
