@@ -15,7 +15,7 @@
 #include "common/message/type.h"
 #include "common/code/raise.h"
 #include "common/code/casual.h"
-#include "common/algorithm.h"
+#include "common/algorithm/container.h"
 
 
 namespace casual

@@ -22,6 +22,8 @@ namespace casual
          {
             if constexpr( std::is_same_v< traits::remove_cvref_t< D>, strong::ipc::id>)
                return std::as_const( destination);
+            else if constexpr( std::is_same_v< traits::remove_cvref_t< D>, process::Handle>)
+               return std::as_const( destination.ipc);
             else
                return std::as_const( destination.connector().process().ipc);
          }
