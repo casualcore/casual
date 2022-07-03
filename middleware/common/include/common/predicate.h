@@ -17,7 +17,7 @@ namespace casual
       //! @returns a composite predicate of all `predicates`, when invoked
       //!    return _logical AND_ for all `predicates`
       template< typename... Ps>
-      auto conjunction( Ps&&... predicates)
+      [[nodiscard]] auto conjunction( Ps&&... predicates)
       {
          return [=]( auto&&... param)
          {
@@ -28,7 +28,7 @@ namespace casual
       //! @returns a composite predicate of all `predicates`, when invoked
       //!    return _logical OR_ for all `predicates`
       template< typename... Ps>
-      auto disjunction( Ps&&... predicates)
+      [[nodiscard]] auto disjunction( Ps&&... predicates)
       {
          return [=]( auto&&... param)
          {
@@ -37,10 +37,10 @@ namespace casual
       }
 
       template< typename P>
-      auto composition( P&& predicate) { return std::forward< P>( predicate);}
+      [[nodiscard]] auto composition( P&& predicate) { return std::forward< P>( predicate);}
 
       template< typename P, typename... Ts>
-      auto composition( P&& predicate, Ts&&... ts)
+      [[nodiscard]] auto composition( P&& predicate, Ts&&... ts)
       {
          return [=]( auto&& value)
          {
@@ -50,25 +50,25 @@ namespace casual
 
       //! reverse the call order of left and right to a predicate
       template< typename T>
-      auto inverse( T&& functor)
+      [[nodiscard]] auto inverse( T&& functor)
       {
          return [functor]( auto&& l, auto&& r){ return functor( r, l);};
       }
 
       //! negates a predicate
       template< typename T>
-      auto negate( T&& functor)
+      [[nodiscard]] auto negate( T&& functor)
       {
          return [functor]( auto&&... param){ return ! functor( param...);};
       }
 
       template< typename T>
-      auto boolean( T&& value) -> decltype( static_cast< bool>( value))
+      [[nodiscard]] auto boolean( T&& value) -> decltype( static_cast< bool>( value))
       {
          return static_cast< bool>( value);
       }
 
-      inline auto boolean()
+      [[nodiscard]] inline auto boolean()
       {
          return []( auto&& value){ return boolean( value);};
       }
@@ -76,7 +76,7 @@ namespace casual
       namespace value
       {
          template< typename T>
-         auto equal( T&& wanted)
+         [[nodiscard]] auto equal( T&& wanted)
          {
             return [ wanted = std::forward< T>( wanted)]( auto&& value){ return value == wanted;};
          }
@@ -87,7 +87,7 @@ namespace casual
          //! wraps and invoke `predicate` with `value.second`
          //! useful for iterate over map-like containers. 
          template< typename P>
-         auto second( P&& predicate)
+         [[nodiscard]] auto second( P&& predicate)
          {
             return [ predicate = std::forward< P>( predicate)]( auto& pair)
             {
@@ -96,7 +96,7 @@ namespace casual
          }
 
 
-         inline auto first()
+         [[nodiscard]] inline auto first()
          {
             return []( auto& pair) -> decltype( pair.first)
             {
@@ -104,7 +104,7 @@ namespace casual
             };
          }
 
-         inline auto second()
+         [[nodiscard]] inline auto second()
          {
             return []( auto& pair) -> decltype( pair.second)
             {

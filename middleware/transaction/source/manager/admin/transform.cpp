@@ -132,9 +132,9 @@ namespace casual
                   {
                      admin::model::pending::Request result;
 
-                     result.resource = value.resource;
-                     result.correlation = value.message.correlation().value();
-                     result.type = common::message::convert::type( value.message.type());
+                     result.resource = value.destination;
+                     result.correlation = value.complete.correlation().value();
+                     result.type = common::message::convert::type( value.complete.type());
 
                      return result;
                   };
@@ -146,7 +146,7 @@ namespace casual
                   {
                      admin::model::pending::Reply result;
 
-                     result.destinations = value.destinations;
+                     result.destination = value.destination;
                      result.type = common::message::convert::type( value.complete.type());
                      result.correlation = value.complete.correlation().value();
 

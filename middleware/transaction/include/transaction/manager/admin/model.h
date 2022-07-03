@@ -137,12 +137,12 @@ namespace casual
 
          struct Reply
          {
-            std::vector< common::process::Handle> destinations;
+            common::process::Handle destination;
             common::Uuid correlation;
             long type;
 
             CASUAL_CONST_CORRECT_SERIALIZE(
-               CASUAL_SERIALIZE( destinations);
+               CASUAL_SERIALIZE( destination);
                CASUAL_SERIALIZE( correlation);
                CASUAL_SERIALIZE( type);
             )
