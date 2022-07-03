@@ -111,29 +111,7 @@ namespace casual
                            // persist transaction log   
                            state.persistent.log.persist();
 
-                           // we'll consume every message either way
-                           auto persistent = std::exchange( state.persistent.replies, {});
-
-                           common::log::line( verbose::log, "persistent: ", persistent);
-
-                           auto direct_send = []( auto& message)
-                           {
-                              return common::message::pending::non::blocking::send( message);
-                           };
-
-                           // try send directly
-                           auto pending = common::algorithm::remove_if( persistent, direct_send);
-                        
-                           common::log::line( verbose::log, "pending: ", pending);
-
-
-                           auto pending_send = []( auto& message)
-                           {
-                              casual::domain::pending::message::send( message);
-                           };
-                           
-                           // send failed non-blocking sends to pending
-                           common::algorithm::for_each( pending, pending_send);
+                           state.persistent.replies.send( state.multiplex);
                         }
 
 
@@ -157,7 +135,7 @@ namespace casual
                         template< typename M>
                         void reply( State& state, M&& message, const common::process::Handle& target)
                         {
-                           state.persistent.replies.emplace_back( std::move( message), target);
+                           state.persistent.replies.add( target, std::forward< M>( message));
                            detail::persist::batch::send( state);
                         }
                         
@@ -245,7 +223,7 @@ namespace casual
                                  }
 
                                  common::log::line( log, "could not send to resource: ", request.resource, " - action: try later");
-                                 return state.pending.requests.emplace_back( request.resource, std::move( request)).message.correlation();
+                                 return state.pending.requests.add( request.resource, std::move( request));
                               }
 
                               auto& resource = state.get_external( request.resource);
@@ -597,12 +575,10 @@ namespace casual
 
                               instance.state( state::resource::Proxy::Instance::State::idle);
 
-                              if( auto found = common::algorithm::find( state.pending.requests, instance.id))
+                              if( auto request = state.pending.requests.next( instance.id))
                               {
-                                 auto request = common::algorithm::container::extract( state.pending.requests, std::begin( found));
-
                                  // We got a pending request for this resource, let's oblige
-                                 if( state.multiplex.send( instance.process.ipc, std::move( request.message)))
+                                 if( state.multiplex.send( instance.process.ipc, std::move( request)))
                                     instance.state( state::resource::Proxy::Instance::State::busy);
                                  else
                                     common::log::line( common::log::category::error, "the instance: ", instance , " - does not seem to be running");

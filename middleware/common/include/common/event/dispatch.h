@@ -18,71 +18,41 @@ namespace casual
 {
    namespace common::event
    {
-      using type = common::message::Type;
-      using complete_type = common::communication::ipc::message::Complete;
-
-      struct base_dispatch
-      {
-         void remove( strong::process::id pid);
-
-         inline const std::vector< common::process::Handle>& subscribers() const { return m_subscribers;}
-
-      protected:
-
-         common::message::pending::Message pending( complete_type&& complete) const;
-
-         std::vector< common::process::Handle> m_subscribers;
-
-         template< typename ID>
-         bool exists( ID id) const
-         {
-            return ! algorithm::find_if( m_subscribers, [id]( auto& process){
-               return process == id;
-            }).empty();
-         }
-      };
-
       template< typename Event>
-      struct Dispatch : base_dispatch
+      struct Dispatch 
       {
-
-         using message_type = common::message::Type;
-
          void subscription( const message::event::subscription::Begin& message)
          {
-            if( ( message.types.empty() || algorithm::find( message.types, Event::type())) && ! exists( message.process.ipc))
-            {
+            if( ( message.types.empty() || algorithm::find( message.types, Event::type())) && ! exists( message.process))
                m_subscribers.push_back( message.process);
-            }
          }
 
          void subscription( const message::event::subscription::End& message)
          {
-            algorithm::container::trim( m_subscribers, algorithm::remove_if( m_subscribers, [&]( auto& v){
-               return v.ipc == message.process.ipc;
-            }));
+            remove( message.process);
          }
 
          //! remove subscribers with pid or ipc
          template< typename ID>
          void remove( ID id)
          {
-            algorithm::container::trim( m_subscribers, algorithm::remove_if( m_subscribers, [id]( auto& process){
-               return process == id;
-            }));
-         }
-
-         void subscription( strong::ipc::id ipc)
-         {
-            if( ! exists( ipc))
-               m_subscribers.emplace_back( 0, ipc);
+            algorithm::container::trim( m_subscribers, algorithm::remove( m_subscribers, id));
          }
 
          explicit operator bool () const { return ! m_subscribers.empty();}
 
+         template< typename ID>
+         bool exists( ID id) const
+         {
+            return predicate::boolean( algorithm::find( m_subscribers, id));
+         }
+
+         //! @deprecated
          common::message::pending::Message operator ()( const Event& event) const
          {
-            return pending( serialize::native::complete< complete_type>( event));
+            return common::message::pending::Message{
+               serialize::native::complete< communication::ipc::message::Complete>( event),
+               m_subscribers};
          }
 
          template< typename MS>
@@ -92,10 +62,14 @@ namespace casual
                multiplex.send( subscriber.ipc, event);
          }
 
+         inline auto& subscribers() const { return m_subscribers;}
+
          CASUAL_LOG_SERIALIZE(
             CASUAL_SERIALIZE_NAME( Event::type(), "event");
             CASUAL_SERIALIZE_NAME( m_subscribers, "subscribers");
          )
+      private:
+         std::vector< common::process::Handle> m_subscribers;
       };
 
       namespace dispatch
@@ -103,6 +77,8 @@ namespace casual
          template< typename... Events>
          struct Collection : event::Dispatch< Events>...
          {
+            using event::Dispatch< Events>::operator()...;
+
             template< typename Event>
             event::Dispatch< Event>& event()
             {
@@ -118,22 +94,22 @@ namespace casual
             template< typename Event>
             bool active() const
             {
-               return static_cast< bool>( event< Event>());
+               return predicate::boolean( event< Event>());
             }
 
             void subscription( const message::event::subscription::Begin& message)
             {
-               do_subscription( message, Events{}...);
+               ( ... , event< Events>().subscription( message) );
             }
 
             void subscription( const message::event::subscription::End& message)
             {
-               do_subscription( message, Events{}...);
+               ( ... , event< Events>().subscription( message) );
             }
 
             void remove( strong::process::id pid)
             {
-               do_remove( pid, Events{}...);
+               ( ... , event< Events>().remove( pid) );
             }
 
             friend std::ostream& operator << ( std::ostream& out, const Collection& value)
@@ -144,27 +120,6 @@ namespace casual
             }
 
          private:
-
-            template< typename M>
-            void do_subscription( const M& message) { }
-
-
-            template< typename M, typename E, typename... Es>
-            void do_subscription( const M& message, E&&, Es&&...)
-            {
-               event< E>().subscription( message);
-               do_subscription( message, Es{}...);
-            }
-
-            void do_remove( strong::process::id pid) { }
-
-
-            template< typename E, typename... Es>
-            void do_remove( strong::process::id pid, E&&, Es&&...)
-            {
-               event< E>().remove( pid);
-               do_remove( pid, Es{}...);
-            }
 
             template< typename E>
             void print( std::ostream& out, E&&) const

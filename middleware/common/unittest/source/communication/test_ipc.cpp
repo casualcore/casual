@@ -373,7 +373,7 @@ namespace casual
 
          std::vector< communication::ipc::inbound::Device> destinations( 10);
 
-         const auto message = unittest::Message{ platform::ipc::transport::size * 8};
+         const auto message = unittest::Message{ platform::ipc::transport::size * 16};
          platform::size::type errors{};
 
          algorithm::for_n< 10>( [&]()

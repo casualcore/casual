@@ -13,7 +13,6 @@
 
 #include "casual/platform.h"
 #include "common/message/transaction.h"
-#include "common/message/pending.h"
 #include "common/algorithm.h"
 #include "common/metric.h"
 #include "common/functional.h"
@@ -22,6 +21,7 @@
 
 #include "common/communication/select.h"
 #include "common/communication/ipc/send.h"
+#include "common/communication/ipc/pending.h"
 
 #include "common/serialize/native/complete.h"
 
@@ -172,26 +172,6 @@ namespace casual
             } // external
          } // resource
 
-         namespace pending
-         {
-            struct Request
-            {
-               template< typename M>
-               Request( common::strong::resource::id resource, M&& message) 
-                  : resource( resource),  message( common::serialize::native::complete< common::communication::ipc::message::Complete>( std::forward< M>( message))) {}
-
-               common::strong::resource::id resource;
-               common::communication::ipc::message::Complete message;
-
-               inline friend bool operator == ( const Request& lhs, common::strong::resource::id rhs) { return lhs.resource == rhs;}
-
-               CASUAL_LOG_SERIALIZE(
-                  CASUAL_SERIALIZE( resource);
-                  CASUAL_SERIALIZE( message);
-               )
-            };
-
-         } // pending
 
          namespace code::priority
          {
@@ -379,7 +359,7 @@ namespace casual
          struct
          {
             //! Replies that will be sent after an atomic write to the log
-            std::vector< common::message::pending::Message> replies;
+            common::communication::ipc::pending::Holder<> replies;
 
             //! the persistent transaction log
             Log log;
@@ -395,7 +375,7 @@ namespace casual
          {
             //! Resource request, that will be processed as soon as possible,
             //! that is, as soon as corresponding resources is done/idle
-            std::vector< state::pending::Request> requests;
+            common::communication::ipc::pending::Holder< common::strong::resource::id> requests;
 
             CASUAL_LOG_SERIALIZE(
                CASUAL_SERIALIZE( requests);
