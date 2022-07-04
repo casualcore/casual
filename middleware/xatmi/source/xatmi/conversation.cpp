@@ -65,14 +65,14 @@ namespace local
 
                if( result)
                {
-                  event = result.underlaying();
+                  event = result.underlying();
                   casual::xatmi::internal::error::set( casual::common::code::xatmi::event);
                   return -1;
                }
             }
             catch( const casual::common::exception::conversation::Event& exception)
             {
-               event = exception.event.underlaying();
+               event = exception.event.underlying();
                casual::xatmi::internal::error::set( casual::common::code::xatmi::event);
                return -1;
             }

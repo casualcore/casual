@@ -131,7 +131,7 @@ void casual_execution_id_set( const uuid_t* id)
 
 const uuid_t* casual_execution_id_get()
 {
-   return &casual::common::execution::id().underlaying().get();
+   return &casual::common::execution::id().underlying().get();
 }
 
 void casual_instance_browse_services( casual_instance_browse_callback callback, void* context)

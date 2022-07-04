@@ -71,7 +71,7 @@ namespace casual
 
             auto result = reopen_guard( [&]()
             { 
-               return local::convert( m_xa->xa_start_entry( local::non_const_xid( transaction), m_id.value(), flags.underlaying()));
+               return local::convert( m_xa->xa_start_entry( local::non_const_xid( transaction), m_id.value(), flags.underlying()));
             });
 
             // this is an extra fallback/try to mitigate possible race-conditions when 
@@ -84,7 +84,7 @@ namespace casual
 
                flags |= Flag::join;
 
-               result = local::convert( m_xa->xa_start_entry( local::non_const_xid( transaction), m_id.value(), flags.underlaying()));
+               result = local::convert( m_xa->xa_start_entry( local::non_const_xid( transaction), m_id.value(), flags.underlying()));
             }
 
             if( result != code::ok)
@@ -99,7 +99,7 @@ namespace casual
 
             auto result = reopen_guard( [&]()
             {
-               return local::convert( m_xa->xa_end_entry( local::non_const_xid( transaction), m_id.value(), flags.underlaying()));
+               return local::convert( m_xa->xa_end_entry( local::non_const_xid( transaction), m_id.value(), flags.underlying()));
             });
 
             if( result != code::ok)
@@ -114,7 +114,7 @@ namespace casual
 
             auto info = common::environment::expand( m_openinfo);
 
-            auto result = local::convert( m_xa->xa_open_entry( info.c_str(), m_id.value(), flags.underlaying()));
+            auto result = local::convert( m_xa->xa_open_entry( info.c_str(), m_id.value(), flags.underlying()));
 
             // we send an event if we fail to open resource
             if( result != code::ok)
@@ -129,7 +129,7 @@ namespace casual
 
             auto info = common::environment::expand( m_closeinfo);
 
-            auto result = local::convert( m_xa->xa_close_entry( info.c_str(), m_id.value(), flags.underlaying()));
+            auto result = local::convert( m_xa->xa_close_entry( info.c_str(), m_id.value(), flags.underlying()));
 
             if( result != code::ok)
                log::line( log::category::error, result, " failed to close resource: ", m_id, " '", m_xa->name, "'");
@@ -143,7 +143,7 @@ namespace casual
 
             auto result = reopen_guard( [&]()
             {
-               return local::convert( m_xa->xa_prepare_entry( local::non_const_xid( transaction), m_id.value(), flags.underlaying()));
+               return local::convert( m_xa->xa_prepare_entry( local::non_const_xid( transaction), m_id.value(), flags.underlying()));
             });
 
             if( result == common::code::xa::protocol)
@@ -169,7 +169,7 @@ namespace casual
 
             return reopen_guard( [&]()
             {
-               return local::convert( m_xa->xa_commit_entry( local::non_const_xid( transaction), m_id.value(), flags.underlaying()));
+               return local::convert( m_xa->xa_commit_entry( local::non_const_xid( transaction), m_id.value(), flags.underlying()));
             });
          }
 
@@ -179,7 +179,7 @@ namespace casual
 
             return reopen_guard( [&]()
             {
-               return local::convert( m_xa->xa_rollback_entry( local::non_const_xid( transaction), m_id.value(), flags.underlaying()));
+               return local::convert( m_xa->xa_rollback_entry( local::non_const_xid( transaction), m_id.value(), flags.underlying()));
             });
          }
 
@@ -229,7 +229,7 @@ namespace casual
 
             while(  count == range::size( xids))
             {
-               count = m_xa->xa_recover_entry( xids.data(), xids.size(), m_id.value(), flags.underlaying());
+               count = m_xa->xa_recover_entry( xids.data(), xids.size(), m_id.value(), flags.underlying());
 
                if( count < 0)
                {

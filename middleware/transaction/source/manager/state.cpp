@@ -115,7 +115,7 @@ namespace casual
 
                      static common::strong::resource::id base_id;
                      
-                     --base_id.underlaying();
+                     --base_id.underlying();
                      return state.externals.emplace_back( process, base_id).id;
 
                   }

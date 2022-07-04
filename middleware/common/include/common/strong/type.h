@@ -112,7 +112,7 @@ namespace casual
             return m_value;
          }
 
-         //! @returns true if the underlaying value is valid
+         //! @returns true if the underlying value is valid
          template< typename S = T, typename P = Policy, 
             std::enable_if_t< 
                detail::traits::has::bool_operator_v< S> || detail::traits::has::static_valid_v< P, S>>* = nullptr> 
@@ -124,7 +124,7 @@ namespace casual
             return static_cast< bool>( m_value);
          }
 
-         //! @returns true if the underlaying value is valid
+         //! @returns true if the underlying value is valid
          template< typename S = T, typename P = Policy, 
             std::enable_if_t< 
                detail::traits::has::bool_operator_v< S> || detail::traits::has::static_valid_v< P, S>>* = nullptr> 
@@ -150,8 +150,8 @@ namespace casual
          //! accessor for the underlying type by ref. Should only
          //! be used when interacting with 'C-api:s'
          //! @{
-         value_type& underlaying() noexcept { return m_value;}
-         const value_type& underlaying() const noexcept { return m_value;}
+         value_type& underlying() noexcept { return m_value;}
+         const value_type& underlying() const noexcept { return m_value;}
          //! @}
 
          //! for Compare< T>
@@ -171,7 +171,7 @@ namespace casual
       };
 
 
-      //! If the underlaying type has equality operations defined for other types we expose
+      //! If the underlying type has equality operations defined for other types we expose
       //! these if the policy type has defined extended_equality
       //! @{
       template< typename T, typename Policy, typename V>
@@ -236,9 +236,9 @@ namespace casual
       }
 
       template< typename T, typename Policy>
-      inline auto operator >> ( std::istream& in, Type< T, Policy>& rhs) -> decltype( in >> rhs.underlaying())
+      inline auto operator >> ( std::istream& in, Type< T, Policy>& rhs) -> decltype( in >> rhs.underlying())
       { 
-         return in >> rhs.underlaying();
+         return in >> rhs.underlying();
       }
 
       namespace detail::hash

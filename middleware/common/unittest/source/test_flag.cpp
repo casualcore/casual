@@ -40,7 +40,7 @@ namespace casual
       }
 
       // Test the compile time initialization
-      static_assert( Flags< Enum>{ Enum::flag1, Enum::flag2}.underlaying() == ( 1 | 2), "bla");
+      static_assert( Flags< Enum>{ Enum::flag1, Enum::flag2}.underlying() == ( 1 | 2), "bla");
       static_assert( Flags< Enum>{ Enum::flag1} == Flags< Enum>{ Enum::flag1}, "bla");
       static_assert( Flags< Enum>{ Enum::flag1} != Flags< Enum>{ Enum::flag2}, "bla");
       static_assert( Flags< Enum>{ Enum::flag1}, "bla");
