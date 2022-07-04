@@ -155,7 +155,7 @@ namespace casual
 
          // we register our self
          discovery::provider::registration( discovery::provider::Ability::discover_external);
-         discovery::provider::registration( { strong::process::id{ process::id().underlaying() + 1}, process::handle().ipc}, discovery::provider::Ability::discover_internal);
+         discovery::provider::registration( { strong::process::id{ process::id().underlying() + 1}, process::handle().ipc}, discovery::provider::Ability::discover_internal);
 
          auto correlation = discovery::request( [](){
             message::discovery::Request request{ process::handle()};

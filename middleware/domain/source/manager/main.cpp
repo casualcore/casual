@@ -179,7 +179,7 @@ namespace casual
                      argument::Parse{ "domain manager",
                         argument::Option( std::tie( settings.configuration), argument::option::keys( { "-c", "--configuration"}, {"--configuration-files"}), "domain configuration 'glob' patterns"),
                         argument::Option( std::tie( settings.bare), { "--bare"}, "if use 'bare' mode or not, ie, do not boot mandatory (broker, TM), mostly for unittest"),
-                        argument::Option( std::tie( settings.parent.ipc.underlaying()), { "--event-ipc"}, "ipc to send events to"),
+                        argument::Option( std::tie( settings.parent.ipc.underlying()), { "--event-ipc"}, "ipc to send events to"),
                         argument::Option( std::tie( settings.parent.correlation), { "--event-id"}, "id of the events to correlate"),
                         
                         argument::Option( std::tie( dummy), argument::option::keys( {}, { "--persist"}), "not used"),

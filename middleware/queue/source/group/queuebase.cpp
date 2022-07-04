@@ -40,8 +40,8 @@ namespace casual
                {
                   sql::database::row::get( row,
                      message.id.get(),
-                     message.queue.underlaying(),
-                     message.origin.underlaying(),
+                     message.queue.underlying(),
+                     message.origin.underlying(),
                      message.trid,
                      message.properties,
                      message.state,
@@ -97,11 +97,11 @@ namespace casual
                      queuebase::Queue result;
 
                      sql::database::row::get( row, 
-                        result.id.underlaying(),
+                        result.id.underlying(),
                         result.name,
                         result.retry.count,
                         result.retry.delay,
-                        result.error.underlaying()
+                        result.error.underlying()
                      );
 
                      return result;
@@ -252,7 +252,7 @@ namespace casual
 
          auto query = m_connection.query(
             "SELECT q.id, q.name, q.retry_count, q.retry_delay, q.error FROM queue q WHERE q.id = :id", 
-            id.underlaying());
+            id.underlying());
 
          return sql::database::query::first( std::move( query), local::transform::Queue{});
       }
@@ -347,7 +347,7 @@ namespace casual
          auto result = sql::database::query::first( m_statement.id.query( name), []( auto& row)
          {
             common::strong::queue::id id;
-            sql::database::row::get( row, id.underlaying());
+            sql::database::row::get( row, id.underlying());
             return id;
          });
 
@@ -501,7 +501,7 @@ namespace casual
 
             // SELECT q.id, q.count
             sql::database::row::get( row, 
-               message.queue.underlaying(), 
+               message.queue.underlying(), 
                message.count
             );
 
@@ -525,7 +525,7 @@ namespace casual
          Trace trace{ "queue::Queuebase::available earliest"};
          log::line( verbose::log, "queue: ", queue);
 
-         auto query = m_statement.available.message.query( queue.underlaying());
+         auto query = m_statement.available.message.query( queue.underlying());
          sql::database::Row row;
 
          if( ! query.fetch( row))
@@ -620,11 +620,11 @@ namespace casual
                created           INTEGER NOT NULL -- when the queue was created
                */
             sql::database::row::get( row, 
-               queue.id.underlaying(),
+               queue.id.underlying(),
                queue.name,
                queue.retry.count,
                queue.retry.delay,
-               queue.error.underlaying(),
+               queue.error.underlying(),
                queue.metric.count,
                queue.metric.size,
                queue.metric.uncommitted,

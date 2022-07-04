@@ -46,7 +46,7 @@ namespace casual
          : payload{ std::move( payload)}
       {
          m_header.type = network::byteorder::encode( cast::underlying( type));
-         correlation.underlaying().copy( m_header.correlation);
+         correlation.underlying().copy( m_header.correlation);
          m_header.size = network::byteorder::size::encode( Complete::payload.size());
       }
 

@@ -102,7 +102,7 @@ namespace casual
                         hints.ai_socktype = SOCK_STREAM;
 
                         flags |= Flag::canonical;
-                        hints.ai_flags = flags.underlaying();
+                        hints.ai_flags = flags.underlying();
 
                         std::string host{ address.host()};
                         std::string port{ address.port()};
@@ -526,7 +526,7 @@ namespace casual
                         log::line( verbose::log, "socket: ", socket, ", flags: ", flags);
 
                         return posix::alternative( 
-                           ::sendmsg( socket.descriptor().value(), message, flags.underlaying()),
+                           ::sendmsg( socket.descriptor().value(), message, flags.underlying()),
                            0,
                            std::errc::resource_unavailable_try_again, std::errc::operation_would_block);
                      };
@@ -593,7 +593,7 @@ namespace casual
                      auto receive_message = []( auto& socket, auto first, auto count, auto flags)
                      {
                         auto bytes = posix::alternative( 
-                           ::recv( socket.descriptor().value(), first, count, flags.underlaying()),
+                           ::recv( socket.descriptor().value(), first, count, flags.underlying()),
                            -1,
                            std::errc::resource_unavailable_try_again, std::errc::operation_would_block);
 
