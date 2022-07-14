@@ -31,7 +31,7 @@ namespace casual
 
       struct Coordinator
       {
-         using callback_type = common::unique_function< void( const strong::ipc::id&, ipc::message::complete::Send&)>;
+         using callback_type = common::unique_function< void( const strong::ipc::id&, const ipc::message::Complete&)>;
 
          inline Coordinator( select::Directive& directive) : m_directive{ &directive} {}
          
@@ -45,7 +45,7 @@ namespace casual
          //! @returns the correlation for the message, regardless if the message was sent directly or not.
          //! @{
          template< typename D, typename M, typename... C>
-         strong::correlation::id send( D& destination, M&& message, C&&... callback)
+         strong::correlation::id send( D&& destination, M&& message, C&&... callback)
          {
             static_assert( sizeof...(C) <= 1, "[0..1] callbacks required");
 
@@ -115,7 +115,7 @@ namespace casual
             inline void error( const strong::ipc::id& destination)
             {
                if( callback)
-                  callback( destination, complete);
+                  callback( destination, complete.complete());
             }
 
             ipc::message::complete::Send complete;

@@ -151,7 +151,7 @@ namespace casual
          }
 
          //! Tries to find the first logic complete message with any of the types in @p types
-         //! `types` has to be an _iterateable_ (container) that holds message::Type's
+         //! `types` has to be an _iterable_ (container) that holds message::Type's
          //!
          //! @return a logical complete message if there is one,
          //!         otherwise the message has absent_message as type
@@ -170,7 +170,7 @@ namespace casual
          // Conversational uses multiple types and correlation.
          //! Tries to find the first logic complete message with any of the types in @p types
          //! and with correlation @p correlation
-         //! `types` has to be an _iterateable_ (container) that holds message::Type's
+         //! `types` has to be an _iterable_ (container) that holds message::Type's
          //!
          //! @return a logical complete message if there is one,
          //!         otherwise the message has absent_message as type
@@ -282,8 +282,9 @@ namespace casual
          template< typename M>
          correlation_type push( M&& message)
          {
-            // Make sure we consume messages from the real queue first.
-            flush();
+            // Make sure we consume up to one messages from the real device first.
+            // So progress can be made.
+            flush( 1);
 
             if constexpr( std::is_same_v< std::decay_t< M>, complete_type>)
             {
@@ -299,7 +300,12 @@ namespace casual
          //! flushes the messages on the device into cache. (ie, make the device writable if it was full), if implemented.
          void flush()
          {
-            flush( *this, traits::priority::tag< 1>{});
+            flush( platform::batch::flush);
+         }
+
+         void flush( platform::size::type count)
+         {
+            flush( *this, count, traits::priority::tag< 1>{});
          }
 
          //! Clear and discard all messages in cache and on the device.
@@ -350,21 +356,19 @@ namespace casual
       private:
 
          template< typename D>
-         static void flush( D& device, traits::priority::tag< 0>)
-         {
-            // no-op - can't flush if we haven't got non-blocking
-         }
-
-         template< typename D>
-         static auto flush( D& device, traits::priority::tag< 1>) -> decltype( policy::non::blocking(device), void())
+         static auto flush( D& device, platform::size::type count, traits::priority::tag< 1>) -> decltype( policy::non::blocking(device), void())
          {
             // We don't want to handle any signals while we're flushing
             signal::thread::scope::Block block;
 
-            auto count = platform::batch::flush;
-
-            while( device.next( common::message::Type::flush_ipc, policy::non::blocking( device)) && --count > 0)
+            while( count-- > 0 && device.next( common::message::Type::flush_ipc, policy::non::blocking( device)))
                ; // no op
+         }
+
+         template< typename D>
+         constexpr static void flush( D& device, platform::size::type count, traits::priority::tag< 0>)
+         {
+            // no-op - can't flush if we haven't got non-blocking
          }
 
          template< typename C, typename M>

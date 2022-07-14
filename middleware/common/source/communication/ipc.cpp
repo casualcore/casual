@@ -104,7 +104,7 @@ namespace casual
                         code::raise::error( code::casual::invalid_argument, "ipc");
 
                      case std::errc::no_such_file_or_directory:
-                        code::raise::error( code::casual::communication_unavailable, "ipc - errno:", code);
+                        code::raise::error( code::casual::communication_unavailable, "ipc - errno: ", code);
 
                      default:
                         // will always throw

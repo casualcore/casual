@@ -8,11 +8,9 @@
 
 #include "common/message/event.h"
 
-#include "common/message/pending.h"
-#include "common/communication/ipc/message.h"
-#include "common/serialize/native/complete.h"
 #include "common/algorithm/container.h"
 #include "common/stream.h"
+
 
 namespace casual
 {
@@ -47,17 +45,10 @@ namespace casual
             return predicate::boolean( algorithm::find( m_subscribers, id));
          }
 
-         //! @deprecated
-         common::message::pending::Message operator ()( const Event& event) const
+         template< typename M>
+         void operator ()( M& multiplex, const Event& event) const
          {
-            return common::message::pending::Message{
-               serialize::native::complete< communication::ipc::message::Complete>( event),
-               m_subscribers};
-         }
-
-         template< typename MS>
-         void operator ()( MS& multiplex, const Event& event) const
-         {
+            log::line( verbose::log, "common::event::Dispatch: ", *this); 
             for( auto subscriber : m_subscribers)
                multiplex.send( subscriber.ipc, event);
          }
@@ -97,13 +88,12 @@ namespace casual
                return predicate::boolean( event< Event>());
             }
 
-            void subscription( const message::event::subscription::Begin& message)
+            template< typename M>
+            void subscription( const M& message)
             {
-               ( ... , event< Events>().subscription( message) );
-            }
-
-            void subscription( const message::event::subscription::End& message)
-            {
+               Trace trace{ "common::event::Dispatch::subscription - begin"};
+               log::line( verbose::log, "message: ", message);
+               
                ( ... , event< Events>().subscription( message) );
             }
 
@@ -114,24 +104,17 @@ namespace casual
 
             friend std::ostream& operator << ( std::ostream& out, const Collection& value)
             {
-               out << "{ ";
-               value.print( out, Events{}...);
-               return out << '}';
+               return value.print( out, Events{}...);
             }
 
          private:
 
-            template< typename E>
-            void print( std::ostream& out, E&&) const
-            {
-               stream::write( out, event< E>());
-            }
-
             template< typename E, typename... Es>
-            void print( std::ostream& out, E&&, Es&&...) const
+            std::ostream& print( std::ostream& out, E&&, Es&&...) const
             {
-               stream::write( out, event< E>(), ", ");
-               print( out, Es{}...);
+               stream::write( out, "{ ", event< E>());
+               ( ... , stream::write( out, ", ", event< Es>()) );
+               return out << '}';
             }
 
          };

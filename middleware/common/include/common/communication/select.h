@@ -134,7 +134,7 @@ namespace casual
             namespace consume
             {
                template< typename H>
-               auto dispatch( H& handler, traits::priority::tag< 1>) 
+               constexpr auto dispatch( H& handler, traits::priority::tag< 1>) 
                   -> decltype( handler( tag::consume{}))
                {
                   return handler( tag::consume{});
@@ -147,88 +147,63 @@ namespace casual
                   return false;
                }
 
-               //! sentinel
-               constexpr bool dispatch() { return false;}
-
-               template< typename H, typename... Hs> 
-               bool dispatch( H& handler, Hs&... handlers)
+               template< typename... Hs> 
+               constexpr bool dispatch( Hs&... handlers)
                {
-                  return dispatch( handler, traits::priority::tag< 1>{}) || dispatch( handlers...);
+                  return ( dispatch( handlers, traits::priority::tag< 1>{}) || ... );
                }
             } // consume
          
             namespace handle
             {
-               //! blocking read handler
-               template< typename H> 
-               auto dispatch( directive::Ready& ready, H& handler, traits::priority::tag< 2>)
-                  -> decltype( void( handler( range::front( ready.read), tag::read{})))
+               namespace read
                {
-                  // keep the reads that did not find a handler.
-                  ready.read = algorithm::filter( ready.read, [&handler]( auto descriptor)
+                  //! blocking read handler
+                  template< typename H> 
+                  auto dispatch( directive::Ready& ready, H& handler, traits::priority::tag< 1>)
+                     -> decltype( predicate::boolean( handler( range::front( ready.read), tag::read{})))
                   {
-                     return ! handler( descriptor, tag::read{});
-                  });
-               }
+                     // keep the reads that did not find a handler.
+                     ready.read = algorithm::filter( ready.read, [ &handler]( auto descriptor)
+                     {
+                        return ! handler( descriptor, tag::read{});
+                     });
+                     return predicate::boolean( ready);
+                  }
 
-               //! blocking write handler
-               template< typename H> 
-               auto dispatch( directive::Ready& ready, H& handler, traits::priority::tag< 1>)
-                  -> decltype( void( handler( range::front( ready.write), tag::write{})))
+                  //! "non read" handler - no op
+                  template< typename H> 
+                  constexpr auto dispatch( directive::Ready& ready, H& handler, traits::priority::tag< 0>) noexcept { return true;};
+               } // read
+
+               namespace write
                {
-                  // keep the writes that did not find a handler.
-                  ready.write = algorithm::filter( ready.write, [&handler]( auto descriptor)
+                  //! blocking write handler
+                  template< typename H> 
+                  auto dispatch( directive::Ready& ready, H& handler, traits::priority::tag< 1>)
+                     -> decltype( predicate::boolean( handler( range::front( ready.write), tag::write{})))
                   {
-                     return ! handler( descriptor, tag::write{});
-                  });
-               }
+                     // keep the writes that did not find a handler.
+                     ready.write = algorithm::filter( ready.write, [ &handler]( auto descriptor)
+                     {
+                        return ! handler( descriptor, tag::write{});
+                     });
+                     return predicate::boolean( ready);
+                  }
 
-               //! 'consume' handler - no op
-               template< typename H> 
-               auto dispatch( directive::Ready& ready, H& handler, traits::priority::tag< 0>) 
-                  -> decltype( void( handler( tag::consume{})))
-               { 
-                  // no-op.
-               }
+                  //! "non write" handler - no op
+                  template< typename H> 
+                  constexpr auto dispatch( directive::Ready& ready, H& handler, traits::priority::tag< 0>) noexcept { return true;};
+               } // write
 
-               template< typename H> 
-               void dispatch( directive::Ready& ready, H& handler)
+               template< typename... Hs> 
+               void dispatch( directive::Ready ready, Hs&... handlers)
                {
-                  handle::dispatch( ready, handler, traits::priority::tag< 2>{});
+                  // will short circuit when `ready` is _consumed_.
+                  ( read::dispatch( ready, handlers, traits::priority::tag< 1>{}) && ... ) 
+                     && ( write::dispatch( ready, handlers, traits::priority::tag< 1>{}) && ... );
                }
-            } // handle
 
-            // "sentinel"
-            template< typename F, typename R> 
-            void iterate( F&& functor, R& ready) {}
-
-            template< typename F, typename H, typename... Hs> 
-            void iterate( F&& functor, directive::Ready& ready, H& handler, Hs&... handlers)
-            {
-               if( ! ready)
-                  return;
-               
-               functor( ready, handler);
-               iterate( functor, ready, handlers...);
-            }
-
-            template< typename... Hs> 
-            void dispatch( directive::Ready ready, Hs&... handlers)
-            {
-               // 'iterate' over all handlers and dispatch on ready...
-               // this might be done with fold expressions...
-               iterate(
-                  []( auto& ready, auto& handler)
-                  {
-                     handle::dispatch( ready, handler);
-                  },
-                  ready,
-                  handlers...);
-            }
-
-            namespace handle
-            {
-               void error();
             } // handle
 
             namespace pump
@@ -238,32 +213,32 @@ namespace casual
                {
                   condition::detail::invoke< condition::detail::tag::prelude>( condition);
 
-                  while( ! condition::detail::invoke< condition::detail::tag::done>( condition))
+                  while( true)
                   {
                      try 
-                     {   
+                     {
+                        // we're idle (most likely)
+                        condition::detail::invoke< condition::detail::tag::idle>( condition);
+
                         // make sure we try to consume from the 'consume-handlers' before
                         // we might block forever. This gives possibilities to consume cached messages
                         // that wont be triggered via multiplexing on file descriptors
                         while( detail::consume::dispatch( handlers...))
-                           if( condition::detail::invoke< condition::detail::tag::done>( condition))
-                              return;
+                           ; // no-op
 
-                        // we're idle
-                        condition::detail::invoke< condition::detail::tag::idle>( condition);
-
-                        // we might be done after idle
+                        // we might be done after idle, and consumed
                         if( condition::detail::invoke< condition::detail::tag::done>( condition))
                            return;
 
                         // we block in `detail::select` with the read and write sets.
-                        detail::dispatch( 
+                        handle::dispatch( 
                            detail::select( directive),
                            handlers...);
                      }
                      catch( ...)
                      {
-                        condition::detail::invoke< condition::detail::tag::error>( condition);
+                        if( auto error = condition::detail::handle::error())
+                           condition::detail::invoke< condition::detail::tag::error>( condition, *error);
                      }
                   } 
                }
@@ -272,12 +247,16 @@ namespace casual
          } // detail
 
 
-         //! handlers has to comply with the following
-         //! * either:
-         //!   * `bool <callable>( descriptor)`
-         //!      *  return true if descriptor is one that <callable> handled - can be blocking
-         //!   * `bool <callable>()`
-         //!      *  return true if descriptor is one that <callable> handled - can be NON blocking
+         //! handlers has to comply with (any of) the following:
+         //! * tag::read
+         //!   * `bool <callable>( descriptor, tag::read)`
+         //!      * return true if descriptor is one that <callable> handled - can be blocking
+         //! * tag::write
+         //!   * `bool <callable>( descriptor, tag::write)`
+         //!      * return true if descriptor is one that <callable> handled - must be non blocking
+         //! * tag::consume
+         //!   * `bool <callable>( tag::consume)`
+         //!      * return true a message is consumed from _cache_ - do not use this for _read_ or _write_! 
          //! @{
          template< typename C, typename... Ts>  
          void pump( C&& condition, const Directive& directive, Ts&&... handlers)
