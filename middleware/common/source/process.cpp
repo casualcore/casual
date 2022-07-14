@@ -396,7 +396,7 @@ namespace casual
 
                   auto loop = [&]()
                   {
-                     auto result = waitpid( pid.value(), &exit.status, flags);
+                     auto result = ::waitpid( pid.value(), &exit.status, flags);
 
                      if( result == -1)
                      {
@@ -423,30 +423,30 @@ namespace casual
 
                         if( WIFEXITED( exit.status))
                         {
-                           exit.reason = lifetime::Exit::Reason::exited;
+                           exit.reason = decltype( exit.reason)::exited;
                            exit.status = WEXITSTATUS( exit.status);
                         }
                         else if( WIFSIGNALED( exit.status))
                         {
                            if( WCOREDUMP( exit.status))
                            {
-                              exit.reason = lifetime::Exit::Reason::core;
+                              exit.reason = decltype( exit.reason)::core;
                               exit.status = 0;
                            }
                            else
                            {
-                              exit.reason = lifetime::Exit::Reason::signaled;
+                              exit.reason = decltype( exit.reason)::signaled;
                               exit.status = WTERMSIG( exit.status);
                            }
                         }
                         else if( WIFSTOPPED( exit.status))
                         {
-                           exit.reason = lifetime::Exit::Reason::stopped;
+                           exit.reason = decltype( exit.reason)::stopped;
                            exit.status = WSTOPSIG( exit.status);
                         }
                         else if( WIFCONTINUED( exit.status))
                         {
-                           exit.reason = lifetime::Exit::Reason::continued;
+                           exit.reason = decltype( exit.reason)::continued;
                            exit.status = 0;
                         }
                      }
@@ -527,30 +527,34 @@ namespace casual
 
          namespace lifetime
          {
+            namespace exit
+            {
+               std::string_view description( Reason value) noexcept
+               {
+                  switch( value)
+                  {
+                     case Reason::exited: return "exited";
+                     case Reason::stopped: return "stopped";
+                     case Reason::continued: return "continued";
+                     case Reason::signaled: return  "signaled";
+                     case Reason::core: return "core";
+                     case Reason::unknown : return "unknown";
+                  }
+                  return "<unknown>";
+               }
+            } // exit
+
             Exit::operator bool () const { return pid.valid();}
 
             bool Exit::deceased() const
             {
-               return reason == Reason::core || reason == Reason::exited || reason == Reason::signaled;
+               return reason == decltype( reason)::core || reason == decltype( reason)::exited || reason == decltype( reason)::signaled;
             }
 
             bool operator == ( strong::process::id pid, const Exit& rhs) { return pid == rhs.pid;}
             bool operator == ( const Exit& lhs, strong::process::id pid) { return pid == lhs.pid;}
             bool operator < ( const Exit& lhs, const Exit& rhs) { return lhs.pid < rhs.pid;}
 
-            std::ostream& operator << ( std::ostream& out, const Exit::Reason& value)
-            {
-               switch( value)
-               {
-                  case Exit::Reason::exited: return out << "exited";
-                  case Exit::Reason::stopped: return out << "stopped";
-                  case Exit::Reason::continued: return out << "continued";
-                  case Exit::Reason::signaled: return out <<  "signaled";
-                  case Exit::Reason::core: return out << "core";
-                  case Exit::Reason::unknown : return out << "unknown";
-               }
-               return out << "<unknown>";
-            }
 
             std::vector< lifetime::Exit> ended()
             {

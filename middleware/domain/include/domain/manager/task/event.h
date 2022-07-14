@@ -7,7 +7,6 @@
 #pragma once
 
 #include "domain/manager/state.h"
-#include "domain/manager/ipc.h"
 
 namespace casual
 {
@@ -26,7 +25,7 @@ namespace casual
             common::log::line( verbose::log, "event: ", event);
 
             if( state.event.active< event_type>())
-               manager::ipc::send( state, state.event( event));
+               state.event( state.multiplex, event);
          }
       }
 

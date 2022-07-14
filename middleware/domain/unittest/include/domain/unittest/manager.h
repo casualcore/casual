@@ -33,7 +33,7 @@ namespace casual
          const common::process::Handle& handle() const noexcept;
          
          //! tries to "activate" the domain, i.e. resets environment variables and such
-         //! only usefull if more than one instance is used
+         //! only useful if more than one instance is used
          void activate();
 
          friend std::ostream& operator << ( std::ostream& out, const Manager& value);

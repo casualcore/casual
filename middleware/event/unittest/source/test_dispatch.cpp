@@ -9,9 +9,7 @@
 #include "casual/event/dispatch.h"
 
 #include "domain/unittest/manager.h"
-#include "domain/pending/message/send.h"
 #include "casual/domain/manager/api/state.h"
-
 
 #include "common/message/event.h"
 #include "common/message/service.h"
@@ -22,9 +20,10 @@
 
 namespace casual
 {
+   using namespace common;
+
    namespace event
    {
-
       namespace local
       {
          namespace
@@ -37,22 +36,18 @@ domain:
       - path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/service/bin/casual-service-manager
 )";
 
-            struct Domain
-            {
-               Domain() = default;
-               Domain( const char* configuration) 
-                  : domain{ { configuration}} {}
 
-               domain::unittest::Manager domain{ { local::configuration}};
-            };
-
-            namespace send
+            template< typename... Cs>
+            auto domain( Cs&&... configurations)
             {
-               void shutdown()
-               {
-                  domain::pending::message::send( common::process::handle(), common::message::shutdown::Request{});
-               }
-            } // send
+               return casual::domain::unittest::manager( local::configuration, std::forward< Cs>( configurations)...);
+            }
+
+
+            void shutdown()
+            {
+               communication::ipc::inbound::device().push( message::shutdown::Request{ process::handle()});
+            }
          } // <unnamed>
       } // local
 
@@ -60,27 +55,27 @@ domain:
       {
          common::unittest::Trace trace;
 
-         try 
+         bool called_empty = false;
+
+         event::dispatch( [ &called_empty]()
          {
-            event::dispatch( []()
-            {
-               throw std::string{ "empty"};
-            });
-         }
-         catch( const std::string& string)
-         {
-            EXPECT_TRUE( string == "empty");
-         }
+            if( std::exchange( called_empty, true))
+               return;
+            
+            // trigger end of _event dispatch_
+            local::shutdown();
+         });
+
+         EXPECT_TRUE( called_empty);
       }
 
       TEST( event_dispatch, service_call)
       {
          common::unittest::Trace trace;
 
-         local::Domain domain;
+         auto domain = local::domain();
 
-         event::dispatch( 
-         [executed = false]() mutable
+         event::dispatch( [ executed = false]() mutable
          {
             // this is an idle 'callback', we need to ensure we're only calling one time...
             if( std::exchange( executed, true))
@@ -97,8 +92,8 @@ domain:
             auto& metric = call.metrics.at( 0);
             EXPECT_TRUE( metric.service.name == ".casual/domain/state");
             EXPECT_TRUE( metric.service.type == decltype(  metric.service.type)::sequential);
-            // we send shotdown to our self, to trigger "end"
-            local::send::shutdown();
+            // trigger end of _event dispatch_
+            local::shutdown();
          });
       }
 
@@ -106,39 +101,40 @@ domain:
       {
          common::unittest::Trace trace;
 
-         local::Domain domain;
+         auto domain = local::domain();
 
+         constexpr auto calls = 5;
          auto count = 0;
 
          event::dispatch( 
-         [calls = 5]() mutable
+         [ count = 0]() mutable
          {
             // we call domain manager, that will trigger 5 call-events
             // we need to make sure we only call exactly 5 times, since
             // we could get another invocation to 'idle'
-            while( calls-- > 0)
+            while( count++ < calls)
             {
                auto state = casual::domain::manager::api::state();
                EXPECT_TRUE( ! state.servers.empty());
             }
          },
-         [&count]( model::service::Call&& call)
+         [ &count]( model::service::Call&& call)
          {
             count += call.metrics.size();
             EXPECT_TRUE( call.metrics.at( 0).service.name == ".casual/domain/state");
-            // we send shotdown to our self, to trigger "end"
-            if( count == 5)
-               local::send::shutdown();
+            // trigger end of _event dispatch_
+            if( count == calls)
+               local::shutdown();
          });
 
-         EXPECT_TRUE( count == 5) << "count: " << count;
+         EXPECT_TRUE( count == calls) << "count: " << count;
       }
 
       TEST( event_dispatch, 5_service_async_call__expect_pending)
       {
          common::unittest::Trace trace;
 
-         local::Domain domain;
+         auto domain = local::domain();
 
          struct
          {
@@ -207,9 +203,8 @@ domain:
                state.pending.push_back( metric.pending);
             });
             
-            // we send shotdown to our self, to trigger "end"
             if( state.pending.size() == count)
-               local::send::shutdown();
+               local::shutdown();
          });
 
          ASSERT_TRUE( state.pending.size() == count) << CASUAL_NAMED_VALUE( state.pending);
@@ -226,7 +221,7 @@ domain:
       {
          common::unittest::Trace trace;
 
-         local::Domain domain;
+         auto domain = local::domain();
 
          event::dispatch( 
          [executed = false]() mutable
@@ -235,7 +230,7 @@ domain:
             if( std::exchange( executed, true))
                return;
 
-            // we fake a concurent metric message to service-manager
+            // we fake a concurrent metric message to service-manager
             // this only works since service-manager is (right now) very
             // laid back regarding if the services actually exist or not, 
             // if not, it just sends the metric event regardless... Might
@@ -266,8 +261,8 @@ domain:
             EXPECT_TRUE( metric.pending == platform::time::unit::zero());
             EXPECT_TRUE( metric.service.name == "foo");
             EXPECT_TRUE( metric.service.type == decltype( metric.service.type)::concurrent);
-            // we send shotdown to our self, to trigger "end"
-            local::send::shutdown();
+            // we trigger shutdown, to trigger "end"
+            local::shutdown();
          });
       }
 

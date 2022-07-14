@@ -136,7 +136,8 @@ namespace casual
                   // tprecv() is called. This is to "force" a timing case.
                   // There is obviously not an absolute guarantee that
                   // the desired effect is achived, but in practice it should work.
-                  common::process::sleep( 1s);
+                  // Why? The order is pretty much guarantied.
+                  common::process::sleep( 100ms);
                }
 
                auto recv_buffer = tpalloc( X_OCTET, nullptr, 128);

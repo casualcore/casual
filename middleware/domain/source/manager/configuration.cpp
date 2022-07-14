@@ -213,7 +213,7 @@ namespace casual
                   detail::entity::modify( state, change));
             }
 
-            auto managers( const State& state, const casual::configuration::Model& wanted)
+            auto managers( State& state, const casual::configuration::Model& wanted)
             {
                Trace trace{ "domain::manager::configuration::local::managers"};
 
@@ -221,7 +221,7 @@ namespace casual
 
                {
                   if( auto handle = state.singleton( communication::instance::identity::service::manager.id))
-                     result.push_back( manager::task::create::configuration::managers::update( wanted, { handle}));
+                     result.push_back( manager::task::create::configuration::managers::update( state, wanted, { handle}));
                }
 
                // restarts

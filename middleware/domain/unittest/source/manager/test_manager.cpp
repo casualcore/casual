@@ -8,6 +8,7 @@
 #include "common/unittest.h"
 #include "common/unittest/file.h"
 
+#include "domain/unittest/utility.h"
 #include "domain/manager/state.h"
 #include "domain/manager/configuration.h"
 #include "domain/manager/admin/model.h"
@@ -241,6 +242,7 @@ domain:
       {
          namespace
          {
+            //! we need to use _internal call_ stuff, since we don't have access to service-manager
             namespace call
             {
                admin::model::State state()
@@ -284,11 +286,15 @@ domain:
                      return unittest::internal::call< std::vector< strong::correlation::id>>( admin::service::name::restart::groups, algorithm::transform( groups, transform));
                   }
                } // restart
-
-
             } // call
 
+            //! we need to use _internal call_ stuff, since we don't have access to service-manager
+            namespace fetch
+            {
+               constexpr auto until = common::unittest::fetch::until( &call::state);
+            } // fetch
 
+            
             namespace configuration
             {
 
@@ -304,18 +310,6 @@ domain:
 )";
 
             } // configuration
-
-            namespace predicate
-            {
-               auto manager()
-               {
-                  return []( const admin::model::Executable& value)
-                  {
-                     return value.alias == "casual-domain-manager";
-                  };
-               }
-
-            } // predicate
 
          } // <unnamed>
       } // local
@@ -348,12 +342,10 @@ domain:
 
          auto domain = local::domain( local::configuration::long_running_processes_5);
 
-         auto state = local::call::state();
+         auto state = local::fetch::until( casual::domain::unittest::fetch::predicate::alias::has::instances( "sleep", 5));
 
          ASSERT_TRUE( state.servers.size() == local::expected::size::servers) << CASUAL_NAMED_VALUE( state);
          EXPECT_TRUE( state.servers.at( 0).instances.size() == 1) << CASUAL_NAMED_VALUE( state);
-         ASSERT_TRUE( local::find::alias( state.executables, "sleep")) << CASUAL_NAMED_VALUE( state);
-         EXPECT_TRUE( local::find::alias( state.executables, "sleep")->instances.size() == 5) << CASUAL_NAMED_VALUE( state);
       }
 
 
@@ -362,16 +354,22 @@ domain:
       {
          common::unittest::Trace trace;
 
-         auto domain = local::domain( local::configuration::long_running_processes_5);
+         auto domain = local::domain( R"(
+domain:
+   name: long_running_processes_5
+   executables:
+      -  alias: sleep
+         path: sleep
+         arguments: [60]
+         instances: 5
+)");
+
+         local::fetch::until( casual::domain::unittest::fetch::predicate::alias::has::instances( "sleep", 5));
 
          auto tasks = local::call::scale( "sleep", 10);
          ASSERT_TRUE( tasks.size() == 1);
 
-
-         auto state = local::call::state();
-
-         ASSERT_TRUE( local::find::alias( state.executables, "sleep"));
-         EXPECT_TRUE( local::find::alias( state.executables, "sleep")->instances.size() == 10) << CASUAL_NAMED_VALUE( state);
+         local::fetch::until( casual::domain::unittest::fetch::predicate::alias::has::instances( "sleep", 10));
       }
 
       TEST( domain_manager, long_running_processes_5__scale_in_to_0___expect_0)
@@ -380,16 +378,13 @@ domain:
 
          auto domain = local::domain( local::configuration::long_running_processes_5);
 
+         local::fetch::until( casual::domain::unittest::fetch::predicate::alias::has::instances( "sleep", 5));
+
          auto tasks = local::call::scale( "sleep", 0);
          ASSERT_TRUE( tasks.size() == 1);
+         
+         local::fetch::until( casual::domain::unittest::fetch::predicate::alias::has::instances( "sleep", 0));
 
-
-         auto state = local::call::state();
-
-         ASSERT_TRUE( local::find::alias( state.executables, "sleep"));
-
-         // not deterministic how long it takes for the processes to terminate.
-         // EXPECT_TRUE( state.executables.at( 0).instances.size() == 0) << CASUAL_NAMED_VALUE( state);
       }
 
 
@@ -728,39 +723,28 @@ domain:
 
          // domain-manager will advertise it's services
          {
-            common::message::service::Advertise message;
-            communication::device::blocking::receive( communication::ipc::inbound::device(), message);
+            auto message = communication::ipc::receive< common::message::service::Advertise>();
             EXPECT_TRUE( domain.handle() == message.process);
          }
-
-         // make sure we 'disconnect' our self as service-manager before shutdown
-         // otherwise domain-manager will wait for approval from service-manager before
-         // each shutdown.
-         auto disconnect = execute::scope( []()
-         {
-            message::event::process::Exit event;
-            event.state.pid = common::process::id(); 
-            event.state.reason = common::process::lifetime::Exit::Reason::exited;
-            communication::device::blocking::send( communication::instance::outbound::domain::manager::device(), event);
-         });
-
-         auto tasks = local::call::scale( "foo", 1);
-         ASSERT_TRUE( tasks.size() == 1) << "tasks: " << CASUAL_NAMED_VALUE( tasks);
 
          // setup subscription to see when hit is done
          common::event::subscribe( common::process::handle(), { message::event::process::Exit::type()});
 
+         auto tasks = local::call::scale( "foo", 1);
+         ASSERT_TRUE( tasks.size() == 1) << "tasks: " << CASUAL_NAMED_VALUE( tasks);
+
+ 
          // Consume the prepare::shutdown::Request
-         auto send_reply = [](){
-            message::domain::process::prepare::shutdown::Request request;
-            EXPECT_TRUE( communication::device::blocking::receive( communication::ipc::inbound::device(), request));
+         auto send_reply = []()
+         {
+            auto request = communication::ipc::receive< message::domain::process::prepare::shutdown::Request>();
             EXPECT_TRUE( request.processes.size() == 1) << CASUAL_NAMED_VALUE( request);
 
-            auto reply = message::reverse::type( request);
-            reply.processes = std::move( request.processes);
-            return [ipc = request.process.ipc, reply = std::move( reply)]()
+            return [ request = std::move( request)]()
             {
-               communication::device::blocking::send( ipc, reply);
+               auto reply = message::reverse::type( request);
+               reply.processes = std::move( request.processes);
+               communication::device::blocking::send( request.process.ipc, reply);
             };
          }();
 
@@ -768,7 +752,7 @@ domain:
          // check that no instances has been shut downed.
          {
             // give some time for a possible bug to occur.
-            process::sleep( std::chrono::milliseconds{ 10});
+            process::sleep( std::chrono::milliseconds{ 1});
 
             auto state = local::call::state();
             auto found = algorithm::find( state.servers, "foo");
@@ -786,14 +770,23 @@ domain:
          // check that one instances has been shut downed.
          {
             // we expect exit event
-            message::event::process::Exit event;
-            EXPECT_TRUE( communication::device::blocking::receive( communication::ipc::inbound::device(), event));
+            communication::ipc::receive< message::event::process::Exit>();
 
             auto state = local::call::state();
             auto found = algorithm::find( state.servers, "foo");
             ASSERT_TRUE( found);
             EXPECT_TRUE( found->instances.size() == 1);
          }
+
+         // make sure we 'disconnect' our self as service-manager before shutdown
+         // otherwise domain-manager will wait for approval from service-manager before
+         // each shutdown.
+         {
+            message::event::process::Exit event;
+            event.state.pid = common::process::id(); 
+            event.state.reason = decltype( event.state.reason)::exited;
+            communication::device::blocking::send( domain.handle().ipc, event);
+         };
       }
 
 
@@ -917,23 +910,30 @@ domain:
 
          auto domain = local::domain( configuration);
 
-         auto state = local::call::state();
-         state.executables = algorithm::container::trim( state.executables, algorithm::remove_if( state.executables, local::predicate::manager()));
+         auto instance_count = []( auto count)
+         { 
+            return [ count]( auto& executable)
+            { 
+               return range::size( executable.instances) == count && algorithm::all_of( executable.instances, []( auto& instance){ return predicate::boolean( instance);});
+            };
+         };
 
-
-         ASSERT_TRUE( state.executables.size() == 4 * 5) << CASUAL_NAMED_VALUE( state);
-
-         for( auto& instance : state.executables)
+         auto state = local::fetch::until( [ instance_count]( auto& state)
          {
-            ASSERT_TRUE( local::call::scale( instance.alias, 10).size() == 1);
-         }
+            return state.executables.size() == 4 * 5 && algorithm::all_of( state.executables, instance_count( 1));
+         });
 
-         state = local::call::state();
 
-         for( auto executable : algorithm::remove_if( state.executables, local::predicate::manager()))
+         local::call::scale( algorithm::transform( state.executables, []( auto& executable)
          {
-            EXPECT_TRUE( executable.instances.size() == 10) << "executable.instances.size(): " << executable.instances.size();
-         }
+            return admin::model::scale::Alias{ executable.alias, 10};
+         }));
+
+         
+         local::fetch::until( [ instance_count]( auto& state)
+         {
+            return state.executables.size() == 4 * 5 && algorithm::all_of( state.executables, instance_count( 10));
+         });
       }
 
       namespace local
@@ -1514,16 +1514,13 @@ domain:
          auto domain = local::domain( R"(
 domain:
    name: post
-
    groups:
       -  name: A
-
    servers:
       -  path: ./bin/test-simple-server
          alias: simple-server
          instances: 2
          memberships: [ A]
-
    executables:
       -  alias: sleep
          path: sleep
@@ -1537,18 +1534,15 @@ domain:
          auto wanted = local::configuration::load( R"(
 domain:
    name: post
-
    groups:
       -  name: A
       -  name: B
          dependencies: [ A]
-
    servers:
       -  path: ./bin/test-simple-server
          alias: replaced-server
          instances: 3
          memberships: [ B]
-
    executables:
       -  alias: sleep
          path: sleep

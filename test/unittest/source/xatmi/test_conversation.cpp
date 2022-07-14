@@ -347,8 +347,9 @@ domain:
 
          // Sleep for a short time before disconnect. This in practice
          // guarantees that the tprecv() in the service is called before
-         // the disconnect message arrives. 
-         common::process::sleep( 1s);
+         // the disconnect message arrives.
+         // Why? this is pretty much guaranteed to arrive in order. 
+         //common::process::sleep( 1s);
 
          EXPECT_TRUE( tpdiscon( connection.descriptor) != -1);
 
@@ -370,7 +371,7 @@ domain:
          // timing and can cause a different code path to detect the disconnect.
          // It should still work. 
 
-         const std::string_view payload {"disconnect follows sleep before tprecv"};
+         constexpr std::string_view payload {"disconnect follows sleep before tprecv"};
          auto connection = local::connect::invoke( "casual/example/conversation_recv_send", payload, TPSENDONLY);
          EXPECT_TRUE( connection) << CASUAL_NAMED_VALUE( connection);
          EXPECT_TRUE( connection.error == 0) << CASUAL_NAMED_VALUE( connection);

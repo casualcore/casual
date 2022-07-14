@@ -10,6 +10,8 @@
 
 #include "domain/manager/admin/model.h"
 
+#include <regex>
+
 namespace casual
 {
    namespace domain::unittest
@@ -24,23 +26,26 @@ namespace casual
          {
             namespace alias::has
             {
-               auto instances( std::string_view alias, platform::size::type count)
+               auto instances( std::string_view expression, platform::size::type count)
                {
-                  return [ alias, count]( const manager::admin::model::State& state)
-                  {
-                     auto is_alias_has_count = [ alias, count]( auto& range)
+                  return [ expression = std::regex{ expression.data(), expression.size()}, count]( const manager::admin::model::State& state)
+                  {  
+                     // we do a copy of the range, since this is only used in unittests...
+                     auto is_alias_has_count = [ &expression, count]( auto range)
                      {
-                        if( auto found = common::algorithm::find( range, alias))
-                           return common::algorithm::count_if( found->instances, []( auto& instance)
-                           {
-                              return instance.state == decltype( instance.state)::running;
-                           }) == count;
+                        auto matched = common::algorithm::filter( range, [ &expression]( auto& value){ return std::regex_match( value.alias, expression);});
 
-                        return false;
+                        return matched && common::algorithm::all_of( matched, [ count]( auto& value)
+                        {
+                           return common::algorithm::count_if( value.instances, []( auto& instance)
+                           { 
+                              return instance.state == decltype( instance.state)::running;}
+                           ) == count;
+
+                        });
                      };
 
                      return is_alias_has_count( state.servers) || is_alias_has_count( state.executables);
-
                   };
                }
             } // alias::has

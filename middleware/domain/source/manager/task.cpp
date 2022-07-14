@@ -7,7 +7,6 @@
 
 #include "domain/manager/task.h"
 
-#include "domain/manager/ipc.h"
 #include "domain/manager/state.h"
 #include "domain/common.h"
 
@@ -40,34 +39,34 @@ namespace casual
 
          } // task
 
-         std::ostream& operator << ( std::ostream& out, Task::Property::Execution value)
+         std::string_view description( Task::Property::Execution value) noexcept
          {
             using Enum = Task::Property::Execution;
             switch( value)
             {
-               case Enum::concurrent: return out << "concurrent";
-               case Enum::sequential: return out << "sequential";
+               case Enum::concurrent: return "concurrent";
+               case Enum::sequential: return "sequential";
             }
-            return out << "<unknown>";
+            return "<unknown>";
          }
          
-         std::ostream& operator << ( std::ostream& out, Task::Property::Completion value)
+         std::string_view description( Task::Property::Completion value) noexcept
          {
             using Enum = Task::Property::Completion;
             switch( value)
             {
-               case Enum::mandatory: return out << "mandatory";
-               case Enum::removable: return out << "removable";
-               case Enum::abortable: return out << "abortable";
+               case Enum::mandatory: return "mandatory";
+               case Enum::removable: return "removable";
+               case Enum::abortable: return "abortable";
             }
-            return out << "<unknown>";
+            return "<unknown>";
          }
 
          std::ostream& operator << ( std::ostream& out, Task::Property value)
          {
-            return out << "{ execution: " << value.execution
-               << ", completion: " << value.completion
-               << '}';
+            return stream::write( out, "{ execution: ", value.execution
+              , ", completion: ", value.completion
+              , '}');
          }
 
          namespace task 
@@ -113,9 +112,9 @@ namespace casual
                         {
                            common::message::event::Task event{ common::process::handle()};
                            event.correlation = task.context().id;
-                           event.description = task.context().descripton;
+                           event.description = task.context().description;
                            event.state = decltype( event.state)::aborted;
-                           manager::ipc::send( state, state.event( event));
+                           state.event( state.multiplex, event);
                         };
 
                         algorithm::for_each( tasks, send_task_end);
@@ -125,20 +124,18 @@ namespace casual
                      void done( State& state, T& task)
                      {
                         Trace trace{ "domain::manager::task::local::send::done"};
+                        log::line( verbose::log, "task: ", task);
 
                         // send event to listeners, if any.
-                        using Task = common::message::event::Task;
-
-                        if( state.event.active< Task>())
+                        if( state.event.active< common::message::event::Task>())
                         {
-                           Task event{ common::process::handle()};
+                           common::message::event::Task event{ common::process::handle()};
                            event.correlation = task.context().id;
-                           event.description = std::move( task.context().descripton);
+                           event.description = std::move( task.context().description);
                            event.state = decltype( event.state)::done;
 
-                           manager::ipc::send( state, state.event( event));
+                           state.event( state.multiplex, event);
                         }
-
                      }
 
                   } // send
@@ -215,18 +212,16 @@ namespace casual
             {
                Trace trace{ "domain::manager::task::Queue::start"};
                log::line( verbose::log, "task: ", task);
-
-               using Task = common::message::event::Task;
                
                // send the 'start' event
-               if( state.event.active< Task>())
+               if( state.event.active< common::message::event::Task>())
                {
-                  Task event{ common::process::handle()};
+                  common::message::event::Task event{ common::process::handle()};
                   event.correlation = task.context().id;
-                  event.description = task.context().descripton;
+                  event.description = task.context().description;
                   event.state = decltype( event.state)::started;
 
-                  manager::ipc::send( state, state.event( event));
+                  state.event( state.multiplex, event);
                }
 
                task::Running running{ state, std::move( task)};
@@ -245,6 +240,16 @@ namespace casual
                log::line( verbose::log, "task: ", task);
 
                local::send::done( state, task);
+            }
+
+            void Queue::next( State& state)
+            {
+               Trace trace{ "domain::manager::task::Queue::next"};
+               while( ! m_pending.empty() && algorithm::none_of( m_running, local::property::sequential()))
+               {
+                  start( state, algorithm::container::extract( m_pending, std::begin( m_pending)));
+               }
+
             }
 
          } // task

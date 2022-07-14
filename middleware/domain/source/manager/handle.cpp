@@ -109,7 +109,7 @@ namespace casual
                      []( auto& instance){ return common::process::id( instance.handle);},
                      []( auto& instance){ return instance.state != decltype( instance.state)::error;});
 
-                     ipc::push( message);
+                     communication::ipc::inbound::device().push( message);
                   }
 
                   log::line( verbose::log, "entity: ", entity);
@@ -119,34 +119,31 @@ namespace casual
                {
                   Trace trace{ "domain::manager::handle::scale::in Executable"};
 
-                  auto shutdownable = executable.shutdownable();
+                  if( auto shutdownable = executable.shutdownable())
+                  {
+                     // We only want child signals
+                     signal::thread::scope::Mask mask{ signal::set::filled( code::signal::child)};
 
-                  if( ! shutdownable)
-                     return;
+                     auto pids = algorithm::transform( range::reverse( shutdownable), []( const auto& i)
+                     {
+                        return i.handle;
+                     });
 
-                  // We only want child signals
-                  signal::thread::scope::Mask mask{ signal::set::filled( code::signal::child)};
-
-
-                  auto pids = algorithm::transform( range::reverse( shutdownable), []( const auto& i){
-                     return i.handle;
-                  });
-
-                  common::process::terminate( pids);
+                     common::process::terminate( pids);
+                  }
                }
 
                void in( State& state, const state::Server& server)
                {
                   Trace trace{ "domain::manager::handle::local::scale::in Server"};
 
-                  auto shutdownable = server.shutdownable();
-
-                  if( ! shutdownable)
-                     return;
-
-                  handle::scale::shutdown( state, algorithm::transform( range::reverse( shutdownable), []( const auto& i){
-                     return i.handle;
-                  }));
+                  if( auto shutdownable = server.shutdownable())
+                  {
+                     handle::scale::shutdown( state, algorithm::transform( range::reverse( shutdownable), []( const auto& i)
+                     {
+                        return i.handle;
+                     }));
+                  }
                }
 
             } // scale
@@ -267,7 +264,7 @@ namespace casual
       {
          Trace trace{ "domain::manager::handle::shutdown"};
 
-         state.runlevel = state::Runlevel::shutdown;
+         state.runlevel = decltype( state.runlevel())::shutdown;
 
          // abort all abortable running or pending task
          state.tasks.abort( state);
@@ -296,30 +293,23 @@ namespace casual
             // We only want child signals
             signal::thread::scope::Mask mask{ signal::set::filled( code::signal::child)};
 
-            // We need to correlate with the service-manager (broker), if it's up
+            // We need to correlate with the service-manager, if it's up
 
-            common::message::domain::process::prepare::shutdown::Request prepare{ common::process::handle()};
-            prepare.processes = std::move( processes);
+            common::message::domain::process::prepare::shutdown::Request request{ common::process::handle()};
+            request.processes = std::move( processes);
 
-            auto service_manager = state.singleton( common::communication::instance::identity::service::manager.id);
-
-            try
+            if( auto service_manager = state.singleton( common::communication::instance::identity::service::manager.id))
             {
-               communication::device::blocking::send( service_manager.ipc, prepare);
+               state.multiplex.send( service_manager.ipc, request);
+               return;
             }
-            catch( ...)
-            {
-               auto error = exception::capture();
-               log::line( log, error, " failed to reach service-manager - action: emulate reply");
 
-               // service-manager is not online, we emulate the reply from service-manager
-               // and send it to our self to ensure that possible tasks are initalized and
-               // ready 
+            // service manager not available ( should only happen in unittest)
+            auto reply = common::message::reverse::type( request);
+            reply.processes = std::move( request.processes);
 
-               auto reply = common::message::reverse::type( prepare);
-               reply.processes = std::move( prepare.processes);
-               ipc::push( reply);
-            }
+            log::line( log, "failed to reach service-manager - action: emulate reply: ", reply);
+            communication::ipc::inbound::device().push( std::move( reply));
          }
          
          void instances( State& state, state::Server& server)
@@ -454,7 +444,7 @@ namespace casual
 
             // We put a dead process event on our own ipc device, that
             // will be handled later on.
-            ipc::push( common::message::event::process::Exit{ exit});
+            communication::ipc::inbound::device().push( common::message::event::process::Exit{ exit});
          }
       } // process
 
@@ -484,6 +474,8 @@ namespace casual
                         Trace trace{ "domain::manager::handle::manager::shutdown"};
                         log::line( verbose::log, "message: ", message);
 
+                        state.runlevel = decltype( state.runlevel())::shutdown;
+
                         // register event subscription for caller
                         {
                            common::message::event::subscription::Begin subscription{ message.process};
@@ -497,7 +489,7 @@ namespace casual
                         auto reply = common::message::reverse::type( message);
                         reply.tasks = handle::shutdown( state);
 
-                        casual::domain::manager::ipc::send( state, message.process, reply);
+                        state.multiplex.send( message.process, reply);
                      };
                   }  
                } // manager
@@ -514,20 +506,13 @@ namespace casual
                         Trace trace{ "domain::manager::handle::scale::prepare::shutdown::Reply"};
                         log::line( verbose::log, "message: ", message);
 
-                        algorithm::for_each( message.processes, [&]( auto& process)
+                        for( auto& process : message.processes)
                         {
-                           if( process)
-                           {
-                              common::message::shutdown::Request shutdown{ common::process::handle()};
-
-                              // Just to make each shutdown easy to follow in log.
-                              shutdown.execution = decltype( shutdown.execution)::emplace( uuid::make());
-
-                              manager::ipc::send( state, process, shutdown);
-                           }
+                           if( process.ipc)
+                              state.multiplex.send( process.ipc, common::message::shutdown::Request{ common::process::handle()});
                            else
                               common::process::terminate( process.pid);
-                        });
+                        }
                      };
                   }
                } // prepare
@@ -598,7 +583,7 @@ namespace casual
                            // We don't want to handle any signals in this task
                            signal::thread::scope::Block block;
 
-                           if( message.state.reason == common::process::lifetime::Exit::Reason::core)
+                           if( message.state.reason == decltype( message.state.reason)::core)
                               log::line( log::category::error, "process cored: ", message.state);
                            else
                               log::line( log::category::information, "process exited: ", message.state);
@@ -736,7 +721,6 @@ namespace casual
                         return [&state]( const common::message::domain::process::lookup::Request& message)
                         {
                            Trace trace{ "domain::manager::handle::process::local::Lookup"};
-
                            log::line( verbose::log, "message: ", message);
 
                            using Directive = decltype( message.directive);
@@ -746,15 +730,13 @@ namespace casual
 
                            if( message.identification)
                            {
-                              auto found = algorithm::find( state.singletons, message.identification);
-
-                              if( found)
+                              if( auto found = algorithm::find( state.singletons, message.identification))
                               {
                                  reply.process = found->second;
-                                 manager::ipc::send( state, message.process, reply);
+                                 state.multiplex.send( message.process, reply);
                               }
                               else if( message.directive == Directive::direct)
-                                 manager::ipc::send( state, message.process, reply);
+                                 state.multiplex.send( message.process, reply);
                               else
                                  return false;
                            }
@@ -762,10 +744,8 @@ namespace casual
                            {
                               reply.process = detail::lookup::pid( state, message.pid);
 
-                              if( reply.process)
-                                 manager::ipc::send( state, message.process, reply);
-                              else if( message.directive == Directive::direct)
-                                 manager::ipc::send( state, message.process, reply);
+                              if( reply.process || message.directive == Directive::direct)
+                                 state.multiplex.send( message.process, reply);
                               else
                                  return false;
                            }
@@ -787,7 +767,7 @@ namespace casual
                      {
                         auto reply = common::message::reverse::type( message);
                         reply.directive = directive;
-                        manager::ipc::send( state, message.process, reply);
+                        state.multiplex.send( message.process, reply);
                      };
                   } // send
 
@@ -828,7 +808,7 @@ namespace casual
                         message.alias = instance::alias();
                         message.services.add = algorithm::transform( manager::admin::services( state).services, transform_service);
                            
-                        manager::ipc::send( state, process, message);
+                        state.multiplex.send( process, message);
                      }
 
                      //! @returns true if it's a singleton process that tries to connect and this function takes
@@ -955,7 +935,7 @@ namespace casual
                      auto reply = common::message::reverse::type( message, common::process::handle());
                      reply.model = state.configuration.model;
 
-                     manager::ipc::send( state, message.process, reply);
+                     state.multiplex.send( message.process, reply);
                   };
                }
 
@@ -969,9 +949,7 @@ namespace casual
                         common::log::line( verbose::log, "message: ", message);
 
                         state.tasks.event( state, message);
-
                      };
-
                   }
                } // update
 
@@ -1013,15 +991,13 @@ namespace casual
                   {
                      Trace trace{ "domain::manager::handle::local::server::Policy::ack"};
 
-                     try
+                     if( auto service_manager = m_state.singleton( common::communication::instance::identity::service::manager.id))
                      {
-                        auto service_manager = m_state.singleton( common::communication::instance::identity::service::manager.id);
-                        communication::device::blocking::send( service_manager.ipc, message);
+                         m_state.multiplex.send( service_manager.ipc, message);
+                         return;
                      }
-                     catch( ...)
-                     {
-                        common::log::line( log, exception::capture(), " failed to reach service-manager - action: discard sending ACK");
-                     }
+
+                     common::log::line( log, "failed to reach service-manager - action: discard sending ACK");
                   }
 
                private: 
@@ -1039,7 +1015,7 @@ namespace casual
          Trace trace{ "domain::manager::handle::create"};
 
          return {
-            common::message::handle::defaults( ipc::device()),
+            common::message::handle::defaults( communication::ipc::inbound::device()),
             handle::local::shutdown::request( state),
             handle::local::shutdown::manager::request( state),
             handle::local::scale::prepare::shutdown( state),

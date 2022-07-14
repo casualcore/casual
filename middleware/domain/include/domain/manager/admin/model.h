@@ -93,18 +93,18 @@ namespace casual
                error,
             };
 
-            inline std::ostream& operator << ( std::ostream& out, State state)
+            constexpr std::string_view description( State state)
             {
                switch( state)
                {
-                  case State::running: return out << "running";
-                  case State::spawned: return out << "spawned";
-                  case State::scale_out: return out << "scale-out";
-                  case State::scale_in: return out << "scale-in";
-                  case State::exit: return out << "exit";
-                  case State::error: return out << "error";
+                  case State::running: return "running";
+                  case State::spawned: return "spawned";
+                  case State::scale_out: return "scale-out";
+                  case State::scale_in: return "scale-in";
+                  case State::exit: return "exit";
+                  case State::error: return "error";
                }
-               assert( ! "invalid state");
+               return "<unknown>";
             }
          } // instance
 
@@ -120,6 +120,8 @@ namespace casual
             { 
                return common::process::id( lhs.handle) == common::process::id( rhs);
             }
+
+            inline explicit operator bool() const noexcept { return common::predicate::boolean( handle);}
 
             CASUAL_CONST_CORRECT_SERIALIZE(
                CASUAL_SERIALIZE( handle);
@@ -176,17 +178,17 @@ namespace casual
                shutdown = 2,
                error = 3,
             };
-            inline std::ostream& operator << ( std::ostream& out, Runlevel runlevel)
+
+            constexpr std::string_view description( Runlevel runlevel)
             {
                switch( runlevel)
                {
-                  case Runlevel::startup: return out << "startup";
-                  case Runlevel::running: return out << "running";
-                  case Runlevel::shutdown: return out << "shutdown";
-                  case Runlevel::error: return out << "error";
+                  case Runlevel::startup: return "startup";
+                  case Runlevel::running: return "running";
+                  case Runlevel::shutdown: return "shutdown";
+                  case Runlevel::error: return "error";
                }
-               assert( ! "invalid runlevel");
-
+               return "<unknown>";
             }
          } // state
 

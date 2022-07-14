@@ -11,36 +11,37 @@
 #include "common/execution.h"
 #include "common/communication/ipc.h"
 #include "common/environment.h"
+#include "common/domain.h"
 
 namespace casual
 {
-   namespace common
+   namespace common::unittest
    {
-      namespace unittest
+
+      common::log::Stream log{ "casual.unittest"};
+      common::log::Stream trace{ "casual.unittest.trace"};
+
+      namespace clean
       {
-         common::log::Stream log{ "casual.unittest"};
-         common::log::Stream trace{ "casual.unittest.trace"};
+         Scope::Scope() 
+         { 
+            // set that we're in _unittest-context_
+            environment::variable::set( environment::variable::name::unittest::context, "");
+            
+            execution::reset();
+            signal::clear();
 
-         namespace clean
-         {
-            Scope::Scope() 
-            { 
-               // set that we're in _unittest-context_
-               environment::variable::set( environment::variable::name::unittest::context, "");
-               
-               execution::reset();
-               signal::clear();
+            communication::ipc::inbound::device().clear();
+         }
 
-               communication::ipc::inbound::device().clear();
-            }
+         Scope::~Scope() 
+         { 
+            signal::clear();
+            environment::variable::unset( environment::variable::name::unittest::context);
+            
+            domain::identity( {}); 
+         }
+      } // clean
 
-            Scope::~Scope() 
-            { 
-               signal::clear();
-               environment::variable::unset( environment::variable::name::unittest::context);
-            }
-
-         } // clean
-      } // unittest
-   } // common
+   } // common::unittest
 } // casual

@@ -9,7 +9,6 @@
 
 
 #include "domain/manager/state.h"
-#include "domain/manager/ipc.h"
 #include "domain/manager/task.h"
 #include "domain/manager/admin/model.h"
 
@@ -22,7 +21,7 @@ namespace casual
 {
    namespace domain::manager::handle
    {
-      using dispatch_type = decltype( common::message::dispatch::handler( ipc::device()));   
+      using dispatch_type = decltype( common::message::dispatch::handler( common::communication::ipc::inbound::device()));   
 
       namespace mandatory
       {

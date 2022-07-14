@@ -47,20 +47,17 @@ namespace casual
             strong::ipc::id ipc;
 
             //! extended equality
-            inline friend bool operator == ( const Handle& lhs, strong::process::id rhs) { return lhs.pid == rhs;}
-            inline friend bool operator != ( const Handle& lhs, strong::process::id rhs) { return lhs.pid != rhs;}
-            inline friend bool operator == ( strong::process::id lhs, const Handle& rhs) { return lhs == rhs.pid;}
-            inline friend bool operator == ( const Handle& lhs, const strong::ipc::id& rhs) { return lhs.ipc == rhs;}
-            inline friend bool operator != ( const Handle& lhs, const strong::ipc::id& rhs) { return lhs.ipc != rhs;}
-            inline friend bool operator == ( const strong::ipc::id& lhs, const Handle& rhs) { return rhs == lhs;}
+            inline friend bool operator == ( const Handle& lhs, strong::process::id rhs) noexcept { return lhs.pid == rhs;}
+            inline friend bool operator != ( const Handle& lhs, strong::process::id rhs) noexcept { return lhs.pid != rhs;}
+            inline friend bool operator == ( strong::process::id lhs, const Handle& rhs) noexcept { return lhs == rhs.pid;}
+            inline friend bool operator == ( const Handle& lhs, const strong::ipc::id& rhs) noexcept { return lhs.ipc == rhs;}
+            inline friend bool operator != ( const Handle& lhs, const strong::ipc::id& rhs) noexcept { return lhs.ipc != rhs;}
+            inline friend bool operator == ( const strong::ipc::id& lhs, const Handle& rhs) noexcept { return rhs == lhs;}
 
-            inline explicit operator bool() const
-            {
-               return pid && ipc;
-            }
+            inline explicit operator bool() const noexcept { return pid && ipc;}
             
             //! for Compare
-            inline auto tie() const { return std::tie( pid, ipc);}
+            inline auto tie() const noexcept { return std::tie( pid, ipc);}
 
             CASUAL_CONST_CORRECT_SERIALIZE(
                CASUAL_SERIALIZE( pid);
@@ -202,21 +199,26 @@ namespace casual
 
          namespace lifetime
          {
-            struct Exit
+            namespace exit
             {
                enum class Reason : short
                {
+                  unknown,
                   core,
                   exited,
                   stopped,
                   continued,
                   signaled,
-                  unknown,
                };
 
+               std::string_view description( Reason value) noexcept;
+               
+            } // exit
+            struct Exit
+            {
                strong::process::id pid;
                int status = 0;
-               Reason reason = Reason::unknown;
+               exit::Reason reason = exit::Reason::unknown;
 
                explicit operator bool () const;
 
@@ -227,15 +229,11 @@ namespace casual
                friend bool operator == ( const Exit& lhs, strong::process::id pid);
                friend bool operator < ( const Exit& lhs, const Exit& rhs);
 
-               friend std::ostream& operator << ( std::ostream& out, const Reason& value);
-
                CASUAL_CONST_CORRECT_SERIALIZE(
-               {
                   CASUAL_SERIALIZE( pid);
                   CASUAL_SERIALIZE( status);
                   CASUAL_SERIALIZE( reason);
-               })
-
+               )
             };
 
             std::vector< Exit> ended();
@@ -288,7 +286,7 @@ namespace casual
          void handle( const process::Handle& handle);
 
          //! clears the handle, and no terminate on destruction will be attempted.
-         //! only (?) usefull when detected that the actual child process has died.
+         //! only (?) useful when detected that the actual child process has died.
          void clear();
       };
 

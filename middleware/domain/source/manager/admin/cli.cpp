@@ -157,8 +157,11 @@ namespace casual
                         algorithm::append( pattern, arguments);
                      }
 
+                     arguments.emplace_back( "--event-pid");
+                     arguments.emplace_back( common::string::compose( common::process::handle().pid));
+
                      arguments.emplace_back( "--event-ipc");
-                     arguments.emplace_back( common::string::compose( common::communication::ipc::inbound::ipc()));
+                     arguments.emplace_back( common::string::compose( common::process::handle().ipc));
 
                      arguments.emplace_back( "--event-id");
                      arguments.emplace_back( common::string::compose( correlation));

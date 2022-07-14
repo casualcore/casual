@@ -43,7 +43,7 @@ namespace casual
       {
          namespace instance
          {
-            std::string_view description( State value)
+            std::string_view description( State value) noexcept
             {
                switch( value)
                {
@@ -216,24 +216,19 @@ namespace casual
          {
             Trace trace{ "domain::manager::state::Server::remove"};
 
-            auto found = algorithm::find( instances, pid);
-            
-            if( ! found)
-               return {};
-
-            log::line( verbose::log, "found: ", *found);
-
-            auto result = std::exchange( found->handle, {});
-
-            if( found->state == state_type::scale_in)
+            if( auto found = algorithm::find( instances, pid))
             {
-               log::line( verbose::log, "remove: ", *found);
-               instances.erase( std::begin( found));
-            }
-            else 
-               found->state = found->state == state_type::running && restart ? state_type::scale_out : state_type::exit;
+               log::line( verbose::log, "found: ", *found);
+               log::line( verbose::log, "instances: ", instances);
 
-            return result;
+               if( found->state == state_type::scale_in)
+                  return algorithm::container::extract( instances, std::begin( found)).handle;
+
+               found->state = found->state == state_type::running && restart ? state_type::scale_out : state_type::exit;
+               return std::exchange( found->handle, {});
+            }
+
+            return {};
          }
 
          bool Server::connect( const common::process::Handle& process)
@@ -453,7 +448,7 @@ namespace casual
                return alias == entity.alias;
             });
 
-            // we keep the non-mathced.
+            // we keep the non-matched.
             range = std::get< 1>( split);
             // if the 'removed' is not empty, we have a match.
             return ! std::get< 0>( split).empty();

@@ -656,7 +656,7 @@ domain:
          {
             common::message::event::process::Exit message;
             message.state.pid = common::process::id();
-            message.state.reason = common::process::lifetime::Exit::Reason::core;
+            message.state.reason = decltype( message.state.reason)::core;
 
             common::communication::device::blocking::send( 
                common::communication::instance::outbound::service::manager::device(),
@@ -785,7 +785,7 @@ domain:
          {
             common::message::event::process::Exit message;
             message.state.pid = common::process::id();
-            message.state.reason = common::process::lifetime::Exit::Reason::core;
+            message.state.reason = decltype( message.state.reason)::core;
 
             common::communication::device::blocking::send( 
                common::communication::instance::outbound::service::manager::device(),
