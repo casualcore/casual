@@ -73,6 +73,17 @@ namespace casual
 
                   } // call
 
+                  namespace external
+                  {
+                     using base_type = admin::model::resource::external::Proxy;
+                     struct Proxy : base_type
+                     {
+                        Proxy() = default;
+                        Proxy( base_type base, std::string alias): base_type{ base}, alias{ std::move( alias)} { }
+
+                        std::string alias;
+                     };
+                  } // external
 
                   namespace format
                   {  
@@ -190,6 +201,20 @@ namespace casual
                            terminal::format::column( "#", format_number_of_instances{}, terminal::color::white, terminal::format::Align::right)
                         );
 
+                     }
+
+                     auto external_resource()
+                     {
+                        auto format_pid = []( const local::external::Proxy& value) 
+                        {
+                           return value.process.pid;
+                        };
+
+                        return common::terminal::format::formatter< local::external::Proxy>::construct(
+                           common::terminal::format::column( "id", std::mem_fn( &local::external::Proxy::id), common::terminal::color::magenta, terminal::format::Align::right),
+                           common::terminal::format::column( "alias", std::mem_fn( &local::external::Proxy::alias), common::terminal::color::no_color, terminal::format::Align::right),
+                           common::terminal::format::column( "pid", format_pid, common::terminal::color::no_color, terminal::format::Align::right)
+                        );
                      }
 
                      auto resource_instance()
@@ -322,6 +347,35 @@ namespace casual
                         }
                         
                      } // resources
+
+                     namespace external
+                     {
+                        auto option()
+                        {
+                           return argument::Option{
+                              []()
+                              {
+                                 auto state = call::state();
+
+                                 auto transform = []( auto&& externals)
+                                 {
+                                    return algorithm::accumulate( externals, std::vector< local::external::Proxy>{}, []( auto result, auto& external)
+                                    {
+                                       std::string alias = communication::ipc::call( external.process.ipc, message::domain::instance::global::state::Request{ process::handle()}).instance.alias; 
+
+                                       result.emplace_back( external, alias);
+                                       return result;
+                                    });
+                                 };
+
+                                 auto externals = transform( state.externals);
+                                 format::external_resource().print( std::cout, externals);
+                              },
+                              { "--list-external-resources" },
+                              R"(list external resources)"
+                           };
+                        }
+                     } // external
 
                      namespace instances
                      {
@@ -768,7 +822,7 @@ namespace casual
                            { "--begin"},
                            R"(creates a 'single' transaction directive
 
-* associates all upstream transaction aware messages with the 'single' transaction, if they don't are associated already.
+* associates all upstream transaction aware messages with the 'single' transaction, if they aren't associated already.
 * all directives from upstream will be 'terminated', that is, notify the upstream 'owner' and not forward the directive
 * sends the directive downstream, so other casual-pipe components can associate 'new stuff' with the 'single' transaction
 
@@ -786,7 +840,7 @@ hence, only one 'directive' can be in flight within a link in the casual-pipe.
                               { "--compound"},
                               R"(creates a compound transaction directive 
 
-* associates all upstream transaction aware messages with a new transaction, if they don't are associated already.
+* associates all upstream transaction aware messages with a new transaction, if they aren't associated already.
 * all directives from upstream will be 'terminated', that is, notify the upstream 'owner' and not forward the directive
 * sends the directive downstream, so other casual-pipe components can associate 'new stuff' with a new transaction
 
@@ -974,6 +1028,7 @@ hence, directly downstream there will be no transaction, but users can start new
                      local::list::transactions::option(),
                      local::list::resources::option(),
                      local::list::instances::option(),
+                     local::list::external::option(),
                      local::begin::option(),
                      local::begin::compound::option(),
                      local::commit::option(),

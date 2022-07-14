@@ -117,6 +117,24 @@ namespace casual
 
             inline friend bool operator < ( const Proxy& lhs,  const Proxy& rhs) { return lhs.id < rhs.id;}
          };
+
+         namespace external
+         {
+            struct Proxy
+            {
+               common::strong::resource::id id;
+               common::process::Handle process;
+
+               CASUAL_CONST_CORRECT_SERIALIZE(
+                  CASUAL_SERIALIZE( id);
+                  CASUAL_SERIALIZE( process);
+               )
+
+               inline friend bool operator == ( const Proxy& lhs, common::strong::resource::id rhs) { return lhs.id == rhs;}
+
+               inline friend bool operator < ( const Proxy& lhs,  const Proxy& rhs) { return lhs.id < rhs.id;}
+            };
+         } // external
       } // resource
 
       namespace pending
@@ -267,6 +285,7 @@ namespace casual
       struct State
       {
          std::vector< admin::model::resource::Proxy> resources;
+         std::vector< admin::model::resource::external::Proxy> externals;
          std::vector< admin::model::Transaction> transactions;
 
          struct
@@ -295,6 +314,7 @@ namespace casual
 
          CASUAL_CONST_CORRECT_SERIALIZE(
             CASUAL_SERIALIZE( resources);
+            CASUAL_SERIALIZE( externals);
             CASUAL_SERIALIZE( transactions);
             CASUAL_SERIALIZE( pending);
             CASUAL_SERIALIZE( log);

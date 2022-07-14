@@ -38,7 +38,8 @@ make.LibraryPaths( [ 'bin',
     '../middleware/configuration/bin',
     '../middleware/http/bin',
     '../middleware/administration/bin',
-    '../middleware/cli/bin']
+    '../middleware/cli/bin',
+    '../middleware/tools/bin']
     + make.optional_library_paths()
     + dsl.paths().library.gtest
    )
