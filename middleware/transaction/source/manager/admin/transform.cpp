@@ -57,7 +57,22 @@ namespace casual
 
                   return result;
                }
-               
+
+               namespace external
+               {
+                  auto proxy()
+                  {
+                     return []( const state::resource::external::Proxy& value)
+                     {
+                        admin::model::resource::external::Proxy result;
+
+                        result.id = value.id;
+                        result.process = value.process;
+
+                        return result;
+                     };
+                  }
+               } // external
             } // resource
 
             admin::model::Log log( const manager::Log::Statistics& log)
@@ -196,6 +211,7 @@ namespace casual
          admin::model::State result;
 
          common::algorithm::transform( state.resources, result.resources, &transform::resource::proxy);
+         common::algorithm::transform( state.externals, result.externals, local::resource::external::proxy());
          common::algorithm::transform( state.transactions, result.transactions, local::transaction());
 
          common::algorithm::transform( state.pending.requests, result.pending.requests, local::pending::request());
