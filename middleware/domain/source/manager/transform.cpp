@@ -242,7 +242,7 @@ namespace casual
                   {
                      manager::admin::model::Task result;
                      result.id = task.context().id.value();
-                     result.description = task.context().descripton;
+                     result.description = task.context().description;
                      return result;
                   };
 

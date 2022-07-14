@@ -747,7 +747,7 @@ domain:
          {
             common::message::event::process::Exit event;
             event.state.pid = process::handle().pid;
-            event.state.reason = common::process::lifetime::Exit::Reason::core;
+            event.state.reason = decltype( event.state.reason)::core;
 
             local::send::tm( event);
          }

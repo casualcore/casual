@@ -37,11 +37,11 @@ namespace casual
          struct Context
          {
             task::id::type id;
-            std::string descripton;
+            std::string description;
 
             CASUAL_LOG_SERIALIZE({
                CASUAL_SERIALIZE( id);
-               CASUAL_SERIALIZE( descripton);
+               CASUAL_SERIALIZE( description);
             })
          };
 
@@ -132,7 +132,7 @@ namespace casual
                concurrent,
                sequential
             };
-            friend std::ostream& operator << ( std::ostream& out, Execution value);
+            friend std::string_view description( Execution value) noexcept;
 
             enum class Completion : short
             {
@@ -143,7 +143,7 @@ namespace casual
                //! can be removed and started will be aborted.
                abortable
             };
-            friend std::ostream& operator << ( std::ostream& out, Completion value);
+            friend std::string_view description( Completion value) noexcept;
 
             Execution execution = Execution::sequential;
             Completion completion = Completion::mandatory;
@@ -205,11 +205,11 @@ namespace casual
             bool operator () ( const M& message) 
             {
                Trace trace{ "domain::manager::task::Running::operator()"};
-               common::log::line( verbose::log, "running: ", *this);
+               common::log::line( verbose::log, "message: ", message);
 
                if( auto found = common::algorithm::find( m_callbacks, common::message::type( message)))
                {
-                  common::log::line( verbose::log, "callback: ", *found, " - message: ", message);
+                  common::log::line( verbose::log, "callback: ", *found);
                   return common::range::front( found)( message);
                }
 
@@ -264,7 +264,8 @@ namespace casual
                   Queue::done( state, std::move( task));
                });
 
-               common::algorithm::container::trim( m_running, keep);
+               if( common::algorithm::container::trim( m_running, keep).empty())
+                  Queue::next( state);
             }
 
             //! @returns true any running task listen to this event message
@@ -288,6 +289,7 @@ namespace casual
          private:
             void start( State& state, Task&& task);
             void done( State& state, Task&& task);
+            void next( State& state);
             
             std::vector< task::Running> m_running;
             std::deque< Task> m_pending;

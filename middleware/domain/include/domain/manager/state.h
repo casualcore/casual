@@ -18,6 +18,8 @@
 #include "common/uuid.h"
 #include "common/state/machine.h"
 #include "common/process.h"
+#include "common/communication/select.h"
+#include "common/communication/ipc/send.h"
 
 #include "common/event/dispatch.h"
 
@@ -138,7 +140,7 @@ namespace casual
                exit,
                error,
             };
-            std::string_view description( State value);
+            std::string_view description( State value) noexcept;
 
 
          } // instance
@@ -305,16 +307,21 @@ namespace casual
       {
          common::state::Machine< state::Runlevel> runlevel;
 
+         common::communication::select::Directive directive;
+         common::communication::ipc::send::Coordinator multiplex{ directive};
+
          std::vector< state::Server> servers;
          std::vector< state::Executable> executables;
          std::vector< state::Group> groups;
-
-         std::map< common::Uuid, common::process::Handle> singletons;
 
          struct
          {
             std::vector< common::message::domain::process::lookup::Request> lookup;
          } pending;
+
+         std::map< common::Uuid, common::process::Handle> singletons;
+
+
 
          //! check if task are done, and if so, start the next task
          bool execute();
@@ -436,6 +443,8 @@ namespace casual
 
          CASUAL_LOG_SERIALIZE(
             CASUAL_SERIALIZE_NAME( runlevel(), "runlevel");
+            CASUAL_SERIALIZE( directive);
+            CASUAL_SERIALIZE( multiplex);
             CASUAL_SERIALIZE( manager_id);
             CASUAL_SERIALIZE( groups);
             CASUAL_SERIALIZE( servers);

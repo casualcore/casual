@@ -6,7 +6,6 @@
 
 #include "domain/manager/task/create.h"
 #include "domain/manager/task/event.h"
-#include "domain/manager/ipc.h"
 
 #include "domain/manager/handle.h"
 #include "domain/common.h"
@@ -582,7 +581,7 @@ namespace casual
             friend bool operator == ( const Correlation& lhs, strong::process::id rhs) { return lhs.process == rhs;}
          };
 
-         manager::Task update( casual::configuration::Model wanted, const std::vector< process::Handle>& destinations)
+         manager::Task update( State& state, casual::configuration::Model wanted, const std::vector< process::Handle>& destinations)
          {
             casual::configuration::message::update::Request request{ process::handle()};
             request.model = std::move( wanted);
@@ -594,14 +593,14 @@ namespace casual
                return result;
             });
 
-            auto invoke = [request = std::move( request), correlations = std::move( correlations)]( State& state, const manager::task::Context& context) mutable 
+            auto invoke = [ request = std::move( request), correlations = std::move( correlations)]( State& state, const manager::task::Context& context) mutable 
                -> std::vector< manager::task::event::Callback>
             {
                Trace trace{ "domain::manager::task::create::configuration::managers::update task start"};
 
-               algorithm::remove_if( correlations, [&request]( auto& correlation)
+               algorithm::container::erase_if( correlations, [ &state, &request]( auto& correlation)
                {
-                  if( ( correlation.id = communication::device::blocking::send( correlation.process.ipc, request)))
+                  if( ( correlation.id = state.multiplex.send( correlation.process.ipc, request)))
                      return false;
                   return true;
                });

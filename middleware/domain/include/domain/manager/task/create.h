@@ -36,7 +36,7 @@ namespace casual
 
       namespace configuration::managers
       {
-         manager::Task update( casual::configuration::Model wanted, const std::vector< common::process::Handle>& destinations);
+         manager::Task update( State& state, casual::configuration::Model wanted, const std::vector< common::process::Handle>& destinations);
       } // configuration::managers
 
    } // domain::manager::task::create

@@ -43,7 +43,7 @@ namespace casual
                // send the event, premature...
                message::event::process::Exit event;
                event.state.pid = strong::process::id{ 42};
-               event.state.reason = process::lifetime::Exit::Reason::core;
+               event.state.reason = decltype( event.state.reason)::core;
 
                unittest::eventually::send( communication::ipc::inbound::ipc(), event);
             }),
@@ -56,7 +56,7 @@ namespace casual
             {
                done = true;
                EXPECT_TRUE( m.state.pid == strong::process::id{ 42});
-               EXPECT_TRUE( m.state.reason == process::lifetime::Exit::Reason::core);
+               EXPECT_TRUE( m.state.reason == decltype( m.state.reason)::core);
             });
          });
 

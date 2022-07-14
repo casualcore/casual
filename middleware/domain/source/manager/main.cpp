@@ -14,9 +14,11 @@
 #include "configuration/model/load.h"
 
 #include "common/communication/ipc.h"
+#include "common/communication/select/ipc.h"
 #include "common/exception/capture.h"
 #include "common/argument.h"
 #include "common/string/compose.h"
+
 
 namespace casual
 {
@@ -35,11 +37,11 @@ namespace casual
 
                struct
                {
-                  common::strong::ipc::id ipc;
+                  common::process::Handle process;
                   common::strong::correlation::id correlation;
 
                   CASUAL_LOG_SERIALIZE(
-                     CASUAL_SERIALIZE( ipc);
+                     CASUAL_SERIALIZE( process);
                      CASUAL_SERIALIZE( correlation);
                   )
                } parent;
@@ -50,6 +52,24 @@ namespace casual
                   CASUAL_SERIALIZE( parent);
                )
             };
+
+            auto settings( int argc, char** argv)
+            {
+               Settings settings;
+               { 
+                  bool dummy{};
+                  argument::Parse{ "domain manager",
+                     argument::Option( std::tie( settings.configuration), argument::option::keys( { "-c", "--configuration"}, {"--configuration-files"}), "domain configuration 'glob' patterns"),
+                     argument::Option( std::tie( settings.bare), { "--bare"}, "if use 'bare' mode or not, ie, do not boot mandatory (broker, TM), mostly for unittest"),
+                     argument::Option( std::tie( settings.parent.process.ipc.underlying()), { "--event-ipc"}, "ipc to send events to"),
+                     argument::Option( std::tie( settings.parent.process.pid.underlying()), { "--event-pid"}, "the pid of the 'booter'"),
+                     argument::Option( std::tie( settings.parent.correlation), { "--event-id"}, "id of the events to correlate"),
+                     
+                     argument::Option( std::tie( dummy), argument::option::keys( {}, { "--persist"}), "not used"),
+                  }( argc, argv);
+               }
+               return settings;
+            }
 
 
             auto initialize( Settings settings)
@@ -64,10 +84,9 @@ namespace casual
 
 
                //! if we've got a parent, we make sure it gets events.
-               if( settings.parent.ipc)
+               if( settings.parent.process)
                {
-                  common::message::event::subscription::Begin request;
-                  request.process.ipc = settings.parent.ipc;
+                  common::message::event::subscription::Begin request{ settings.parent.process};
                   state.event.subscription( request);
                }
 
@@ -116,16 +135,14 @@ namespace casual
                {
                   auto error( State& state)
                   {
-                     return [&state]()
+                     return [&state]( auto& error)
                      {
-                        auto error = exception::capture();
-
                         if( error.code() == code::casual::shutdown)
                         {
                            state.runlevel = state::Runlevel::shutdown;
                            handle::shutdown( state);
                         }
-                        else if( state.runlevel == state::Runlevel::error)
+                        else if( state.runlevel == decltype( state.runlevel())::error)
                         {
                            log::line( log::category::error, error, " already in error state - fatal abort");
                            log::line( log::category::verbose::error, "state: ", state);
@@ -133,7 +150,7 @@ namespace casual
                         }
                         else 
                         {
-                           log::line( log::category::error, error, " enter error state");
+                           log::line( log::category::error, error, " - enter error state");
                            state.runlevel = state::Runlevel::error;
                            handle::shutdown( state);
                            log::line( log::category::verbose::error, "state: ", state);
@@ -150,8 +167,7 @@ namespace casual
                      condition::error( detail::error( state))
                   );
                }
-            }
-
+            } // condition
 
             void start( State state)
             {
@@ -160,40 +176,30 @@ namespace casual
 
                auto handler = handle::create( state);
 
-               message::dispatch::pump(
+               communication::select::dispatch::pump(
                   local::condition::create( state),
-                  handler,
-                  manager::ipc::device());
+                  state.directive,
+                  state.multiplex,
+                  communication::select::ipc::dispatch::create( state, &handle::create)
+               );
             }
 
 
             void main( int argc, char** argv)
             {
-               common::strong::ipc::id ipc;
+               common::process::Handle process;
 
                try
                {
-                  Settings settings;
-                  { 
-                     bool dummy{};
-                     argument::Parse{ "domain manager",
-                        argument::Option( std::tie( settings.configuration), argument::option::keys( { "-c", "--configuration"}, {"--configuration-files"}), "domain configuration 'glob' patterns"),
-                        argument::Option( std::tie( settings.bare), { "--bare"}, "if use 'bare' mode or not, ie, do not boot mandatory (broker, TM), mostly for unittest"),
-                        argument::Option( std::tie( settings.parent.ipc.underlying()), { "--event-ipc"}, "ipc to send events to"),
-                        argument::Option( std::tie( settings.parent.correlation), { "--event-id"}, "id of the events to correlate"),
-                        
-                        argument::Option( std::tie( dummy), argument::option::keys( {}, { "--persist"}), "not used"),
-                     }( argc, argv);
-                  }
-
-                  ipc = settings.parent.ipc;
+                  auto settings = local::settings( argc, argv);
+                  process = settings.parent.process;
 
                   local::start( local::initialize( std::move( settings)));
 
                }
                catch( ...)
                {
-                  if( ipc)
+                  if( process)
                   {
                      auto error = common::exception::capture();
                      common::message::event::Error event;
@@ -201,7 +207,8 @@ namespace casual
                      event.severity = common::message::event::Error::Severity::fatal;
                      event.code = error.code();
 
-                     common::communication::device::non::blocking::optional::send( ipc, event);
+                     // TODO can we get rid of this blocking?
+                     common::communication::device::non::blocking::optional::send( process.ipc, event);
                   }
 
                   throw;

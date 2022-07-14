@@ -23,6 +23,8 @@
 #include "common/unittest.h"
 #include "common/unittest/file.h"
 
+#include "casual/assert.h"
+
 namespace casual
 {
    using namespace common;
@@ -48,6 +50,7 @@ namespace casual
                {
                   std::vector< std::string> result{ 
                      "--bare", "true",
+                     "--event-pid", common::string::compose( common::process::id()),
                      "--event-ipc", common::string::compose( common::communication::ipc::inbound::ipc()),
                      "--event-id", common::string::compose( id),
                      "--configuration-files"
@@ -68,7 +71,7 @@ namespace casual
             {
                auto root()
                {
-                  return environment::variable::get( "CASUAL_MAKE_SOURCE_ROOT");
+                  return std::filesystem::path{ environment::variable::get( "CASUAL_MAKE_SOURCE_ROOT")};
                }
             } // repository
             
@@ -92,84 +95,98 @@ namespace casual
                log::Trace trace{ "domain::unittest::local::shutdown", verbose::log};
                log::line( verbose::log, "manager: ", manager);
 
-               signal::thread::scope::Block blocked_signals{ { code::signal::child}};
-
-               auto gracefully = []( auto& manager)
+               auto create_handler = []( auto& tasks)
                {
-                  auto handler = []( auto& tasks)
-                  {
-                     return message::dispatch::handler( communication::ipc::inbound::device(),
-                        [&tasks]( message::event::Task& event)
-                        {
-                           log::line( verbose::log, "event: ", event);
-                           if( event.done())
-                              algorithm::container::trim( tasks, algorithm::remove( tasks, event.correlation));
-                        },
-                        []( message::event::Error& event)
-                        {
-                           log::line( log::category::error, "event: ", event);
-                        }
-                     );
-                  };
-
-                  auto tasks = communication::ipc::call(
-                      manager.ipc, common::message::domain::manager::shutdown::Request{ process::handle()}).tasks;
-                  
-                  log::line( verbose::log, "tasks: ", tasks);
-
-                  auto condition = common::message::dispatch::condition::compose(
-                     common::event::condition::done( [&tasks]()
-                     { 
-                        return tasks.empty();
-                     })
+                  return message::dispatch::handler( communication::ipc::inbound::device(),
+                     [ &tasks]( const message::event::Task& event)
+                     {
+                        log::line( verbose::log, "event: ", event);
+                        if( event.done())
+                           algorithm::container::trim( tasks, algorithm::remove( tasks, event.correlation));
+                     },
+                     []( const message::event::Error& event)
+                     {
+                        log::line( log::category::error, "event: ", event);
+                     }
                   );
-
-                  // listen for events
-                  common::message::dispatch::relaxed::pump( 
-                     condition,
-                     handler( tasks), 
-                     communication::ipc::inbound::device());
-
-                  process::wait( manager.pid);
                };
 
-               if( manager)
-                  gracefully( manager);
-               else if( manager.pid)
-               {
-                  process::terminate( manager.pid);
-                  process::wait( manager.pid);
-               }
+               auto tasks = communication::ipc::call( manager.ipc, common::message::domain::manager::shutdown::Request{ process::handle()}).tasks;
+               log::line( verbose::log, "tasks: ", tasks);
+
+               auto condition = common::message::dispatch::condition::compose(
+                  common::event::condition::done( [ &tasks]()
+                  { 
+                     return tasks.empty();
+                  })
+               );
+
+               // listen for events
+               common::message::dispatch::relaxed::pump( 
+                  condition,
+                  create_handler( tasks), 
+                  communication::ipc::inbound::device());
+
+               process::wait( manager.pid);
             }
 
 
             struct Manager
             {
                Manager() = default;
-               Manager( const std::string& path, std::vector< std::string> arguments)
-                  : process{ path, arguments} 
+               Manager( const std::filesystem::path& path, std::vector< std::string> arguments)
+                  : m_handle{ common::process::spawn( path, std::move( arguments))}
                {}
 
                ~Manager()
                {
                   exception::guard( [&]()
                   {
-                     if( process)
-                        local::shutdown( process);
-                     
-                     process.clear();
+                     if( m_handle)
+                     {
+                        local::shutdown( m_handle);
+                     }
+                     else if( m_handle.pid)
+                     {
+                        process::terminate( m_handle.pid);
+                        process::wait( m_handle.pid);
+                     }
                   });
                }
 
-               Manager( Manager&& other) noexcept = default;
-               Manager& operator = ( Manager&& other) noexcept = default;
+               Manager( Manager&& other) noexcept : m_handle{ std::exchange( other.m_handle, {})} {}
+               Manager& operator = ( Manager&& other) noexcept 
+               { 
+                  std::swap( m_handle, other.m_handle);
+                  return *this;
+               }
+
+               void handle( const common::process::Handle& handle) noexcept
+               {
+                  casual::assertion( m_handle.pid == handle.pid, "note the same pids");
+                  m_handle = handle;
+               }
+
+               auto& handle() const noexcept { return m_handle;}
 
                CASUAL_LOG_SERIALIZE(
-                  CASUAL_SERIALIZE( process);
+                  CASUAL_SERIALIZE_NAME( m_handle, "handle");
                )
 
-               common::Process process;
+            private:
+               common::process::Handle m_handle;
             };
+
+            namespace signal
+            {
+               auto handler()
+               {
+                  return common::signal::callback::scoped::replace< code::signal::child>( []()
+                  {
+                     log::line( verbose::log, code::signal::child, " discarded");
+                  });
+               }
+            } // signal
 
          } // <unnamed>
       } // local
@@ -178,7 +195,8 @@ namespace casual
       {
          Implementation( std::vector< std::string_view> configuration, std::function< void( const std::string&)> callback = nullptr)
             : environment( std::move( callback)),
-            files( local::configuration::files( configuration))
+            files( local::configuration::files( configuration)),
+            scoped_signal_handler{ local::signal::handler()}
          {
             log::Trace trace{ "domain::unittest::Manager::Implementation", verbose::log};
 
@@ -188,11 +206,11 @@ namespace casual
 
             auto unsubscribe_scope = execute::scope( [&]()
             {
-               if( ! manager.process.ipc)
+               if( ! manager.handle().ipc)
                   return;
 
                communication::device::blocking::optional::send( 
-                  manager.process.ipc, common::message::event::subscription::End{ process::handle()});
+                  manager.handle().ipc, common::message::event::subscription::End{ process::handle()});
             });
             
             auto condition = []( auto& tasks)
@@ -212,20 +230,20 @@ namespace casual
                   common::message::handle::discard< message::event::process::Spawn>(),
                   common::message::handle::discard< message::event::process::Exit>(),
                   common::message::handle::discard< message::event::sub::Task>(),
-                  [&]( const manager::task::message::domain::Information& event)
+                  [ &state]( const manager::task::message::domain::Information& event)
                   {
                      log::line( log::debug, "event: ", event);
                      state.domain = event.domain;
                      common::domain::identity( event.domain);
-                     state.manager.process.handle( event.process);
+                     state.manager.handle( event.process);
 
                      // Set environment variable to make it easier for other processes to
                      // reach domain-manager (should work any way...)
                      common::environment::variable::process::set(
                         common::environment::variable::name::ipc::domain::manager,
-                        state.manager.process);
+                        state.manager.handle());
                   },
-                  [&tasks]( const message::event::Task& event)
+                  [ &tasks]( const message::event::Task& event)
                   {
                      log::line( log::debug, "event: ", event);
 
@@ -244,7 +262,8 @@ namespace casual
             auto tasks = std::vector< strong::correlation::id>{ strong::correlation::id::emplace( uuid::make())};
 
             // spawn the domain-manager
-            manager = local::Manager{ local::repository::root() + "/middleware/domain/bin/casual-domain-manager",
+            manager = local::Manager{ 
+               local::repository::root() / "middleware/domain/bin/casual-domain-manager",
                local::configuration::arguments( files, tasks.front())};
 
             common::message::dispatch::relaxed::pump( 
@@ -287,12 +306,12 @@ domain:
 
             void activate()
             {
-               environment::variable::set( "CASUAL_DOMAIN_HOME", home);
+               environment::variable::set( "CASUAL_DOMAIN_HOME", home.string());
                
                if( callback)
                   callback( home.string());
 
-               // reset all (hopefolly) environment based 'values' 
+               // reset all (hopefully) environment based 'values' 
                environment::reset();
             }
 
@@ -306,12 +325,15 @@ domain:
 
          } environment;
 
-
          std::vector< common::file::scoped::Path> files;
          local::Manager manager;
          common::domain::Identity domain;
 
+         using scoped_signal_handler_type = decltype( local::signal::handler());
+         scoped_signal_handler_type scoped_signal_handler;
+
          CASUAL_LOG_SERIALIZE(
+            CASUAL_SERIALIZE( environment);
             CASUAL_SERIALIZE( files);
             CASUAL_SERIALIZE( manager);
             CASUAL_SERIALIZE( domain);
@@ -338,7 +360,7 @@ domain:
 
       const common::process::Handle& Manager::handle() const noexcept
       {
-         return m_implementation->manager.process;
+         return m_implementation->manager.handle();
       }
 
       void Manager::activate()
