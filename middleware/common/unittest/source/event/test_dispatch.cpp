@@ -8,6 +8,7 @@
 #include "common/unittest.h"
 
 #include "common/event/dispatch.h"
+#include "common/communication/ipc/send.h"
 
 namespace casual
 {
@@ -23,23 +24,6 @@ namespace casual
             message::event::process::Exit> collection;
 
          EXPECT_TRUE( ! collection.active< message::event::process::Exit>());
-      }
-
-      TEST( common_event_dispatch, collection_create_event)
-      {
-         common::unittest::Trace trace;
-
-         event::dispatch::Collection<
-            message::event::Error,
-            message::event::process::Spawn,
-            message::event::process::Exit> collection;
-
-         message::event::process::Exit event;
-
-         auto pending = collection( event);
-
-         // we have no 'subscription', hence no targets, hence pending is interpret as sent.
-         EXPECT_TRUE( pending.sent()) << trace.compose( CASUAL_NAMED_VALUE( pending));
       }
 
       TEST( common_event_dispatch, collection_subscribe_error)
@@ -118,6 +102,48 @@ namespace casual
          EXPECT_TRUE( ! collection.active< message::event::process::Exit>());
       }
 
+      TEST( common_event_dispatch, collection_dispatch)
+      {
+         common::unittest::Trace trace;
+
+         struct
+         {
+            communication::select::Directive directive;
+            communication::ipc::send::Coordinator multiplex{ directive};
+         } state;
+
+         event::dispatch::Collection<
+            message::event::Error,
+            message::event::process::Spawn,
+            message::event::process::Exit> events;
+
+         // we register our self to process exit event.
+         {
+            message::event::subscription::Begin begin{ process::handle()};
+            begin.types = { message::event::process::Exit::type()};
+            events.subscription( begin);
+         }
+
+         // dispatch process exit event (to our self)
+         {
+            message::event::process::Exit exit;
+            exit.state.pid = process::id();
+            exit.state.status = 42;
+            exit.state.reason = decltype( exit.state.reason)::core;
+
+            events( state.multiplex, exit);
+         }
+         
+         // make sure the whole event reaches us.
+         while( ! state.multiplex.send())
+            communication::ipc::inbound::device().flush();
+
+         auto event = communication::ipc::receive< message::event::process::Exit>();
+
+         EXPECT_TRUE( event.state.pid == process::id());
+         EXPECT_TRUE( event.state.status == 42);
+         EXPECT_TRUE( event.state.reason == decltype( event.state.reason)::core);
+      }
 
    } // common
 

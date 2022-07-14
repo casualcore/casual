@@ -25,7 +25,7 @@ namespace casual
 
 
       template< typename C, typename M>
-      C complete( M&& message)
+      auto complete( M&& message) -> decltype( void( typename customization::point< std::decay_t< C>>::writer{}() << message), C{})
       {
          if( ! message.execution)
             message.execution = execution::id();
@@ -42,7 +42,7 @@ namespace casual
       }
 
       template< typename C, typename M>
-      void complete( C&& complete, M& message)
+      auto complete( C&& complete, M& message) -> decltype( void( typename customization::point< std::decay_t< C>>::reader{}( complete.payload) >> message))
       {
          using casual::common::message::type;
          assert( complete.type() == type( message));
@@ -53,6 +53,14 @@ namespace casual
 
          auto archive = reader{}( complete.payload);
          archive >> message;
+      }
+
+      template< typename M, typename C>
+      auto complete( C& complete) -> decltype( void( native::complete( complete, std::declval< M&>())), M{})
+      {
+         M message;
+         native::complete( complete, message);
+         return message;
       }
 
    } // common::serialize::native

@@ -271,6 +271,7 @@ namespace casual
             }
 
             inline const auto& correlation() const noexcept { return m_complete.correlation();}
+            inline const auto& complete() const noexcept { return m_complete;}
 
             CASUAL_LOG_SERIALIZE(
                CASUAL_SERIALIZE_NAME( m_complete, "complete");

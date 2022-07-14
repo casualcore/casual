@@ -12,31 +12,22 @@
 
 namespace casual
 {
-   namespace common
+   namespace common::communication::device::handle
    {
-      namespace communication
+      void error()
       {
-         namespace device
+         try
          {
-            namespace handle
-            {
-               void error()
-               {
-                  try
-                  {
-                     throw;
-                  }
-                  catch( ...)
-                  {
-                     if( exception::capture().code() != code::casual::interrupted)
-                        throw;
+            throw;
+         }
+         catch( ...)
+         {
+            if( exception::capture().code() != code::casual::interrupted)
+               throw;
 
-                     log::line( verbose::log, "device interrupted");
-                     signal::dispatch();
-                  }
-               }
-            } // handle
-         } // device
-      } // communication
-   } // common
+            log::line( verbose::log, "device interrupted");
+            signal::dispatch();
+         }
+      }
+   } // common::communication::device::handle
 } // casual

@@ -23,14 +23,7 @@ namespace casual
                
                bool operator () ( tag::consume)
                {
-                  // we try to consume the cache.
-                  if( ! m_handler( communication::ipc::inbound::device().cached()))
-                     return false;
-
-                  while( m_handler( communication::ipc::inbound::device().cached()))
-                     ;
-                  
-                  return true;
+                  return predicate::boolean( m_handler( communication::ipc::inbound::device().cached()));
                }
 
                bool operator() ( strong::file::descriptor::id descriptor, tag::read)

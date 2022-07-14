@@ -74,17 +74,18 @@ namespace casual
                   //! takes care of atomic signals...
                   void select( strong::file::descriptor::id highest, ::fd_set* read, ::fd_set* write)
                   {
+                     Trace trace{ "common::communication::select::dispatch::detail::local::select"};
                      // block all signals
                      signal::thread::scope::Block block;
 
                      // check pending signals
                      if( signal::pending( block.previous()))
                         code::raise::error( code::casual::interrupted);
-                  
+
                      posix::result( 
                         // will set previous signal mask atomically 
                         // note: first argument: nfds is the highest-numbered file descriptor in any of the three sets, plus 1.
-                        ::pselect( highest.value() + 1, read, write, nullptr, nullptr, &block.previous().set), "pselect ", __FILE__, ':', __LINE__);
+                        ::pselect( highest.value() + 1, read, write, nullptr, nullptr, &block.previous().set));
                   }
 
                } // <unnamed>
@@ -128,16 +129,6 @@ namespace casual
                   filter_ready( directive.write.descriptors(), write),
                };
             }
-
-            namespace handle
-            {
-               void error()
-               {
-                  Trace trace{ "common::communication::select::dispatch::detail::handle::error"};
-                  device::handle::error();
-               }
-            } // handle
-
          } // detail
 
       } // dispatch

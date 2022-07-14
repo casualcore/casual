@@ -210,6 +210,14 @@ namespace casual
       {
          namespace detail
          {
+            namespace handle
+            {
+               //! If the "error" is an interrupt, signals are taken care of
+               //! and no error return
+               //! If it's not an interrupt, the error is returned.
+               std::optional< std::system_error> error();
+            } // handle
+
             namespace tag
             {
                struct prelude{};
@@ -220,7 +228,8 @@ namespace casual
                template< typename Tag>
                struct default_invoke
                {
-                  static constexpr void invoke() {};
+                  template< typename... Ts>
+                  static constexpr void invoke( Ts&&... ts) {};
                };
 
                template<>
@@ -232,10 +241,9 @@ namespace casual
                template<>
                struct default_invoke< tag::error>
                {
-                  static void invoke() 
+                  static void invoke( const std::system_error& error) 
                   { 
-                     // takes care of signals
-                     communication::device::handle::error();
+                     throw error;
                   };
                };
             } // tag
@@ -246,33 +254,34 @@ namespace casual
             {
                tagged( C callable) : callable{ std::move( callable)} {}
 
-               auto operator() ( Tag tag) { return callable();}
+               template< typename... Ts>
+               auto operator() ( Tag tag, Ts&&... ts) { return callable( std::forward< Ts>( ts)...);}
 
                C callable;
             };
 
             namespace dispatch
             {
-               // default behaviour, if not provided
-               template< typename Tag, typename T> 
-               auto invoke( T& condition, traits::priority::tag< 0>) -> decltype( tag::default_invoke< Tag>::invoke())
+               // uses the user provided 'condition'
+               template< typename Tag, typename C, typename... Ts> 
+               auto invoke( C& condition, traits::priority::tag< 1>, Ts&&... ts) -> decltype( condition( Tag{}, std::forward< Ts>( ts)...))
                {
-                  return tag::default_invoke< Tag>::invoke();
+                  return condition( Tag{}, std::forward< Ts>( ts)...);
                }
 
-               // uses the user provided 'condition'
-               template< typename Tag, typename T> 
-               auto invoke( T& condition, traits::priority::tag< 1>) -> decltype( condition( Tag{}))
+               // default behaviour, if not provided
+               template< typename Tag, typename C, typename... Ts> 
+               auto invoke( C& condition, traits::priority::tag< 0>, Ts&&... ts) -> decltype( tag::default_invoke< Tag>::invoke( std::forward< Ts>( ts)...))
                {
-                  return condition( Tag{});
+                  return tag::default_invoke< Tag>::invoke( std::forward< Ts>( ts)...);
                }
+
             } // dispatch
 
-
-            template< typename Tag, typename T> 
-            auto invoke( T& condition) -> decltype( dispatch::invoke< Tag>( condition, traits::priority::tag< 1>{}))
+            template< typename Tag, typename C, typename... Ts> 
+            auto invoke( C& condition, Ts&&... ts) -> decltype( dispatch::invoke< Tag>( condition, traits::priority::tag< 1>{}, std::forward< Ts>( ts)...))
             {
-               return dispatch::invoke< Tag>( condition, traits::priority::tag< 1>{});
+               return dispatch::invoke< Tag>( condition, traits::priority::tag< 1>{}, std::forward< Ts>( ts)...);
             }
 
             namespace pump
@@ -305,7 +314,8 @@ namespace casual
                      }
                      catch( ...)
                      {
-                        detail::invoke< detail::tag::error>( condition);
+                        if( auto error = handle::error())
+                           detail::invoke< detail::tag::error>( condition, *error);
                      }
                   } 
                }
@@ -343,7 +353,9 @@ namespace casual
          template< typename T>
          auto idle( T callable) { return detail::tagged< detail::tag::idle, T>{ std::move( callable)};}
 
-         //! provided `callable` will be invoked and if the result is `true` the control is return to caller
+         //! provided `callable` will be invoked and if the result is `true` the pump stops, 
+         //! and control is return to caller.
+         //! @attention `done` should not alter any state, just answer if the "pump" is done.
          template< typename T>
          auto done( T callable) { return detail::tagged< detail::tag::done, T>{ std::move( callable)};}
 
