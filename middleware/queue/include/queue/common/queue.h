@@ -23,7 +23,8 @@ namespace casual
 
       struct Lookup
       {
-         explicit Lookup( std::string queue);
+         using Semantic = ipc::message::lookup::request::context::Semantic;
+         explicit Lookup( std::string queue, Semantic semantic = Semantic::direct);
 
          ipc::message::lookup::Reply operator () () const;
 

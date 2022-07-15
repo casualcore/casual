@@ -99,55 +99,6 @@ namespace casual
             sleep( std::chrono::duration_cast< platform::time::unit>( time));
          }
 
-         namespace pattern
-         {
-            struct Sleep
-            {
-               struct Pattern
-               {
-                  struct infinite_quantity {}; 
-
-                  Pattern( platform::time::unit time, platform::size::type quantity);
-                  Pattern( platform::time::unit time, infinite_quantity);
-
-                  template< typename R, typename P>
-                  Pattern( std::chrono::duration< R, P> time, platform::size::type quantity)
-                   : Pattern{ std::chrono::duration_cast< platform::time::unit>( time), quantity}
-                  {}
-
-                  template< typename R, typename P>
-                  Pattern( std::chrono::duration< R, P> time, infinite_quantity)
-                   : Pattern{ std::chrono::duration_cast< platform::time::unit>( time), infinite_quantity{}}
-                  {}
-
-                  bool done();
-
-                  CASUAL_LOG_SERIALIZE(
-                  {
-                     CASUAL_SERIALIZE_NAME( m_time, "time");
-                     CASUAL_SERIALIZE_NAME( m_quantity, "quantity");
-                  })
-
-               private:
-                  platform::time::unit m_time;
-                  platform::size::type m_quantity = 0;
-               };
-               
-               Sleep( std::initializer_list< Pattern> pattern);
-
-               bool operator () ();
-
-               // for logging only
-               CASUAL_LOG_SERIALIZE(
-               {
-                  CASUAL_SERIALIZE_NAME( m_pattern, "pattern");
-               })
-
-            private:
-               std::vector< Pattern> m_pattern;
-            };
-
-         } // pattern
 
          //! Spawn a new application that path describes
          //!

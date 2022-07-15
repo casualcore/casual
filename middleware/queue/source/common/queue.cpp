@@ -22,10 +22,11 @@ namespace casual
       {
          namespace
          {
-            auto request( const std::string& queue)
+            auto request( const std::string& queue, ipc::message::lookup::request::context::Semantic semantic)
             {
                ipc::message::lookup::Request request{ common::process::handle()};
                request.name = queue;
+               request.context.semantic = semantic;
                return communication::device::blocking::send(
                   communication::instance::outbound::queue::manager::optional::device(),
                   request);
@@ -33,8 +34,8 @@ namespace casual
          } // <unnamed>
       } // local
 
-      Lookup::Lookup( std::string queue)
-         : m_name( std::move( queue)), m_correlation{ local::request( m_name)}
+      Lookup::Lookup( std::string queue, Semantic semantic)
+         : m_name( std::move( queue)), m_correlation{ local::request( m_name, semantic)}
       {}
 
       ipc::message::lookup::Reply Lookup::operator () () const
