@@ -144,60 +144,6 @@ namespace casual
             }
          }
 
-         namespace pattern
-         {
-            namespace local
-            {
-               namespace
-               {
-                  platform::size::type check_infinity( platform::size::type quantity)
-                  {
-                     return quantity ==  0 ? std::numeric_limits< platform::size::type>::max() : quantity;
-                  }
-               } // <unnamed>
-            } // local
-
-
-            Sleep::Pattern::Pattern( platform::time::unit time, platform::size::type quantity)
-               : m_time{ time}, m_quantity{ local::check_infinity( quantity)}
-            {}
-
-            Sleep::Pattern::Pattern( platform::time::unit time, infinite_quantity)
-               : m_time{ time}, m_quantity{ std::numeric_limits< platform::size::type>::max()}
-            {}
-
-            bool Sleep::Pattern::done()
-            {
-               sleep( m_time);
-
-               if( m_quantity == std::numeric_limits< platform::size::type>::max())
-               {
-                  return false;
-               }
-               return --m_quantity == 0;
-            }
-
-            Sleep::Sleep( std::initializer_list< Pattern> pattern) : m_pattern( std::move( pattern))
-            {
-               // We reverse the patterns so we can go from the back
-               algorithm::reverse( m_pattern);
-            }
-
-            bool Sleep::operator () ()
-            {
-               if( ! m_pattern.empty())
-               {
-                  if( m_pattern.back().done())
-                  {
-                     m_pattern.pop_back();
-                  }
-                  return true;
-               }
-               return false;
-            }
-
-         } // pattern
-
          namespace local
          {
             namespace

@@ -30,6 +30,17 @@ namespace casual
             committed = 2,
             dequeued = 3,
          };
+         constexpr std::string_view description( State state) noexcept
+         {
+            switch( state)
+            {
+               case State::enqueued: return "enqueued";
+               case State::committed: return "committed";
+               case State::dequeued: return "dequeued";
+            }
+            return "<unknown>";
+         }
+
       } // message
 
       struct Attributes
@@ -44,11 +55,10 @@ namespace casual
          platform::time::point::type available = platform::time::point::limit::zero();
 
          CASUAL_CONST_CORRECT_SERIALIZE(
-         {
             CASUAL_SERIALIZE( properties);
             CASUAL_SERIALIZE( reply);
             CASUAL_SERIALIZE( available);
-         })
+         )
 
       };
 
@@ -62,10 +72,9 @@ namespace casual
          common::Uuid id;
 
          CASUAL_CONST_CORRECT_SERIALIZE(
-         {
             CASUAL_SERIALIZE( properties);
             CASUAL_SERIALIZE( id);
-         })
+         )
       };
 
       struct Payload
@@ -74,10 +83,9 @@ namespace casual
          platform::binary::type data;
 
          CASUAL_CONST_CORRECT_SERIALIZE(
-         {
             CASUAL_SERIALIZE( type);
             CASUAL_SERIALIZE( data);
-         })
+         )
       };
 
 

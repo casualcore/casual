@@ -202,7 +202,7 @@ namespace casual
                            handle_dequeue_reply( reply);
                            state.done = true;
                         },
-                        // queue-group want's to end the blockin dequeue for some reason
+                        // queue-group want's to end the blocking dequeue for some reason
                         [&]( ipc::message::group::dequeue::forget::Request& message)
                         {
                            Trace trace{ "casual::queue::local::dequeue::blocking handler - forget::Request"};
@@ -340,32 +340,14 @@ namespace casual
                {
                   Trace trace{ "casual::queue::blocking::available::dequeue"};
 
-                  common::process::pattern::Sleep sleep{
-                     { std::chrono::milliseconds{ 100}, 10},
-                     { std::chrono::seconds{ 2}, 100},
-                     { std::chrono::seconds{ 10}, common::process::pattern::Sleep::Pattern::infinite_quantity{}},
-                  };
+                  queue::Lookup lookup( queue, ipc::message::lookup::request::context::Semantic::wait);
 
-                  while( true)
-                  {
-                     try
-                     {
-                        return blocking::dequeue( queue, selector);
-                     }
-                     catch( ...)
-                     {
-                        auto error = common::exception::capture();
-                        if( error.code() != queue::code::no_queue)
-                           throw;
+                  auto message = local::dequeue::blocking( lookup, selector);
 
-                        // check if we've got a shutdown...
-                        if( common::communication::ipc::inbound::device().cached( common::message::shutdown::Request::type()))
-                           common::code::raise::error( common::code::casual::shutdown);
+                  if( message.empty())
+                     queue::raise( code::no_message);
 
-                        common::log::line( verbose::log, error, " queue not available yet - ", queue); 
-                     }
-                     sleep();
-                  }
+                  return std::move( message.front());
                }
 
             } // available
