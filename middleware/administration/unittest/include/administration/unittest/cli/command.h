@@ -4,8 +4,8 @@
 //! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-#include "common/environment/expand.h"
 #include "common/string/compose.h"
+#include "common/pimpl.h"
 
 #include <string>
 
@@ -13,34 +13,32 @@ namespace casual
 {
    namespace administration::unittest::cli::command
    {
+      namespace detail
+      {      
+         struct Pipe
+         {
+            explicit Pipe( std::string command);
+            ~Pipe();
 
-      struct Pipe
-      {
-         template< typename... Cs>
-         explicit Pipe( Cs&&... commands) : Pipe{ common::environment::expand( common::string::compose( std::forward< Cs>( commands)...))}
-         {}
+            //! @returns the output of the command
+            std::string consume() &&;
 
-         Pipe( Pipe&& other);
-         Pipe& operator = ( Pipe&& other);
+            //! @deprecated use consume instead
+            std::string string() &&;
 
-         ~Pipe();
+         private:
+            struct Implementation;
+            common::move::Pimpl< Implementation> m_implementation;
+         };
 
-         std::string string() &&;
+         static_assert( ! std::is_copy_constructible_v< Pipe> && ! std::is_copy_assignable_v< Pipe>);
 
-         template< typename... Cs>
-         friend auto execute( Cs&&... commands);
-
-      private:
-         explicit Pipe( std::string command);
-
-         std::string m_old_path;
-         FILE* m_stream = nullptr;
-      };
+      } // detail
 
       template< typename... Cs>
       auto execute( Cs&&... commands)
       {
-         return Pipe{ std::forward< Cs>( commands)...};
+         return detail::Pipe{ common::string::compose( std::forward< Cs>( commands)...)};
       }
    
    } // administration::unittest::cli::command
