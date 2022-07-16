@@ -36,7 +36,7 @@ namespace casual
       {
          common::unittest::Trace trace;
 
-         move::basic_pimpl< local::Value> value;
+         move::Pimpl< local::Value> value;
 
          EXPECT_TRUE( value->some_long == 42);
          EXPECT_TRUE( value->some_string == "42");
@@ -46,7 +46,7 @@ namespace casual
       {
          common::unittest::Trace trace;
 
-         move::basic_pimpl< local::Value> value{ 666, "666"};
+         move::Pimpl< local::Value> value{ 666, "666"};
 
          EXPECT_TRUE( value->some_long == 666);
          EXPECT_TRUE( value->some_string == "666");
@@ -56,7 +56,7 @@ namespace casual
       {
          common::unittest::Trace trace;
 
-         move::basic_pimpl< local::Value> source{ 666, "666"};
+         move::Pimpl< local::Value> source{ 666, "666"};
 
          auto result = std::move( source);
 
@@ -72,7 +72,7 @@ namespace casual
       {
          common::unittest::Trace trace;
 
-         basic_pimpl< local::Value> value;
+         Pimpl< local::Value> value;
 
          EXPECT_TRUE( value->some_long == 42);
          EXPECT_TRUE( value->some_string == "42");
@@ -82,7 +82,7 @@ namespace casual
       {
          common::unittest::Trace trace;
 
-         basic_pimpl< local::Value> value{ 666, "666"};
+         Pimpl< local::Value> value{ 666, "666"};
 
          EXPECT_TRUE( value->some_long == 666);
          EXPECT_TRUE( value->some_string == "666");
@@ -93,7 +93,7 @@ namespace casual
       {
          common::unittest::Trace trace;
 
-         basic_pimpl< local::Value> a{ 666, "666"};
+         Pimpl< local::Value> a{ 666, "666"};
 
          auto b = a;
 
@@ -116,7 +116,7 @@ namespace casual
       {
          common::unittest::Trace trace;
 
-         basic_pimpl< local::Value> source{ 666, "666"};
+         Pimpl< local::Value> source{ 666, "666"};
 
          auto result = std::move( source);
 

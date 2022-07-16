@@ -14,60 +14,60 @@ namespace casual
    {
       namespace move
       {
-         template< typename T>
-         class basic_pimpl
+         template< typename Implementation>
+         struct Pimpl
          {
-         public:
-
-            using implementation_type = T;
-            using holder_type = std::unique_ptr< implementation_type>;
-
             template< typename ...Args>
-            basic_pimpl( Args&&... args) : m_holder( std::make_unique< implementation_type>( std::forward< Args>( args)...)) {}
+            explicit Pimpl( Args&&... args) : m_holder( std::make_unique< Implementation>( std::forward< Args>( args)...)) {}
 
-            basic_pimpl( basic_pimpl&&) noexcept = default;
-            basic_pimpl& operator = ( basic_pimpl&&) noexcept = default;
+            Implementation* operator -> () const noexcept { return m_holder.get();}
+            Implementation& operator * () const noexcept{ return *m_holder;}
 
-            ~basic_pimpl() = default;
-
-            implementation_type* operator -> () const { return m_holder.get();}
-            implementation_type& operator * () const { return *m_holder.get();}
-
-            explicit operator bool () const noexcept { return static_cast< bool>( m_holder);}
+            explicit operator bool () const noexcept { return predicate::boolean( m_holder);}
 
          protected:
-            basic_pimpl( holder_type&& holder) : m_holder{ std::move( holder)} {} 
+            Pimpl( std::unique_ptr< Implementation> holder) : m_holder{ std::move( holder)} {} 
 
-            holder_type m_holder;
+            std::unique_ptr< Implementation> m_holder;
          };
+
+         static_assert( std::is_nothrow_move_constructible_v< Pimpl< int>> && std::is_nothrow_move_assignable_v< Pimpl< int>>);
+         static_assert( ! std::is_copy_constructible_v< Pimpl< int>> && ! std::is_copy_assignable_v< Pimpl< int>>);
+
+         
       } // move
 
-      template< typename T>
-      struct basic_pimpl : public move::basic_pimpl< T>
+      template< typename Implementation>
+      struct Pimpl : move::Pimpl< Implementation>
       {
-         using base_type = move::basic_pimpl< T>;
-         using implementation_type = T;
+         using base_type = move::Pimpl< Implementation>;
 
          template< typename ...Args>
-         basic_pimpl( Args&&... args) : base_type{ std::forward< Args>( args)...}{}
+         Pimpl( Args&&... args) : base_type{ std::forward< Args>( args)...}{}
 
-         basic_pimpl( basic_pimpl&&) noexcept = default;
-         basic_pimpl& operator = ( basic_pimpl&&) noexcept = default;
+         template< typename... Ts>
+         static Pimpl create( Ts&&... ts) { }
+
+         Pimpl( Pimpl&&) noexcept = default;
+         Pimpl& operator = ( Pimpl&&) noexcept = default;
 
          //! Make a deep copy
-         basic_pimpl( const basic_pimpl& other) : base_type{ std::make_unique< implementation_type>( *other)} {}
+         Pimpl( const Pimpl& other) : base_type{ std::make_unique< Implementation>( *other)} {}
 
          //! We need to overload non const copy-ctor, otherwise variadic ctor will take it.
-         basic_pimpl( basic_pimpl& other) : base_type{ std::make_unique< implementation_type>( *other)} {}
+         Pimpl( Pimpl& other) : base_type{ std::make_unique< Implementation>( *other)} {}
 
          //! Make a deep copy
-         basic_pimpl& operator = ( const basic_pimpl& other)
+         Pimpl& operator = ( const Pimpl& other)
          {
-            basic_pimpl temporary{ other};
+            Pimpl temporary{ other};
             *this = std::move( temporary);
             return *this;
          }
       };
+
+      static_assert( std::is_nothrow_move_constructible_v< Pimpl< int>> && std::is_nothrow_move_assignable_v< Pimpl< int>>);
+      static_assert( std::is_copy_constructible_v< Pimpl< int>> && std::is_copy_assignable_v< Pimpl< int>>);
 
    } // common
 } // casual

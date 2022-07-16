@@ -19,54 +19,95 @@ namespace casual
 
    namespace administration::unittest::cli::command
    {
-      Pipe::Pipe( std::string command) : m_old_path{ environment::variable::get( "PATH", std::string{})}
+      namespace detail
       {
-         // sink child signals 
-         // TODO should be a scoped registration that restores the handler, if any.
-         signal::callback::registration< code::signal::child>( [](){});
-
-         environment::variable::set( "PATH", environment::expand( string::compose( "${CASUAL_MAKE_SOURCE_ROOT}/middleware/administration/bin:${PATH}")));
-         log::line( verbose::log, "PATH: ", environment::variable::get( "PATH"));
-         
-         log::line( verbose::log, "executing command: ", command);
-         m_stream = posix::result( ::popen( command.data(), "r"));
-      }
-
-      Pipe::Pipe( Pipe&& other) : m_stream{ std::exchange( other.m_stream, m_stream)} {}
-      Pipe& Pipe::operator = ( Pipe&& other) { std::exchange( other.m_stream, m_stream); return *this;}
-
-      Pipe::~Pipe() 
-      {
-         if( ! m_stream)
-            return;
-         
-         ::pclose( m_stream);
-         
-         if( m_old_path.empty())
-            environment::variable::unset( "PATH");
-         else
-            environment::variable::set( "PATH", m_old_path);
-      }
-
-      std::string Pipe::string() &&
-      {
-         // block all signals but terminate
-         signal::thread::scope::Block block{ signal::set::filled( code::signal::terminate)};
-
-         std::array< char, 256> buffer;
-         std::ostringstream result;
-         auto descriptor = ::fileno( m_stream);
-
-         while( true)
+         namespace local
          {
-            auto read = posix::result( ::read( descriptor, buffer.data(), buffer.size()));
+            namespace
+            {
+               namespace signal
+               {
+                  auto handler()
+                  {
+                     return common::signal::callback::scoped::replace< code::signal::child>( []()
+                     {
+                        log::line( verbose::log, "unittest::cli::command - ", code::signal::child, " discarded");
+                     });
 
-            if( read == 0)
-               return std::move( result).str();
+                  }
+               } // signal
+            } // <unnamed>
+         } // local
 
-            result.write( buffer.data(), read);
+         struct Pipe::Implementation
+         {
+            Implementation( std::string command) 
+               : scoped_signal_handler{ local::signal::handler()}, 
+               old_path{ environment::variable::get( "PATH", std::string{})}
+            {
+               command = environment::expand( std::move( command));
+
+               environment::variable::set( "PATH", environment::expand( "${CASUAL_MAKE_SOURCE_ROOT}/middleware/administration/bin:${PATH}"));
+               log::line( verbose::log, "PATH: ", environment::variable::get( "PATH"));
+               
+               log::line( verbose::log, "executing command: ", command);
+               stream = posix::result( ::popen( command.data(), "r"));
+            }
+
+            std::string consume()
+            {
+               // block all signals but terminate
+               signal::thread::scope::Block block{ signal::set::filled( code::signal::terminate)};
+
+               std::array< char, 256> buffer;
+               std::ostringstream result;
+               auto descriptor = ::fileno( stream);
+
+               while( true)
+               {
+                  auto read = posix::result( ::read( descriptor, buffer.data(), buffer.size()));
+
+                  if( read == 0)
+                     return std::move( result).str();
+
+                  result.write( buffer.data(), read);
+               }
+            }
+
+            ~Implementation()
+            {
+               ::pclose( stream);
+            
+               if( old_path.empty())
+                  environment::variable::unset( "PATH");
+               else
+                  environment::variable::set( "PATH", old_path);
+            }
+
+            using scoped_signal_handler_type = decltype( local::signal::handler());
+            scoped_signal_handler_type scoped_signal_handler; 
+
+            std::string old_path;
+            FILE* stream = nullptr;
+         };
+
+         Pipe::Pipe( std::string command) 
+            : m_implementation{ std::move( command)}
+         {}
+
+         Pipe::~Pipe() = default;
+
+         std::string Pipe::consume() &&
+         {
+            return m_implementation->consume();
          }
-      }
+
+         std::string Pipe::string() &&
+         {
+            return m_implementation->consume();
+         }
+
+      } // detail
 
    } // administration::unittest::cli::command
 } // casual

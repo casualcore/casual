@@ -957,7 +957,7 @@ domain:
       TEST( domain_manager, kill_internal_pending__expect_restart)
       {
          common::unittest::Trace trace;
-         unittest::Manager manager;
+         auto domain = unittest::manager();
 
          // setup subscription to see when stuff is done
          common::event::subscribe( common::process::handle(), 

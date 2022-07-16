@@ -188,15 +188,41 @@ namespace casual
                }
             } // signal
 
+            namespace implementation
+            {
+               struct Environment
+               {
+                  Environment()
+                  {
+                     activate();
+                  }
+
+                  void activate()
+                  {
+                     environment::variable::set( "CASUAL_DOMAIN_HOME", home.string());
+
+                     // reset all (hopefully) environment based 'values' 
+                     environment::reset();
+                  }
+
+                  //! domain root directory
+                  common::unittest::directory::temporary::Scoped home;
+
+                  CASUAL_LOG_SERIALIZE(
+                     CASUAL_SERIALIZE( home);
+                  )
+               };
+               
+            } // implementation
+
          } // <unnamed>
       } // local
 
       struct Manager::Implementation
       {
-         Implementation( std::vector< std::string_view> configuration, std::function< void( const std::string&)> callback = nullptr)
-            : environment( std::move( callback)),
-            files( local::configuration::files( configuration)),
-            scoped_signal_handler{ local::signal::handler()}
+         Implementation( std::vector< std::string_view> configuration)
+            : scoped_signal_handler{ local::signal::handler()}, 
+            files( local::configuration::files( configuration))
          {
             log::Trace trace{ "domain::unittest::Manager::Implementation", verbose::log};
 
@@ -296,41 +322,13 @@ domain:
             local::instance::devices::reset();
          }
          
-         struct Environment
-         {
-            Environment( std::function< void( const std::string&)> callback)
-               : callback{ std::move( callback)}
-            {
-               activate();
-            }
+         using scoped_signal_handler_type = decltype( local::signal::handler());
+         scoped_signal_handler_type scoped_signal_handler;
 
-            void activate()
-            {
-               environment::variable::set( "CASUAL_DOMAIN_HOME", home.string());
-               
-               if( callback)
-                  callback( home.string());
-
-               // reset all (hopefully) environment based 'values' 
-               environment::reset();
-            }
-
-            //! domain root directory
-            common::unittest::directory::temporary::Scoped home;
-            std::function< void( const std::string&)> callback;
-
-            CASUAL_LOG_SERIALIZE(
-               CASUAL_SERIALIZE( home);
-            )
-
-         } environment;
-
+         local::implementation::Environment environment;
          std::vector< common::file::scoped::Path> files;
          local::Manager manager;
          common::domain::Identity domain;
-
-         using scoped_signal_handler_type = decltype( local::signal::handler());
-         scoped_signal_handler_type scoped_signal_handler;
 
          CASUAL_LOG_SERIALIZE(
             CASUAL_SERIALIZE( environment);
@@ -344,16 +342,7 @@ domain:
       Manager::Manager( std::vector< std::string_view> configuration)
          : m_implementation( configuration) {}
 
-      Manager::Manager( std::vector< std::string_view> configuration, std::function< void( const std::string&)> callback)
-         : m_implementation( configuration, std::move( callback)) {}
-
-      Manager::Manager() {}
-
-      Manager::~Manager()
-      {
-         log::Trace trace{ "domain::unittest::Manager::~Manager", verbose::log};
-         log::line( verbose::log, "this: ", *this);
-      }
+      Manager::~Manager() = default;
 
       Manager::Manager( Manager&&) noexcept = default;
       Manager& Manager::operator = ( Manager&&) noexcept = default;

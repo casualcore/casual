@@ -93,7 +93,7 @@ domain:
                   void operator() () const
                   {
                      common::transaction::context().clear();
-                     common::unittest::rm::clear();
+                     common::unittest::rm::state::clear();
                   }
                };
 
@@ -170,11 +170,11 @@ domain:
             // no rm involvement
             EXPECT_TRUE( tx_commit() == TX_OK);
 
-            auto state = common::unittest::rm::state( local::id());
+            auto state = common::unittest::rm::state::get( local::id());
             EXPECT_TRUE( state.errors.empty()) << CASUAL_NAMED_VALUE( state.errors);
             // only open has been called
             ASSERT_TRUE( state.invocations.size() == 1) << CASUAL_NAMED_VALUE( state.invocations);
-            ASSERT_TRUE( state.invocations.at( 0) == common::unittest::rm::State::Invoke::xa_open_entry) << CASUAL_NAMED_VALUE( state.invocations);
+            ASSERT_TRUE( state.invocations.at( 0) == common::unittest::rm::state::Invoke::xa_open_entry) << CASUAL_NAMED_VALUE( state.invocations);
          }
 
          TEST( test_transaction, dynamic_resource_involved__transaction_commit__expect_xa_end_invokation)
@@ -204,10 +204,10 @@ domain:
             common::unittest::rm::registration( id);
             EXPECT_TRUE( tx_commit() == TX_OK);
 
-            auto state = common::unittest::rm::state( id);
+            auto state = common::unittest::rm::state::get( id);
             EXPECT_TRUE( state.errors.empty()) << CASUAL_NAMED_VALUE( state.errors);
 
-            using Invoke = common::unittest::rm::State::Invoke;
+            using Invoke = common::unittest::rm::state::Invoke;
             
             // configure
             //   -> xa_open_entry
@@ -245,13 +245,13 @@ domain:
             common::transaction::context().configure( { local::link_static( "rm1")});
 
             auto rm = local::id();
-            using Invoke = common::unittest::rm::State::Invoke;
+            using Invoke = common::unittest::rm::state::Invoke;
 
             EXPECT_TRUE( rm);
             EXPECT_TRUE( tx_begin() == TX_OK);
 
             {
-               auto state = common::unittest::rm::state( rm);
+               auto state = common::unittest::rm::state::get( rm);
                EXPECT_TRUE( algorithm::count( state.invocations, Invoke::xa_end_entry) == 0) << CASUAL_NAMED_VALUE( state);
                EXPECT_TRUE( algorithm::count( state.invocations, Invoke::xa_start_entry) == 1) << CASUAL_NAMED_VALUE( state);
 
@@ -259,7 +259,7 @@ domain:
                EXPECT_TRUE( ::tpcall( "casual/example/echo", buffer.data, buffer.size, &buffer.data, &buffer.size, 0) != -1);
             }
 
-            auto state = common::unittest::rm::state( rm);
+            auto state = common::unittest::rm::state::get( rm);
             EXPECT_TRUE( state.transactions.all.size() == 1);
             EXPECT_TRUE( algorithm::count( state.invocations, Invoke::xa_end_entry) == 1);
             EXPECT_TRUE( algorithm::count( state.invocations, Invoke::xa_start_entry) == 2);

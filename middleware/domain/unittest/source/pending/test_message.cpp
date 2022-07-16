@@ -23,7 +23,7 @@ namespace casual
          common::unittest::Trace trace;
 
          EXPECT_NO_THROW( {
-            unittest::Manager domain;
+            auto domain = unittest::manager();
          });
       }
 
@@ -31,7 +31,7 @@ namespace casual
       {
          common::unittest::Trace trace;
 
-         unittest::Manager domain;
+         auto domain = unittest::manager();
 
          {
             common::message::service::lookup::Request message;

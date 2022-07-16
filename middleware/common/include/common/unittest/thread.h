@@ -7,11 +7,8 @@
 
 #pragma once
 
-
-
 #include <thread>
 
-//#include "common/pimpl.h"
 #include "common/unittest/log.h"
 
 namespace casual
@@ -39,8 +36,6 @@ namespace casual
             ~Thread();
 
          private:
-            //struct Implementation;
-            //move::basic_pimpl< Implementation> m_implementation;
             std::thread m_thread;
          };
       } // unittest

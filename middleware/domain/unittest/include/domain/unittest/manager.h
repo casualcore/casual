@@ -8,6 +8,7 @@
 
 #include "common/process.h"
 #include "common/pimpl.h"
+#include "common/algorithm/container.h"
 
 
 #include <vector>
@@ -19,12 +20,7 @@ namespace casual
    {
       struct Manager 
       {
-         Manager();
          Manager( std::vector< std::string_view> configuration);
-
-         //! callback to be able to enable other _environment_ stuff before boot
-         //! @attention `callback` has to be idempotent (if activate is used)
-         Manager( std::vector< std::string_view> configuration, std::function< void( const std::string&)> callback);
          ~Manager();
 
          Manager( Manager&&) noexcept;
@@ -40,16 +36,13 @@ namespace casual
 
       private:
          struct Implementation;
-         common::move::basic_pimpl< Implementation> m_implementation;
+         common::move::Pimpl< Implementation> m_implementation;
       };
 
-      template< typename... C>
-      [[nodiscard]] auto manager( C&&... configurations)
+      template< typename... Cs>
+      [[nodiscard]] auto manager( Cs&&... configurations)
       {
-         std::vector< std::string_view> views;
-         ( views.emplace_back( std::forward< C>( configurations)) , ... );
-
-         return domain::unittest::Manager{ std::move( views)};
+         return Manager{ common::algorithm::container::emplace::initialize< std::vector< std::string_view>>( std::forward< Cs>( configurations)...)};
       }
 
    } // domain::unittest
