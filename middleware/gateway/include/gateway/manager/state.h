@@ -64,8 +64,8 @@ namespace casual
 
             namespace executable
             {
-               std::string path( const inbound::Group& value);
-               std::string path( const outbound::Group& value);
+               std::filesystem::path path( const inbound::Group& value);
+               std::filesystem::path path( const outbound::Group& value);
             
             } // executable
 

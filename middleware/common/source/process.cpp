@@ -188,7 +188,7 @@ namespace casual
                      return result;
                   }
 
-                  std::vector< const char*> arguments( const std::string& path, const std::vector< std::string>& arguments)
+                  std::vector< const char*> arguments( const std::filesystem::path& path, const std::vector< std::string>& arguments)
                   {
                      std::vector< const char*> result;
 
@@ -245,7 +245,7 @@ namespace casual
                   };
 
                   strong::process::id invoke(
-                     std::string path,
+                     std::filesystem::path path,
                      const Attributes& attributes,
                      std::vector< std::string> arguments,
                      std::vector< environment::Variable> environment)
@@ -254,7 +254,7 @@ namespace casual
 
                      // We need to expand environment and arguments
                      environment::normalize( environment, environment);
-                     environment::normalize( path, environment);
+                     path = environment::expand( std::move( path), environment);
                      environment::normalize( arguments, environment);
                      
                      // check if path exist and process has permission to execute it.
@@ -304,7 +304,7 @@ namespace casual
 
 
          strong::process::id spawn(
-            std::string path,
+            std::filesystem::path path,
             std::vector< std::string> arguments,
             std::vector< environment::Variable> environment)
          {
@@ -318,12 +318,12 @@ namespace casual
 
          }
 
-         strong::process::id spawn( std::string path, std::vector< std::string> arguments)
+         strong::process::id spawn( std::filesystem::path path, std::vector< std::string> arguments)
          {
             return spawn( std::move( path), std::move( arguments), {});
          }
 
-         int execute( std::string path, std::vector< std::string> arguments)
+         int execute( std::filesystem::path path, std::vector< std::string> arguments)
          {
             return wait( spawn( std::move( path), std::move( arguments)));
          }

@@ -234,7 +234,7 @@ namespace casual
                struct
                {
                   common::process::Handle handle;
-                  std::string path;
+                  std::filesystem::path path;
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
                      CASUAL_SERIALIZE( handle);

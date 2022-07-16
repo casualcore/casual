@@ -139,7 +139,7 @@ namespace casual
                using base_spawn::base_spawn;
 
                std::string alias;
-               std::string path;
+               std::filesystem::path path;
                std::vector< strong::process::id> pids;
 
                CASUAL_CONST_CORRECT_SERIALIZE(
@@ -186,7 +186,7 @@ namespace casual
                using base_configured::base_configured;
 
                std::string alias;
-               std::string path;
+               std::filesystem::path path;
 
                CASUAL_CONST_CORRECT_SERIALIZE(
                   base_configured::serialize( archive);
