@@ -10,6 +10,7 @@
 
 #include <string>
 #include <vector>
+#include <filesystem>
 
 namespace casual
 {
@@ -61,7 +62,7 @@ namespace casual
                   //! @note not pid, but the internal id of the servcer/executable
                   id_type id;
                   std::string alias;
-                  std::string path;
+                  std::filesystem::path path;
                   std::vector< std::string> arguments;
                   std::string note;
 

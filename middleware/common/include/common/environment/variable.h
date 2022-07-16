@@ -25,8 +25,8 @@ namespace casual
                : std::string( std::move( variable))
             {}
 
-            inline std::string_view name() const { return { data(), find_pivot( *this)};}
-            inline std::string_view value() const
+            inline std::string_view name() const noexcept{ return { data(), find_pivot( *this)};}
+            inline std::string_view value() const noexcept
             {  
                auto pivot = find_pivot( *this) + 1;
 
@@ -37,7 +37,7 @@ namespace casual
             }
 
          private:
-            static std::size_t find_pivot( const std::string& value)
+            inline static std::size_t find_pivot( const std::string& value) noexcept
             {
                return std::distance( std::begin( value), std::find( std::begin( value), std::end( value), '='));
             }

@@ -76,7 +76,7 @@ namespace casual
 
                namespace spawn
                {
-                  strong::process::id process( const std::string& alias, const std::string& path, const std::vector< std::string>& arguments)
+                  strong::process::id process( const std::string& alias, const std::filesystem::path& path, const std::vector< std::string>& arguments)
                   {
                      try
                      { 

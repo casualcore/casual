@@ -32,7 +32,7 @@ namespace casual
                // split the range to the next beginning of the variable, if any
                auto next_range = []( auto range)
                { 
-                  const auto delimiter = std::string_view{ "${"};
+                  constexpr auto delimiter = std::string_view{ "${"};
 
                   auto result = algorithm::divide_search( range, delimiter);
                   if( std::get< 0>( result).empty() && ! std::get< 1>( result).empty())
@@ -101,7 +101,7 @@ namespace casual
 
          } // <unnamed>
       } // local
-      
+
       std::string expand( std::string value)
       {
          return local::expand( std::move( value), []( auto& out, auto variable)

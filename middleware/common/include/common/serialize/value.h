@@ -692,7 +692,7 @@ namespace casual
             //! @todo: Remove usage of string::utf8 when using C++20
             static auto read( A& archive, std::filesystem::path& path, const char* name)
             {
-               std::string data;
+               auto data = path.u8string();
                string::utf8 wrapper{ data};
                if( value::read( archive, wrapper, name))
                {

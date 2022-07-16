@@ -173,7 +173,7 @@ namespace casual
 
          struct Executable
          {
-            std::string path;
+            std::filesystem::path path;
             std::optional< std::string> alias;
             std::optional< std::string> note;
 

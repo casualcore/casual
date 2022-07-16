@@ -105,11 +105,11 @@ namespace casual
          //! @param path path to application to be spawned
          //! @param arguments 0..N arguments that is passed to the application
          //! @return process id of the spawned process
-         strong::process::id spawn( std::string path, std::vector< std::string> arguments);
+         strong::process::id spawn( std::filesystem::path path, std::vector< std::string> arguments);
 
 
          strong::process::id spawn(
-            std::string path,
+            std::filesystem::path path,
             std::vector< std::string> arguments,
             std::vector< environment::Variable> environment);
 
@@ -122,7 +122,7 @@ namespace casual
          //! @param path path to application to be spawned
          //! @param arguments 0..N arguments that is passed to the application
          //! @return exit code from the process
-         int execute( std::string path, std::vector< std::string> arguments);
+         int execute( std::filesystem::path path, std::vector< std::string> arguments);
 
          //! Wait for a specific process to terminate.
          //!
