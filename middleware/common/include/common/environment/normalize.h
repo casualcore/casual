@@ -22,6 +22,8 @@ namespace casual
          template< typename Policy>
          struct Traverser 
          {
+
+
             inline constexpr static auto archive_type() { return serialize::archive::Type::static_order_type;}
 
             template< typename... Ts> 
@@ -53,7 +55,13 @@ namespace casual
 
             bool read( std::string& value)
             {
-               value = m_policy( value);
+               m_policy( value);
+               return true;
+            }
+
+            bool read( string::utf8& value)
+            {
+               m_policy( value.get());
                return true;
             }
 
@@ -61,6 +69,7 @@ namespace casual
             bool read( T&& value) { return false; } // no op
          
          private:
+
             Policy m_policy;
          };
 
@@ -68,23 +77,23 @@ namespace casual
          {
             struct direct
             {
-               std::string operator () ( std::string& value) const 
+               void operator () ( std::string& value) const 
                {
-                  return environment::expand( std::move( value));
+                  value = environment::expand( std::move( value));
                }
             };
 
             struct cache
             {
                cache( const std::vector< environment::Variable>& local)
-                  : m_local( local) {}
+                  : m_local( &local) {}
 
-               std::string operator () ( std::string& value) const 
+               void operator () ( std::string& value) const 
                {
-                  return environment::expand( std::move( value), m_local);
+                  value = environment::expand( std::move( value), *m_local);
                }
 
-               const std::vector< environment::Variable>& m_local;
+               const std::vector< environment::Variable>* m_local;
             };
 
          } // policy

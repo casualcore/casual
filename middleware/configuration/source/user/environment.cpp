@@ -36,7 +36,7 @@ namespace casual
       {
          namespace
          {
-            std::vector< Variable> fetch( Environment environment, std::vector< std::string>& paths)
+            std::vector< Variable> fetch( Environment environment, std::vector< std::filesystem::path>& paths)
             {
                std::vector< Variable> result;
 
@@ -70,7 +70,7 @@ namespace casual
       std::vector< Variable> fetch( Environment environment)
       {
          // So we only fetch one file one time. If there are circular dependencies.
-         std::vector< std::string> paths;
+         std::vector< std::filesystem::path> paths;
 
          return local::fetch( std::move( environment), paths);
       }

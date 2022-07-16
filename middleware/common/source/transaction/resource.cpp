@@ -95,7 +95,7 @@ namespace casual
 
          Resource::code Resource::end( const transaction::ID& transaction, Flags flags) noexcept
          {
-            log::line( log::category::transaction, "end resource: ", m_id, " transaction: ", transaction, " flags: ", flags);
+            log::line( log::category::transaction, "end resource: ", m_id, ", transaction: ", transaction, ", flags: ", flags);
 
             auto result = reopen_guard( [&]()
             {
@@ -110,9 +110,8 @@ namespace casual
 
          Resource::code Resource::open( Flags flags) noexcept
          {
-            log::line( log::category::transaction, "open resource: ", m_id, " openinfo: ", m_openinfo, " flags: ", flags);
-
             auto info = common::environment::expand( m_openinfo);
+            log::line( log::category::transaction, "open resource: ", m_id, ", openinfo: ", info, ", flags: ", flags);
 
             auto result = local::convert( m_xa->xa_open_entry( info.c_str(), m_id.value(), flags.underlying()));
 
@@ -125,9 +124,8 @@ namespace casual
 
          Resource::code Resource::close( Flags flags) noexcept
          {
-            log::line( log::category::transaction, "close resource: ", m_id, " closeinfo: ", m_closeinfo, " flags: ", flags);
-
             auto info = common::environment::expand( m_closeinfo);
+            log::line( log::category::transaction, "close resource: ", m_id, ", closeinfo: ", info, ", flags: ", flags);
 
             auto result = local::convert( m_xa->xa_close_entry( info.c_str(), m_id.value(), flags.underlying()));
 

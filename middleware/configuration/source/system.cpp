@@ -28,12 +28,12 @@ namespace casual
       model::system::Model get()
       {
 
-         std::string default_missplaced_file =  common::environment::directory::install() / "configuration" / "resources.*";
+         std::string default_misplaced_file =  common::environment::directory::install() / "configuration" / "resources.*";
 
          // Try to find configuration file
          auto glob = common::environment::variable::get( 
             common::environment::variable::name::system::configuration, 
-            common::environment::variable::get( common::environment::variable::name::resource::configuration, default_missplaced_file));
+            common::environment::variable::get( common::environment::variable::name::resource::configuration, default_misplaced_file));
 
          return get( glob);
 

@@ -1091,11 +1091,12 @@ The semantics are similar to http PUT:
                {
                   struct Type : common::compare::Order< Type>
                   {
-                     Type( strong::process::id pid, std::string alias, std::string path) : pid{ pid}, alias{ std::move( alias)}, path{ std::move( path)} {}
+                     Type( strong::process::id pid, std::string alias, std::filesystem::path path) 
+                        : pid{ pid}, alias{ std::move( alias)}, path{ std::move( path)} {}
 
                      strong::process::id pid;
                      std::string alias;
-                     std::string path;
+                     std::filesystem::path path;
 
                      auto tie() const noexcept { return std::tie( alias, pid);}
                   };

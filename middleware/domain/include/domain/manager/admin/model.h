@@ -45,7 +45,7 @@ namespace casual
          {
             id_type id;
             std::string alias;
-            std::string path;
+            std::filesystem::path path;
             std::vector< std::string> arguments;
             std::string note;
 

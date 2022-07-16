@@ -34,14 +34,14 @@ namespace casual
          {
             namespace executable
             {
-               std::string path( const outbound::Group& value)
+               std::filesystem::path path( const outbound::Group& value)
                {
                   if( value.configuration.connect == decltype( value.configuration.connect)::reversed)
                      return local::path( "casual-gateway-outbound-reverse-group");
                   return local::path( "casual-gateway-outbound-group");
                }
 
-               std::string path( const inbound::Group& value)
+               std::filesystem::path path( const inbound::Group& value)
                {
                   if( value.configuration.connect == decltype( value.configuration.connect)::reversed)
                      return local::path( "casual-gateway-inbound-reverse-group");

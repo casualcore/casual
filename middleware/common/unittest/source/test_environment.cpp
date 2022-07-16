@@ -20,7 +20,7 @@ namespace casual
       {
          common::unittest::Trace trace;
 
-         EXPECT_TRUE( environment::expand( "test/a/b/c") == "test/a/b/c");
+         EXPECT_TRUE( environment::expand( std::filesystem::path{ "test/a/b/c"}) == "test/a/b/c");
       }
 
 
@@ -46,6 +46,19 @@ namespace casual
          auto home = environment::variable::get( "HOME");
 
          auto result =  environment::expand( "a/b/c/${HOME}/a/b/c");
+
+         EXPECT_TRUE( result == "a/b/c/" + home + "/a/b/c") << "result: " << result;
+      }
+
+      TEST( common_environment, environment_file_path__variable_in_middle__expect_altered)
+      {
+         common::unittest::Trace trace;
+
+         ASSERT_TRUE( environment::variable::exists( "HOME"));
+
+         auto home = environment::variable::get( "HOME");
+
+         auto result =  environment::expand( std::filesystem::path{ "a/b/c/${HOME}/a/b/c"});
 
          EXPECT_TRUE( result == "a/b/c/" + home + "/a/b/c") << "result: " << result;
       }
