@@ -160,7 +160,7 @@ value:
 
          private:
             class Implementation;
-            common::basic_pimpl< Implementation> m_pimpl;
+            common::Pimpl< Implementation> m_pimpl;
          };
 
       } // pimpl

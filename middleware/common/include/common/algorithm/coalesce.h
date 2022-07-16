@@ -12,7 +12,7 @@ namespace casual
 {
    namespace common::algorithm
    {
-         namespace detail
+      namespace detail
       {
          namespace coalesce
          {

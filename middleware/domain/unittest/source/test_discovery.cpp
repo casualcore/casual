@@ -25,7 +25,7 @@ namespace casual
       {
          common::unittest::Trace trace;
 
-         unittest::Manager manager;
+         auto domain = unittest::manager();
 
          auto correlation = discovery::request( {}, {});
 
@@ -41,7 +41,7 @@ namespace casual
       {
          common::unittest::Trace trace;
 
-         unittest::Manager manager;
+         auto domain = unittest::manager();
 
          auto correlation = discovery::request( message::discovery::Request{ process::handle()});
 
@@ -58,7 +58,7 @@ namespace casual
       {
          common::unittest::Trace trace;
 
-         unittest::Manager manager;
+         auto domain = unittest::manager();
 
          // we register our self
          discovery::provider::registration( discovery::provider::Ability::discover_external);
@@ -85,7 +85,7 @@ namespace casual
       {
          common::unittest::Trace trace;
 
-         unittest::Manager manager;
+         auto domain = unittest::manager();
 
          // we register our self
          discovery::provider::registration( discovery::provider::Ability::discover_internal);
@@ -118,7 +118,7 @@ namespace casual
       {
          common::unittest::Trace trace;
 
-         unittest::Manager manager;
+         auto domain = unittest::manager();
 
          // we register our self
          discovery::provider::registration( discovery::provider::Ability::discover_external);
@@ -151,7 +151,7 @@ namespace casual
       {
          common::unittest::Trace trace;
 
-         unittest::Manager manager;
+         auto domain = unittest::manager();
 
          // we register our self
          discovery::provider::registration( discovery::provider::Ability::discover_external);
@@ -190,7 +190,7 @@ namespace casual
       {
          common::unittest::Trace trace;
 
-         unittest::Manager manager;
+         auto domain = unittest::manager();
          using Ability = discovery::provider::Ability;
 
          discovery::provider::registration( { Ability::discover_external, Ability::discover_internal, Ability::needs});
@@ -227,7 +227,7 @@ namespace casual
       {
          common::unittest::Trace trace;
 
-         unittest::Manager manager;
+         auto domain = unittest::manager();
 
          communication::select::Directive directive;
          communication::ipc::send::Coordinator multiplex{ directive};
@@ -275,7 +275,7 @@ namespace casual
       {
          common::unittest::Trace trace;
 
-         unittest::Manager manager;
+         auto domain = unittest::manager();
 
          communication::select::Directive directive;
          communication::ipc::send::Coordinator multiplex{ directive};

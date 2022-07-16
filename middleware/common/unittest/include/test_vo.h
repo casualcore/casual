@@ -162,7 +162,7 @@ value:
 
          private:
             class Implementation;
-            common::basic_pimpl< Implementation> m_pimpl;
+            common::move::Pimpl< Implementation> m_pimpl;
          };
 
       } // pimpl

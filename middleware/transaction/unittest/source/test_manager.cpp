@@ -1587,7 +1587,7 @@ domain:
 
          auto count_invocation = []( auto id, auto type) 
          {
-            return algorithm::count( common::unittest::rm::state( id).invocations, type);
+            return algorithm::count( common::unittest::rm::state::get( id).invocations, type);
          };
 
          constexpr auto rm1 = strong::resource::id{ 1};
@@ -1598,23 +1598,23 @@ domain:
             { "rm-mockup", "rm1", &casual_mockup_xa_switch_static},
             { "rm-mockup", "rm2", &casual_mockup_xa_switch_static}});
 
-         EXPECT_TRUE( count_invocation( rm1, common::unittest::rm::State::Invoke::xa_open_entry) == 1);
-         EXPECT_TRUE( count_invocation( rm2, common::unittest::rm::State::Invoke::xa_open_entry) == 1);
-         EXPECT_TRUE( count_invocation( rm1, common::unittest::rm::State::Invoke::xa_start_entry) == 0);
-         EXPECT_TRUE( count_invocation( rm2, common::unittest::rm::State::Invoke::xa_start_entry) == 0);
+         EXPECT_TRUE( count_invocation( rm1, common::unittest::rm::state::Invoke::xa_open_entry) == 1);
+         EXPECT_TRUE( count_invocation( rm2, common::unittest::rm::state::Invoke::xa_open_entry) == 1);
+         EXPECT_TRUE( count_invocation( rm1, common::unittest::rm::state::Invoke::xa_start_entry) == 0);
+         EXPECT_TRUE( count_invocation( rm2, common::unittest::rm::state::Invoke::xa_start_entry) == 0);
 
          // begin transaction
          {
             EXPECT_TRUE( local::begin() == common::code::tx::ok);
-            EXPECT_TRUE( count_invocation( rm1, common::unittest::rm::State::Invoke::xa_start_entry) == 1);
-            EXPECT_TRUE( count_invocation( rm2, common::unittest::rm::State::Invoke::xa_start_entry) == 1);
+            EXPECT_TRUE( count_invocation( rm1, common::unittest::rm::state::Invoke::xa_start_entry) == 1);
+            EXPECT_TRUE( count_invocation( rm2, common::unittest::rm::state::Invoke::xa_start_entry) == 1);
          }
 
          // commit transaction
          {
             EXPECT_TRUE( local::commit() == common::code::tx::ok);
-            EXPECT_TRUE( count_invocation( rm1, common::unittest::rm::State::Invoke::xa_end_entry) == 1);
-            EXPECT_TRUE( count_invocation( rm2, common::unittest::rm::State::Invoke::xa_end_entry) == 1);
+            EXPECT_TRUE( count_invocation( rm1, common::unittest::rm::state::Invoke::xa_end_entry) == 1);
+            EXPECT_TRUE( count_invocation( rm2, common::unittest::rm::state::Invoke::xa_end_entry) == 1);
 
             auto resource_proxy_invoked = []( auto& state, auto id) -> decltype( state.resources.at( 0))
             {

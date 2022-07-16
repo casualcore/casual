@@ -14,62 +14,63 @@
 
 namespace casual
 {
-   namespace common
+   namespace common::unittest::rm
    {
-      namespace unittest
+      namespace state
       {
-         namespace rm
+         enum class Invoke : short 
          {
-            struct State
-            {
-               struct Transactions
-               {
-                  transaction::ID current;
-                  std::vector< transaction::ID> all;
+            xa_open_entry,
+            xa_close_entry,
+            xa_start_entry,
+            xa_end_entry,
+            xa_rollback_entry,
+            xa_prepare_entry,
+            xa_commit_entry,
+            xa_recover_entry,
+            xa_forget_entry,
+            xa_complete_entry
+         };
+         std::string_view description( Invoke value) noexcept;
 
-                  CASUAL_LOG_SERIALIZE(
-                     CASUAL_SERIALIZE( current);
-                     CASUAL_SERIALIZE( all);
-                  )
+         struct Transactions
+         {
+            transaction::ID current;
+            std::vector< transaction::ID> all;
 
-               } transactions;
+            CASUAL_LOG_SERIALIZE(
+               CASUAL_SERIALIZE( current);
+               CASUAL_SERIALIZE( all);
+            )
+         };
 
-               std::vector< code::xa> errors;
+      } // state
 
-               enum class Invoke : short 
-               {
-                  xa_open_entry,
-                  xa_close_entry,
-                  xa_start_entry,
-                  xa_end_entry,
-                  xa_rollback_entry,
-                  xa_prepare_entry,
-                  xa_commit_entry,
-                  xa_recover_entry,
-                  xa_forget_entry,
-                  xa_complete_entry
-               };
-               friend std::string_view description( Invoke value);
+      struct State
+      {
+         strong::resource::id id;
+         state::Transactions transactions;
+         std::vector< code::xa> errors;
+         std::vector< state::Invoke> invocations;
 
-               std::vector< Invoke> invocations;
+         CASUAL_LOG_SERIALIZE(
+            CASUAL_SERIALIZE( id);
+            CASUAL_SERIALIZE( transactions);
+            CASUAL_SERIALIZE( errors);
+            CASUAL_SERIALIZE( invocations);
+         )
+      };
 
-               CASUAL_LOG_SERIALIZE(
-                  CASUAL_SERIALIZE( transactions);
-                  CASUAL_SERIALIZE( errors);
-                  CASUAL_SERIALIZE( invocations);
-               )
-            };
+      //! emulate a resource dynamic registration
+      void registration( strong::resource::id id); 
 
-            //! emulate a resource dynamic registration
-            void registration( strong::resource::id id); 
+      namespace state
+      {
+         const State& get( strong::resource::id id);
+         void clear();
+      } // state
 
-            const State& state( strong::resource::id id);
-            void clear();
-            
-         } // rm
-
-      } // unittest
-   } // common
+   } // common::unittest::rm
 } // casual
 
 extern "C"

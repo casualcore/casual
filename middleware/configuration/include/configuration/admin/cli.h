@@ -24,7 +24,7 @@ namespace casual
             common::argument::Group options() &;
          private:
             struct Implementation;
-            common::move::basic_pimpl< Implementation> m_implementation;
+            common::move::Pimpl< Implementation> m_implementation;
          };
       } // admin
       
