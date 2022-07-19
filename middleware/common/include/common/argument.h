@@ -929,7 +929,7 @@ namespace casual
             template< size_type min, size_type max>
             auto operator () ( cardinality::range< min, max> cardinality) const 
             { 
-               static_assert( min <= 1 && max == 1, "a group can only have cardinlaity [0..1] or [1]");
+               static_assert( min <= 1 && max == 1, "a group can only have cardinality [0..1] or [1]");
 
                auto result = *this;
                result.m_cardinality = m_cardinality.create( cardinality);
@@ -1011,7 +1011,7 @@ namespace casual
          namespace option
          {
             //! return a functor that toggles the boolean
-            //! usefull to set "flags", example: --verbose.
+            //! useful to set "flags", example: --verbose.
             inline auto toggle( bool& value)
             {
                return [&value](){

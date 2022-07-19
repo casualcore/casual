@@ -87,7 +87,7 @@ This is the changelog for `casual` and all changes are listed in this document.
 ### Changed
 - configuration - added `system` at the same level as `domain`
    - `system` holds system wide configuration, and for the time being only `system.resource` which
-      replaces the _resource.propertis file_ (`casual` can still handle the deprecated file though).
+      replaces the _resource.properties file_ (`casual` can still handle the deprecated file though).
 - cli - reverted the 'locale' awareness for the `CLI`
    - To many subtle and not to subtle problems - not worth it.
 - configuration - service restrictions for servers are now treated as regex
@@ -114,7 +114,7 @@ This is the changelog for `casual` and all changes are listed in this document.
 
 ### Fixes
 - http - outbound handle discovery (_http-services_ are treated _external_ as they should)
-- xatmi - support for conversations (primarely targeting COBOL)
+- xatmi - support for conversations (primarily targeting COBOL)
 - gateway - fixed so outbound holds unique connections per service
 - discovery - service-manager only replies with _local_ services
    - **attention** if the intention is that a domain should expose services that the domain has

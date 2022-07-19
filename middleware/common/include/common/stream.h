@@ -55,7 +55,7 @@ namespace casual
          
       } // detail
 
-      //! write multible values
+      //! write multiple values
       template< typename... Ts>
       auto write( std::ostream& out, Ts&&... ts) 
          -> decltype( ( detail::write( out, std::forward< Ts>( ts)), ...) )

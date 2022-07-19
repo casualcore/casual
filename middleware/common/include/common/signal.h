@@ -244,13 +244,13 @@ namespace casual
       } // callback
 
       //! Dispatch pending signal to callbacks, that is not blocked by current signal mask.
-      //! if no callbacks been registred an exception will be thrown
+      //! if no callbacks been registered an exception will be thrown
       //!
       //! @throw subtype to exception::signal::exception
       void dispatch();
 
       //! Dispatch pending signal to callbacks, that is not blocked by the provided signal mask
-      //! if no callbacks been registred an exception will be thrown
+      //! if no callbacks been registered an exception will be thrown
       //!
       //! @throw subtype to exception::signal::exception
       void dispatch( signal::Set mask);

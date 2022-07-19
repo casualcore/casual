@@ -791,7 +791,7 @@ namespace casual
                            }
                         } 
 
-                        // take care of not available ( yet). We find the earlest and set a timer for that
+                        // take care of not available ( yet). We find the earliest and set a timer for that
                         {
                            auto earliest_future = algorithm::min( std::get< 1>( split), []( auto& l, auto& r){ return l.when < r.when;});
 
