@@ -57,7 +57,7 @@ namespace casual
             void deactivate( const std::string& category);
             void write( const std::string& category, const std::string& message);
 
-            //! reopens the logfile on the next write. usefull for 'log-rotations'.
+            //! reopens the logfile on the next write. useful for 'log-rotations'.
             void reopen();
 
          } // stream

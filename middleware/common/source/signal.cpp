@@ -210,13 +210,13 @@ namespace casual
                   {
                      bool operator () ( const signal::Set& current)
                      {
-                        return disptacher( current, callback);
+                        return dispatcher( current, callback);
                      }
 
                      friend bool operator == ( const Handler& lhs, code::signal rhs) { return lhs.signal == rhs;}
 
                      code::signal signal{};
-                     common::function< bool( const signal::Set&, callback::callback_type&)> disptacher;
+                     common::function< bool( const signal::Set&, callback::callback_type&)> dispatcher;
                      callback::callback_type callback;
                      
                   };
@@ -253,7 +253,7 @@ namespace casual
 
                      Handler result;
                      result.signal = signal;
-                     result.disptacher = create_dispatcher< signal>();
+                     result.dispatcher = create_dispatcher< signal>();
                      return result;
                   }
 

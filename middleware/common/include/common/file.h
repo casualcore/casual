@@ -110,7 +110,7 @@ namespace casual
 
       namespace directory
       {
-         //! creates all directories recursively if misissing.
+         //! creates all directories recursively if missing.
          //! takes soft links into account when creating the path, if any.
          void create( const std::filesystem::path& path);
 

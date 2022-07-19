@@ -91,9 +91,6 @@ namespace casual
                         }
                         m_out << '\n';
                         
-
-                        auto splittet = string::split( option.description, '\n');
-                        log::line( log::debug, "option.description", splittet);
                         
                         algorithm::for_each( string::split( option.description, '\n'), [&]( auto& row)
                         {
@@ -428,7 +425,7 @@ namespace casual
             {
                std::ostream& operator << ( std::ostream& out, const Names& value)
                {
-                  return stream::write( out, "{ actvie: ", value.m_active,
+                  return stream::write( out, "{ active: ", value.m_active,
                      ", deprecated: ", value.m_deprecated,
                      '}');
                }
