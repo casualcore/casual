@@ -87,7 +87,7 @@ namespace casual
                   void reopen() 
                   {
                      m_output = File::open();
-                     log( "casual.log", "logfile reopened");
+                     log( "casual.log", string::compose( "logfile reopened: ", common::environment::log::path()));
                   }
 
                   static std::ofstream open()

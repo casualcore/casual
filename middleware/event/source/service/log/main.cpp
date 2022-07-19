@@ -32,21 +32,25 @@ namespace casual
       {
          namespace
          {
-            struct Filter
+            namespace settings
             {
-               std::string inclusive;
-               std::string exclusive;
+               struct Filter
+               {
+                  std::string inclusive;
+                  std::string exclusive;
 
-               CASUAL_LOG_SERIALIZE({
-                  CASUAL_SERIALIZE( inclusive);
-                  CASUAL_SERIALIZE( exclusive);
-               })
-            };
+                  CASUAL_LOG_SERIALIZE({
+                     CASUAL_SERIALIZE( inclusive);
+                     CASUAL_SERIALIZE( exclusive);
+                  })
+               };
+            } // settings
+
             struct Settings
             {
                std::filesystem::path file = "statistics.log";
                std::string delimiter = "|";
-               Filter filter;
+               settings::Filter filter;
 
                CASUAL_LOG_SERIALIZE({
                   CASUAL_SERIALIZE( file);
@@ -68,7 +72,7 @@ namespace casual
 
                   void reopen()
                   {  
-                     common::log::line( event::log, "reopen: ", file.path());
+                     common::log::line( event::log, "reopen service event log: ", file); 
 
                      file.flush();
                      file = open( file.path());
@@ -97,10 +101,17 @@ namespace casual
                template< typename F> 
                void pump( state::Log& log, F&& filter)
                {
-                  // make sure we reopen file on SIGHUP
-                  common::signal::callback::registration< common::code::signal::hangup>( [&log](){ log.reopen();});
-
                   bool done = false;
+
+                  // make sure we reopen on SIGHUP
+                  common::signal::callback::registration< common::code::signal::hangup>( [ &log]()
+                  {
+                     // we've highjacked the hangup signal handler for _log rotate_, we
+                     // need to call this explicitly
+                     common::log::stream::reopen();
+                     log.reopen();
+                  });
+
 
                   auto conditions = common::event::condition::compose(
                      common::event::condition::error( [&done]( auto& error) 
@@ -122,7 +133,7 @@ namespace casual
 
                   common::event::listen(
                      std::move( conditions),
-                     [&log, &filter]( const common::message::event::service::Calls& event)
+                     [ &log, filter = std::move( filter)]( const common::message::event::service::Calls& event)
                      {
                         auto handle = []( auto& log, auto& filter, const common::message::event::service::Metric& metric)
                         {
@@ -155,40 +166,34 @@ namespace casual
 
             void pump( Settings settings)
             {
+               common::log::line( event::log, "settings: ", settings);
+
                state::Log log{ std::move( settings.file), std::move( settings.delimiter)};
 
-               auto filter_exclusive = [&settings]()
+               auto filter_exclusive = []( auto& settings)
                {
-                  return [filter = std::regex{ settings.filter.exclusive}]( auto& metric)
+                  return [ filter = std::regex{ settings.filter.exclusive}]( auto& metric) noexcept
                   {
                      return ! std::regex_match( metric.service, filter);
                   };
                };
 
-               auto filter_inclusive = [&settings]()
+               auto filter_inclusive = []( auto& settings)
                {
-                  return [filter = std::regex{ settings.filter.inclusive}]( auto& metric)
+                  return [ filter = std::regex{ settings.filter.inclusive}]( auto& metric) noexcept
                   {
                      return std::regex_match( metric.service, filter);
                   };
                };
 
-               auto filter_combo = [&]()
-               {
-                  return [exclusive = filter_exclusive(), inclusive = filter_inclusive()]( auto& metric)
-                  {
-                     return exclusive( metric) && inclusive( metric);
-                  };
-               };
-
                if( ! settings.filter.inclusive.empty() && ! settings.filter.exclusive.empty())
-                  detail::pump( log, filter_combo());
+                  detail::pump( log, common::predicate::conjunction( filter_exclusive( settings), filter_inclusive( settings)));
                else if( ! settings.filter.inclusive.empty())
-                  detail::pump( log, filter_inclusive());
+                  detail::pump( log, filter_inclusive( settings));
                else if( ! settings.filter.exclusive.empty())
-                  detail::pump( log, filter_exclusive());
+                  detail::pump( log, filter_exclusive( settings));
                else
-                  detail::pump( log, []( auto& metric){ return true;});
+                  detail::pump( log, []( auto& metric) noexcept { return true;});
             }
 
 
@@ -196,26 +201,64 @@ namespace casual
             {
                namespace filter
                {
-                  auto exclusive( Settings& settings)
+                  auto completer = []( auto&&, auto help) -> std::vector< std::string>
                   {
-                     using namespace casual::common::argument;
-                     
-                     return Option( 
+                     if( help)
+                        return { "<regex>"};
+                     return { "<value>"};
+                  };
+
+                  auto exclusive( Settings& settings)
+                  {                     
+                     return casual::common::argument::Option( 
                         std::tie( settings.filter.exclusive), 
+                        completer,
                         common::argument::option::keys( { "--filter-exclusive"}, { "--discard"}),
-                        "regexp pattern - if matched on service name metrics are discarded");
+                        "only services that does NOT match the expression are logged\n\n"
+                        "can be used in conjunction with --filter-inclusive");
                   }
 
                   auto inclusive( Settings& settings)
-                  {
-                     using namespace casual::common::argument;
-                     
-                     return Option( 
-                        std::tie( settings.filter.inclusive), 
+                  {                     
+                     return common::argument::Option( 
+                        std::tie( settings.filter.inclusive),
+                        completer,
                         common::argument::option::keys( { "--filter-inclusive"}, { "--filter"}),
-                        "regexp pattern - only services with matched names will be logged");
+                        "only services that matches the expression are logged\n\n"
+                        "can be used in conjunction with --filter-exclusive");
                   }
                } // filter
+
+               auto file( Settings& settings)
+               {
+                  auto completer = []( auto&&, auto help) -> std::vector< std::string>
+                  {
+                     if( help)
+                        return { "<path>"};
+                     return { "<value>"};
+                  };
+                  return common::argument::Option( 
+                     std::tie( settings.file),
+                     completer,
+                     { "-f", "--file"},
+                     common::string::compose( "where to log (default: ", settings.file, ")")); 
+               }
+
+               auto delimiter( Settings& settings)
+               {
+                  auto completer = []( auto&&, auto help) -> std::vector< std::string>
+                  {
+                     if( help)
+                        return { "<string>"};
+                     return { "<value>"};
+                  };
+                  return common::argument::Option( 
+                     std::tie( settings.file),
+                     completer,
+                     { "-d", "--delimiter"},
+                     common::string::compose( "delimiter between columns (default: '", settings.delimiter , "')")); 
+               }
+
             } // option
 
             void main( int argc, char **argv)
@@ -224,15 +267,13 @@ namespace casual
 
                {
                   using namespace casual::common::argument;
-                  Parse{ "service log", 
-                     Option( std::tie( settings.file), { "-f", "--file"}, "path to log-file (default: '" + settings.file.string() + "')"),
-                     Option( std::tie( settings.delimiter), { "-d", "--delimiter"}, "delimiter between columns (default: '" + settings.delimiter + "')"),
+                  Parse{ "log service call metrics", 
+                     option::file( settings),
+                     option::delimiter( settings),
                      option::filter::inclusive( settings),
                      option::filter::exclusive( settings),
                   }( argc, argv);
                }
-
-               common::log::line( event::log, "settings: ", settings);
 
                // connect to domain
                common::communication::instance::whitelist::connect( 0xc9d132c7249241c8b4085cc399b19714_uuid);
