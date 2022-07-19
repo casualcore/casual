@@ -27,39 +27,21 @@ namespace casual
       {
          namespace
          {
-            constexpr auto configuration = R"(
+            namespace configuration
+            {
+               constexpr auto base = R"(
 domain:
-   name: service-domain
-
+   name: service-log
    groups:
       - name: first
       - name: second
         dependencies: [ first]
-
    servers:
       - path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/service/bin/casual-service-manager
-        memberships: [ first]
-
-   executables:
-      - path: bin/casual-event-service-log
-        arguments: [ --file, "${SERVICE_LOG_FILE}"]
-        memberships: [ second]
-        
+        memberships: [ first]        
 )";
+            } // configuration
 
-            struct Domain
-            {
-               Domain() = default;
-               Domain( const char* configuration) 
-                  : domain{ { configuration}} {}
-
-               domain::unittest::Manager domain{ { local::configuration}};
-            };
-
-            auto ping_handle = []( auto& handle)
-            {
-               return common::communication::instance::ping( handle.ipc) == handle;
-            };
 
             namespace file
             {
@@ -90,6 +72,15 @@ domain:
                };
             } // file
 
+            namespace fetch::service
+            {
+               auto log()
+               {
+                  // we use the _singleton uuid_ that we know to address service-log.
+                  return common::communication::instance::fetch::handle( 0xc9d132c7249241c8b4085cc399b19714_uuid);
+               } 
+            } // fetch::service
+
 
          } // <unnamed>
       } // local
@@ -102,13 +93,15 @@ domain:
 
          auto guard = common::environment::variable::scoped::set( "SERVICE_LOG_FILE", log_file.string());
 
-         local::Domain domain;
+         auto domain = domain::unittest::manager( local::configuration::base, R"(
+domain:
+   executables:
+      - path: bin/casual-event-service-log
+        arguments: [ --file, "${SERVICE_LOG_FILE}"]
+        memberships: [ second]
+)");
 
-         // we use the _singleton uuid_ that we know to address service-log.
-         auto service_log_handle = common::communication::instance::fetch::handle( 0xc9d132c7249241c8b4085cc399b19714_uuid);
-
-         // we know that the service-log is pingable after it has set up the event registration
-         EXPECT_TRUE( local::ping_handle( service_log_handle));
+         auto handle = local::fetch::service::log();
 
          // produce metric to log-file
          EXPECT_TRUE( casual::domain::manager::api::state().executables.at( 0).alias == "casual-event-service-log");
@@ -121,7 +114,7 @@ domain:
          common::file::rename( log_file, rotated);
 
          // send hangup to service-log, to open the (new) file again
-         common::signal::send( service_log_handle.pid, common::code::signal::hangup);
+         common::signal::send( handle.pid, common::code::signal::hangup);
 
          {
             // produce metric to log-file
@@ -148,31 +141,15 @@ domain:
 
          common::environment::variable::set( "SERVICE_LOG_FILE", log_file.string());
 
-         local::Domain domain{ R"(
+         auto domain = domain::unittest::manager( local::configuration::base, R"(
 domain:
-   name: service-domain
-
-   groups:
-      - name: first
-      - name: second
-        dependencies: [ first]
-   servers:
-      - path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/service/bin/casual-service-manager
-        memberships: [ first]
-
    executables:
       - path: bin/casual-event-service-log
         arguments: [ --file, "${SERVICE_LOG_FILE}", --filter-exclusive, '^[.].*$']
         memberships: [ second]
-        
-)"};
+)");
 
-
-         // we use the _singleton uuid_ that we know to address service-log.
-         auto service_log_handle = common::communication::instance::fetch::handle( 0xc9d132c7249241c8b4085cc399b19714_uuid);
-
-         // we know that the service-log is pingable after it has set up the event registration
-         EXPECT_TRUE( local::ping_handle( service_log_handle));
+         ASSERT_TRUE( local::fetch::service::log());
 
          // produce metric to log-file
          casual::domain::manager::api::state();
@@ -193,31 +170,15 @@ domain:
 
          common::environment::variable::set( "SERVICE_LOG_FILE", log_file.string());
 
-         local::Domain domain{ R"(
+         auto domain = domain::unittest::manager( local::configuration::base, R"(
 domain:
-   name: service-domain
-
-   groups:
-      - name: first
-      - name: second
-        dependencies: [ first]
-   servers:
-      - path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/service/bin/casual-service-manager
-        memberships: [ first]
-
    executables:
       - path: bin/casual-event-service-log
         arguments: [ --file, "${SERVICE_LOG_FILE}", --filter-inclusive, '^[.].*$']
-        memberships: [ second]
-        
-)"};
+        memberships: [ second]   
+)");
 
-
-         // we use the _singleton uuid_ that we know to address service-log.
-         auto service_log_handle = common::communication::instance::fetch::handle( 0xc9d132c7249241c8b4085cc399b19714_uuid);
-
-         // we know that the service-log is pingable after it has set up the event registration
-         EXPECT_TRUE( local::ping_handle( service_log_handle));
+         ASSERT_TRUE( local::fetch::service::log());
 
          // make sure we get som metrics 
          casual::domain::manager::api::state();
@@ -226,6 +187,30 @@ domain:
          EXPECT_TRUE( local::file::wait::content( log_file)) << local::file::string( log_file);
       }
 
+      TEST( event_service_log, filter_inclusive_exclusive)
+      {
+         common::unittest::Trace trace;
+
+         auto log_file = common::unittest::file::temporary::name( ".log");
+
+         common::environment::variable::set( "SERVICE_LOG_FILE", log_file.string());
+
+         auto domain = domain::unittest::manager( local::configuration::base, R"(
+domain:
+   executables:
+      - path: bin/casual-event-service-log
+        arguments: [ --file, "${SERVICE_LOG_FILE}", --filter-inclusive, '.*state', --filter-exclusive, ".*foo.*"]
+        memberships: [ second]
+)");
+
+         ASSERT_TRUE( local::fetch::service::log());
+
+         // make sure we get som metrics 
+         casual::domain::manager::api::state();
+
+         // the call should match the filter, hence logged        
+         EXPECT_TRUE( local::file::wait::content( log_file)) << local::file::string( log_file);
+      }
 
    } // event
 } // casual
