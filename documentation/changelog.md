@@ -2,6 +2,57 @@
 This is the changelog for `casual` and all changes are listed in this document.
 
 ## [Unreleased]
+### Fixes
+- event - fix event-service-log to also reopen 'casual.log' on SIGHUP
+  - updated documentation
+- domain - use multiplex send
+- transaction - get rid of "pending" message - only multiplex send
+- transaction - use multiplex send
+- service - fix multiplex send for events
+- queue - add lookup restrictions depending on caller location
+   We take three "locations" in consideration: 
+    - 'local': the lookup is done from within the domain, some client, or
+      server instigate the lookup.
+       - local queues: OK
+       - remote queues: OK
+       - unknown queues (does a discover): OK if found, _absent-queue_ otherwise
+    - 'external': the lookup is done by an inbound
+       - local queues: OK
+       - remote queues: _absent-queue_
+       - unknown queues: _absent-queue_
+    - 'external-with-forward-discovery': the lookup is done by an inbound
+      that has `discovery.forward=true` configured.
+       - local queues: OK
+       - remote queues: OK
+       - unknown queues: _absent-queue_
+- service - add lookup restrictions depending on caller location
+  We take three "locations" in consideration:    
+   - 'local': the lookup is done from within the domain, some client, or
+      server instigate the lookup.
+      - local services: OK
+      - remote services: OK
+      - unknown services (does a discover): OK if found, _no-ent_ otherwise
+   - 'external': the lookup is done by an inbound
+      - local services: OK
+      - remote services: _no-ent_
+      - unknown services: _no-ent_
+   - 'external-with-forward-discovery': the lookup is done by an inbound
+   that has `discovery.forward=true` configured.
+      - local services: OK
+      - remote services: OK
+      - unknown services: _no-ent_
+- queue - fix pre/post sqlite statements for "tuning"
+   - The database is located /some/path/a.qb
+   - If a file exists that is named /some/path/a.pre.statements, it will be
+     read an executed, during startup.
+   - If a file exists that is named /some/path/a.post.statements, it will be
+     read an executed, during shutdown.
+- discovery - fix using routes for services correctly
+- http - fix outbound to advertise services with order 0
+   - If http-outbound is configured, user has made a choice to use
+     "xatmi-over-http" for the configured services. This is now prioritized.
+- discovery - fix using routes for services correctly
+   
 
 ## [1.5.12] - 2022-05-10
 ### Fixes
