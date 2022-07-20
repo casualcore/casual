@@ -87,17 +87,9 @@ namespace casual
                   { 
                      // defined further down.
                      void dequeues( State& state);
-
-                     void send( State& state, std::vector< common::message::pending::Message> messages)
-                     {
-                        for( auto& pending : messages)
-                        {
-                           assert( pending.destinations.size() == 1);
-                           state.multiplex.send( pending.destinations[ 0].ipc, std::move( pending.complete));
-                        }
-                     }
                      
                   } // pending
+                  
                } // detail
 
                namespace dead
@@ -706,8 +698,7 @@ namespace casual
                         handle::persist( state);
 
                         // send _forget requests_ to pending dequeue requests, if any.
-                        local::detail::pending::send( state, state.pending.forget());
-
+                        state.pending.forget().send( state.multiplex);
                      }
                   } // detail
 
@@ -828,7 +819,7 @@ namespace casual
             // persist the queuebase
             state.queuebase.persist();
             
-            local::detail::pending::send( state, std::exchange( state.pending.replies, {}));
+            state.pending.replies.send( state.multiplex);
 
             // handle pending dequeues, if any.
             local::detail::pending::dequeues( state);

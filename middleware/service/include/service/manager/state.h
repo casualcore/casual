@@ -7,7 +7,6 @@
 #pragma once
 
 #include "common/message/service.h"
-#include "common/message/pending.h"
 
 #include "common/metric.h"
 #include "common/server/service.h"

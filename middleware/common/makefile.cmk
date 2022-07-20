@@ -97,7 +97,6 @@ casual_common_objectfiles = [
     make.Compile( 'source/message/dispatch.cpp'),
     make.Compile( 'source/message/dispatch/handle.cpp'),
     make.Compile( 'source/message/type.cpp'), 
-    make.Compile( 'source/message/pending.cpp'),
     make.Compile( 'source/message/event.cpp'),
 
     make.Compile( 'source/event/listen.cpp'),
@@ -250,7 +249,6 @@ unittest_objectfiles = [
 
     make.Compile( 'unittest/source/message/test_dispatch.cpp'),
     make.Compile( 'unittest/source/message/test_coordinate.cpp'),
-    make.Compile( 'unittest/source/message/test_pending.cpp'),
     
     make.Compile( 'unittest/source/server/test_service.cpp'),
     make.Compile( 'unittest/source/server/test_arguments.cpp'),

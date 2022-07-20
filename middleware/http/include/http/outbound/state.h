@@ -15,7 +15,6 @@
 #include "common/buffer/type.h"
 #include "common/pimpl.h"
 #include "common/message/service.h"
-#include "common/message/pending.h"
 #include "common/domain.h"
 
 #include <string>

@@ -45,11 +45,11 @@ domain:
             {
                return casual::domain::unittest::manager( configuration::base, std::forward< C>( configurations)...);
             }
-         } // <unnamed>      
+         } // <unnamed>
 
       } // local
 
-
+/*
       TEST( cli_internal, log_relocation__expect_example_server_to_log_elsewhere)
       {
          common::unittest::Trace trace;
@@ -74,6 +74,7 @@ domain:
          EXPECT_TRUE( ! common::unittest::file::fetch::until::content( scoped_path).empty());
 
       }
+      */
    } // administration
    
 } // casual

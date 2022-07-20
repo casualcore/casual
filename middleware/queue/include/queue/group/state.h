@@ -15,6 +15,7 @@
 #include "common/state/machine.h"
 #include "common/communication/select.h"
 #include "common/communication/ipc/send.h"
+#include "common/communication/ipc/pending.h"
 
 #include <string>
 
@@ -27,9 +28,9 @@ namespace casual
          struct Pending
          {
             template< typename M>
-            void reply( M&& message, const common::process::Handle& destinations)
+            void reply( M&& message, const common::process::Handle& destination)
             {
-               replies.emplace_back( std::forward< M>( message), destinations);
+               replies.add( destination, std::forward< M>( message));
             }
 
             void add( ipc::message::group::dequeue::Request&& message);
@@ -38,7 +39,7 @@ namespace casual
 
             //! forgets all pending dequeue request.
             //! @returns forget request that should be sent to pending callers
-            std::vector< common::message::pending::Message> forget();
+            common::communication::ipc::pending::Holder forget();
 
             //! @returns dequeue-request that potentially has messages available for dequeue
             std::vector< ipc::message::group::dequeue::Request> extract( std::vector< common::strong::queue::id> queues);
@@ -47,7 +48,7 @@ namespace casual
 
             inline auto empty() const noexcept { return replies.empty() && dequeues.empty();}
 
-            std::vector< common::message::pending::Message> replies;
+            common::communication::ipc::pending::Holder replies;
             std::vector< ipc::message::group::dequeue::Request> dequeues;
 
             CASUAL_CONST_CORRECT_SERIALIZE(

@@ -359,7 +359,7 @@ namespace casual
          struct
          {
             //! Replies that will be sent after an atomic write to the log
-            common::communication::ipc::pending::Holder<> replies;
+            common::communication::ipc::pending::Holder replies;
 
             //! the persistent transaction log
             Log log;
@@ -375,7 +375,7 @@ namespace casual
          {
             //! Resource request, that will be processed as soon as possible,
             //! that is, as soon as corresponding resources is done/idle
-            common::communication::ipc::pending::Holder< common::strong::resource::id> requests;
+            common::communication::ipc::pending::basic_holder< common::strong::resource::id> requests;
 
             CASUAL_LOG_SERIALIZE(
                CASUAL_SERIALIZE( requests);

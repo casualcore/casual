@@ -14,7 +14,6 @@
 #include "queue/common/ipc/message.h"
 
 #include "common/string.h"
-#include "common/message/pending.h"
 
 #include <filesystem>
 

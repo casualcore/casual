@@ -14,7 +14,6 @@
 #include "casual/platform.h"
 
 #include "common/message/domain.h"
-#include "common/message/pending.h"
 #include "common/uuid.h"
 #include "common/state/machine.h"
 #include "common/process.h"

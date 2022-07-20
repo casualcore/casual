@@ -52,7 +52,7 @@ namespace casual
             return result;
          }
 
-         std::vector< common::message::pending::Message> Pending::forget()
+         common::communication::ipc::pending::Holder Pending::forget()
          {
             return algorithm::transform( std::exchange( dequeues, {}), []( auto&& request)
             {
@@ -61,7 +61,7 @@ namespace casual
                result.queue = request.queue;
                result.name = request.name;
 
-               return common::message::pending::Message{ std::move( result), request.process};
+               return common::communication::ipc::pending::Message{ request.process, std::move( result)};
             });
          }
 
@@ -87,18 +87,9 @@ namespace casual
             queue::Trace trace{ "queue::group::state::Pending::remove"};
             log::line( verbose::log, "pid: ", pid);
 
-            auto remove = []( auto& container, auto predicate)
-            {
-               algorithm::container::trim( container, algorithm::remove_if( container, predicate));
-            };
+            algorithm::container::trim( dequeues, algorithm::remove( dequeues, pid));
 
-            remove( dequeues, [pid]( auto& m) { return m.process.pid == pid;});
-
-            remove( replies, [pid]( auto& m) 
-            { 
-               m.remove( pid);
-               return m.sent();
-            });
+            replies.remove( pid);
          }
       } // state
 

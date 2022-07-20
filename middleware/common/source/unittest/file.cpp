@@ -80,7 +80,7 @@ namespace casual
             {
                std::string content( const std::filesystem::path& path)
                {
-                  auto count = 400;
+                  auto count = 1500;
                   while( count-- > 0)
                   {
                      if( ! file::empty( path))
