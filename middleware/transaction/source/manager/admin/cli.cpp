@@ -22,8 +22,6 @@
 
 #include "serviceframework/service/protocol/call.h"
 
-#include "domain/pending/message/send.h"
-
 #include "casual/cli/pipe.h"
 
 
@@ -503,9 +501,9 @@ namespace casual
                               Trace trace{ "transaction::manager::admin::local::handle::terminate::directive"};
 
                               // terminate the upstream transaction directive
-                              casual::domain::pending::message::eventually::send(
-                                 message.process, 
+                              communication::device::blocking::optional::send( message.process.ipc, 
                                  cli::message::transaction::directive::Terminated{ common::process::handle()});
+
                            };
                         }
                         
@@ -623,13 +621,13 @@ namespace casual
                                     {
                                        common::message::transaction::commit::Request request{ process::handle()};
                                        request.trid = transaction.trid;
-                                       casual::domain::pending::message::eventually::send( tm, request);
+                                       communication::device::blocking::optional::send( tm, request);
                                     }
                                     else 
                                     {
                                        common::message::transaction::rollback::Request request{ process::handle()};
                                        request.trid = transaction.trid;
-                                       casual::domain::pending::message::eventually::send( tm, request);
+                                       communication::device::blocking::optional::send( tm, request);
                                     }
 
                                     return transaction.trid;

@@ -23,8 +23,6 @@
 
 #include "configuration/message.h"
 
-#include "domain/pending/message/send.h"
-
 
 namespace casual
 {

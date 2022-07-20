@@ -13,7 +13,6 @@
 #include "domain/manager/task/event.h"
 #include "domain/manager/transform.h"
 #include "domain/common.h"
-#include "domain/pending/message/message.h"
 
 #include "configuration/message.h"
 
@@ -162,18 +161,6 @@ namespace casual
                void prepare( State& state)
                {
                   Trace trace{ "domain::manager::handle::mandatory::boot::core::prepare"};
-
-                  {
-                     auto server = state::Server::create();
-                     server.alias = "casual-domain-pending-message";
-                     server.path = common::process::path().parent_path() / "casual-domain-pending-message";
-                     server.scale( 1);
-                     server.memberships.push_back( state.group_id.core);
-                     server.note = "handles pending internal messages";
-                     server.restart = true;
-
-                     state.servers.push_back( std::move( server));
-                  }
 
                   {
                      auto server = state::Server::create();

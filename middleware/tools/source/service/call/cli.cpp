@@ -22,7 +22,6 @@
 
 #include "casual/cli/pipe.h"
 
-#include "domain/pending/message/send.h"
 #include "service/manager/admin/api.h"
 
 

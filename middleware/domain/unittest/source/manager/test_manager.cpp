@@ -45,7 +45,7 @@ namespace casual
 
             namespace expected::size
             {
-               constexpr auto servers = 3;
+               constexpr auto servers = 2;
             } // expected::size
 
 
@@ -954,41 +954,6 @@ domain:
          } // <unnamed>
       } // local
 
-      TEST( domain_manager, kill_internal_pending__expect_restart)
-      {
-         common::unittest::Trace trace;
-         auto domain = unittest::manager();
-
-         // setup subscription to see when stuff is done
-         common::event::subscribe( common::process::handle(), 
-         { message::event::process::Exit::type(), message::event::process::Spawn::type()});
-
-         strong::process::id target;
-
-         {
-            auto state = local::call::state();
-            auto pending = local::find::alias( state.servers, "casual-domain-pending-message");
-            ASSERT_TRUE( pending);
-            ASSERT_TRUE( pending->instances.size() == 1);
-
-            target = pending->instances.at( 0).handle.pid;
-            signal::send( target, code::signal::kill);
-         }
-
-         // wait for the exit-event
-         {
-            message::event::process::Exit event;
-            common::communication::device::blocking::receive( common::communication::ipc::inbound::device(), event);
-            EXPECT_TRUE( event.state.pid == target) << CASUAL_NAMED_VALUE( event);
-         }
-
-         // wait for the spawn-event
-         {
-            message::event::process::Spawn event;
-            common::communication::device::blocking::receive( common::communication::ipc::inbound::device(), event);
-            EXPECT_TRUE( event.alias == "casual-domain-pending-message") << CASUAL_NAMED_VALUE( event);
-         }
-      }
 
       TEST( domain_manager, restart_executable)
       {

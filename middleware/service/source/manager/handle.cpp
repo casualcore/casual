@@ -28,7 +28,6 @@
 #include "configuration/message.h"
 #include "configuration/model/change.h"
 
-#include "domain/pending/message/send.h"
 #include "domain/discovery/api.h"
 
 // std
