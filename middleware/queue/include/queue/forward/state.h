@@ -17,6 +17,8 @@
 #include "common/process.h"
 #include "common/buffer/type.h"
 #include "common/state/machine.h"
+#include "common/communication/select.h"
+#include "common/communication/ipc/send.h"
 
 
 #include <vector>
@@ -383,7 +385,11 @@ namespace casual
 
       struct State
       {  
-         common::state::Machine< state::Runlevel> runlevel;          
+         common::state::Machine< state::Runlevel> runlevel;
+
+         common::communication::select::Directive directive;
+         common::communication::ipc::send::Coordinator multiplex{ directive};
+
          state::Forward forward;
          state::Pending pending;
 

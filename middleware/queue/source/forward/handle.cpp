@@ -129,33 +129,38 @@ namespace casual
 
                namespace detail
                {
-                  auto send_request = []( auto id, auto& name)
+                  namespace send
                   {
-                     ipc::message::lookup::Request request{ process::handle()};
-                     request.name = name;
-                     request.context.semantic = decltype( request.context.semantic)::wait;
+                     template< typename ID>
+                     auto request( State& state, ID id, const std::string& name)
+                     {
+                        ipc::message::lookup::Request request{ process::handle()};
+                        request.name = name;
+                        request.context.semantic = decltype( request.context.semantic)::wait;
 
-                     common::log::line( verbose::log, "request: ", request);
+                        common::log::line( verbose::log, "request: ", request);
 
-                     state::pending::queue::Lookup pending;
-                     pending.id = id;
-                     pending.correlation = ipc::flush::send( ipc::queue::manager(), request);
-                     return pending;
-                  };
+                        state::pending::queue::Lookup pending;
+                        pending.id = id;
+                        pending.correlation = state.multiplex.send( ipc::queue::manager(), request);
+                        return pending;
+                     };
+                  } // send
+                  
 
                   void request( State& state, state::forward::Service& forward)
                   {
-                     state.pending.queue.lookups.push_back( detail::send_request( forward.id, forward.source.queue));
+                     state.pending.queue.lookups.push_back( detail::send::request( state, forward.id, forward.source.queue));
 
                      if( forward.reply)
-                        state.pending.queue.lookups.push_back( detail::send_request( forward.id, forward.reply.value().queue));
+                        state.pending.queue.lookups.push_back( detail::send::request( state, forward.id, forward.reply.value().queue));
                   }
 
 
                   void request( State& state, state::forward::Queue& forward)
                   {
-                     state.pending.queue.lookups.push_back( detail::send_request( forward.id, forward.source.queue));
-                     state.pending.queue.lookups.push_back( detail::send_request( forward.id, forward.target.queue));
+                     state.pending.queue.lookups.push_back( detail::send::request( state, forward.id, forward.source.queue));
+                     state.pending.queue.lookups.push_back( detail::send::request( state, forward.id, forward.target.queue));
                   }
 
                } // detail
@@ -202,9 +207,6 @@ namespace casual
                         request.selector = forward.selector;
                         request.block = true;
 
-                        if( ! ipc::flush::optional::send( forward.source.process.ipc, request))
-                           return;
-
                         using Pending = common::traits::remove_cvref_t< decltype( state.pending.dequeues.back())>;
 
                         Pending pending;
@@ -214,6 +216,14 @@ namespace casual
 
                         state.pending.dequeues.push_back( std::move( pending));
                         ++forward;
+
+                        state.multiplex.send( forward.source.process.ipc, request, [ &state]( auto& ipc, auto& complete)
+                        {
+                           algorithm::container::erase( state.pending.dequeues, complete.correlation());
+                           // TODO send "error reply"?
+
+                        });
+                        
                      };
 
                      common::algorithm::for_n( forward.instances.missing(), send_request);
@@ -234,7 +244,7 @@ namespace casual
                         request.correlation = pending.correlation;
                         request.trid = pending.trid;
 
-                        ipc::flush::send( ipc::transaction::manager(), request);
+                        state.multiplex.send( ipc::transaction::manager(), request);
 
                         state.pending.transaction.rollbacks.emplace_back( std::forward< P>( pending));
                      }
@@ -252,7 +262,7 @@ namespace casual
                         request.correlation = pending.correlation;
                         request.trid = pending.trid;
 
-                        ipc::flush::send( ipc::transaction::manager(), request);
+                        state.multiplex.send( ipc::transaction::manager(), request);
 
                         state.pending.transaction.commits.emplace_back( std::forward< P>( pending));
                      }
@@ -276,11 +286,11 @@ namespace casual
                   {
                      Trace trace{ "queue::forward::service::local::comply::to::state send_discard_request"};
 
-                     auto send_discard_request = []( auto& pending)
+                     auto send_discard_request = [ &state]( auto& pending)
                      {
                         ipc::message::lookup::discard::Request request{ process::handle()};
                         request.correlation = pending.correlation;
-                        ipc::flush::send( ipc::queue::manager(), request);
+                        state.multiplex.send( ipc::queue::manager(), request);
                      };
                      algorithm::for_each( state.pending.queue.lookups, send_discard_request);
                   }
@@ -289,14 +299,14 @@ namespace casual
                   {
                      Trace trace{ "queue::forward::service::local::comply::to::state send_forget_request"};
 
-                     auto send_forget_request = [&state]( auto& pending)
+                     auto send_forget_request = [ &state]( auto& pending)
                      {
-                        return state.forward_apply( pending.id, [&pending]( auto& forward)
+                        return state.forward_apply( pending.id, [ &state, &pending]( auto& forward)
                         {
                            ipc::message::group::dequeue::forget::Request request{ process::handle()};
                            request.correlation = pending.correlation;
                            
-                           ipc::flush::optional::send( forward.source.process.ipc, request);
+                           state.multiplex.send( forward.source.process.ipc, request);
                            
                         });
                      };
@@ -309,7 +319,7 @@ namespace casual
                   {
                      Trace trace{ "queue::forward::service::local::comply::to::state send_service_lookup_discard_request"};
 
-                     auto send_service_lookup_discard_request = [&state]( auto& pending)
+                     auto send_service_lookup_discard_request = [ &state]( auto& pending)
                      {
                         // we know that this pending is from a service-forward
                         auto& forward = *state.forward_service( pending.id);
@@ -319,7 +329,7 @@ namespace casual
                         request.requested = forward.target.service;
                         
                         // we assume service-manager are always 'online'...
-                        ipc::flush::send( ipc::service::manager(), request);
+                        state.multiplex.send( ipc::service::manager(), request);
                      };
 
                      auto& pending = state.pending.service.lookups;
@@ -384,7 +394,7 @@ namespace casual
 
                         comply::to::state( state);
 
-                        ipc::flush::send( message.process.ipc, common::message::reverse::type( message, process::handle()));                        
+                        state.multiplex.send( message.process.ipc, common::message::reverse::type( message, process::handle()));                        
                      };
                   }
 
@@ -470,7 +480,7 @@ namespace casual
                            // we'll wait 'forever'
                            request.context.semantic = decltype( request.context.semantic)::wait;
 
-                           ipc::flush::send( ipc::service::manager(), request);
+                           state.multiplex.send( ipc::service::manager(), request);
 
                            forward::state::pending::service::Lookup lookup{ std::move( pending)};
                            lookup.buffer.type = std::move( message.message[ 0].type);
@@ -498,7 +508,7 @@ namespace casual
 
                            log::line( verbose::log, "enqueue request: ", request);
 
-                           ipc::flush::send( forward->target.process.ipc, request);
+                           state.multiplex.send( forward->target.process.ipc, request);
                            state.pending.enqueues.emplace_back( std::move( pending));
 
                         }
@@ -591,7 +601,7 @@ namespace casual
                            request.trid = pending.trid;
                            request.service = std::move( message.service);
 
-                           ipc::flush::send( message.process.ipc, request);
+                           state.multiplex.send( message.process.ipc, request);
                            state.pending.service.calls.emplace_back( std::move( pending), message.process.pid);
                         };
                      }
@@ -655,11 +665,15 @@ namespace casual
                                  request.message.available = platform::time::clock::type::now() + reply.delay;
 
                               log::line( verbose::log, "enqueue reply: ", request);
-
-                              if( ipc::flush::optional::send( reply.process.ipc, request))
-                                 state.pending.enqueues.emplace_back( std::move( call));
-                              else 
-                                 send::transaction::rollback::request( state, std::move( call));
+                              
+                              state.pending.enqueues.emplace_back( std::move( call));
+                              state.multiplex.send( reply.process.ipc, request, [ &state]( auto& ipc, auto& complete)
+                              {
+                                 // remove the added pending.
+                                 auto pending = pending::consume( state.pending.enqueues, complete.correlation());
+                                 
+                                 send::transaction::rollback::request( state, std::move( pending));
+                              });
                            }
                            else
                               send::transaction::commit::request( state, std::move( call));
@@ -803,7 +817,7 @@ namespace casual
                         reply.services = algorithm::transform( state.forward.services, transform_service);
                         reply.queues = algorithm::transform( state.forward.queues, transform_queue);
 
-                        ipc::flush::send( message.process.ipc, reply);
+                        state.multiplex.send( message.process.ipc, reply);
                      };
                   }
                } // state

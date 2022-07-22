@@ -14,6 +14,7 @@
 #include "common/message/dispatch.h"
 #include "common/environment.h"
 #include "common/environment/normalize.h"
+#include "common/communication/select/ipc.h"
 
 #include "domain/configuration/fetch.h"
 #include "domain/discovery/api.h"
@@ -35,15 +36,6 @@ namespace casual
             {
                Trace trace( "queue::manager::local::initialize");
 
-               // make sure we handle death of our children
-               signal::callback::registration< code::signal::child>( []()
-               {
-                  algorithm::for_each( process::lifetime::ended(), []( auto& exit)
-                  {
-                     manager::handle::process::exit( exit);
-                  });
-               });
-
                // Set environment variable so children can find us easy
                common::environment::variable::process::set(
                   common::environment::variable::name::ipc::queue::manager,
@@ -56,7 +48,7 @@ namespace casual
 
                return state;
             }
-
+/*
             namespace wait
             {
                //! waits for the 'entities' to be running (or worse)
@@ -74,19 +66,16 @@ namespace casual
                      handler, 
                      ipc::device());
 
-                  // Connect to domain
-                  common::communication::instance::whitelist::connect( common::communication::instance::identity::queue::manager);
-
-                  // register that we can answer discovery questions.
-                  using Ability = casual::domain::discovery::provider::Ability;
-                  casual::domain::discovery::provider::registration( flags::compose( Ability::discover_internal, Ability::needs, Ability::known));
+                  
                }  
             } // wait
+            */
 
             auto condition( State& state)
             {
                return message::dispatch::condition::compose(
-                  message::dispatch::condition::done( [&state]() { return state.done();})
+                  message::dispatch::condition::done( [ &state]() { return state.done();}),
+                  message::dispatch::condition::idle( [ &state](){ handle::idle( state);})
                );
             }
 
@@ -96,9 +85,19 @@ namespace casual
 
                auto abort = execute::scope( [&state](){ manager::handle::abort( state);});
 
-               auto handler = manager::handlers( state);
+               // make sure we handle death of our children
+               signal::callback::registration< code::signal::child>( [ &state]()
+               {
+                  for( auto& exit : process::lifetime::ended())
+                     manager::handle::process::exit( state, exit);
+               });
 
-               wait::running( state, handler);
+
+               //wait::running( state, handler);
+
+               // register that we can answer discovery questions.
+               using Ability = casual::domain::discovery::provider::Ability;
+               casual::domain::discovery::provider::registration( flags::compose( Ability::discover_internal, Ability::needs, Ability::known));
 
                // we can supply configuration
                casual::domain::configuration::supplier::registration();
@@ -106,10 +105,11 @@ namespace casual
                common::log::line( common::log::category::information, "casual-queue-manager is on-line");
                common::log::line( verbose::log, "state: ", state);
                
-               message::dispatch::pump( 
+               communication::select::dispatch::pump(
                   local::condition( state),
-                  handler, 
-                  ipc::device());
+                  state.directive,
+                  state.multiplex,
+                  communication::select::ipc::dispatch::create( state, &handle::create));
 
                // cancel the abort
                abort.release();
@@ -120,9 +120,7 @@ namespace casual
                Settings settings;
                {
                   using namespace casual::common::argument;
-                  Parse{ R"(
-Manages casual queue, the provided queue functionality.
-)",
+                  Parse{ R"(Manages casual queue, the provided queue functionality)",
                   }( argc, argv);
                }
 

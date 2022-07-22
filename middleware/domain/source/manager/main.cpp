@@ -174,8 +174,6 @@ namespace casual
                Trace trace{ "domain::manager::local::start"};
                log::line( verbose::log, "state: ", state);
 
-               auto handler = handle::create( state);
-
                communication::select::dispatch::pump(
                   local::condition::create( state),
                   state.directive,

@@ -33,7 +33,7 @@ namespace casual
          {
             namespace send::error
             {
-               void reply( State& state, common::message::service::call::callee::Request& message, common::code::xatmi code)
+               void reply( State& state, const common::message::service::call::callee::Request& message, common::code::xatmi code)
                {
                   Trace trace{ "service::forward::handle::service::send::error::reply"};
 
@@ -92,7 +92,7 @@ namespace casual
 
                         log::line( log, "send request - to: ", message.process, " - request: ", request);
 
-                        state.multiplex.send( message.process.ipc, request, [ &state, request, service_name = message.service.name]( auto& destination, auto& complete) mutable
+                        state.multiplex.send( message.process.ipc, request, [ &state, request, service_name = message.service.name]( auto& destination, auto& complete)
                         {
                            log::line( log::category::error, "call to service ", std::quoted( service_name), " failed - action: send error reply");
                            send::error::reply( state, request, common::code::xatmi::no_entry);

@@ -34,7 +34,7 @@ namespace casual
          template< typename ID>
          void remove( ID id)
          {
-            algorithm::container::trim( m_subscribers, algorithm::remove( m_subscribers, id));
+            algorithm::container::erase( m_subscribers, id);
          }
 
          explicit operator bool () const { return ! m_subscribers.empty();}

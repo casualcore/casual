@@ -13,6 +13,8 @@
 #include "casual/platform.h"
 
 #include "common/state/machine.h"
+#include "common/communication/select.h"
+#include "common/communication/ipc/send.h"
 
 #include <string>
 
@@ -66,15 +68,15 @@ namespace casual
 
       struct State
       {
-         inline State() = default;
-         inline State( std::string filename)
-            : queuebase{ std::move( filename)}
-         {}
 
          State( State&&) = default;
          State& operator = ( State&&) = default;
 
          common::state::Machine< state::Runlevel> runlevel;
+
+         common::communication::select::Directive directive;
+         common::communication::ipc::send::Coordinator multiplex{ directive};
+
          Queuebase queuebase;
          state::Pending pending;
 
@@ -91,6 +93,8 @@ namespace casual
 
          CASUAL_CONST_CORRECT_SERIALIZE(
             CASUAL_SERIALIZE( runlevel);
+            CASUAL_SERIALIZE( directive);
+            CASUAL_SERIALIZE( multiplex);
             CASUAL_SERIALIZE( pending);
             CASUAL_SERIALIZE( involved);
             CASUAL_SERIALIZE( zombies);

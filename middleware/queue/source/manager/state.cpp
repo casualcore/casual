@@ -39,6 +39,7 @@ namespace casual
          {
             switch( value)
             {
+               case Runlevel::configuring: return "configuring";
                case Runlevel::running: return "running";
                case Runlevel::shutdown: return "shutdown";
                case Runlevel::error: return "error";
@@ -111,10 +112,10 @@ namespace casual
 
          remove_queues( pid);
 
-         common::algorithm::container::trim( groups, common::algorithm::remove( groups, pid));
-         common::algorithm::container::trim( forward.groups, common::algorithm::remove( forward.groups, pid));
-         common::algorithm::container::trim( pending.lookups, common::algorithm::remove( pending.lookups, pid));
-         common::algorithm::container::trim( remotes, common::algorithm::remove( remotes, pid));
+         algorithm::container::erase( groups, pid);
+         algorithm::container::erase( forward.groups, pid);
+         algorithm::container::erase( pending.lookups, pid);
+         algorithm::container::erase( remotes, pid);
       }
 
       void State::update( queue::ipc::message::Advertise& message)
@@ -175,7 +176,7 @@ namespace casual
 
       bool State::ready() const
       {
-         auto is_running = []( auto& entity){ return entity.state >= decltype( entity.state())::running;};
+         auto is_running = []( auto& group){ return group.state >= decltype( group.state())::running;};
          
          return algorithm::all_of( groups, is_running) && algorithm::all_of( forward.groups, is_running);
       }

@@ -15,6 +15,7 @@
 #include "common/process.h"
 #include "common/exception/capture.h"
 #include "common/communication/instance.h"
+#include "common/communication/select/ipc.h"
 #include "common/message/signal.h"
 
 namespace casual
@@ -73,10 +74,11 @@ namespace casual
                      handle::abort( state);
                   });
 
-                  common::message::dispatch::pump( 
-                     condition( state), 
-                     group::handlers( state), 
-                     ipc::device());
+                  communication::select::dispatch::pump(
+                     local::condition( state),
+                     state.directive,
+                     state.multiplex,
+                     communication::select::ipc::dispatch::create( state, &group::handlers));
 
                   abort_guard.release();
                }

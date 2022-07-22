@@ -10,8 +10,9 @@
 #include "queue/forward/state.h"
 #include "queue/forward/handle.h"
 
-#include "common/message/dispatch.h"
+#include "common/communication/select/ipc.h"
 #include "common/exception/guard.h"
+
 
 namespace casual
 {
@@ -50,10 +51,11 @@ namespace casual
                // consume in the dispatch handler.
                auto state = initialize();
 
-               message::dispatch::pump( 
-                  condition( state), 
-                  forward::handlers( state), 
-                  ipc::device());
+               communication::select::dispatch::pump(
+                  local::condition( state),
+                  state.directive,
+                  state.multiplex,
+                  communication::select::ipc::dispatch::create( state, &forward::handlers));
 
                log::line( verbose::log, "state: ", state);
             }

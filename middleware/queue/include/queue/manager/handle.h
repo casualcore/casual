@@ -15,32 +15,31 @@
 
 namespace casual
 {
-   namespace queue::manager
+   namespace queue::manager::handle
    {
-      namespace handle
+
+      using dispatch_type = decltype( common::message::dispatch::handler( ipc::device()));
+
+      namespace process
       {
-         using dispatch_type = decltype( common::message::dispatch::handler( ipc::device()));
+         void exit( State& state, const common::process::lifetime::Exit& exit);
 
-         namespace process
-         {
-            void exit( const common::process::lifetime::Exit& exit);
+      } // process
 
-         } // process
+      namespace comply
+      {
+         void configuration( State& state, casual::configuration::model::queue::Model model);
+         
+      } // comply
 
-         namespace comply
-         {
-            void configuration( State& state, casual::configuration::model::queue::Model model);
-            
-         } // comply
+      void idle( State& state);
 
-         //! hard shutdown - best effort shutdown
-         void abort( State& state);
+      //! hard shutdown - best effort shutdown
+      void abort( State& state);
 
-      } // handle
+      handle::dispatch_type create( State& state);
 
-      handle::dispatch_type handlers( State& state);
-
-   } // queue::manager
+   } // queue::manager::handle
 } // casual
 
 

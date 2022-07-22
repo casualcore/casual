@@ -5,6 +5,7 @@
 //!
 
 #include "common/communication/ipc/send.h"
+#include "common/communication/log.h"
 
 namespace casual
 {
@@ -70,7 +71,7 @@ namespace casual
             }
             catch( ...)
             {
-               log::line( log::category::error, exception::capture(), " failed to send to ipc: ", ipc, " - action: invoke error callback (if any) on the message");
+               log::line( log, exception::capture(), " failed to send to destination: ", ipc, " - action: invoke callback (if any) and discard for all pending messages to the destination");
                message.error( ipc);
 
                return {};
@@ -79,8 +80,30 @@ namespace casual
          return result;
       }
 
+      void Coordinator::Message::error( const strong::ipc::id& destination) const noexcept
+      {
+         Trace trace{ "communication::ipc::send::Coordinator::Message::error"};
+         
+         if( ! callback)
+         {
+            log::line( log, "no callback for 'message': ", *this);
+            return;
+         }
+
+         try
+         {
+            callback( destination, complete.complete());
+         }
+         catch( ...)
+         {
+            log::line( log::category::error, exception::capture(), " callback failed for 'message': ", *this, " - destination: ", destination);
+         }
+      }
+
       bool Coordinator::Remote::send( select::Directive& directive) noexcept
       {
+         Trace trace{ "communication::ipc::send::Coordinator::Remote::send"};
+
          try
          {
             while( ! m_queue.empty())
@@ -93,21 +116,10 @@ namespace casual
          }
          catch( ...)
          {
-            log::line( log::category::error, exception::capture(), " failed to send to destination: ", m_destination, " - action: invoke callback (if any) and discard for all pending messages to the destination");
+            log::line( log, exception::capture(), " failed to send to destination: ", m_destination, " - action: invoke callback (if any) and discard for all pending messages to the destination");
 
-            auto invoke_callback = [ &destination = m_destination.ipc()]( auto& message) noexcept
-            {
-               try
-               {
-                  message.error( destination);
-               }
-               catch( ...)
-               {
-                  log::line( log::category::error, exception::capture(), " failed to invoke callback for message: ", message, " - action: discard");
-               }
-            };
-
-            algorithm::for_each( m_queue, invoke_callback);
+            for( auto& message : m_queue)
+               message.error( m_destination.ipc());
          }
          
          directive.write.remove( descriptor());

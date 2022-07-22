@@ -9,7 +9,8 @@
 
 #include "queue/common/ipc/message.h"
 
-#include "common/communication/ipc.h"
+#include "common/communication/select.h"
+#include "common/communication/ipc/send.h"
 #include "common/domain.h"
 #include "common/state/machine.h"
 
@@ -116,6 +117,7 @@ namespace casual
 
          enum struct Runlevel : short
          {
+            configuring,
             running,
             shutdown,
             error,
@@ -127,6 +129,9 @@ namespace casual
       struct State
       {
          common::state::Machine< state::Runlevel> runlevel;
+
+         common::communication::select::Directive directive;
+         common::communication::ipc::send::Coordinator multiplex{ directive};
 
          std::unordered_map< std::string, std::vector< state::Queue>> queues;
 
@@ -186,6 +191,8 @@ namespace casual
 
          CASUAL_LOG_SERIALIZE(
             CASUAL_SERIALIZE( runlevel);
+            CASUAL_SERIALIZE( directive);
+            CASUAL_SERIALIZE( multiplex);
             CASUAL_SERIALIZE( queues);
             CASUAL_SERIALIZE( pending);
             CASUAL_SERIALIZE( groups);

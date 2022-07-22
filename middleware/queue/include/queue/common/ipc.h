@@ -37,12 +37,6 @@ namespace casual
       } // gateway::optional
 
 
-      //! since we're sending a lot of messages in the same 'batch', we need to flush our inbound
-      //! to mitigate 'deadlocks' 
-      namespace flush
-      {
-         using namespace common::communication::ipc::flush;
-      } // flush
 
    } // queue::ipc
 } // casual

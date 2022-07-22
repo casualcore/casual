@@ -109,6 +109,17 @@ namespace casual
          return container;
       }
 
+      //! erases every element in the `container` that are 'equal' to `value`,
+      //! which could be none.
+      //! @return `container`
+      template< typename C, typename T>
+      C& erase( C& container, const T& value)
+      {
+         while( auto found = algorithm::find( container, value))
+            container.erase( std::begin( found));
+         return container;
+      }
+
       //! Erases occurrences from an associative container that
       //! fulfill the predicate
       //!
