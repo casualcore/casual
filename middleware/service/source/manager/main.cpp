@@ -18,6 +18,7 @@
 #include "common/argument.h"
 #include "common/environment.h"
 #include "common/communication/instance.h"
+#include "common/communication/select/ipc.h"
 #include "common/message/dispatch.h"
 
 #include <iostream>
@@ -103,29 +104,11 @@ namespace casual
                );
             }
 
-            namespace dispatch
-            {
-               auto handler( State& state)
-               {
-                  return [ handler = manager::handler( state)]( common::strong::file::descriptor::id descriptor, common::communication::select::tag::read) mutable
-                  {
-                     auto& inbound = common::communication::ipc::inbound::device();
-                     if( inbound.descriptor() != descriptor)
-                        return false;
-
-                     handler( common::communication::device::non::blocking::next( inbound));
-                     return true;
-                  };
-               }
-            } // dispatch
-
             void start( State state)
             {
                Trace trace( "service::manager:local::start");
 
                setup( state);
-
-               auto handler = manager::handler( state);
 
                // register that we can answer discovery questions.
                using Ability = casual::domain::discovery::provider::Ability;
@@ -140,7 +123,7 @@ namespace casual
                communication::select::dispatch::pump(
                   local::condition( state),
                   state.directive,
-                  dispatch::handler( state),
+                  communication::select::ipc::dispatch::create( state, &handle::create),
                   state.multiplex
                );
             }

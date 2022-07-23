@@ -138,30 +138,30 @@ namespace casual
 
       template<typename T>
       struct function< T, std::enable_if_t< has::call_operator< T>::value>> 
-         : public function< decltype( &T::operator())>
+         : function< decltype( &T::operator())>
       {
       };
 
       template<typename T>
-      struct function< std::reference_wrapper< T>> : public function< T>
+      struct function< std::reference_wrapper< T>> : function< T>
       {
       };
 
       //! const functor specialization
       template< typename C, typename R, typename ...Args>
-      struct function< R(C::*)(Args...) const> : public detail::function< R, Args...>
+      struct function< R(C::*)(Args...) const> : detail::function< R, Args...>
       {
       };
 
       //! non const functor specialization
       template< typename C, typename R, typename ...Args>
-      struct function< R(C::*)(Args...)> : public detail::function< R, Args...>
+      struct function< R(C::*)(Args...)> : detail::function< R, Args...>
       {
       };
 
       //! free function specialization
       template< typename R, typename ...Args>
-      struct function< R(*)(Args...)> : public detail::function< R, Args...>
+      struct function< R(*)(Args...)> : detail::function< R, Args...>
       {
       };
 

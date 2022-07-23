@@ -10,7 +10,7 @@
 #include "queue/common/ipc/message.h"
 #include "queue/common/ipc.h"
 
-#include "common/message/handle.h"
+#include "common/message/dispatch/handle.h"
 #include "common/message/transaction.h"
 #include "common/message/signal.h"
 #include "common/message/event.h"
@@ -838,9 +838,9 @@ namespace casual
 
       handle::dispatch_type handlers( State& state)
       {
-         return {
+         return handle::dispatch_type{
             common::event::listener( handle::local::dead::process( state)),
-            common::message::handle::defaults( communication::ipc::inbound::device()),
+            common::message::dispatch::handle::defaults(),
             common::message::internal::dump::state::handle( state),
 
             handle::local::configuration::update::request( state),

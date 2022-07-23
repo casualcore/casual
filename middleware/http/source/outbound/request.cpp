@@ -16,7 +16,7 @@
 #include "common/memory.h"
 #include "common/environment.h"
 #include "common/communication/ipc.h"
-#include "common/message/handle.h"
+#include "common/message/dispatch/handle.h"
 #include "common/stream.h"
 
 

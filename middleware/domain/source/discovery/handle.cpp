@@ -9,7 +9,7 @@
 #include "domain/message/discovery.h"
 #include "domain/discovery/common.h"
 
-#include "common/message/handle.h"
+#include "common/message/dispatch/handle.h"
 #include "common/message/event.h"
 #include "common/event/listen.h"
 #include "common/algorithm.h"
@@ -614,8 +614,8 @@ namespace casual
 
       dispatch_type create( State& state)
       {
-         return {
-            common::message::handle::defaults( common::communication::ipc::inbound::device()),
+         return dispatch_type{
+            common::message::dispatch::handle::defaults(),
             common::event::listener( local::event::process::exit( state)),
             local::api::provider::registration( state),
             local::api::request( state),

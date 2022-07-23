@@ -10,7 +10,7 @@
 #include "common/communication/instance.h"
 #include "common/server/handle/call.h"
 #include "common/server/handle/conversation.h"
-#include "common/message/handle.h"
+#include "common/message/dispatch/handle.h"
 
 namespace casual
 {
@@ -75,7 +75,7 @@ namespace casual
                      } state;
 
                      auto handler = message::dispatch::handler( inbound,
-                        message::handle::defaults( inbound),
+                        message::dispatch::handle::defaults(),
                         // will configure and advertise services
                         server::handle::Call( local::transform::arguments( std::move( services), std::move( resources))),
                         server::handle::Conversation{},

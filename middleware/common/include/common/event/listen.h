@@ -9,7 +9,7 @@
 
 
 #include "common/message/event.h"
-#include "common/message/handle.h"
+#include "common/message/dispatch/handle.h"
 
 #include "common/communication/ipc.h"
 #include "common/execute.h"
@@ -26,15 +26,53 @@ namespace casual
          using device_type = common::communication::ipc::inbound::Device;
          using handler_type = decltype( message::dispatch::handler( std::declval< device_type&>()));
 
+         void subscribe( const process::Handle& process, std::vector< message::Type> types);
+         void unsubscribe( const process::Handle& process, std::vector< message::Type> types);
 
          namespace detail
          {
             handler_type subscribe( handler_type&& handler);
 
-         } // detail
+            namespace unsubscribe 
+            {
+               template< typename Callback>
+               struct Wrapper : Callback
+               {
+                  explicit Wrapper( Callback callback) : Callback{ std::move( callback)} 
+                  {}
 
-         void subscribe( const process::Handle& process, std::vector< message::Type> types);
-         void unsubscribe( const process::Handle& process, std::vector< message::Type> types);
+                  Wrapper( Wrapper&&) noexcept = default;
+                  Wrapper& operator = ( Wrapper&&) noexcept = default;
+
+                  ~Wrapper()
+                  {
+                     if( ! m_active)
+                        return;
+
+                     using traits_type = traits::function< Callback>;
+                     using message_type = traits::remove_cvref_t< typename traits_type::template argument_t< 0>>;
+
+                     event::unsubscribe( process::handle(), { message_type::type()});
+                  }
+               private:
+                  move::Active m_active;
+               };
+
+               template< typename... Callback>
+               handler_type wrapper( Callback&&... callbacks)
+               {
+                  handler_type result;
+
+                  ( result.insert( Wrapper< Callback>( std::forward< Callback>( callbacks))) , ... );
+
+                  return detail::subscribe( std::move( result));
+               }
+               
+            } // unsubscribe 
+
+            
+
+         } // detail
 
          namespace scope
          {
@@ -68,7 +106,7 @@ namespace casual
                   auto unsubscription = scope::unsubscribe( handler.types());
                   common::message::dispatch::relaxed::pump( 
                      std::forward< C>( condition), 
-                     common::message::handle::defaults( device) + std::move( handler),
+                     common::message::dispatch::handle::defaults() + std::move( handler),
                      device);
                }
             } // subscription
@@ -91,7 +129,7 @@ namespace casual
 
             common::message::dispatch::relaxed::pump( 
                std::forward< C>( condition),
-               common::message::handle::defaults( device) + std::move( handler),
+               common::message::dispatch::handle::defaults() + std::move( handler),
                device);
          }
 
@@ -99,7 +137,7 @@ namespace casual
          template< typename... Callback>
          handler_type listener( Callback&&... callbacks)
          {
-            return detail::subscribe( { std::forward< Callback>( callbacks)...});
+            return detail::unsubscribe::wrapper( std::forward< Callback>( callbacks)...);
          }
 
 

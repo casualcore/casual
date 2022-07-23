@@ -8,7 +8,7 @@
 #include "common/server/handle/conversation.h"
 #include "common/message/service.h"
 #include "common/message/conversation.h"
-#include "common/message/handle.h"
+#include "common/message/dispatch/handle.h"
 #include "common/log.h"
 #include "common/communication/ipc.h"
 #include "common/communication/instance.h"
@@ -140,10 +140,9 @@ namespace casual
                   auto& device = communication::ipc::inbound::device();
 
                   auto handler = message::dispatch::handler( device,
-                     message::handle::defaults( device),
+                     message::dispatch::handle::defaults(),
                      handle::service::Call{},
-                     handle::service::Conversation{},
-                     message::handle::Shutdown{});
+                     handle::service::Conversation{});
 
                   message::dispatch::pump( handler, device);
                }

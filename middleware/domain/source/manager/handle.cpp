@@ -19,7 +19,7 @@
 #include "common/instance.h"
 #include "common/communication/instance.h" 
 
-#include "common/message/handle.h"
+#include "common/message/dispatch/handle.h"
 #include "common/server/handle/call.h"
 #include "common/cast.h"
 #include "common/environment.h"
@@ -1001,8 +1001,8 @@ namespace casual
       {
          Trace trace{ "domain::manager::handle::create"};
 
-         return {
-            common::message::handle::defaults( communication::ipc::inbound::device()),
+         return dispatch_type{
+            common::message::dispatch::handle::defaults(),
             handle::local::shutdown::request( state),
             handle::local::shutdown::manager::request( state),
             handle::local::scale::prepare::shutdown( state),

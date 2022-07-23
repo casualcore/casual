@@ -14,7 +14,7 @@
 #include "common/event/listen.h"
 #include "common/execute.h"
 #include "common/message/event.h"
-#include "common/message/handle.h"
+#include "common/message/dispatch/handle.h"
 #include "common/serialize/binary.h"
 
 #include "common/code/raise.h"
@@ -253,9 +253,9 @@ namespace casual
             auto handler = []( auto& state, auto& tasks)
             {
                return common::message::dispatch::handler( communication::ipc::inbound::device(),
-                  common::message::handle::discard< message::event::process::Spawn>(),
-                  common::message::handle::discard< message::event::process::Exit>(),
-                  common::message::handle::discard< message::event::sub::Task>(),
+                  common::message::dispatch::handle::discard< message::event::process::Spawn>(),
+                  common::message::dispatch::handle::discard< message::event::process::Exit>(),
+                  common::message::dispatch::handle::discard< message::event::sub::Task>(),
                   [ &state]( const manager::task::message::domain::Information& event)
                   {
                      log::line( log::debug, "event: ", event);

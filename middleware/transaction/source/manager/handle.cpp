@@ -12,7 +12,7 @@
 
 #include "casual/assert.h"
 
-#include "common/message/handle.h"
+#include "common/message/dispatch/handle.h"
 #include "common/event/listen.h"
 #include "common/server/handle/call.h"
 
@@ -1055,7 +1055,7 @@ namespace casual
                dispatch_type handlers( State& state)
                {
                   return common::message::dispatch::handler( ipc::device(),
-                     common::message::handle::defaults( ipc::device()),
+                     common::message::dispatch::handle::defaults(),
                      local::process::exit( state),
                      local::resource::configuration::request( state),
                      local::resource::ready( state)
@@ -1067,7 +1067,7 @@ namespace casual
             dispatch_type handlers( State& state)
             {
                return common::message::dispatch::handler( ipc::device(),
-                  common::message::handle::defaults( ipc::device()),
+                  common::message::dispatch::handle::defaults(),
                   common::event::listener( local::process::exit( state)),
                   local::commit::request( state),
                   local::rollback::request( state),

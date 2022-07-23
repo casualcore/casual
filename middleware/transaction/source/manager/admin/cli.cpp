@@ -16,7 +16,7 @@
 #include "common/serialize/create.h"
 #include "common/communication/instance.h"
 #include "common/communication/ipc.h"
-#include "common/message/handle.h"
+#include "common/message/dispatch/handle.h"
 #include "common/range/adapter.h"
 #include "common/algorithm/sorted.h"
 
@@ -746,7 +746,7 @@ namespace casual
                            auto& device = communication::ipc::inbound::device();
 
                            auto handler = common::message::dispatch::handler( device,
-                              common::message::handle::defaults( device),
+                              common::message::dispatch::handle::defaults(),
                               begin::handle::downstream::finalize( state),
                               begin::handle::downstream::terminated( state),
                               begin::handle::reply::commit( state),

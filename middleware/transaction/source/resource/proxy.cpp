@@ -12,7 +12,7 @@
 #include "common/message/transaction.h"
 #include "common/process.h"
 #include "common/message/dispatch.h"
-#include "common/message/handle.h"
+#include "common/message/dispatch/handle.h"
 #include "common/communication/ipc.h"
 #include "common/environment.h"
 
@@ -166,7 +166,7 @@ namespace casual
             auto& device = common::communication::ipc::inbound::device();
             
             auto handler = common::message::dispatch::handler( device,
-               common::message::handle::defaults( device),
+               common::message::dispatch::handle::defaults(),
                proxy::local::handle::prepare( m_state),
                proxy::local::handle::commit( m_state),
                proxy::local::handle::rollback( m_state)

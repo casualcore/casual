@@ -13,7 +13,7 @@
 
 #include "common/message/transaction.h"
 #include "common/message/dispatch.h"
-#include "common/message/handle.h"
+#include "common/message/dispatch/handle.h"
 #include "common/message/internal.h"
 #include "common/message/service.h"
 #include "common/event/send.h"
@@ -881,7 +881,7 @@ namespace casual
             auto handlers( State& state)
             {
                return message::dispatch::handler( ipc::device(),
-                  message::handle::defaults( ipc::device()),
+                  message::dispatch::handle::defaults(),
                   common::message::internal::dump::state::handle( state),
 
                   handle::configuration::update::request( state),

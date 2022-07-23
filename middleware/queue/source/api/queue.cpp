@@ -19,7 +19,7 @@
 #include "common/buffer/type.h"
 #include "common/buffer/pool.h"
 #include "common/message/dispatch.h"
-#include "common/message/handle.h"
+#include "common/message/dispatch/handle.h"
 #include "common/transaction/context.h"
 #include "common/communication/ipc.h"
 #include "common/execute.h"

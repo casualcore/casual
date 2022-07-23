@@ -39,7 +39,7 @@ namespace casual
          basic_handler& operator = ( basic_handler&&) noexcept = default;
 
          template< typename... Args>
-         basic_handler( Args&& ...handlers) : m_handlers( assign( std::forward< Args>( handlers)...))
+         explicit basic_handler( Args&& ...handlers) : m_handlers( assign( std::forward< Args>( handlers)...))
          {
          }
 
@@ -69,16 +69,16 @@ namespace casual
             assign( m_handlers, std::forward< Args>( handlers)...);
          }
 
-         basic_handler& operator += ( basic_handler&& other)
+         basic_handler& operator += ( basic_handler other)
          {
             add( m_handlers, std::move( other));
             return *this;
          }
 
-         friend basic_handler operator + ( basic_handler&& lhs, basic_handler&& rhs)
+         friend basic_handler operator + ( basic_handler lhs, basic_handler&& rhs)
          {
-            lhs += std::move( rhs);
-            return std::move( lhs);
+            lhs += std::exchange( rhs, {});
+            return lhs;
          }
 
          CASUAL_LOG_SERIALIZE(

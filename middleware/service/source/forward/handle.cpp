@@ -10,7 +10,7 @@
 #include "service/common.h"
 
 #include "common/message/dispatch.h"
-#include "common/message/handle.h"
+#include "common/message/dispatch/handle.h"
 
 #include "common/server/handle/call.h"
 #include "common/communication/instance.h"
@@ -159,7 +159,7 @@ namespace casual
        
       dispatch_type create( State& state)
       {
-         return {
+         return dispatch_type{
             local::service::lookup::reply( state),
             local::service::call::request( state),
             local::shutdown::request( state)

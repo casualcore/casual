@@ -14,7 +14,7 @@
 #include "configuration/message.h"
 
 #include "common/server/handle/call.h"
-#include "common/message/handle.h"
+#include "common/message/dispatch/handle.h"
 #include "common/message/internal.h"
 #include "common/instance.h"
 #include "common/communication/instance.h"
@@ -356,7 +356,7 @@ namespace casual
          static common::server::handle::admin::Call call{ manager::admin::services( state)};
 
          return common::message::dispatch::handler( ipc::inbound(),
-            common::message::handle::defaults( ipc::inbound()),
+            common::message::dispatch::handle::defaults(),
             common::message::internal::dump::state::handle( state),
             handle::local::process::exit( state),
 

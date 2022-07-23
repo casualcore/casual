@@ -14,7 +14,7 @@
 
 #include "common/communication/device.h"
 #include "common/communication/instance.h"
-#include "common/message/handle.h"
+#include "common/message/dispatch/handle.h"
 #include "common/message/internal.h"
 #include "common/event/listen.h"
 
@@ -677,8 +677,8 @@ namespace casual
       {
          casual::domain::discovery::provider::registration( casual::domain::discovery::provider::Ability::topology);
 
-         return {
-            common::message::handle::defaults( communication::ipc::inbound::device()),
+         return internal_handler{
+            common::message::dispatch::handle::defaults(),
             common::message::internal::dump::state::handle( state),
 
             // lookup
@@ -711,7 +711,7 @@ namespace casual
 
       external_handler external( State& state)
       {
-         return {
+         return external_handler{
             
             local::external::disconnect::reply( state),
 

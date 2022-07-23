@@ -22,7 +22,7 @@
 #include "common/event/listen.h"
 #include "common/event/send.h"
 #include "common/algorithm/compare.h"
-#include "common/message/handle.h"
+#include "common/message/dispatch/handle.h"
 #include "common/message/internal.h"
 #include "common/communication/instance.h"
 #include "common/communication/ipc/send.h"
@@ -584,7 +584,7 @@ namespace casual
       handle::dispatch_type create( State& state)
       {
          return common::message::dispatch::handler( ipc::device(),
-            common::message::handle::defaults( ipc::device()),
+            common::message::dispatch::handle::defaults(),
             common::message::internal::dump::state::handle( state),
             
             handle::local::group::connect( state),

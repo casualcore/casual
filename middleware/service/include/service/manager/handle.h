@@ -21,48 +21,44 @@
 
 namespace casual
 {
-   namespace service::manager
+   namespace service::manager::handle
    {
       namespace ipc
       {
          common::communication::ipc::inbound::Device& device();
       } // ipc
 
-      namespace handle
+      namespace comply
       {
-         namespace comply
-         {
-            void configuration( State& state, casual::configuration::Model model);
-         } // comply
+         void configuration( State& state, casual::configuration::Model model);
+      } // comply
 
-         void timeout( State& state);
+      void timeout( State& state);
 
-         namespace metric
+      namespace metric
+      {
+         //! tries to send metrics regardless
+         void send( State& state);
+
+         namespace batch
          {
-            //! tries to send metrics regardless
+            //! send metrics if we've reach batch-limit
             void send( State& state);
+         } // batch
+         
+      } // metric
 
-            namespace batch
-            {
-               //! send metrics if we've reach batch-limit
-               void send( State& state);
-            } // batch
-            
-         } // metric
+      namespace process
+      {
+         void exit( const common::process::lifetime::Exit& exit);   
+      } // process
 
-         namespace process
-         {
-            void exit( const common::process::lifetime::Exit& exit);   
-         } // process
+      using dispatch_type = decltype( common::message::dispatch::handler( ipc::device()));
 
-         using dispatch_type = decltype( common::message::dispatch::handler( ipc::device()));
-
-      } // handle
-      
       //! @returns all the handlers for service manager
-      handle::dispatch_type handler( State& state);
+      dispatch_type create( State& state);
 
-   } // service::manager
+   } // service::manager::handle
 } // casual
 
 

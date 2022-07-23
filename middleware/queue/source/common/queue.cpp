@@ -10,7 +10,7 @@
 #include "common/communication/instance.h"
 
 
-#include "common/message/handle.h"
+#include "common/message/dispatch/handle.h"
 
 
 namespace casual

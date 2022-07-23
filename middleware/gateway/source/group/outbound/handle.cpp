@@ -14,7 +14,7 @@
 #include "domain/discovery/api.h"
 
 #include "common/communication/instance.h"
-#include "common/message/handle.h"
+#include "common/message/dispatch/handle.h"
 #include "common/message/internal.h"
 #include "common/event/send.h"
 #include "common/instance.h"
@@ -843,8 +843,8 @@ namespace casual
       {
          casual::domain::discovery::provider::registration( casual::domain::discovery::provider::Ability::discover_external);
          
-         return {
-            common::message::handle::defaults( ipc::inbound()),
+         return internal_handler{
+            common::message::dispatch::handle::defaults(),
             common::message::internal::dump::state::handle( state),
 
             local::internal::domain::connected( state),
@@ -873,7 +873,7 @@ namespace casual
 
       external_handler external( State& state)
       {
-         return {
+         return external_handler{
             local::external::disconnect::request( state),
             
             // service

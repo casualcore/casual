@@ -11,11 +11,12 @@
 #include "common/message/server.h"
 #include "common/message/domain.h"
 #include "common/message/dispatch.h"
+#include "common/communication/ipc.h"
 #include "common/log.h"
 
 namespace casual
 {
-   namespace common::message::handle
+   namespace common::message::dispatch::handle
    {
 
       //! Replies to a ping message
@@ -39,15 +40,10 @@ namespace casual
          };
       } // global
 
-      
-      template< typename Device> 
-      auto defaults( Device&& device)
-      {
-         return dispatch::handler( device, 
-            handle::Ping{},
-            handle::Shutdown{},
-            handle::global::State{});
-      }
+      using handler_type = decltype( message::dispatch::handler( communication::ipc::inbound::device()));
+
+      //! @return a handler with all the default handlers
+      handler_type defaults() noexcept;
 
       //! Handles and discard a given message type
       template< typename Message> 
@@ -69,5 +65,5 @@ namespace casual
          };
       }
 
-   } // common::message::handle
+   } // common::message::dispatch::handle
 } // casual

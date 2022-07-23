@@ -13,7 +13,7 @@
 
 #include "common/communication/instance.h"
 #include "common/communication/ipc/flush/send.h"
-#include "common/message/handle.h"
+#include "common/message/dispatch/handle.h"
 
 namespace casual
 {
@@ -124,7 +124,7 @@ namespace casual
 
             auto& device = communication::ipc::inbound::device();
             return message::dispatch::handler( device,
-               message::handle::defaults( device),
+               message::dispatch::handle::defaults(),
                local::service::call::request( state),
                local::discovery::request( state));
          }

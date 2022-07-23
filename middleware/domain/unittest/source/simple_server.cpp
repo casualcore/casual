@@ -7,7 +7,7 @@
 
 #include "common/communication/ipc.h"
 #include "common/communication/instance.h"
-#include "common/message/handle.h"
+#include "common/message/dispatch/handle.h"
 #include "common/message/signal.h"
 #include "common/exception/capture.h"
 #include "common/environment.h"
@@ -48,7 +48,7 @@ namespace casual
             auto& ipc = communication::ipc::inbound::device();
 
             auto handler = message::dispatch::handler( ipc,
-                  message::handle::defaults( ipc),
+                  message::dispatch::handle::defaults(),
                   std::move( handle_hangup)
             );
 

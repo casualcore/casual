@@ -73,11 +73,11 @@ namespace casual
                      common::event::condition::compose( 
                         common::event::condition::idle( std::move( empty)),
                         common::event::condition::done( std::move( done))),
-                     std::move( handler) + std::move( handle_shutdown));
+                     std::move( handler) + handler_type{ std::move( handle_shutdown)});
                else 
                   common::event::listen( 
                      common::event::condition::compose( common::event::condition::done( std::move( done))),
-                     std::move( handler) + std::move( handle_shutdown));
+                     std::move( handler) + handler_type{ std::move( handle_shutdown)});
             }
 
             template< typename T> 

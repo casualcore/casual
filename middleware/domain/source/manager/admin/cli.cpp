@@ -15,7 +15,7 @@
 #include "configuration/model/transform.h"
 
 #include "common/event/listen.h"
-#include "common/message/handle.h"
+#include "common/message/dispatch/handle.h"
 #include "common/argument.h"
 #include "common/terminal.h"
 #include "common/environment.h"
