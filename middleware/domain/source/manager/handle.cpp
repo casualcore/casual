@@ -1002,7 +1002,7 @@ namespace casual
          Trace trace{ "domain::manager::handle::create"};
 
          return dispatch_type{
-            common::message::dispatch::handle::defaults(),
+            common::message::dispatch::handle::defaults( state),
             handle::local::shutdown::request( state),
             handle::local::shutdown::manager::request( state),
             handle::local::scale::prepare::shutdown( state),

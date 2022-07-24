@@ -1085,11 +1085,10 @@ namespace casual
       dispatch_type create( State& state)
       {
          return dispatch_type{
-            common::message::dispatch::handle::defaults(),
+            common::message::dispatch::handle::defaults( state),
             common::event::listener( 
                handle::local::event::process::exit( state)
             ),
-            common::message::internal::dump::state::handle( state),
             handle::local::process::prepare::shutdown( state),
             handle::local::service::advertise( state),
             handle::local::service::lookup( state),

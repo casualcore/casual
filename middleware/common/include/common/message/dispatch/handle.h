@@ -10,40 +10,49 @@
 
 #include "common/message/server.h"
 #include "common/message/domain.h"
+#include "common/message/internal.h"
 #include "common/message/dispatch.h"
 #include "common/communication/ipc.h"
 #include "common/log.h"
+
 
 namespace casual
 {
    namespace common::message::dispatch::handle
    {
 
-      //! Replies to a ping message
-      struct Ping
+      namespace dump
       {
-         void operator () ( const server::ping::Request& message);
-      };
-
-      //! @throws exception::casual::Shutdown if message::shutdown::Request is dispatched
-      struct Shutdown
-      {
-         void operator () ( const message::shutdown::Request& message);
-      };
-
-      namespace global
-      {
-         //! gather _global state_ from the process and reply the information to caller
-         struct State 
+         //! dumps the state to casual log.
+         template< typename State>
+         auto state( const State& state) noexcept
          {
-            void operator () ( const message::domain::instance::global::state::Request& message);
-         };
-      } // global
+            return [&state]( const message::internal::dump::State&)
+            {
+               std::ostringstream out;
+               log::write( out, "state: ", state);
+               log::stream::write( "casual.internal", std::move( out).str());
+            };
+         }
+      } // dump
+
 
       using handler_type = decltype( message::dispatch::handler( communication::ipc::inbound::device()));
 
-      //! @return a handler with all the default handlers
+      //! @return a handler with all the default handlers:
+      //! * Ping - Replies to a ping message
+      //! * Shutdown - throws exception::casual::Shutdown if message::shutdown::Request is dispatched
+      //! * global::State gather - global state_ from the process and reply the information to caller
       handler_type defaults() noexcept;
+
+      //! @returns all defaults + state dump.
+      template< typename State>
+      handler_type defaults( const State& state) noexcept
+      {
+         auto result = defaults();
+         result.insert( dump::state( state));
+         return result;
+      }
 
       //! Handles and discard a given message type
       template< typename Message> 

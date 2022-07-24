@@ -356,8 +356,7 @@ namespace casual
          static common::server::handle::admin::Call call{ manager::admin::services( state)};
 
          return common::message::dispatch::handler( ipc::inbound(),
-            common::message::dispatch::handle::defaults(),
-            common::message::internal::dump::state::handle( state),
+            common::message::dispatch::handle::defaults( state),
             handle::local::process::exit( state),
 
             handle::local::outbound::connect( state),

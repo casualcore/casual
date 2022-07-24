@@ -678,8 +678,6 @@ namespace casual
          casual::domain::discovery::provider::registration( casual::domain::discovery::provider::Ability::topology);
 
          return internal_handler{
-            common::message::dispatch::handle::defaults(),
-            common::message::internal::dump::state::handle( state),
 
             // lookup
             local::internal::service::lookup::reply( state),

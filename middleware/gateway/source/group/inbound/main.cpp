@@ -16,7 +16,7 @@
 #include "common/communication/instance.h"
 #include "common/communication/select/ipc.h"
 #include "common/argument.h"
-#include "common/message/internal.h"
+#include "common/message/dispatch/handle.h"
 
 
 namespace casual
@@ -162,7 +162,7 @@ namespace casual
                {
                   // we add the common/general inbound logic
                   return inbound::handle::internal( state) + common::message::dispatch::handler( ipc::inbound(),
-                     common::message::internal::dump::state::handle( state),
+                     common::message::dispatch::handle::defaults( state),
                      handle::configuration::update::request( state),
                      handle::state::request( state),
                      handle::event::process::exit( state),

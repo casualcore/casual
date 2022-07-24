@@ -584,8 +584,7 @@ namespace casual
       handle::dispatch_type create( State& state)
       {
          return common::message::dispatch::handler( ipc::device(),
-            common::message::dispatch::handle::defaults(),
-            common::message::internal::dump::state::handle( state),
+            common::message::dispatch::handle::defaults( state),
             
             handle::local::group::connect( state),
             handle::local::group::configuration::update::reply( state),

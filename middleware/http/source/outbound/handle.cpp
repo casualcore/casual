@@ -124,7 +124,7 @@ namespace casual
 
             auto& device = communication::ipc::inbound::device();
             return message::dispatch::handler( device,
-               message::dispatch::handle::defaults(),
+               message::dispatch::handle::defaults( state),
                local::service::call::request( state),
                local::discovery::request( state));
          }

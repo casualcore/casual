@@ -160,6 +160,7 @@ namespace casual
       dispatch_type create( State& state)
       {
          return dispatch_type{
+            common::message::dispatch::handle::defaults( state),
             local::service::lookup::reply( state),
             local::service::call::request( state),
             local::shutdown::request( state)

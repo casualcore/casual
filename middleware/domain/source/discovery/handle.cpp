@@ -615,7 +615,7 @@ namespace casual
       dispatch_type create( State& state)
       {
          return dispatch_type{
-            common::message::dispatch::handle::defaults(),
+            common::message::dispatch::handle::defaults( state),
             common::event::listener( local::event::process::exit( state)),
             local::api::provider::registration( state),
             local::api::request( state),
@@ -627,8 +627,7 @@ namespace casual
             local::reply( state),
             local::topology::direct::update( state),
             local::topology::implicit::update( state),
-            local::shutdown::request( state),
-            common::message::internal::dump::state::handle( state)
+            local::shutdown::request( state)
          };
       }
 

@@ -4,7 +4,6 @@
 //! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-
 #include "common/message/dispatch/handle.h"
 #include "common/communication/ipc.h"
 #include "common/environment.h"
@@ -24,56 +23,73 @@ namespace casual
             template< typename M>
             void send( const common::process::Handle& destination, M&& message)
             {
-
                // We ignore signals
                signal::thread::scope::Mask mask{ signal::set::filled( code::signal::terminate, code::signal::interrupt)};
 
                communication::device::blocking::optional::send( destination.ipc, message);
             }
+
+            namespace handle
+            {
+               auto ping()
+               {
+                  return []( const server::ping::Request& message)
+                  {
+                     Trace trace{ "common::message::dispatch::handle::local::handle::ping"};
+                     log::line( log::debug, "message: ", message);
+
+                     local::send( message.process, message::reverse::type( message, common::process::handle()));
+                  };
+               }
+
+               auto shutdown()
+               {
+                  return []( const message::shutdown::Request& message)
+                  {
+                     Trace trace{ "common::message::dispatch::handle::local::handle::shutdown"};
+                     log::line( log::debug, "message: ", message);
+
+                     code::raise::error( code::casual::shutdown, "shutdown received from: ", message.process);
+                  };
+               }
+
+               namespace global
+               {
+                  auto state()
+                  {
+                     return []( const message::domain::instance::global::state::Request& message)
+                     {
+                        Trace trace{ "common::message::dispatch::handle::local::handle::global::state"};
+                        log::line( log::debug, "message: ", message);
+
+                        auto reply = message::reverse::type( message);
+                        reply.process.handle = common::process::handle();
+                        reply.process.path = common::process::path();
+                        reply.environment.variables = environment::variable::native::current();
+                        if( auto& instance = instance::information())
+                        {
+                           reply.instance.alias = instance.value().alias;
+                           reply.instance.index = instance.value().index;
+                        }
+
+                        log::line( log::debug, "reply: ", reply);
+                        
+                        local::send( message.process, reply);
+                     };
+                  }
+               } // global
+
+            } // handle
          } // <unnamed>
       } // local
 
-      void Shutdown::operator () ( const message::shutdown::Request& message)
-      {
-         code::raise::error( code::casual::shutdown, "shutdown received from: ", message.process);
-      }
-
-      void Ping::operator () ( const server::ping::Request& message)
-      {
-         log::line( log::debug, "pinged by process: ", message.process);
-         local::send( message.process, message::reverse::type( message, common::process::handle()));
-      }
-
-      
-      namespace global
-      {
-         void State::operator () ( const message::domain::instance::global::state::Request& message)
-         {
-            Trace trace{ "common::message::handle::global::State"};
-            log::line( log::debug, "message: ", message);
-
-            auto reply = message::reverse::type( message);
-            reply.process.handle = common::process::handle();
-            reply.process.path = common::process::path();
-            reply.environment.variables = environment::variable::native::current();
-            if( auto& instance = instance::information())
-            {
-               reply.instance.alias = instance.value().alias;
-               reply.instance.index = instance.value().index;
-            }
-
-            log::line( log::debug, "reply: ", reply);
-            
-            local::send( message.process, reply);
-         }
-      } // global
 
       handler_type defaults() noexcept
       {
          return dispatch::handler( communication::ipc::inbound::device(),
-            handle::Ping{},
-            handle::Shutdown{},
-            handle::global::State{});
+            local::handle::ping(),
+            local::handle::shutdown(),
+            local::handle::global::state());
       }
 
    } // common::message::dispatch::handle

@@ -84,9 +84,8 @@ namespace casual
                      common::service::header::Fields reply;
 
                      CASUAL_LOG_SERIALIZE(
-                     { 
                         CASUAL_SERIALIZE( reply);
-                     })   
+                     )
 
                   } header;
 
@@ -98,7 +97,6 @@ namespace casual
                   }
                   
                   CASUAL_LOG_SERIALIZE(
-                  { 
                      CASUAL_SERIALIZE( payload);
                      CASUAL_SERIALIZE( offset);
                      CASUAL_SERIALIZE( destination);
@@ -109,7 +107,7 @@ namespace casual
                      CASUAL_SERIALIZE( parent);
                      CASUAL_SERIALIZE( trid);
                      CASUAL_SERIALIZE( header);
-                  })                     
+                  )                     
                };
 
                inline const curl::type::easy& easy() const { return m_easy;}
@@ -173,6 +171,10 @@ namespace casual
          struct
          {
             state::Pending requests;
+            
+            CASUAL_LOG_SERIALIZE(
+               CASUAL_SERIALIZE( requests);
+            )
          } pending;
 
          struct 
@@ -183,6 +185,11 @@ namespace casual
             bool pending() const { return m_wait.revents & CURL_WAIT_POLLIN;}
 
             void clear() { m_wait.revents = {};}
+
+            CASUAL_LOG_SERIALIZE(
+               CASUAL_SERIALIZE_NAME( pending(), "pending");
+            )
+
          private:
             friend State;
 
@@ -202,11 +209,23 @@ namespace casual
 
             inline auto& message() const { return m_message;}
 
+            CASUAL_LOG_SERIALIZE(
+               CASUAL_SERIALIZE_NAME( m_message, "message");
+            )
+
          private:
             common::message::event::service::Calls m_message;
          } metric;
 
          common::domain::Identity identity{ "http"};
+
+         CASUAL_LOG_SERIALIZE(
+            CASUAL_SERIALIZE( pending);
+            CASUAL_SERIALIZE( inbound);
+            CASUAL_SERIALIZE( lookup);
+            CASUAL_SERIALIZE( metric);
+            CASUAL_SERIALIZE( identity);
+         )
 
       };
    } // http::outbound

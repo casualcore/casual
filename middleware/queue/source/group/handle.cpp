@@ -840,8 +840,7 @@ namespace casual
       {
          return handle::dispatch_type{
             common::event::listener( handle::local::dead::process( state)),
-            common::message::dispatch::handle::defaults(),
-            common::message::internal::dump::state::handle( state),
+            common::message::dispatch::handle::defaults( state),
 
             handle::local::configuration::update::request( state),
             handle::local::enqueue::request( state),

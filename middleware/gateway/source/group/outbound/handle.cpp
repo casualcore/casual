@@ -844,8 +844,6 @@ namespace casual
          casual::domain::discovery::provider::registration( casual::domain::discovery::provider::Ability::discover_external);
          
          return internal_handler{
-            common::message::dispatch::handle::defaults(),
-            common::message::internal::dump::state::handle( state),
 
             local::internal::domain::connected( state),
 

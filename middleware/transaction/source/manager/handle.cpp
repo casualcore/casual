@@ -1067,7 +1067,7 @@ namespace casual
             dispatch_type handlers( State& state)
             {
                return common::message::dispatch::handler( ipc::device(),
-                  common::message::dispatch::handle::defaults(),
+                  common::message::dispatch::handle::defaults( state),
                   common::event::listener( local::process::exit( state)),
                   local::commit::request( state),
                   local::rollback::request( state),
