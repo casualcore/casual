@@ -15,7 +15,7 @@ namespace casual
 {
    namespace buffer
    {
-      extern common::log::Stream log;
+      extern common::log::Stream& log;
 
       namespace verbose
       {

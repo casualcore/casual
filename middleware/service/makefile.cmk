@@ -33,27 +33,38 @@ install_bins = []
 install_libs = []
 install_headers = []
 
-logic_archive = make.LinkArchive( 'bin/casual-service-logic',
-   [
-   make.Compile( 'source/manager/handle.cpp'),
-   make.Compile( 'source/manager/state.cpp'),
-   make.Compile( 'source/manager/transform.cpp'),
-   make.Compile( 'source/manager/configuration.cpp'),
-   make.Compile( 'source/common.cpp'),
-   make.Compile( 'source/manager/admin/server.cpp'),
-   ])
+
+common_library = make.LinkLibrary( 'bin/casual-service-common',
+    [
+        make.Compile( 'source/common.cpp'),
+    ],
+    [
+        'casual-common',
+    ])
+
+manager_archive = make.LinkArchive( 'bin/casual-service-manager-archive',
+    [
+        make.Compile( 'source/manager/state.cpp'),
+        make.Compile( 'source/manager/admin/server.cpp'),
+        make.Compile( 'source/manager/transform.cpp'),
+    ])
 
 
 target = make.LinkExecutable( 'bin/casual-service-manager',
-	[ make.Compile( 'source/manager/main.cpp')],
+	[ 
+        make.Compile( 'source/manager/main.cpp'),
+        make.Compile( 'source/manager/handle.cpp'),
+        make.Compile( 'source/manager/configuration.cpp'),
+    ],
 	[
-     logic_archive,
-     'casual-common',
-     'casual-domain-utility',
-     'casual-domain-discovery',
-     'casual-serviceframework',
-     'casual-configuration']
-   )
+        common_library,
+        manager_archive,
+        'casual-common',
+        'casual-domain-utility',
+        'casual-domain-discovery',
+        'casual-serviceframework',
+        'casual-configuration'
+    ])
 
 install_bins.append( target)
 
@@ -65,7 +76,7 @@ target = make.LinkExecutable( 'bin/casual-service-forward',
         make.Compile( 'source/forward/handle.cpp')
     ],
     [
-        logic_archive,
+        common_library,
         'casual-domain-utility',
         'casual-common'
     ])
@@ -80,7 +91,7 @@ admin_api_lib = make.LinkLibrary( 'bin/casual-service-admin-api',
       make.Compile( 'source/manager/admin/api.cpp')
    ],
    [
-       logic_archive,
+       common_library,
        'casual-common',
        'casual-serviceframework'
    ])
@@ -89,8 +100,8 @@ install_libs.append( admin_api_lib)
 target = make.LinkLibrary( 'bin/casual-service-admin-cli',
     [ make.Compile( 'source/manager/admin/cli.cpp')],
     [ 
-        admin_api_lib,
-        logic_archive, 
+        common_library,
+        admin_api_lib, 
         'casual-common', 
         'casual-serviceframework', 
     ])
@@ -99,16 +110,16 @@ install_libs.append( target)
 
 # public api
 api_lib = make.LinkLibrary( 'bin/casual-service-api',
-   [ 
-      make.Compile( 'source/manager/api/state.cpp'),
-      make.Compile( 'source/manager/api/model.cpp')
-   ],
-   [ 
-      admin_api_lib,
-      logic_archive,
-      'casual-common',
-      'casual-serviceframework', 
-   ])
+    [ 
+        make.Compile( 'source/manager/api/state.cpp'),
+        make.Compile( 'source/manager/api/model.cpp')
+    ],
+    [
+        common_library, 
+        admin_api_lib,
+        'casual-common',
+        'casual-serviceframework', 
+    ])
 
 install_libs.append( api_lib)
 
@@ -123,7 +134,8 @@ service_unittest = make.LinkLibrary( 'bin/casual-service-unittest',
     [ 
         make.Compile( 'unittest/source/utility.cpp'),
     ],
-    [ 
+    [
+        common_library, 
         'casual-common',
         'casual-serviceframework',
     ])
@@ -131,25 +143,24 @@ service_unittest = make.LinkLibrary( 'bin/casual-service-unittest',
  
 make.LinkUnittest( 'unittest/bin/test-casual-service',
     [
-      make.Compile( 'unittest/source/forward/test_cache.cpp'),
-      make.Compile( 'unittest/source/manager/test_manager.cpp'),
-      make.Compile( 'unittest/source/manager/test_state.cpp'),
-      make.Compile( 'unittest/source/manager/test_api.cpp'),
+        make.Compile( 'unittest/source/forward/test_cache.cpp'),
+        make.Compile( 'unittest/source/manager/test_manager.cpp'),
+        make.Compile( 'unittest/source/manager/test_state.cpp'),
+        make.Compile( 'unittest/source/manager/test_api.cpp'),
     ],
     [
-     logic_archive,
-     api_lib,
-     service_unittest,
-     'casual-domain-utility',
-     'casual-domain-discovery',
-     'casual-common', 
-     'casual-serviceframework',
-     'casual-configuration', 
-     'casual-unittest',
-     'casual-domain-unittest',
-     ])
-
-
+        common_library,
+        manager_archive,
+        api_lib,
+        service_unittest,
+        'casual-domain-utility',
+        'casual-domain-discovery',
+        'casual-common', 
+        'casual-serviceframework',
+        'casual-configuration', 
+        'casual-unittest',
+        'casual-domain-unittest',
+    ])
 
 # Install
 make.Install( install_bins, dsl.paths().install + '/bin')

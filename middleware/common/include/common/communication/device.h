@@ -80,15 +80,9 @@ namespace casual
          ~Inbound()
          {
             if( ! m_cache.empty() && log::category::warning)
-            {
-               log::Stream warning{ "warning"};
-               log::line( warning, "pending messages in cache - ", *this);
-            }
+               log::line( log::category::warning, "pending messages in cache - ", *this);
             else if( verbose::log)
-            {
-               log::Stream debug{ "casual.communication.verbose"};
-               log::line( debug, "device: ", *this);
-            }
+               log::line( verbose::log, "device: ", *this);
          }
 
          Inbound( Inbound&&) = default;
