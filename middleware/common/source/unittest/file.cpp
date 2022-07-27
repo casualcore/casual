@@ -13,6 +13,7 @@
 #include "common/process.h"
 
 #include <fstream>
+#include <regex>
 
 namespace casual
 {
@@ -60,6 +61,11 @@ namespace casual
             return std::filesystem::file_size( path);
          }
 
+         bool empty( const std::filesystem::path& path) 
+         { 
+            return std::filesystem::exists( path) && size( path) == 0;
+         }
+
          namespace fetch
          {
             std::string content( const std::filesystem::path& path)
@@ -88,6 +94,20 @@ namespace casual
             } // until
             
          } // fetch
+
+         bool contains( const std::filesystem::path& path, std::string_view expression)
+         {
+            const auto regex = std::regex{ std::begin( expression), std::end( expression)};
+            std::ifstream stream{ path};
+            
+            std::string line;
+            while( std::getline( stream, line))
+            {
+               if( std::regex_match( line, regex))
+                  return true;
+            }
+            return false;
+         }
 
       } // file
 

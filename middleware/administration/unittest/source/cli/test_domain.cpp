@@ -65,7 +65,7 @@ domain:
 
       } // local
 
-      TEST( domain_manager_cli, scale_out_to_5__expected_configured_instances_5)
+      TEST( cli_domain, scale_out_to_5__expected_configured_instances_5)
       {
          common::unittest::Trace trace;
          
@@ -94,7 +94,7 @@ domain:
          EXPECT_TRUE( output == expected) << "output:  " << output << "expected: " << expected;
       }
 
-      TEST( domain_manager_cli, 5_scale_in_to_1__expected_configured_instances_1)
+      TEST( cli_domain, 5_scale_in_to_1__expected_configured_instances_1)
       {
          common::unittest::Trace trace;
          
@@ -123,7 +123,7 @@ domain:
          EXPECT_TRUE( output == expected) << "output:  " << output << "expected: " << expected;
       }
 
-      TEST( domain_manager_cli, failed_instances__scale_out_to_5__expected_configured_instances_5)
+      TEST( cli_domain, failed_instances__scale_out_to_5__expected_configured_instances_5)
       {
          common::unittest::Trace trace;
          
@@ -143,7 +143,7 @@ domain:
          EXPECT_TRUE( output == expected) << "output:  " << output << "expected: " << expected;
       }
 
-      TEST( domain_manager_cli, failed_instances__scale_in_to_1__expected_configured_instances_1)
+      TEST( cli_domain, failed_instances__scale_in_to_1__expected_configured_instances_1)
       {
          common::unittest::Trace trace;
          
@@ -170,7 +170,7 @@ domain:
          EXPECT_TRUE( output == expected) << "output:  " << output << "expected: " << expected;
       }
 
-      TEST( domain_manager_cli, running_instances__scale_out_to_5__expected_configured_instances_5)
+      TEST( cli_domain, running_instances__scale_out_to_5__expected_configured_instances_5)
       {
          common::unittest::Trace trace;
          
@@ -192,7 +192,7 @@ domain:
          EXPECT_TRUE( output == expected) << output;
       }
 
-      TEST( domain_manager_cli, running_instances__scale_in_to_1__expected_configured_instances_1)
+      TEST( cli_domain, running_instances__scale_in_to_1__expected_configured_instances_1)
       {
          common::unittest::Trace trace;
          

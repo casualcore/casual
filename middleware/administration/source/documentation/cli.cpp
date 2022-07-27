@@ -87,6 +87,7 @@ namespace casual
                   generate_option( "buffer");
                   generate_option( "describe");
                   generate_option( "call");
+                  generate_option( "internal");
 
                   // the casual cli
                   {

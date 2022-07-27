@@ -65,7 +65,7 @@ domain:
       } // local
 
 
-      TEST( administration_cli_call, synchronous_call)
+      TEST( cli_call, synchronous_call)
       {
          common::unittest::Trace trace;
          
@@ -82,7 +82,7 @@ domain:
          EXPECT_TRUE( output == "casual\n") << output;
       }
 
-      TEST( administration_cli_call, synchronous_call_iterations_10)
+      TEST( cli_call, synchronous_call_iterations_10)
       {
          common::unittest::Trace trace;
 

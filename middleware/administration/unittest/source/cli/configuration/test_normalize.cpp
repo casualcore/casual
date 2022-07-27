@@ -194,7 +194,7 @@ domain:
       }
    }
 
-   TEST( configuration_normalize, single_file)
+   TEST( cli_configuration_normalize, single_file)
    {
       auto file_base = common::unittest::file::temporary::content( ".yaml", configuration::single::config);
 
@@ -212,7 +212,7 @@ domain:
       ASSERT_TRUE(errors.empty()) << "Errors were printed on validation: " << errors << "\nfor normalized config: \n" << normalize_output;
    }
 
-   TEST( configuration_normalize, multiple_files)
+   TEST( cli_configuration_normalize, multiple_files)
    {
       auto file_config_domain =
             common::unittest::file::temporary::content(".yaml", configuration::multiple::config_domain);

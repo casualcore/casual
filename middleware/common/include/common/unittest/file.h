@@ -34,7 +34,7 @@ namespace casual
          common::file::scoped::Path content( const std::filesystem::path& file, std::string_view content);
 
          platform::size::type size( const std::filesystem::path& path);
-         inline bool empty( const std::filesystem::path& path) { return size( path) == 0;}
+         bool empty( const std::filesystem::path& path);
 
          namespace fetch
          {
@@ -50,6 +50,10 @@ namespace casual
             } // until
             
          } // fetch
+
+         //! @returns true if a line in the file matches the regular `expression`
+         //! @note has to match the whole line.
+         bool contains( const std::filesystem::path& path, std::string_view expression);
 
       } // file
 

@@ -24,11 +24,11 @@ namespace casual
          using base_type = message::basic_message< Type::internal_configure_log>;
          struct Log : base_type
          {
-            std::filesystem::path path;
+            std::optional< std::filesystem::path> path;
 
             struct
             {
-               std::string inclusive;
+               std::optional< std::string> inclusive;
 
                CASUAL_CONST_CORRECT_SERIALIZE(
                   CASUAL_SERIALIZE( inclusive);

@@ -146,19 +146,33 @@ valid directives:
 
             namespace internal
             {
-               auto options()
+               namespace option
                {
-                  auto state_dump = []()
+                  namespace detail
                   {
-                     auto invoke = []( std::vector< common::strong::process::id::value_type> pids)
+                     auto fetch_handles( const std::vector< common::strong::process::id>& pids)
                      {
-                        auto send_message = []( auto pid)
+                        return algorithm::accumulate( pids, std::vector< process::Handle>{}, []( auto result, auto pid)
                         {
-                           if( auto handle = communication::instance::fetch::handle( common::strong::process::id{ pid}, communication::instance::fetch::Directive::direct))
-                              communication::device::blocking::optional::send( handle.ipc, common::message::internal::dump::State{});
+                           if( auto handle = communication::instance::fetch::handle( pid, communication::instance::fetch::Directive::direct))
+                              result.push_back( handle);
+
+                           return result;
+                        });
+                     }
+                     
+                  } // detail
+
+                  auto state_dump()
+                  {
+                     auto invoke = []( std::vector< common::strong::process::id> pids)
+                     {
+                        auto send_message = []( auto&& handle)
+                        {
+                           communication::device::blocking::optional::send( handle.ipc, common::message::internal::dump::State{});
                         };
 
-                        algorithm::for_each( pids, send_message);
+                        algorithm::for_each( detail::fetch_handles( pids), send_message);
                      };
 
                      return common::argument::Option{
@@ -166,13 +180,84 @@ valid directives:
                         { "--state-dump"},
                         "dump state to casual.log for the provided pids, if the pid is able"
                      };
-                  };
-                 
+                  }
+
+                  auto log_path()
+                  {
+                     auto invoke = []( std::filesystem::path path, std::vector< common::strong::process::id> pids)
+                     {
+                        common::message::internal::configure::Log message;
+                        message.path = std::move( path);
+
+                        auto send_message = [ &message]( auto&& handle)
+                        {
+                           communication::device::blocking::optional::send( handle.ipc, message);
+                        };
+
+                        algorithm::for_each( detail::fetch_handles( pids), send_message);
+                     };
+
+                     auto complete = []( auto&&, auto help) -> std::vector< std::string>
+                     {
+                        if( help)
+                           return { "<path>", "<pid>"};
+                        return { "<value>"};
+                     };
+
+                     return common::argument::Option{
+                        std::move( invoke),
+                        complete,
+                        { "--log-path"},
+                        R"(relocate the log-file for provided pids
+
+Note: only works for 'servers' with a message pump)"
+                     };
+                  }
+
+                  auto log_expression_inclusive()
+                  {
+                     auto invoke = []( std::string expression, std::vector< common::strong::process::id> pids)
+                     {
+                        common::message::internal::configure::Log message;
+                        message.expression.inclusive = std::move( expression);
+
+                        auto send_message = [ &message]( auto&& handle)
+                        {
+                           communication::device::blocking::optional::send( handle.ipc, message);
+                        };
+
+                        algorithm::for_each( detail::fetch_handles( pids), send_message);
+                     };
+
+                     auto complete = []( auto&&, auto help) -> std::vector< std::string>
+                     {
+                        if( help)
+                           return { "<expression>", "<pid>"};
+                        return { "<value>"};
+                     };
+
+                     return common::argument::Option{
+                        std::move( invoke),
+                        complete,
+                        { "--log-expression-inclusive"},
+                        R"(updates the _inclusive category filter_ (regex) for provided pids
+
+Works the same as the `CASUAL_LOG` variable
+Note: only works for 'servers' with a message pump)"
+                     };
+                  }
+                  
+               } // option
+
+
+               auto group()
+               {
                   return common::argument::Group{
                      [](){}, { "internal"}, "internal casual stuff for troubleshooting etc...",
-                     state_dump()
+                     option::state_dump(),
+                     option::log_path(),
+                     option::log_expression_inclusive(),
                   };
-
                }
                
             } // internal
@@ -220,7 +305,7 @@ Where <option> is one of the listed below
                cli.buffer.options(),
                cli.configuration.options(),
                common::terminal::output::directive().options(),
-               local::internal::options(),
+               local::internal::group(),
                local::version::options(),
             };
          }

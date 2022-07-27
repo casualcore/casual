@@ -11,6 +11,7 @@
 
 #include "common/code/raise.h"
 #include "common/code/casual.h"
+#include "common/log/stream.h"
 
 namespace casual
 {
@@ -88,6 +89,11 @@ namespace casual
                         Trace trace{ "common::message::dispatch::handle::local::handle::configure::log"};
                         log::line( log::debug, "message: ", message);
 
+                        log::stream::Configure configure;
+                        configure.path = message.path;
+                        configure.expression.inclusive = message.expression.inclusive;
+
+                        log::stream::configure( configure);
                      };
                   }
                } // configure
