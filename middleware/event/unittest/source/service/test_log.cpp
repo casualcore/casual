@@ -43,35 +43,6 @@ domain:
             } // configuration
 
 
-            namespace file
-            {
-               auto empty = []( auto& path)
-               {
-                  std::ifstream file{ path};
-                  return file.peek() == std::ifstream::traits_type::eof();
-               };
-
-               namespace wait
-               {
-                  auto content = []( auto& path)
-                  {
-                     auto count = 400;
-                     while( file::empty( path) && count-- > 0)
-                        common::process::sleep( std::chrono::milliseconds{ 4});
-
-                     return count > 0;
-                  };
-               } // has
-
-               auto string = []( auto& path)
-               {
-                  std::ifstream file{ path};
-                  std::stringstream stream;
-                  stream << file.rdbuf();
-                  return std::move( stream).str();
-               };
-            } // file
-
             namespace fetch::service
             {
                auto log()
@@ -107,7 +78,7 @@ domain:
          EXPECT_TRUE( casual::domain::manager::api::state().executables.at( 0).alias == "casual-event-service-log");
 
          // we wait until we got something
-         EXPECT_TRUE( local::file::wait::content( log_file)) << local::file::string( log_file);
+         EXPECT_TRUE( ! common::unittest::file::fetch::until::content( log_file).empty()) << common::unittest::file::fetch::content( log_file);
          
          // move the file
          auto rotated = common::unittest::file::temporary::name( ".log");
@@ -122,7 +93,7 @@ domain:
 
             // it's not deterministic when the signal arrives, so we need to "poll".
             auto count = 1000;
-            while( local::file::empty( log_file) && count-- > 0)
+            while( common::unittest::file::empty( log_file) && count-- > 0)
             {
                casual::domain::manager::api::state();
                common::process::sleep( std::chrono::milliseconds{ 2});
@@ -158,7 +129,7 @@ domain:
          common::process::sleep( std::chrono::milliseconds{ 1});
 
          // the metric should be discarded.
-         EXPECT_TRUE( local::file::empty( log_file)) << local::file::string( log_file);
+         EXPECT_TRUE( common::unittest::file::empty( log_file)) << common::unittest::file::fetch::content( log_file);
       }
 
 
@@ -184,7 +155,7 @@ domain:
          casual::domain::manager::api::state();
 
          // the call should match the filter, hence logged        
-         EXPECT_TRUE( local::file::wait::content( log_file)) << local::file::string( log_file);
+         EXPECT_TRUE( ! common::unittest::file::fetch::until::content( log_file).empty()) << common::unittest::file::fetch::content( log_file);
       }
 
       TEST( event_service_log, filter_inclusive_exclusive)
@@ -209,7 +180,7 @@ domain:
          casual::domain::manager::api::state();
 
          // the call should match the filter, hence logged        
-         EXPECT_TRUE( local::file::wait::content( log_file)) << local::file::string( log_file);
+         EXPECT_TRUE( ! common::unittest::file::fetch::until::content(log_file).empty()) << common::unittest::file::fetch::content( log_file);
       }
 
    } // event

@@ -322,9 +322,10 @@ namespace casual
          cli_transaction_finalize,
          cli_transaction_propagate,
 
-         // internal "troubleshoting" messages
+         // internal "troubleshooting" messages
          INTERNAL_BASE  = 11000,
          internal_dump_state = INTERNAL_BASE,
+         internal_configure_log,
 
          UNITTEST_BASE = 10000000, // avoid conflict with real messages
          unittest_message = UNITTEST_BASE,

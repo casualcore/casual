@@ -9,33 +9,25 @@
 
 namespace casual
 {
-   namespace common
+   namespace common::log::category
    {
-      namespace log
+
+      Stream parameter{ "parameter"};
+      Stream information{ "information"};
+      Stream warning{ "warning"};
+
+      // Always on
+      Stream error{ "error"};
+
+      namespace verbose
       {
-         namespace category
-         {
-            
-            Stream parameter{ "parameter"};
-            Stream information{ "information"};
-            Stream warning{ "warning"};
+         Stream error{ "error.verbose"};
 
-            // Always on
-            Stream error{ "error"};
+      } // verbose
 
-            namespace verbose
-            {
-               Stream error{ "error.verbose"};
+      Stream transaction{ "casual.transaction"};
+      Stream buffer{ "casual.buffer"};
 
-            } // verbose
-
-
-            Stream transaction{ "casual.transaction"};
-            Stream buffer{ "casual.buffer"};
-
-         } // category
-      } // log
-   } // common
-
+   } // common::log::category
 } // casual
 

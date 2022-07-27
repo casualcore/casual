@@ -79,6 +79,19 @@ namespace casual
                   }
                } // global
 
+               namespace configure
+               {
+                  auto log()
+                  {
+                     return []( message::internal::configure::Log& message)
+                     {
+                        Trace trace{ "common::message::dispatch::handle::local::handle::configure::log"};
+                        log::line( log::debug, "message: ", message);
+
+                     };
+                  }
+               } // configure
+
             } // handle
          } // <unnamed>
       } // local
@@ -89,6 +102,7 @@ namespace casual
          return dispatch::handler( communication::ipc::inbound::device(),
             local::handle::ping(),
             local::handle::shutdown(),
+            local::handle::configure::log(),
             local::handle::global::state());
       }
 

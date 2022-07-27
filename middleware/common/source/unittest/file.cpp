@@ -10,6 +10,7 @@
 #include "common/log/category.h"
 #include "common/code/system.h"
 #include "common/exception/guard.h"
+#include "common/process.h"
 
 #include <fstream>
 
@@ -53,6 +54,40 @@ namespace casual
             file << content;
             return { path};
          }
+
+         platform::size::type size( const std::filesystem::path& path)
+         {
+            return std::filesystem::file_size( path);
+         }
+
+         namespace fetch
+         {
+            std::string content( const std::filesystem::path& path)
+            {
+               std::ifstream file{ path};
+               std::stringstream stream;
+               stream << file.rdbuf();
+               return std::move( stream).str();
+            }
+
+            namespace until
+            {
+               std::string content( const std::filesystem::path& path)
+               {
+                  auto count = 400;
+                  while( count-- > 0)
+                  {
+                     if( ! file::empty( path))
+                        return fetch::content( path);
+
+                     process::sleep( std::chrono::milliseconds{ 4});
+                  }
+                  return {};
+               }
+               
+            } // until
+            
+         } // fetch
 
       } // file
 

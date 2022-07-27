@@ -194,6 +194,7 @@ namespace casual
             case Type::cli_transaction_finalize: return "cli_transaction_finalize";
             case Type::cli_transaction_propagate: return "cli_transaction_propagate";
             case Type::internal_dump_state: return "internal_dump_state";
+            case Type::internal_configure_log: return "internal_configure_log";
             case Type::unittest_message: return "unittest_message";
 
             // end markers...

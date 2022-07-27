@@ -33,6 +33,24 @@ namespace casual
 
          common::file::scoped::Path content( const std::filesystem::path& file, std::string_view content);
 
+         platform::size::type size( const std::filesystem::path& path);
+         inline bool empty( const std::filesystem::path& path) { return size( path) == 0;}
+
+         namespace fetch
+         {
+            //! @return the extracted content of the file.
+            std::string content( const std::filesystem::path& path);
+
+            namespace until
+            {
+               //! Tries to fetch the content of a file until there are content...
+               //! @return the extracted content of the file.
+               std::string content( const std::filesystem::path& path);
+               
+            } // until
+            
+         } // fetch
+
       } // file
 
       namespace directory
