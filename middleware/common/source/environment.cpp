@@ -203,6 +203,7 @@ namespace casual
                //! unittests
                struct Paths 
                {
+
                   std::filesystem::path domain = create_path( get_domain());
                   
                   std::filesystem::path install = []() -> std::filesystem::path
@@ -210,7 +211,7 @@ namespace casual
                      if( variable::exists( variable::name::directory::install))
                         return variable::get( variable::name::directory::install);
 
-                     // TODO: Use some more platform independant solution
+                     // TODO: Use some more platform independent solution
                      return "/opt/casual";
                   }();
 
@@ -380,8 +381,6 @@ namespace casual
          void reset()
          {
             local::global::paths = local::Paths{};
-
-            common::log::line( common::verbose::log, "paths: ", local::global::paths);
          }
       } // environment
    } // common

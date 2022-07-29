@@ -110,10 +110,19 @@ namespace casual
                void set( std::string_view name, std::string_view value);
 
                template< typename T>
-               auto set( std::string_view name, T&& value, traits::priority::tag< 1>) 
+               auto set( std::string_view name, T&& value, traits::priority::tag< 2>) 
                   -> decltype( set( name, std::forward< T>( value)))
                {
                   set( name, std::forward< T>( value));
+               }
+
+               //! for values that is not "string", but have a string() member
+               // (std::filesystem::path)
+               template< typename T>
+               auto set( std::string_view name, T&& value, traits::priority::tag< 1>) 
+                  -> decltype( set( name, std::forward< T>( value).string()))
+               {
+                  set( name, std::forward< T>( value).string());
                }
 
                template< typename T>
@@ -141,7 +150,7 @@ namespace casual
             auto set( std::string_view name, T&& value) 
                -> decltype( detail::set( name, std::forward< T>( value), traits::priority::tag< 1>{}))
             {
-               detail::set( name, std::forward< T>( value), traits::priority::tag< 1>{});
+               detail::set( name, std::forward< T>( value), traits::priority::tag< 2>{});
             }
 
             void unset( std::string_view name);
