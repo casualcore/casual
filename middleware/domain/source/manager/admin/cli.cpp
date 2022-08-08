@@ -1010,7 +1010,7 @@ depending on what parts are updated.
                            
                            auto archive = common::serialize::create::writer::from( format);
                            archive << CASUAL_NAMED_VALUE( domain);
-                           archive.consume( file);
+                           archive.consume( file.stream());
 
                            return scoped;
                         };

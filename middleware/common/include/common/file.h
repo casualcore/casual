@@ -43,15 +43,25 @@ namespace casual
             std::filesystem::path m_path;
          };
 
-         struct Output : std::ofstream
+         struct Output
          {
             Output( std::filesystem::path path, std::ios_base::openmode mode = std::ios_base::out);
 
-            const std::filesystem::path& path() const  { return m_path;}
+            void reopen();
+            inline void flush() noexcept { m_stream.flush();}
+
+            inline auto& path() const noexcept { return m_path;}
+            inline auto& stream() noexcept { return m_stream;}
+
+            operator std::ostream& () noexcept { return m_stream;}
+
+            template< typename T>
+            auto& operator << ( T&& value) { return m_stream << std::forward< T>( value);}
 
             inline friend std::ostream& operator << ( std::ostream& out, const Output& value) { return out << value.m_path;}
 
          private:
+            std::ofstream m_stream;
             std::filesystem::path m_path;
          };
 

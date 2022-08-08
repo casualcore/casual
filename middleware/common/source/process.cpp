@@ -63,7 +63,7 @@ namespace casual
          {
             namespace
             {
-               std::filesystem::path get_process_path()
+               std::filesystem::path initialize_process_path()
                {
 #ifdef __APPLE__
                   std::uint32_t size = platform::size::max::path;
@@ -95,18 +95,13 @@ namespace casual
                   return result;
                }
 
-
-               namespace global
-               {
-                  const std::filesystem::path path = get_process_path();
-               } // global
-
             } // <unnamed>
          } // local
 
          const std::filesystem::path& path()
          {
-            return local::global::path;
+            static const std::filesystem::path singleton{ local::initialize_process_path()};
+            return singleton;
          }
 
          strong::process::id id()

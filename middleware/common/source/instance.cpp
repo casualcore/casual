@@ -9,6 +9,9 @@
 #include "common/environment.h"
 #include "common/serialize/json.h"
 
+// TODO remove
+#include <iostream>
+
 
 namespace casual
 {
@@ -24,7 +27,7 @@ namespace casual
                {
                   constexpr auto name = "CASUAL_INSTANCE_INFORMATION";
 
-                  // allways consume the information so it doesn't propabate to children
+                  // always consume the information so it doesn't propagate to children
                   // (parent has to set this explicitly)
                   std::string value = common::environment::variable::consume( name, {});
 
@@ -33,6 +36,9 @@ namespace casual
                std::optional< Information> information()
                {
                   auto value = std::move( variable::value);
+
+                  // TODO remove
+                  std::cerr << variable::name << ": " <<  value << '\n';
 
                   if( value.empty())
                      return {};

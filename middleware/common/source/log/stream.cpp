@@ -53,34 +53,6 @@ namespace casual
                std::atomic< bool> reopen{ false};
             } // global::file
 
-            namespace file
-            {
-               struct Output : common::file::Output
-               {
-                  Output( std::filesystem::path path) 
-                     : common::file::Output{ create_parent( std::move( path)), std::ios::app}
-                  {}
-
-                  Output& operator = ( Output&&) = default;
-
-                  void reopen()
-                  {
-                     close();
-                     open( path(), std::ios::app);
-                     if( ! *this)
-                        code::raise::error( code::casual::invalid_path, "failed to reopen log file: ", path());
-                  }
-
-               private:
-
-                  inline std::filesystem::path create_parent( std::filesystem::path path)
-                  {
-                     directory::create( path.parent_path());
-                     return path;
-                  }
-               };
-               static_assert( std::is_move_assignable_v< Output>);
-            } // file
 
             struct File
             {
@@ -96,7 +68,7 @@ namespace casual
                   if( local::global::file::reopen.load())
                      reopen();
 
-                  common::stream::write( m_output, platform::time::clock::type::now(),
+                  common::stream::write( m_output.stream(), platform::time::clock::type::now(),
                      '|', common::domain::identity().name,
                      '|', execution::id(),
                      '|', process::id(),
@@ -113,7 +85,7 @@ namespace casual
 
                void relocate( std::filesystem::path path)
                {
-                  log( "casual.log", string::compose( "relocate logfile to: ", path));
+                  log( "casual.log", string::compose( "relocate logfile to: ", m_output));
                   m_output = file::Output{ std::move( path)};
                }
 
@@ -121,7 +93,9 @@ namespace casual
 
             private:
                File() : m_output( common::environment::log::path())
-               {}
+               {
+                  log( "casual.log", string::compose( "REMOVE - log created", m_output));
+               }
 
                void reopen() 
                {
@@ -187,7 +161,7 @@ namespace casual
                   {
                      if( value != base_type::traits_type::eof())
                      {
-                        if( value == '\n')
+                        if( value == '\n' || value == '\0')
                            log();
                         else
                            m_buffer.push_back( base_type::traits_type::to_char_type( value));
@@ -280,6 +254,8 @@ namespace casual
                   std::unique_ptr< stream::buffer> m_buffer;
                   std::string m_category;
                };
+
+               static_assert( std::is_nothrow_move_assignable_v< holder> && std::is_nothrow_move_constructible_v< holder>);
 
                auto activate() noexcept { return []( auto& stream) noexcept { stream.activate();};}
                auto deactivate() noexcept { return []( auto& stream) noexcept { stream.deactivate();};}
