@@ -198,78 +198,84 @@ namespace casual
          {
             namespace
             {
+               namespace path
+               {
+                  namespace detail
+                  {
+                     constexpr std::string_view casual = ".casual";
+
+
+                     template< typename O>
+                     auto value( std::string_view name, O&& optional) -> std::filesystem::path
+                     {
+                        if( variable::exists( name))
+                           return variable::get( name);
+
+                        return optional();
+                     }
+                  } // detail
+
+                  auto domain() -> std::filesystem::path
+                  {
+                     return common::directory::create( detail::value( variable::name::directory::domain, [](){ return "./";}));
+                  }
+
+                  auto transient() -> std::filesystem::path
+                  {
+                     return detail::value( variable::name::directory::transient, [](){ return environment::directory::temporary() / detail::casual;});
+                  }
+
+                  auto persistent() -> std::filesystem::path
+                  {
+                     return detail::value( variable::name::directory::persistent, [](){ return domain() / detail::casual;});
+                  }
+
+                  auto install() -> std::filesystem::path
+                  {
+                      // TODO: Use some more platform independent solution
+                     return detail::value( variable::name::directory::install, [](){ return "/opt/casual";});
+                  }
+
+                  auto log() -> std::filesystem::path
+                  {
+                     return detail::value( variable::name::log::path, [](){ return domain() / "casual.log";});
+                  }
+
+                  auto ipc() -> std::filesystem::path
+                  {
+                     return common::directory::create( detail::value( variable::name::directory::ipc, [](){ return transient() / "ipc";}));
+                  }
+
+                  auto queue() -> std::filesystem::path
+                  {
+                     return common::directory::create( detail::value( variable::name::directory::queue, [](){ return persistent() / "queue";}));
+                  }
+
+                  auto transaction() -> std::filesystem::path
+                  {
+                     return common::directory::create( detail::value( variable::name::directory::transaction, [](){ return persistent() / "transaction";}));
+                  }
+
+                  auto singleton() -> std::filesystem::path
+                  {
+                     return common::directory::create( domain() / detail::casual) / "singleton";
+                  }
+                  
+               } // path
+
+
                //! holds "all" paths based on enviornment.
                //! main purpose is to be able to reset when running
                //! unittests
                struct Paths 
                {
-
-                  std::filesystem::path domain = create_path( get_domain());
-                  
-                  std::filesystem::path install = []() -> std::filesystem::path
-                  {
-                     if( variable::exists( variable::name::directory::install))
-                        return variable::get( variable::name::directory::install);
-
-                     // TODO: Use some more platform independent solution
-                     return "/opt/casual";
-                  }();
-
-                  std::filesystem::path log = []() -> std::filesystem::path
-                  {
-                     auto file = []( ) -> std::filesystem::path
-                     {
-                        if( variable::exists( variable::name::log::path))
-                           return variable::get( variable::name::log::path);
-
-                        return get_domain() / "casual.log";
-                     }();
-
-                     common::directory::create( file.parent_path());
-                     return file;
-                  }();
-
-                  std::filesystem::path ipc = []() 
-                  {
-                     auto get = []()
-                     {
-                        if( variable::exists( variable::name::directory::ipc))
-                           return std::filesystem::path{ variable::get( variable::name::directory::ipc)};
-                        
-                        return get_transient() / "ipc";
-                     };
-
-                     return create_path( get());
-                  }();
-
-                  std::filesystem::path queue = []() 
-                  {
-                     auto get = []()
-                     {
-                        if( variable::exists( variable::name::directory::queue))
-                           return std::filesystem::path{ variable::get( variable::name::directory::queue)};
-                        
-                        return get_persistent() / "queue";
-                     };
-
-                     return create_path( get());
-                  }();
-
-                  std::filesystem::path transaction = []() 
-                  {
-                     auto get = []()
-                     {
-                        if( variable::exists( variable::name::directory::transaction))
-                           return std::filesystem::path{ variable::get( variable::name::directory::transaction)};
-
-                        return get_persistent() / "transaction";
-                     };
-
-                     return create_path( get());
-                  }();
-
-                  std::filesystem::path singleton = create_path( get_domain() / ".casual") / "singleton";
-
+                  std::filesystem::path domain = path::domain();
+                  std::filesystem::path install = path::install();
+                  std::filesystem::path log = path::log();
+                  std::filesystem::path ipc = path::ipc();
+                  std::filesystem::path queue = path::queue();
+                  std::filesystem::path transaction = path::transaction();
+                  std::filesystem::path singleton = path::singleton();
                   
                   CASUAL_LOG_SERIALIZE(
                      CASUAL_SERIALIZE( domain);
@@ -280,38 +286,6 @@ namespace casual
                      CASUAL_SERIALIZE( transaction);
                      CASUAL_SERIALIZE( singleton);
                   )
-
-               private:
-
-                  static std::filesystem::path get_domain()
-                  {
-                     if( variable::exists( variable::name::directory::domain))
-                        return { variable::get( variable::name::directory::domain)};
-
-                     return { "./"};
-                  }
-
-                  static std::filesystem::path get_transient()
-                  {
-                     if( variable::exists( variable::name::directory::transient))
-                        return std::filesystem::path{ variable::get( variable::name::directory::transient)} ;
-
-                     return environment::directory::temporary() / ".casual";
-                  }
-
-                  static std::filesystem::path get_persistent()
-                  {
-                     if( variable::exists( variable::name::directory::persistent))
-                        return std::filesystem::path{ variable::get( variable::name::directory::persistent)} ;
-
-                     return get_domain() / ".casual";
-                  }
-
-                  static std::filesystem::path create_path( std::filesystem::path path)
-                  {
-                     common::directory::create( path);
-                     return path;
-                  }
                };
 
                
@@ -331,10 +305,9 @@ namespace casual
                return local::global::paths.domain;
             }
 
-            const std::filesystem::path& temporary()
+            std::filesystem::path temporary()
             {
-               static const std::filesystem::path singleton{ common::directory::temporary()};
-               return singleton;               
+               return std::filesystem::temp_directory_path();
             }
 
             const std::filesystem::path& install()

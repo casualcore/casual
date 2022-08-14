@@ -175,32 +175,34 @@ namespace casual
 
             namespace name
             {
+               using namespace std::string_view_literals;
+
                namespace unittest
                {
                   //! if set, we're in a unittest context and can act differently
                   //! TODO we might want to have a #define from the compiler
-                  constexpr auto context = "CASUAL_UNITTEST_CONTEXT";
+                  constexpr auto context = "CASUAL_UNITTEST_CONTEXT"sv;
                } // unittest
                
                namespace system
                {
-                  constexpr auto configuration = "CASUAL_SYSTEM_CONFIGURATION_GLOB";
+                  constexpr auto configuration = "CASUAL_SYSTEM_CONFIGURATION_GLOB"sv;
                } // system
 
                namespace resource
                {
                   //! @deprecated use name::system::configuration
-                  constexpr auto configuration = "CASUAL_RESOURCE_CONFIGURATION_FILE";
+                  constexpr auto configuration = "CASUAL_RESOURCE_CONFIGURATION_FILE"sv;
                } // resource
 
                namespace log
                {
-                  constexpr auto pattern = "CASUAL_LOG";
-                  constexpr auto path = "CASUAL_LOG_PATH";
+                  constexpr auto pattern = "CASUAL_LOG"sv;
+                  constexpr auto path = "CASUAL_LOG_PATH"sv;
 
                   namespace parameter
                   {
-                     constexpr auto format = "CASUAL_LOG_PARAMETER_FORMAT";
+                     constexpr auto format = "CASUAL_LOG_PARAMETER_FORMAT"sv;
                   } // parameter
 
                } // log
@@ -209,21 +211,21 @@ namespace casual
                namespace directory
                {
                   //! variable name representing casual home. Where casual is installed
-                  constexpr auto install = "CASUAL_HOME";
+                  constexpr auto install = "CASUAL_HOME"sv;
 
-                  constexpr auto domain = "CASUAL_DOMAIN_HOME";
+                  constexpr auto domain = "CASUAL_DOMAIN_HOME"sv;
 
                   //! where to store ipc files
-                  constexpr auto ipc = "CASUAL_IPC_DIRECTORY";
+                  constexpr auto ipc = "CASUAL_IPC_DIRECTORY"sv;
 
                   //! where to store transaction (TLOG) database files
-                  constexpr auto transaction = "CASUAL_TRANSACTION_DIRECTORY";
+                  constexpr auto transaction = "CASUAL_TRANSACTION_DIRECTORY"sv;
 
                   //! where to store queue database files
-                  constexpr auto queue = "CASUAL_QUEUE_DIRECTORY";
+                  constexpr auto queue = "CASUAL_QUEUE_DIRECTORY"sv;
 
-                  constexpr auto transient = "CASUAL_TRANSIENT_DIRECTORY";
-                  constexpr auto persistent = "CASUAL_PERSISTENT_DIRECTORY";
+                  constexpr auto transient = "CASUAL_TRANSIENT_DIRECTORY"sv;
+                  constexpr auto persistent = "CASUAL_PERSISTENT_DIRECTORY"sv;
                } // directory
                
 
@@ -233,40 +235,40 @@ namespace casual
                {
                   namespace domain
                   {
-                     constexpr auto manager = "CASUAL_DOMAIN_MANAGER_PROCESS";
+                     constexpr auto manager = "CASUAL_DOMAIN_MANAGER_PROCESS"sv;
                   } // domain
 
                   namespace service
                   {
-                     constexpr auto manager = "CASUAL_SERVICE_MANAGER_PROCESS";
+                     constexpr auto manager = "CASUAL_SERVICE_MANAGER_PROCESS"sv;
                   } // service
 
                   namespace transaction
                   {
-                     constexpr auto manager = "CASUAL_TRANSACTION_MANAGER_PROCESS";
+                     constexpr auto manager = "CASUAL_TRANSACTION_MANAGER_PROCESS"sv;
                   } // transaction
 
                   namespace queue
                   {
-                     constexpr auto manager = "CASUAL_QUEUE_MANAGER_PROCESS";
+                     constexpr auto manager = "CASUAL_QUEUE_MANAGER_PROCESS"sv;
                   } // queue
 
                   namespace gateway
                   {
-                     constexpr auto manager = "CASUAL_GATEWAY_MANAGER_PROCESS";
+                     constexpr auto manager = "CASUAL_GATEWAY_MANAGER_PROCESS"sv;
                   } // gateway
                } // ipc
                //! @}
 
                namespace terminal
                {
-                  constexpr auto precision = "CASUAL_TERMINAL_PRECISION";
-                  constexpr auto color = "CASUAL_TERMINAL_COLOR";
-                  constexpr auto header = "CASUAL_TERMINAL_HEADER";
-                  constexpr auto porcelain = "CASUAL_TERMINAL_PORCELAIN";
-                  constexpr auto block = "CASUAL_TERMINAL_BLOCK";
-                  constexpr auto verbose = "CASUAL_TERMINAL_VERBOSE";
-                  constexpr auto editor = "CASUAL_TERMINAL_EDITOR";
+                  constexpr auto precision = "CASUAL_TERMINAL_PRECISION"sv;
+                  constexpr auto color = "CASUAL_TERMINAL_COLOR"sv;
+                  constexpr auto header = "CASUAL_TERMINAL_HEADER"sv;
+                  constexpr auto porcelain = "CASUAL_TERMINAL_PORCELAIN"sv;
+                  constexpr auto block = "CASUAL_TERMINAL_BLOCK"sv;
+                  constexpr auto verbose = "CASUAL_TERMINAL_VERBOSE"sv;
+                  constexpr auto editor = "CASUAL_TERMINAL_EDITOR"sv;
                } // log
 
             } // name
@@ -275,7 +277,7 @@ namespace casual
          namespace directory
          {
             //! @return default temp directory
-            const std::filesystem::path& temporary();
+            std::filesystem::path temporary();
 
             //! @return Home of current domain
             const std::filesystem::path& domain();
