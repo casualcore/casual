@@ -877,7 +877,7 @@ domain:
 
       TEST( test_xatmi_conversation, connect_send_TPSENDONLY_service_tpreturn_send__conversation_recv_send_service)
       {
-         unittest::Trace trace;
+         common::unittest::Trace trace;
 
          auto domain = local::domain();
          // In this test the called service does a tpreturn() when
@@ -971,7 +971,7 @@ domain:
 
       TEST( casual_xatmi_conversation, DISABLED_connect_send_TPSENDONLY_service_tpreturn_with_data_send__conversation_recv_send_service)
       {
-         unittest::Trace trace;
+         common::unittest::Trace trace;
 
          auto domain = local::domain();
          // This test is similiar to the previous test.
@@ -1043,7 +1043,7 @@ domain:
 
       TEST( test_xatmi_conversation, connect_send_TPRECVONLY_service_return__conversation_recv_send_service)
       {
-         unittest::Trace trace;
+         common::unittest::Trace trace;
 
          auto domain = local::domain();
          // What happens in this test?
@@ -1087,7 +1087,7 @@ domain:
 
       TEST( test_xatmi_conversation, connect_send_send_TPRECVONLY_service_return_recv__conversation_recv_send_service)
       {
-         unittest::Trace trace;
+         common::unittest::Trace trace;
 
          auto domain = local::domain();
          // What happens in this test?
@@ -1144,7 +1144,7 @@ domain:
 
       TEST( test_xatmi_conversation, connect_send_sleep_send_TPRECVONLY_service_return_recv__conversation_recv_send_service)
       {
-         unittest::Trace trace;
+         common::unittest::Trace trace;
 
          auto domain = local::domain();
          // What happens in this test?
