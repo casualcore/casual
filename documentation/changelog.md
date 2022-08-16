@@ -3,6 +3,14 @@ This is the changelog for `casual` and all changes are listed in this document.
 
 ## [Unreleased]
 
+## [1.5.13] - 2022-08-16
+### Fixes
+- queue - add lookup restrictions depending on caller location
+- service - add lookup restrictions depending on caller location
+- queue - fix pre/post statements for "tuning"
+- http - fix outbound to advertise services with order 0
+- discovery - fix using routes for services correctly
+
 ## [1.5.12] - 2022-05-10
 ### Fixes
 - cli - fix configuration --normalize
