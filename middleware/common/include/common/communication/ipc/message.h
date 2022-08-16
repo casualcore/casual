@@ -218,7 +218,6 @@ namespace casual
          platform::size::type m_offset{};
       };
 
-      static_assert( traits::is_movable< Complete>::value, "not movable");
 
       template< typename M>
       Complete& operator >> ( Complete& complete, M& message)

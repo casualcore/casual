@@ -37,9 +37,6 @@ namespace casual
                {
                   auto value = std::move( variable::value);
 
-                  // TODO remove
-                  std::cerr << variable::name << ": " <<  value << '\n';
-
                   if( value.empty())
                      return {};
 

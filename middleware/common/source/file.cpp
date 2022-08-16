@@ -61,29 +61,46 @@ namespace casual
             } // <unnamed>
          } // local
 
-         Input::Input( std::filesystem::path path, std::ios_base::openmode mode) : std::ifstream{ path, mode}, m_path{ std::move( path)}
-         {
-            if( ! is_open())
-               code::raise::error( code::casual::invalid_path, "failed to open file: ", m_path);
-         }
-
-         Output::Output( std::filesystem::path path, std::ios_base::openmode mode) 
-            : m_stream{ local::create_parent( path), mode}, m_path{ std::move( path)}
+         Input::Input( std::filesystem::path path) 
+            : m_stream{ path, std::ios::in }, m_path{ std::move( path)}
          {
             if( ! m_stream.is_open())
-               code::raise::error( code::casual::invalid_path, "failed to open file: ", m_path);
+               code::raise::error( code::casual::invalid_path, "failed to open file: ", *this);
          }
 
-         void Output::reopen()
+         std::ostream& operator << ( std::ostream& out, const Input& value) 
+         { 
+            return stream::write( out, value.m_path);
+         }
+
+         static_assert( traits::is::movable_v< Input>);
+
+         namespace output
          {
-            m_stream.close();
-            m_stream.open( local::create_parent( m_path), std::ios::app);
-            if( ! m_stream.is_open())
-               code::raise::error( code::casual::invalid_path, "failed to reopen file: ", m_path);
-         }
+            base::base( std::filesystem::path path, std::ios::openmode mode) 
+               : m_stream{ local::create_parent( path), std::ios::out | mode}, m_path{ std::move( path)}
+            {
+               if( ! m_stream.is_open())
+                  code::raise::error( code::casual::invalid_path, "failed to open file: ", *this);
+            }
 
-         static_assert( std::is_move_constructible_v< Output>);
-         static_assert( std::is_move_assignable_v< Output>);
+            void base::reopen( std::ios::openmode mode)
+            {
+               m_stream.close();
+               m_stream.open( local::create_parent( m_path), mode);
+               if( ! m_stream.is_open())
+                  code::raise::error( code::casual::invalid_path, "failed to reopen file: ", *this);
+            }
+
+            std::ostream& operator << ( std::ostream& out, const base& value) 
+            {
+               return stream::write( out, value.m_path);
+            }
+
+            static_assert( traits::is::movable_v< Append>);
+            
+         } // output
+         
 
          void remove( const std::filesystem::path& path)
          {
@@ -174,22 +191,19 @@ namespace casual
 
          std::filesystem::path temporary( std::string_view extension)
          {
-            return directory::temporary() / string::compose( uuid::make(), '.', extension); 
+            return environment::directory::temporary() / string::compose( uuid::make(), '.', extension); 
          }
 
       } // file
 
       namespace directory
       {
-         void create( const std::filesystem::path& path)
+         std::filesystem::path create( std::filesystem::path path)
          {
             if( ! std::filesystem::exists( path))
                std::filesystem::create_directories( path);
-         }
 
-         std::filesystem::path temporary()
-         {
-            return std::filesystem::temp_directory_path();
+            return path;
          }
 
       } // directory

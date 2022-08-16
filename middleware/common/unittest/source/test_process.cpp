@@ -22,10 +22,14 @@ namespace casual
       {
          namespace
          {
-            auto processPath()
+            namespace process
             {
-               return std::filesystem::path{ __FILE__}.parent_path().parent_path().parent_path() / "bin" / "simple_process";
-            }
+               auto path()
+               {
+                  return std::filesystem::path{ "./bin/simple_process"};
+               }
+            } // process
+
          }
       }
 
@@ -46,7 +50,7 @@ namespace casual
       {
          common::unittest::Trace trace;
 
-         auto pid = process::spawn( local::processPath(), {});
+         auto pid = process::spawn( local::process::path(), {});
 
          EXPECT_TRUE( pid);
          EXPECT_TRUE( pid != process::id());
@@ -59,7 +63,7 @@ namespace casual
       {
          common::unittest::Trace trace;
 
-         auto pid = process::spawn( local::processPath(), { "-r", "42" });
+         auto pid = process::spawn( local::process::path(), { "-r", "42" });
 
          EXPECT_TRUE( pid);
          EXPECT_TRUE( pid != process::id());
@@ -76,7 +80,7 @@ namespace casual
 
          log::line( log::category::error, "REMOVE");
 
-         auto pid = process::spawn( local::processPath(), {});
+         auto pid = process::spawn( local::process::path(), {});
 
          EXPECT_TRUE( pid);
          EXPECT_TRUE( pid != process::id());
@@ -131,7 +135,7 @@ namespace casual
       {
          common::unittest::Trace trace;
 
-         auto path = local::processPath();
+         auto path = local::process::path();
          path += "_non_existing_file";
 
          EXPECT_CODE({

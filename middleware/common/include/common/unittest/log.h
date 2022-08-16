@@ -12,6 +12,8 @@
 #include "common/log/trace.h"
 #include "common/string/compose.h"
 
+#include "casual/assert.h"
+
 #include <gtest/gtest.h>
 
 namespace casual
@@ -42,7 +44,7 @@ namespace casual
       {
          Trace()
          {
-            auto test_info = ::testing::UnitTest::GetInstance()->current_test_info();
+            auto test_info = casual::assertion( ::testing::UnitTest::GetInstance()->current_test_info());
             log::line( unittest::trace, "TEST( ", test_info->test_case_name(), ".", test_info->name(), ") - in");
          }
          ~Trace()

@@ -307,7 +307,7 @@ namespace casual
 
             // We try to eliminate signals to propagate to children by it self...
             // we don't need to set groupid with posix_spawnattr_setpgroup since the default is 0.
-            local::spawn::Attributes attributes{ POSIX_SPAWN_SETPGROUP};
+            const local::spawn::Attributes attributes{ POSIX_SPAWN_SETPGROUP};
 
             return local::spawn::invoke( std::move( path), attributes, std::move( arguments), std::move( environment));
 

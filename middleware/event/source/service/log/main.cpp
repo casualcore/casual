@@ -65,32 +65,20 @@ namespace casual
                struct Log
                {
                   Log( std::filesystem::path path, std::string delimiter) 
-                     : file{ Log::open( std::move( path))}, delimiter{ std::move( delimiter)} {}
+                     : file{ std::move( path)}, delimiter{ std::move( delimiter)} {}
                   
-                  common::file::Output file;
+                  common::file::output::Append file;
                   std::string delimiter;
 
                   void reopen()
                   {  
-                     common::log::line( event::log, "reopen service event log: ", file); 
-
-                     file.flush();
-                     file = open( file.path());
+                     common::log::line( event::log, "reopen service event log: ", file);
+                     file.reopen();
                   }
 
                   void flush()
                   {
                      file.flush();
-                  }
-
-               private:
-
-                  static common::file::Output open( std::filesystem::path path)
-                  {
-                     // make sure we got the directory
-                     common::directory::create( path.parent_path());
-
-                     return { std::move( path), std::ios::app};
                   }
                };
             } // state

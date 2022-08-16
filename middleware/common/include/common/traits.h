@@ -216,12 +216,7 @@ namespace casual
       template< typename T>
       using by_value_or_const_ref_t = typename by_value_or_const_ref< T>::type;
 
-      template< typename T>
-      struct is_nothrow_movable : bool_constant<
-         std::is_nothrow_move_constructible< T>::value && std::is_nothrow_move_assignable< T>::value> {}; 
 
-      template< typename T>
-      using is_movable = is_nothrow_movable< T>;
 
       //! usable in else branch in constexpr if context
       template< typename T> 
@@ -403,6 +398,17 @@ namespace casual
             } // output
    
          } // detail
+
+
+         template< typename T>
+         inline constexpr bool movable_v = std::is_move_constructible_v< T> && std::is_move_assignable_v< T>;
+
+         namespace nothrow
+         {
+            template< typename T>
+            inline constexpr bool movable_v = std::is_nothrow_move_constructible_v< T> && std::is_nothrow_move_assignable_v< T>;
+            
+         } // nothrow
 
 
          template< typename T>

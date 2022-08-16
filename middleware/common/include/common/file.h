@@ -31,39 +31,55 @@ namespace casual
             } // standard
          } // descriptor
 
-         struct Input : std::ifstream
+         struct Input
          {
-            Input( std::filesystem::path path, std::ios_base::openmode mode = std::ios_base::in);
+            Input( std::filesystem::path path);
 
-            const std::filesystem::path& path() const  { return m_path;}
+            const auto& path() const { return m_path;}
+            inline operator std::istream& () noexcept { return m_stream;}
 
-            inline friend std::ostream& operator << ( std::ostream& out, const Input& value) { return out << value.m_path;}
+            friend std::ostream& operator << ( std::ostream& out, const Input& value);
 
          private:
+            std::ifstream m_stream;
             std::filesystem::path m_path;
          };
 
-         struct Output
+         namespace output
          {
-            Output( std::filesystem::path path, std::ios_base::openmode mode = std::ios_base::out);
+            struct base
+            {
+               base( std::filesystem::path path, std::ios::openmode mode);
 
-            void reopen();
-            inline void flush() noexcept { m_stream.flush();}
+               void reopen( std::ios::openmode mode);
+               inline decltype( auto) flush() { return m_stream.flush();}
+               inline auto& path() const noexcept { return m_path;}
 
-            inline auto& path() const noexcept { return m_path;}
-            inline auto& stream() noexcept { return m_stream;}
+               template< typename T>
+               auto& operator << ( T&& value) { return m_stream << std::forward< T>( value);}
+               
+               inline operator std::ostream& () noexcept { return m_stream;}
+               
+               friend std::ostream& operator << ( std::ostream& out, const base& value);
 
-            operator std::ostream& () noexcept { return m_stream;}
+            private:
+               std::ofstream m_stream;
+               std::filesystem::path m_path;
+            };
 
-            template< typename T>
-            auto& operator << ( T&& value) { return m_stream << std::forward< T>( value);}
+            template< std::ios::openmode mode>
+            struct basic : base
+            {
+               explicit basic( std::filesystem::path path) 
+                  : base{ std::move( path), mode} {}
 
-            inline friend std::ostream& operator << ( std::ostream& out, const Output& value) { return out << value.m_path;}
+               void reopen() { base::reopen( mode);}
+            };
 
-         private:
-            std::ofstream m_stream;
-            std::filesystem::path m_path;
-         };
+            using Append = basic< std::ios::app>;
+            using Truncate = basic< std::ios::trunc>;
+            
+         } // output
 
          void remove( const std::filesystem::path& path);
 
@@ -122,10 +138,8 @@ namespace casual
       {
          //! creates all directories recursively if missing.
          //! takes soft links into account when creating the path, if any.
-         void create( const std::filesystem::path& path);
+         std::filesystem::path create( std::filesystem::path path);
 
-         //! @return the system temporary directory
-         std::filesystem::path temporary();
       } // directory
 
    } // common

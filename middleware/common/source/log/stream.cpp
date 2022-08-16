@@ -68,7 +68,7 @@ namespace casual
                   if( local::global::file::reopen.load())
                      reopen();
 
-                  common::stream::write( m_output.stream(), platform::time::clock::type::now(),
+                  common::stream::write( m_output, platform::time::clock::type::now(),
                      '|', common::domain::identity().name,
                      '|', execution::id(),
                      '|', process::id(),
@@ -86,16 +86,16 @@ namespace casual
                void relocate( std::filesystem::path path)
                {
                   log( "casual.log", string::compose( "relocate logfile to: ", m_output));
-                  m_output = file::Output{ std::move( path)};
+                  m_output = file::output::Append{ std::move( path)};
                }
 
                inline auto& path() const noexcept { return m_output.path();}
 
+
             private:
+
                File() : m_output( common::environment::log::path())
-               {
-                  log( "casual.log", string::compose( "REMOVE - log created", m_output));
-               }
+               {}
 
                void reopen() 
                {
@@ -105,7 +105,7 @@ namespace casual
                   log( "casual.log", string::compose( "logfile reopened: ", m_output));
                }
 
-               file::Output m_output;
+               common::file::output::Append m_output;
                std::string m_alias = instance::alias();
             };
 

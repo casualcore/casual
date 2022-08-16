@@ -1005,12 +1005,12 @@ depending on what parts are updated.
 
                         auto get_configuration_file = []( auto& domain, auto format)
                         {
-                           file::Output file{ file::temporary( format)};
+                           file::output::Truncate file{ file::temporary( format)};
                            file::scoped::Path scoped{ file.path()};
                            
                            auto archive = common::serialize::create::writer::from( format);
                            archive << CASUAL_NAMED_VALUE( domain);
-                           archive.consume( file.stream());
+                           archive.consume( file);
 
                            return scoped;
                         };

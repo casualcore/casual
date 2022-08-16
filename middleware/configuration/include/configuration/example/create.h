@@ -7,6 +7,7 @@
 #pragma once
 
 #include "common/file.h"
+#include "common/environment.h"
 #include "common/serialize/create.h"
 #include "common/serialize/yaml.h"
 
@@ -22,7 +23,7 @@ namespace casual
          {
             inline common::file::scoped::Path temporary( std::string_view extension)
             {
-               const auto prefix = common::directory::temporary() / "configuration_";
+               const auto prefix = common::environment::directory::temporary() / "configuration_";
                return { common::file::name::unique( prefix.string(), extension)};
             }
          } // detail
