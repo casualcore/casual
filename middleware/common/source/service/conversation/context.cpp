@@ -120,10 +120,11 @@ namespace casual
                      // tpsend. This is to detect the exceptional situations
                      // the other end has issused a disconnect (tpsend in
                      // subordinate tpsend) or has done a tpreturn (tpsend
-                     // in initiator)  
-                     common::Flags< Event> pending_event(common::service::conversation::state::descriptor::Value value)
+                     // in initiator)
+                     send::Result pending_event(common::service::conversation::state::descriptor::Value value)
                      {
-                        common::Flags< Event> result_event{}; // assume no return event!
+                        //common::Flags< Event> result_event{}; // assume no return event!
+                        send::Result result; // assumes no return event! User code 0
 
                         // There can possibly be pending messages that effecitively
                         // terminate the conversation.
@@ -148,7 +149,7 @@ namespace casual
                         // conversation an inbound conversation_send can only be
                         // the result of a subordinate tpreturn, while a
                         // conversation_disconnect is the result of an initiator
-                        // disconnect. 
+                        // disconnect.
 
                         message::conversation::callee::Send inp_message;
                         std::vector<common::message::Type> types{
@@ -181,21 +182,21 @@ namespace casual
                               switch( inp_message.code.result)
                               {
                                  case Result::service_fail:
-                                    result_event = decltype( result_event.type())::service_fail;
+                                    result.event = decltype( result.event.type())::service_fail;
+                                    result.user = inp_message.code.user;
                                     break;
                                  case Result::service_error:
-                                    result_event = decltype( result_event.type())::service_error;
+                                    result.event = decltype( result.event.type())::service_error;
                                     break;
                                  default:
                                     // Anything else is abnormal in this situation and should not happen.
-                                    //  
                                     log::line( log::category::error,
                                              code::casual::internal_unexpected_value,
                                              " message type: ", complete_msg.type(),
                                              " with unexpected code.result: ",
-                                             inp_message.code.result, 
+                                             inp_message.code.result,
                                              " handled as service_error");
-                                    result_event = decltype( result_event.type())::service_error; 
+                                    result.event = decltype( result.event.type())::service_error;
                                     break;
                               }
                            break;
@@ -207,7 +208,7 @@ namespace casual
                         default:
                            // should never happen! The next() above only accept
                            // conversation_send and conversation_disconnect.
-                           // And absent_message can occur and when
+                           // And absent_message can occur when
                            // neither has arrived. Anything else should be
                            // the result of a coding error/bug.
                            // Log or dump? A defensive strategy is to treat as
@@ -219,8 +220,8 @@ namespace casual
                            throw exception::conversation::Event{ Event::disconnect};
                            break;
                         }
-                        return result_event;
-                     }   
+                        return result;
+                     }
 
                   } // check
 
@@ -340,7 +341,7 @@ namespace casual
                return descriptor;
             }
 
-            common::Flags< Event> Context::send( strong::conversation::descriptor::id descriptor, common::buffer::payload::Send&& buffer, common::Flags< send::Flag> flags)
+            send::Result Context::send( strong::conversation::descriptor::id descriptor, common::buffer::payload::Send&& buffer, common::Flags< send::Flag> flags)
             {
                Trace trace{ "common::service::conversation::Context::send"};
 
@@ -350,6 +351,8 @@ namespace casual
                local::validate::send( value);
 
                value.duplex = local::duplex::convert( flags);
+               // if an event occurs (TPEV_DISCONIMM, TPEV_SVCFAI or TPEV_SVCERR)
+               // the conversation is terminated. The descriptor shall be unreserved.
                auto unreserve = common::execute::scope( [&](){ m_state.descriptors.unreserve( descriptor);});
 
                local::check::disconnect( value);
@@ -377,17 +380,18 @@ namespace casual
                // early detection, we should check for this.
 
                // We can possibly use the generic dispatch (consume?)
-               // machinery to handle this. A low level soultion is to
+               // machinery to handle this. A low level solution is to
                // do a non-blocking recive for conversation_send or
                // conversation_disconnect. As we are in control of the
                // conversation an inbound conversation_send can only be
                // the result of a subordinate tpreturn, while a
                // conversation_disconnect is the result of an initiator
-               // disconnect. 
+               // disconnect.
                // This low level impementation is in check::pending_event()
-               common::Flags< Event> result_event = local::check::pending_event( value);
+               //common::Flags< Event> result_event = local::check::pending_event( value);
+               send::Result result = local::check::pending_event( value);
 
-               if (result_event.empty())
+               if (result.event.empty())
                {
                   // normal case! No pending event so prepare and send data
                   auto message = local::prepare::message< message::conversation::caller::Send>( value, std::move( buffer));
@@ -396,10 +400,11 @@ namespace casual
 
                   communication::device::blocking::send( value.process.ipc, message);
 
-                  unreserve.release();
+                  unreserve.release(); // the conversation remains, so descriptor
+                                       // shall not be unreserved
                }
 
-               return result_event;
+               return result;
 
             }
 
@@ -432,18 +437,20 @@ namespace casual
                // that (unless it provides for such a mode). It is also a
                // bit of overkill to set up all that machinery.
                //
-               // For now,  I am using a more simpler approach and use
+               // For now,  I am using a simple approach (but not elegant!) and use
                // primitives provided by Inbound<typename Connector>.
 
                // Normally we will get a conversation_send message and
                // the content of that message is needed. We do NOT need
                // the deserialized content of a possible (but unusual)
-               // disconnect_message.
+               // disconnect_message. The existence of the message is enough.
 
                auto receive_message = [&unreserve]( auto& correlation, auto& flags)
                {
                   // types of interest...
-                  constexpr static auto types = common::array::make( message::conversation::callee::Send::type(), message::Type::conversation_disconnect);
+                  constexpr static auto types = common::array::make(
+                      message::conversation::callee::Send::type(),
+                      message::Type::conversation_disconnect);
 
                   auto receive_complete = []( auto& correlation, auto& flags)
                   {
@@ -504,16 +511,52 @@ namespace casual
                // terminate that service (assuming it is part of an invoked
                // service), and not the conversation. Indirectly
                // it terminates the conversation but that is a consequence
-               // of the termination of the initiator
+               // of the termination of the initiator!
+               //
+               // A tpreturn can supply a user return code that is passed
+               // on to the caller of tprecv. The user return code is only passed
+               // on SVCSUCC and SVCFAIL. It is not passed with "SVCERR".
+               // Note that as this code is called in the context of a tprecv,
+               // the other end is likely to be in control of the conversation
+               // when/if it calls tpreturn. This means that a user return code
+               // and possibly a data buffer can be sent by the tpreturn.
+               // There can be exotic timing cases where the tpreturn is
+               // called by a service that is NOT in control of the conversation,
+               // but when the "initiator" receives the message sent by the tpretun
+               // the initator has transferrred the control of the conversation.
+               //
+               // initiator               service
+               //  tpsend
+               //                         tprecv
+               //  tpsend TPRECVONLY
+               //                         tpreturn TPSVCFAIL and no data, but user code
+               //  tprecv
+               //                         (message sent with TPRECVONLY is discarded)
+               //
+               // If the timing is slightly different and the initator has got the
+               // "tpreturn message" when the call to tpsend with TPRECVONLY is issued,
+               // then that call can return TPEV_SVCFAIL. The tpsend is documented as 
+               // setting the global "tpurcode" in this case. This implies that the user
+               // return code is to be passed even for tpreturn when not in control
+               // of the session (as long as no data buffer is passed to tpreturn).     
 
                using Result = decltype( message.code.result);
                if( message.code.result != Result::absent)
                {
                   switch( message.code.result)
                   {
-                     case Result::ok: result.event = decltype( result.event.type())::service_success; break;
-                     case Result::service_fail: result.event = decltype( result.event.type())::service_fail; break;
-                     default: result.event = decltype( result.event.type())::service_error; break;
+                     case Result::ok:
+                        result.event = decltype( result.event.type())::service_success;
+                        result.user = message.code.user;
+                     break;
+                     case Result::service_fail:
+                        result.event = decltype( result.event.type())::service_fail;
+                        result.user = message.code.user;
+                        break;
+                     default:
+                        result.event = decltype( result.event.type())::service_error;
+                        result.user = 0; // a predictable uesr return code...
+                        break;
                   }
                   
                   // we're done with this conversation,

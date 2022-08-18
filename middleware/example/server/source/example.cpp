@@ -27,8 +27,8 @@ namespace casual
    namespace example::server
    {
       // Helpers. Mainly used in service casual_example_conversation_recv_send
-      // to make code more compact and reduce clutter. 
-      namespace local 
+      // to make code more compact and reduce clutter.
+      namespace local
       {
          namespace
          {
@@ -39,7 +39,7 @@ namespace casual
                   int retval; // captured return value
                   int error;  // captured tperrno
                   long event; // captured event code
-                  std::string data; // received data 
+                  std::string data; // received data
                   // Serialization needed?
                   CASUAL_LOG_SERIALIZE(
                      CASUAL_SERIALIZE( event);
@@ -56,7 +56,7 @@ namespace casual
                   auto recv_len= tptypes( buffer, nullptr,nullptr);
                   result.retval = tprecv( descriptor, &buffer, &recv_len, flags, &result.event);
                   result.error = tperrno;
-                  
+
                   if( result.retval != -1 || // =no error or event from tprecv or
                         (result.retval == -1 && result.error == TPEEVENT && // "error" and event with possible data
                         algorithm::compare::any( result.event, TPEV_SVCFAIL, TPEV_SVCSUCC, TPEV_SENDONLY)))
@@ -259,20 +259,24 @@ namespace casual
                if( recent_data.find("execute tpreturn TPFAIL no data") != std::string::npos)
                {
                   // Also a "hack"for testing purposes.
-                  // Do a tpreturn with TPFAIL from service. This is a 
+                  // Do a tpreturn with TPFAIL from service. This is a
                   // kind of an "abort from service side" when done
                   // when service (subordinate i XATMI spec terms) is
                   // not in control of the conversation. According to spec
                   // a tpreturn when not in control gives TPEV_SVCERR
                   // in caller, except for a tpreturn with no data and
-                  // TPFAIL that should give TPEV_SVCFAIL. 
-                  // 
+                  // TPFAIL that should give TPEV_SVCFAIL.
+                  //
                   // Note that if we got control in the last tprecv
                   // it is legal/normal from a "protocol" point of view
                   // to return with a TPFAIL. In this case data is also
                   // allowed!
                   log::line(log::debug, "casual_example_conversation_recv_send requested to execute \"tpreturn TPFAIL no data\"");
-                  tpreturn(TPFAIL, 0, 0, 0, 0); 
+                  // use a "user return code(rcode" value of 2 to have something that is not equal
+                  // o the default. Allows verification that the user return code is passed
+                  // to caller even if no data is passed. Useful when testing calls to tpreturn
+                  // when not in control of the conversation.
+                  tpreturn(TPFAIL, 2, 0, 0, 0);
                   //      (failure, rcode, no data, length 0, flags)
                }
                if( recent_data.find("execute tpreturn TPFAIL with data") != std::string::npos)
@@ -289,7 +293,9 @@ namespace casual
                   auto tpreturn_buffer = tpalloc(X_OCTET, nullptr, return_data.length());
 
                   common::algorithm::copy(common::range::make(return_data.begin(), return_data.end()), tpreturn_buffer);
-                  tpreturn( TPFAIL, 0, tpreturn_buffer, tptypes(tpreturn_buffer, nullptr, nullptr), 0);
+                  // use a user rreturn code of 1. Different from 0 so it can be checked
+                  // for in initiator/caller.
+                  tpreturn( TPFAIL, 1, tpreturn_buffer, tptypes(tpreturn_buffer, nullptr, nullptr), 0);
                   //      ( failure, rcode, no data, length 0, flags)
                }
             } // while( receiving) <-- if this is needed the control flow is way to big! (which it is...)            } // while(receiving)
