@@ -102,10 +102,35 @@ int tpsend( int id, const char* idata, long ilen, long flags, long* event)
          Flag::no_time,
          Flag::signal_restart};
 
-      return casual::common::service::conversation::context().send(
+      auto result = casual::common::service::conversation::context().send(
             casual::common::strong::conversation::descriptor::id{ id},
             std::move( buffer),
             valid_flags.convert( flags));
+      // There may be a user return code. It need to be set.
+      // Occurs if/when callee called tpreturn (and thereby
+      // terminated the conversation). It is a bit unusaual
+      // for a (conversational) service to call tpreturn when
+      // not in control of the conversation (as we are in
+      // tpsend, this side is in control of the conversation).
+      // It is a kind of "service side abort" of the converation.
+      // A call to tpreturn WITHOUT data shall according to the
+      // XATMI spec result in a TPEV_SVCFAIL event, and this can
+      // have a user return code. If the tpreturn call have data
+      // the result will be a TPEV_SVCERR reported to the initiator...
+      // A tpsend in the conversational service will never return
+      // TPEV_SVCFAIL. An "initator side abort" of a conversation,
+      // is done with tpdiscon() resulting in a TPEV_DISCONIMM.
+      // "Abnormal" terminations of caller/initiator also
+      // result in TPEV_DISCONIMM.
+      //
+      // The XATMI spec does not say if the global tpurcode
+      // should be left unchanged on calls that do not return
+      // a user return code (all cases except TPEV_SVCFAIL).
+      // For now I always set it to whatever happens to be in
+      // result.user (defaults to 0).
+      casual::xatmi::internal::user::code::set( result.user);
+
+      return result.event;
 
    });
 }
@@ -136,6 +161,11 @@ int tprecv( int id, char ** odata, long *olen, long flags, long* event)
 
       casual::common::buffer::pool::Holder::instance().deallocate( *odata);
       std::tie( *odata, *olen) = casual::common::buffer::pool::Holder::instance().insert( std::move( result.buffer));
+
+      // We also need to set any user return code that may be present. Happens when/if
+      // the callee called tpreturn. A user return code is available on SVCSUCC or SVCFAIL.
+      // Not in on SVCERR, but even i that case there is a value (==0) in result.user.
+      casual::xatmi::internal::user::code::set( result.user);
 
       return result.event;
 

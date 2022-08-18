@@ -52,6 +52,15 @@ namespace casual
             {
                using Flag = flag::service::conversation::send::Flag;
                using Flags = flag::service::conversation::send::Flags;
+               struct Result
+               {
+                  common::Flags< Event> event;
+                  long user = 0;
+                  CASUAL_LOG_SERIALIZE(
+                     CASUAL_SERIALIZE( event);
+                     CASUAL_SERIALIZE( user);
+                  )
+               };
             } // send
 
             namespace receive
@@ -62,10 +71,12 @@ namespace casual
                struct Result
                {
                   common::Flags< Event> event;
+                  long user = 0;
                   common::buffer::Payload buffer;
 
                   CASUAL_LOG_SERIALIZE(
                      CASUAL_SERIALIZE( event);
+                     CASUAL_SERIALIZE( user);
                      CASUAL_SERIALIZE( buffer);
                   )
                };
@@ -79,7 +90,7 @@ namespace casual
 
                strong::conversation::descriptor::id connect( const std::string& service, common::buffer::payload::Send buffer, connect::Flags flags);
 
-               common::Flags< Event> send( strong::conversation::descriptor::id descriptor, common::buffer::payload::Send&& buffer, common::Flags< send::Flag> flags);
+               send::Result send( strong::conversation::descriptor::id descriptor, common::buffer::payload::Send&& buffer, common::Flags< send::Flag> flags);
 
                receive::Result receive( strong::conversation::descriptor::id descriptor, common::Flags< receive::Flag> flags);
 
