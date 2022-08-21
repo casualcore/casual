@@ -252,22 +252,6 @@ jobs:
           name: suse_rpm
           path: ./**/casual-middleware*.rpm
 
-  publish-version:
-    runs-on: self-hosted
-    needs: [build-centos,build-suse]
-    if: success()
-    steps:
-      - name: Publish suse
-        uses: actions/download-artifact@v3
-        with:
-          name: suse_rpm
-          path: /var/www/release/
-      - name: Publish centos
-        uses: actions/download-artifact@v3
-        with:
-          name: centos_rpm
-          path: /var/www/release/
-
   notification-end:
     runs-on: ubuntu-latest
     needs: [build-centos,build-suse]
