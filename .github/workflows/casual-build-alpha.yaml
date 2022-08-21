@@ -270,7 +270,7 @@ jobs:
 
   notification-end:
     runs-on: ubuntu-latest
-    needs: [build-centos,build-suse,tag-repo]
+    needs: [build-centos,build-suse]
     if: always()
     steps: 
       - uses: martialonline/workflow-status@v2
