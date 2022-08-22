@@ -228,6 +228,16 @@ namespace casual
                         deactivate();
                   }
 
+                  template< typename P>
+                  stream::buffer* initialize( P&& predicate) noexcept
+                  {
+                     if( ! predicate( *this))
+                        return nullptr;
+
+                     m_buffer = std::make_unique< stream::buffer>( std::move( m_category));
+                     return m_buffer.get();
+                  }
+
                   bool active() const noexcept { return common::predicate::boolean( m_buffer);}
 
                   log::Stream& stream() noexcept { return *m_stream;}
@@ -281,10 +291,10 @@ namespace casual
                if( auto found = algorithm::find( local::streams(), category))
                   casual::terminate( "log category ", std::quoted( category), " already registered - stream: ", *found, " - all streams: ", local::streams());
 
-               // make sure we register stream, and possibly activate the stream.
-               auto& handle = local::streams().emplace_back( std::move( category), stream);
-               handle.toggle( common::predicate::disjunction( predicate::mandatory(), predicate::user()));
-               return handle.buffer();
+               auto predicate = common::predicate::disjunction( predicate::mandatory(), predicate::user());
+
+               // make sure we register stream, and possibly activate the stream based on the predicate.
+               return local::streams().emplace_back( std::move( category), stream).initialize( predicate);
             }
 
 
