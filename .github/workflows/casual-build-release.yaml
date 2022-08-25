@@ -1,12 +1,11 @@
-name: Build Casual - Beta
+name: Build Casual - Release
 on: 
   push:
     branches:
-      - 'feature/*/main'
-      - 'patch/*/main'
+      - 'release/*'
 
 env:
-  build_type: beta
+  build_type: normal
   centos_image: casual/centos-builder
   suse_image: casual/suse-builder
 
@@ -55,12 +54,12 @@ jobs:
       - name: set casual_version
         id: casual_version
         run: |
-          echo "::set-output name=value::$( echo ${{ steps.build_version.outputs.value }} | awk -F'-' '{ print $1 }' )"
+          echo "::set-output name=value::${{ steps.build_version.outputs.value }}"
 
       - name: set casual_release
         id: casual_release
         run: |
-          echo "::set-output name=value::$( echo ${{ steps.build_version.outputs.value }} | awk -F'-' '{ print $2 }' )"
+          echo "::set-output name=value::1"
   
   notification-start:
     runs-on: ubuntu-latest

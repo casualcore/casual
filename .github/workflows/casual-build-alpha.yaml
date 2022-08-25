@@ -3,10 +3,9 @@ on:
   push:
     branches:
       - 'feature/**'
-      - '!**/dev'
+      - '!feature/*/main'
       - 'patch/**'
-      - '!**/dev'
-      - '!**/main'
+      - '!patch/*/main'
 env:
   build_type: alpha
   centos_image: casual/centos-builder
