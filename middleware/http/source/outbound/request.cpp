@@ -33,6 +33,27 @@ namespace casual
       {
          namespace
          {
+
+
+            auto& configuration()
+            {
+               static struct Configuration
+               {
+                  const bool force_fresh_connect = common::environment::variable::get( "CASUAL_HTTP_CURL_FORCE_FRESH_CONNECT", false);
+                  const bool verbose = common::environment::variable::get( "CASUAL_HTTP_CURL_VERBOSE", false);
+
+               } result;
+
+               return result;
+            }
+
+            struct
+            {
+               const std::regex loggable_content{ R"(text\/.*)"};
+
+            } global;
+
+
             namespace send
             {
                namespace callback
@@ -167,17 +188,6 @@ namespace casual
                } // callback
             } // receive
 
-            
-            namespace log
-            {
-               auto verbose = common::environment::variable::get( "CASUAL_CURL_VERBOSE", 0) == 1;
-            } // log
-            
-            namespace global
-            {
-               auto const loggable_content_type_regexp = std::regex{ R"(text\/.*)"};
-            } // global
-
          } // <unnamed>
       } // local
 
@@ -204,7 +214,7 @@ namespace casual
                      {
                         common::log::line( common::log::category::error, "failed to deduce buffer type for content-type: ", content.value());
 
-                        if( std::regex_match( content.value(), local::global::loggable_content_type_regexp))
+                        if( std::regex_match( content.value(), local::global.loggable_content))
                            common::log::line( common::log::category::verbose::error, "payload: ", string::view::make( request.state().payload.memory));
 
                         return {};
@@ -252,7 +262,8 @@ namespace casual
          curl::easy::set::option( easy, CURLOPT_URL, node.url.data());
          curl::easy::set::option( easy, CURLOPT_FOLLOWLOCATION, 1L);
 
-            // connection stuff
+         // Only force fresh connection if user wants to...
+         if( local::configuration().force_fresh_connect)
          {
             // TODO performance: there probably exists a better way than to reconnect,
             //  but in "some" network stacks request gets lost, and no _failure_ is detected. 
@@ -290,7 +301,7 @@ namespace casual
             curl::easy::set::option( easy, CURLOPT_HEADERDATA, &request.state());
          }
 
-         if( local::log::verbose)
+         if( local::configuration().verbose)
             curl::easy::set::option( easy, CURLOPT_VERBOSE, 1);
 
 

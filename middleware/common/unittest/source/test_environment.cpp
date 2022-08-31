@@ -16,6 +16,25 @@ namespace casual
 {
    namespace common
    {
+      TEST( common_environment_variable_type, boolean_default)
+      {
+         common::unittest::Trace trace;
+
+         EXPECT_TRUE( ! environment::variable::get( "SOME_VARIABLE", false));
+         EXPECT_TRUE( environment::variable::get( "SOME_VARIABLE", true));
+      }
+
+      TEST( common_environment_variable_type, boolean)
+      {
+         common::unittest::Trace trace;
+
+         environment::variable::set( "SOME_VARIABLE_5b54338bc2704", true);
+         EXPECT_TRUE( environment::variable::get< bool>( "SOME_VARIABLE_5b54338bc2704"));
+
+         environment::variable::set( "SOME_VARIABLE_5b54338bc2704", false);
+         EXPECT_TRUE( ! environment::variable::get< bool>( "SOME_VARIABLE_5b54338bc2704"));
+      }
+
       TEST( common_environment, string__no_variable__expect_same)
       {
          common::unittest::Trace trace;
