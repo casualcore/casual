@@ -57,6 +57,8 @@ common = make.LinkLibrary( 'bin/casual-queue-common',
     make.Compile( 'source/code.cpp'),
    ],
    ['casual-common',])
+
+install_lib.append( common)
  
 # Group
 

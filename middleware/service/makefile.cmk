@@ -42,6 +42,8 @@ common_library = make.LinkLibrary( 'bin/casual-service-common',
         'casual-common',
     ])
 
+install_libs.append( common_library)
+
 manager_archive = make.LinkArchive( 'bin/casual-service-manager-archive',
     [
         make.Compile( 'source/manager/state.cpp'),
