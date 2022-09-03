@@ -28,7 +28,8 @@ def alpha():
 def assemble_filter(base_version, version_type):
    match_string = "^" + base_version
    if version_type == normal():
-      match_string += "\."
+      match_string += "\.[0-9]+$"
+      return match_string
    else:
       match_string += "-" + version_type
    
