@@ -248,6 +248,18 @@ namespace casual
                   tpreturn( TPFAIL, 0, nullptr, 0, 0);
                }
 
+               if( recent_data.find("execute exit") != std::string::npos)
+               {
+                  // A "hack"for testing purposes.
+                  // Force the server to exit. The intention is that this 
+                  // "emulates" the case that service code causes a fatal error
+                  // forces an exit of the server process. I.e. no return
+                  // to the Casual code. I expect caller to get a TPSVCERR in 
+                  // this case. 
+                  log::line(log::debug, "casual_example_conversation_recv_send requested to execute \"exit\"");
+                  exit(1);
+               }
+
                if( recent_data.find("execute return") != std::string::npos)
                {
                   // Also a "hack"for testing purposes.

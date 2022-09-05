@@ -1090,6 +1090,97 @@ domain:
 #endif
       }
 
+      TEST( test_xatmi_conversation, connect_send_TPRECVONLY_server_exit__conversation_recv_send_service)
+      {
+         common::unittest::Trace trace;
+
+         auto domain = local::domain();
+         // What happens in this test?
+         // This is a test of a scenario where the service misbehaves!
+         // The service is instructed to do "exit"/terminate the server
+         // process. In this case  "exit()" is called. In real situations
+         // a SEGV or similar condition may be the cause of the server exit.
+         // * connect with data, TPSENDONLY
+         // * send data, including a substring "execute exit". Hand over
+         //   control of conversation.
+         // * (callee will exit the server process)
+         // * tprecv
+
+         const std::string_view payload {"connect data"};
+         auto connection = local::connect::invoke( "casual/example/conversation_recv_send", payload, TPSENDONLY);
+         EXPECT_TRUE( connection) << CASUAL_NAMED_VALUE( connection);
+         EXPECT_TRUE( connection.error == 0) << CASUAL_NAMED_VALUE( connection);
+
+         {
+            std::string send_data {" execute exit"};
+            auto result = local::send::invoke ( connection.descriptor, send_data, TPSIGRSTRT|TPRECVONLY);
+            EXPECT_TRUE( result) << CASUAL_NAMED_VALUE( result);
+         }
+
+         {
+            // The receive should fail in some way as the callee terminates
+            // in a bad way
+            auto result = local::receive::invoke( connection.descriptor, TPSIGRSTRT);
+            EXPECT_TRUE( result.retval == -1) << CASUAL_NAMED_VALUE( result);
+            EXPECT_TRUE( result.error == TPEEVENT) << CASUAL_NAMED_VALUE( result);
+            EXPECT_TRUE( result.event == TPEV_SVCERR) << CASUAL_NAMED_VALUE( result);
+         }
+
+         // and the conversation descriptor should now be invalid
+         EXPECT_TRUE( tpdiscon( connection.descriptor) == -1);
+
+#ifdef HANG_WORKAROUND
+         common::process::sleep( 200ms);
+#endif
+      }
+
+      TEST( test_xatmi_conversation, connect_send_TPSENDONLY_server_exit__conversation_recv_send_service)
+      {
+         common::unittest::Trace trace;
+
+         auto domain = local::domain();
+         // What happens in this test?
+         // This is a test of a scenario where the service misbehaves!
+         // The service is instructed to do "exit"/terminate the server
+         // process. In this case  "exit()" is called. In real situations
+         // a SEGV or similar condition may be the cause of the server exit.
+         // * connect with data, TPSENDONLY
+         // * send data, including a substring "execute exit". 
+         // * sleep a short time to geive server time to exit
+         // * (attempt to) send data and hand over
+         //   control of conversation.
+         // Expected result is a TPEV_SVCERR on the tpsend
+
+         const std::string_view payload {"connect data"};
+         auto connection = local::connect::invoke( "casual/example/conversation_recv_send", payload, TPSENDONLY);
+         EXPECT_TRUE( connection) << CASUAL_NAMED_VALUE( connection);
+         EXPECT_TRUE( connection.error == 0) << CASUAL_NAMED_VALUE( connection);
+
+         {
+            std::string send_data {" execute exit"};
+            auto result = local::send::invoke ( connection.descriptor, send_data, TPSIGRSTRT);
+            EXPECT_TRUE( result) << CASUAL_NAMED_VALUE( result);
+         }
+
+         common::process::sleep( 200ms);
+
+         {
+            std::string send_data {" dummy data"};
+            auto result = local::send::invoke ( connection.descriptor, send_data, TPSIGRSTRT|TPRECVONLY);
+            EXPECT_TRUE( result.retval == -1) << CASUAL_NAMED_VALUE( result);
+            EXPECT_TRUE( result.error == TPEEVENT) << CASUAL_NAMED_VALUE( result);
+            EXPECT_TRUE( result.event == TPEV_SVCERR) << CASUAL_NAMED_VALUE( result);
+            EXPECT_TRUE( result.user == 0) << CASUAL_NAMED_VALUE( result);
+         }
+
+         // and the conversation descriptor should now be invalid
+         EXPECT_TRUE( tpdiscon( connection.descriptor) == -1);
+
+#ifdef HANG_WORKAROUND
+         common::process::sleep( 200ms);
+#endif
+      }
+
       TEST( test_xatmi_conversation, connect_send_send_TPRECVONLY_service_return_recv__conversation_recv_send_service)
       {
          common::unittest::Trace trace;
@@ -1126,16 +1217,22 @@ domain:
          {
             std::string send_data {" send data"};
             auto result = local::send::invoke ( connection.descriptor, send_data, TPSIGRSTRT|TPRECVONLY);
-            EXPECT_TRUE( result) << CASUAL_NAMED_VALUE( result);
-         }
-
-         {
-            // The receive should fail in some way as the callee terminates
-            // in a bad way
-            auto result = local::receive::invoke( connection.descriptor, TPSIGRSTRT);
-            EXPECT_TRUE( result.retval == -1) << CASUAL_NAMED_VALUE( result);
-            EXPECT_TRUE( result.error == TPEEVENT) << CASUAL_NAMED_VALUE( result);
-            EXPECT_TRUE( result.event == TPEV_SVCERR) << CASUAL_NAMED_VALUE( result);;
+            // Depending on timing this send may fail or succeed. Usually it succeeds
+            // but it has happened that it fails...
+            if ( result)
+            {
+               // The receive should fail in some way as the callee terminates
+               // in a bad way
+               auto result = local::receive::invoke( connection.descriptor, TPSIGRSTRT);
+               EXPECT_TRUE( result.retval == -1) << CASUAL_NAMED_VALUE( result);
+               EXPECT_TRUE( result.error == TPEEVENT) << CASUAL_NAMED_VALUE( result);
+               EXPECT_TRUE( result.event == TPEV_SVCERR) << CASUAL_NAMED_VALUE( result);;         
+            } else {
+               // If the send fails, it should be with TPEV_SVCERR
+               EXPECT_TRUE( result.retval == -1) << CASUAL_NAMED_VALUE( result);
+               EXPECT_TRUE( result.error == TPEEVENT) << CASUAL_NAMED_VALUE( result);
+               EXPECT_TRUE( result.event == TPEV_SVCERR) << CASUAL_NAMED_VALUE( result);;         
+            }
          }
 
          // and the conversation descriptor should now be invalid

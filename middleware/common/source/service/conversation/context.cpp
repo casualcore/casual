@@ -120,18 +120,22 @@ namespace casual
                      // tpsend. This is to detect the exceptional situations
                      // the other end has issused a disconnect (tpsend in
                      // subordinate tpsend) or has done a tpreturn (tpsend
-                     // in initiator)
+                     // in initiator).
+                     // It also handles the case of a pending service_reply
+                     // that may have been sent by the service manager if/when
+                     // it detected that the server process terminated while busy. 
                      send::Result pending_event(common::service::conversation::state::descriptor::Value value)
                      {
-                        //common::Flags< Event> result_event{}; // assume no return event!
                         send::Result result; // assumes no return event! User code 0
 
                         // There can possibly be pending messages that effecitively
                         // terminate the conversation.
                         // * In the "initiator" it can happen that the subordinate has
                         //   done a tpreturn while not in control of the conversation
-                        // * in the subordinate there can be a conversation_disconnect
+                        // * In the subordinate there can be a conversation_disconnect
                         //   caused by a disconnect call executed by the initiator.
+                        // * In the initiator there can be a service_reply if/when
+                        //   the server process has terminated while busy.
                         // Not detecting and handling theese messages MAY be acceptable
                         // but the XATMI spec documents events for reporting events
                         // in the above cases (TPEV_SVCFAIL or TPEV_SVCERR in the
@@ -154,7 +158,8 @@ namespace casual
                         message::conversation::callee::Send inp_message;
                         std::vector<common::message::Type> types{
                            inp_message.type(),
-                           message::Type::conversation_disconnect};
+                           message::Type::conversation_disconnect,
+                           message::Type::service_reply};
 
                         // Buffer for serialized messages
                         decltype(communication::device::non::blocking::next(
@@ -205,9 +210,18 @@ namespace casual
                            // do as in local::check::disconnect().
                            throw exception::conversation::Event{ Event::disconnect};
                            break;
+                        case message::Type::service_reply:
+                           // Message from service manager. Server process has
+                           // died...
+                           // Need to generate TPEV_SVCERR
+                           // We do not need the actual message content!
+                           // If this occurs it is an unconditional TPEV_SVCERR
+                           result.event = decltype( result.event.type())::service_error;
+                           break;
                         default:
                            // should never happen! The next() above only accept
-                           // conversation_send and conversation_disconnect.
+                           // conversation_send, conversation_disconnect and
+                           // service_reply.
                            // And absent_message can occur when
                            // neither has arrived. Anything else should be
                            // the result of a coding error/bug.
@@ -261,8 +275,16 @@ namespace casual
 
                auto start = platform::time::clock::type::now();
 
-               auto descriptor = m_state.descriptors.reserve( 
-                  strong::correlation::id{ uuid::make()},
+               auto descriptor = m_state.descriptors.reserve(
+                  // Use the correlation id from the lookup
+                  // in the connect! Seems as if service manager remembers
+                  // this correlation id and uses it to send a 
+                  // "service reply" if/when the server executing the service
+                  // terminates for some reason. For this to work
+                  // the conversation receive (and send?) calls need to use
+                  // the same correlation id to wait for/read responses
+                  // from the service
+                  strong::correlation::id{ lookup.correlation()},
                   process::Handle{},
                   local::duplex::convert( flags),
                   true);
@@ -421,9 +443,10 @@ namespace casual
 
                local::check::disconnect( value);
 
-               // There are two possible messages in this situation:
+               // There are three possible messages in this situation:
                //  message::conversation::calle::send
-               //  message::conversation::disconnect
+               //  message::Type::conversation_disconnect
+               //  message::Type::service_reply
                // This means we must use communication::device methods that
                // allows this. The usual
                //   communication::device[::non]::blocking(receive(communication::ipc::inbound::device(),
@@ -444,13 +467,25 @@ namespace casual
                // the content of that message is needed. We do NOT need
                // the deserialized content of a possible (but unusual)
                // disconnect_message. The existence of the message is enough.
+               // The same is true for service_reply also. This message
+               // comes from the service manager, and occurs when the service
+               // manager has detected that the server process terminated
+               // and was busy (with an active service).
+               //
+               // To get a service_reply from a conversational service is
+               // a bit odd. A cleaner design might have been to have a
+               // specific message::Type for notificationa about service
+               // errors. Now the conversational case relies on the logic
+               // and messaages used for "tpcall"  
 
                auto receive_message = [&unreserve]( auto& correlation, auto& flags)
                {
                   // types of interest...
                   constexpr static auto types = common::array::make(
                       message::conversation::callee::Send::type(),
-                      message::Type::conversation_disconnect);
+                      //message::Type::conversation_disconnect);
+                      message::Type::conversation_disconnect,
+                      message::Type::service_reply);
 
                   auto receive_complete = []( auto& correlation, auto& flags)
                   {
@@ -490,6 +525,17 @@ namespace casual
                         // "error" path
                         // do as in local::check::disconnect().
                         throw exception::conversation::Event{ Event::disconnect};
+                     }
+                     case message::Type::service_reply:
+                     {
+                        // "error" path
+                        // It is somewhat odd to get a service_reply 
+                        // in a conversational context! This occurs if/when
+                        // a server processing a (subordinate) conversational
+                        // service diees. The service manager discovers this
+                        // and sends a service_reply. This is the expected
+                        // message in a "tpcall" context... 
+                        throw exception::conversation::Event{ Event::service_error};
                      }
                      default:
                      {
