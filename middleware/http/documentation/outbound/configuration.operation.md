@@ -28,5 +28,11 @@ http:
           value: some-header-value
 
 
-
 ```
+
+## environments
+
+name                                   | type    | default | description  
+---------------------------------------|---------|---------|------------------------------------------------------------------------------------
+`CASUAL_HTTP_CURL_FORCE_FRESH_CONNECT` | `bool`  | `false` | force a new connection for every call
+`CASUAL_HTTP_CURL_VERBOSE`             | `bool`  | `false` | internal "verbose" logging from cURL 
