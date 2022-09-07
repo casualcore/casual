@@ -10,6 +10,7 @@
 #include "domain/discovery/common.h"
 
 #include "common/communication/select.h"
+#include "common/communication/select/ipc.h"
 #include "common/exception/guard.h"
 #include "common/argument.h"
 #include "common/communication/instance.h"
@@ -46,25 +47,6 @@ namespace casual
                );
             }
 
-            namespace dispatch
-            {
-               auto handler( State& state)
-               {
-                  return [ handler = handle::create( state)]( common::strong::file::descriptor::id descriptor, common::communication::select::tag::read) mutable
-                  {
-                     auto& inbound = common::communication::ipc::inbound::device();
-                     if( inbound.descriptor() != descriptor)
-                        return false;
-                     
-                     auto count = platform::batch::discovery::message::pump::next;
-                     while( count-- != 0 && handler( common::communication::device::non::blocking::next( inbound)))
-                        ; // no-op
-                     
-                     return true;
-                  };
-               }
-            } // dispatch
-
             void start( State state)
             {
                Trace trace{ "domain::discovery::local::start"};
@@ -74,7 +56,7 @@ namespace casual
                communication::select::dispatch::pump( 
                   local::condition( state),
                   state.directive,
-                  dispatch::handler( state),
+                  communication::select::ipc::dispatch::create( state, &handle::create),
                   state.multiplex
                );
 

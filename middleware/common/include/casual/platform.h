@@ -85,7 +85,7 @@ namespace casual
       {
          namespace message::pump
          {
-            constexpr size::type next = 200;
+            constexpr size::type next = 1;
          } // message::pump
 
          namespace transaction
