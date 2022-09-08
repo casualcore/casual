@@ -3,6 +3,12 @@ This is the changelog for `casual` and all changes are listed in this document.
 
 ## [Unreleased]
 
+## [1.5.14] - 2022-09-08
+### Fixes
+- conversation - fix a bug where tprecv and tpsend failed to set the global tpurcode.
+- conversation - generate events in tpsend when partner calls tpreturn or tpdiscon.
+- conversation - fix handling of server process exit/core.
+
 ## [1.5.13] - 2022-08-16
 ### Fixes
 - queue - add lookup restrictions depending on caller location
