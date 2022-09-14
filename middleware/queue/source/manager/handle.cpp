@@ -174,7 +174,7 @@ namespace casual
                      state.pending.lookups.push_back( std::move( message));
                   }
 
-                  void reply( State& state, const casual::queue::manager::state::Queue& queue, queue::ipc::message::lookup::Request& message)
+                  void reply( State& state, const casual::queue::manager::state::Queue& queue, const queue::ipc::message::lookup::Request& message)
                   {
                      auto reply = common::message::reverse::type( message);
                      reply.name = message.name;
@@ -220,7 +220,7 @@ namespace casual
                      switch( message.context.requester)
                      {
                         case Enum::internal:
-                           if( ! detail::dispatch::lookup::internal_only( state, message))
+                           if( ! detail::dispatch::lookup::internal_external( state, message))
                               detail::dispatch::lookup::discovery( state, message);
                            return;
                         case Enum::external:
@@ -402,6 +402,8 @@ namespace casual
                      {
                         Trace trace{ "queue::manager::handle::local::domain::discovery::api::reply"};
                         common::log::line( verbose::log, "message: ", message);
+
+                        
 
                         pending::lookups::check( state);
 

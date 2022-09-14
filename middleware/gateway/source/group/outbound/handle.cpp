@@ -362,7 +362,7 @@ namespace casual
                                  auto advertise = state.lookup.add( 
                                     connection, 
                                     algorithm::transform( reply.content.services, []( auto& service){ return state::lookup::Resource{ service.name, service.property.hops};}), 
-                                    algorithm::transform( reply.content.queues, []( auto& service){ return state::lookup::Resource{ service.name, 1};}));
+                                    algorithm::transform( reply.content.queues, []( auto& queue){ return state::lookup::Resource{ queue.name, 1};}));
 
 
                                  auto equal_name = []( auto& lhs, auto& rhs){ return lhs.name == rhs;};
