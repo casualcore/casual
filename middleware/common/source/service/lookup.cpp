@@ -8,7 +8,6 @@
 
 #include "common/communication/instance.h"
 
-
 namespace casual
 {
    namespace common::service
@@ -37,32 +36,7 @@ namespace casual
          Lookup::~Lookup()
          {
             if( m_correlation)
-            {
-               try
-               {
-                  log::line( log::debug, "pending lookup - discard");
-
-                  // we've got a pending lookup on the service, we need to tell
-                  // service manager to discard our lookup.
-
-                  const auto request = [&]()
-                  {
-                     message::service::lookup::discard::Request result{ process::handle()};
-                     result.requested = m_service;
-                     result.correlation = m_correlation;
-                     return result;
-                  }();
-
-                  auto reply = communication::ipc::call( communication::instance::outbound::service::manager::device(), request);
-
-                  if( reply.state == decltype( reply.state)::replied)
-                     communication::ipc::inbound::device().discard( m_correlation);
-               }
-               catch( ...)
-               {
-                  log::line( log::category::error, exception::capture());
-               }
-            }
+               lookup::discard( m_correlation);
          }
 
          Lookup::Lookup( Lookup&& other) noexcept
@@ -71,6 +45,13 @@ namespace casual
                m_reply{ std::exchange( other.m_reply, {})}
          {}
 
+         const strong::correlation::id& Lookup::correlation() const noexcept
+         {
+            if( m_reply)
+               return m_reply->correlation;
+
+            return m_correlation;
+         }
 
          Lookup& Lookup::operator = ( Lookup&& other) noexcept
          {
@@ -89,7 +70,7 @@ namespace casual
          }
 
 
-         bool Lookup::update( Reply&& reply)
+         void Lookup::update( Reply&& reply)
          {
             log::line( verbose::log, "reply: ", reply);
 
@@ -98,7 +79,6 @@ namespace casual
                case State::idle:
                   m_correlation = {};
                   m_reply = std::move( reply);
-                  return true;
                   break;
                case State::absent:
                   m_correlation = {};
@@ -108,9 +88,35 @@ namespace casual
                   m_reply = std::move( reply);
                   break;
             }
-            return false;
          }
       } // detail
+
+      namespace lookup
+      {
+         void discard( const strong::correlation::id& correlation) noexcept
+         {
+            if( ! correlation)
+               return;
+
+            exception::guard( [ &]()
+            {
+               Trace trace{ "common::service::lookup::discard"};
+
+               const auto request = [&]()
+               {
+                  message::service::lookup::discard::Request result{ process::handle()};
+                  result.correlation = correlation;
+                  return result;
+               }();
+
+               auto reply = communication::ipc::call( communication::instance::outbound::service::manager::device(), request);
+
+               if( reply.state == decltype( reply.state)::replied)
+                  communication::ipc::inbound::device().discard( correlation);
+            });
+         }
+
+      } // lookup
 
       const Lookup::Reply& Lookup::operator () ()
       {

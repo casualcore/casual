@@ -42,7 +42,7 @@ namespace casual
 
             friend void swap( Lookup& lhs, Lookup& rhs);
 
-            inline auto& correlation() const noexcept { return m_correlation;}
+            const strong::correlation::id& correlation() const noexcept;
 
             CASUAL_LOG_SERIALIZE(
                CASUAL_SERIALIZE_NAME( m_service, "service");
@@ -50,13 +50,20 @@ namespace casual
                CASUAL_SERIALIZE_NAME( m_reply, "reply");
             )
          protected:
-            bool update( Reply&& reply);
+            void update( Reply&& reply);
 
             std::string m_service;
             strong::correlation::id m_correlation;
             std::optional< Reply> m_reply;
          };
       } // detail
+
+      namespace lookup
+      {
+         //! discards a lookup reservation.
+         //! TODO maintainence - this should be taken cared of by the type it self...
+         void discard( const strong::correlation::id& correlation) noexcept;
+      } // lookup
 
       struct Lookup : detail::Lookup
       {

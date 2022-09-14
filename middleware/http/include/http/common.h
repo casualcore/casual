@@ -40,11 +40,11 @@ namespace casual
          {
             namespace result
             {
-               constexpr auto code = "casual-result-code";
+               inline constexpr auto code = "casual-result-code";
 
                namespace user
                {
-                  constexpr auto code = "casual-result-user-code";
+                  inline constexpr auto code = "casual-result-user-code";
                } // user
 
             } // result
@@ -69,13 +69,13 @@ namespace casual
       namespace protocol
       {
 
-         constexpr auto x_octet = "application/casual-x-octet";
-         constexpr auto binary = "application/casual-binary";
-         constexpr auto json = "application/json";
-         constexpr auto xml = "application/xml";
-         constexpr auto field = "application/casual-field";
-         constexpr auto string = "application/casual-string";
-         constexpr auto null = "application/casual-null";
+         inline constexpr auto x_octet = "application/casual-x-octet";
+         inline constexpr auto binary = "application/casual-binary";
+         inline constexpr auto json = "application/json";
+         inline constexpr auto xml = "application/xml";
+         inline constexpr auto field = "application/casual-field";
+         inline constexpr auto string = "application/casual-string";
+         inline constexpr auto null = "application/casual-null";
 
          namespace convert
          {

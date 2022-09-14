@@ -50,7 +50,7 @@ namespace casual
 
             auto request = request::prepare( local::node(), std::move( call));
 
-            auto payload = request::receive::transcode::payload( std::move( request));
+            auto payload = request::receive::payload( std::move( request));
 
             EXPECT_TRUE( payload.memory.empty());
          }
@@ -64,7 +64,7 @@ namespace casual
 
             auto request = request::prepare( local::node(), std::move( call));
 
-            auto payload = request::receive::transcode::payload( std::move( request));
+            auto payload = request::receive::payload( std::move( request));
 
             EXPECT_TRUE( payload.null());
             EXPECT_TRUE( payload.memory.empty());
@@ -82,7 +82,7 @@ namespace casual
 
             auto request = request::prepare( local::node(), std::move( call));
 
-            auto buffer = request::receive::transcode::payload( std::move( request));
+            auto buffer = request::receive::payload( std::move( request));
 
             EXPECT_TRUE( buffer.memory == payload);
          }

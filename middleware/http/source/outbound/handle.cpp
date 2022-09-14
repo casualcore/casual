@@ -159,7 +159,7 @@ namespace casual
                {
                   try
                   {
-                     message.buffer = request::receive::transcode::payload( std::move( request));
+                     message.buffer = request::receive::payload( std::move( request));
                   }
                   catch( ...)
                   {

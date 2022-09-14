@@ -170,8 +170,8 @@ namespace casual
                      result.transaction.code = message.transaction.state == decltype( message.transaction.state)::active ? code::tx::ok : code::tx::rollback;
 
                      casual::cli::pipe::forward::message( result);
-
                   }
+
                } // detail
 
                auto pipe( State& state)

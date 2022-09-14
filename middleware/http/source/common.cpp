@@ -65,9 +65,7 @@ namespace casual
                      { "TPEMATCH", xatmi::service_advertised},
                   };
 
-                  auto found = algorithm::find( mapping, value);
-
-                  if( found)
+                  if( auto found = algorithm::find( mapping, value))
                      return found->second;
 
                   log::line( log::category::error, "unknown result code: ", value, " - protocol error");

@@ -33,17 +33,23 @@ namespace casual
       {
          namespace
          {
+            
+            struct Configuration
+            {
+               const bool force_fresh_connect = common::environment::variable::get( "CASUAL_HTTP_CURL_FORCE_FRESH_CONNECT", false);
+               const bool force_binary_base64 = common::environment::variable::get( "CASUAL_HTTP_FORCE_BINARY_BASE64", false);
+               const bool verbose = common::environment::variable::get( "CASUAL_HTTP_CURL_VERBOSE", false);
 
+               CASUAL_LOG_SERIALIZE(
+                  CASUAL_SERIALIZE( force_fresh_connect);
+                  CASUAL_SERIALIZE( force_binary_base64);
+                  CASUAL_SERIALIZE( verbose);
+               )
+            };
 
             auto& configuration()
             {
-               static struct Configuration
-               {
-                  const bool force_fresh_connect = common::environment::variable::get( "CASUAL_HTTP_CURL_FORCE_FRESH_CONNECT", false);
-                  const bool verbose = common::environment::variable::get( "CASUAL_HTTP_CURL_VERBOSE", false);
-
-               } result;
-
+               static Configuration result;
                return result;
             }
 
@@ -90,16 +96,17 @@ namespace casual
                   }
                } // callback
 
-               namespace transcode
+               namespace prepare
                {
-                  state::pending::Request payload( common::buffer::Payload&& payload)
+                  state::pending::Request request( common::buffer::Payload&& payload)
                   {
-                     Trace trace{ "http::outbound::request::local::send::transcode::payload"};
+                     Trace trace{ "http::outbound::request::local::prepare::request"};
                      
                      state::pending::Request result;
                      result.state().payload = std::move( payload);
 
-                     http::buffer::transcode::to::wire( result.state().payload);
+                     if( local::configuration().force_binary_base64)
+                        http::buffer::transcode::to::wire( result.state().payload);
                      
                      // add content header
                      {
@@ -113,7 +120,8 @@ namespace casual
 
                      return result;
                   }
-               } // transcode          
+               } // prepare
+       
             } // send
 
             namespace receive
@@ -193,43 +201,42 @@ namespace casual
 
       namespace receive
       {
-         namespace transcode
+         common::buffer::Payload payload( state::pending::Request&& request)
          {
-            common::buffer::Payload payload( state::pending::Request&& request)
+            Trace trace{ "http::outbound::request::detail::receive::payload"};
+            common::log::line( verbose::log, "request from wire: ", request);
+
+            // set buffer type
             {
-               Trace trace{ "http::outbound::request::detail::receive::transcode::payload"};
-               common::log::line( verbose::log, "request from wire: ", request);
+               auto content = request.state().header.reply.find( "content-type");
 
-               // set buffer type
+               if( content)
                {
-                  auto content = request.state().header.reply.find( "content-type");
+                  auto type = protocol::convert::to::buffer( content.value());
 
-                  if( content)
+                  if( ! type.empty())
+                     request.state().payload.type = std::move( type);
+                  else
                   {
-                     auto type = protocol::convert::to::buffer( content.value());
+                     common::log::line( common::log::category::error, "failed to deduce buffer type for content-type: ", content.value());
 
-                     if( ! type.empty())
-                        request.state().payload.type = std::move( type);
-                     else
-                     {
-                        common::log::line( common::log::category::error, "failed to deduce buffer type for content-type: ", content.value());
+                     if( std::regex_match( content.value(), local::global.loggable_content))
+                        common::log::line( common::log::category::verbose::error, "payload: ", string::view::make( request.state().payload.memory));
 
-                        if( std::regex_match( content.value(), local::global.loggable_content))
-                           common::log::line( common::log::category::verbose::error, "payload: ", string::view::make( request.state().payload.memory));
-
-                        return {};
-                     }
+                     return {};
                   }
                }
-
-               auto payload = std::move( request.state().payload);
-
-               http::buffer::transcode::from::wire( payload);
-               common::log::line( verbose::log, "payload: ", payload);
-
-               return payload;
             }
-         } // transcode
+
+            auto payload = std::move( request.state().payload);
+
+            if( local::configuration().force_binary_base64)
+               http::buffer::transcode::from::wire( payload);
+            
+            common::log::line( verbose::log, "payload: ", payload);
+
+            return payload;
+         }
       } // receive
       
 
@@ -238,10 +245,12 @@ namespace casual
          Trace trace{ "http::outbound::request::prepare"};
 
          common::log::line( http::verbose::log, "node: ", node);
+         common::log::line( http::verbose::log, "configuration: ", local::configuration());
 
          auto now = platform::time::clock::type::now();
 
-         auto request = local::send::transcode::payload( std::move( message.buffer));
+         auto request = local::send::prepare::request( std::move( message.buffer));
+         common::log::line( http::verbose::log, "request: ", request);
 
          request.state().header.request.add( *node.headers);
 
@@ -252,6 +261,8 @@ namespace casual
          request.state().parent = std::move( message.parent);
          request.state().trid = message.trid;
          request.state().start = now;
+
+         common::log::line( http::verbose::log, "request.state(): ", request.state());
 
          auto& easy = request.easy();
 

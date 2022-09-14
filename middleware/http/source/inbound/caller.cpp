@@ -20,6 +20,8 @@
 #include "common/code/category.h"
 #include "common/code/xatmi.h"
 #include "common/exception/capture.h"
+#include "common/environment.h"
+#include "common/execute.h"
 
 #include <vector>
 #include <unordered_map>
@@ -34,7 +36,17 @@ namespace casual
          namespace local
          {
             namespace
-            { 
+            {
+               auto& configuration()
+               {
+                  static struct Configuration
+                  {
+                     const bool force_binary_base64 = common::environment::variable::get( "CASUAL_HTTP_FORCE_BINARY_BASE64", false);
+                  } result;
+
+                  return result;
+               }
+
                namespace lookup
                {
                   using LookupStore = std::unordered_map< long, common::service::non::blocking::Lookup>;
@@ -80,6 +92,7 @@ namespace casual
 
                   void remove( long key) { store.erase( key); }
                }
+
                namespace header
                {
                   common::service::header::Fields copy( const http_header_type& headers)
@@ -242,7 +255,10 @@ namespace casual
                      catch( common::service::call::Fail& exception)
                      {
                         transport->code = common::cast::underlying( common::code::xatmi::service_fail);
-                        http::buffer::transcode::to::wire( exception.result.buffer);
+
+                        if( local::configuration().force_binary_base64)
+                           http::buffer::transcode::to::wire( exception.result.buffer);
+                        
                         transport->payload = buffer::copy( exception.result.buffer.memory);
                         usercode = exception.result.user;
                      }
@@ -313,7 +329,14 @@ namespace casual
                      try
                      {
                         // Lookup done, ready to call
-                        common::log::line( common::verbose::log, "key: ", transport->lookup_key);
+                        auto lookup = lookup::consume( transport->lookup_key);
+                        common::log::line( common::verbose::log, "lookup: ", lookup);
+                        
+                        // make sure we discard the reservation if something fails...
+                        auto discard_guard = common::execute::scope( [ correlation = lookup.correlation()]()
+                        { 
+                           common::service::lookup::discard( correlation);
+                        });
 
                         // Handle header
                         const auto& header = header::copy( transport->header_in);
@@ -322,17 +345,21 @@ namespace casual
                         const auto& parameters = parameter::copy( transport->parameter);
                         common::log::line( common::verbose::log, "parameters: ", parameters);
 
-                        // possible transcode buffer from wire-encoding
                         common::buffer::Payload payload( protocol::convert::to::buffer( protocol), buffer::assemble( transport, parameters, protocol));
-                        http::buffer::transcode::from::wire( payload);
+
+                        // possible transcode buffer to wire-encoding
+                        if( local::configuration().force_binary_base64)
+                           http::buffer::transcode::from::wire( payload);
 
                         // Call service
                         namespace call = common::service::call;
                         transport->descriptor = call::context().async( 
-                           lookup::consume( transport->lookup_key), 
+                           std::move( lookup), 
                            common::buffer::payload::Send( payload),
                            header,
                            call::async::Flag::no_block);
+
+                        discard_guard.release();
                      }
                      catch( ...)
                      {
@@ -373,8 +400,9 @@ namespace casual
                         }
                         else 
                         {
-                            // possible transcode buffer to wire-encoding
-                           http::buffer::transcode::to::wire( reply.buffer);
+                           // possible transcode buffer to wire-encoding
+                           if( local::configuration().force_binary_base64)
+                              http::buffer::transcode::to::wire( reply.buffer);
                         }
                            
                         transport->payload = buffer::copy( reply.buffer.memory);

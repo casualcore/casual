@@ -33,12 +33,9 @@ namespace casual
 
       namespace receive
       {
-         namespace transcode
-         {
-            //! transocode the 'reply' to reply-payload.
-            //! @attention the request is consumed!
-            common::buffer::Payload payload( state::pending::Request&& request);
-         } // transcode
+         //! if configured -> transcode the 'reply' to reply-payload.
+         //! @attention the request is consumed!
+         common::buffer::Payload payload( state::pending::Request&& request);
       } // receive
 
       namespace detail
