@@ -5,8 +5,8 @@ import subprocess
 import os
 
 def perform_build(dummy):
-   print( "building and installing nginx")
-   filename = os.path.join( os.getenv("CASUAL_BUILD_HOME"), 'thirdparty/setup/install_nginx.py')
+   print( "building and installing nginx - source root: ", os.getenv("CASUAL_MAKE_SOURCE_ROOT"))
+   filename = os.path.join( os.getenv("CASUAL_MAKE_SOURCE_ROOT"), 'thirdparty/setup/install_nginx.py')
    try:
       out = subprocess.check_output(["python3", filename])
    except subprocess.CalledProcessError as e:

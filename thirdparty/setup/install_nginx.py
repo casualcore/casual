@@ -13,8 +13,9 @@ from shutil import copyfile
 URL="http://nginx.org/download/"
 FILENAME="nginx-1.18.0.tar.gz"
 TMP="/tmp/"
+SOURCE_ROOT = os.getenv( "CASUAL_MAKE_SOURCE_ROOT", os.getenv("CASUAL_BUILD_HOME"))
 
-if not os.getenv("CASUAL_BUILD_HOME") or not os.getenv("CASUAL_HOME"):
+if not SOURCE_ROOT or not os.getenv("CASUAL_HOME"):
 	raise SystemError("CASUAL-environment need to be set")
 
 BASENAME=os.path.splitext(os.path.splitext(FILENAME)[0])[0]
@@ -38,12 +39,12 @@ print( subprocess.check_output(['./configure',
 '--with-debug',
 '--with-cc-opt=-Wno-deprecated',
 '--prefix=' + prefix,
-'--add-module=' + os.getenv('CASUAL_BUILD_HOME') + '/middleware/plugin',
+'--add-module=' + SOURCE_ROOT + '/middleware/plugin',
 '--without-http_rewrite_module']))
 print("Running make")
 print( subprocess.check_output(['make']))
 print("Running install")
 print( subprocess.check_output(['make', 'install']))
 print("Updating configuration")
-copyfile(os.getenv("CASUAL_BUILD_HOME") + '/thirdparty/nginx/nginx.conf', prefix + '/conf/nginx.conf') 
+copyfile( SOURCE_ROOT + '/thirdparty/nginx/nginx.conf', prefix + '/conf/nginx.conf') 
 print("Done")
