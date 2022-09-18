@@ -6,6 +6,8 @@
 
 #include "common/exception/guard.h"
 
+#include "common/exception/format.h"
+
 #include "common/event/send.h"
 #include "common/terminal.h"
 
@@ -95,7 +97,7 @@ namespace casual
                   const auto error = exception::capture();
                   if( error.code() != code::casual::shutdown)
                   {
-                     common::log::line( std::cerr, terminal::color::value::red, error.code(), terminal::color::value::no_color, " ", error.what());
+                     exception::format::terminal( std::cerr, error);
                      return error.code().value();
                   }
                }

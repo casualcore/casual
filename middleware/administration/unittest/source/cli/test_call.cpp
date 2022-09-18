@@ -11,6 +11,9 @@
 #include "common/execute.h"
 #include "common/result.h"
 #include "common/signal.h"
+#include "common/code/xatmi.h"
+#include "common/terminal.h"
+#include "common/exception/format.h"
 
 #include "domain/unittest/manager.h"
 
@@ -60,7 +63,22 @@ domain:
             {
                return casual::domain::unittest::manager( configuration::base, std::forward< C>( configurations)...);
             }
-         } // <unnamed>      
+         } // <unnamed> 
+
+         namespace check
+         {
+            template< typename C, typename... Ts>
+            auto format( const std::string& candidate, C code, Ts&&... ts)
+            {
+               auto error_string = []( auto& error){ return string::view::make( std::begin( error), std::begin( algorithm::find( error, '\n')));};
+
+               std::ostringstream out;
+               exception::format::terminal( out, exception::compose( code, std::forward< Ts>( ts)...));
+               auto error = std::move( out).str();
+
+               return error_string( candidate) == error_string( error);
+            }
+         } // check
 
       } // local
 
@@ -78,7 +96,7 @@ domain:
 )");
 
 
-         auto output = administration::unittest::cli::command::execute( R"(echo "casual" | casual buffer --compose | casual call --service casual/example/echo | casual buffer --extract)").string();
+         auto output = administration::unittest::cli::command::execute( R"(echo "casual" | casual buffer --compose | casual call --service casual/example/echo | casual buffer --extract)").consume();
          EXPECT_TRUE( output == "casual\n") << output;
       }
 
@@ -95,7 +113,7 @@ domain:
 )");
 
 
-         auto output = administration::unittest::cli::command::execute( R"(echo "casual" | casual buffer --compose | casual call --iterations 10 --service casual/example/echo | casual buffer --extract)").string();
+         auto output = administration::unittest::cli::command::execute( R"(echo "casual" | casual buffer --compose | casual call --iterations 10 --service casual/example/echo | casual buffer --extract)").consume();
          constexpr auto expected = R"(casual
 casual
 casual
@@ -109,6 +127,38 @@ casual
 )";
 
          EXPECT_TRUE( output == expected) << output;
+      }
+
+      TEST( cli_call, synchronous_call_no_emt)
+      {
+         common::unittest::Trace trace;
+         
+         auto domain = local::domain( R"(
+domain:
+   servers:
+      - path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-server"
+        memberships: [ user]
+        arguments: [ --sleep, 10ms]
+)");
+
+         auto output = administration::unittest::cli::command::execute( R"(echo "casual" | casual buffer --compose | casual call --service non.existent 2>&1 )").consume();
+         EXPECT_TRUE( local::check::format( output, code::xatmi::no_entry)) << "output: '" << output;
+      }
+
+      TEST( cli_call, synchronous_call_system)
+      {
+         common::unittest::Trace trace;
+         
+         auto domain = local::domain( R"(
+domain:
+   servers:
+      - path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-error-server"
+        memberships: [ user]
+        arguments: [ --sleep, 10ms]
+)");
+
+         auto output = administration::unittest::cli::command::execute( R"(echo "casual" | casual buffer --compose | casual call --service casual/example/error/TPESYSTEM 2>&1 )").consume();
+         EXPECT_TRUE( local::check::format( output, code::xatmi::system)) << "output: '" << output << "'";
       }
 
    } // administration

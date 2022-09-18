@@ -48,6 +48,9 @@ namespace casual
             template< typename M>
             void message( const M& message)
             {
+               if( ! message.execution)
+                  message.execution = common::execution::id();
+
                if( pipe::terminal::out())
                   cli::message::to::human< M>::stream( message);
                else

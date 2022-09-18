@@ -12,6 +12,7 @@
 #include <optional>
 #include "common/service/call/context.h"
 #include "common/exception/capture.h"
+#include "common/exception/format.h"
 #include "common/transaction/context.h"
 #include "common/execute.h"
 #include "common/terminal.h"
@@ -132,9 +133,7 @@ namespace casual
                      request.context.semantic = decltype( request.context.semantic)::no_busy_intermediate;
                      auto correlation = local::flush::send( communication::instance::outbound::service::manager::device(), request);
 
-                     auto reply = common::message::reverse::type( request);
-                     communication::device::blocking::receive( communication::ipc::inbound::device(), reply, correlation);
-                     return reply;
+                     return communication::ipc::receive< common::message::service::lookup::Reply>( correlation);
                   };
 
                   auto call( State& state, casual::cli::message::Payload& message)
@@ -142,6 +141,10 @@ namespace casual
                      Trace trace{ "tools::service::call::local::handle::detail::call"};
 
                      auto lookup = detail::lookup( state.service);
+                     log::line( verbose::log, "lookup: ", lookup);
+
+                     if( lookup.state == decltype( lookup.state)::absent)
+                        code::raise::error( code::xatmi::no_entry);
 
                      // call
                   
@@ -163,11 +166,21 @@ namespace casual
                   {
                      Trace trace{ "tools::service::call::local::handle::detail::reply"};
                      log::line( verbose::log, "message: ", message);
+                     
+                     // only log error to stderr. 
+                     // TODO: is this "enough"?.
+                     if( message.code.result != decltype( message.code.result)::ok)
+                        exception::format::terminal( std::cerr, exception::compose( message.code.result));
 
                      casual::cli::message::Payload result{ process::handle()};
+                     result.correlation = message.correlation;
+                     result.execution = message.execution;
                      result.payload = std::move( message.buffer);
+                     result.code = message.code;
                      result.transaction.trid = message.transaction.trid;
                      result.transaction.code = message.transaction.state == decltype( message.transaction.state)::active ? code::tx::ok : code::tx::rollback;
+
+                     log::line( verbose::log, "result: ", result);
 
                      casual::cli::pipe::forward::message( result);
                   }

@@ -12,6 +12,7 @@
 #include "common/buffer/type.h"
 #include "common/communication/stream.h"
 #include "common/message/dispatch.h"
+#include "common/message/service.h"
 
 #include <iostream>
 
@@ -157,11 +158,13 @@ namespace casual
          {
             using base_payload::base_payload;
 
+            common::message::service::Code code;
             common::buffer::Payload payload;
             message::Transaction transaction;
 
             CASUAL_CONST_CORRECT_SERIALIZE(
                base_payload::serialize( archive);
+               CASUAL_SERIALIZE( code);
                CASUAL_SERIALIZE( payload);
                CASUAL_SERIALIZE( transaction);
             )  
