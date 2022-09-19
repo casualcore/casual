@@ -12,6 +12,8 @@
 #include "queue/api/queue.h"
 #include "queue/code.h"
 
+#include "common/array.h"
+
 #include "common/process.h"
 #include "common/file.h"
 #include "common/message/domain.h"
@@ -24,6 +26,7 @@
 #include "common/communication/instance.h"
 #include "common/serialize/macro.h"
 
+#include "domain/discovery/api.h"
 #include "domain/unittest/manager.h"
 
 #include <fstream>
@@ -209,6 +212,65 @@ domain:
          }
       }
 
+      TEST( casual_queue, multiple_lookup_request__expect_one_discovery)
+      {
+         common::unittest::Trace trace;
+
+         auto domain = local::domain();
+
+         domain::discovery::provider::registration( domain::discovery::provider::Ability::discover_external);
+
+         auto send_lookup_request = []()
+         {
+            ipc::message::lookup::Request request{ common::process::handle()};
+            request.name = "a";
+
+            common::communication::device::blocking::send( 
+               common::communication::instance::outbound::queue::manager::device(), 
+               request);
+         };
+
+         send_lookup_request();
+
+         {
+            ipc::message::Advertise remote;
+
+            remote.process = common::process::handle();
+            remote.queues.add.emplace_back( "a");
+
+            common::communication::device::blocking::send( 
+               common::communication::instance::outbound::queue::manager::device(), remote);
+         }
+
+         {
+            // Receive discovery request and send reply
+            auto request = common::communication::ipc::receive< domain::message::discovery::Request>();
+
+            EXPECT_TRUE( common::algorithm::equal( request.content.queues, common::array::make( "a")));
+
+            auto reply = common::message::reverse::type( request, common::process::handle());
+            reply.content.queues.emplace_back( "a");
+            common::communication::device::blocking::send( request.process.ipc, reply);
+         }
+         
+         {
+            // Receive lookup reply
+            auto reply = common::communication::ipc::receive< ipc::message::lookup::Reply>();
+            EXPECT_TRUE( reply.queue) << CASUAL_NAMED_VALUE( reply);
+         }
+
+         send_lookup_request();
+         
+         {
+            // Expect to not receive discovery request
+            domain::message::discovery::Request request;
+            common::algorithm::for_n( 5, [&request]()
+            {
+               EXPECT_FALSE( common::communication::device::non::blocking::receive( common::communication::ipc::inbound::device(), request));
+               common::process::sleep( std::chrono::milliseconds{ 1});
+            });
+         }
+      }
 
       TEST( casual_queue, enqueue_1_message___expect_1_message_in_queue)
       {

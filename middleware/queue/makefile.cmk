@@ -206,6 +206,7 @@ test_casual_queue = make.LinkUnittest( 'unittest/bin/test-casual-queue',
      'sqlite3',
      'casual-unittest',
      'casual-service-unittest',
+     'casual-domain-discovery',
      'casual-domain-unittest',
      'casual-xatmi',
      ]  
