@@ -407,7 +407,7 @@ namespace casual
          struct
          {
             state::service::pending::Deadline deadline;
-            std::deque< state::service::pending::Lookup> lookups;
+            std::vector< state::service::pending::Lookup> lookups;
             common::message::coordinate::fan::Out< common::message::service::call::ACK, common::strong::process::id> shutdown;
             
             CASUAL_LOG_SERIALIZE(

@@ -198,6 +198,13 @@ namespace casual
       {
          namespace
          {
+            namespace service::detail::handle
+            {
+               // defined after lookup, below
+               void pending( State& state, std::vector< state::service::pending::Lookup>&& pending);
+                  
+            } // service::detail::handle
+
             namespace event
             { 
                namespace process
@@ -229,6 +236,10 @@ namespace casual
 
                         state.pending.shutdown.failed( event.state.pid);
                         state.remove( event.state.pid);
+
+                        // The dead process might be the last instance that supplied a given set of services. 
+                        // We need to check pending lookups... We just "invalidate and re-lookup"
+                        service::detail::handle::pending( state, std::exchange( state.pending.lookups, {}));
                      };
                   }
                } // process
@@ -262,17 +273,6 @@ namespace casual
 
             namespace service
             {
-               namespace detail
-               {
-                  namespace handle
-                  {
-                     // defined after lookup, below
-                     void pending( State& state, std::vector< state::service::pending::Lookup>&& pending);
-                  } // handle
-
-                  
-               } // detail
-
                auto advertise( State& state)
                {
                   return [&state]( common::message::service::Advertise& message)
@@ -824,8 +824,8 @@ namespace casual
                            }
                            else if( pending.request.context.semantic == decltype( pending.request.context.semantic)::wait)
                            {
-                              // we put the pending back. In front to be as fair as possible
-                              state.pending.lookups.push_front( std::move( pending));
+                              // we put the pending back.
+                              state.pending.lookups.push_back( std::move( pending));
                            }
                            else 
                            {
