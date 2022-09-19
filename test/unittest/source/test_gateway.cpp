@@ -19,6 +19,8 @@
 
 #include "gateway/unittest/utility.h"
 
+#include "domain/unittest/utility.h"
+
 #include "service/unittest/utility.h"
 
 #include "transaction/unittest/utility.h"
@@ -93,15 +95,15 @@ domain:
                return buffer;
             }
 
-            inline auto call( std::string_view service, int code)
+            inline auto call( std::string_view service, code::xatmi code)
             {
                auto buffer = local::allocate( 128);
                auto len = tptypes( buffer, nullptr, nullptr);
 
                if( tpcall( service.data(), buffer, 128, &buffer, &len, 0) == -1)
-                  EXPECT_TRUE( tperrno == code) << "tpcall to '" << service << " - expected: " << tperrnostring( code) << " got: " << tperrnostring( tperrno);
+                  EXPECT_TRUE( code::xatmi{ tperrno} == code) << string::compose( "tpcall to '" , service , " - expected: " , code , " got: " , code::xatmi{ tperrno});
                else
-                  EXPECT_TRUE( code == 0) << "tpcall to '" << service << " - expected: " << tperrnostring( code) << " got: " << tperrnostring( 0);
+                  EXPECT_TRUE( code == code::xatmi::ok) << string::compose( "tpcall to '" , service , " - expected: " , code , " got: " , code::xatmi::ok);
 
                tpfree( buffer);
             };
@@ -145,7 +147,7 @@ domain:
                return result;
             };
 
-            auto receive( int descriptor)
+            auto receive( int descriptor, code::xatmi code = code::xatmi::ok)
             {
                auto buffer = local::allocate( 128);
                assert( buffer);
@@ -153,7 +155,7 @@ domain:
                auto len = tptypes( buffer, nullptr, nullptr);
 
                tpgetrply( &descriptor, &buffer, &len, 0);
-               EXPECT_TRUE( tperrno == 0) << "tperrno: " << tperrnostring( tperrno);
+               EXPECT_TRUE( code::xatmi{ tperrno} == code) << "tperrno: " << string::compose( code::xatmi{ tperrno});
 
                common::log::line( verbose::log, "got reply from descriptor: ", descriptor);
 
@@ -385,8 +387,8 @@ domain:
          gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected());
 
          // call the two domain services to get discovery
-         local::call( "casual/example/domain/echo/B", 0);
-         local::call( "casual/example/domain/echo/C", 0);
+         local::call( "casual/example/domain/echo/B", code::xatmi::ok);
+         local::call( "casual/example/domain/echo/C", code::xatmi::ok);
 
          // check the hops...
          auto state = casual::service::unittest::state();
@@ -458,8 +460,8 @@ domain:
          gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected());
 
          // call the two domain services to get discovery
-         local::call( "b", 0);
-         local::call( "c-indirect", 0);
+         local::call( "b", code::xatmi::ok);
+         local::call( "c-indirect", code::xatmi::ok);
       }
 
 
@@ -1165,7 +1167,7 @@ domain:
          }
 
          // expect new calls to get TPENOENT
-         local::call( "sleepy", TPENOENT);
+         local::call( "sleepy", code::xatmi::no_entry);
       }
 
 
@@ -1238,7 +1240,7 @@ domain:
          }
 
          // expect new calls to get TPENOENT
-         local::call( "casual/example/sleep", TPENOENT);
+         local::call( "casual/example/sleep", code::xatmi::no_entry);
       }
 
       TEST( test_gateway, domain_A_to_B__B_to_A__A_knows_of_echo_in_B__scale_echo_down__call_echo_from_B____expect_TPNOENT)
@@ -1287,7 +1289,7 @@ domain:
 
          gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected( 1));
 
-         local::call( "casual/example/sleep", TPOK);
+         local::call( "casual/example/sleep", code::xatmi::ok);
          
          // jump in to B
          b.activate();
@@ -1302,7 +1304,7 @@ domain:
 
          a.activate();
          // call expect TPENOENT
-         local::call( "casual/example/sleep", TPENOENT);
+         local::call( "casual/example/sleep", code::xatmi::no_entry);
       }
 
 
@@ -1537,7 +1539,7 @@ domain:
 
          gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected());
 
-         local::call( "casual/example/echo", 0);
+         local::call( "casual/example/echo", code::xatmi::ok);
 
          log::line( verbose::log, "before shutdown of B");
 
@@ -1548,7 +1550,7 @@ domain:
 
          log::line( verbose::log, "after shutdown of B");
 
-         local::call( "casual/example/echo", TPENOENT);
+         local::call( "casual/example/echo", code::xatmi::no_entry);
 
          log::line( verbose::log, "before boot of B");
 
@@ -1561,7 +1563,7 @@ domain:
          log::line( verbose::log, "after boot of B");
 
          // expect to discover echo...
-         local::call( "casual/example/echo", 0);
+         local::call( "casual/example/echo", code::xatmi::ok);
       }
 
       TEST( test_gateway, domains_A_B__B_has_route_b_to_echo____A_has_route_a_to_b___call_route_a_from_A___expect_discovery)
@@ -1612,7 +1614,7 @@ domain:
 
          gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected());
 
-         local::call( "a", 0);
+         local::call( "a", code::xatmi::ok);
          
       }
 
@@ -1661,7 +1663,7 @@ domain:
 
          gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected());
 
-         local::call( "foo", 0);
+         local::call( "foo", code::xatmi::ok);
 
          log::line( verbose::log, "before shutdown of B");
 
@@ -1671,7 +1673,7 @@ domain:
 
          log::line( verbose::log, "after shutdown of B");
 
-         local::call( "foo", TPENOENT);
+         local::call( "foo", code::xatmi::no_entry);
 
          log::line( verbose::log, "before boot of B");
 
@@ -1684,7 +1686,7 @@ domain:
          log::line( verbose::log, "after boot of B");
          
          // expect to discover echo...
-         local::call( "foo", 0);
+         local::call( "foo", code::xatmi::ok);
       }
 
 
@@ -1732,7 +1734,7 @@ domain:
 
          gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected());
 
-         local::call( "foo", 0);
+         local::call( "foo", code::xatmi::ok);
 
          log::line( verbose::log, "before shutdown of B");
 
@@ -1742,7 +1744,7 @@ domain:
 
          log::line( verbose::log, "after shutdown of B");
 
-         local::call( "foo", TPENOENT);
+         local::call( "foo", code::xatmi::no_entry);
 
          log::line( verbose::log, "before boot of B");
 
@@ -1755,7 +1757,7 @@ domain:
          log::line( verbose::log, "after boot of B");
          
          // expect to discover echo...
-         local::call( "foo", 0);
+         local::call( "foo", code::xatmi::ok);
 
       }
 
@@ -1844,8 +1846,8 @@ domain:
          {
             algorithm::for_n( count, []()
             {
-               local::call( "casual/example/resource/domain/echo/A", TPOK);
-               local::call( "casual/example/resource/domain/echo/B", TPOK);
+               local::call( "casual/example/resource/domain/echo/A", code::xatmi::ok);
+               local::call( "casual/example/resource/domain/echo/B", code::xatmi::ok);
             });
          };
 
@@ -2041,7 +2043,7 @@ domain:
          {
             algorithm::for_n( count, []()
             {
-               local::call( "casual/example/resource/nested/calls/C", TPOK);
+               local::call( "casual/example/resource/nested/calls/C", code::xatmi::ok);
             });
          };
 
@@ -2266,7 +2268,7 @@ domain:
          {
             algorithm::for_n( count, []()
             {
-               local::call( "casual/example/resource/nested/calls/C", TPOK);
+               local::call( "casual/example/resource/nested/calls/C", code::xatmi::ok);
             });
          };
 
@@ -2498,7 +2500,7 @@ domain:
          {
             algorithm::for_n( count, []()
             {
-               local::call( "casual/example/resource/nested/calls/C", TPOK);
+               local::call( "casual/example/resource/nested/calls/C", code::xatmi::ok);
             });
          };
 
@@ -2730,7 +2732,7 @@ domain:
          {
             algorithm::for_n( count, []()
             {
-               local::call( "casual/example/resource/nested/calls/C", TPOK);
+               local::call( "casual/example/resource/nested/calls/C", code::xatmi::ok);
             });
          };
 
@@ -2951,7 +2953,7 @@ domain:
          {
             algorithm::for_n( count, []()
             {
-               local::call( "casual/example/resource/nested/calls/C", TPOK);
+               local::call( "casual/example/resource/nested/calls/C", code::xatmi::ok);
             });
          };
 
@@ -3033,6 +3035,65 @@ domain:
             // distributed transactions, only rollback
             EXPECT_TRUE( instance.metrics.resource.count == transaction_count * 3) << CASUAL_NAMED_VALUE( instance.metrics.resource);
          }  
+      }
+
+      TEST( test_gateway, kill_callee___expect_service_error__pending_lookup_reply)
+      {
+         common::unittest::Trace trace;
+
+         auto b = local::domain( R"(
+domain: 
+   name: B
+   servers:
+      -  alias: casual-example-server
+         path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-server"
+         memberships: [ user]
+         arguments: [ --sleep, 1s]
+   gateway:
+      inbound:
+         groups:
+            -  connections:
+                  -  address: 127.0.0.1:7000
+   
+
+)");
+
+         auto example = casual::domain::unittest::server( casual::domain::unittest::state(), "casual-example-server");
+         ASSERT_TRUE( example);
+
+         auto a = local::domain( R"(
+domain: 
+   name: A
+   gateway:
+      outbound:
+         groups:
+            -  connections:
+                  -  address: 127.0.0.1:7000
+   
+)");
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected());
+
+
+         const auto payload = common::unittest::random::binary( 128);
+
+         {
+            auto call_1 = local::acall( "casual/example/sleep", payload);
+            // the following two becomes pending
+            auto call_2 = local::acall( "casual/example/sleep", payload);
+            auto call_3 = local::acall( "casual/example/echo", payload);
+
+            common::signal::send( example.pid, code::signal::kill);
+
+            // gets service_error
+            local::receive( call_1, code::xatmi::service_error);
+
+            // these gets no_entry, but gets transform to service_error, since
+            // tpacall does not allow no_entry in getrply
+            local::receive( call_2, code::xatmi::service_error);
+            local::receive( call_3, code::xatmi::service_error);
+         }
+
+         local::call( "casual/example/sleep", code::xatmi::no_entry);
       }
 
       //! put in this TU to enable all helpers to check state
