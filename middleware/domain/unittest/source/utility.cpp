@@ -15,11 +15,36 @@ namespace casual
    using namespace common;
    namespace domain::unittest
    {
+      namespace local
+      {
+         namespace
+         {
+            auto find_instance = []( auto& range, auto& alias, auto index)
+               -> decltype( range.at( 0).instances.at( index).handle)
+            {
+               if( auto found = algorithm::find( range, alias))
+                  return found->instances.at( index).handle;
+
+               return {};
+            };
+         } // <unnamed>
+      } // local
+
       manager::admin::model::State state()
       {
          serviceframework::service::protocol::binary::Call call;
          auto reply = call( manager::admin::service::name::state);
          return reply.extract< manager::admin::model::State>();
+      }
+
+      common::process::Handle server( const manager::admin::model::State& state, std::string_view alias, platform::size::type index)
+      {
+         return local::find_instance( state.servers, alias, index);
+      }
+
+      common::strong::process::id executable( const manager::admin::model::State& state, std::string_view alias, platform::size::type index)
+      {
+         return local::find_instance( state.executables, alias, index);
       }
 
       namespace fetch::predicate

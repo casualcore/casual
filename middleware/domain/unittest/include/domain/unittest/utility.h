@@ -18,6 +18,9 @@ namespace casual
    {
       manager::admin::model::State state();
 
+      common::process::Handle server( const manager::admin::model::State& state, std::string_view alias, platform::size::type index = 0);
+      common::strong::process::id executable( const manager::admin::model::State& state, std::string_view alias, platform::size::type index = 0);
+
       namespace fetch
       {
          constexpr auto until = common::unittest::fetch::until( &unittest::state);
