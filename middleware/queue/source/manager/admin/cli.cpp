@@ -12,6 +12,8 @@
 #include "queue/api/queue.h"
 #include "queue/common/queue.h"
 
+#include "common/transaction/id.h"
+
 #include "common/argument.h"
 #include "common/terminal.h"
 #include "common/chronology.h"
@@ -87,6 +89,14 @@ namespace casual
                   return result;
                }
 
+               std::vector< common::transaction::global::ID> recover( const std::vector< common::transaction::global::ID>& gtrids,
+                  ipc::message::group::message::recovery::Directive directive)
+               {
+                  using Call = serviceframework::service::protocol::binary::Call;
+                  return Call{}( manager::admin::service::name::recover,
+                     std::move( gtrids),
+                     std::move( directive)).extract< std::vector< common::transaction::global::ID>>();
+               }
             } // call
 
 
@@ -1138,7 +1148,73 @@ casual queue --restore <queue-name>)"
                      };
                   }
                } // remove
+               namespace recovery
+               {
+                  using Directive = ipc::message::group::message::recovery::Directive;
+                  namespace commit
+                  {
 
+                     auto option()
+                     {
+                        auto invoke = []( common::transaction::global::ID gtrid, std::vector< common::transaction::global::ID> gtrids)
+                        {
+                           gtrids.insert( std::begin( gtrids), std::move( gtrid));
+                           auto commited = call::recover( std::move( gtrids), Directive::commit); 
+
+                           algorithm::for_each( commited, []( auto& gtrid)
+                           {
+                              common::log::line( std::cout, gtrid);
+                           });
+                        };
+
+                        auto complete = []( auto& values, bool help) -> std::vector< std::string>
+                        {
+                           if( help)
+                              return { "<gtrid>"};
+
+                           return { "<value>"};
+                        };
+
+                        return argument::Option{
+                           std::move( invoke),
+                           complete,
+                           {  "--recover-transactions-commit"},
+                           R"(recover specific messages from a given queue with commit)"
+                        };
+                     }
+                  }
+                  namespace rollback
+                  {
+                     auto option()
+                     {
+                        auto invoke = []( common::transaction::global::ID gtrid, std::vector< common::transaction::global::ID> gtrids)
+                        {
+                           gtrids.insert( std::begin( gtrids), std::move( gtrid));
+                           auto rollbacked = call::recover( std::move( gtrids), Directive::rollback); 
+
+                           algorithm::for_each( rollbacked, []( auto& gtrid)
+                           {
+                              common::log::line( std::cout, gtrid);
+                           });
+                        };
+
+                        auto complete = []( auto& values, bool help) -> std::vector< std::string>
+                        {
+                           if( help)
+                              return { "<gtrid>"};
+
+                           return { "<value>"};
+                        };
+
+                        return argument::Option{
+                           std::move( invoke),
+                           complete,
+                           {  "--recover-transactions-rollback"},
+                           R"(recover specific messages from a given queue with rollback)"
+                        };
+                     }
+                  }
+               }
             } // messages
 
             namespace clear
@@ -1390,6 +1466,8 @@ casual queue --metric-reset a b)"
                      local::consume::option(),
                      local::clear::option(),
                      local::messages::remove::option(),
+                     local::messages::recovery::commit::option(),
+                     local::messages::recovery::rollback::option(),
                      local::forward::scale::aliases::option(),
                      local::metric::reset::option(),
                      local::legend::option(),

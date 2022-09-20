@@ -13,6 +13,7 @@
 
 #include "casual/platform.h"
 #include "common/uuid.h"
+#include "common/transaction/global.h"
 
 
 namespace casual
@@ -83,7 +84,6 @@ namespace casual
       namespace messages
       {
          std::vector< common::Uuid> remove( const std::string& queue, const std::vector< common::Uuid>& messages);
-         
       } // messages
 
       } // v1

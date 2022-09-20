@@ -179,6 +179,31 @@ namespace casual
 
             }
 
+            std::vector< common::transaction::global::ID> recover( manager::State& state, const std::vector< common::transaction::global::ID>& gtrids, 
+               ipc::message::group::message::recovery::Directive directive)
+            {
+               Trace trace{ "queue::manager::admin::local::recover"};
+
+               auto recover_futures = algorithm::transform( state.groups, [&gtrids, directive]( auto& group)
+               {
+                  ipc::message::group::message::recovery::Request request{ process::handle()};
+                  request.gtrids = gtrids;
+                  request.directive = directive;
+                  return communication::device::async::call( group.process.ipc, request);
+               });
+
+               return algorithm::accumulate( recover_futures, std::vector< common::transaction::global::ID>{}, []( auto result, auto& feature)
+               {
+                  auto predicate = [&result]( auto& value)
+                  {
+                     return ! algorithm::find( result, value);
+                  };
+
+                  algorithm::copy_if( future_get( feature).gtrids, std::back_inserter( result), predicate);
+                  return result;
+               });
+            }
+
             namespace metric
             {
                void reset( manager::State& state, const std::vector< std::string>& queues)
@@ -318,6 +343,20 @@ namespace casual
                   };
                }
 
+               auto recover( manager::State& state)
+               {
+                  return [&state]( common::service::invoke::Parameter&& parameter)
+                  {
+                     auto protocol = serviceframework::service::protocol::deduce( std::move( parameter));
+
+                     auto gtrids = protocol.extract< std::vector< common::transaction::global::ID>>( "gtrids");
+                     using Directive = ipc::message::group::message::recovery::Directive;
+                     auto directive = protocol.extract< Directive>("directive");
+
+                     return serviceframework::service::user( std::move( protocol), &local::recover, state, std::move( gtrids), directive);
+                  };
+               }
+
                namespace metric
                {
                   auto reset( manager::State& state)
@@ -382,6 +421,11 @@ namespace casual
                },
                { service::name::clear,
                   local::service::clear( state),
+                  common::service::transaction::Type::none,
+                  common::service::category::admin
+               },
+               { service::name::recover,
+                  local::service::recover( state),
                   common::service::transaction::Type::none,
                   common::service::category::admin
                },

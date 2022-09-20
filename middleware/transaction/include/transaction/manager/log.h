@@ -6,12 +6,12 @@
 
 #pragma once
 
-#include "transaction/global.h"
 
 #include "sql/database.h"
 
 #include "casual/platform.h"
 
+#include "common/transaction/global.h"
 #include "common/message/transaction.h"
 
 
@@ -43,7 +43,7 @@ namespace casual
 
          void prepare( const state::Transaction& transaction);
          void remove( common::transaction::id::range::range_type global);
-         inline void remove( const global::ID& global) { remove( global());}
+         inline void remove( const common::transaction::global::ID& global) { remove( global());}
 
          //! persist the current "transaction" and start a new one
          void persist();

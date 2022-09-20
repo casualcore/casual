@@ -54,6 +54,7 @@ namespace casual
 
          common::communication::ipc::pending::Holder Pending::forget()
          {
+            queue::Trace trace{ "queue::group::state::Pending::forget"};
             return algorithm::transform( std::exchange( dequeues, {}), []( auto&& request)
             {
                ipc::message::group::dequeue::forget::Request result{ process::handle()};

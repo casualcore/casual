@@ -15,6 +15,8 @@
 #include "common/execute.h"
 #include "common/event/send.h"
 #include "common/environment.h"
+#include "common/view/binary.h"
+
 
 #include "common/code/raise.h"
 #include "common/code/casual.h"
@@ -571,6 +573,40 @@ namespace casual
          return messages;
       }
 
+      std::vector< common::transaction::global::ID> Queuebase::recovery_commit( common::strong::queue::id queue, std::vector< common::transaction::global::ID> gtrids)
+      {
+         auto missing_message = [&]( auto& id)
+         {
+            m_statement.commit1.execute( id());
+            const auto commit1_affected = m_connection.affected();
+            m_statement.commit2.execute( id());
+            const auto commit2_affected = m_connection.affected();
+ 
+            return commit1_affected == 0 && commit2_affected == 0;
+         };
+
+         algorithm::container::trim( gtrids, algorithm::remove_if( gtrids, missing_message));
+
+         return gtrids;
+      }
+
+      std::vector< common::transaction::global::ID> Queuebase::recovery_rollback( common::strong::queue::id queue, std::vector< common::transaction::global::ID> gtrids)
+      {
+         auto missing_message = [&]( auto& id)
+         {
+            m_statement.rollback1.execute( id());
+            const auto rollback1_affected = m_connection.affected();
+            m_statement.rollback2.execute( id());
+            const auto rollback2_affected = m_connection.affected();
+            m_statement.rollback3.execute( id());
+
+            return rollback1_affected == 0 && rollback2_affected == 0;
+         };
+
+         algorithm::container::trim( gtrids, algorithm::remove_if( gtrids, missing_message));
+
+         return gtrids;
+      }
 
       void Queuebase::commit( const common::transaction::ID& id)
       {
@@ -579,7 +615,6 @@ namespace casual
          log::line( log, "commit xid: ", id);
 
          auto gtrid = common::transaction::id::range::global( id);
-
          m_statement.commit1.execute( gtrid);
          m_statement.commit2.execute( gtrid);
       }
@@ -591,7 +626,6 @@ namespace casual
          log::line( log, "rollback xid: ", id);
 
          auto gtrid = common::transaction::id::range::global( id);
-
          m_statement.rollback1.execute( gtrid);
          m_statement.rollback2.execute( gtrid);
          m_statement.rollback3.execute( gtrid);

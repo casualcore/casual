@@ -160,6 +160,12 @@ namespace casual
          //! @returns id:s of the messages that was removed
          std::vector< common::Uuid> remove( common::strong::queue::id queue, std::vector< common::Uuid> messages);
 
+         //! @returns gtrid:s of the messages that was commited
+         std::vector< common::transaction::global::ID> recovery_commit( common::strong::queue::id queue, std::vector< common::transaction::global::ID> gtrids);
+
+         //! @returns gtrid:s of the messages that was rollbacked
+         std::vector< common::transaction::global::ID> recovery_rollback( common::strong::queue::id queue, std::vector< common::transaction::global::ID> gtrids);
+
          void commit( const common::transaction::ID& id);
          void rollback( const common::transaction::ID& id);
 

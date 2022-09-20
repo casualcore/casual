@@ -8,7 +8,6 @@
 #pragma once
 
 
-#include "transaction/global.h"
 #include "transaction/manager/log.h"
 
 #include "casual/platform.h"
@@ -18,6 +17,7 @@
 #include "common/functional.h"
 #include "common/message/coordinate.h"
 #include "common/state/machine.h"
+#include "common/transaction/global.h"
 
 #include "common/communication/select.h"
 #include "common/communication/ipc/send.h"
@@ -305,7 +305,7 @@ namespace casual
             common::state::Machine< transaction::Stage> stage;
 
             //! the global part of the distributed transaction id
-            global::ID global;
+            common::transaction::global::ID global;
 
             //! 1..* branches of this global transaction
             std::vector< transaction::Branch> branches;
@@ -315,7 +315,7 @@ namespace casual
             platform::time::point::type started;
             platform::time::point::type deadline;
 
-            inline friend bool operator == ( const Transaction& lhs, const global::ID& rhs) { return lhs.global == rhs;}
+            inline friend bool operator == ( const Transaction& lhs, const common::transaction::global::ID& rhs) { return lhs.global == rhs;}
             inline friend bool operator == ( const Transaction& lhs, common::transaction::id::range::range_type rhs) { return lhs.global() == rhs;}
             
             inline friend bool operator == ( const Transaction& lhs, const common::transaction::ID& rhs) { return lhs.global == rhs;}

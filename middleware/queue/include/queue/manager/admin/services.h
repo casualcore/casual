@@ -14,6 +14,8 @@ namespace casual
       constexpr auto state = ".casual/queue/state";
       constexpr auto restore = ".casual/queue/restore";
       constexpr auto clear = ".casual/queue/clear";
+      constexpr auto recover = ".casual/queue/recover";
+
 
       namespace messages
       {

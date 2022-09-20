@@ -8,6 +8,7 @@
 
 #include "common/message/type.h"
 #include "common/transaction/id.h"
+#include "common/transaction/global.h"
 
 #include "configuration/model.h"
 
@@ -795,6 +796,59 @@ namespace casual
                };
                
             } // remove
+            namespace recovery
+            {
+               enum class Directive : int
+               {
+                  commit,
+                  rollback
+               };
+
+               inline constexpr std::string_view description( Directive value) noexcept
+               {
+                  switch( value)
+                  {
+                     using Enum = recovery::Directive;
+                     case Enum::commit: return "commit";
+                     case Enum::rollback: return "rollback";
+                  }
+                  return "<unknown>";
+               }
+
+
+               using base_request = common::message::basic_request< common::message::Type::queue_group_message_recovery_request>;
+               struct Request : base_request
+               {
+
+                  using base_request::base_request;
+
+                  common::strong::queue::id queue;
+                  //! transactions to recover
+                  std::vector< common::transaction::global::ID> gtrids;
+
+                  Directive directive = Directive::commit;
+
+                  CASUAL_CONST_CORRECT_SERIALIZE(
+                     base_request::serialize( archive);
+                     CASUAL_SERIALIZE( queue);
+                     CASUAL_SERIALIZE( gtrids);
+                     CASUAL_SERIALIZE( directive);
+                  )
+               };
+
+               using base_reply = common::message::basic_message< common::message::Type::queue_group_message_recovery_reply>;
+               struct Reply : base_reply
+               {
+                  using base_reply::base_reply;
+                  //! transaction that got handled
+                  std::vector< common::transaction::global::ID> gtrids;
+
+                  CASUAL_CONST_CORRECT_SERIALIZE(
+                     base_reply::serialize( archive);
+                     CASUAL_SERIALIZE( gtrids);
+                  )
+               };
+            } // recovery
          } // message
       } // group
 
@@ -995,6 +1049,9 @@ namespace casual
 
             template<>
             struct type_traits< casual::queue::ipc::message::group::message::remove::Request> : detail::type< casual::queue::ipc::message::group::message::remove::Reply> {};
+
+            template<>
+            struct type_traits< casual::queue::ipc::message::group::message::recovery::Request> : detail::type< casual::queue::ipc::message::group::message::recovery::Reply> {};
 
             template<>
             struct type_traits< casual::queue::ipc::message::group::enqueue::Request> : detail::type< casual::queue::ipc::message::group::enqueue::Reply> {};
