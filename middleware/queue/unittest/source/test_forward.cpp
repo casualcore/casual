@@ -29,6 +29,8 @@
 
 #include "service/unittest/utility.h"
 
+#include "transaction/unittest/utility.h"
+
 #include "configuration/model/transform.h"
 #include "configuration/model/load.h"
 
@@ -535,7 +537,7 @@ domain:
          unittest::scale::all::forward::aliases( 4);
 
          // we only replies to one of the service calls, and not send 'ACK' to service-manger
-         // hence, the service-forwards will be wating for a service-lookup-reply from service-manager
+         // hence, the service-forwards will be waiting for a service-lookup-reply from service-manager
          {
             common::message::service::call::callee::Request request;
             
@@ -553,7 +555,8 @@ domain:
 
          unittest::scale::all::forward::aliases( 0);
 
-         auto zero_instances = []( auto& state)
+
+         auto state = unittest::fetch::until( []( auto& state)
          {
             auto has_zero = []( auto forward)
             {
@@ -562,15 +565,8 @@ domain:
 
             return common::algorithm::all_of( state.forward.services, has_zero) &&
                common::algorithm::all_of( state.forward.queues, has_zero);
-         };
+         });
 
-         auto state = unittest::state();
-
-         while( ! zero_instances( state))
-         {
-            common::process::sleep( std::chrono::milliseconds{ 5});
-            state = unittest::state();
-         }
 
          // check queue-forwards, there should not be any rollbacks on queue-forwards
          {
@@ -586,6 +582,15 @@ domain:
             // only one has been committed (since we only allowed one call to this unittest-binary)
             EXPECT_TRUE( state.forward.services.at( 0).metric.commit.count == 1);
          }
+
+         {
+            auto state = casual::transaction::unittest::fetch::until( casual::transaction::unittest::fetch::predicate::transactions( 0));
+
+            EXPECT_TRUE( state.transactions.empty()) << CASUAL_NAMED_VALUE( state);
+            // groups a and b
+            EXPECT_TRUE( state.externals.size() == 2) << CASUAL_NAMED_VALUE( state);
+         }
+   
       }
 
    } // queue

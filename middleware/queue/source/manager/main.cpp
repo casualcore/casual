@@ -48,28 +48,6 @@ namespace casual
 
                return state;
             }
-/*
-            namespace wait
-            {
-               //! waits for the 'entities' to be running (or worse)
-               template< typename H>
-               void running( State& state, H& handler)
-               {
-                  Trace trace( "queue::manager::local::wait::running");
-                  
-                  auto condition = message::dispatch::condition::compose(
-                     message::dispatch::condition::done( [&state]() { return state.ready();})
-                  );
-
-                  message::dispatch::pump( 
-                     condition,
-                     handler, 
-                     ipc::device());
-
-                  
-               }  
-            } // wait
-            */
 
             auto condition( State& state)
             {
@@ -91,9 +69,6 @@ namespace casual
                   for( auto& exit : process::lifetime::ended())
                      manager::handle::process::exit( state, exit);
                });
-
-
-               //wait::running( state, handler);
 
                // register that we can answer discovery questions.
                using Ability = casual::domain::discovery::provider::Ability;

@@ -206,7 +206,9 @@ namespace casual
             ipc::message::Transport transport;
             EXPECT_TRUE( ipc::native::receive( ipc::inbound::handle(), transport, ipc::native::Flag::none));
             EXPECT_TRUE( transport.message.header.offset == 0);
-            EXPECT_TRUE( transport.message.header.count == ipc::message::transport::max_payload_size());
+            EXPECT_TRUE( transport.message.header.count == ipc::message::transport::max_payload_size()) 
+               << CASUAL_NAMED_VALUE( transport.message.header.count) << '\n'
+               << CASUAL_NAMED_VALUE( ipc::message::transport::max_payload_size());
 
             // we expect no more transports
             {

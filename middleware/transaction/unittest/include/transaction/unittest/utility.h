@@ -19,6 +19,14 @@ namespace casual
       namespace fetch
       {
          constexpr auto until = common::unittest::fetch::until( &unittest::state);
+
+         namespace predicate
+         {
+            inline auto transactions( platform::size::type count)
+            {
+               return [ count]( auto& state){ return common::range::size( state.transactions) == count;};
+            }
+         } // predicate
       }
       
    } // transaction::unittest

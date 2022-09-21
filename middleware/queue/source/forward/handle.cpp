@@ -519,10 +519,15 @@ namespace casual
                   {
                      namespace detail::discard::pending
                      {
-                        auto dequeue = []( State& state, const auto& message)
+                        template< typename M>
+                        auto dequeue( State& state, const M& message)
                         {
+                           Trace trace{ "queue::forward::handle::dequeue::forget::detail::discard::pending::dequeue"};
+
                            if( auto found = algorithm::find( state.pending.dequeues, message.correlation))
                            {
+                              common::log::line( verbose::log, "found: ", *found);
+
                               auto pending = algorithm::container::extract( state.pending.dequeues, std::begin( found));
 
                               state.forward_apply( pending.id, []( auto& forward)
@@ -531,9 +536,9 @@ namespace casual
                                  common::log::line( verbose::log, "forward: ", forward);
                               });
 
-                              common::log::line( verbose::log, "pending: ", pending);
+                              common::log::line( verbose::log, "state.pending.dequeues: ", state.pending.dequeues);
                            }
-                        };
+                        }
                         
                      } // detail::discard::pending
 
@@ -558,7 +563,7 @@ namespace casual
                            Trace trace{ "queue::forward::handle::dequeue::forget::reply"};
                            common::log::line( verbose::log, "message: ", message);
 
-                           if( message.found)
+                           if( message.discarded)
                               detail::discard::pending::dequeue( state, message);
 
                            // if not found, we've already got a dequeue, and we're mid 'state flow'.
@@ -824,37 +829,61 @@ namespace casual
 
                namespace dead
                {
+                  namespace detail::transform
+                  {
+                     auto dequeue( forward::state::pending::Dequeue& pending)
+                     {
+                        ipc::message::group::dequeue::forget::Request message{ common::process::handle()};
+                        message.correlation = pending.correlation;
+                        return message;
+                     }
+
+                     auto enqueue( forward::state::pending::Enqueue& pending)
+                     {
+                        ipc::message::group::enqueue::Reply message;
+                        message.correlation = pending.correlation;
+                        return message;
+                     }
+
+                  } // detail::transform
+
                   auto process( State& state)
                   {
-                     return [&state]( const common::message::event::process::Exit& message)
+                     return [ &state]( const common::message::event::process::Exit& message)
                      {
                         Trace trace{ "queue::forward::service::local::handle::dead::process"};
                         log::line( verbose::log, "message: ", message);
 
-                        auto transform_id = []( auto& forward){ return forward.id;};
+                        // Note: We rely on others to send us "error replies" for the following 
+                        //  * pending.service.calls : service-manager
+                        //  * pending.transaction.(commit|rollback) : transaction-manager
 
-                        // take care of source pendings
+                        // ids of all logical instances that interact with the `pid` in some
+                        // way ( enqueue, dequeue, _target enqueue_, _reply enqueue_).
+                        auto ids = state.forward.ids( message.state.pid);
+                        log::line( verbose::log, "ids: ", ids);
+
+                        // emulates the messages/replies, and let the _normal flow_ take care of business.
+                        auto emulate_error_reply = []( auto& pendings, auto& ids, auto transformer)
                         {
-                           auto is_source = [pid=message.state.pid]( auto& forward){ return forward.source == pid;};
+                           auto invalid = std::get< 0>( algorithm::intersection( pendings, ids));
+                           log::line( verbose::log, "invalid: ", invalid);
 
-                           auto ids = algorithm::transform_if( state.forward.queues, transform_id, is_source);
-                           algorithm::transform_if( state.forward.services, std::back_inserter( ids), transform_id, is_source);
-
-                           auto pending = std::get< 0>( algorithm::intersection( state.pending.dequeues, ids));
-                           log::line( verbose::log, "pending: ", pending);
-
-                           // we pretend that queue-group has sent dequeue::forget and let the normal flow 
-                           // take place.
-                           algorithm::for_each( pending, []( auto& pending)
+                           algorithm::for_each( algorithm::transform( invalid, transformer), []( auto& message)
                            {
-                              ipc::message::group::dequeue::forget::Request forget{ common::process::handle()};
-                              forget.correlation = pending.correlation;
-                              ipc::device().push( std::move( forget));
+                              ipc::device().push( std::move( message));
                            });
-                        }
+
+                           algorithm::container::erase( pendings, invalid);
+                        };
+
+                        emulate_error_reply( state.pending.dequeues, ids, &detail::transform::dequeue);
+                        emulate_error_reply( state.pending.enqueues, ids, &detail::transform::enqueue);
+ 
+                        
+                        state.invalidate( ids);
                      };                     
                   }
-
 
                } // dead
 

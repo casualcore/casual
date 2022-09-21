@@ -413,11 +413,15 @@ namespace casual
                using base_reply = common::message::basic_message< common::message::Type::queue_group_dequeue_forget_reply>;
                struct Reply : base_reply
                {
-                  bool found = false;
+                  //! true if callee actually discarded/forgot about the
+                  //! pending dequeue.
+                  //! false if callee don't know abut a pending dequeue, hence already
+                  //! got a dequeue.
+                  bool discarded = false;
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
                      base_reply::serialize( archive);
-                     CASUAL_SERIALIZE( found);
+                     CASUAL_SERIALIZE( discarded);
                   )
                };
 

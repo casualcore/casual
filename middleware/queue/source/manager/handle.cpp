@@ -100,7 +100,8 @@ namespace casual
                      {
                         Trace trace{ "queue::manager::handle::local::event::process::exit"};
                         common::log::line( verbose::log, "event: ", event);
-                        state.remove( event.state.pid);
+
+                        state.task.coordinator( event);
                      };
                   }
                } // process
@@ -109,6 +110,62 @@ namespace casual
 
             namespace shutdown
             {
+               namespace detail
+               {
+                  template< typename Es>
+                  auto action( State& state, Es& entities)
+                  {
+                     return [ &state, &entities]( task::unit::id id)
+                     {
+                        Trace trace{ "queue::manager::handle::local::shutdown::action"};
+                        common::log::line( verbose::log, "entities: ", entities);
+
+                        state::task::State task_state;
+                        task_state.id = id;
+                        task_state.pids = algorithm::transform( entities, [ &state]( auto& entity)
+                        {
+                           if( entity.process.ipc)
+                              state.multiplex.send( entity.process.ipc, common::message::shutdown::Request{ common::process::handle()});
+                           else
+                              signal::send( entity.process.pid, code::signal::terminate);
+
+                           return entity.process.pid;
+                        });
+
+                        common::log::line( verbose::log, "task_state: ", task_state);
+
+                        if( task_state.pids.empty())
+                           return task::unit::action::Outcome::abort;
+
+                        state.task.states.push_back( std::move( task_state));
+                        return task::unit::action::Outcome::success;
+                     };
+                  };
+
+                  auto handler( State& state)
+                  {
+                     return [ &state]( task::unit::id id, const common::message::event::process::Exit& event)
+                     {
+                        Trace trace{ "queue::manager::handle::local::shutdown::request shutdown_handler"};
+
+                        auto task_state = casual::assertion( algorithm::find( state.task.states, id));
+                        algorithm::container::erase( task_state->pids, event.state.pid);
+
+                        common::log::line( verbose::log, "task_state: ", task_state);
+
+                        state.remove( event.state.pid);
+
+                        if( ! task_state->pids.empty())
+                           return task::unit::Dispatch::pending;
+                        else
+                           state.task.states.erase( std::begin( task_state));
+                        return task::unit::Dispatch::done;
+                     };
+                  }
+                  
+               } // detail
+
+               
                auto request( State& state)
                {
                   return [&state]( common::message::shutdown::Request& message)
@@ -120,20 +177,14 @@ namespace casual
 
                      local::pending::lookups::discard( state);
 
-                     auto shutdown = [&]( auto& entity)
-                     {
-                        if( entity.process.ipc)
-                        {
-                           state.multiplex.send(
-                              entity.process.ipc,
-                              common::message::shutdown::Request{ common::process::handle()});
-                        }
-                        else
-                           signal::send( entity.process.pid, code::signal::terminate);
-                     };
-
-                     algorithm::for_each( state.forward.groups, shutdown);
-                     algorithm::for_each( state.groups, shutdown);
+                     // create coordinated tasks, first the forwards, then the queue groups
+                     state.task.coordinator.then( task::create::unit( 
+                        task::create::action( shutdown::detail::action( state, state.forward.groups)),
+                        shutdown::detail::handler( state)
+                     )).then( task::create::unit( 
+                        task::create::action( shutdown::detail::action( state, state.groups)),
+                        shutdown::detail::handler( state)
+                     ));
                   };
                }
 

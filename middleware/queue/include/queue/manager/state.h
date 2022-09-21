@@ -9,6 +9,8 @@
 
 #include "queue/common/ipc/message.h"
 
+#include "casual/task.h"
+
 #include "common/communication/select.h"
 #include "common/communication/ipc/send.h"
 #include "common/domain.h"
@@ -115,6 +117,34 @@ namespace casual
             )
          };
 
+         namespace task
+         {
+            struct State
+            {
+               casual::task::unit::id id;
+               std::vector< common::strong::process::id> pids;
+               
+               inline friend bool operator == ( const State& lhs, casual::task::unit::id rhs) { return lhs.id == rhs;}
+
+               CASUAL_LOG_SERIALIZE(
+                  CASUAL_SERIALIZE( id);
+                  CASUAL_SERIALIZE( pids);
+               )
+            };
+
+         } // task
+
+         struct Task
+         {
+            std::vector< task::State> states;
+            casual::task::Coordinator coordinator;
+
+            CASUAL_LOG_SERIALIZE(
+               CASUAL_SERIALIZE( states);
+               CASUAL_SERIALIZE( coordinator);
+            )
+         };
+
          enum struct Runlevel : short
          {
             configuring,
@@ -155,7 +185,9 @@ namespace casual
 
 
          std::vector< state::Remote> remotes;
-         
+
+         state::Task task;
+
          //! @returns 0..1 queue (providers) that provides the queue
          //! @{
          const state::Queue* queue( const std::string& name) const noexcept;
@@ -198,10 +230,11 @@ namespace casual
             CASUAL_SERIALIZE( groups);
             CASUAL_SERIALIZE( forward);
             CASUAL_SERIALIZE( remotes);
+            CASUAL_SERIALIZE( task);
             CASUAL_SERIALIZE( note);
          )
-
       };
+
    } // queue::manager
 } // casual
 

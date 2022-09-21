@@ -41,13 +41,12 @@ namespace casual
 
             auto result = common::message::reverse::type( message);
 
-            auto [ keep, remove] = algorithm::partition( dequeues, [&message]( auto& m){ return m.correlation != message.correlation;});
-
-            log::line( verbose::log, "found: ", remove);
-            
-            result.found = ! remove.empty();
-
-            algorithm::container::trim( dequeues, keep);
+            if( auto found = algorithm::find( dequeues, message.correlation))
+            {
+               log::line( verbose::log, "found: ", *found);
+               result.discarded = true;
+               dequeues.erase( std::begin( found));
+            }
 
             return result;
          }

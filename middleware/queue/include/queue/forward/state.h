@@ -163,9 +163,12 @@ namespace casual
                Service& operator++();
                Service& operator--();
 
+               void invalidate() noexcept;
+
                inline bool valid_queues() const { return source && ( ! reply || reply.value());}
 
-               friend bool operator == ( const Service& lhs, forward::id rhs) { return lhs.id == rhs;}
+               inline friend bool operator == ( const Service& lhs, forward::id rhs) { return lhs.id == rhs;}
+               inline friend bool operator == ( const Service& lhs, common::strong::process::id rhs) { return lhs.source.process == rhs || lhs.reply == rhs;}
 
                CASUAL_LOG_SERIALIZE(
                   CASUAL_SERIALIZE( id);
@@ -197,9 +200,12 @@ namespace casual
                Queue& operator++();
                Queue& operator--();
 
+               void invalidate() noexcept;
+
                inline bool valid_queues() const { return source && target;}
 
-               friend bool operator == ( const forward::Queue& lhs, forward::id rhs) { return lhs.id == rhs;}
+               inline friend bool operator == ( const Queue& lhs, forward::id rhs) { return lhs.id == rhs;}
+               inline friend bool operator == ( const Queue& lhs, common::strong::process::id  rhs) { return lhs.source.process == rhs || lhs.target.process == rhs;}
 
                CASUAL_LOG_SERIALIZE(
                   CASUAL_SERIALIZE( id);
@@ -275,6 +281,8 @@ namespace casual
 
                   common::strong::process::id pid{};
 
+                  inline friend bool operator == ( const Call& lhs, common::strong::process::id rhs) { return lhs.pid == rhs;}
+
                   CASUAL_LOG_SERIALIZE(
                      transaction_base::serialize( archive);
                      CASUAL_SERIALIZE( pid);
@@ -315,7 +323,7 @@ namespace casual
          //! and we consume/remove the current pending, make the next request
          //! and add that specific 'correlation' to pending.
          //! 
-         //! The layout of Pending has the order of normal successfull execution flow,
+         //! The layout of Pending has the order of normal successful execution flow,
          //! with the exception of pending.rollbacks, which is a 'state shortcut' when
          //! handlers detect some errors and rollbacks the 'flow'.
          //! Otherwise the flow ends when we handle commit reply, and start the Forward
@@ -375,6 +383,9 @@ namespace casual
             std::vector< state::forward::Service> services;
             std::vector< state::forward::Queue> queues;
 
+            //! accumulate all id's for a given process
+            std::vector< forward::id> ids( common::strong::process::id pid) const noexcept;
+
             CASUAL_LOG_SERIALIZE(
                CASUAL_SERIALIZE( services);
                CASUAL_SERIALIZE( queues);
@@ -398,6 +409,9 @@ namespace casual
          //! we're done when we're in shutdown mode
          //! and all forwards has no concurrent stuff in flight.
          bool done() const noexcept;
+
+         //! removes all state associated with source and/or target for forwards 
+         void invalidate( const std::vector< state::forward::id>& ids) noexcept;
 
          state::forward::Service* forward_service( state::forward::id id) noexcept;
          state::forward::Queue* forward_queue( state::forward::id id) noexcept;

@@ -155,9 +155,7 @@ namespace casual
 
          auto is_same = std::is_same< const double&, argument_type>::value;
          EXPECT_TRUE( is_same);
-
       }
-
 
       TEST( common_conformance, get_function_argument_type)
       {
@@ -169,10 +167,20 @@ namespace casual
 
          auto is_same = std::is_same< double&, argument_type>::value;
          EXPECT_TRUE( is_same);
-
       }
 
+      TEST( common_conformance, get_function_two_arguments_types)
+      {
+         using function_1 = std::function< void( double&, long&)>;
 
+         EXPECT_TRUE( traits::function< function_1>::arguments() == 2);
+
+         using argument1_type = typename traits::function< function_1>::argument< 0>::type;
+         using argument2_type = typename traits::function< function_1>::argument< 1>::type;
+
+         EXPECT_TRUE(( std::is_same_v< double&, argument1_type>));
+         EXPECT_TRUE(( std::is_same_v< long&, argument2_type>));
+      }
 
       long some_function( const std::string& value) { return 1;}
 

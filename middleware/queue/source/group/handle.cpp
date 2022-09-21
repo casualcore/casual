@@ -725,7 +725,7 @@ namespace casual
 
                   auto request( State& state)
                   {
-                     return [&state]( const common::message::shutdown::Request & message)
+                     return [&state]( const common::message::shutdown::Request& message)
                      {
                         Trace trace{ "queue::handle::local::shutdown::request"};
                         log::line( verbose::log, "message: ", message);
