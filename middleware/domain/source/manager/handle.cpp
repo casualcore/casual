@@ -979,12 +979,9 @@ namespace casual
                      Trace trace{ "domain::manager::handle::local::server::Policy::ack"};
 
                      if( auto service_manager = m_state.singleton( common::communication::instance::identity::service::manager.id))
-                     {
                          m_state.multiplex.send( service_manager.ipc, message);
-                         return;
-                     }
-
-                     common::log::line( log, "failed to reach service-manager - action: discard sending ACK");
+                     else
+                        log::line( log, "failed to reach service-manager - action: discard sending ACK");
                   }
 
                private: 

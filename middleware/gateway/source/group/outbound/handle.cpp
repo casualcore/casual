@@ -413,7 +413,7 @@ namespace casual
                            {
                               log::line( log, "outbound is in shutdown mode - action: reply with empty discovery");
 
-                              state.multiplex.send( message.process.ipc, common::message::reverse::type( message, common::process::handle()));
+                              state.multiplex.send( message.process.ipc, common::message::reverse::type( message));
                               return;
                            }
 
@@ -452,7 +452,7 @@ namespace casual
 
                               detail::advertise::replies( state, replies, outcome);
 
-                              casual::domain::message::discovery::Reply message{ common::process::handle()};
+                              casual::domain::message::discovery::Reply message;
                               message.correlation = correlation;
                               
                               for( auto& reply : replies)

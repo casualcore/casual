@@ -15,27 +15,21 @@
 
 namespace casual
 {
-   namespace common
+   namespace common::message
    {
-      namespace message
+      namespace server::ping
       {
-         namespace server
-         {
-            namespace ping
-            {
-               using Request = basic_request< Type::server_ping_request>;
-               using Reply = basic_reply< Type::server_ping_reply>;
-            } // ping
-         } // server
+         using Request = basic_request< Type::server_ping_request>;
+         using Reply = basic_process< Type::server_ping_reply>;
+      } // server::ping
 
-         namespace reverse
-         {
-            template<>
-            struct type_traits< server::ping::Request> : detail::type< server::ping::Reply> {};
+      namespace reverse
+      {
+         template<>
+         struct type_traits< server::ping::Request> : detail::type< server::ping::Reply> {};
+      } // reverse
 
-         } // reverse
-      } // message
-   } //common
+   } //common::message
 } // casual
 
 

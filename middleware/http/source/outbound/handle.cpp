@@ -94,7 +94,7 @@ namespace casual
                         Trace trace{ "http::outbound::handle::local::discovery::request"};
                         log::line( verbose::log, "message: ", message);
 
-                        auto reply = common::message::reverse::type( message, process::handle());
+                        auto reply = common::message::reverse::type( message);
                         reply.domain = state.identity;
 
                         using Services = std::remove_reference_t< decltype( reply.content.services())>;

@@ -373,7 +373,7 @@ namespace casual
                         Trace trace{ "queue::manager::handle::local::domain::discovery::internal::request"};
                         common::log::line( verbose::log, "message: ", message);
 
-                        auto reply = common::message::reverse::type( message, common::process::handle());
+                        auto reply = common::message::reverse::type( message);
 
                         auto is_local = [&state]( auto& name)
                         {

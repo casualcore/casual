@@ -54,7 +54,7 @@ namespace casual
       }
 
 
-      TEST( domain_discovery, register_as_discover_provieder__send_api_request___expect_request__then_reply)
+      TEST( domain_discovery, register_as_discover_provider__send_api_request___expect_request__then_reply)
       {
          common::unittest::Trace trace;
 
@@ -67,16 +67,14 @@ namespace casual
 
          // wait for the request, and send reply reply
          {
-            message::discovery::Request request;
-            communication::device::blocking::receive( communication::ipc::inbound::device(), request);
-            auto reply = common::message::reverse::type( request, process::handle());
+            auto request = communication::ipc::receive< message::discovery::Request>();
+            auto reply = common::message::reverse::type( request);
             communication::device::blocking::send( request.process.ipc, reply);
          }
 
          // wait for the reply
          {
-            message::discovery::api::Reply reply;
-            communication::device::blocking::receive( communication::ipc::inbound::device(), reply);
+            auto reply = communication::ipc::receive< message::discovery::api::Reply>();
             EXPECT_TRUE( reply.correlation == correlation);
          }
       }
@@ -96,18 +94,16 @@ namespace casual
 
          // wait for the internal request, and send reply reply
          {
-            message::discovery::internal::Request request;
-            communication::device::blocking::receive( communication::ipc::inbound::device(), request);
+            auto request = communication::ipc::receive< message::discovery::internal::Request>();
             EXPECT_TRUE( algorithm::equal( request.content.services(), array::make( "a")));
-            auto reply = common::message::reverse::type( request, process::handle());
+            auto reply = common::message::reverse::type( request);
             reply.content.add_service( { "a", "foo", common::service::transaction::Type::branch});
             communication::device::blocking::send( request.process.ipc, reply);
          }
 
          // wait for the reply
          {
-            message::discovery::Reply reply;
-            communication::device::blocking::receive( communication::ipc::inbound::device(), reply);
+            auto reply = communication::ipc::receive< message::discovery::Reply>();
             EXPECT_TRUE( reply.correlation == correlation);
             ASSERT_TRUE( reply.content.services().size() == 1);
          }
@@ -129,9 +125,8 @@ namespace casual
 
          auto handle_request = []()
          {
-            message::discovery::Request request;
-            communication::device::blocking::receive( communication::ipc::inbound::device(), request);
-            auto reply = common::message::reverse::type( request, process::handle());
+            auto request = communication::ipc::receive< message::discovery::Request>();
+            auto reply = common::message::reverse::type( request);
             communication::device::blocking::send( request.process.ipc, reply);
          };
 
@@ -167,7 +162,7 @@ namespace casual
          auto handle_request = []( auto request)
          {
             communication::device::blocking::receive( communication::ipc::inbound::device(), request);
-            auto reply = common::message::reverse::type( request, process::handle());
+            auto reply = common::message::reverse::type( request);
             reply.content.add_queue({"a"});
             communication::device::blocking::send( request.process.ipc, reply);
          };

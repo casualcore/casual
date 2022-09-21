@@ -384,7 +384,7 @@ namespace casual
                            Trace trace{ "discovery::handle::local::request coordinate external"};
                            log::line( verbose::log, "replies: ", replies);
 
-                           message::discovery::Reply message{ process::handle()};
+                           message::discovery::Reply message;
                            message.correlation = destination.correlation;
                            message.content = std::move( content);
                            
@@ -408,7 +408,7 @@ namespace casual
                         Trace trace{ "discovery::handle::local::request coordinate internal"};
                         log::line( verbose::log, "replies: ", replies);
 
-                        message::discovery::Reply message{ process::handle()};
+                        message::discovery::Reply message;
                         message.correlation = destination.correlation;
 
                         for( auto& reply : replies)

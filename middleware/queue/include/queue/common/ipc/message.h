@@ -150,7 +150,7 @@ namespace casual
             )
          };
 
-         using base_reply = common::message::basic_reply< common::message::Type::queue_manager_queue_lookup_reply>;
+         using base_reply = common::message::basic_process< common::message::Type::queue_manager_queue_lookup_reply>;
          struct Reply : base_reply
          {
             using base_reply::base_reply;
@@ -513,7 +513,7 @@ namespace casual
                )
             };
 
-            using base_reply = common::message::basic_reply< common::message::Type::queue_group_configuration_update_reply>;
+            using base_reply = common::message::basic_process< common::message::Type::queue_group_configuration_update_reply>;
             struct Reply : base_reply
             {
                using base_reply::base_reply;
@@ -871,7 +871,7 @@ namespace casual
                )
             };
 
-            using base_reply = common::message::basic_reply< common::message::Type::queue_forward_group_configuration_update_reply>;
+            using base_reply = common::message::basic_process< common::message::Type::queue_forward_group_configuration_update_reply>;
             struct Reply : base_reply
             {
                using base_reply::base_reply;

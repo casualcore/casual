@@ -142,6 +142,8 @@ namespace casual
                using base_request = message::basic_request< Type::domain_process_lookup_request>;
                struct Request : base_request
                {
+                  using base_request::base_request;
+
                   Uuid identification;
                   strong::process::id pid;
                   request::Directive directive = request::Directive::wait;
@@ -154,10 +156,11 @@ namespace casual
                   )
                };
 
-               using base_reply = basic_reply< Type::domain_process_lookup_reply>;
-
+               using base_reply = basic_process< Type::domain_process_lookup_reply>;
                struct Reply : base_reply
                {
+                  using base_reply::base_reply;
+
                   Uuid identification;
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
@@ -183,7 +186,7 @@ namespace casual
                   )
                };
 
-               using base_reply = basic_reply< Type::domain_process_prepare_shutdown_reply>;
+               using base_reply = basic_message< Type::domain_process_prepare_shutdown_reply>;
                struct Reply : base_reply
                {
                   using base_reply::base_reply;

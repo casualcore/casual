@@ -399,15 +399,15 @@ namespace casual
       // Below, some basic message related types that is used by others
 
       template< message::Type type>
-      struct basic_request : basic_message< type>
+      struct basic_process : basic_message< type>
       {
-         basic_request() = default;
-         inline basic_request( common::process::Handle process) : process{ std::move( process)} {}
+         basic_process() = default;
+         inline basic_process( common::process::Handle process) : process{ std::move( process)} {}
 
          common::process::Handle process;
 
-         friend bool operator == ( const basic_request& lhs, strong::process::id rhs) { return lhs.process == rhs;}
-         friend bool operator == ( strong::process::id lhs, const basic_request& rhs) { return rhs == lhs;}
+         friend bool operator == ( const basic_process& lhs, strong::process::id rhs) { return lhs.process == rhs;}
+         friend bool operator == ( strong::process::id lhs, const basic_process& rhs) { return rhs == lhs;}
 
          CASUAL_CONST_CORRECT_SERIALIZE(
             basic_message< type>::serialize( archive);
@@ -417,9 +417,13 @@ namespace casual
       };
 
       template< message::Type type>
-      using basic_reply = basic_request< type>;
+      using basic_request = basic_process< type>;
 
-      //! Message to pollitely ask a 'server' to exit/termination.
+      template< message::Type type>
+      using basic_reply = basic_message< type>;
+
+
+      //! Message to politely ask a 'server' to exit/termination.
       namespace shutdown
       {
          using base_request = basic_request< Type::shutdown_request>;

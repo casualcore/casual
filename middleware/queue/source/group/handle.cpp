@@ -140,7 +140,7 @@ namespace casual
                            Trace trace{ "queue::handle::local::message::meta::request"};
                            log::line( verbose::log, "message: ", message);
 
-                           auto reply = common::message::reverse::type( message, common::process::handle());
+                           auto reply = common::message::reverse::type( message);
                            reply.messages = state.queuebase.meta( message.qid);
 
                            state.multiplex.send( message.process.ipc, reply);
@@ -530,7 +530,7 @@ namespace casual
 
                         state.queuebase.metric_reset( message.queues);
 
-                        state.multiplex.send( message.process.ipc, common::message::reverse::type( message, common::process::handle()));
+                        state.multiplex.send( message.process.ipc, common::message::reverse::type( message));
                      };
                   }
                } // metric::reset

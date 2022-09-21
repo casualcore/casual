@@ -395,7 +395,7 @@ namespace casual
             } // reply
 
             //! Represent "service-name-lookup" response.
-            using base_reply = basic_reply< message::Type::service_name_lookup_reply>; 
+            using base_reply = basic_process< message::Type::service_name_lookup_reply>; 
             struct Reply : base_reply
             {
                using base_reply::base_reply;

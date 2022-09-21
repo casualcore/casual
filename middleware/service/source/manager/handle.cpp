@@ -693,7 +693,7 @@ namespace casual
                         if( idle || ! unknown.empty())
                         {
                            // we can send a reply for these directly
-                           auto reply = common::message::reverse::type( message, common::process::handle());
+                           auto reply = common::message::reverse::type( message);
                            reply.processes = std::move( unknown);
 
                            algorithm::transform( idle, std::back_inserter( reply.processes), []( auto& instance)
@@ -716,7 +716,7 @@ namespace casual
 
                            auto callback = [ 
                               &state,
-                              message = common::message::reverse::type( message, common::process::handle()), 
+                              message = common::message::reverse::type( message), 
                               instances = range::to_vector( busy),
                               destination = message.process]
                               ( auto&& replies, auto&& outcome) mutable
@@ -767,7 +767,7 @@ namespace casual
                         Trace trace{ "service::manager::handle::domain::discovery::internal::request"};
                         common::log::line( verbose::log, "message: ", message);
 
-                        auto reply = common::message::reverse::type( message, common::process::handle());
+                        auto reply = common::message::reverse::type( message);
 
                         // accumulate our internal/local services intersected with the requested
                         {

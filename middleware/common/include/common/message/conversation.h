@@ -117,7 +117,7 @@ namespace casual
             } // callee
 
 
-            using base_reply = basic_reply< Type::conversation_connect_reply>;
+            using base_reply = basic_process< Type::conversation_connect_reply>;
             struct Reply : base_reply
             {
                using base_reply::base_reply;

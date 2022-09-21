@@ -253,7 +253,7 @@ domain:
 
             EXPECT_TRUE( common::algorithm::equal( request.content.queues(), common::array::make( "a")));
 
-            auto reply = common::message::reverse::type( request, common::process::handle());
+            auto reply = common::message::reverse::type( request);
             reply.content.add_queue( {"a"});
             common::communication::device::blocking::send( request.process.ipc, reply);
          }
