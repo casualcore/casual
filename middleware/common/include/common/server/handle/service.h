@@ -70,7 +70,7 @@ namespace casual
             ack.correlation = message.correlation;
             ack.execution = message.execution;
             ack.metric.execution = message.execution;
-            ack.metric.service = message.service.name;
+            ack.metric.service = message.service.logical_name();
             ack.metric.parent = message.parent;
             ack.metric.process = common::process::handle();
             ack.metric.trid = reply.transaction.trid;

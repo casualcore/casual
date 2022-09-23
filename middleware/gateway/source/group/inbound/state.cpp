@@ -6,6 +6,7 @@
 
 #include "gateway/group/inbound/state.h"
 
+#include <utility>
 
 namespace casual
 {
@@ -37,7 +38,7 @@ namespace casual
                   message.pending = lookup.pending;
 
                   if( message.service.name != lookup.service.name)
-                     message.service.name = lookup.service.name;
+                     message.service.requested = std::exchange( message.service.name, lookup.service.name);
 
                   return serialize::native::complete< complete_type>( std::move( message));
                }
