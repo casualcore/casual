@@ -384,8 +384,8 @@ namespace casual
                         };
 
 
-                        for( auto& queue : algorithm::filter( message.content.queues, is_local))
-                           reply.content.queues.emplace_back( std::move( queue));
+                        for( auto& queue : algorithm::filter( message.content.queues(), is_local))
+                           reply.content.add_queue( std::move( queue));
 
                         common::log::line( verbose::log, "reply: ", reply);
 
@@ -435,9 +435,9 @@ namespace casual
                         // add the pending _wait for ever_ requests
                         for( auto& pending : state.pending.lookups)
                            if( pending.context.semantic == decltype( pending.context.semantic)::wait)
-                              reply.content.queues.push_back( pending.name);
+                              reply.content.add_queue( pending.name);
                         
-                        algorithm::container::trim( reply.content.queues, algorithm::unique( algorithm::sort( reply.content.queues)));
+                        algorithm::container::trim( reply.content.queues(), algorithm::unique( algorithm::sort( reply.content.queues())));
                         common::log::line( verbose::log, "reply: ", reply);
 
                         state.multiplex.send( message.process.ipc, reply);
@@ -459,21 +459,21 @@ namespace casual
 
 
                         // all known "remote" queues
-                        reply.content.queues = algorithm::accumulate( state.queues, std::move( reply.content.queues), []( auto result, auto& pair)
+                        reply.content.queues( algorithm::accumulate( state.queues, std::move( reply.content.queues()), []( auto result, auto& pair)
                         {
                            auto is_remote = []( auto& queue){ return queue.remote();};
                            if( algorithm::find_if( std::get< 1>( pair), is_remote))
                               result.push_back( std::get< 0>( pair));
 
                            return result;
-                        });
+                        }));
 
                         // all 'wait for ever'
                         for( auto& pending : state.pending.lookups)
                            if( pending.context.semantic == decltype( pending.context.semantic)::wait)
-                              reply.content.queues.push_back( pending.name);
+                              reply.content.add_queue( pending.name);
 
-                        algorithm::container::trim( reply.content.queues, algorithm::unique( algorithm::sort( reply.content.queues)));
+                        algorithm::container::trim( reply.content.queues(), algorithm::unique( algorithm::sort( reply.content.queues())));
 
                         common::log::line( verbose::log, "reply: ", reply);
 

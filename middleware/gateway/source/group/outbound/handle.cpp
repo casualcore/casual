@@ -361,8 +361,8 @@ namespace casual
 
                                  auto advertise = state.lookup.add( 
                                     connection, 
-                                    algorithm::transform( reply.content.services, []( auto& service){ return state::lookup::Resource{ service.name, service.property.hops};}), 
-                                    algorithm::transform( reply.content.queues, []( auto& queue){ return state::lookup::Resource{ queue.name, 1};}));
+                                    algorithm::transform( reply.content.services(), []( auto& service){ return state::lookup::Resource{ service.name, service.property.hops};}), 
+                                    algorithm::transform( reply.content.queues(), []( auto& queue){ return state::lookup::Resource{ queue.name, 1};}));
 
 
                                  auto equal_name = []( auto& lhs, auto& rhs){ return lhs.name == rhs;};
@@ -370,7 +370,7 @@ namespace casual
                                  // we need to intersect whit the actual 'resource' information with what the state says we should advertise.
                                  // (we do not know the _information_, and don't really care)
 
-                                 if( auto services = std::get< 0>( algorithm::intersection( reply.content.services, advertise.services, equal_name)))
+                                 if( auto services = std::get< 0>( algorithm::intersection( reply.content.services(), advertise.services, equal_name)))
                                  {
                                     common::message::service::concurrent::Advertise request{ common::process::handle()};
                                     request.alias = instance::alias();
@@ -380,7 +380,7 @@ namespace casual
                                     state.multiplex.send( ipc::manager::service(), request);
                                  }
 
-                                 if( auto queues = std::get< 0>( algorithm::intersection( reply.content.queues, advertise.queues, equal_name)))
+                                 if( auto queues = std::get< 0>( algorithm::intersection( reply.content.queues(), advertise.queues, equal_name)))
                                  {
                                     casual::queue::ipc::message::Advertise request{ common::process::handle()};
                                     request.order = state.order;
@@ -487,8 +487,8 @@ namespace casual
                         if( information->configuration)
                         {
                            auto& configuration = information->configuration;
-                           update.content.services = configuration.services;
-                           update.content.queues = configuration.queues;
+                           update.content.services( configuration.services);
+                           update.content.queues( configuration.queues);
                         }
 
                         // let the _discovery_ know that the topology has been updated
@@ -804,7 +804,7 @@ namespace casual
                         log::line( verbose::log, "message: ", message);
 
                         // increase hops for all services.
-                        for( auto& service : message.content.services)
+                        for( auto& service : message.content.services())
                            ++service.property.hops;
 
                         state.coordinate.discovery( std::move( message));                         

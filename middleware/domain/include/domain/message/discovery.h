@@ -39,27 +39,60 @@ namespace casual
          {
             Content() = default;
             Content( std::vector< std::string> services, std::vector< std::string> queues)
-               : services{ common::algorithm::sort( std::move( services))}, queues{ common::algorithm::sort( std::move( queues))}
+               : m_services{ common::algorithm::sort( std::move( services))}, m_queues{ common::algorithm::sort( std::move( queues))}
             {}
-
-            std::vector< std::string> services;
-            std::vector< std::string> queues;
 
             inline Content& operator += ( Content rhs)
             {
-               common::algorithm::sorted::append_unique( common::algorithm::sort( rhs.services), services);
-               common::algorithm::sorted::append_unique( common::algorithm::sort( rhs.queues), queues);
+               common::algorithm::sorted::append_unique( common::algorithm::sort( rhs.m_services), m_services);
+               common::algorithm::sorted::append_unique( common::algorithm::sort( rhs.m_queues), m_queues);
                return *this;
             };
 
+            inline const std::vector< std::string>& services() const noexcept { return m_services;};
+            inline std::vector< std::string>& services() noexcept { return m_services;};
+            inline void services( std::vector< std::string> services) noexcept 
+            { 
+               m_services = common::algorithm::sort( std::move( services));
+            };
+
+            inline const std::vector< std::string>& queues() const noexcept { return m_queues;};
+            inline std::vector< std::string>& queues() noexcept { return m_queues;};
+            inline void queues( std::vector< std::string> queues) noexcept
+            { 
+               m_queues = common::algorithm::sort( std::move( queues));
+            };
+
+            inline void add_service( std::string service) noexcept 
+            { 
+               auto position = std::get< 1>( common::algorithm::sorted::lower_bound( m_services, service));
+               m_services.insert( std::begin( position), service);
+            }
+            inline void add_queue( std::string queue) noexcept 
+            { 
+               auto position = std::get< 1>( common::algorithm::sorted::lower_bound( m_queues, queue));
+               m_queues.insert( std::begin( position), queue);
+            }
+
+            inline void replace_service( const std::string& from, const std::string& to) noexcept
+            {
+               common::algorithm::replace( m_services, from, to);
+               common::algorithm::sort( m_services);
+            }
+
             inline friend Content operator + ( Content lhs, Content rhs) { lhs += std::move( rhs); return lhs;}
 
-            inline explicit operator bool() const noexcept { return ! services.empty() || ! queues.empty();}
+            inline explicit operator bool() const noexcept { return ! m_services.empty() || ! m_queues.empty();}
 
             CASUAL_CONST_CORRECT_SERIALIZE(
-               CASUAL_SERIALIZE( services);
-               CASUAL_SERIALIZE( queues);
+               CASUAL_SERIALIZE_NAME( m_services, "services");
+               CASUAL_SERIALIZE_NAME( m_queues, "queues");
             )
+
+            private:
+               std::vector< std::string> m_services;
+               std::vector< std::string> m_queues;
+
          };
 
       } // request
@@ -88,27 +121,63 @@ namespace casual
          {
             Content() = default;
             Content( std::vector< Service> services, std::vector< Queue> queues)
-               : services{ common::algorithm::sort( std::move( services))}, queues{ common::algorithm::sort( std::move( queues))}
+               : m_services{ common::algorithm::sort( std::move( services))}, m_queues{ common::algorithm::sort( std::move( queues))}
             {}
 
-            std::vector< Service> services;
-            std::vector< Queue> queues;
-
-            inline explicit operator bool () const noexcept { return ! services.empty() || ! queues.empty();}
+            inline explicit operator bool () const noexcept { return ! m_services.empty() || ! m_queues.empty();}
 
             inline Content& operator += ( Content other)
             {
-               common::algorithm::sorted::append_unique( common::algorithm::sort( std::move( other.services)), services);
-               common::algorithm::sorted::append_unique( common::algorithm::sort( std::move( other.queues)), queues);
+               common::algorithm::sorted::append_unique( common::algorithm::sort( std::move( other.m_services)), m_services);
+               common::algorithm::sorted::append_unique( common::algorithm::sort( std::move( other.m_queues)), m_queues);
                return *this;
+            }
+
+            inline const std::vector< Service>& services() const noexcept { return m_services;};
+            inline std::vector< Service>& services() noexcept { return m_services;};
+            inline void services( std::vector< Service> services) noexcept 
+            { 
+               m_services = common::algorithm::sort( std::move( services));
+            };
+
+            inline const std::vector< Queue>& queues() const noexcept { return m_queues;};
+            inline std::vector< Queue>& queues() noexcept { return m_queues;};
+            inline void queues( std::vector< Queue> queues) noexcept
+            { 
+               m_queues = common::algorithm::sort( std::move( queues));
+            };
+
+            inline void add_service( Service service) noexcept 
+            { 
+               auto position = std::get< 1>( common::algorithm::sorted::lower_bound( m_services, service));
+               m_services.insert( std::begin( position), service);
+            }
+            inline void add_queue( Queue queue) noexcept 
+            { 
+               auto position = std::get< 1>( common::algorithm::sorted::lower_bound( m_queues, queue));
+               m_queues.insert( std::begin( position), queue);
+            }
+
+            inline void replace_service( const std::string& from, const std::string& to) noexcept
+            {
+               // transform between service and route
+               common::algorithm::for_each_if( m_services, 
+                  [to]( auto& value) { value.name = to;},
+                  [from]( auto value) { return from == value.name;}
+               );
+               common::algorithm::sort( m_services);
             }
 
             inline friend Content operator + ( Content lhs, Content rhs) { return lhs += std::move( rhs);}
 
             CASUAL_CONST_CORRECT_SERIALIZE(
-               CASUAL_SERIALIZE( services);
-               CASUAL_SERIALIZE( queues);
+               CASUAL_SERIALIZE_NAME( m_services, "services");
+               CASUAL_SERIALIZE_NAME( m_queues, "queues");
             )
+
+            private:
+               std::vector< Service> m_services;
+               std::vector< Queue> m_queues;
          };
       } // reply
 

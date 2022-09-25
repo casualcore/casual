@@ -243,8 +243,8 @@ namespace casual
                               auto transform_names = []( auto& range){ return algorithm::transform( range, []( auto& value){ return value.name;});};
 
                               return result + decltype( result){
-                                 transform_names( reply.content.services),
-                                 transform_names( reply.content.queues)};
+                                 transform_names( reply.content.services()),
+                                 transform_names( reply.content.queues())};
                            });
 
                            state.multiplex.send( destination.ipc, reply);
@@ -290,23 +290,22 @@ namespace casual
                   {
                      Trace trace{ "discovery::handle::detail::request::normalize::content"};
 
-                     algorithm::container::trim( request.services, std::get< 1>( algorithm::sorted::intersection( request.services, reply.services)));
-                     algorithm::container::trim( request.queues, std::get< 1>( algorithm::sorted::intersection( request.queues, reply.queues)));
+                     algorithm::container::trim( request.services(), std::get< 1>( algorithm::sorted::intersection( request.services(), reply.services())));
+                     algorithm::container::trim( request.queues(), std::get< 1>( algorithm::sorted::intersection( request.queues(), reply.queues())));
 
                      // make sure to "map" routes to the origin names (only services for now)
-                     for( auto& service : request.services)
+                     for( auto& service : request.services())
                         if( auto found = routes.find_name( service))
-                           service = found->origin;
-
+                           request.replace_service( service, found->origin);
                      return request;
                   }
 
                   auto reply( message::discovery::reply::Content reply, const message::discovery::internal::reply::service::Routes& routes)
                   {
                      // make sure to "map" back routes to the name (only services for now)
-                     for( auto& service : reply.services)
+                     for( auto& service : reply.services())
                         if( auto found = routes.find_origin( service.name))
-                           service.name = found->name;
+                           reply.replace_service( service.name, found->name);
 
                      return reply;
 
