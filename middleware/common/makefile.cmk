@@ -215,6 +215,7 @@ unittest_objectfiles = [
     make.Compile( 'unittest/source/test_range.cpp'),
     make.Compile( 'unittest/source/test_execute.cpp'),
     make.Compile( 'unittest/source/test_execution.cpp'),
+    make.Compile( 'unittest/source/test_task.cpp'),
 
     make.Compile( 'unittest/source/log/test_stream.cpp'),
 

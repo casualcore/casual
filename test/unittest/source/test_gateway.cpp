@@ -14,6 +14,7 @@
 #include "domain/manager/admin/cli.h"
 #include "common/communication/instance.h"
 #include "common/environment/scoped.h"
+#include "common/sink.h"
 
 #include "serviceframework/service/protocol/call.h"
 
@@ -170,12 +171,6 @@ domain:
             auto size( B&& buffer)
             {
                return tptypes( buffer.get(), nullptr, nullptr);
-            }
-
-            template< typename T>
-            void sink( T&& value)
-            {
-               auto sinked = std::move( value);
             }
 
             namespace example
@@ -520,8 +515,8 @@ domain:
             EXPECT_TRUE( algorithm::compare::any( std::string_view{ buffer.get()}, "B", "C"));
          });
 
-         local::sink( std::move( c));
-         local::sink( std::move( b));
+         common::sink( std::move( c));
+         common::sink( std::move( b));
 
          // wait until we only have one outbound connected (D)
          gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected( 1));
@@ -569,7 +564,7 @@ domain:
          gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected());
 
          // shutdown and boot b
-         local::sink( std::move( b));
+         common::sink( std::move( b));
          gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected( 0));
 
 
@@ -616,7 +611,7 @@ domain:
          gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected( 1));
 
          // shutdown and boot a
-         local::sink( std::move( a));
+         common::sink( std::move( a));
          a = local::domain( A);
 
          // wait until we're connected again
@@ -1156,7 +1151,7 @@ domain:
          gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::pending( 7));
 
          // shutdown B 
-         local::sink( std::move( b));
+         common::sink( std::move( b));
          // <-- b is down.
 
          // receive the 7 calls
@@ -1355,7 +1350,7 @@ domain:
          });
 
          // shutdown B
-         local::sink( std::move( b));
+         common::sink( std::move( b));
 
          // we expect to always get to C
          algorithm::for_n< 10>( []()
@@ -1364,7 +1359,7 @@ domain:
          });
 
          // shutdown C
-         local::sink( std::move( c));
+         common::sink( std::move( c));
 
          // we expect to always get to D ( the only on left...)
          algorithm::for_n< 10>( []()
@@ -1415,7 +1410,7 @@ domain:
          });
 
          // shutdown B
-         local::sink( std::move( b));
+         common::sink( std::move( b));
 
          // we expect to always get to C
          algorithm::for_n< 10>( []()
@@ -1544,7 +1539,7 @@ domain:
          log::line( verbose::log, "before shutdown of B");
 
          // "shutdown" B
-         local::sink( std::move( b));
+         common::sink( std::move( b));
          
          gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::disconnected());
 
@@ -1668,7 +1663,7 @@ domain:
          log::line( verbose::log, "before shutdown of B");
 
          // "shutdown" B
-         local::sink( std::move( b));
+         common::sink( std::move( b));
          gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::disconnected());
 
          log::line( verbose::log, "after shutdown of B");
@@ -1739,7 +1734,7 @@ domain:
          log::line( verbose::log, "before shutdown of B");
 
          // "shutdown" B
-         local::sink( std::move( b));
+         common::sink( std::move( b));
          gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::disconnected());
 
          log::line( verbose::log, "after shutdown of B");

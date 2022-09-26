@@ -12,6 +12,7 @@
 #include "common/communication/select.h"
 #include "common/message/domain.h"
 #include "common/message/service.h"
+#include "common/sink.h"
 
 #include "common/unittest/eventually/send.h"
 
@@ -394,7 +395,7 @@ namespace casual
          const auto count = coordinator.pending();
          EXPECT_TRUE( count > 0);
 
-         unittest::sink( std::move( destinations));
+         common::sink( std::move( destinations));
 
          // try send the cached messages, which will of course fail, and _errors_ will increase.
          coordinator.send();
