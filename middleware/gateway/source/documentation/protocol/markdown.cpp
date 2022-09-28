@@ -785,8 +785,8 @@ Sent to and received from other domains when one domain wants to discover inform
                message_type message;
                message.domain.name = "domain-A";
 
-               message.content.services.push_back( local::string::value( 128));
-               message.content.queues.push_back( local::string::value( 128));
+               message.content.add_service( local::string::value( 128));
+               message.content.add_queue( local::string::value( 128));
 
                local::format::type( out, message, {
                         { "execution", "uuid of the current execution context (breadcrumb)"},

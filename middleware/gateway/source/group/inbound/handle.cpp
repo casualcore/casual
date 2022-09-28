@@ -651,8 +651,8 @@ namespace casual
                               });
                            };
 
-                           exclude( message.content.services, information->configuration.exclude.services);
-                           exclude( message.content.queues, information->configuration.exclude.queues);
+                           exclude( message.content.services(), information->configuration.exclude.services);
+                           exclude( message.content.queues(), information->configuration.exclude.queues);
 
                            casual::domain::discovery::request( message);                    
                         };

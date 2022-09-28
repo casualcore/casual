@@ -97,7 +97,8 @@ namespace casual
                         auto reply = common::message::reverse::type( message, process::handle());
                         reply.domain = state.identity;
 
-                        reply.content.services = algorithm::accumulate( message.content.services, decltype( reply.content.services){}, [&state]( auto result, auto& name)
+                        using Services = std::remove_reference_t< decltype( reply.content.services())>;
+                        reply.content.services( algorithm::accumulate( message.content.services(), Services{}, [&state]( auto result, auto& name)
                         {
                            if( algorithm::find( state.lookup, name))
                            {
@@ -105,9 +106,8 @@ namespace casual
                               service.property.hops = 1;
                               service.property.type = decltype( service.property.type)::configured;
                            }
-
                            return result;
-                        });                   
+                        }));
 
                         communication::ipc::flush::optional::send( message.process.ipc, reply);
                      };
