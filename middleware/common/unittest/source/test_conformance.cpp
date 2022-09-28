@@ -57,6 +57,8 @@ namespace casual
 
       static_assert( traits::is::tuple_v< std::pair< int, long>>, "traits::is::tuple_v does not work...");
 
+
+
       template< int... values>
       constexpr auto size_of_parameter_pack()
       {
@@ -80,10 +82,24 @@ namespace casual
             }
             return 0;
          }
+
+         template< typename to_type, typename from_type>
+         auto cast_and_compare( from_type value)
+         {
+            to_type casted = static_cast< to_type>( value);
+            return static_cast< from_type>( casted) == value;
+         }
          
       } // detail
 
-      
+      TEST( common_conformance, static_cast_by_value)
+      {
+         EXPECT_TRUE( detail::cast_and_compare< char>( std::uint8_t{ 42}));
+         EXPECT_TRUE( detail::cast_and_compare< char>( std::int8_t{ 42}));
+         EXPECT_TRUE( detail::cast_and_compare< short>( std::int16_t{ 42}));
+         EXPECT_TRUE( detail::cast_and_compare< short>( std::uint16_t{ 42}));
+         EXPECT_TRUE( detail::cast_and_compare< int>( long{ 42}));
+      }
 
 
       TEST( common_conformance, fallthrough)

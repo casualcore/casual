@@ -111,15 +111,15 @@ namespace casual
 
          namespace archive
          {
-            namespace write
+            namespace native
             {
-               //! predicate which types a write-archive can write 'natively'
+               //! predicate which types an archive can read/write 'natively'
                template< typename T> 
                inline constexpr bool type_v = common::traits::is::any_v< common::traits::remove_cvref_t< T>, 
-                        bool, char, short, int, long, unsigned long, long long, float, double,
+                        bool, char, short, long, long long, float, double,
                         view::immutable::Binary, view::Binary, string::immutable::utf8, string::utf8>
                   || common::traits::has::any::base_v< common::traits::remove_cvref_t< T>, std::string, platform::binary::type>;
-            } // read
+            } // native
 
             namespace detail
             {

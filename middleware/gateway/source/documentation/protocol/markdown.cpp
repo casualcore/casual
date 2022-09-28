@@ -180,7 +180,7 @@ namespace casual
 
                template< typename T> 
                auto write( T&& value, const char* name)
-                  -> std::enable_if_t< common::serialize::traits::is::archive::write::type_v< common::traits::remove_cvref_t< T>>>
+                  -> std::enable_if_t< common::serialize::traits::is::archive::native::type_v< common::traits::remove_cvref_t< T>>>
                { 
                   canonical.push( name);
                   write( std::forward< T>( value));

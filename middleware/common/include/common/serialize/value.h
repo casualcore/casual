@@ -55,14 +55,27 @@ namespace casual
          {
             namespace indirection
             {
-               // lowest priority
-
+               // read
+               // highest - the archive can natively handle the value
+               template< typename A, typename T>
+               auto read( A& archive, T&& value, const char* name, traits::priority::tag< 4>)
+                  -> decltype( archive.read( std::forward< T>( value), name))
+               {
+                  return archive.read( std::forward< T>( value), name);
+               }
+               
+               template< typename A, typename T>
+               auto read( A& archive, T&& value, const char* name, traits::priority::tag< 3>) -> 
+                  decltype( customize::traits::value_t<T, A>::read( archive, std::forward< T>( value), name))
+               {
+                  return customize::traits::value_t<T, A>::read( archive, std::forward< T>( value), name);
+               }
 
                template< typename A, typename T>
-               auto read( A& archive, T&& value, const char* name, traits::priority::tag< 0>) -> 
-                  decltype( traits::value_t<T, A>::read( archive, std::forward< T>( value), name))
+               auto read( A& archive, T&& value, const char* name, traits::priority::tag< 2>) -> 
+                  decltype( customize::traits::value_t<T, A>::serialize( archive, std::forward< T>( value), name))
                {
-                  return traits::value_t<T, A>::read( archive, std::forward< T>( value), name);
+                  return customize::traits::value_t<T, A>::serialize( archive, std::forward< T>( value), name);
                }
 
                template< typename A, typename T>
@@ -73,33 +86,17 @@ namespace casual
                }
 
                template< typename A, typename T>
-               auto read( A& archive, T&& value, const char* name, traits::priority::tag< 2>) -> 
-                  decltype( customize::traits::value_t<T, A>::serialize( archive, std::forward< T>( value), name))
+               auto read( A& archive, T&& value, const char* name, traits::priority::tag< 0>) -> 
+                  decltype( traits::value_t<T, A>::read( archive, std::forward< T>( value), name))
                {
-                  return customize::traits::value_t<T, A>::serialize( archive, std::forward< T>( value), name);
-               }  
-
-               template< typename A, typename T>
-               auto read( A& archive, T&& value, const char* name, traits::priority::tag< 3>) -> 
-                  decltype( customize::traits::value_t<T, A>::read( archive, std::forward< T>( value), name))
-               {
-                  return customize::traits::value_t<T, A>::read( archive, std::forward< T>( value), name);
+                  return traits::value_t<T, A>::read( archive, std::forward< T>( value), name);
                }
-               
-               // highest - the archive can natively handle the value
-               template< typename A, typename T>
-               auto read( A& archive, T&& value, const char* name, traits::priority::tag< 4>)
-                  -> decltype( archive.read( std::forward< T>( value), name))
-               {
-                  return archive.read( std::forward< T>( value), name);
-               }
-
 
                // write
                // highest - the archive can natively handle the value
                template< typename A, typename T>
                auto write( A& archive, const T& value, const char* name, traits::priority::tag< 4>)
-                  -> decltype( archive.write( value, name))
+                  -> decltype( void( archive.write( value, name)))
                {
                   archive.write( value, name);
                }
@@ -260,6 +257,57 @@ namespace casual
                   return true;
                }
                return false;
+            }
+         };
+
+         namespace detail::integral::archive::conformant
+         {
+            //! @returns the promoted/converted `value`. 
+            //!    Assumes that compiler will optimize this call away if integral types
+            //!    can be "casted" directly.
+            template< typename R, typename T>
+            R convert( T value) noexcept { return value;}
+
+            template< typename T>
+            auto convert( T value) noexcept
+            {
+               if constexpr( common::traits::is::any_v< T, std::int8_t, std::uint8_t>)
+                  return convert< char>( value);
+               if constexpr( common::traits::is::any_v< T, std::uint16_t>)
+                  return convert< short>( value);
+               if constexpr( common::traits::is::any_v< T, int, unsigned int, std::int32_t, std::uint32_t>)
+                  return convert< long>( value);
+               if constexpr( common::traits::is::any_v< T, std::uint64_t, unsigned long>)
+                  return convert< long>( value);
+            };
+         } // detail::integral::archive::conformant
+
+         //! Specialization for "odd" integral types
+         template< typename T, typename A>
+         struct Value< T, A, std::enable_if_t< common::traits::is::any_v< T, 
+            std::int8_t, std::uint8_t, std::uint16_t, int, unsigned int, std::int32_t, std::uint32_t, unsigned long, std::uint64_t
+         >>>
+         {
+            static void write( A& archive, const T& value, const char* name)
+            {
+               using conformant_type = decltype( detail::integral::archive::conformant::convert( value));
+               static_assert( traits::is::archive::native::type_v< conformant_type>);
+
+               archive.write( detail::integral::archive::conformant::convert( value), name);
+            }
+
+            static bool read( A& archive, T& value, const char* name)
+            {
+               using conformant_type = decltype( detail::integral::archive::conformant::convert( value));
+               static_assert( traits::is::archive::native::type_v< conformant_type>);
+
+               conformant_type conformant;
+
+               if( ! archive.read( conformant, name))
+                  return false;
+
+               value = detail::integral::archive::conformant::convert< T>( conformant);
+               return true;
             }
          };
 
@@ -545,17 +593,17 @@ namespace casual
                template< typename A, typename V>
                auto read_order_type( A& archive, V& value)
                {
-                  bool not_empty = false;
-                  archive.read( not_empty, nullptr);
+                  bool has_value = false;
+                  archive.read( has_value, nullptr);
 
-                  if( not_empty)
+                  if( has_value)
                   {
-                     std::decay_t< decltype( value.value())> contained;
+                     traits::remove_cvref_t< decltype( value.value())> contained{};
                      value::read( archive, contained, nullptr);
                      value = std::move( contained);
                   }
 
-                  return not_empty;
+                  return has_value;
                }
 
                template< typename A, typename V>

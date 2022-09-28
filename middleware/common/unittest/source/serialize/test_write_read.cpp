@@ -80,7 +80,7 @@ namespace casual
                   serialize::writer::consume( writer, buffer);
 
                   auto reader = policy_type::reader( buffer);
-                  T value;
+                  auto value = T{};
                   reader >> CASUAL_NAMED_VALUE( value);
                   validate( reader, traits::priority::tag< 1>{});
                   return value;

@@ -11,53 +11,14 @@
 
 namespace casual
 {
-   namespace common
+   namespace common::serialize
    {
-      namespace serialize
-      { 
-         Reader::~Reader() = default;
+      Reader::~Reader() = default;
+      Writer::~Writer() = default;
 
-         Reader::Reader( Reader&&) noexcept = default;
-         Reader& Reader::operator = ( Reader&&) noexcept = default;
+      Writer::Writer( Writer&&) noexcept = default;
+      Writer& Writer::operator = ( Writer&&) noexcept = default;
 
-         bool Reader::read( int& value, const char* name)
-         {
-            long temp;
-            if( read( temp, name))
-            {
-               value = temp;
-               return true;
-            }
-            return false;
-         }
-
-         bool Reader::read (unsigned long& value, const char* name)
-         {
-            long temp;
-            if( read( temp, name))
-            {
-               value = temp;
-               return true;
-            }
-            return false;
-         }
-
-         Writer::~Writer() = default;
-
-         Writer::Writer( Writer&&) noexcept = default;
-         Writer& Writer::operator = ( Writer&&) noexcept = default;
-
-         void Writer::save( const int value, const char* name)
-         {
-            save( static_cast< long>( value), name);
-         }
-
-         void Writer::save( const unsigned long value, const char* name)
-         {
-            save( static_cast< long>( value), name);
-         }
-
-      } // serialize
-   } // common
+   } // common::serialize
 } // casual
 

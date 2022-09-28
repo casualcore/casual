@@ -10,8 +10,10 @@
 #include "common/serialize/native/binary.h"
 #include "common/serialize/native/network.h"
 #include "common/serialize/native/complete.h"
+#include "common/serialize/binary.h"
 #include "common/communication/ipc/message.h"
 #include "common/communication/tcp/message.h"
+
 
 #include "common/message/service.h"
 
@@ -345,6 +347,96 @@ namespace casual
                }
 
             }
+
+            namespace local
+            {
+               namespace
+               {
+                  namespace only::host
+                  {
+                     struct Integrals : common::Compare< Integrals>
+                     {
+                        Integrals() = default;
+                        Integrals( std::int8_t int8, std::int16_t int16, std::int32_t int32, std::int64_t int64, std::uint8_t uint8, std::uint16_t uint16, std::uint32_t uint32, std::uint64_t uint64) 
+                           : int8{ int8}, int16{ int16}, int32{ int32}, int64{ int64}, uint8{ uint8}, uint16{ uint16}, uint32{ uint32}, uint64{ uint64} {}
+
+                        std::int8_t int8{};
+                        std::int16_t int16{};
+                        std::int32_t int32{};
+                        std::int64_t int64{};
+                        std::uint8_t uint8{};
+                        std::uint16_t uint16{};
+                        std::uint32_t uint32{};
+                        std::uint64_t uint64{};
+
+                        auto tie() const noexcept { return std::tie( int8, int16, int32, int64, uint8, uint16, uint32, uint64);}
+
+                        CASUAL_CONST_CORRECT_SERIALIZE(
+                           CASUAL_SERIALIZE( int8);
+                           CASUAL_SERIALIZE( int16);
+                           CASUAL_SERIALIZE( int32);
+                           CASUAL_SERIALIZE( int64);
+                           CASUAL_SERIALIZE( uint8);
+                           CASUAL_SERIALIZE( uint16);
+                           CASUAL_SERIALIZE( uint32);
+                           CASUAL_SERIALIZE( uint64);
+                        ) 
+                     };
+
+                  } // only::host
+               } // <unnamed>
+            } // local
+
+            TEST( casual_serialize_native_binary_only_host, oddball_integrals)
+            {
+               unittest::Trace trace;
+
+               const auto origin = local::only::host::Integrals{ 1, 2, 4, 5, 6, 7, 8, 9};
+
+               auto buffer = [ &origin]()
+               {
+                  auto archive = serialize::native::binary::writer();
+                  archive << origin;
+                  return archive.consume();
+               }();
+
+               {
+                  auto value = local::only::host::Integrals{};
+                  EXPECT_TRUE( origin != value);
+                  
+                  auto archive = serialize::native::binary::reader( buffer);
+                  archive >> value;
+                  
+                  EXPECT_TRUE( origin == value);
+               }
+            };
+
+            TEST( casual_serialize_native_binary_only_host, archive_oddball_integrals)
+            {
+               unittest::Trace trace;
+
+               const auto origin = local::only::host::Integrals{ 1, 2, 4, 5, 6, 7, 8, 9};
+
+               auto buffer = [ &origin]()
+               {
+                  auto archive = serialize::binary::writer();
+                  archive << origin;
+                  platform::binary::type buffer;
+                  archive.consume( buffer);
+                  return buffer;
+               }();
+
+               {
+                  auto value = local::only::host::Integrals{};
+                  EXPECT_TRUE( origin != value);
+                  
+                  auto archive = serialize::binary::reader( buffer);
+                  archive >> value;
+                  
+                  EXPECT_TRUE( origin == value);
+               }
+            };
+
          } // native
       } // serialize
    } // common

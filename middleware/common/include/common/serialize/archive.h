@@ -46,9 +46,7 @@ namespace casual
          inline bool read( bool& value, const char* name) { return m_protocol->read( value, name);}
          inline bool read( char& value, const char* name){ return m_protocol->read( value, name);}
          inline bool read( short& value, const char* name) { return m_protocol->read( value, name);}
-         bool read( int& value, const char* name);
          inline bool read( long& value, const char* name) { return m_protocol->read( value, name);}
-         bool read( unsigned long& value, const char* name);
          inline bool read( long long& value, const char* name) { return m_protocol->read( value, name);}
          inline bool read( float& value, const char* name) { return m_protocol->read( value, name);}
          inline bool read( double& value, const char* name) { return m_protocol->read( value, name);}
@@ -75,7 +73,6 @@ namespace casual
          }
 
       private:
-
          struct concept
          {
             virtual ~concept() = default;
@@ -183,7 +180,7 @@ namespace casual
          //! binary types, such as char[16] that easily converts to const std::string& 
          template< typename T>
          auto write( const T& value, const char* name)
-            -> std::enable_if_t< traits::is::archive::write::type_v< common::traits::remove_cvref_t< T>>>
+            -> std::enable_if_t< traits::is::archive::native::type_v< common::traits::remove_cvref_t< T>>>
          {
             save( value, name);
          }
@@ -219,9 +216,7 @@ namespace casual
          inline void save( bool value, const char* name) { m_protocol->write( value, name);}
          inline void save( char value, const char* name) { m_protocol->write( value, name);}
          inline void save( short value, const char* name) { m_protocol->write( value, name);}
-         void save( int value, const char* name);
          inline void save( long value, const char* name) { m_protocol->write( value, name);}
-         void save( unsigned long value, const char* name);
          inline void save( long long value, const char* name) { m_protocol->write( value, name);}
          inline void save( float value, const char* name) { m_protocol->write( value, name);}
          inline void save( double value, const char* name) { m_protocol->write( value, name);}

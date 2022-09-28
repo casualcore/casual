@@ -57,7 +57,7 @@ namespace casual
 
          template<typename T>
          auto dispatch( T&& value, const char* name, common::traits::priority::tag< 1>) 
-            -> std::enable_if_t< traits::is::archive::write::type_v< common::traits::remove_cvref_t< T>>>
+            -> std::enable_if_t< traits::is::archive::native::type_v< common::traits::remove_cvref_t< T>>>
          {
             save( std::forward< T>( value), name);
          }

@@ -13,17 +13,12 @@
 
 namespace casual
 {
-   namespace common
+   namespace common::serialize::binary
    {
-      namespace serialize
-      {
-         namespace binary
-         {
-            serialize::Reader reader( const platform::binary::type& source);
-            serialize::Writer writer();
-         } // binary
-      } // serialize
-   } // common
+      serialize::Reader reader( const platform::binary::type& source);
+      serialize::Writer writer();
+      
+   } // common::serialize::binary
 } // casual
 
 
