@@ -75,7 +75,7 @@ namespace casual
             template< typename R, typename N> 
             auto extract( N&& name)
             {
-               R result;
+               R result{};
                *this >> CASUAL_NAMED_VALUE_NAME( result, name);
                return result;
             }

@@ -21,6 +21,7 @@ make.LibraryPaths( ['bin',
     '../buffer/bin',
     '../configuration/bin',
     '../domain/bin',
+    '../service/bin',
     '../cli/bin',
     '../serviceframework/bin',
     '../xatmi/bin']

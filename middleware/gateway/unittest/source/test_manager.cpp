@@ -392,37 +392,37 @@ domain:
 
          auto loop_device = communication::ipc::inbound::Device{};
 
-         // receive the call and send call to outbound to simulate a _gateway loop_
+         trace.line( "receive the call and send call to outbound to simulate a _gateway loop_");
          {
             auto request = communication::ipc::receive< common::message::service::call::callee::Request>( correlation);
             EXPECT_TRUE( request.buffer.memory == origin);
 
             {
-               // emulate loop - later we should receive an error reply
+               trace.line( "emulate loop - later we should receive an error reply");
                auto loop_request = request;
                loop_request.process = common::process::Handle{ common::process::id(), loop_device.connector().handle().ipc()};
                communication::device::blocking::send( outbound.ipc, loop_request);
             }
 
-            // reply to the request
+            trace.line( "reply to the request");
             auto reply = common::message::reverse::type( request);
             reply.buffer = std::move( request.buffer);
             communication::device::blocking::send( request.process.ipc, reply);
          }
          
-         // make sure outbound did not _terminate_
+         trace.line( "make sure outbound did not _terminate_");
          {
             auto current = unittest::fetch::until( unittest::fetch::predicate::outbound::connected( 1)).outbound.groups.at( 0).process;
             ASSERT_TRUE( outbound.pid == current.pid);
          }
          
-         // receive the error reply
+         trace.line( "receive the error reply");
          {
             auto reply = unittest::service::receive< common::message::service::call::Reply>( loop_device, correlation);
             EXPECT_TRUE( reply.code.result == decltype( reply.code.result)::system) << CASUAL_NAMED_VALUE( reply.code);
          }
 
-         // receive the real reply
+         trace.line( "receive the real reply");
          {
             auto reply = communication::ipc::receive< common::message::service::call::Reply>( correlation);
             EXPECT_TRUE( reply.code.result == decltype( reply.code.result)::ok);

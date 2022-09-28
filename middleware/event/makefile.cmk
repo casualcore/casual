@@ -19,6 +19,7 @@ make.LibraryPaths([
     '../common/bin',
     '../xatmi/bin',
     '../domain/bin',
+    '../service/bin',
     '../serviceframework/bin',
     '../configuration/bin']
     + make.optional_library_paths()
