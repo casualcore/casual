@@ -110,6 +110,8 @@ namespace casual
                // if the requested service name differs from the 'origin', requested is set.
                std::optional< std::string> requested;
 
+               inline auto logical_name() const noexcept { return requested.value_or( name); }
+
                CASUAL_CONST_CORRECT_SERIALIZE(
                   service::Base::serialize( archive);
                   CASUAL_SERIALIZE( requested);

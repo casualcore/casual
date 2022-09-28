@@ -58,7 +58,7 @@ namespace casual
             {
                using base_type::base_type;
 
-               Service service;
+               service::call::Service service;
                std::string parent;
 
                common::transaction::ID trid;
