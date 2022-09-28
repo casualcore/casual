@@ -20,6 +20,7 @@
 
 #include "common/transaction/context.h"
 #include "common/transaction/resource.h"
+#include "common/transaction/global.h"
 
 #include "common/code/signal.h"
 #include "common/signal.h"
@@ -28,6 +29,10 @@
 
 #include "domain/discovery/api.h"
 #include "domain/unittest/manager.h"
+
+#include "queue/manager/admin/services.h"
+#include "serviceframework/service/protocol.h"
+#include "serviceframework/service/protocol/call.h"
 
 #include <fstream>
 #include <future>
@@ -740,6 +745,120 @@ domain:
 
          EXPECT_TRUE( unittest::messages( "a1").empty());
       }
+
+      namespace local
+      {
+         namespace
+         {
+            std::vector< common::transaction::global::ID> recover( const std::vector< common::transaction::global::ID>& gtrids,
+               ipc::message::group::message::recovery::Directive directive)
+            {
+               using Call = serviceframework::service::protocol::binary::Call;
+               return Call{}( manager::admin::service::name::recover,
+                  std::move( gtrids),
+                  std::move( directive)).extract< std::vector< common::transaction::global::ID>>();
+            }
+         } // unnamed
+      } // local
+
+      TEST( casual_queue, enqueue_1___dequeue_message___recover_commit____expect_0_message_in_queue)
+      {
+         common::unittest::Trace trace;
+
+         using Directive = ipc::message::group::message::recovery::Directive;
+
+         auto domain = local::domain();
+
+         const std::string payload{ "some message"};
+         queue::Message message;
+         message.payload.type = common::buffer::type::binary();
+         message.payload.data.assign( std::begin( payload), std::end( payload));
+
+         queue::enqueue( "a1", message);
+         {
+            auto messages = unittest::messages( "a1");
+            ASSERT_TRUE( messages.size() == 1);
+         }
+
+         {
+            // simulate a uncommitted dequeue
+            common::transaction::context().begin();
+            queue::dequeue( "a1");
+            {
+               auto messages = unittest::messages( "a1");
+               ASSERT_TRUE( messages.size() == 1);
+               auto trid = common::transcode::hex::encode( messages.front().trid);
+               ASSERT_TRUE( trid.size() > 0);
+
+               common::transaction::global::ID gtrid{ trid};
+
+               auto committed = local::recover({ gtrid}, Directive::commit);
+               ASSERT_TRUE( committed.front() == gtrid);
+            }
+         }
+
+         {
+            EXPECT_TRUE( unittest::messages( "a1").empty());
+            EXPECT_TRUE( unittest::messages( "a1.error").empty());
+         }
+
+         // rollback simulated uncommited dequeue, otherwise casual-queue-group has ongoing transactions
+         common::transaction::context().rollback();
+      }
+
+      TEST( casual_queue, enqueue_1___dequeue_message___recover_rollback____expect_1_message_in_queue)
+      {
+         common::unittest::Trace trace;
+
+         using Directive = ipc::message::group::message::recovery::Directive;
+
+         auto domain = local::domain();
+
+         const std::string payload{ "some message"};
+         queue::Message message;
+         message.payload.type = common::buffer::type::binary();
+         message.payload.data.assign( std::begin( payload), std::end( payload));
+
+         queue::enqueue( "a1", message);
+         {
+            auto messages = unittest::messages( "a1");
+            ASSERT_TRUE( messages.size() == 1);
+         }
+
+         {
+            // simulate a uncommitted dequeue
+            common::transaction::context().begin();
+            queue::dequeue( "a1");
+            {
+               auto messages = unittest::messages( "a1");
+               ASSERT_TRUE( messages.size() == 1);
+               EXPECT_TRUE( messages.front().redelivered == 0);
+
+               auto trid = common::transcode::hex::encode( messages.front().trid);
+               ASSERT_TRUE( trid.size() > 0);
+
+               common::transaction::global::ID gtrid{ trid};
+
+               auto recovery_rollbacked = local::recover({ gtrid}, Directive::rollback);
+
+               ASSERT_TRUE( ! recovery_rollbacked.empty());
+
+               EXPECT_TRUE( recovery_rollbacked.front() == gtrid);
+            }
+            {
+               // verify that message is redelivered once
+               auto messages = unittest::messages( "a1");
+
+               ASSERT_TRUE( messages.size() == 1);
+               EXPECT_TRUE( messages.front().redelivered == 1);
+            }
+
+            // rollback simulated uncommited dequeue, otherwise casual-queue-group has ongoing transactions
+            common::transaction::context().rollback();
+         }
+
+     }
+
 
       TEST( casual_queue, enqueue_5___clear_queue___expect_0_message_in_queue)
       {

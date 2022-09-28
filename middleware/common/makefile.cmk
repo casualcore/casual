@@ -79,6 +79,8 @@ casual_common_objectfiles = [
     
     make.Compile( 'source/transaction/context.cpp'),
     make.Compile( 'source/transaction/id.cpp'),
+    make.Compile( 'source/transaction/global.cpp'),
+
     make.Compile( 'source/transaction/resource.cpp'),
     make.Compile( 'source/transaction/transaction.cpp'),
     

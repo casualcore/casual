@@ -165,6 +165,27 @@ namespace casual
                      }
                      
                   } // remove
+
+                  namespace recovery
+                  {
+                     auto request( State& state)
+                     {
+                        return [&state]( queue::ipc::message::group::message::recovery::Request& message)
+                        {
+                           Trace trace{ "queue::handle::local::message::recovery::request"};
+                           log::line( verbose::log, "message: ", message);
+
+                           auto reply = common::message::reverse::type( message);
+
+                           if( message.directive == decltype( message.directive)::commit)
+                              reply.gtrids = state.queuebase.recovery_commit( message.queue, std::move( message.gtrids));
+                           else
+                              reply.gtrids = state.queuebase.recovery_rollback( message.queue, std::move( message.gtrids));
+
+                           state.multiplex.send( message.process, reply);
+                        };
+                     }
+                  } // recovery
                } // message
 
                namespace enqueue
@@ -848,6 +869,7 @@ namespace casual
             handle::local::clear::request( state),
             handle::local::message::meta::request( state),
             handle::local::message::remove::request( state),
+            handle::local::message::recovery::request( state),
             handle::local::metric::reset::request( state),
             handle::local::shutdown::request( state),
          };

@@ -137,6 +137,8 @@ namespace casual
             case Type::queue_group_message_peek_reply: return "queue_group_message_peek_reply";
             case Type::queue_group_message_remove_request: return "queue_group_message_remove_request";
             case Type::queue_group_message_remove_reply: return "queue_group_message_remove_reply";
+            case Type::queue_group_message_recovery_request: return "queue_group_message_recovery_request";
+            case Type::queue_group_message_recovery_reply: return "queue_group_message_recovery_reply";
             case Type::queue_group_queue_restore_request: return "queue_group_queue_restore_request";
             case Type::queue_group_queue_restore_reply: return "queue_group_queue_restore_reply";
             case Type::queue_group_queue_clear_request: return "queue_group_queue_clear_request";

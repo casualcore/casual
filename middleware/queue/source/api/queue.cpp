@@ -276,7 +276,6 @@ namespace casual
                   }
                   
                } // dequeue
-
             } // <unnamed>
          } // local
 
@@ -608,7 +607,6 @@ namespace casual
                reply >> CASUAL_NAMED_VALUE( result);
                return result;
             }
-            
          } // messages
       } // v1
    } // queue

@@ -37,7 +37,6 @@ install_headers = []
 manager_archive = make.LinkArchive( 'bin/manager-archive',
     [
         make.Compile( 'source/common.cpp'),
-        make.Compile( 'source/global.cpp'),
         make.Compile( 'source/manager/state.cpp'),
         make.Compile( 'source/manager/action.cpp'),
         make.Compile( 'source/manager/transform.cpp'),
