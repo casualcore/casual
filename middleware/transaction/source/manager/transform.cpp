@@ -32,7 +32,7 @@ namespace casual
                if( ! configuration.empty())
                   return common::environment::expand( std::move( configuration));
 
-               auto file = environment::directory::transaction() / "log.db";
+               auto file = directory::create( environment::directory::transaction()) / "log.db";
 
                // TODO: remove this in 2.0 (that exist to be backward compatible)
                {

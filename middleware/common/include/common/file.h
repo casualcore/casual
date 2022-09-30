@@ -140,6 +140,12 @@ namespace casual
          //! takes soft links into account when creating the path, if any.
          std::filesystem::path create( std::filesystem::path path);
 
+         namespace shared
+         {
+            //! creates directory with group write.
+            std::filesystem::path create( std::filesystem::path path);
+         } // shared
+
       } // directory
 
    } // common

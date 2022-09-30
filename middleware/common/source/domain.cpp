@@ -116,6 +116,7 @@ namespace casual
             const Model model{ process::handle(), domain::identity()};
 
             auto& path = environment::domain::singleton::file();
+            directory::create( path.parent_path());
 
             if( std::filesystem::exists( path))
             {

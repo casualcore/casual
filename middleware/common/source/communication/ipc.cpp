@@ -12,6 +12,7 @@
 #include "common/log.h"
 #include "common/signal.h"
 #include "common/environment.h"
+#include "common/file.h"
 
 #include "common/exception/capture.h"
 #include "common/code/raise.h"
@@ -416,6 +417,8 @@ namespace casual
                      strong::ipc::id ipc{ uuid::make()};
 
                      Address address{ ipc};
+
+                     directory::shared::create( environment::directory::ipc());
 
                      posix::result( ::bind(
                         socket.descriptor().value(),

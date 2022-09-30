@@ -217,7 +217,7 @@ namespace casual
 
                   auto domain() -> std::filesystem::path
                   {
-                     return common::directory::create( detail::value( variable::name::directory::domain, [](){ return "./";}));
+                     return detail::value( variable::name::directory::domain, [](){ return "./";});
                   }
 
                   auto transient() -> std::filesystem::path
@@ -243,28 +243,28 @@ namespace casual
 
                   auto ipc() -> std::filesystem::path
                   {
-                     return common::directory::create( detail::value( variable::name::directory::ipc, [](){ return transient() / "ipc";}));
+                     return detail::value( variable::name::directory::ipc, [](){ return transient() / "ipc";});
                   }
 
                   auto queue() -> std::filesystem::path
                   {
-                     return common::directory::create( detail::value( variable::name::directory::queue, [](){ return persistent() / "queue";}));
+                     return detail::value( variable::name::directory::queue, [](){ return persistent() / "queue";});
                   }
 
                   auto transaction() -> std::filesystem::path
                   {
-                     return common::directory::create( detail::value( variable::name::directory::transaction, [](){ return persistent() / "transaction";}));
+                     return detail::value( variable::name::directory::transaction, [](){ return persistent() / "transaction";});
                   }
 
                   auto singleton() -> std::filesystem::path
                   {
-                     return common::directory::create( domain() / detail::casual) / "singleton";
+                     return domain() / detail::casual / "singleton";
                   }
                   
                } // path
 
 
-               //! holds "all" paths based on enviornment.
+               //! holds "all" paths based on environment.
                //! main purpose is to be able to reset when running
                //! unittests
                struct Paths 
@@ -293,7 +293,7 @@ namespace casual
                {
                   Paths paths;
                } // global
-               
+
             } // <unnamed>
          } // local
 

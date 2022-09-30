@@ -206,6 +206,20 @@ namespace casual
             return path;
          }
 
+         namespace shared
+         {
+            std::filesystem::path create( std::filesystem::path path)
+            {
+               namespace fs = std::filesystem;
+               if( ! fs::exists( path))
+               {
+                  fs::create_directories( path);
+                  fs::permissions( path, fs::perms::group_write, fs::perm_options::add);
+               }
+
+               return path;
+            }
+         } // shared
       } // directory
 
    } // common
