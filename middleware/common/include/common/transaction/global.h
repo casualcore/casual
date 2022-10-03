@@ -40,7 +40,7 @@ namespace casual::common
          friend std::istream& operator >> ( std::istream& in, common::transaction::global::ID& gtrid);
 
       private:
-         short m_size{};
+         std::int8_t m_size{};
          std::array<char, 64> m_gtrid{};           
       };
       
