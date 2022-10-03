@@ -66,12 +66,21 @@ namespace casual
       }
       
       //! @returns a tuple with [first, lower_bound) and [lower_bound, last)
+      //! @{
       template< typename R, typename T>
-      auto lower_bound( R&& range, T&& value)
+      auto lower_bound( R&& range, const T& value)
       {
          auto pivot = std::lower_bound( std::begin( range), std::end( range), value);
          return std::make_tuple( range::make( std::begin( range), pivot), range::make( pivot, std::end( range)));
       }
+
+      template< typename R, typename T, typename Compare>
+      auto lower_bound( R&& range, const T& value, Compare compare)
+      {
+         auto pivot = std::lower_bound( std::begin( range), std::end( range), value, compare);
+         return std::make_tuple( range::make( std::begin( range), pivot), range::make( pivot, std::end( range)));
+      }
+      //! @}
 
       //! @returns a tuple with [first, upper_bound) and [upper_bound, last)
       template< typename R, typename T>
