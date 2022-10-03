@@ -240,6 +240,14 @@ namespace casual
                detail::make_reverse_iterator( std::begin( range)));
          }
 
+         //! @returns a _move range_ with move_iterator, that will 'move' (return rvalue reference) 
+         //!    elements during subscripts
+         template< typename R>
+         constexpr auto move( R&& range)
+         {
+            return make( std::move_iterator{ std::begin( range)}, std::move_iterator{ std::end( range)});
+         }
+
          template< typename C>
          struct type_traits
          {
