@@ -272,6 +272,13 @@ static ngx_int_t ngx_xatmi_backend_handler( ngx_http_request_t* r)
    ngx_log_debug0(NGX_LOG_DEBUG_ALL, r->connection->log, 0,
       "xatmi: ngx_xatmi_backend_handler.\n");
 
+   ngx_event_t* event = r->connection->read;
+   if (event->timedout) {
+      // reset the effect of using timers in casual calling cycle
+      // needs to be done in order to get keepalive functionality to work.
+      event->timedout = 0;
+   }
+
    ngx_int_t rc;
    ngx_chain_t out;
    ngx_buf_t *b;

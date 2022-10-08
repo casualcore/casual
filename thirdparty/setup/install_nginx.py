@@ -11,7 +11,7 @@ import subprocess
 from shutil import copyfile
 
 URL="http://nginx.org/download/"
-FILENAME="nginx-1.18.0.tar.gz"
+FILENAME="nginx-1.22.0.tar.gz"
 TMP="/tmp/"
 SOURCE_ROOT = os.getenv( "CASUAL_MAKE_SOURCE_ROOT", os.getenv("CASUAL_BUILD_HOME"))
 
