@@ -1,7 +1,66 @@
 # Changelog
 This is the changelog for `casual` and all changes are listed in this document.
 
-## [Unreleased]
+## [Unreleased - 1.6]
+### Added
+- queue - recover queue message (#74)
+- transaction - list external resources from cli
+- http - make http payload base64 encoding optional
+- configuration - add `exclude.(services|queues)` to inbound connections
+- http - outbound configuration to control caller fresh connect (#65)
+- packaging - package resources.yaml in /etc/casual/
+
+### Fixes
+- http - correct http inbound to handle keepalive
+- http - upgrade nginx to latest stable 1.22.0
+- http - remove debug log level as default (#79)
+- service - fix metrics to use route name (#78)
+- domain - keep service and queues sorted in discovery (#77)
+- service - fix pending "error" reply when server cores/exit
+- cli - fix stderr printout on error from `casual call ...`
+- queue - fix local lookup to also search external known queues
+- event - fix event-service-log to also reopen 'casual.log' on SIGHUP
+
+### Internal
+- build - fix build environment sourcing compatibility with zsh and bash
+- serialize - fix ability to (de)serialize all fix integral types   
+- queue - fix shutdown problem for forward/queue groups
+- common - add general task abstraction to help with boot/shutdown order  
+- communication - get rid of unnecessary `process` member on most replies
+- service - unittest to validate error reply on pending call when core
+- build - handle missing files correct
+- queue - added unittest for external queue discovery
+- http - use CASUAL_MAKE_SOURCE_ROOT when building nginx
+- communication - only consume 1 message on select dispatch.
+- common - fix logging bug
+- build - use github actions
+- build - refactor pipeline and make it more logic
+- algorithm - move container specific algorithms to algorithm::container
+- queue - fix queue::code is part of the _queue api_, link wise.
+- queue - use common::code::raise::error instead of local implmentation
+- gateway - make gateway inbound respect excluded services and queues
+- gateway - make unittest discovery using utility from other managers
+- setup - made middleware/example/env/casual.env idempotent
+- common - improve log::stream - update logging api
+- common - environment minor cleanup
+- common  - fix some error in logging
+- environment - fix environment::set for std::filesystem::path
+- pending - remove all old deprecated pending stuff
+- log - add api to configure _log_ during runtime
+- service - fix ODR violation for common::log::Stream
+- common - refactor message::dispatch::handle to improve `defaults`
+- event - fix event unsubscribe for subscribed events
+- domain - eliminate domain-pending-message
+- refactoring - use std::filesystem::path for all _paths_
+- common - improve "pimpl", rm-mockup, administration::command
+- common - remove process::pattern::Sleepßßßß
+- select - improve and simplify multiplex select & Co
+- transaction - get rid of "pending" message - only multiplex send
+- ipc - add abstraction for pending (generic) messages
+- domain - use multiplex send
+- transaction - use multiplex send
+- service - fix multiplex send for events
+- queue - use multiplex send
 
 ## [1.5.13] - 2022-08-16
 ### Fixes
