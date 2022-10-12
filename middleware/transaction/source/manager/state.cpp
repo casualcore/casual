@@ -96,12 +96,12 @@ namespace casual
 
             namespace external
             {
-               Proxy::Proxy( common::process::Handle  process, common::strong::resource::id id)
+               Proxy::Proxy( common::process::Handle process, common::strong::resource::id id)
                   : process{std::move( process)}, id{std::move( id)}
                {
                }
 
-               bool operator == ( const Proxy& lhs, const common::process::Handle& rhs)
+               bool operator == ( const Proxy& lhs, const common::strong::ipc::id& rhs)
                {
                   return lhs.process == rhs;
                }
@@ -110,14 +110,13 @@ namespace casual
                {
                   common::strong::resource::id id( State& state, const common::process::Handle& process)
                   {
-                     if( auto found = common::algorithm::find( state.externals, process))
+                     if( auto found = common::algorithm::find( state.externals, process.ipc))
                         return found->id;
 
                      static common::strong::resource::id base_id;
-                     
+
                      --base_id.underlying();
                      return state.externals.emplace_back( process, base_id).id;
-
                   }
                } // proxy
             } // external

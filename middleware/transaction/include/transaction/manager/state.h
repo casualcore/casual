@@ -145,7 +145,7 @@ namespace casual
             {
                struct Proxy
                {
-                  Proxy( common::process::Handle  process, common::strong::resource::id id);
+                  Proxy( common::process::Handle process, common::strong::resource::id id);
 
                   common::process::Handle process;
 
@@ -155,7 +155,7 @@ namespace casual
                   // TODO maintainence: get metrics for "external" resources
                   // Metrics metrics;
 
-                  friend bool operator == ( const Proxy& lhs, const common::process::Handle& rhs);
+                  friend bool operator == ( const Proxy& lhs, const common::strong::ipc::id& rhs);
                   inline friend bool operator == ( const Proxy& lhs, common::strong::resource::id rhs) { return lhs.id == rhs;}
 
                   CASUAL_LOG_SERIALIZE(
@@ -168,7 +168,6 @@ namespace casual
                {
                   common::strong::resource::id id( State& state, const common::process::Handle& process);
                } // proxy
-
             } // external
          } // resource
 
