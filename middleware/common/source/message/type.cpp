@@ -31,6 +31,8 @@ namespace casual
             case Type::domain_manager_shutdown_reply: return "domain_manager_shutdown_reply";
             case Type::domain_process_lookup_request: return "domain_process_lookup_request";
             case Type::domain_process_lookup_reply: return "domain_process_lookup_reply";
+            case Type::domain_process_information_request: return "domain_process_information_request";
+            case Type::domain_process_information_reply: return "domain_process_information_reply";
             case Type::domain_configuration_request: return "domain_configuration_request";
             case Type::domain_configuration_reply: return "domain_configuration_reply";
             case Type::domain_server_configuration_request: return "domain_server_configuration_request";

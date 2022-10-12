@@ -169,6 +169,19 @@ namespace casual
             )
          };
 
+         struct Grandchild
+         {
+            common::process::Handle handle;
+            std::string alias;
+            std::filesystem::path path;
+
+            CASUAL_CONST_CORRECT_SERIALIZE(
+               CASUAL_SERIALIZE( handle);
+               CASUAL_SERIALIZE( alias);
+               CASUAL_SERIALIZE( path);
+            )
+         };
+
          namespace state
          {
             enum class Runlevel : int
@@ -200,6 +213,7 @@ namespace casual
             std::vector< model::Group> groups;
             std::vector< model::Executable> executables;
             std::vector< model::Server> servers;
+            std::vector< model::Grandchild> grandchildren;
 
             struct Tasks
             {
@@ -229,6 +243,7 @@ namespace casual
                CASUAL_SERIALIZE( groups);
                CASUAL_SERIALIZE( executables);
                CASUAL_SERIALIZE( servers);
+               CASUAL_SERIALIZE( grandchildren);
                CASUAL_SERIALIZE( tasks);
                CASUAL_SERIALIZE( event);
             })

@@ -5,6 +5,7 @@
 //!
 
 
+#include "common/instance.h"
 #include "common/communication/instance.h"
 #include "common/communication/ipc.h"
 #include "common/communication/log.h"
@@ -126,6 +127,8 @@ namespace casual
          {
             common::message::domain::process::connect::Request request{ process::handle()};
             request.whitelist = true;
+            request.information.alias = common::instance::alias();
+            request.information.path = common::process::path();
             local::connect( request);
 
          }
@@ -138,6 +141,8 @@ namespace casual
             request.whitelist = true;
             request.singleton.identification = identity.id;
             request.singleton.environment = identity.environment;
+            request.information.alias = common::instance::alias();
+            request.information.path = common::process::path();
 
             local::connect( request);
          }
@@ -151,7 +156,7 @@ namespace casual
          {
             connect( instance::Identity{ id, {}});
          }
-         
+
       } // whitelist
 
 

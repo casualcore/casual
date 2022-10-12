@@ -1526,5 +1526,132 @@ domain:
          
       }
 
+      namespace local
+      {
+         namespace
+         {
+            namespace grandchild::expected
+            {
+               const std::string alias = "some_alias";
+               const std::filesystem::path path = "c/a/s/u/a/l";
+            } // grandchild::expected
+         }
+      } // local
+
+      TEST( domain_manager, connect_grandchild__expect_handle_alias_path)
+      {
+         common::unittest::Trace trace;
+
+         auto domain = local::domain( R"(
+domain:
+   name: unittest
+)");
+
+         {
+            auto state = local::call::state();
+            EXPECT_TRUE( state.grandchildren.empty());
+         }
+
+         // We act as a grandchild and connect to the DM
+         {
+            auto request = common::message::domain::process::connect::Request{ common::process::handle()};
+            request.information.alias = local::grandchild::expected::alias;
+            request.information.path = local::grandchild::expected::path;
+            communication::device::blocking::send( communication::instance::outbound::domain::manager::device(), request);
+         }
+
+         auto state = local::call::state();
+         EXPECT_TRUE( state.grandchildren.size() == 1);
+
+         auto grandchild = state.grandchildren.at( 0);
+         EXPECT_TRUE( grandchild.handle == common::process::id());
+         EXPECT_TRUE( grandchild.alias == local::grandchild::expected::alias);
+         EXPECT_TRUE( grandchild.path == local::grandchild::expected::path);
+      }
+
+      TEST( domain_manager, connected_grandchild_exits__expect_removed)
+      {
+         common::unittest::Trace trace;
+
+         auto domain = local::domain( R"(
+domain:
+   name: unittest
+)");
+
+         {
+            auto state = local::call::state();
+            EXPECT_TRUE( state.grandchildren.empty());
+         }
+
+         // Connect to dm
+         {
+            auto request = common::message::domain::process::connect::Request{ common::process::handle()};
+            communication::device::blocking::send( communication::instance::outbound::domain::manager::device(), request);
+
+            auto state = local::call::state();
+            EXPECT_TRUE( state.grandchildren.size() == 1);
+         }
+
+         // We fake our own death
+         {
+            message::event::process::Exit event;
+            event.state.pid = common::process::id(); 
+            event.state.reason = decltype( event.state.reason)::exited;
+            communication::device::blocking::send( communication::instance::outbound::domain::manager::device(), event);
+         }
+
+         auto state = local::call::state();
+         EXPECT_TRUE( state.grandchildren.empty());
+
+      }
+
+      TEST( domain_manager, request_process_information)
+      {
+         auto domain = local::domain( R"(
+domain:
+   name: unittest
+)");
+
+         // Connect to dm
+         {
+            auto request = common::message::domain::process::connect::Request{ common::process::handle()};
+            request.information.alias = local::grandchild::expected::alias;
+            request.information.path = local::grandchild::expected::path;
+            communication::device::blocking::send( communication::instance::outbound::domain::manager::device(), request);
+         }
+
+         auto request = message::domain::process::information::Request{ process::handle()};
+         // We lookup ourselves...
+         request.handles.push_back( process::handle());
+         // ...and the DM itself...
+         request.handles.push_back( domain.handle());
+         // ...as well as a non-existent pid.
+         request.handles.push_back( common::process::Handle{ common::strong::process::id{}});
+
+         auto processes = communication::ipc::call( communication::instance::outbound::domain::manager::device(), request).processes;
+
+         // The invalid pid should not be included in the response since it's not a real process
+         EXPECT_TRUE( processes.size() == 2);
+         EXPECT_TRUE( algorithm::includes( processes, std::vector{ process::handle().pid, domain.handle().pid}));
+
+         auto find_process = []( const auto& processes, const auto& handle)
+         {
+            return algorithm::find_if( processes, [&handle]( const auto& process){ return process.handle.pid == handle;});
+         };
+
+         {
+            auto process = find_process( processes, process::handle());
+            ASSERT_TRUE( process) << CASUAL_NAMED_VALUE( processes);
+            EXPECT_TRUE( process->alias == local::grandchild::expected::alias) << process->alias;
+            EXPECT_TRUE( process->path == local::grandchild::expected::path) << process->path;
+         }
+
+         auto dm = find_process( processes, domain.handle());
+         ASSERT_TRUE( dm) << CASUAL_NAMED_VALUE( processes);
+         EXPECT_TRUE( dm->alias == "casual-domain-manager") << dm->alias;
+         EXPECT_TRUE( dm->path == "casual-domain-manager") << dm->path;
+
+      }
+
    } // domain::manager
 } // casual

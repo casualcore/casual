@@ -59,7 +59,7 @@ namespace casual
 
                struct base_process
                {
-                  //! @note not pid, but the internal id of the servcer/executable
+                  //! @note not pid, but the internal id of the server/executable
                   id_type id;
                   std::string alias;
                   std::filesystem::path path;

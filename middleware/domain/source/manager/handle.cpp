@@ -695,12 +695,12 @@ namespace casual
                   {
                      common::process::Handle pid( const State& state, strong::process::id pid)
                      {
-                        auto server = state.server( pid);
-                        
-                        if( server)
+                        if( auto server = state.server( pid))
                            return server->instance( pid)->handle;
-                        else
-                           return state.grandchild( pid);
+                        else if ( auto grandchild = state.grandchild( pid))
+                           return grandchild->handle;
+
+                        return {};
                      }
 
                      auto request( State& state)
@@ -767,7 +767,7 @@ namespace casual
                         log::line( log, "added process: ", message.process, " to ", *server);
                      }
                      else // we assume it's a grandchild
-                        state.grandchildren.push_back( message.process);
+                        state.grandchildren.emplace_back( message.process, std::move( message.information.alias), std::move( message.information.path));
 
                      algorithm::container::trim( state.pending.lookup, algorithm::remove_if( state.pending.lookup, process::detail::lookup::request( state)));
 
@@ -908,6 +908,34 @@ namespace casual
                   };
                }
 
+               namespace information
+               {
+                  auto request( State& state)
+                  {
+                     return [&state]( const common::message::domain::process::information::Request& message)
+                     {
+                        Trace trace{ "domain::manager::handle::process::information::request"};
+
+                        auto reply = common::message::reverse::type( message);
+                        algorithm::for_each( message.handles, [&state, &reply]( const auto& handle)
+                        {
+                           if( handle.pid)
+                           {
+                              if( auto server = state.server( handle.pid))
+                                 reply.processes.emplace_back( server->instance( handle.pid)->handle, server->alias, server->path);
+                              else if( auto executable = state.executable( handle.pid))
+                                 // we make sure to return a handle with pid only, since executables lack ipc
+                                 reply.processes.emplace_back( common::process::Handle{ handle.pid}, executable->alias, executable->path);
+                              else if( auto grandchild = state.grandchild( handle.pid))
+                                 reply.processes.emplace_back( grandchild->handle, grandchild->alias, grandchild->path);
+                           }
+                        });
+
+                        state.multiplex.send( message.process, reply);
+                     };
+                  }
+               } // information
+
             } // process
 
             namespace configuration
@@ -1014,6 +1042,7 @@ namespace casual
             handle::local::event::sub::task( state),
             handle::local::process::connect( state),
             handle::local::process::lookup( state),
+            handle::local::process::information::request( state),
             handle::local::configuration::request( state),
             handle::local::configuration::update::reply( state),
             handle::local::configuration::supplier::registration( state),

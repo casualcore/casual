@@ -32,6 +32,9 @@ namespace casual
                   ipc::queue::manager(),
                   ipc::message::forward::group::Connect{ process::handle()});
 
+               // 'connect' to our local domain
+               common::communication::instance::whitelist::connect();
+
                return State{};
             }
 

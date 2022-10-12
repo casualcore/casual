@@ -364,7 +364,6 @@ namespace casual
                   return ! algorithm::find( e.instances, pid).empty();
                }).data();
             }
-
             
          } // <unnamed>
       } // local
@@ -414,6 +413,13 @@ namespace casual
                   return i.id == id;
                }));
             }
+
+            template< typename G>
+            auto grandchild( G& grandchildren, common::strong::process::id pid) noexcept
+            {
+               return algorithm::find( grandchildren, pid).data();
+            }
+
          } // <unnamed>
       } // local
 
@@ -463,12 +469,14 @@ namespace casual
          return runnables;
       }
 
-      common::process::Handle State::grandchild( common::strong::process::id pid) const noexcept
+      state::Grandchild* State::grandchild( common::strong::process::id pid) noexcept
       {
-         if( auto found = algorithm::find( grandchildren, pid)) 
-            return *found;
+         return local::grandchild( grandchildren, pid);
+      }
 
-         return {};
+      const state::Grandchild* State::grandchild( common::strong::process::id pid) const noexcept
+      {
+         return local::grandchild( grandchildren, pid);
       }
 
       common::process::Handle State::singleton( const common::Uuid& id) const noexcept

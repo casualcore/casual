@@ -110,10 +110,9 @@ namespace casual
                            for( auto& configuration : message.model.connections)
                               state.connect.prospects.emplace_back( std::move( configuration));
 
-
                            // we might got some addresses to try...
                            external::connect( state);
-                           
+
                            // send reply
                            state.multiplex.send( message.process.ipc, common::message::reverse::type( message, common::process::handle()));
                            
@@ -127,7 +126,7 @@ namespace casual
                      {
                         return [&state]( message::outbound::state::Request& message)
                         {
-                           Trace trace{ "gateway::group::outbound::local::handle::internal::state::request"};
+                           Trace trace{ "gateway::group::outbound::local::internal::handle::state::request"};
 
                            state.multiplex.send( message.process.ipc, tcp::connect::state::request( state, message));
                         };

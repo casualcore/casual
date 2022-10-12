@@ -352,23 +352,30 @@ namespace casual
                      {
                         auto option()
                         {
-                           return argument::Option{
-                              []()
+                           return argument::Option{ []()
                               {
-                                 auto state = call::state();
-
                                  auto transform = []( auto&& externals)
                                  {
-                                    return algorithm::accumulate( externals, std::vector< local::external::Proxy>{}, []( auto result, auto& external)
-                                    {
-                                       std::string alias = communication::ipc::call( external.process.ipc, message::domain::instance::global::state::Request{ process::handle()}).instance.alias; 
+                                    auto request = message::domain::process::information::Request{ process::handle()};
+                                    request.handles = algorithm::transform( externals, []( const auto& e) { return e.process;});
 
-                                       result.emplace_back( external, alias);
+                                    // we query the DM for more information about the externals
+                                    auto processes = communication::ipc::call( communication::instance::outbound::domain::manager::device(), request).processes;
+
+                                    return algorithm::accumulate( processes, std::vector< local::external::Proxy>{}, [&externals]( auto result, auto& process)
+                                    {
+                                       auto external = algorithm::find_if( externals, [&process]( const auto& external) {
+                                          return external.process.pid == process.handle;
+                                       });
+
+                                       if( external)
+                                          result.emplace_back( *external, process.alias);
+
                                        return result;
                                     });
                                  };
 
-                                 auto externals = transform( state.externals);
+                                 auto externals = transform( call::state().externals);
                                  format::external_resource().print( std::cout, externals);
                               },
                               { "--list-external-resources" },

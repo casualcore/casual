@@ -368,7 +368,7 @@ namespace casual
                         return involved;
                      }
                   } // involved
-               } // domain
+               } // external
             } // resource
          } // transaction
 

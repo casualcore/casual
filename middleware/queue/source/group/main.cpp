@@ -50,6 +50,9 @@ namespace casual
                      communication::instance::outbound::queue::manager::device(),
                      ipc::message::group::Connect{ process::handle()});
 
+                  // 'connect' to our local domain
+                  common::communication::instance::whitelist::connect();
+
                   return {};
                }
 

@@ -206,6 +206,12 @@ namespace casual
             return path;
          }
 
+         std::filesystem::path create_parent_path( std::filesystem::path path)
+         {
+            create( path.parent_path());
+            return path;
+         }
+
          namespace shared
          {
             std::filesystem::path create( std::filesystem::path path)
@@ -214,7 +220,7 @@ namespace casual
                if( ! fs::exists( path))
                {
                   fs::create_directories( path);
-                  fs::permissions( path, fs::perms::group_write, fs::perm_options::add);
+                  fs::permissions( path, fs::perms::group_all, fs::perm_options::add);
                }
 
                return path;

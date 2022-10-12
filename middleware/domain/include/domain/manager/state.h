@@ -299,8 +299,9 @@ namespace casual
          };
          std::string_view description( Runlevel value);
 
-      } // state
+         using Grandchild = common::message::domain::process::Information;
 
+      } // state
 
       struct State
       {
@@ -328,7 +329,7 @@ namespace casual
 
          //! Processes that register but is not direct children of
          //! this process.
-         std::vector< common::process::Handle> grandchildren;
+         std::vector< state::Grandchild> grandchildren;
 
          //! executable id of this domain manager
          state::Server::id_type manager_id;
@@ -432,7 +433,8 @@ namespace casual
 
          Runnables runnables( std::vector< std::string> aliases);
 
-         common::process::Handle grandchild( common::strong::process::id pid) const noexcept;
+         state::Grandchild* grandchild( common::strong::process::id pid) noexcept;
+         const state::Grandchild* grandchild( common::strong::process::id pid) const noexcept;
 
          common::process::Handle singleton( const common::Uuid& id) const noexcept;
 

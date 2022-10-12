@@ -123,13 +123,15 @@ namespace casual
             }
 
             // find remote queues and add to model
-            for( auto [ queue_name, queue_instances] : state.queues)
+            for( auto& queue : state.queues)
             {
-               auto remote_queues = algorithm::filter( queue_instances, []( const auto& instance) { return instance.remote();});
-
-               algorithm::for_each( remote_queues, [&result, &queue_name]( const auto& remote_queue)
+               algorithm::transform_if( queue.second, std::back_inserter( result.remote.queues), [ &queue]( auto& instance)
                {
-                  result.remote.queues.push_back( admin::model::remote::Queue{ queue_name, remote_queue.process.pid});
+                  return admin::model::remote::Queue{ queue.first, instance.process.pid};
+               },
+               []( auto& instance)
+               {
+                  return instance.remote();
                });
             }
 

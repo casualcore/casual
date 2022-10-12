@@ -64,6 +64,25 @@ namespace casual
                )
             };
 
+            struct Information
+            {
+               Information() = default;
+               inline Information( common::process::Handle handle, std::string alias, std::string path):
+                  handle{ handle}, alias{ std::move( alias)}, path{ std::move( path)}
+               {}
+
+               common::process::Handle handle;
+               std::string alias;
+               std::filesystem::path path;
+
+               inline friend bool operator == ( const Information& lhs, common::strong::process::id rhs) { return lhs.handle == rhs;}
+
+               CASUAL_CONST_CORRECT_SERIALIZE(
+                  CASUAL_SERIALIZE( handle);
+                  CASUAL_SERIALIZE( alias);
+                  CASUAL_SERIALIZE( path);
+               )
+            };
 
             namespace connect
             {
@@ -74,11 +93,13 @@ namespace casual
 
                   bool whitelist = false;
                   process::Singleton singleton;
+                  process::Information information;
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
                      base_request::serialize( archive);
                      CASUAL_SERIALIZE( whitelist);
                      CASUAL_SERIALIZE( singleton);
+                     CASUAL_SERIALIZE( information);
                   )
                };
 
@@ -201,6 +222,36 @@ namespace casual
 
 
             } // prepare::shutdown
+
+            namespace information
+            {
+               using base_request = message::basic_request< Type::domain_process_information_request>;
+               struct Request : base_request
+               {
+                  using base_request::base_request;
+
+                  std::vector< common::process::Handle> handles;
+
+                  CASUAL_CONST_CORRECT_SERIALIZE(
+                     base_request::serialize( archive);
+                     CASUAL_SERIALIZE( handles);
+                  )
+               };
+
+               using base_reply = message::basic_reply< Type::domain_process_information_reply>;
+               struct Reply : base_reply
+               {
+                  using base_reply::base_reply;
+
+                  std::vector< process::Information> processes;
+
+                  CASUAL_CONST_CORRECT_SERIALIZE(
+                     base_reply::serialize( archive);
+                     CASUAL_SERIALIZE( processes);
+                  )
+               };
+
+            } // information
          } // process
 
          namespace instance::global::state
@@ -274,6 +325,9 @@ namespace casual
 
          template<>
          struct type_traits< domain::instance::global::state::Request> : detail::type< domain::instance::global::state::Reply> {};
+
+         template<>
+         struct type_traits< domain::process::information::Request> : detail::type< domain::process::information::Reply> {};
 
       } // reverse
 

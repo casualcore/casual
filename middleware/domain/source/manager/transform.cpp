@@ -252,6 +252,19 @@ namespace casual
                   return result;
                }
 
+               auto grandchild()
+               {
+                  return []( const manager::state::Grandchild& grandchild)
+                  {
+                     manager::admin::model::Grandchild result;
+                     result.handle = grandchild.handle;
+                     result.alias = grandchild.alias;
+                     result.path = grandchild.path;
+
+                     return result;
+                  };
+               }
+
             } // model
 
          } // <unnamed>
@@ -286,6 +299,7 @@ namespace casual
          result.executables = algorithm::transform( state.executables, local::model::excecutable());
          //result.event = local::model::event( state.event);
          result.tasks = local::model::tasks( state.tasks);
+         result.grandchildren = algorithm::transform( state.grandchildren, local::model::grandchild());
 
          return result;
       }

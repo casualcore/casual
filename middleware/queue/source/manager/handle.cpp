@@ -24,6 +24,7 @@
 #include "common/algorithm/compare.h"
 #include "common/message/dispatch/handle.h"
 #include "common/message/internal.h"
+#include "common/instance.h"
 #include "common/communication/instance.h"
 #include "common/communication/ipc/send.h"
 
@@ -592,7 +593,10 @@ namespace casual
 
             auto spawn = []( auto& entity)
             {
-               entity.process.pid = common::process::spawn( state::entity::path( entity), {});
+               entity.process.pid = common::process::spawn(
+                  state::entity::path( entity),
+                  {},
+                  { instance::variable( instance::Information{ entity.configuration.alias})});
                entity.state = decltype( entity.state())::spawned;
             };
 

@@ -400,7 +400,7 @@ namespace casual
                            state.multiplex.send( message.process.ipc, reply);
                         };
                      }
-                  }
+                  } // prepare
 
                   namespace rollback
                   {
@@ -436,7 +436,7 @@ namespace casual
                            // handle::persist will take care of pending dequeue requests
                         };
                      }
-                  }
+                  } // rollback
                } // transaction
 
                namespace restore

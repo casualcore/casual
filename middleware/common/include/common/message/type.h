@@ -55,6 +55,9 @@ namespace casual
          domain_process_lookup_request,
          domain_process_lookup_reply,
 
+         domain_process_information_request,
+         domain_process_information_reply,
+
          domain_configuration_request = DOMAIN_BASE + 200,
          domain_configuration_reply,
          domain_server_configuration_request,
