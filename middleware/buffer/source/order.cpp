@@ -37,16 +37,8 @@ namespace casual
             namespace
             {
 
-               class Buffer : public common::buffer::Buffer
+               struct Buffer : public common::buffer::Buffer
                {
-
-               private:
-
-                  decltype(payload.memory.size()) selector = 0;
-
-               public:
-
-
                   using common::buffer::Buffer::Buffer;
                   using size_type = platform::binary::size::type;
 
@@ -85,80 +77,62 @@ namespace casual
                      selector = value;
                   }
 
-                  auto handle() const noexcept
-                  {
-                     return payload.memory.data();
-                  }
+                  auto handle() const noexcept { return common::buffer::handle::type{ payload.memory.data()};}
+                  auto handle() noexcept { return common::buffer::handle::mutate::type{ payload.memory.data()};}
 
-                  auto handle() noexcept
-                  {
-                     return payload.memory.data();
-                  }
-
-
-                  //!
                   //! Implement Buffer::transport
-                  //!
                   size_type transport( const platform::binary::size::type user_size) const
                   {
-                     //
                      // Just ignore user-size all together
-                     //
-
                      return utilized();
                   }
 
-                  //!
                   //! Implement Buffer::reserved
-                  //!
                   auto reserved() const
                   {
                      return capacity();
                   }
 
+               private:
+                  decltype( payload.memory.size()) selector = 0;
                };
 
-
-               class Allocator : public common::buffer::pool::basic_pool<Buffer>
+               using allocator_base = common::buffer::pool::implementation::Default< Buffer>;
+               struct Allocator : allocator_base
                {
-               public:
-
-                  using types_type = common::buffer::pool::default_pool::types_type;
-
-                  static const types_type& types()
+                  static constexpr auto types() 
                   {
-                     // The types this pool can manage
-                     static const types_type result{ common::buffer::type::combine( CASUAL_ORDER)};
-                     return result;
-                  }
+                     constexpr std::string_view key = CASUAL_ORDER "/";
+                     return common::array::make( key);
+                  };
 
-                  platform::buffer::raw::type allocate( const std::string& type, const platform::binary::size::type size)
+                  common::buffer::handle::mutate::type allocate( std::string_view type, platform::binary::size::type size)
                   {
-                     auto& buffer = m_pool.emplace_back( type, 0);
+                     auto& buffer = allocator_base::emplace_back( type, 0);
 
-                     // GCC returns null for std::vector::data with capacity zero
+                     // If size() is ​0​, data() may or may not return a null pointer
                      buffer.capacity( size ? size : 1);
 
                      return buffer.handle();
                   }
 
 
-                  platform::buffer::raw::type reallocate( const platform::buffer::raw::immutable::type handle, const platform::binary::size::type size)
+                  common::buffer::handle::mutate::type reallocate( common::buffer::handle::type handle, platform::binary::size::type size)
                   {
-                     const auto result = find( handle);
+                     auto& buffer = allocator_base::get( handle);
 
-                     if( size < result->utilized())
+                     if( size < buffer.utilized())
                      {
                         // Allow user to reduce allocation
-                        result->shrink();
+                        buffer.shrink();
                      }
                      else
                      {
-                        // GCC returns null for std::vector::data with size zero
-                        result->capacity( size ? size : 1);
+                        // If size() is ​0​, data() may or may not return a null pointer
+                        buffer.capacity( size ? size : 1);
                      }
 
-                     return result->handle();
+                     return buffer.handle();
                   }
 
                };
@@ -166,22 +140,10 @@ namespace casual
             } // <unnamed>
          } // local
 
-      } // order
-   } // buffer
-
-   //
-   // Register and define the type that can be used to get the custom pool
-   //
-   template class common::buffer::pool::Registration< buffer::order::local::Allocator>;
-
-   namespace buffer
-   {
-      namespace order
-      {
-         using pool_type = common::buffer::pool::Registration< local::Allocator>;
-
          namespace
          {
+            using pool_type = common::buffer::pool::Registration< local::Allocator>;
+
             namespace error
             {
                int handle()
@@ -218,7 +180,7 @@ namespace casual
 
                   try
                   {
-                     const auto& buffer = pool_type::pool.get( handle);
+                     const auto& buffer = pool_type::pool().get( common::buffer::handle::type{ handle});
 
                      if( reserved) *reserved = buffer.capacity();
                      if( utilized) *utilized = buffer.utilized();
@@ -244,7 +206,7 @@ namespace casual
 
                   try
                   {
-                     pool_type::pool.get( handle).utilized( 0);
+                     pool_type::pool().get( common::buffer::handle::type{ handle}).utilized( 0);
                   }
                   catch( ...)
                   {
@@ -310,18 +272,15 @@ namespace casual
 
                   try
                   {
-                     auto& buffer = pool_type::pool.get( *handle);
+                     auto& buffer = pool_type::pool().get( common::buffer::handle::type{ *handle});
 
-                     //
                      // Make sure to update the handle regardless
-                     //
-                     const auto synchronize = common::execute::scope
-                     ( [&]() { *handle = buffer.handle();});
+                     const auto synchronize = common::execute::scope( [ handle, &buffer]() 
+                     { 
+                        *handle = buffer.handle().underlying();
+                     });
 
-
-                     //
                      // Append the data
-                     //
                      append( buffer.payload.memory, std::forward<A>( arguments)...);
 
                   }
@@ -343,7 +302,7 @@ namespace casual
 
                   try
                   {
-                     pool_type::pool.get( handle).consumed( 0);
+                     pool_type::pool().get( common::buffer::handle::type{ handle}).consumed( 0);
                   }
                   catch( ...)
                   {
@@ -385,36 +344,22 @@ namespace casual
 
                   try
                   {
-                     auto& buffer = pool_type::pool.get( handle);
+                     auto& buffer = pool_type::pool().get( common::buffer::handle::type{ handle});
 
-                     //
                      // See how much have been read so far
-                     //
                      const auto read = buffer.consumed();
 
-                     //
                      // Read the data and let us not how much
-                     //
-                     const auto size = select( buffer.handle() + read, std::forward<A>( arguments)...);
+                     const auto size = select( buffer.handle().underlying() + read, std::forward<A>( arguments)...);
 
-                     //
                      // Calculate the new cursor
-                     //
                      const auto consumed = read + size;
 
                      if( consumed > buffer.utilized())
-                     {
-                        //
-                        // We need to report this
-                        //
-                        return CASUAL_ORDER_OUT_OF_BOUNDS;
-                     }
+                        return CASUAL_ORDER_OUT_OF_BOUNDS; // We need to report this
 
-                     //
                      // Update the cursor
-                     //
                      buffer.consumed( consumed);
-
                   }
                   catch( ...)
                   {

@@ -45,12 +45,12 @@ namespace casual
                         return []( auto values, auto help) -> std::vector< std::string> 
                         {
                            return {
-                              common::buffer::type::x_octet(), 
-                              common::buffer::type::binary(),
-                              common::buffer::type::yaml(),
-                              common::buffer::type::xml(),
-                              common::buffer::type::json(),
-                              common::buffer::type::ini()};
+                              std::string( common::buffer::type::x_octet), 
+                              std::string( common::buffer::type::binary),
+                              std::string( common::buffer::type::yaml),
+                              std::string( common::buffer::type::xml),
+                              std::string( common::buffer::type::json),
+                              std::string( common::buffer::type::ini)};
                         };
                      };                  
                   } // types

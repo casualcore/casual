@@ -68,25 +68,24 @@ namespace casual
 
       namespace protocol
       {
-
-         inline constexpr auto x_octet = "application/casual-x-octet";
-         inline constexpr auto binary = "application/casual-binary";
-         inline constexpr auto json = "application/json";
-         inline constexpr auto xml = "application/xml";
-         inline constexpr auto field = "application/casual-field";
-         inline constexpr auto string = "application/casual-string";
-         inline constexpr auto null = "application/casual-null";
+         constexpr std::string_view x_octet = "application/casual-x-octet";
+         constexpr std::string_view binary = "application/casual-binary";
+         constexpr std::string_view json = "application/json";
+         constexpr std::string_view xml = "application/xml";
+         constexpr std::string_view field = "application/casual-field";
+         constexpr std::string_view string = "application/casual-string";
+         constexpr std::string_view null = "application/casual-null";
 
          namespace convert
          {
             namespace from
             {
-               std::string buffer( const std::string& buffer);
+               std::string buffer( std::string_view buffer);
             } // from
 
             namespace to
             {
-               std::string buffer( const std::string& content);
+               std::string buffer( std::string_view content);
             } // to
          } // convert
       } //protocol

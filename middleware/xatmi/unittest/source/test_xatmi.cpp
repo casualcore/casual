@@ -17,7 +17,7 @@ namespace casual
 {
    namespace common
    {
-      TEST( casual_xatmi_execution, execution_id_get_size_is_32)
+      TEST( xatmi_execution, execution_id_get_size_is_32)
       {
          common::unittest::Trace trace;
 
@@ -26,7 +26,7 @@ namespace casual
          EXPECT_EQ( uuid::string( *id).size(), 32U);
       }
 
-      TEST( casual_xatmi_execution, execution_id_set)
+      TEST( xatmi_execution, execution_id_set)
       {
          common::unittest::Trace trace;
 

@@ -20,7 +20,7 @@ namespace casual
    {
 
 
-      TEST( casual_xatmi_buffer, X_OCTET_allocate)
+      TEST( xatmi_buffer, X_OCTET_allocate)
       {
          char* buffer = tpalloc( X_OCTET, nullptr, 2048);
 
@@ -31,7 +31,7 @@ namespace casual
       }
 
 
-      TEST( casual_xatmi_buffer, X_OCTET_reallocate)
+      TEST( xatmi_buffer, X_OCTET_reallocate)
       {
          char* buffer = tpalloc( X_OCTET, nullptr, 2048);
 
@@ -47,7 +47,7 @@ namespace casual
 
       }
 
-      TEST( casual_xatmi_buffer, X_OCTET_tptypes)
+      TEST( xatmi_buffer, X_OCTET_tptypes)
       {
          char* buffer = tpalloc( X_OCTET, nullptr, 666);
          ASSERT_TRUE( buffer != nullptr);

@@ -35,7 +35,7 @@ namespace casual
             {
                service::invoke::Parameter parameter;
                parameter.service.name = std::move( name);
-               parameter.payload.type = buffer::type::binary();
+               parameter.payload.type = buffer::type::binary;
                
                return parameter;
             }

@@ -76,73 +76,48 @@ namespace casual
 
             };
 
-
-            class Allocator : public common::buffer::pool::basic_pool<Buffer>
+            using allocator_base = common::buffer::pool::implementation::Default< Buffer>;
+            struct Allocator : allocator_base
             {
-            public:
-
-               using types_type = common::buffer::pool::default_pool::types_type;
-
-               static const types_type& types()
+               static constexpr auto types() 
                {
-                  // The types this pool can manage
-                  static const types_type result{ common::buffer::type::combine( CASUAL_STRING)};
-                  return result;
-               }
+                  constexpr std::string_view key = CASUAL_STRING "/";
+                  return common::array::make( key);
+               };
 
-               platform::buffer::raw::type allocate( const std::string& type, const platform::binary::size::type size)
+               common::buffer::handle::mutate::type allocate( std::string_view type, platform::binary::size::type size)
                {
-                  auto& buffer = m_pool.emplace_back( type, size ? size : 1);
+                  auto& buffer = allocator_base::emplace_back( type, size ? size : 1);
 
                   buffer.payload.memory.front() = '\0';
 
-                  return buffer.payload.memory.data();
+                  return buffer.payload.handle();
                }
 
-               platform::buffer::raw::type reallocate( const platform::buffer::raw::immutable::type handle, const platform::binary::size::type size)
+               common::buffer::handle::mutate::type reallocate( common::buffer::handle::type handle, platform::binary::size::type size)
                {
-                  const auto result = find( handle);
+                  auto& buffer = allocator_base::get( handle);
 
-                  result->payload.memory.resize( size ? size : 1);
-
-                  result->payload.memory.back() = '\0';
+                  buffer.payload.memory.resize( size ? size : 1);
+                  buffer.payload.memory.back() = '\0';
 
                   // Allow user to reduce allocation
-                  result->payload.memory.shrink_to_fit();
+                  buffer.payload.memory.shrink_to_fit();
 
-                  return result->payload.memory.data();
+                  return buffer.payload.handle();
                }
 
-               platform::buffer::raw::type insert( common::buffer::Payload payload)
+               common::buffer::handle::mutate::type insert( common::buffer::Payload payload)
                {
                   // Validate it before we move it
                   local::validate( payload);
 
-                  return m_pool.emplace_back( std::move( payload)).payload.memory.data();
+                  return allocator_base::emplace_back( std::move( payload)).payload.handle();
                }
 
             };
 
-         } // <unnamed>
-
-      } // string
-
-   } // buffer
-
-
-   //
-   // Register and define the type that can be used to get the custom pool
-   //
-   template class common::buffer::pool::Registration< buffer::string::Allocator>;
-
-   namespace buffer
-   {
-      namespace string
-      {
-         using pool_type = common::buffer::pool::Registration< Allocator>;
-
-         namespace
-         {
+            using pool_type = common::buffer::pool::Registration< Allocator>;
 
             int error() noexcept
             {
@@ -174,7 +149,7 @@ namespace casual
 
                try
                {
-                  const auto& buffer = pool_type::pool.get( handle);
+                  const auto& buffer = pool_type::pool().get( common::buffer::handle::type{ handle});
 
                   if( size) *size = buffer.payload.memory.size();
                   if( used) *used = std::strlen( buffer.payload.memory.data()) + 1;
@@ -194,7 +169,7 @@ namespace casual
 
                try
                {
-                  auto& buffer = pool_type::pool.get( *handle);
+                  auto& buffer = pool_type::pool().get( common::buffer::handle::type{ *handle});
 
                   const auto count = std::strlen( value) + 1;
 
@@ -218,7 +193,7 @@ namespace casual
 
                try
                {
-                  const auto& buffer = pool_type::pool.get( handle);
+                  const auto& buffer = pool_type::pool().get( common::buffer::handle::type{ handle});
 
                   const auto used = std::strlen( buffer.payload.memory.data()) + 1;
                   const auto size = buffer.payload.memory.size();

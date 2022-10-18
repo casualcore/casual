@@ -139,6 +139,7 @@ namespace casual
          }
          catch( common::service::invoke::Forward& forward)
          {
+            // TODO make this forward work without a copy of payload...
             policy.forward( std::move( forward), message);
             
             policy.transaction( true);

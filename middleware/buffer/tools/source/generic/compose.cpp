@@ -24,7 +24,7 @@ namespace casual
                {
                   void main( int argc, char** argv)
                   {
-                     std::string type = common::buffer::type::x_octet();
+                     auto type = std::string( common::buffer::type::x_octet);
 
                      constexpr auto information = R"([deprecated] use `casual buffer --compose` instead)";
 

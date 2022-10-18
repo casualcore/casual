@@ -161,7 +161,8 @@ if --verbose is provided the type of the buffer will be sent to stderr.
 
                   casual::cli::message::Payload message;
 
-                  message.payload.type = type.value_or( common::buffer::type::x_octet());
+                  
+                  message.payload.type = type ? *type : common::buffer::type::x_octet;
 
                   while( std::cin.peek() != std::istream::traits_type::eof())
                      message.payload.memory.push_back( std::cin.get());

@@ -10,29 +10,22 @@
 
 namespace casual
 {
-
-   namespace common
+   namespace common::buffer
    {
-      namespace buffer
+      struct x_octet : pool::implementation::default_buffer
       {
-
-         struct x_octet : public pool::default_pool
+         static constexpr auto types()
          {
-            static const std::vector< std::string>& types()
-            {
-               static const std::vector< std::string> result{
-                     type::x_octet(), type::binary(), type::json(), type::yaml(), type::xml(), type::ini()
-                  };
-               return result;
-            }
-         };
+            // TODO Why all these? Don't understand my former self...
+            return array::make( type::x_octet, type::binary, type::json, type::yaml, type::xml, type::ini);
+         }
+      };
 
-         //
-         // Register the pool to the pool-holder
-         //
-         template class pool::Registration< x_octet>;
+      // Register the pool to the pool-holder
+      template struct pool::Registration< x_octet>;
 
-      } // buffer
-   } // common
 
+
+
+   } // common::buffer
 } // casual

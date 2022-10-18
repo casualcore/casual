@@ -32,7 +32,11 @@ namespace casual
             {
                namespace
                {
-                  std::vector< std::string> keys() { return { "ini", ".ini", buffer::type::ini()};};
+                  constexpr auto keys() 
+                  {
+                     using namespace std::string_view_literals; 
+                     return array::make( "ini"sv, ".ini"sv, buffer::type::ini);
+                  };
 
                   const std::string magic{ '@' };
 
@@ -240,9 +244,9 @@ namespace casual
 
                      struct Implementation
                      {
-                        inline constexpr static auto archive_type() { return archive::Type::static_need_named;}
+                        constexpr static auto archive_type() { return archive::Type::static_need_named;}
 
-                        static decltype( auto) keys() { return local::keys();}
+                        constexpr static auto keys() { return local::keys();}
 
                         Implementation( tree&& document) : m_document( std::move( document)), m_node_stack{ &m_document} {}
 
@@ -470,9 +474,9 @@ namespace casual
                      {
                      public:
 
-                        inline constexpr static auto archive_type() { return archive::Type::static_need_named;}
+                        constexpr static auto archive_type() { return archive::Type::static_need_named;}
 
-                        static decltype( auto) keys() { return local::keys();}
+                        constexpr static auto keys() { return local::keys();}
 
                         Implementation() : m_node_stack{ &m_document } {}
 

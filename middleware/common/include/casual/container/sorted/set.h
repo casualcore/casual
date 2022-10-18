@@ -68,6 +68,15 @@ namespace casual
          explicit Set( const Compare& compare, const Allocator& allocator = Allocator()) : m_compare{ compare}, m_values{ allocator} {}
          explicit Set( const Allocator& allocator ) : Set{ Compare(), allocator} {};
 
+         Set& operator = ( container_type other) 
+         {
+            // we assume `other` has few, if any, duplicates
+            m_values = common::algorithm::sort( std::move( other));
+            common::algorithm::container::trim( m_values, common::algorithm::unique( m_values));
+
+            return *this;
+         }
+
 
          template< typename... Args >
          std::pair< iterator, bool> emplace( Args&&... args)
@@ -131,6 +140,8 @@ namespace casual
          void clear() noexcept { m_values.clear();}
 
          value_type extract( const_iterator where) { return common::algorithm::container::extract( m_values, where);}
+
+         
 
          CASUAL_FORWARD_SERIALIZE( m_values)
 

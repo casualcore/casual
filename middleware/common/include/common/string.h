@@ -183,6 +183,19 @@ namespace casual
          return detail::to( std::forward< T>( value));
       }
 
+      //! Helper to "catch" string-like values and convert to std::string
+      struct Argument
+      {
+         inline Argument( std::string value) : m_value( std::move( value)) {}
+         inline Argument( std::string_view value) : Argument( std::string( value)) {}
+         inline Argument( const char* value) : Argument( std::string( value)) {}
+
+         operator std::string() && { return std::move( m_value);}
+
+      private:
+         std::string m_value;
+      };
+
    } // common::string
 } // casual
 

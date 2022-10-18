@@ -11,6 +11,7 @@
 #include "common/serialize/archive.h"
 #include "common/stream/customization.h"
 #include "common/cast.h"
+#include "common/array.h"
 
 
 #include <ostream>
@@ -74,7 +75,11 @@ namespace casual
          
          inline constexpr static auto archive_type() { return archive::Type::static_need_named;}
 
-         static std::vector< std::string> keys();
+         constexpr static auto keys() 
+         {
+            using namespace std::string_view_literals; 
+            return array::make( "line"sv);
+         }
 
          platform::size::type container_start( const platform::size::type size, const char* name);
          void container_end( const char*);

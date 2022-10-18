@@ -31,15 +31,17 @@ namespace local
       template< typename R, typename Flags>
       void handle_reply_buffer( R&& result, Flags flags, char** odata, long* olen)
       {
-         auto output = casual::common::buffer::pool::Holder::instance().get( *odata);
+         auto output = casual::common::buffer::pool::Holder::instance().get( casual::common::buffer::handle::type{ *odata});
 
          using enum_type = typename Flags::enum_type;
 
          if( flags.exist( enum_type::no_change) && result.buffer.type != output.payload().type)
             casual::common::code::raise::error( casual::common::code::xatmi::buffer_output);
 
-         casual::common::buffer::pool::Holder::instance().deallocate( *odata);
-         std::tie( *odata, *olen) = casual::common::buffer::pool::Holder::instance().insert( std::move( result.buffer));
+         casual::common::buffer::pool::Holder::instance().deallocate( casual::common::buffer::handle::type{ *odata});
+         auto buffer = casual::common::buffer::pool::Holder::instance().insert( std::move( result.buffer));
+         *odata = std::get< 0>( buffer).underlying();
+         *olen = std::get< 1>( buffer);
       }
 
    } // <unnamed>
@@ -67,7 +69,7 @@ int casual_service_call( const char* const service, char* idata, const long ilen
          Flag::no_time,
          Flag::signal_restart};
 
-      auto buffer = casual::common::buffer::pool::Holder::instance().get( idata, ilen);
+      auto buffer = casual::common::buffer::pool::Holder::instance().get( casual::common::buffer::handle::type{ idata}, ilen);
 
       auto flags = valid_flags.convert( bitmap);
 
@@ -86,8 +88,10 @@ int casual_service_call( const char* const service, char* idata, const long ilen
       casual::xatmi::internal::error::set( casual::common::code::xatmi::service_fail);
       casual::xatmi::internal::user::code::set( fail.result.user);
 
-      casual::common::buffer::pool::Holder::instance().deallocate( *odata);
-      std::tie( *odata, *olen) = casual::common::buffer::pool::Holder::instance().insert( std::move( fail.result.buffer));      
+      casual::common::buffer::pool::Holder::instance().deallocate( casual::common::buffer::handle::type{ *odata});
+      auto result = casual::common::buffer::pool::Holder::instance().insert( std::move( fail.result.buffer));
+      *odata = std::get< 0>( result).underlying();
+      *olen = std::get< 1>( result);
    }
    catch( ...)
    {
@@ -108,7 +112,7 @@ int casual_service_asynchronous_send( const char* const service, char* idata, co
 
    try
    {
-      auto buffer = casual::common::buffer::pool::Holder::instance().get( idata, ilen);
+      auto buffer = casual::common::buffer::pool::Holder::instance().get( casual::common::buffer::handle::type{ idata}, ilen);
 
       using Flag = casual::common::service::call::async::Flag;
 
@@ -163,8 +167,10 @@ int casual_service_asynchronous_receive( int *const descriptor, char** odata, lo
       casual::xatmi::internal::user::code::set( fail.result.user);
 
       *descriptor = fail.result.descriptor;
-      casual::common::buffer::pool::Holder::instance().deallocate( *odata);
-      std::tie( *odata, *olen) = casual::common::buffer::pool::Holder::instance().insert( std::move( fail.result.buffer));      
+      casual::common::buffer::pool::Holder::instance().deallocate( casual::common::buffer::handle::type{ *odata});
+      auto result = casual::common::buffer::pool::Holder::instance().insert( std::move( fail.result.buffer));
+      *odata = std::get< 0>( result).underlying();
+      *olen = std::get< 1>( result);  
    }
    catch( ...)
    {

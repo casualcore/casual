@@ -42,7 +42,7 @@ namespace casual
             common::message::service::call::callee::Request request;
             request.process = common::process::handle();
             request.service.name = std::move( service);
-            request.buffer.type = common::buffer::type::binary();
+            request.buffer.type = common::buffer::type::binary;
 
             auto archive = common::serialize::binary::writer();
             detail::serialize( archive, std::forward< Ts>( arguments)...);

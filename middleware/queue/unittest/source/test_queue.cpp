@@ -286,7 +286,7 @@ domain:
 
          const std::string payload{ "some message"};
          queue::Message message;
-         message.payload.type = common::buffer::type::binary();
+         message.payload.type = common::buffer::type::binary;
          message.payload.data.assign( std::begin( payload), std::end( payload));
 
          queue::enqueue( "a1", message);
@@ -356,7 +356,7 @@ domain:
             message.attributes.available = now;
             message.attributes.properties = "poop";
             message.attributes.reply = "a2";
-            message.payload.type = common::buffer::type::binary();
+            message.payload.type = common::buffer::type::binary;
             message.payload.data.assign( std::begin( payload), std::end( payload));
          }
 
@@ -370,7 +370,7 @@ domain:
          EXPECT_TRUE( local::compare( info.attributes.available, now));
          EXPECT_TRUE( info.attributes.properties == "poop") << "info: " << CASUAL_NAMED_VALUE( info);
          EXPECT_TRUE( info.attributes.reply == "a2");
-         EXPECT_TRUE( info.payload.type == common::buffer::type::binary());
+         EXPECT_TRUE( info.payload.type == common::buffer::type::binary);
          EXPECT_TRUE( info.payload.size == common::range::size( payload));
 
          // message should still be there
@@ -399,7 +399,7 @@ domain:
                message.attributes.available = now;
                message.attributes.properties = "poop";
                message.attributes.reply = "a2";
-               message.payload.type = common::buffer::type::binary();
+               message.payload.type = common::buffer::type::binary;
                message.payload.data.assign( std::begin( payload), std::end( payload));
             }
 
@@ -416,7 +416,7 @@ domain:
          EXPECT_TRUE( local::compare( message.attributes.available, now));
          EXPECT_TRUE( message.attributes.properties == "poop");
          EXPECT_TRUE( message.attributes.reply == "a2");
-         EXPECT_TRUE( message.payload.type == common::buffer::type::binary());
+         EXPECT_TRUE( message.payload.type == common::buffer::type::binary);
          EXPECT_TRUE( common::algorithm::equal( message.payload.data, payload));
 
          // message should still be there
@@ -511,7 +511,7 @@ domain:
             {
                message.attributes.properties = "poop";
                message.attributes.reply = "a2";
-               message.payload.type = common::buffer::type::binary();
+               message.payload.type = common::buffer::type::binary;
                message.payload.data.assign( std::begin( payload), std::end( payload));
             }
 
@@ -543,7 +543,7 @@ domain:
                message.attributes.properties = "poop";
                message.attributes.reply = "a2";
                message.attributes.available = available;
-               message.payload.type = common::buffer::type::binary();
+               message.payload.type = common::buffer::type::binary;
                message.payload.data.assign( std::begin( payload), std::end( payload));
             }
 
@@ -572,7 +572,7 @@ domain:
             queue::Message message;
             {
                message.attributes.properties = "poop";
-               message.payload.type = common::buffer::type::binary();
+               message.payload.type = common::buffer::type::binary;
                message.payload.data.assign( std::begin( payload), std::end( payload));
             }
             queue::enqueue( name, message);
@@ -646,7 +646,7 @@ domain:
             {
                message.attributes.properties = "poop";
                message.attributes.reply = "a2";
-               message.payload.type = common::buffer::type::binary();
+               message.payload.type = common::buffer::type::binary;
                message.payload.data.assign( std::begin( payload), std::end( payload));
             }
 
@@ -733,7 +733,7 @@ domain:
 
          const std::string payload{ "some message"};
          queue::Message message;
-         message.payload.type = common::buffer::type::binary();
+         message.payload.type = common::buffer::type::binary;
          message.payload.data.assign( std::begin( payload), std::end( payload));
 
          queue::enqueue( "a1", message);
@@ -771,7 +771,7 @@ domain:
 
          const std::string payload{ "some message"};
          queue::Message message;
-         message.payload.type = common::buffer::type::binary();
+         message.payload.type = common::buffer::type::binary;
          message.payload.data.assign( std::begin( payload), std::end( payload));
 
          queue::enqueue( "a1", message);
@@ -816,7 +816,7 @@ domain:
 
          const std::string payload{ "some message"};
          queue::Message message;
-         message.payload.type = common::buffer::type::binary();
+         message.payload.type = common::buffer::type::binary;
          message.payload.data.assign( std::begin( payload), std::end( payload));
 
          queue::enqueue( "a1", message);
@@ -869,7 +869,7 @@ domain:
          const std::string payload{ "some message"};
          {
             queue::Message message;
-            message.payload.type = common::buffer::type::binary();
+            message.payload.type = common::buffer::type::binary;
             message.payload.data.assign( std::begin( payload), std::end( payload));
 
             common::algorithm::for_n< 5>( [&]()
@@ -955,7 +955,7 @@ domain:
 
          queue::Message message;
          {
-            message.payload.type = common::buffer::type::binary();
+            message.payload.type = common::buffer::type::binary;
             message.payload.data = common::unittest::random::binary( 43);
          }
 
@@ -1001,7 +1001,7 @@ domain:
          {
             queue::Message message;
             {
-               message.payload.type = common::buffer::type::binary();
+               message.payload.type = common::buffer::type::binary;
                message.payload.data = common::unittest::random::binary( 43);
             }
             queue::enqueue( "a1", message);

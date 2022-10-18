@@ -46,7 +46,7 @@ namespace casual
             common::unittest::Trace trace;
 
             common::message::service::call::callee::Request call;
-            call.buffer.type = common::buffer::type::binary();
+            call.buffer.type = common::buffer::type::binary;
 
             auto request = request::prepare( local::node(), std::move( call));
 
@@ -77,7 +77,7 @@ namespace casual
             const auto payload = common::unittest::random::binary( 1024);
 
             common::message::service::call::callee::Request call;
-            call.buffer.type = common::buffer::type::binary();
+            call.buffer.type = common::buffer::type::binary;
             call.buffer.memory = payload;
 
             auto request = request::prepare( local::node(), std::move( call));

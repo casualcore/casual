@@ -30,8 +30,8 @@ namespace casual
 {
    namespace common::traits
    {
-      template <bool B>
-      using bool_constant = std::integral_constant<bool, B>;
+      template< bool B>
+      using bool_constant = std::integral_constant< bool, B>;
 
       namespace priority
       {
@@ -223,29 +223,26 @@ namespace casual
       struct dependent_false : std::false_type {};
 
       /* not needed right now, but could be... 
-      //!
-      //! 
       //! defines value == true if all types differ, otherwise false
-      //!
       //! @{
       template< typename T1, typename T2, typename... Args>
       struct is_different : bool_constant< is_different< T1, T2>::value && is_different< T2, Args...>::value>
-      {
-
-      };
+      {};
 
       template< typename T1, typename T2>
       struct is_different< T1, T2> : bool_constant< ! std::is_same< T1, T2>::value>
-      {
-      };
+      {};
       //! @}
-      */
-
-      template< template< typename> class Predicate, typename T, typename... Ts>
+     
+      template< template< typename> typename Predicate, typename T, typename... Ts>
       struct any_of : bool_constant< Predicate< T>::value || any_of< Predicate, Ts...>::value> {};
 
-      template< template< typename> class Predicate, typename T>
+      template< template< typename> typename Predicate, typename T>
       struct any_of< Predicate, T> : bool_constant< Predicate< T>::value> {};
+
+      template< typename T>
+      inline constexpr bool any_of_v = any_of< T>;
+      */
 
       struct unmovable
       {

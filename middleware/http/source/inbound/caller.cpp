@@ -394,7 +394,7 @@ namespace casual
 
                         if( reply.buffer.null())
                         {
-                           ::strncpy( transport->protocol, http::protocol::null, sizeof( transport->protocol));
+                           ::strncpy( transport->protocol, http::protocol::null.data(), sizeof( transport->protocol));
                            common::algorithm::copy( "NULL", reply.buffer.memory);
                            common::log::line( common::verbose::log, "protocol: ", transport->protocol);
                         }

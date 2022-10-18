@@ -40,7 +40,7 @@ namespace casual
 
                result.message.id = common::uuid::make();
                result.message.reply = "someQueue";
-               result.message.type = common::buffer::type::binary();
+               result.message.type = common::buffer::type::binary;
 
                common::algorithm::copy( common::uuid::string( common::uuid::make()), result.message.payload);
 

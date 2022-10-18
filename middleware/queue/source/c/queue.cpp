@@ -312,8 +312,9 @@ namespace casual
                   payload.type = std::move( message.front().payload.type);
                   payload.memory = std::move( message.front().payload.data);
 
-                  std::tie( result.payload.buffer, result.payload.size) =
-                        common::buffer::pool::Holder::instance().insert( std::move( payload));
+                  auto buffer = common::buffer::pool::Holder::instance().insert( std::move( payload));
+                  result.payload.buffer = std::get< 0>( buffer).underlying();
+                  result.payload.size = std::get< 1>( buffer);
                }
                return local::message::global::cache.add( std::move( result)).id.value();
             }

@@ -12,9 +12,6 @@
 #include "common/code/raise.h"
 #include "common/code/xatmi.h"
 
-#include "casual/xatmi/extended.h"
-#include "casual/xatmi/defines.h"
-
 namespace casual
 {
    namespace common
@@ -23,21 +20,14 @@ namespace casual
       {
          namespace type
          {
-            const std::string& x_octet() { static const auto name = combine( X_OCTET); return name;}
-
-            const std::string& binary() { static const auto name = combine( CASUAL_BUFFER_BINARY_TYPE, CASUAL_BUFFER_BINARY_SUBTYPE); return name;}
-            const std::string& json() { static const auto name = combine( CASUAL_BUFFER_JSON_TYPE, CASUAL_BUFFER_JSON_SUBTYPE); return name;}
-            const std::string& yaml() { static const auto name = combine( CASUAL_BUFFER_YAML_TYPE, CASUAL_BUFFER_YAML_SUBTYPE); return name;}
-            const std::string& xml() { static const auto name = combine( CASUAL_BUFFER_XML_TYPE, CASUAL_BUFFER_XML_SUBTYPE); return name;}
-            const std::string& ini() { static const auto name = combine( CASUAL_BUFFER_INI_TYPE, CASUAL_BUFFER_INI_SUBTYPE); return name;}
-
 
             std::string combine( const char* type, const char* subtype )
             {
                std::string result{ type};
                result.push_back( '/');
 
-               if( subtype && subtype[ 0] != '\0') { return result + subtype;}
+               if( subtype && subtype[ 0] != '\0')
+                  return result + subtype;
 
                return result;
             }
@@ -45,40 +35,25 @@ namespace casual
 
          } // type
 
-
+         static_assert( traits::is::nothrow::movable_v< Payload>);
+         // TODO make sure this type is move only, and remove the copy during _service-forward_
+         //static_assert( ! traits::is::copyable_v< Payload>);
 
          Payload::Payload() = default;
 
-         Payload::Payload( std::nullptr_t) : Payload{ "NULL", 0} {}
+         Payload::Payload( std::nullptr_t) : Payload{ std::string{ "NULL"}, 0} {}
 
-         Payload::Payload( std::string type) : type( std::move( type)) {}
+         Payload::Payload( string::Argument type) : type( std::move( type)) {}
 
-         Payload::Payload( std::string type, platform::binary::type buffer)
+         Payload::Payload( string::Argument type, platform::binary::type buffer)
           : type( std::move( type)), memory( std::move( buffer)) {}
 
-         Payload::Payload( std::string type, platform::binary::size::type size)
+         Payload::Payload( string::Argument type, platform::binary::size::type size)
           : type( std::move( type)), memory( size)
          {
             if( ! memory.data())
                memory.reserve( 1);
          }
-
-
-         Payload::Payload( Payload&& rhs) noexcept
-         {
-            type = std::move( rhs.type);
-            memory = std::move( rhs.memory);
-         }
-         Payload& Payload::operator = ( Payload&& rhs) noexcept
-         {
-            type = std::move( rhs.type);
-            memory = std::move( rhs.memory);
-            return *this;
-         }
-
-
-         Payload::Payload( const Payload&)  = default;
-         Payload& Payload::operator = ( const Payload&) = default;
 
          bool Payload::null() const
          {
@@ -104,10 +79,13 @@ namespace casual
             }
          }
 
+         static_assert( traits::is::nothrow::movable_v< Buffer>);
+         static_assert( ! traits::is::copyable_v< Buffer>);
+
          Buffer::Buffer( Payload payload) : payload( std::move( payload)) {}
 
-         Buffer::Buffer( std::string type, platform::binary::size::type size)
-             : payload( std::move( type), size) {}
+         Buffer::Buffer( string::Argument type, platform::binary::size::type size)
+            : payload( std::move( type), size) {}
 
 
          Buffer::Buffer( Buffer&&) noexcept = default;

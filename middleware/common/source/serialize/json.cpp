@@ -42,7 +42,11 @@ namespace casual
             {
                namespace
                {
-                  std::vector< std::string> keys() { return { "json", ".json", "jsn", ".jsn", buffer::type::json()};};
+                  constexpr auto keys() 
+                  {
+                     using namespace std::string_view_literals; 
+                     return array::make( "json"sv, ".json"sv, "jsn"sv, ".jsn"sv, buffer::type::json);
+                  };
 
                   namespace reader
                   {
@@ -173,9 +177,9 @@ namespace casual
                      {
                      public:
 
-                        inline constexpr static auto archive_type() { return archive::Type::static_need_named;}
+                        constexpr static auto archive_type() { return archive::Type::static_need_named;}
 
-                        static decltype( auto) keys() { return local::keys();}
+                        constexpr static auto keys() { return local::keys();}
 
                         template< typename... Ts>
                         explicit Implementation( Ts&&... ts) : m_stack{ & reader::parse( m_document, std::forward< Ts>( ts)...)} 
@@ -333,9 +337,9 @@ namespace casual
                      {
                      public:
 
-                        inline constexpr static auto archive_type() { return archive::Type::static_need_named;}
+                        constexpr static auto archive_type() { return archive::Type::static_need_named;}
 
-                        static decltype( auto) keys() { return local::keys();}
+                        constexpr static auto keys() { return local::keys();}
                         
                         explicit basic_implementation()
                            : m_allocator( &m_document.GetAllocator()), m_stack{ &m_document}

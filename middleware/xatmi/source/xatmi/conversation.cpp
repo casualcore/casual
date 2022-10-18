@@ -23,7 +23,7 @@ int tpconnect( const char* svc, const char* idata, long ilen, long flags)
 
    try
    {
-      auto buffer = casual::common::buffer::pool::Holder::instance().get( idata, ilen);
+      auto buffer = casual::common::buffer::pool::Holder::instance().get( casual::common::buffer::handle::type{ idata}, ilen);
 
       using Flag = casual::common::service::conversation::connect::Flag;
 
@@ -92,7 +92,7 @@ int tpsend( int id, const char* idata, long ilen, long flags, long* event)
 {
    return local::conversation::wrap( *event, [&]()
    {
-      auto buffer = casual::common::buffer::pool::Holder::instance().get( idata, ilen);
+      auto buffer = casual::common::buffer::pool::Holder::instance().get( casual::common::buffer::handle::type{ idata}, ilen);
 
       using Flag = casual::common::service::conversation::send::Flag;
 
@@ -114,7 +114,7 @@ int tprecv( int id, char ** odata, long *olen, long flags, long* event)
 {
    return local::conversation::wrap( *event, [&](){
 
-      auto buffer = casual::common::buffer::pool::Holder::instance().get( *odata);
+      auto buffer = casual::common::buffer::pool::Holder::instance().get( casual::common::buffer::handle::type{ *odata});
 
       using Flag = casual::common::service::conversation::receive::Flag;
 
@@ -134,8 +134,11 @@ int tprecv( int id, char ** odata, long *olen, long flags, long* event)
       if( ( flag & Flag::no_change) && buffer.payload().type != result.buffer.type)
          casual::common::code::raise::error( casual::common::code::xatmi::buffer_output);
 
-      casual::common::buffer::pool::Holder::instance().deallocate( *odata);
-      std::tie( *odata, *olen) = casual::common::buffer::pool::Holder::instance().insert( std::move( result.buffer));
+      casual::common::buffer::pool::Holder::instance().deallocate( casual::common::buffer::handle::type{ *odata});
+
+      auto output_buffer = casual::common::buffer::pool::Holder::instance().insert( std::move( result.buffer));
+      *odata = std::get< 0>( output_buffer).underlying();
+      *olen = std::get< 1>( output_buffer);
 
       return result.event;
 

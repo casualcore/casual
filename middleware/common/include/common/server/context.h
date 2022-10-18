@@ -50,7 +50,7 @@ namespace casual
 
                struct Buffer
                {
-                  platform::buffer::raw::type data = nullptr;
+                  buffer::handle::type data;
                   platform::buffer::raw::size::type size = 0;
                } buffer;
 

@@ -181,7 +181,7 @@ domain:
                request.process = common::process::handle();
                request.service = std::move( reply.service);
                request.pending = reply.pending;
-               request.buffer.type = common::buffer::type::binary();
+               request.buffer.type = common::buffer::type::binary;
                
                return common::communication::device::async::call( 
                   reply.process.ipc,

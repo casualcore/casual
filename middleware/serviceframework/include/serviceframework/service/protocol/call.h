@@ -183,7 +183,7 @@ namespace casual
             {
                struct Input
                {
-                  static const std::string& type() { return common::buffer::type::binary();};
+                  static constexpr auto type() { return common::buffer::type::binary;};
                   common::serialize::Writer archive = common::serialize::binary::writer();
                };
 

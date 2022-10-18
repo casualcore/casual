@@ -58,7 +58,7 @@ namespace casual
       }
 
 
-      TEST( casual_field_buffer, pool)
+      TEST( buffer_field, pool)
       {
          common::unittest::Trace trace;
 
@@ -75,7 +75,7 @@ namespace casual
       }
 
 
-      TEST( casual_field_buffer, tptypes)
+      TEST( buffer_field, tptypes)
       {
          common::unittest::Trace trace;
 
@@ -95,13 +95,18 @@ namespace casual
       }
 
 
-      TEST( casual_field_buffer, use_with_invalid_buffer__expecting_invalid_buffer)
+      TEST( buffer_field, use_with_invalid_buffer__expecting_invalid_buffer)
       {
          common::unittest::Trace trace;
+
+         //auto temp = tpalloc( CASUAL_FIELD, nullptr, 666);
+
+         //EXPECT_TRUE( false) << "common::buffer::pool::holder(): " << CASUAL_NAMED_VALUE( common::buffer::pool::holder());
+
          
          char* invalid = nullptr;
 
-         EXPECT_TRUE( casual_field_explore_buffer( nullptr, nullptr, nullptr) == CASUAL_FIELD_INVALID_HANDLE);
+         ASSERT_TRUE( casual_field_explore_buffer( nullptr, nullptr, nullptr) == CASUAL_FIELD_INVALID_HANDLE) <<  casual_field_explore_buffer( nullptr, nullptr, nullptr);
 
          EXPECT_TRUE( casual_field_explore_buffer( invalid, nullptr, nullptr) == CASUAL_FIELD_INVALID_HANDLE);
 
@@ -129,6 +134,8 @@ namespace casual
 
          EXPECT_TRUE( casual_field_remove_occurrence( invalid, FLD_CHAR1, 0) == CASUAL_FIELD_INVALID_HANDLE);
 
+         //tpfree( temp);
+
          auto buffer = tpalloc( CASUAL_FIELD, "", 0);
          ASSERT_TRUE( buffer != nullptr);
 
@@ -143,7 +150,7 @@ namespace casual
 
       }
 
-      TEST( casual_field_buffer, use_with_wrong_buffer__expecting_invalid_buffer)
+      TEST( buffer_field, use_with_wrong_buffer__expecting_invalid_buffer)
       {
          common::unittest::Trace trace;
 
@@ -155,7 +162,7 @@ namespace casual
          tpfree( buffer);
       }
 
-      TEST( casual_field_buffer, add_binary_data_with_negative_size__expecting_invalid_argument)
+      TEST( buffer_field, add_binary_data_with_negative_size__expecting_invalid_argument)
       {
          common::unittest::Trace trace;
 
@@ -167,7 +174,7 @@ namespace casual
          tpfree( buffer);
       }
 
-      TEST( casual_field_buffer, allocate_with_zero_size__expecting_success)
+      TEST( buffer_field, allocate_with_zero_size__expecting_success)
       {
          common::unittest::Trace trace;
 
@@ -180,7 +187,7 @@ namespace casual
          tpfree( buffer);
       }
 
-      TEST( casual_field_buffer, reallocate_with_larger_size__expecting_success)
+      TEST( buffer_field, reallocate_with_larger_size__expecting_success)
       {
          common::unittest::Trace trace;
 
@@ -202,7 +209,7 @@ namespace casual
       }
 
 
-      TEST( casual_field_buffer, reallocate_with_smaller_size__expecting_success)
+      TEST( buffer_field, reallocate_with_smaller_size__expecting_success)
       {
          common::unittest::Trace trace;
 
@@ -235,7 +242,7 @@ namespace casual
          tpfree( buffer);
       }
 
-      TEST( casual_field_buffer, reallocate_with_invalid_handle__expecting_nullptr)
+      TEST( buffer_field, reallocate_with_invalid_handle__expecting_nullptr)
       {
          common::unittest::Trace trace;
 
@@ -249,7 +256,7 @@ namespace casual
       }
 
 
-      TEST( casual_field_buffer, allocate_with_small_size_and_write_much__expecting_increased_size)
+      TEST( buffer_field, allocate_with_small_size_and_write_much__expecting_increased_size)
       {
          common::unittest::Trace trace;
 
@@ -266,7 +273,7 @@ namespace casual
       }
 
 
-      TEST( casual_field_buffer, add_and_get__expecting_success)
+      TEST( buffer_field, add_and_get__expecting_success)
       {
          common::unittest::Trace trace;
 
@@ -329,7 +336,7 @@ namespace casual
       }
 
 
-      TEST( casual_field_buffer, add_and_get_several_occurrences__expecting_success)
+      TEST( buffer_field, add_and_get_several_occurrences__expecting_success)
       {
          common::unittest::Trace trace;
 
@@ -363,7 +370,7 @@ namespace casual
       }
 
 
-      TEST( casual_field_buffer, add_one_and_get_two_occurrences__expecting_no_occurrence)
+      TEST( buffer_field, add_one_and_get_two_occurrences__expecting_no_occurrence)
       {
          common::unittest::Trace trace;
 
@@ -379,7 +386,7 @@ namespace casual
          tpfree( buffer);
       }
 
-      TEST( casual_field_buffer, add_short_with_id_of_long__expecting_invalid_argument)
+      TEST( buffer_field, add_short_with_id_of_long__expecting_invalid_argument)
       {
          common::unittest::Trace trace;
 
@@ -391,7 +398,7 @@ namespace casual
          tpfree( buffer);
       }
 
-      TEST( casual_field_buffer, add_short_with_invalid_id__expecting_invalid_id)
+      TEST( buffer_field, add_short_with_invalid_id__expecting_invalid_id)
       {
          common::unittest::Trace trace;
 
@@ -405,7 +412,7 @@ namespace casual
       }
 
 
-      TEST( casual_field_buffer, get_type_from_id__expecting_success)
+      TEST( buffer_field, get_type_from_id__expecting_success)
       {
          common::unittest::Trace trace;
 
@@ -414,7 +421,7 @@ namespace casual
          EXPECT_TRUE( type == CASUAL_FIELD_LONG);
       }
 
-      TEST( casual_field_buffer, type_from_invalid_id__expecting_invalid_id)
+      TEST( buffer_field, type_from_invalid_id__expecting_invalid_id)
       {
          common::unittest::Trace trace;
 
@@ -423,7 +430,7 @@ namespace casual
          EXPECT_TRUE( casual_field_type_of_id( -1, &type) == CASUAL_FIELD_INVALID_ARGUMENT);
       }
 
-      TEST( casual_field_buffer, remove_occurrence_with_invalid_id__expecting_invalid_argument)
+      TEST( buffer_field, remove_occurrence_with_invalid_id__expecting_invalid_argument)
       {
          common::unittest::Trace trace;
 
@@ -437,7 +444,7 @@ namespace casual
       }
 
 
-      TEST( casual_field_buffer, remove_occurrence_with_no_occurrence__expecting_no_occurrence)
+      TEST( buffer_field, remove_occurrence_with_no_occurrence__expecting_no_occurrence)
       {
          common::unittest::Trace trace;
 
@@ -450,7 +457,7 @@ namespace casual
          tpfree( buffer);
       }
 
-      TEST( casual_field_buffer, add_and_remove_occurrence__expecting_success)
+      TEST( buffer_field, add_and_remove_occurrence__expecting_success)
       {
          common::unittest::Trace trace;
 
@@ -463,7 +470,7 @@ namespace casual
          tpfree( buffer);
       }
 
-      TEST( casual_field_buffer, add_two_and_remove_first_occurrence_and_get_second_as_first__expecting_success)
+      TEST( buffer_field, add_two_and_remove_first_occurrence_and_get_second_as_first__expecting_success)
       {
          common::unittest::Trace trace;
 
@@ -480,7 +487,7 @@ namespace casual
          tpfree( buffer);
       }
 
-      TEST( casual_field_buffer, add_twp_and_remove_second_occurrence_and_first_second_as_first__expecting_success)
+      TEST( buffer_field, add_twp_and_remove_second_occurrence_and_first_second_as_first__expecting_success)
       {
          common::unittest::Trace trace;
 
@@ -498,7 +505,7 @@ namespace casual
       }
 
 
-      TEST( casual_field_buffer, remove_all_occurrences_and_check_existence__expecting_no_occurrence)
+      TEST( buffer_field, remove_all_occurrences_and_check_existence__expecting_no_occurrence)
       {
          common::unittest::Trace trace;
 
@@ -514,7 +521,7 @@ namespace casual
          tpfree( buffer);
       }
 
-      TEST( casual_field_buffer, add_to_source_and_copy_buffer_and_get_from_target__expecting_success)
+      TEST( buffer_field, add_to_source_and_copy_buffer_and_get_from_target__expecting_success)
       {
          common::unittest::Trace trace;
 
@@ -550,7 +557,7 @@ namespace casual
       }
 
 
-      TEST( casual_field_buffer, test_some_iteration)
+      TEST( buffer_field, test_some_iteration)
       {
          common::unittest::Trace trace;
 
@@ -596,7 +603,7 @@ namespace casual
 
       namespace
       {
-         class casual_field_buffer_repository : public ::testing::Test
+         class buffer_field_repository : public ::testing::Test
          {
          protected:
 
@@ -618,7 +625,7 @@ namespace casual
       }
 
 
-      TEST_F( casual_field_buffer_repository, get_name_from_id_from_group_one__expecting_success)
+      TEST_F( buffer_field_repository, get_name_from_id_from_group_one__expecting_success)
       {
          common::unittest::Trace trace;
 
@@ -627,14 +634,14 @@ namespace casual
          EXPECT_STREQ( name, "FLD_SHORT1");
       }
 
-      TEST_F( casual_field_buffer_repository, get_name_from_id_to_null__expecting_success_and_no_crasch)
+      TEST_F( buffer_field_repository, get_name_from_id_to_null__expecting_success_and_no_crasch)
       {
          common::unittest::Trace trace;
 
          ASSERT_TRUE( casual_field_name_of_id( FLD_SHORT1, nullptr) == CASUAL_FIELD_SUCCESS);
       }
 
-      TEST_F( casual_field_buffer_repository, get_name_from_id_from_group_two__expecting_success)
+      TEST_F( buffer_field_repository, get_name_from_id_from_group_two__expecting_success)
       {
          common::unittest::Trace trace;
 
@@ -643,7 +650,7 @@ namespace casual
          EXPECT_STREQ( name, "FLD_DOUBLE2");
       }
 
-      TEST_F( casual_field_buffer_repository, get_id_from_name_from_group_one__expecting_success)
+      TEST_F( buffer_field_repository, get_id_from_name_from_group_one__expecting_success)
       {
          common::unittest::Trace trace;
 
@@ -652,14 +659,14 @@ namespace casual
          EXPECT_EQ( id, FLD_SHORT2);
       }
 
-      TEST_F( casual_field_buffer_repository, get_id_from_name_to_null__expecting_success_and_no_crasch)
+      TEST_F( buffer_field_repository, get_id_from_name_to_null__expecting_success_and_no_crasch)
       {
          common::unittest::Trace trace;
 
          ASSERT_TRUE( casual_field_id_of_name( "FLD_SHORT2", nullptr) == CASUAL_FIELD_SUCCESS);
       }
 
-      TEST_F( casual_field_buffer_repository, get_id_from_name_from_group_two__expecting_success)
+      TEST_F( buffer_field_repository, get_id_from_name_from_group_two__expecting_success)
       {
          common::unittest::Trace trace;
 
@@ -668,7 +675,7 @@ namespace casual
          EXPECT_EQ( id, FLD_DOUBLE3);
       }
 
-      TEST_F( casual_field_buffer_repository, get_name_from_non_existing_id__expecting_unkown_id)
+      TEST_F( buffer_field_repository, get_name_from_non_existing_id__expecting_unkown_id)
       {
          common::unittest::Trace trace;
 
@@ -676,7 +683,7 @@ namespace casual
          ASSERT_TRUE( casual_field_name_of_id( 666, &name) == CASUAL_FIELD_OUT_OF_BOUNDS);
       }
 
-      TEST_F( casual_field_buffer_repository, get_id_from_non_existing_name__expecting_unknown_id)
+      TEST_F( buffer_field_repository, get_id_from_non_existing_name__expecting_unknown_id)
       {
          common::unittest::Trace trace;
 
@@ -684,7 +691,7 @@ namespace casual
          ASSERT_TRUE( casual_field_id_of_name( "NON_EXISTING_NAME", &id) == CASUAL_FIELD_OUT_OF_BOUNDS);
       }
 
-      TEST_F( casual_field_buffer_repository, get_name_from_invalid_id__expecting_invalid_argument)
+      TEST_F( buffer_field_repository, get_name_from_invalid_id__expecting_invalid_argument)
       {
          common::unittest::Trace trace;
 
@@ -693,7 +700,7 @@ namespace casual
          EXPECT_TRUE( result == CASUAL_FIELD_OUT_OF_BOUNDS) << result;
       }
 
-      TEST_F( casual_field_buffer_repository, get_id_from_null_name__expecting_invalid_argument)
+      TEST_F( buffer_field_repository, get_id_from_null_name__expecting_invalid_argument)
       {
          common::unittest::Trace trace;
 
@@ -702,7 +709,7 @@ namespace casual
          EXPECT_TRUE( result == CASUAL_FIELD_INVALID_ARGUMENT) << result;
       }
 
-      TEST_F( casual_field_buffer_repository, get_id_from_invalid_name__expecting_invalid_argument)
+      TEST_F( buffer_field_repository, get_id_from_invalid_name__expecting_invalid_argument)
       {
          common::unittest::Trace trace;
 
@@ -711,7 +718,7 @@ namespace casual
          EXPECT_TRUE( result == CASUAL_FIELD_OUT_OF_BOUNDS) << result;
       }
 
-      TEST_F( casual_field_buffer_repository, get_name_of_type__expecting_success)
+      TEST_F( buffer_field_repository, get_name_of_type__expecting_success)
       {
          common::unittest::Trace trace;
 
@@ -732,7 +739,7 @@ namespace casual
          EXPECT_STREQ( name, "binary");
       }
 
-      TEST_F( casual_field_buffer_repository, get_name_of_invalid_type__expecting_invalid_argument)
+      TEST_F( buffer_field_repository, get_name_of_invalid_type__expecting_invalid_argument)
       {
          common::unittest::Trace trace;
 
@@ -741,7 +748,7 @@ namespace casual
          EXPECT_TRUE( result == CASUAL_FIELD_OUT_OF_BOUNDS) << result;
       }
 
-      TEST_F( casual_field_buffer_repository, get_name_of_type_to_null__expecting_success_and_no_crasch)
+      TEST_F( buffer_field_repository, get_name_of_type_to_null__expecting_success_and_no_crasch)
       {
          common::unittest::Trace trace;
 
@@ -749,7 +756,7 @@ namespace casual
          EXPECT_TRUE( result == CASUAL_FIELD_SUCCESS) << result;
       }
 
-      TEST_F( casual_field_buffer_repository, get_type_of_name__expecting_success)
+      TEST_F( buffer_field_repository, get_type_of_name__expecting_success)
       {
          common::unittest::Trace trace;
 
@@ -770,7 +777,7 @@ namespace casual
          EXPECT_EQ( type, CASUAL_FIELD_BINARY);
       }
 
-      TEST_F( casual_field_buffer_repository, get_type_of_invalid_name__expecting_invalid_argument)
+      TEST_F( buffer_field_repository, get_type_of_invalid_name__expecting_invalid_argument)
       {
          common::unittest::Trace trace;
 
@@ -779,14 +786,14 @@ namespace casual
          EXPECT_TRUE( result == CASUAL_FIELD_OUT_OF_BOUNDS) << result;
       }
 
-      TEST_F( casual_field_buffer_repository, get_type_of_name_to_null__expecting_success_and_no_crasch)
+      TEST_F( buffer_field_repository, get_type_of_name_to_null__expecting_success_and_no_crasch)
       {
          common::unittest::Trace trace;
 
          EXPECT_TRUE( casual_field_type_of_name( "string", nullptr) == CASUAL_FIELD_SUCCESS);
       }
 
-      TEST_F( casual_field_buffer_repository, print__expecting_success)
+      TEST_F( buffer_field_repository, print__expecting_success)
       {
          common::unittest::Trace trace;
 
@@ -806,7 +813,7 @@ namespace casual
          tpfree( buffer);
       }
 
-      TEST_F( casual_field_buffer_repository, dump__correct_transformation)
+      TEST_F( buffer_field_repository, dump__correct_transformation)
       {
          common::unittest::Trace trace;
 
@@ -832,7 +839,7 @@ namespace casual
 
       }
 
-      TEST_F( casual_field_buffer_repository, DISABLED_match__expecting_match)
+      TEST_F( buffer_field_repository, DISABLED_match__expecting_match)
       {
          common::unittest::Trace trace;
 
@@ -851,7 +858,7 @@ namespace casual
          tpfree( buffer);
       }
 
-      TEST_F( casual_field_buffer_repository, DISABLED_match__expecting_optimized_match)
+      TEST_F( buffer_field_repository, DISABLED_match__expecting_optimized_match)
       {
          common::unittest::Trace trace;
 
@@ -877,7 +884,7 @@ namespace casual
          tpfree( buffer);
       }
 
-      TEST( casual_field_buffer, add_three_remove_two_field_and_then_iterate__expecting_third_as_first)
+      TEST( buffer_field, add_three_remove_two_field_and_then_iterate__expecting_third_as_first)
       {
          common::unittest::Trace trace;
 
@@ -904,7 +911,7 @@ namespace casual
       }
 
 
-      TEST( casual_field_buffer, add_three_remove_middle_field_and_then_iterate__expecting_third_as_second)
+      TEST( buffer_field, add_three_remove_middle_field_and_then_iterate__expecting_third_as_second)
       {
          common::unittest::Trace trace;
 
@@ -932,7 +939,7 @@ namespace casual
          tpfree( buffer);
       }
 
-      TEST( casual_field_buffer, get_pod_size__expecting_correct_sizes)
+      TEST( buffer_field, get_pod_size__expecting_correct_sizes)
       {
          common::unittest::Trace trace;
 
@@ -954,7 +961,7 @@ namespace casual
 
       }
 
-      TEST( casual_field_buffer, minimum_need__expecting_correct_results)
+      TEST( buffer_field, minimum_need__expecting_correct_results)
       {
          common::unittest::Trace trace;
 
@@ -983,7 +990,7 @@ namespace casual
 
 
 
-      TEST( casual_field_buffer, add_values_as_void_and_get_as_type__expecting_success)
+      TEST( buffer_field, add_values_as_void_and_get_as_type__expecting_success)
       {
          common::unittest::Trace trace;
 
@@ -1051,7 +1058,7 @@ namespace casual
          tpfree( buffer);
       }
 
-      TEST( casual_field_buffer, add_values_as_type_and_get_as_void__expecting_success)
+      TEST( buffer_field, add_values_as_type_and_get_as_void__expecting_success)
       {
          common::unittest::Trace trace;
 
@@ -1132,7 +1139,7 @@ namespace casual
       }
 
 
-      TEST( casual_field_buffer, add_short_and_then_update_it__expecting_updated_value_on_get)
+      TEST( buffer_field, add_short_and_then_update_it__expecting_updated_value_on_get)
       {
          common::unittest::Trace trace;
 
@@ -1160,7 +1167,7 @@ namespace casual
          tpfree( buffer);
       }
 
-      TEST( casual_field_buffer, add_string_of_certain_size_and_update_it__expecting_equality)
+      TEST( buffer_field, add_string_of_certain_size_and_update_it__expecting_equality)
       {
          common::unittest::Trace trace;
 
@@ -1222,7 +1229,7 @@ namespace casual
       }
 
 
-      TEST( casual_field_buffer, count_occurrences__expecting_correct_numbers)
+      TEST( buffer_field, count_occurrences__expecting_correct_numbers)
       {
          common::unittest::Trace trace;
 
@@ -1248,7 +1255,7 @@ namespace casual
          tpfree( buffer);
       }
 
-      TEST( casual_field_buffer, serialize_buffer__expecting_success)
+      TEST( buffer_field, serialize_buffer__expecting_success)
       {
          common::unittest::Trace trace;
 
@@ -1281,7 +1288,7 @@ namespace casual
       }
 
 
-      TEST( casual_field_buffer, serialize_invalid_buffer__expecting_failure)
+      TEST( buffer_field, serialize_invalid_buffer__expecting_failure)
       {
          common::unittest::Trace trace;
 
@@ -1309,7 +1316,7 @@ namespace casual
          ASSERT_EQ( result, CASUAL_FIELD_INVALID_HANDLE);
       }
 
-      TEST( casual_field_buffer, DISABLED_performance__expecting_good_enough_speed)
+      TEST( buffer_field, DISABLED_performance__expecting_good_enough_speed)
       {
          common::unittest::Trace trace;
 
@@ -1361,7 +1368,7 @@ namespace casual
          }
       }
 
-      TEST( casual_field_buffer, casual_field_type_of_id)
+      TEST( buffer_field, casual_field_type_of_id)
       {
          common::unittest::Trace trace;
 

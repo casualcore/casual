@@ -26,14 +26,14 @@ namespace casual
       namespace transaction
       {
 
-         TEST( casual_xatmi_tx, tx_info__expect_0_transaction)
+         TEST( xatmi_tx, tx_info__expect_0_transaction)
          {
             common::unittest::Trace trace;
 
             EXPECT_TRUE( tx_info( nullptr) == 0);
          }
 
-         TEST( casual_xatmi_tx, tx_suspend__no_current_transaction__expect_TX_PROTOCOL_ERROR)
+         TEST( xatmi_tx, tx_suspend__no_current_transaction__expect_TX_PROTOCOL_ERROR)
          {
             common::unittest::Trace trace;
 
@@ -42,7 +42,7 @@ namespace casual
             ASSERT_TRUE( tx_suspend( &xid) == TX_PROTOCOL_ERROR);
          }
 
-         TEST( casual_xatmi_tx, tx_begin__expect_transaction)
+         TEST( xatmi_tx, tx_begin__expect_transaction)
          {
             common::unittest::Trace trace;
 
@@ -52,7 +52,7 @@ namespace casual
             EXPECT_TRUE( tx_info( nullptr) == 0);
          }
 
-         TEST( casual_xatmi_tx, two_tx_begin__expect_TX_PROTOCOLL_ERROR)
+         TEST( xatmi_tx, two_tx_begin__expect_TX_PROTOCOLL_ERROR)
          {
             common::unittest::Trace trace;
 
@@ -63,7 +63,7 @@ namespace casual
             EXPECT_TRUE( tx_info( nullptr) == 0);
          }
 
-         TEST( casual_xatmi_tx, tx_begin_tx_suspend_tx_resume__tx_rollback__expect_TX_OK)
+         TEST( xatmi_tx, tx_begin_tx_suspend_tx_resume__tx_rollback__expect_TX_OK)
          {
             common::unittest::Trace trace;
 
@@ -76,7 +76,7 @@ namespace casual
             EXPECT_TRUE( tx_rollback() == TX_OK);
          }
 
-         TEST( casual_xatmi_tx, tx_begin__10_tx_suspend_tx_begin___tx_commit_tx_resume__rollback__expect_TX_OK)
+         TEST( xatmi_tx, tx_begin__10_tx_suspend_tx_begin___tx_commit_tx_resume__rollback__expect_TX_OK)
          {
             common::unittest::Trace trace;
 
@@ -107,7 +107,7 @@ namespace casual
             EXPECT_TRUE( tx_rollback() == TX_OK);
          }
 
-         TEST( casual_xatmi_tx, tx_begin__10_tx_suspend_tx_begin__in_revers_order__tx_commit_tx_resume__rollback__expect_TX_OK)
+         TEST( xatmi_tx, tx_begin__10_tx_suspend_tx_begin__in_revers_order__tx_commit_tx_resume__rollback__expect_TX_OK)
          {
             common::unittest::Trace trace;
 
@@ -139,7 +139,7 @@ namespace casual
          }
 
 
-         TEST( casual_xatmi_tx, chained_control__tx_begin_tx_commit__expect_new_transaction)
+         TEST( xatmi_tx, chained_control__tx_begin_tx_commit__expect_new_transaction)
          {
             common::unittest::Trace trace;
 
@@ -155,7 +155,7 @@ namespace casual
             EXPECT_TRUE( tx_commit() == TX_OK);
          }
 
-         TEST( casual_xatmi_tx, chained_control__tx_begin_tx_begin__expect_TX_PROTOCOLL_ERROR)
+         TEST( xatmi_tx, chained_control__tx_begin_tx_begin__expect_TX_PROTOCOLL_ERROR)
          {
             common::unittest::Trace trace;
 
@@ -169,7 +169,7 @@ namespace casual
             EXPECT_TRUE( tx_commit() == TX_OK);
          }
 
-         TEST( casual_xatmi_tx, stacked_control__tx_begin_tx_begin__expect_TX_OK)
+         TEST( xatmi_tx, stacked_control__tx_begin_tx_begin__expect_TX_OK)
          {
             common::unittest::Trace trace;
 
@@ -187,7 +187,7 @@ namespace casual
             EXPECT_TRUE( tx_info( nullptr) == 0);
          }
 
-         TEST( casual_xatmi_tx, stacked_control__tx_begin_tx_begin_tx_suspend__expect_TX_OK)
+         TEST( xatmi_tx, stacked_control__tx_begin_tx_begin_tx_suspend__expect_TX_OK)
          {
             common::unittest::Trace trace;
 

@@ -32,7 +32,12 @@ namespace casual
             {
                namespace
                {
-                  std::vector< std::string> keys() { return { "xml", ".xml", buffer::type::xml()};};
+
+                  constexpr auto keys() 
+                  {
+                     using namespace std::string_view_literals; 
+                     return array::make( "xml"sv, ".xml", common::buffer::type::xml);
+                  }
 
                   namespace reader
                   {
@@ -167,9 +172,9 @@ namespace casual
                      {
                      public:
 
-                        inline constexpr static auto archive_type() { return archive::Type::static_need_named;}
+                        constexpr static auto archive_type() { return archive::Type::static_need_named;}
 
-                        static decltype( auto) keys() { return local::keys();}
+                        constexpr static auto keys() { return local::keys();}
 
                         //! @param node Normally a pugi::xml_document
                         //!
@@ -340,9 +345,9 @@ namespace casual
                      {
                      public:
 
-                        inline constexpr static auto archive_type() { return archive::Type::static_need_named;}
+                        constexpr static auto archive_type() { return archive::Type::static_need_named;}
 
-                        static decltype( auto) keys() { return local::keys();}
+                        constexpr static auto keys() { return local::keys();}
 
 
                         //! @param node Normally a pugi::xml_document

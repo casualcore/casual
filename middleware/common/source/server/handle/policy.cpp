@@ -204,6 +204,7 @@ namespace casual
                      forward.parameter.service.name,
                      decltype( common::service::Lookup::Context::semantic)::forward};
 
+                  // TODO make this forward work without a copy of payload...
                   auto request = message;
 
                   auto target = lookup();

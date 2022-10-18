@@ -31,86 +31,60 @@ namespace casual
                using common::buffer::Buffer::Buffer;
 
                //! Implement Buffer::transport
-               size_type transport( const size_type user_size) const
+               size_type transport( platform::size::type user_size) const
                {
 
                   // Just ignore user-size all together
                   return payload.memory.size();
                }
-
             };
 
-
-            class Allocator : public common::buffer::pool::basic_pool<Buffer>
+            using allocator_base = common::buffer::pool::implementation::Default< Buffer>;
+            struct Allocator : allocator_base
             {
-            public:
 
-               using types_type = common::buffer::pool::default_pool::types_type;
-
-               static const types_type& types()
+               static constexpr auto types() 
                {
-                  static const types_type result
-                  {
-                     common::buffer::type::combine( CASUAL_OCTET),
-                     common::buffer::type::combine( CASUAL_OCTET, CASUAL_OCTET_XML),
-                     common::buffer::type::combine( CASUAL_OCTET, CASUAL_OCTET_JSON),
-                     common::buffer::type::combine( CASUAL_OCTET, CASUAL_OCTET_YAML),
-                  };
+                  return common::array::force::make< std::string_view>( 
+                     CASUAL_OCTET "/",
+                     CASUAL_OCTET "/" CASUAL_OCTET_XML,
+                     CASUAL_OCTET "/" CASUAL_OCTET_JSON,
+                     CASUAL_OCTET "/" CASUAL_OCTET_YAML
+                  );
+               };
 
-                  return result;
-               }
-
-               platform::buffer::raw::type allocate( const std::string& type, const platform::binary::size::type size)
+               common::buffer::handle::mutate::type allocate( std::string_view type, platform::binary::size::type size)
                {
-                  auto& buffer = m_pool.emplace_back( type, size);
+                  auto& buffer = allocator_base::emplace_back( type, size);
 
-                  // GCC returns null for std::vector::data with capacity zero
-                  if( ! size) 
+                  // If size() is ​0​, data() may or may not return a null pointer
+                  if( ! std::data( buffer.payload.memory))
                      buffer.payload.memory.reserve( 1);
 
-                  return buffer.payload.memory.data();
+                  return buffer.payload.handle();
                }
 
 
-               platform::buffer::raw::type reallocate( const platform::buffer::raw::immutable::type handle, const platform::binary::size::type size)
+               common::buffer::handle::mutate::type reallocate( common::buffer::handle::type handle, platform::binary::size::type size)
                {
-                  const auto result = find( handle);
-
-                  m_pool.back().payload.memory.resize( size);
+                  auto& buffer = allocator_base::get( handle);
 
                   if( size)
                   {
                      // Allow user to reduce allocation
-                     result->payload.memory.shrink_to_fit();
+                     buffer.payload.memory.shrink_to_fit();
                   }
                   else
                   {
-                     // GCC returns null for std::vector::data with capacity zero
-                     m_pool.back().payload.memory.reserve( 1);
+                     // TODO What is this? How could this possible make sense?
+                     //m_pool.back().payload.memory.reserve( 1);
                   }
 
-                  return result->payload.memory.data();
+                  return buffer.payload.handle();
                }
             };
 
-         } // <unnamed>
-
-      } // octet
-
-
-   } // buffer
-
-   template class common::buffer::pool::Registration< buffer::octet::Allocator>;
-
-
-   namespace buffer
-   {
-      namespace octet
-      {
-         using pool_type = common::buffer::pool::Registration< Allocator>;
-
-         namespace
-         {
+            using pool_type = common::buffer::pool::Registration< Allocator>;
 
             int error() noexcept
             {
@@ -138,7 +112,7 @@ namespace casual
 
                try
                {
-                  const auto& buffer = pool_type::pool.get( handle);
+                  const auto& buffer = pool_type::pool().get( common::buffer::handle::type{ handle});
 
 
                   if( name)
@@ -162,7 +136,7 @@ namespace casual
 
                try
                {
-                  auto& buffer = pool_type::pool.get( *handle);
+                  auto& buffer = pool_type::pool().get( common::buffer::handle::type{ *handle});
 
                   *handle = casual::common::algorithm::copy(
                      casual::common::range::make( data, size),
@@ -184,7 +158,7 @@ namespace casual
 
                try
                {
-                  const auto& buffer = pool_type::pool.get( handle);
+                  const auto& buffer = pool_type::pool().get( common::buffer::handle::type{ handle});
 
                   data = buffer.payload.memory.data();
                   size = buffer.payload.memory.size();

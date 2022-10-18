@@ -33,7 +33,7 @@ namespace casual
                   }
 
                   template< typename Map, typename Creator>
-                  void registration( Map& map, Creator&& creator, const std::vector< std::string>& keys)
+                  void registration( Map& map, Creator&& creator, range_type keys)
                   {
                      for( auto& key : keys)
                         map.emplace( key, creator);
@@ -56,7 +56,7 @@ namespace casual
                      template< Policy policy> // just to get different instances based on policy
                      struct holder
                      {
-                        static void registration( reader::Creator&& creator, const std::vector< std::string>& keys)
+                        static void registration( reader::Creator&& creator, range_type keys)
                         {
                            create::local::registration( creators(), std::move( creator), keys);
                         }
@@ -72,9 +72,9 @@ namespace casual
                            return algorithm::transform( creators(), []( auto& pair){ return pair.first;});
                         }
 
-                        static std::map< std::string, reader::Creator, std::less<>>& creators() 
+                        static std::map< std::string_view, reader::Creator, std::less<>>& creators() 
                         {
-                           static std::map< std::string, reader::Creator, std::less<>> creators;
+                           static std::map< std::string_view, reader::Creator, std::less<>> creators;
                            return creators;
                         } 
                      };
@@ -87,7 +87,7 @@ namespace casual
                   using Dispatch = local::holder< local::Policy::consumed>;
                   namespace detail
                   {
-                     void registration( reader::Creator&& creator, const std::vector< std::string>& keys)
+                     void registration( reader::Creator&& creator, range_type keys)
                      {
                         Dispatch::registration( std::move( creator), keys);
                      }
@@ -101,7 +101,7 @@ namespace casual
                   using Dispatch = local::holder< local::Policy::strict>;
                   namespace detail
                   {
-                     void registration( reader::Creator&& creator, const std::vector< std::string>& keys)
+                     void registration( reader::Creator&& creator, range_type keys)
                      {
                         Dispatch::registration( std::move( creator), keys);
                      }
@@ -115,7 +115,7 @@ namespace casual
                   using Dispatch = local::holder< local::Policy::relaxed>;
                   namespace detail
                   {
-                     void registration( reader::Creator&& creator, const std::vector< std::string>& keys)
+                     void registration( reader::Creator&& creator, range_type keys)
                      {
                         Dispatch::registration( std::move( creator), keys);
                      }
@@ -124,7 +124,7 @@ namespace casual
                   serialize::Reader from( std::string_view key, const platform::binary::type& data) { return Dispatch::from( key, data);}
                }
 
-               std::vector< std::string> keys()
+               std::vector< std::string_view> keys()
                {
                   return relaxed::Dispatch::keys();
                }
@@ -138,9 +138,9 @@ namespace casual
                   {
                      namespace global
                      {
-                        static std::map< std::string, writer::Creator, std::less<>>& creators() 
+                        static std::map< std::string_view, writer::Creator, std::less<>>& creators() 
                         {
-                           static std::map< std::string, writer::Creator, std::less<>> creators;
+                           static std::map< std::string_view, writer::Creator, std::less<>> creators;
                            return creators;
                         } 
                      } // global
@@ -150,7 +150,7 @@ namespace casual
 
                namespace detail
                {
-                  void registration( writer::Creator&& creator, const std::vector< std::string>& keys)
+                  void registration( writer::Creator&& creator, range_type keys)
                   {
                      create::local::registration( local::global::creators(), std::move( creator), keys);
                   }
@@ -162,7 +162,7 @@ namespace casual
                   return serialize::create::local::create( local::global::creators(), key);
                }
 
-               std::vector< std::string> keys()
+               std::vector< std::string_view> keys()
                {
                   return algorithm::transform( local::global::creators(), []( auto& pair){ return pair.first;});
                }

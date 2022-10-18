@@ -15,7 +15,7 @@ namespace casual
 {
    namespace common
    {
-      TEST( casual_common_range_empty, empty)
+      TEST( common_range_empty, empty)
       {
          common::unittest::Trace trace;
 
@@ -25,7 +25,7 @@ namespace casual
          EXPECT_TRUE( range::empty( range::make( owner)));
       }
 
-      TEST( casual_common_range_empty, not_empty)
+      TEST( common_range_empty, not_empty)
       {
          common::unittest::Trace trace;
 
@@ -35,7 +35,7 @@ namespace casual
          EXPECT_TRUE( ! range::empty( range::make( owner)));
       }
 
-      TEST( casual_common_range_size, empty)
+      TEST( common_range_size, empty)
       {
          common::unittest::Trace trace;
 
@@ -45,7 +45,7 @@ namespace casual
          EXPECT_TRUE( range::size( range::make( owner)) == 0);
       }
 
-      TEST( casual_common_range_size, not_empty)
+      TEST( common_range_size, not_empty)
       {
          common::unittest::Trace trace;
 
@@ -56,7 +56,7 @@ namespace casual
          EXPECT_TRUE( range::size( range::make( owner)) == size);
       }
 
-      TEST( casual_common_range, reverse)
+      TEST( common_range, reverse)
       {
          common::unittest::Trace trace;
 
@@ -73,5 +73,6 @@ namespace casual
 
          static_assert( std::is_same< decltype( forward), decltype( range::reverse( range::reverse( forward)))>::value, ""); 
       }
+
    } // common
 } // casual

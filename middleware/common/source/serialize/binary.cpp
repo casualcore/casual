@@ -24,22 +24,25 @@ namespace casual
          {
             namespace
             {
-               std::vector< std::string> keys() { return { "binary", common::buffer::type::binary()};};
+               constexpr auto keys() 
+               {
+                  using namespace std::string_view_literals; 
+                  return array::make( "binary"sv, common::buffer::type::binary);
+               }
 
                namespace implementation
                {
                   struct Writer : native::binary::Writer
                   {
-                     inline constexpr static auto archive_type() { return archive::Type::static_order_type;}
+                     constexpr static auto archive_type() { return archive::Type::static_order_type;}
 
-                     static decltype( auto) keys() { return local::keys();}
-
+                     constexpr static auto keys() { return local::keys();}
                   };
 
 
                   struct Reader : native::binary::Reader
                   {
-                     inline constexpr static auto archive_type() { return archive::Type::static_order_type;}
+                     constexpr static auto archive_type() { return archive::Type::static_order_type;}
 
                      Reader( const platform::binary::type& buffer) : native::binary::Reader{ buffer} {}
 
@@ -49,7 +52,7 @@ namespace casual
                            m_buffer.push_back( in.get());
                      }
 
-                     static decltype( auto) keys() { return local::keys();}
+                     constexpr static auto keys() { return local::keys();}
 
                   private:
                      platform::binary::type m_buffer;

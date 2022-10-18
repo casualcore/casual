@@ -318,7 +318,7 @@ domain:
          auto payload = common::unittest::random::binary( 1024);
          {
             queue::Message message;
-            message.payload.type = common::buffer::type::json();
+            message.payload.type = common::buffer::type::json;
             message.payload.data = payload;
             queue::enqueue( "a1", message);
          }
@@ -333,7 +333,7 @@ domain:
          {
             auto message = queue::blocking::dequeue( "a2");
 
-            EXPECT_TRUE( message.payload.type == common::buffer::type::json());
+            EXPECT_TRUE( message.payload.type == common::buffer::type::json);
             EXPECT_TRUE( message.payload.data == payload);
          }
          

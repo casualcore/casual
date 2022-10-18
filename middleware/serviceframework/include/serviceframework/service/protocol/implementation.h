@@ -19,158 +19,149 @@
 
 namespace casual
 {
-   namespace serviceframework
+   namespace serviceframework::service::protocol::implementation
    {
-      namespace service
+      struct Base : common::traits::unrelocatable
       {
-         namespace protocol
+         Base( protocol::parameter_type&& parameter);
+
+         bool call() const;
+         void exception();
+
+         io::Input& input();
+         io::Output& output();
+
+      protected:
+
+         protocol::result_type finalize();
+
+         protocol::parameter_type m_parameter;
+         protocol::result_type m_result;
+
+         io::Input m_input;
+         io::Output m_output;
+      };
+
+
+      struct Binary : public Base
+      {
+         Binary( protocol::parameter_type&& parameter);
+         static constexpr auto type() { return common::buffer::type::binary;}
+         protocol::result_type finalize();
+
+      private:
+         common::serialize::Reader m_reader;
+         common::serialize::Writer m_writer;
+
+      };
+
+      struct Yaml : public Base
+      {
+         Yaml( protocol::parameter_type&& parameter);
+
+         protocol::result_type finalize();
+         static constexpr auto type() { return common::buffer::type::yaml;}
+
+      private:
+         common::serialize::Reader m_reader;
+         common::serialize::Writer m_writer;
+      };
+
+      struct Json : public Base
+      {
+         Json( protocol::parameter_type&& parameter);
+
+         protocol::result_type finalize();
+         static constexpr auto type() { return common::buffer::type::json;}
+
+      private:
+         common::serialize::Reader m_reader;
+         common::serialize::Writer m_writer;
+      };
+
+      struct Xml : public Base
+      {
+         Xml( protocol::parameter_type&& parameter);
+
+         protocol::result_type finalize();
+         static constexpr auto type() { return common::buffer::type::xml;}
+
+      private:
+         common::serialize::Reader m_reader;
+         common::serialize::Writer m_writer;
+      };
+
+      struct Ini : public Base
+      {
+         Ini( protocol::parameter_type&& parameter);
+
+         protocol::result_type finalize();
+         static constexpr auto type() { return common::buffer::type::ini;}
+
+      private:
+         common::serialize::Reader m_reader;
+         common::serialize::Writer m_writer;
+      };
+
+      namespace parameter
+      {
+         struct Log : common::traits::unrelocatable
          {
-            namespace implementation
-            {
-               struct Base : common::traits::unrelocatable
-               {
-                  Base( protocol::parameter_type&& parameter);
+            Log( service::Protocol&& protocol);
 
-                  bool call() const;
-                  void exception();
+            inline decltype( auto) type() const { return m_protocol.type();}
 
-                  io::Input& input();
-                  io::Output& output();
+            bool call();
+            protocol::result_type finalize();
+            inline void exception() { m_protocol.exception();}
 
-               protected:
+            inline io::Input& input() { return m_protocol.input();}
+            inline io::Output& output() { return m_protocol.output();}
 
-                  protocol::result_type finalize();
-
-                  protocol::parameter_type m_parameter;
-                  protocol::result_type m_result;
-
-                  io::Input m_input;
-                  io::Output m_output;
-               };
+         private:
+            service::Protocol m_protocol;
+            common::serialize::Writer m_writer;
+            
+         };
+      } // parameter
 
 
-               struct Binary : public Base
-               {
-                  Binary( protocol::parameter_type&& parameter);
-                  static const std::string& type();
-                  protocol::result_type finalize();
+      struct Describe : common::traits::unrelocatable
+      {
+         Describe( service::Protocol&& protocol);
 
-               private:
-                  common::serialize::Reader m_reader;
-                  common::serialize::Writer m_writer;
+         bool call() const;
+         protocol::result_type finalize();
+         inline decltype( auto) type() const { return m_protocol.type();}
 
-               };
+         inline void exception() { m_protocol.exception();}
 
-               struct Yaml : public Base
-               {
-                  Yaml( protocol::parameter_type&& parameter);
+         inline io::Input& input() { return m_input;}
+         inline io::Output& output() { return m_output;}
 
-                  protocol::result_type finalize();
-                  static const std::string& type();
+      private:
 
-               private:
-                  common::serialize::Reader m_reader;
-                  common::serialize::Writer m_writer;
-               };
+         io::Input m_input;
+         io::Output m_output;
 
-               struct Json : public Base
-               {
-                  Json( protocol::parameter_type&& parameter);
+         Model m_model;
 
-                  protocol::result_type finalize();
-                  static const std::string& type();
+         common::serialize::Reader m_prepare = service::protocol::describe::prepare();
 
-               private:
-                  common::serialize::Reader m_reader;
-                  common::serialize::Writer m_writer;
-               };
+         struct Writer
+         {
+            Writer( Model& model) 
+               : input( service::protocol::describe::writer( model.arguments.input)), 
+                  output( service::protocol::describe::writer( model.arguments.output)) {}
 
-               struct Xml : public Base
-               {
-                  Xml( protocol::parameter_type&& parameter);
+            common::serialize::Writer input;
+            common::serialize::Writer output;
+         } m_writer;
 
-                  protocol::result_type finalize();
-                  static const std::string& type();
+         service::Protocol m_protocol;
+      };
 
-               private:
-                  common::serialize::Reader m_reader;
-                  common::serialize::Writer m_writer;
-               };
-
-               struct Ini : public Base
-               {
-                  Ini( protocol::parameter_type&& parameter);
-
-                  protocol::result_type finalize();
-                  static const std::string& type();
-
-               private:
-                  common::serialize::Reader m_reader;
-                  common::serialize::Writer m_writer;
-               };
-
-               namespace parameter
-               {
-                  struct Log : common::traits::unrelocatable
-                  {
-                     Log( service::Protocol&& protocol);
-
-                     inline const std::string& type() const { return m_protocol.type();}
-
-                     bool call();
-                     protocol::result_type finalize();
-                     inline void exception() { m_protocol.exception();}
-
-                     inline io::Input& input() { return m_protocol.input();}
-                     inline io::Output& output() { return m_protocol.output();}
-
-                  private:
-                     service::Protocol m_protocol;
-                     common::serialize::Writer m_writer;
-                     
-                  };
-               } // parameter
-
-
-               struct Describe : common::traits::unrelocatable
-               {
-                  Describe( service::Protocol&& protocol);
-
-                  bool call() const;
-                  protocol::result_type finalize();
-                  const std::string& type() const;
-
-                  inline void exception() { m_protocol.exception();}
-
-                  inline io::Input& input() { return m_input;}
-                  inline io::Output& output() { return m_output;}
-
-               private:
-
-                  io::Input m_input;
-                  io::Output m_output;
-
-                  Model m_model;
-
-                  common::serialize::Reader m_prepare = service::protocol::describe::prepare();
-
-                  struct Writer
-                  {
-                     Writer( Model& model) 
-                        : input( service::protocol::describe::writer( model.arguments.input)), 
-                          output( service::protocol::describe::writer( model.arguments.output)) {}
-
-                     common::serialize::Writer input;
-                     common::serialize::Writer output;
-                  } m_writer;
-
-                  service::Protocol m_protocol;
-               };
-
-            } // implementation
-         } // protocol
-      } // service
-   } // serviceframework
+   } // serviceframework::service::protocol::implementation
 } // casual
 
 

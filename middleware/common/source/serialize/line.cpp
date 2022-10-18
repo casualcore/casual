@@ -27,11 +27,6 @@ namespace casual
             m_stream.setf( std::ios_base::fixed, std::ios_base::floatfield);
          }
 
-         std::vector< std::string> Writer::keys() 
-         { 
-            return { "line"};
-         }
-
          std::ostream& Writer::maybe_name( const char* name)
          {
             if( name)

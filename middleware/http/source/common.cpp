@@ -125,12 +125,12 @@ namespace casual
                namespace
                {
                   template< typename C, typename K, typename G>
-                  auto find( C& container, const K& key, G&& generic)
+                  std::string find( C& container, const K& key, G&& generic)
                   {
                      auto found = common::algorithm::find( container, key);
 
                      if( found)
-                        return found->second;
+                        return std::string{ found->second};
 
                      log::line( verbose::log, "failed to find key: ", key, " - using generic buffer type protocol");
                      return generic( key);
@@ -140,25 +140,26 @@ namespace casual
                   {
                      namespace type
                      {
-                        auto fielded() { return common::buffer::type::combine( CASUAL_FIELD, nullptr);}
-                        auto string() { return common::buffer::type::combine( CASUAL_STRING, nullptr);}
-                        auto null() { return "NULL";}
+                        constexpr auto fielded() { return casual::buffer::field::buffer::key;}
+                        constexpr auto string() { return casual::buffer::string::buffer::key;}
+                        constexpr auto null() { return common::buffer::type::null;}
                      } // type
                   } // buffer
 
-                  const std::string generic_prefix{ "application/casual-generic/"};
+                  constexpr std::string_view generic_prefix = "application/casual-generic/";
 
                } // <unnamed>
             } // local
+
             namespace from
             {
-               std::string buffer( const std::string& buffer)
+               std::string buffer( std::string_view buffer)
                {
-                  static const std::map< std::string, std::string> mapping{
-                     { common::buffer::type::x_octet(), protocol::x_octet},
-                     { common::buffer::type::binary(), protocol::binary},
-                     { common::buffer::type::json(), protocol::json},
-                     { common::buffer::type::xml(), protocol::xml},
+                  static const std::map< std::string_view, std::string_view> mapping{
+                     { common::buffer::type::x_octet, protocol::x_octet},
+                     { common::buffer::type::binary, protocol::binary},
+                     { common::buffer::type::json, protocol::json},
+                     { common::buffer::type::xml, protocol::xml},
                      { local::buffer::type::fielded(), protocol::field},
                      { local::buffer::type::string(), protocol::string},
                      { local::buffer::type::null(), protocol::null},
@@ -175,13 +176,13 @@ namespace casual
 
             namespace to
             {
-               std::string buffer( const std::string& content)
+               std::string buffer( std::string_view content)
                {
-                  static const std::map< std::string, std::string> mapping{
-                     { protocol::x_octet, common::buffer::type::x_octet()},
-                     { protocol::binary, common::buffer::type::binary()},
-                     { protocol::json, common::buffer::type::json()},
-                     { protocol::xml, common::buffer::type::xml()},
+                  static const std::map< std::string_view, std::string_view> mapping{
+                     { protocol::x_octet, common::buffer::type::x_octet},
+                     { protocol::binary, common::buffer::type::binary},
+                     { protocol::json, common::buffer::type::json},
+                     { protocol::xml, common::buffer::type::xml},
                      { protocol::field, local::buffer::type::fielded()},
                      { protocol::string, local::buffer::type::string()},
                      { protocol::null, local::buffer::type::null()},
@@ -242,13 +243,13 @@ namespace casual
                      payload.memory.erase( last, std::end( payload.memory));
                   };
 
-                  static const auto mapping = std::map< std::string, common::function< void( common::buffer::Payload&) const>>
+                  static const auto mapping = std::map< std::string_view, common::function< void( common::buffer::Payload&) const>>
                   {
-                     { common::buffer::type::json(), local::transcode_none},
-                     { common::buffer::type::xml(), local::transcode_none},
+                     { common::buffer::type::json, local::transcode_none},
+                     { common::buffer::type::xml, local::transcode_none},
                      
-                     { common::buffer::type::binary(), decode_base64},
-                     { common::buffer::type::x_octet(), decode_base64},
+                     { common::buffer::type::binary, decode_base64},
+                     { common::buffer::type::x_octet, decode_base64},
                      { protocol::convert::local::buffer::type::fielded(), decode_base64},
                      { protocol::convert::local::buffer::type::string(), decode_base64},
                      { protocol::convert::local::buffer::type::null(), local::transcode_clear},
@@ -276,13 +277,13 @@ namespace casual
                      common::transcode::base64::encode( buffer, payload.memory);
                   };
 
-                  static const auto mapping = std::map< std::string, common::function< void( common::buffer::Payload&) const>>
+                  static const auto mapping = std::map< std::string_view, common::function< void( common::buffer::Payload&) const>>
                   {
-                     { common::buffer::type::json(), local::transcode_none},
-                     { common::buffer::type::xml(), local::transcode_none},
+                     { common::buffer::type::json, local::transcode_none},
+                     { common::buffer::type::xml, local::transcode_none},
 
-                     { common::buffer::type::binary(), encode_base64},
-                     { common::buffer::type::x_octet(), encode_base64},
+                     { common::buffer::type::binary, encode_base64},
+                     { common::buffer::type::x_octet, encode_base64},
                      { protocol::convert::local::buffer::type::fielded(), encode_base64},
                      { protocol::convert::local::buffer::type::string(), encode_base64},
                      { protocol::convert::local::buffer::type::null(), local::transcode_clear},

@@ -321,7 +321,7 @@ domain:
          // enqueue
          {
             queue::Message message;
-            message.payload.type = common::buffer::type::binary();
+            message.payload.type = common::buffer::type::binary;
             message.payload.data = payload;
 
             queue::enqueue( "a1", message);
@@ -338,7 +338,7 @@ domain:
                request);
 
             EXPECT_TRUE( request.buffer.memory == payload);
-            EXPECT_TRUE( request.buffer.type == common::buffer::type::binary());
+            EXPECT_TRUE( request.buffer.type == common::buffer::type::binary);
 
             auto reply = common::message::reverse::type( request);
             reply.buffer = std::move( request.buffer);
@@ -349,7 +349,7 @@ domain:
          {
             auto message = queue::blocking::dequeue( "a2");
             EXPECT_TRUE( message.payload.data == payload);
-            EXPECT_TRUE( message.payload.type == common::buffer::type::binary());
+            EXPECT_TRUE( message.payload.type == common::buffer::type::binary);
          }
       }
 
@@ -368,7 +368,7 @@ domain:
          // enqueue
          {
             queue::Message message;
-            message.payload.type = common::buffer::type::binary();
+            message.payload.type = common::buffer::type::binary;
             message.payload.data = payload;
 
             queue::enqueue( "a3", message);
@@ -384,7 +384,7 @@ domain:
                request);
 
             EXPECT_TRUE( request.buffer.memory == payload);
-            EXPECT_TRUE( request.buffer.type == common::buffer::type::binary());
+            EXPECT_TRUE( request.buffer.type == common::buffer::type::binary);
 
             auto reply = common::message::reverse::type( request);
             reply.buffer = std::move( request.buffer);
@@ -399,7 +399,7 @@ domain:
          {
             auto message = queue::blocking::dequeue( "b3");
             EXPECT_TRUE( message.payload.data == payload);
-            EXPECT_TRUE( message.payload.type == common::buffer::type::binary());
+            EXPECT_TRUE( message.payload.type == common::buffer::type::binary);
          }
       }
 
@@ -417,7 +417,7 @@ domain:
          // enqueue
          {
             queue::Message message;
-            message.payload.type = common::buffer::type::binary();
+            message.payload.type = common::buffer::type::binary;
             message.payload.data = payload;
 
             queue::enqueue( "a4", message);
@@ -430,7 +430,7 @@ domain:
 
             EXPECT_TRUE( platform::time::clock::type::now() - start > std::chrono::milliseconds{ 10});
             EXPECT_TRUE( message.payload.data == payload);
-            EXPECT_TRUE( message.payload.type == common::buffer::type::binary());
+            EXPECT_TRUE( message.payload.type == common::buffer::type::binary);
          }
       }
 
@@ -445,7 +445,7 @@ domain:
          // enqueue
          {
             queue::Message message;
-            message.payload.type = common::buffer::type::binary();
+            message.payload.type = common::buffer::type::binary;
             message.payload.data = payload;
 
             queue::enqueue( "c1", message);
@@ -456,7 +456,7 @@ domain:
          {
             auto message = queue::blocking::dequeue( "c4");
             EXPECT_TRUE( message.payload.data == payload);
-            EXPECT_TRUE( message.payload.type == common::buffer::type::binary());
+            EXPECT_TRUE( message.payload.type == common::buffer::type::binary);
          }
       }
 
@@ -519,7 +519,7 @@ domain:
          // enqueue
          {
             queue::Message message;
-            message.payload.type = common::buffer::type::binary();
+            message.payload.type = common::buffer::type::binary;
             message.payload.data = payload;
 
 
@@ -546,7 +546,7 @@ domain:
                request);
 
             EXPECT_TRUE( request.buffer.memory == payload);
-            EXPECT_TRUE( request.buffer.type == common::buffer::type::binary());
+            EXPECT_TRUE( request.buffer.type == common::buffer::type::binary);
 
             auto reply = common::message::reverse::type( request);
             reply.buffer = std::move( request.buffer);

@@ -78,7 +78,9 @@ namespace casual
       template <typename T, typename R>
       inline std::ostream& operator << ( std::ostream& out, const Value< T, R>& named)
       {
-         return stream::customization::delay< T>::write( out, named.name(), ": ", named.value());
+         if( named.name())
+            return stream::customization::delay< T>::write( out, named.name(), ": ", named.value());
+         return stream::customization::delay< T>::write( out, named.value());
       }
 
       namespace value

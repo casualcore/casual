@@ -21,13 +21,15 @@ namespace casual
 {
    namespace common::serialize::create
    {
+      using range_type = range::type_t< std::array< std::string_view, 1>>;
+
       namespace reader
       {
          namespace consumed 
          {
             namespace detail
             {
-               void registration( reader::Creator&& creator, const std::vector< std::string>& keys);
+               void registration( reader::Creator&& creator, range_type keys);
             } // detail
 
             template< typename I, typename S> 
@@ -47,7 +49,7 @@ namespace casual
          {
             namespace detail
             {
-               void registration( reader::Creator&& creator, const std::vector< std::string>& keys);
+               void registration( reader::Creator&& creator, range_type keys);
             } // detail
 
             template< typename I, typename S> 
@@ -68,7 +70,7 @@ namespace casual
          {
             namespace detail
             {
-               void registration( reader::Creator&& creator, const std::vector< std::string>& keys);
+               void registration( reader::Creator&& creator, range_type keys);
             } // detail
 
             template< typename I, typename S> 
@@ -85,19 +87,34 @@ namespace casual
          }
 
          //! @returns all registred reader keys
-         std::vector< std::string> keys();
+         std::vector< std::string_view> keys();
 
          namespace detail
          {
             namespace indirection
             {
-               template< typename Implementation> 
-               auto registration( const std::vector< std::string>& keys) 
-                  -> std::enable_if_t< Implementation::archive_type() != archive::Type::static_order_type>
+
+               template< typename Value, typename... Values>
+               inline constexpr bool value_any_of( Value value, Values... values)
+               {
+                  static_assert( common::traits::is::same_v< Value, Values...>, "all compared values has to be the same type");
+
+                  return ( ... || (value == values) );
+               }
+
+
+               template< typename Implementation, typename Range> 
+               auto registration( Range keys) 
+                  -> std::enable_if_t< value_any_of( 
+                        Implementation::archive_type(), 
+                        archive::Type::static_need_named,
+                        archive::Type::dynamic_type), bool>
                {
                   relaxed::detail::registration( reader::Creator::construct< Implementation, policy::Relaxed>(), keys);
                   strict::detail::registration( reader::Creator::construct< Implementation, policy::Strict>(), keys);
                   consumed::detail::registration( reader::Creator::construct< Implementation, policy::Consumed>(), keys);
+
+                  return true;
                }
             } // indirection
          } // detail
@@ -105,9 +122,8 @@ namespace casual
          template< typename Implementation>
          auto registration()
          {
-            const auto keys = Implementation::keys();
-            detail::indirection::registration< Implementation>( keys);
-            return true;
+            auto keys = Implementation::keys();
+            return detail::indirection::registration< Implementation>( range::make( keys));
          }
 
          template< typename P>
@@ -137,7 +153,16 @@ namespace casual
       {
          namespace detail
          {
-            void registration( writer::Creator&& creator, const std::vector< std::string>& keys);
+            void registration( writer::Creator&& creator, range_type keys);
+
+            //! helper to convert _string view array_ to the known range_type (during the lifetime of the expression)
+            template< typename T>
+            auto registration( writer::Creator&& creator, T&& keys) 
+               -> std::enable_if_t< std::is_same_v< traits::remove_cvref_t< decltype( range::make( keys))>, range_type>>
+            {
+               registration( std::move( creator), range::make( keys));
+            } 
+            
          } // detail
          
          serialize::Writer from( std::string_view key);
@@ -146,7 +171,7 @@ namespace casual
          auto create() { return detail::create< I>();}
 
          //! @returns all registred writer keys
-         std::vector< std::string> keys();
+         std::vector< std::string_view> keys();
 
          template< typename Implementation>
          auto registration()
@@ -171,9 +196,9 @@ namespace casual
          {
             inline auto format() 
             {
-               return []( auto values, bool)
+               return []( auto values, bool) -> std::vector< std::string>
                {
-                  return writer::keys();
+                  return common::algorithm::transform( writer::keys(), []( auto& view){ return std::string( view);});
                };
             }
          } // complete

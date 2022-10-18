@@ -46,19 +46,25 @@
 
 namespace casual
 {
-   namespace buffer
+   namespace buffer::field
    {
-      namespace field
-      {
+      
+      using item_type = long;
+      using size_type = platform::binary::size::type;
+      using const_data_type = platform::binary::type::const_pointer;
+      using data_type = platform::binary::type::pointer;
 
+      enum : long
+      {
+         item_offset = 0,
+         size_offset = item_offset + common::network::byteorder::bytes< item_type>(),
+         data_offset = size_offset + common::network::byteorder::bytes< size_type>(),
+      };
+
+      namespace local
+      {
          namespace
          {
-            using item_type = long;
-            using size_type = platform::binary::size::type;
-            using const_data_type = platform::binary::type::const_pointer;
-            using data_type = platform::binary::type::pointer;
-
-
             template<typename T>
             T decode( const_data_type where) noexcept
             {
@@ -67,17 +73,9 @@ namespace casual
                return common::network::byteorder::decode<T>( encoded);
             }
 
-
-            enum : long
-            {
-               item_offset = 0,
-               size_offset = item_offset + common::network::byteorder::bytes<item_type>(),
-               data_offset = size_offset + common::network::byteorder::bytes<size_type>(),
-            };
-
             struct Buffer : common::buffer::Buffer
             {
-               std::map<item_type,std::vector<size_type>> index;
+               std::map< item_type, std::vector< size_type>> index;
 
                template<typename... A>
                Buffer( A&&... arguments) : common::buffer::Buffer( std::forward<A>( arguments)...)
@@ -90,10 +88,10 @@ namespace casual
 
                   while( cursor < end)
                   {
-                     const auto item = decode<item_type>( &*cursor + item_offset);
-                     const auto size = decode<size_type>( &*cursor + size_offset);
+                     const auto item = local::decode<item_type>( &*cursor + item_offset);
+                     const auto size = local::decode<size_type>( &*cursor + size_offset);
 
-                     index[item].push_back( std::distance( begin, cursor));
+                     index[ item].push_back( std::distance( begin, cursor));
 
                      std::advance( cursor, data_offset + size);
                   }
@@ -102,44 +100,20 @@ namespace casual
                      common::code::raise::error( common::code::xatmi::argument, "buffer is comprised");
                }
 
-               void shrink()
-               {
-                  return payload.memory.shrink_to_fit();
-               }
+               Buffer( Buffer&&) noexcept = default;
+               Buffer& operator = ( Buffer&&) noexcept = default;
 
-               size_type capacity() const noexcept
-               {
-                  return payload.memory.capacity();
-               }
+               void shrink() { return payload.memory.shrink_to_fit();}
+               size_type capacity() const noexcept { return payload.memory.capacity();}
+               void capacity( platform::size::type value){ payload.memory.reserve( value); }
+               size_type utilized() const noexcept { return payload.memory.size();}
+               void utilized( platform::size::type value) { payload.memory.resize( value);}
 
-               void capacity( const decltype(payload.memory.capacity()) value)
-               {
-                  payload.memory.reserve( value);
-               }
-
-
-               size_type utilized() const noexcept
-               {
-                  return payload.memory.size();
-               }
-
-               void utilized( const decltype(payload.memory.size()) value)
-               {
-                  payload.memory.resize( value);
-               }
-
-               auto handle() const noexcept
-               {
-                  return payload.memory.data();
-               }
-
-               auto handle() noexcept
-               {
-                  return payload.memory.data();
-               }
+               auto handle() const noexcept { return common::buffer::handle::type{ payload.memory.data()};}
+               auto handle() noexcept { return common::buffer::handle::mutate::type{ payload.memory.data()};}
 
                //! Implement Buffer::transport
-               size_type transport( const platform::binary::size::type user_size) const
+               size_type transport( platform::size::type user_size) const
                {
                   // Just ignore user-size all together
 
@@ -147,32 +121,31 @@ namespace casual
                }
 
                //! Implement Buffer::reserved
-               size_type reserved() const
-               {
-                  return capacity();
-               }
+               size_type reserved() const noexcept { return capacity();}
+
+               CASUAL_LOG_SERIALIZE( 
+                  common::buffer::Buffer::serialize( archive);
+                  CASUAL_SERIALIZE( index);
+               )
 
             };
 
             // Might be named Pool as well
-            class Allocator : public common::buffer::pool::basic_pool<Buffer>
+            using allocator_base = common::buffer::pool::implementation::Default< Buffer>; 
+            struct Allocator : allocator_base
             {
-            public:
-
-               using types_type = common::buffer::pool::default_pool::types_type;
-
-               static const types_type& types()
+               constexpr static auto types() 
                {
-                  // The types this pool can manage
-                  static const types_type result{ common::buffer::type::combine( CASUAL_FIELD)};
-                  return result;
-               }
+                  return common::array::make( buffer::key);
+               };
 
-               platform::buffer::raw::type allocate( const std::string& type, const platform::binary::size::type size)
+               common::buffer::handle::mutate::type allocate( std::string_view type, platform::binary::size::type size)
                {
-                  auto& buffer = m_pool.emplace_back( type, 0);
+                  auto& buffer = allocator_base::emplace_back( type, 0);
 
-                  // GCC returns null for std::vector::data with capacity zero
+                  common::log::line( common::verbose::log, "TODO remove: field:: allocate this: ", static_cast< const void*>( this));
+
+                  // If size() is ​0​, data() may or may not return a null pointer
                   buffer.capacity( size ? size : 1);
 
                   common::log::line( common::verbose::log, "allocated buffer: ", buffer);
@@ -180,671 +153,662 @@ namespace casual
                   return buffer.handle();
                }
 
-               platform::buffer::raw::type reallocate( const platform::buffer::raw::immutable::type handle, const platform::binary::size::type size)
+               common::buffer::handle::mutate::type reallocate( common::buffer::handle::type handle, platform::binary::size::type size)
                {
-                  const auto result = find( handle);
+                  auto& buffer = allocator_base::get( handle);
 
-                  if( size < result->utilized())
-                  {
+                  if( size < buffer.utilized())
+                  { 
                      // Allow user to reduce allocation
-                     result->shrink();
+                     buffer.shrink();
                   }
                   else
                   {
-                     // GCC returns null for std::vector::data with size zero
-                     result->capacity( size ? size : 1);
+                     // If size() is ​0​, data() may or may not return a null pointer
+                     buffer.capacity( size ? size : 1);
                   }
 
-                  common::log::line( common::verbose::log, "reallocated buffer: ", *result);
+                  common::log::line( common::verbose::log, "reallocated buffer: ", buffer);
 
-                  return result->handle();
+                  return buffer.handle();
                }
 
+               Buffer& get( common::buffer::handle::type handle)
+               {
+                  common::log::line( common::verbose::log, "TODO remove: field:: get handle: ", handle);
+
+                  common::log::line( common::verbose::log, "TODO remove: field:: get this: ", static_cast< const void*>( this));
+
+                  return allocator_base::get( handle);
+
+               }
             };
+
          } // <unnamed>
-      } // field
-   } // buffer
+      } // local
 
-
-   // Register and define the type that can be used to get the custom pool
-   template class common::buffer::pool::Registration< casual::buffer::field::Allocator>;
-
-
-   namespace buffer
-   {
-      namespace field
+      namespace
       {
+         using pool_type = common::buffer::pool::Registration< local::Allocator>;
 
-         using pool_type = common::buffer::pool::Registration< Allocator>;
+         namespace error
+         {
+            int handle() noexcept
+            {
+               try
+               {
+                  throw;
+               }
+               catch( const std::out_of_range&)
+               {
+                  return CASUAL_FIELD_OUT_OF_BOUNDS;
+               }
+               catch( const std::invalid_argument&)
+               {
+                  return CASUAL_FIELD_INVALID_ARGUMENT;
+               }
+               catch( const std::bad_alloc&)
+               {
+                  return CASUAL_FIELD_OUT_OF_MEMORY;
+               }
+               catch( ...)
+               {
+                  const auto error = common::exception::capture();
 
-         namespace
+                  if( error.code() == common::code::xatmi::argument)
+                     return CASUAL_FIELD_INVALID_HANDLE;
+
+                  common::stream::write( std::cerr, "error: ", error, '\n');
+                  
+                  return CASUAL_FIELD_INTERNAL_FAILURE;
+               }
+            }
+         }
+
+         namespace add
          {
 
-            namespace error
+            template<typename B>
+            void append( B& buffer, const_data_type data, platform::size::type size)
             {
-               int handle() noexcept
+               buffer.payload.memory.insert( buffer.payload.memory.end(), data, data + size);
+            }
+
+
+            template<typename B, typename T>
+            void append( B& buffer, const T value)
+            {
+               const auto encoded = common::network::byteorder::encode( value);
+               append( buffer, reinterpret_cast<const_data_type>( &encoded), sizeof( encoded));
+            }
+
+
+            template<typename B>
+            void append( B& buffer, const item_type id, const_data_type data, const size_type size)
+            {
+               const auto used = buffer.utilized();
+
+               try
                {
-                  try
-                  {
-                     throw;
-                  }
-                  catch( const std::out_of_range&)
-                  {
-                     return CASUAL_FIELD_OUT_OF_BOUNDS;
-                  }
-                  catch( const std::invalid_argument&)
-                  {
-                     return CASUAL_FIELD_INVALID_ARGUMENT;
-                  }
-                  catch( const std::bad_alloc&)
-                  {
-                     return CASUAL_FIELD_OUT_OF_MEMORY;
-                  }
-                  catch( ...)
-                  {
-                     const auto error = common::exception::capture();
+                  // Append id to buffer
+                  append( buffer, id);
 
-                     if( error.code() == common::code::xatmi::argument)
-                        return CASUAL_FIELD_INVALID_HANDLE;
+                  // Append size to buffer
+                  append( buffer, size);
 
-                     common::stream::write( std::cerr, "error: ", error, '\n');
-                     
-                     return CASUAL_FIELD_INTERNAL_FAILURE;
-                  }
+                  // Append data to buffer
+                  append( buffer, data, size);
+
+                  // Append current offset to index
+                  buffer.index[id].push_back( used);
+
+               }
+               catch( ...)
+               {
+                  // Make sure to reset the size in case of exception
+                  buffer.utilized( used);
+                  throw;
                }
             }
 
-            namespace add
+            template<typename B>
+            void append( B& buffer, const item_type id, const char* const value)
             {
+               append( buffer, id, value, std::strlen( value) + 1);
+            }
 
-               template<typename B>
-               void append( B& buffer, const_data_type data, const std::size_t size)
+            template<typename B, typename T>
+            void append( B& buffer, const item_type id, const T value)
+            {
+               const auto encoded = common::network::byteorder::encode( value);
+               append( buffer, id, reinterpret_cast<const_data_type>( &encoded), sizeof( encoded));
+            }
+
+            template<typename... A>
+            int data( char** handle, const item_type id, const int type, A&&... arguments)
+            {
+               //const trace trace( "field::add::data");
+
+               if( type != (id / CASUAL_FIELD_TYPE_BASE))
                {
-                  buffer.payload.memory.insert( buffer.payload.memory.end(), data, data + size);
+
+                  common::log::line( casual::buffer::verbose::log, "buffer::field::add::data: invalid argument - id: ", id, " - type: ", type);
+                  return CASUAL_FIELD_INVALID_ARGUMENT;
                }
 
-
-               template<typename B, typename T>
-               void append( B& buffer, const T value)
+               try
                {
-                  const auto encoded = common::network::byteorder::encode( value);
-                  append( buffer, reinterpret_cast<const_data_type>( &encoded), sizeof( encoded));
+                  auto& buffer = pool_type::pool().get( common::buffer::handle::type{ *handle});
+
+                  // Make sure to update the handle regardless
+                  const auto synchronize = common::execute::scope( [ handle, &buffer]() 
+                  { 
+                     *handle = buffer.handle().underlying();
+                  });
+
+                  // Append the data
+                  append( buffer, id, std::forward<A>( arguments)...);
+
+               }
+               catch( ...)
+               {
+                  return error::handle();
                }
 
+               return CASUAL_FIELD_SUCCESS;
 
-               template<typename B>
-               void append( B& buffer, const item_type id, const_data_type data, const size_type size)
+            }
+         } // add
+
+         namespace get
+         {
+            template<typename I>
+            size_type offset( const I& index, const item_type id, const size_type occurrence)
+            {
+               return index.at( id).at( occurrence);
+            }
+
+            template<typename B>
+            void select( const B& buffer, const item_type id, const size_type occurrence, const_data_type& data, size_type& size)
+            {
+               const auto field_offset = offset( buffer.index, id, occurrence);
+
+               data = buffer.handle().underlying() + field_offset + data_offset;
+
+               size = local::decode< size_type>( buffer.handle().underlying() + field_offset + size_offset);
+            }
+
+            template<typename B>
+            void select( const B& buffer, const item_type id, const size_type occurrence, const_data_type& data)
+            {
+               const auto field_offset = offset( buffer.index, id, occurrence);
+
+               data = buffer.handle().underlying() + field_offset + data_offset;
+            }
+
+            template<typename B, typename T>
+            void select( const B& buffer, const item_type id, const size_type occurrence, T& data)
+            {
+               const auto field_offset = offset( buffer.index, id, occurrence);
+
+               data = local::decode< T>( buffer.handle().underlying() + field_offset + data_offset);
+            }
+
+
+            template<typename... A>
+            int data( const char* const handle, const item_type id, size_type occurrence, const int type, A&&... arguments)
+            {
+               //const trace trace( "field::get::data");
+
+               if( type != (id / CASUAL_FIELD_TYPE_BASE))
+                  return CASUAL_FIELD_INVALID_ARGUMENT;
+
+               try
                {
-                  const auto used = buffer.utilized();
+                  const auto& buffer = pool_type::pool().get( common::buffer::handle::type{ handle});
 
-                  try
-                  {
-                     // Append id to buffer
-                     append( buffer, id);
+                  // Select the data
+                  select( buffer, id, occurrence, std::forward<A>( arguments)...);
 
-                     // Append size to buffer
-                     append( buffer, size);
-
-                     // Append data to buffer
-                     append( buffer, data, size);
-
-                     // Append current offset to index
-                     buffer.index[id].push_back( used);
-
-                  }
-                  catch( ...)
-                  {
-                     // Make sure to reset the size in case of exception
-                     buffer.utilized( used);
-                     throw;
-                  }
+               }
+               catch( ...)
+               {
+                  return error::handle();
                }
 
-               template<typename B>
-               void append( B& buffer, const item_type id, const char* const value)
+               return CASUAL_FIELD_SUCCESS;
+
+            }
+
+         } // get
+
+         namespace cut
+         {
+
+            template<typename B>
+            void remove( B& buffer, const item_type id, const size_type occurrence)
+            {
+               auto& occurrences = buffer.index.at( id);
+
+               const auto offset = occurrences.at( occurrence);
+
+               // Get the size of the value
+               const auto size = local::decode< size_type>( buffer.handle().underlying() + offset + size_offset);
+
+               // Remove the data from the buffer
+               buffer.payload.memory.erase(
+                  buffer.payload.memory.begin() + offset,
+                  buffer.payload.memory.begin() + offset + data_offset + size);
+
+               // Remove entry from index
+
+               occurrences.erase( occurrences.begin() + occurrence);
+
+               if( occurrences.empty())
                {
-                  append( buffer, id, value, std::strlen( value) + 1);
+                  buffer.index.erase( id);
                }
 
-               template<typename B, typename T>
-               void append( B& buffer, const item_type id, const T value)
+               // Update offsets beyond this one
+               //
+               // The index and the actual buffer may not be in same order
+               // and thus we need to go through the whole index
+
+               for( auto& field : buffer.index)
+                  for( auto& occurrence : field.second)
+                     if( occurrence > offset)
+                        occurrence += ( 0 - data_offset - size);
+
+            }
+
+
+            int data( const char* const handle, const item_type id, size_type occurrence)
+            {
+               //const trace trace( "field::cut::data");
+
+               if( ! (id > CASUAL_FIELD_NO_ID))
+                  return CASUAL_FIELD_INVALID_ARGUMENT;
+
+               try
                {
-                  const auto encoded = common::network::byteorder::encode( value);
-                  append( buffer, id, reinterpret_cast<const_data_type>( &encoded), sizeof( encoded));
+                  auto& buffer = pool_type::pool().get( common::buffer::handle::type{ handle});
+
+                  remove( buffer, id, occurrence);
+               }
+               catch( ...)
+               {
+                  return error::handle();
                }
 
-               template<typename... A>
-               int data( char** handle, const item_type id, const int type, A&&... arguments)
+               return CASUAL_FIELD_SUCCESS;
+
+            }
+
+            int all( const char* const handle)
+            {
+               //const trace trace( "field::cut::all");
+
+               try
                {
-                  //const trace trace( "field::add::data");
+                  auto& buffer = pool_type::pool().get( common::buffer::handle::type{ handle});
 
-                  if( type != (id / CASUAL_FIELD_TYPE_BASE))
-                  {
+                  buffer.payload.memory.clear();
+                  buffer.index.clear();
+               }
+               catch( ...)
+               {
+                  return error::handle();
+               }
 
-                     common::log::line( casual::buffer::verbose::log, "buffer::field::add::data: invalid argument - id: ", id, " - type: ", type);
-                     return CASUAL_FIELD_INVALID_ARGUMENT;
-                  }
+               return CASUAL_FIELD_SUCCESS;
 
-                  try
-                  {
-                     auto& buffer = pool_type::pool.get( *handle);
+            }
 
-                     // Make sure to update the handle regardless
-                     const auto synchronize = common::execute::scope
-                     ( [&]() { *handle = buffer.handle();});
+         } // cut
 
-                     // Append the data
-                     append( buffer, id, std::forward<A>( arguments)...);
+         namespace set
+         {
 
-                  }
-                  catch( ...)
-                  {
-                     return error::handle();
-                  }
+            template<typename M, typename I>
+            void update( M& memory, I& index, const item_type id, const size_type occurrence, const_data_type data, const size_type size)
+            {
+               // Get the offset to where the field begin
+               const auto offset = index.at( id).at( occurrence);
+
+               const auto current = local::decode<size_type>( memory.data() + offset + size_offset);
+
+               // With equal sizes, stuff could be optimized ... but no
+
+               // Erase the old and insert the new ... and yes, it
+               // could be done more efficient but the whole idea
+               // with this functionality is rather stupid
+
+               memory.insert(
+                  memory.erase(
+                     memory.begin() + offset + data_offset,
+                     memory.begin() + offset + data_offset + current),
+                  data, data + size);
+
+               // Write the new size (afterwards since above can throw)
+
+               const auto encoded = common::network::byteorder::encode( size);
+               std::copy(
+                  reinterpret_cast<const_data_type>( &encoded),
+                  reinterpret_cast<const_data_type>( &encoded) + sizeof( encoded),
+                  memory.begin() + offset + size_offset);
+
+               // Update offsets beyond this one
+               //
+               // The index and the actual buffer may not be in same order
+               // and thus we need to go through the whole index
+
+               for( auto& field : index)
+                  for( auto& occurrence : field.second)
+                     if( occurrence > offset)
+                        occurrence += (size - current);
+
+            }
+
+            template<typename M, typename I>
+            void update( M& memory, I& index, const item_type id, const size_type occurrence, const_data_type value)
+            {
+               const auto count = std::strlen( value) + 1;
+               update( memory, index, id, occurrence, value, count);
+            }
+
+
+            template<typename M, typename I, typename T>
+            void update( M& memory, I& index, const item_type id, const size_type occurrence, const T value)
+            {
+               // Could be optimized, but ... no
+               const auto encoded = common::network::byteorder::encode( value);
+               update( memory, index, id, occurrence, reinterpret_cast<const_data_type>( &encoded), sizeof( encoded));
+            }
+
+
+
+            template<typename... A>
+            int data( char** handle, const item_type id, size_type occurrence, const int type, A&&... arguments)
+            {
+               //const trace trace( "field::set::data");
+
+               if( type != (id / CASUAL_FIELD_TYPE_BASE))
+                  return CASUAL_FIELD_INVALID_ARGUMENT;
+
+               try
+               {
+                  auto& buffer = pool_type::pool().get( common::buffer::handle::type{ *handle});
+
+                  // Make sure to update the handle regardless
+                  const auto synchronize = common::execute::scope( [ handle, &buffer]() 
+                  { 
+                     *handle = buffer.handle().underlying();
+                  });
+
+                  // Update the data
+                  update( buffer.payload.memory, buffer.index, id, occurrence, std::forward<A>( arguments)...);
+
+               }
+               catch( ...)
+               {
+                  return error::handle();
+               }
+
+               return CASUAL_FIELD_SUCCESS;
+
+            }
+
+         } // set
+
+         namespace explore
+         {
+            int value( const char* const handle, const item_type id, const size_type occurrence, size_type& count)
+            {
+               //const trace trace( "field::explore::value");
+
+               try
+               {
+                  const auto& buffer = pool_type::pool().get( common::buffer::handle::type{ handle});
+
+                  const auto offset = buffer.index.at( id).at( occurrence);
+
+                  count = local::decode< size_type>( buffer.payload.memory.data() + offset + size_offset);
+               }
+               catch( ...)
+               {
+                  return error::handle();
+               }
+
+               return CASUAL_FIELD_SUCCESS;
+            }
+
+            int buffer( const char* const handle, size_type& size, size_type& used)
+            {
+               //const trace trace( "field::explore::buffer");
+
+               try
+               {
+                  //common::log::line( common::verbose::log, "TODO remove - common::buffer::handle::type{ handle}: ",   common::buffer::handle::type{ handle});
+
+                  //common::log::line( common::verbose::log, "TODO remove - &pool_type::pool() ",   &pool_type::pool());
+                  //common::log::line( common::verbose::log, "TODO remove - common::buffer::pool::holder().find_pool( casual::buffer::field::buffer::key)->stable_address(): ", common::buffer::pool::holder().find_pool( casual::buffer::field::buffer::key)->stable_address());
+
+                  //common::log::line( common::verbose::log, "TODO remove - * common::buffer::pool::holder().find_pool( casual::buffer::field::buffer::key): ", * common::buffer::pool::holder().find_pool( casual::buffer::field::buffer::key));
+                  //common::log::line( common::verbose::log, "TODO remove - pool_type::pool(): ",  pool_type::pool());
+                  const auto& buffer = pool_type::pool().get( common::buffer::handle::type{ handle});
+                  size = buffer.capacity();
+                  used = buffer.utilized();
+               }
+               catch( ...)
+               {
+                  return error::handle();
+               }
+
+               return CASUAL_FIELD_SUCCESS;
+            }
+
+            int existence( const char* const handle, const item_type id, const size_type occurrence)
+            {
+               //const trace trace( "field::explore::existence");
+
+               try
+               {
+                  const auto& buffer = pool_type::pool().get( common::buffer::handle::type{ handle});
+
+                  // Just to force an exception
+                  buffer.index.at( id).at( occurrence);
 
                   return CASUAL_FIELD_SUCCESS;
-
                }
-            } // add
+               catch( ...)
+               {
+                  return error::handle();
+               }
 
-            namespace get
+            }
+
+
+            int count( const char* const handle, const item_type id, size_type& occurrences)
             {
-               template<typename I>
-               size_type offset( const I& index, const item_type id, const size_type occurrence)
+               //const trace trace( "field::explore::count");
+
+               try
                {
-                  return index.at( id).at( occurrence);
+                  const auto& buffer = pool_type::pool().get( common::buffer::handle::type{ handle});
+
+                  auto found = common::algorithm::find( buffer.index, id);
+
+                  if( found)
+                     occurrences = found->second.size();
+                  else
+                     occurrences = 0;
+               }
+               catch( ...)
+               {
+                  return error::handle();
                }
 
-               template<typename B>
-               void select( const B& buffer, const item_type id, const size_type occurrence, const_data_type& data, size_type& size)
-               {
-                  const auto field_offset = offset( buffer.index, id, occurrence);
+               return CASUAL_FIELD_SUCCESS;
+            }
 
-                  data = buffer.handle() + field_offset + data_offset;
-
-                  size = decode<size_type>( buffer.handle() + field_offset + size_offset);
-               }
-
-               template<typename B>
-               void select( const B& buffer, const item_type id, const size_type occurrence, const_data_type& data)
-               {
-                  const auto field_offset = offset( buffer.index, id, occurrence);
-
-                  data = buffer.handle() + field_offset + data_offset;
-               }
-
-               template<typename B, typename T>
-               void select( const B& buffer, const item_type id, const size_type occurrence, T& data)
-               {
-                  const auto field_offset = offset( buffer.index, id, occurrence);
-
-                  data = decode<T>( buffer.handle() + field_offset + data_offset);
-               }
-
-
-               template<typename... A>
-               int data( const char* const handle, const item_type id, size_type occurrence, const int type, A&&... arguments)
-               {
-                  //const trace trace( "field::get::data");
-
-                  if( type != (id / CASUAL_FIELD_TYPE_BASE))
-                  {
-                     return CASUAL_FIELD_INVALID_ARGUMENT;
-                  }
-
-                  try
-                  {
-                     const auto& buffer = pool_type::pool.get( handle);
-
-                     // Select the data
-                     select( buffer, id, occurrence, std::forward<A>( arguments)...);
-
-                  }
-                  catch( ...)
-                  {
-                     return error::handle();
-                  }
-
-                  return CASUAL_FIELD_SUCCESS;
-
-               }
-
-            } // get
-
-            namespace cut
+            int count( const char* const handle, size_type& occurrences)
             {
+               //const trace trace( "field::explore::count");
 
-               template<typename B>
-               void remove( B& buffer, const item_type id, const size_type occurrence)
+               try
                {
-                  auto& occurrences = buffer.index.at( id);
+                  const auto& buffer = pool_type::pool().get( common::buffer::handle::type{ handle});
 
-                  const auto offset = occurrences.at( occurrence);
+                  occurrences =
+                     std::accumulate(
+                        buffer.index.begin(), buffer.index.end(), 0,
+                        []( const auto count, const auto& field)
+                        { return count + field.second.size();});
+               }
+               catch( ...)
+               {
+                  return error::handle();
+               }
 
-                  // Get the size of the value
-                  const auto size = decode<size_type>( buffer.handle() + offset + size_offset);
+               return CASUAL_FIELD_SUCCESS;
+            }
 
-                  // Remove the data from the buffer
-                  buffer.payload.memory.erase(
-                     buffer.payload.memory.begin() + offset,
-                     buffer.payload.memory.begin() + offset + data_offset + size);
+         } // explore
 
-                  // Remove entry from index
+         namespace iterate
+         {
+            int first( const char* const handle, item_type& id, size_type& index)
+            {
+               //const trace trace( "field::iterate::first");
 
-                  occurrences.erase( occurrences.begin() + occurrence);
+               try
+               {
+                  const auto& buffer = pool_type::pool().get( common::buffer::handle::type{ handle});
 
-                  if( occurrences.empty())
+                  if( buffer.index.empty())
                   {
-                     buffer.index.erase( id);
+                     return CASUAL_FIELD_OUT_OF_BOUNDS;
                   }
 
-                  // Update offsets beyond this one
-                  //
-                  // The index and the actual buffer may not be in same order
-                  // and thus we need to go through the whole index
+                  id = buffer.index.begin()->first;
+                  index = 0;
+               }
+               catch( ...)
+               {
+                  return error::handle();
+               }
 
-                  for( auto& field : buffer.index)
+               return CASUAL_FIELD_SUCCESS;
+
+            }
+
+            int next( const char* const handle, item_type& id, size_type& index)
+            {
+               //const trace trace( "field::iterate::next");
+
+               try
+               {
+                  const auto& buffer = pool_type::pool().get( common::buffer::handle::type{ handle});
+
+                  const auto current = buffer.index.find( id);
+                  if( current != buffer.index.end())
                   {
-                     for( auto& occurrence : field.second)
+                     if( static_cast<std::size_t>(++index) < current->second.size())
                      {
-                        if( occurrence > offset)
-                        {
-                           occurrence += (0 - data_offset - size);
-                        }
+                        // Then we are ok
                      }
-                  }
-
-               }
-
-
-               int data( const char* const handle, const item_type id, size_type occurrence)
-               {
-                  //const trace trace( "field::cut::data");
-
-                  if( ! (id > CASUAL_FIELD_NO_ID))
-                  {
-                     return CASUAL_FIELD_INVALID_ARGUMENT;
-                  }
-
-                  try
-                  {
-                     auto& buffer = pool_type::pool.get( handle);
-
-                     remove( buffer, id, occurrence);
-                  }
-                  catch( ...)
-                  {
-                     return error::handle();
-                  }
-
-                  return CASUAL_FIELD_SUCCESS;
-
-               }
-
-               int all( const char* const handle)
-               {
-                  //const trace trace( "field::cut::all");
-
-                  try
-                  {
-                     auto& buffer = pool_type::pool.get( handle);
-
-                     buffer.payload.memory.clear();
-                     buffer.index.clear();
-                  }
-                  catch( ...)
-                  {
-                     return error::handle();
-                  }
-
-                  return CASUAL_FIELD_SUCCESS;
-
-               }
-
-            } // cut
-
-            namespace set
-            {
-
-               template<typename M, typename I>
-               void update( M& memory, I& index, const item_type id, const size_type occurrence, const_data_type data, const size_type size)
-               {
-                  // Get the offset to where the field begin
-                  const auto offset = index.at( id).at( occurrence);
-
-                  const auto current = decode<size_type>( memory.data() + offset + size_offset);
-
-                  // With equal sizes, stuff could be optimized ... but no
-
-                  // Erase the old and insert the new ... and yes, it
-                  // could be done more efficient but the whole idea
-                  // with this functionality is rather stupid
-
-                  memory.insert(
-                     memory.erase(
-                        memory.begin() + offset + data_offset,
-                        memory.begin() + offset + data_offset + current),
-                     data, data + size);
-
-                  // Write the new size (afterwards since above can throw)
-
-                  const auto encoded = common::network::byteorder::encode( size);
-                  std::copy(
-                     reinterpret_cast<const_data_type>( &encoded),
-                     reinterpret_cast<const_data_type>( &encoded) + sizeof( encoded),
-                     memory.begin() + offset + size_offset);
-
-                  // Update offsets beyond this one
-                  //
-                  // The index and the actual buffer may not be in same order
-                  // and thus we need to go through the whole index
-
-                  for( auto& field : index)
-                  {
-                     for( auto& occurrence : field.second)
-                     {
-                        if( occurrence > offset)
-                        {
-                           occurrence += (size - current);
-                        }
-                     }
-                  }
-
-               }
-
-               template<typename M, typename I>
-               void update( M& memory, I& index, const item_type id, const size_type occurrence, const_data_type value)
-               {
-                  const auto count = std::strlen( value) + 1;
-                  update( memory, index, id, occurrence, value, count);
-               }
-
-
-               template<typename M, typename I, typename T>
-               void update( M& memory, I& index, const item_type id, const size_type occurrence, const T value)
-               {
-                  // Could be optimized, but ... no
-                  const auto encoded = common::network::byteorder::encode( value);
-                  update( memory, index, id, occurrence, reinterpret_cast<const_data_type>( &encoded), sizeof( encoded));
-               }
-
-
-
-               template<typename... A>
-               int data( char** handle, const item_type id, size_type occurrence, const int type, A&&... arguments)
-               {
-                  //const trace trace( "field::set::data");
-
-                  if( type != (id / CASUAL_FIELD_TYPE_BASE))
-                  {
-                     return CASUAL_FIELD_INVALID_ARGUMENT;
-                  }
-
-                  try
-                  {
-                     auto& buffer = pool_type::pool.get( *handle);
-
-                     // Make sure to update the handle regardless
-                     const auto synchronize = common::execute::scope( [&]() 
-                     { 
-                        *handle = buffer.handle();
-                     });
-
-                     // Update the data
-                     update( buffer.payload.memory, buffer.index, id, occurrence, std::forward<A>( arguments)...);
-
-                  }
-                  catch( ...)
-                  {
-                     return error::handle();
-                  }
-
-                  return CASUAL_FIELD_SUCCESS;
-
-               }
-
-            } // set
-
-            namespace explore
-            {
-               int value( const char* const handle, const item_type id, const size_type occurrence, size_type& count)
-               {
-                  //const trace trace( "field::explore::value");
-
-                  try
-                  {
-                     const auto& buffer = pool_type::pool.get( handle);
-
-                     const auto offset = buffer.index.at( id).at( occurrence);
-
-                     count = decode<size_type>( buffer.payload.memory.data() + offset + size_offset);
-                  }
-                  catch( ...)
-                  {
-                     return error::handle();
-                  }
-
-                  return CASUAL_FIELD_SUCCESS;
-               }
-
-               int buffer( const char* const handle, size_type& size, size_type& used)
-               {
-                  //const trace trace( "field::explore::buffer");
-
-                  try
-                  {
-                     const auto& buffer = pool_type::pool.get( handle);
-                     size = buffer.capacity();
-                     used = buffer.utilized();
-                  }
-                  catch( ...)
-                  {
-                     return error::handle();
-                  }
-
-                  return CASUAL_FIELD_SUCCESS;
-               }
-
-               int existence( const char* const handle, const item_type id, const size_type occurrence)
-               {
-                  //const trace trace( "field::explore::existence");
-
-                  try
-                  {
-                     const auto& buffer = pool_type::pool.get( handle);
-
-                     // Just to force an exception
-                     buffer.index.at( id).at( occurrence);
-
-                     return CASUAL_FIELD_SUCCESS;
-                  }
-                  catch( ...)
-                  {
-                     return error::handle();
-                  }
-
-               }
-
-
-               int count( const char* const handle, const item_type id, size_type& occurrences)
-               {
-                  //const trace trace( "field::explore::count");
-
-                  try
-                  {
-                     const auto& buffer = pool_type::pool.get( handle);
-
-                     auto found = common::algorithm::find( buffer.index, id);
-
-                     if( found)
-                        occurrences = found->second.size();
                      else
-                        occurrences = 0;
-                  }
-                  catch( ...)
-                  {
-                     return error::handle();
-                  }
-
-                  return CASUAL_FIELD_SUCCESS;
-               }
-
-               int count( const char* const handle, size_type& occurrences)
-               {
-                  //const trace trace( "field::explore::count");
-
-                  try
-                  {
-                     const auto& buffer = pool_type::pool.get( handle);
-
-                     occurrences =
-                        std::accumulate(
-                           buffer.index.begin(), buffer.index.end(), 0,
-                           []( const auto count, const auto& field)
-                           { return count + field.second.size();});
-                  }
-                  catch( ...)
-                  {
-                     return error::handle();
-                  }
-
-                  return CASUAL_FIELD_SUCCESS;
-               }
-
-            } // explore
-
-            namespace iterate
-            {
-               int first( const char* const handle, item_type& id, size_type& index)
-               {
-                  //const trace trace( "field::iterate::first");
-
-                  try
-                  {
-                     const auto& buffer = pool_type::pool.get( handle);
-
-                     if( buffer.index.empty())
                      {
-                        return CASUAL_FIELD_OUT_OF_BOUNDS;
-                     }
-
-                     id = buffer.index.begin()->first;
-                     index = 0;
-                  }
-                  catch( ...)
-                  {
-                     return error::handle();
-                  }
-
-                  return CASUAL_FIELD_SUCCESS;
-
-               }
-
-               int next( const char* const handle, item_type& id, size_type& index)
-               {
-                  //const trace trace( "field::iterate::next");
-
-                  try
-                  {
-                     const auto& buffer = pool_type::pool.get( handle);
-
-                     const auto current = buffer.index.find( id);
-                     if( current != buffer.index.end())
-                     {
-                        if( static_cast<std::size_t>(++index) < current->second.size())
+                        const auto next = std::next( current);
+                        if( next != buffer.index.end())
                         {
-                           // Then we are ok
+                           id = next->first;
+                           index = 0;
                         }
                         else
                         {
-                           const auto next = std::next( current);
-                           if( next != buffer.index.end())
-                           {
-                              id = next->first;
-                              index = 0;
-                           }
-                           else
-                           {
-                              return CASUAL_FIELD_OUT_OF_BOUNDS;
-                           }
+                           return CASUAL_FIELD_OUT_OF_BOUNDS;
                         }
                      }
-                     else
-                     {
-                        // We couldn't even find the previous one
-                        return CASUAL_FIELD_INVALID_ARGUMENT;
-                     }
-
                   }
-                  catch( ...)
+                  else
                   {
-                     return error::handle();
+                     // We couldn't even find the previous one
+                     return CASUAL_FIELD_INVALID_ARGUMENT;
                   }
-
-                  return CASUAL_FIELD_SUCCESS;
 
                }
+               catch( ...)
+               {
+                  return error::handle();
+               }
 
-            } // iterate
+               return CASUAL_FIELD_SUCCESS;
 
-            namespace copy
+            }
+
+         } // iterate
+
+         namespace copy
+         {
+            int buffer( char** target_handle, const char* const source_handle)
             {
-               int buffer( char** target_handle, const char* const source_handle)
+               //const trace trace( "field::copy::buffer");
+
+
+               try
                {
-                  //const trace trace( "field::copy::buffer");
+                  auto& target = pool_type::pool().get( common::buffer::handle::type{ *target_handle});
+                  const auto& source = pool_type::pool().get( common::buffer::handle::type{ source_handle});
 
+                  const auto synchronize = common::execute::scope( [ target_handle, &target]()
+                  { 
+                     *target_handle = target.handle().underlying();
+                  });
 
-                  try
-                  {
-                     auto& target = pool_type::pool.get( *target_handle);
-                     const auto& source = pool_type::pool.get( source_handle);
-
-                     const auto synchronize = common::execute::scope
-                     ( [&]() { *target_handle = target.handle();});
-
-                     auto index = source.index;
-                     target.payload.memory = source.payload.memory;
-                     std::swap( target.index, index);
-                  }
-                  catch( ...)
-                  {
-                     return error::handle();
-                  }
-
-                  return CASUAL_FIELD_SUCCESS;
+                  auto index = source.index;
+                  target.payload.memory = source.payload.memory;
+                  std::swap( target.index, index);
+               }
+               catch( ...)
+               {
+                  return error::handle();
                }
 
-               int memory( char** const handle, const void* const source, const platform::binary::size::type count)
+               return CASUAL_FIELD_SUCCESS;
+            }
+
+            int memory( char** const handle, const void* const source, const platform::binary::size::type count)
+            {
+               //const trace trace( "field::copy::data");
+
+               try
                {
-                  //const trace trace( "field::copy::data");
+                  auto& buffer = pool_type::pool().get( common::buffer::handle::type{ *handle});
 
-                  try
-                  {
-                     auto& buffer = pool_type::pool.get( *handle);
+                  const auto synchronize = common::execute::scope( [ handle, &buffer]() 
+                  { 
+                     *handle = buffer.handle().underlying();
+                  });
 
-                     const auto synchronize = common::execute::scope
-                     ( [&]() { *handle = buffer.handle();});
+                  const auto data = static_cast< const_data_type>( source);
+                  const auto size = count;
 
-                     const auto data = static_cast<const_data_type>(source);
-                     const auto size = count;
-
-                     buffer = common::buffer::Payload{ buffer.payload.type, { data, data + size}};
-                  }
-                  catch( ...)
-                  {
-                     return error::handle();
-                  }
-
-                  return CASUAL_FIELD_SUCCESS;
+                  buffer = common::buffer::Payload{ buffer.payload.type, { data, data + size}};
+               }
+               catch( ...)
+               {
+                  return error::handle();
                }
 
-            } // copy
+               return CASUAL_FIELD_SUCCESS;
+            }
 
-         } // <unnamed>
+         } // copy
 
-      } // field
+      } // <unnamed>
 
-   } // buffer
+   } // buffer::field
 
 } // casual
 
@@ -1059,9 +1023,7 @@ int casual_field_get_binary( const char* const buffer, const long id, const long
 int casual_field_get_value( const char* const buffer, const long id, const long index, void* const value, long* const count)
 {
    if( ! value)
-   {
       return casual_field_explore_value( buffer, id, index, count);
-   }
 
    const int type = id / CASUAL_FIELD_TYPE_BASE;
 
@@ -1091,10 +1053,7 @@ int casual_field_get_value( const char* const buffer, const long id, const long 
          return CASUAL_FIELD_INVALID_ARGUMENT;
       }
 
-
-      //
       // This is perhaps not Fget32-compatible if field is invalid
-      //
       *count = size;
    }
 
@@ -1148,9 +1107,7 @@ int casual_field_set_double( char** const buffer, const long id, const long inde
 int casual_field_set_string( char** const buffer, const long id, const long index, const char* const value)
 {
    if( value)
-   {
       return casual::buffer::field::set::data( buffer, id, index, CASUAL_FIELD_STRING, value);
-   }
 
    return CASUAL_FIELD_INVALID_ARGUMENT;
 }
@@ -1158,9 +1115,7 @@ int casual_field_set_string( char** const buffer, const long id, const long inde
 int casual_field_set_binary( char** const buffer, const long id, const long index, const char* const value, const long count)
 {
    if( count < 0)
-   {
       return CASUAL_FIELD_INVALID_ARGUMENT;
-   }
 
    return casual::buffer::field::set::data( buffer, id, index, CASUAL_FIELD_BINARY, value, count);
 }
@@ -1197,29 +1152,21 @@ int casual_field_set_value( char** const buffer, const long id, const long index
 int casual_field_put_value( char** buffer, const long id, const long index, const void* const value, const long count)
 {
    if( index < 0)
-   {
       return casual_field_add_value( buffer, id, value, count);
-   }
 
-   //
    // Can be more efficient but remember to add empty occurrences if needed
-   //
 
    const auto result = casual_field_set_value( buffer, id, index, value, count);
 
    if( result == CASUAL_FIELD_OUT_OF_BOUNDS)
    {
       if( const auto result = casual_field_add_empty( buffer, id))
-      {
          return result;
-      }
 
       return casual_field_put_value( buffer, id, index, value, count);
-
    }
 
    return result;
-
 }
 
 
@@ -1278,11 +1225,10 @@ namespace casual
                         std::string type;
                         
                         CASUAL_CONST_CORRECT_SERIALIZE(
-                        {
                            CASUAL_SERIALIZE( id);
                            CASUAL_SERIALIZE( name);
                            CASUAL_SERIALIZE( type);
-                        })
+                        )
                      };
 
                      struct group
@@ -1291,10 +1237,9 @@ namespace casual
                         std::vector< field> fields;
 
                         CASUAL_CONST_CORRECT_SERIALIZE(
-                        {
                            CASUAL_SERIALIZE( base);
                            CASUAL_SERIALIZE( fields);
-                        })
+                        )
                      };
 
                      struct mapping
@@ -1406,12 +1351,8 @@ namespace casual
                      const auto fields = fetch::fields( std::move( files));
 
                      for( const auto& field : fields)
-                     {
                         if( ! result.emplace( field.id, field.name).second)
-                        {
                            common::log::line( common::log::category::warning, "id for ", field.name, " is not unique");
-                        }
-                     }
                   }
                   catch( ...)
                   {
@@ -1472,26 +1413,26 @@ namespace casual
                      switch( id / CASUAL_FIELD_TYPE_BASE)
                      {
                      case CASUAL_FIELD_SHORT:
-                        archive << make( decode<short>( data), value);
+                        archive << make( local::decode<short>( data), value);
                         break;
                      case CASUAL_FIELD_LONG:
-                        archive << make( decode<long>( data), value);
+                        archive << make( local::decode<long>( data), value);
                         break;
                      case CASUAL_FIELD_CHAR:
                         archive << make( *(data), value);
                         break;
                      case CASUAL_FIELD_FLOAT:
-                        archive << make( decode<float>( data), value);
+                        archive << make( local::decode<float>( data), value);
                         break;
                      case CASUAL_FIELD_DOUBLE:
-                        archive << make( decode<double>( data), value);
+                        archive << make( local::decode<double>( data), value);
                         break;
                      case CASUAL_FIELD_STRING:
                         archive << make( std::string( data), value);
                         break;
                      case CASUAL_FIELD_BINARY:
                      default:
-                        archive << make( std::vector<char>( data, data + decode<size_type>( size)), value);
+                        archive << make( std::vector<char>( data, data + local::decode<size_type>( size)), value);
                         break;
                      }
                   }
@@ -1601,28 +1542,29 @@ namespace casual
                };
 
 
-               struct Dispatch
+               struct Dispatch : common::traits::unrelocatable
                {
                   ~Dispatch()
                   {
-                     pool_type::pool.deallocate( m_buffer);
+                     pool_type::pool().deallocate( m_buffer);
                   }
 
                   auto release()
                   {
-                     return std::move( pool_type::pool.release( std::exchange( m_buffer, nullptr)).payload);
+                     return std::move( pool_type::pool().release( std::exchange( m_buffer, {})).payload);
                   }
 
-                  void operator() ( long id, char value) { casual_field_add_char( &m_buffer, id, value);}
-                  void operator() ( long id, short value) { casual_field_add_short( &m_buffer, id, value);}
-                  void operator() ( long id, long value) { casual_field_add_long( &m_buffer, id, value);}
-                  void operator() ( long id, float value) { casual_field_add_float( &m_buffer, id, value);}
-                  void operator() ( long id, double value) { casual_field_add_double( &m_buffer, id, value);}
-                  void operator() ( long id, const std::string& value) { casual_field_add_string( &m_buffer, id, value.c_str());}
-                  void operator() ( long id, const std::vector< char>& value) { casual_field_add_binary( &m_buffer, id, value.data(), value.size());}
+                  void operator() ( long id, char value) { casual_field_add_char( data(), id, value);}
+                  void operator() ( long id, short value) { casual_field_add_short( data(), id, value);}
+                  void operator() ( long id, long value) { casual_field_add_long( data(), id, value);}
+                  void operator() ( long id, float value) { casual_field_add_float( data(), id, value);}
+                  void operator() ( long id, double value) { casual_field_add_double( data(), id, value);}
+                  void operator() ( long id, const std::string& value) { casual_field_add_string( data(), id, value.c_str());}
+                  void operator() ( long id, const std::vector< char>& value) { casual_field_add_binary( data(), id, value.data(), value.size());}
 
                private:
-                  char* m_buffer = pool_type::pool.allocate( common::buffer::type::combine( CASUAL_FIELD), 1024);
+                  char** data() noexcept { return &m_buffer.underlying();}
+                  common::buffer::handle::mutate::type m_buffer = pool_type::pool().allocate( buffer::key, 1024);
                };
 
 
@@ -1634,7 +1576,7 @@ namespace casual
                {
                   const Trace trace{ "field::internal::stream out"};
 
-                  const auto& buffer = pool_type::pool.get( pool_type::pool.insert( std::move( payload)));
+                  const auto& buffer = pool_type::pool().get( pool_type::pool().insert( std::move( payload)));
 
                   common::log::line( verbose::log, "buffer.payload.type: ", buffer.payload.type, " - protocol: ", protocol);
 
@@ -1643,12 +1585,8 @@ namespace casual
                   std::vector< write> fields;
 
                   for( const auto& field : buffer.index)
-                  {
                      for( const auto& occurrence : field.second)
-                     {
-                        fields.emplace_back( field.first, buffer.handle() + occurrence);
-                     }
-                  }
+                        fields.emplace_back( field.first, buffer.handle().underlying() + occurrence);
 
                   archive << CASUAL_NAMED_VALUE( fields);
                   archive.consume( stream);
@@ -1669,9 +1607,7 @@ namespace casual
                   Dispatch dispatch;
 
                   for( auto& f : fields)
-                  {
                      f.dispatch( dispatch);
-                  }
 
                   return dispatch.release();
                }
@@ -1679,14 +1615,14 @@ namespace casual
 
             void stream( const char* buffer, std::ostream& stream, const std::string& protocol)
             {
-               payload::stream( pool_type::pool.get( buffer).payload, stream, protocol);
+               payload::stream( pool_type::pool().get( common::buffer::handle::type{ buffer}).payload, stream, protocol);
             }
 
             char* stream( std::istream& stream, const std::string& protocol)
             {
                try
                {
-                  return pool_type::pool.insert( payload::stream( stream, protocol));
+                  return pool_type::pool().insert( payload::stream( stream, protocol)).underlying();
                }
                catch( ...)
                {
@@ -1700,7 +1636,7 @@ namespace casual
             {
                const Trace trace{ "field::internal::add"};
 
-               return pool_type::pool.insert( common::buffer::Payload{ common::buffer::type::combine( CASUAL_FIELD), std::move( buffer)});
+               return pool_type::pool().insert( common::buffer::Payload{ buffer::key, std::move( buffer)}).underlying();
             }
 
          } // internal
@@ -1975,7 +1911,7 @@ namespace casual
 
                   try
                   {
-                     const auto& buffer = pool_type::pool.get( handle);
+                     const auto& buffer = pool_type::pool().get( common::buffer::handle::type{ handle});
 
                      stream << std::fixed;
 
@@ -1996,19 +1932,19 @@ namespace casual
                            switch( field.first / CASUAL_FIELD_TYPE_BASE)
                            {
                            case CASUAL_FIELD_SHORT:
-                              stream << decode<short>( data);
+                              stream << local::decode< short>( data);
                               break;
                            case CASUAL_FIELD_LONG:
-                              stream << decode<long>( data);
+                              stream << local::decode< long>( data);
                               break;
                            case CASUAL_FIELD_CHAR:
                               stream << data;
                               break;
                            case CASUAL_FIELD_FLOAT:
-                              stream << decode<float>( data);
+                              stream << local::decode< float>( data);
                               break;
                            case CASUAL_FIELD_DOUBLE:
-                              stream << decode<double>( data);
+                              stream << local::decode< double>( data);
                               break;
                            case CASUAL_FIELD_STRING:
                               stream << data;
@@ -2016,7 +1952,7 @@ namespace casual
                            case CASUAL_FIELD_BINARY:
                            default:
                               const auto size = offset + size_offset;
-                              stream << common::transcode::base64::encode( data, data + decode<long>( size));
+                              stream << common::transcode::base64::encode( data, data + local::decode< long>( size));
                               break;
                            }
 

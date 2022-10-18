@@ -60,16 +60,15 @@ namespace casual
             {}
 
             ~Protocol();
-
+            
             Protocol( Protocol&&);
             Protocol& operator = ( Protocol&&);
-
 
             bool call() const { return m_concept->call();}
 
             protocol::result_type finalize() { return m_concept->finalize();}
             void exception() { m_concept->exception();}
-            const std::string& type() const { return m_concept->type();}
+            std::string_view type() const { return m_concept->type();}
             
             //! extract type `R` with `name`
             template< typename R, typename N> 
@@ -148,7 +147,7 @@ namespace casual
                virtual protocol::result_type finalize() = 0;
                virtual void exception() = 0;
 
-               virtual const std::string& type() const = 0;
+               virtual std::string_view type() const = 0;
             };
 
             template< typename P>
@@ -166,7 +165,7 @@ namespace casual
                protocol::result_type finalize() override { return m_protocol.finalize();}
                void exception() override { m_protocol.exception();}
 
-               const std::string& type() const override { return m_protocol.type();}
+               std::string_view type() const override { return m_protocol.type();}
 
             private:
                Protocol m_protocol;
@@ -196,17 +195,16 @@ namespace casual
                Protocol create( protocol::parameter_type&& parameter);
 
                template< typename Protocol>
-               const std::string& registration( const std::string& type)
+               std::string_view registration( std::string_view type)
                {
                   m_creators[ type] = Creator< Protocol>{};
                   return type;
                }
 
                template< typename Protocol>
-               const std::string& registration()
+               std::string_view registration()
                {
-                  m_creators[ Protocol::type()] = Creator< Protocol>{};
-                  return Protocol::type();
+                  return registration< Protocol>( Protocol::type());
                }
 
             private:
@@ -225,7 +223,7 @@ namespace casual
 
                Factory();
 
-               using mapping_type = std::map< std::string, creator_type>;
+               using mapping_type = std::map< std::string_view, creator_type>;
 
                mapping_type m_creators;
             };

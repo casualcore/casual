@@ -29,7 +29,11 @@ namespace casual
          {
             namespace
             {
-               std::vector< std::string> keys() { return { "yaml", ".yaml", "yml", ".yml", buffer::type::yaml()};};
+               constexpr auto keys() 
+               {
+                  using namespace std::string_view_literals; 
+                  return array::make( "yaml"sv, ".yaml"sv, "yml"sv, ".yml"sv, buffer::type::yaml);
+               };
 
                namespace reader
                {
@@ -129,9 +133,9 @@ namespace casual
                   {
                   public:
 
-                     inline constexpr static auto archive_type() { return archive::Type::static_need_named;}
+                     constexpr static auto archive_type() { return archive::Type::static_need_named;}
 
-                     static decltype( auto) keys() { return local::keys();}
+                     constexpr static auto keys() { return local::keys();}
 
                      template< typename... Ts>
                      Implementation( Ts&&... ts) : m_stack{ load::document( std::forward< Ts>( ts)...)}, m_document{ range::back( m_stack)} {}

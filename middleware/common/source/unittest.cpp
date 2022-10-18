@@ -61,7 +61,7 @@ namespace casual
             common::message::service::call::callee::Request message{ process::handle()};
             message.service = std::move( lookup.service);
             message.buffer.memory = std::move( payload);
-            message.buffer.type = common::buffer::type::x_octet();
+            message.buffer.type = common::buffer::type::x_octet;
 
             return communication::device::blocking::send( lookup.process.ipc, message);
          }

@@ -46,7 +46,7 @@ namespace casual
                         struct Entry 
                         {
                            std::string service;
-                           std::string type = common::buffer::type::x_octet();
+                           std::string type = std::string( common::buffer::type::x_octet);
                            std::string match;
                            std::string result;
 

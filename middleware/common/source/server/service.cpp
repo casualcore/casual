@@ -84,14 +84,14 @@ namespace casual
                         result.flags = argument.flags.underlying();
 
                         // This is the only place where we use adopt
-                        result.data = buffer::pool::Holder::instance().adopt( std::move( argument.payload));
+                        result.data = buffer::pool::Holder::instance().adopt( std::move( argument.payload)).underlying();
 
                         return result;
                      }
 
                      buffer::Payload payload( const server::state::Jump& jump)
                      {
-                        if( jump.buffer.data != nullptr)
+                        if( jump.buffer.data)
                            return buffer::pool::holder().release( jump.buffer.data, jump.buffer.size);
 
                         return { nullptr};

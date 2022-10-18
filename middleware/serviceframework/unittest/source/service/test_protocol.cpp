@@ -137,7 +137,7 @@ namespace casual
          auto type = GetParam();
 
          //! TODO maintainence: fix ini so it can handle unnamed stuff...
-         if( type == common::buffer::type::ini())
+         if( type == common::buffer::type::ini)
             return;
 
          auto protocol = service::protocol::deduce( local::prepare( type));
@@ -172,7 +172,7 @@ namespace casual
          auto type = GetParam();
 
          //! TODO maintainence: fix ini so it can handle unnamed stuff...
-         if( type == common::buffer::type::ini())
+         if( type == common::buffer::type::ini)
             return;
 
          auto protocol = service::protocol::deduce( local::prepare( type));
@@ -270,11 +270,11 @@ namespace casual
       INSTANTIATE_TEST_SUITE_P( casual_sf_service,
             protocol,
             ::testing::Values(
-               common::buffer::type::xml(),
-               common::buffer::type::json(),
-               common::buffer::type::yaml(),
-               common::buffer::type::ini()
-               //common::buffer::type::binary()
+               common::buffer::type::xml,
+               common::buffer::type::json,
+               common::buffer::type::yaml,
+               common::buffer::type::ini
+               //common::buffer::type::binary
             )
       );
    } // serviceframework

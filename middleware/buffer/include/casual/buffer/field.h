@@ -44,6 +44,14 @@
 
 
 #ifdef __cplusplus
+
+#include <string_view>
+
+namespace casual::buffer::field::buffer
+{
+   constexpr std::string_view key = CASUAL_FIELD "/";
+} // casual::buffer::field::buffer
+
 extern "C" {
 #endif
 

@@ -38,7 +38,7 @@ namespace casual
             {
                return out << "{ value: " << value.state.value
                      << ", code: " << value.state.code
-                     << ", data: @" << static_cast< void*>( value.buffer.data)
+                     << ", data: " << value.buffer.data
                      << ", size: " << value.buffer.size
                      << ", service: " << value.forward.service << '}';
             }
@@ -67,7 +67,7 @@ namespace casual
 
             m_state.jump.state.value = rval;
             m_state.jump.state.code = rcode;
-            m_state.jump.buffer.data = data;
+            m_state.jump.buffer.data = buffer::handle::type{ data};
             m_state.jump.buffer.size = len;
             m_state.jump.forward.service.clear();
 
@@ -87,7 +87,7 @@ namespace casual
 
             m_state.jump.state.value = rval;
             m_state.jump.state.code = rcode;
-            m_state.jump.buffer.data = data;
+            m_state.jump.buffer.data = buffer::handle::type{ data};
             m_state.jump.buffer.size = len;
             m_state.jump.forward.service.clear();
 
@@ -101,7 +101,7 @@ namespace casual
          {
             m_state.jump.state.value = flag::xatmi::Return::success;
             m_state.jump.state.code = 0;
-            m_state.jump.buffer.data = data;
+            m_state.jump.buffer.data = buffer::handle::type{ data};
             m_state.jump.buffer.size = size;
 
             m_state.jump.forward.service = service ? service : "";

@@ -21,7 +21,7 @@ char* casual_buffer_allocate( const char* type, const char* subtype, long size)
    try
    {
       // TODO: Shall we report size less than zero ?
-      return casual::common::buffer::pool::Holder::instance().allocate( type, subtype, size < 0 ? 0 : size);
+      return casual::common::buffer::pool::Holder::instance().allocate( type, subtype, size < 0 ? 0 : size).underlying();
    }
    catch( ...)
    {
@@ -37,7 +37,7 @@ char* casual_buffer_reallocate( const char* ptr, long size)
    try
    {
       // TODO: Shall we report size less than zero ?
-      return casual::common::buffer::pool::Holder::instance().reallocate( ptr, size < 0 ? 0 : size);
+      return casual::common::buffer::pool::Holder::instance().reallocate( casual::common::buffer::handle::type{ ptr}, size < 0 ? 0 : size).underlying();
    }
    catch( ...)
    {
@@ -52,7 +52,7 @@ long casual_buffer_type( const char* const ptr, char* const type, char* const su
 
    try
    {
-      auto buffer = casual::common::buffer::pool::Holder::instance().get( ptr);
+      auto buffer = casual::common::buffer::pool::Holder::instance().get( casual::common::buffer::handle::type{ ptr});
 
       auto combined = casual::common::buffer::type::dismantle( buffer.payload().type);
 
@@ -86,7 +86,7 @@ void casual_buffer_free( const char* const ptr)
 {
    try
    {
-      casual::common::buffer::pool::Holder::instance().deallocate( ptr);
+      casual::common::buffer::pool::Holder::instance().deallocate( casual::common::buffer::handle::type{ ptr});
    }
    catch( ...)
    {
