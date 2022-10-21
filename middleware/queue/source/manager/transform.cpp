@@ -14,6 +14,7 @@ namespace casual
       namespace model
       {
          admin::model::State state(
+            const manager::State& state,
             std::vector< ipc::message::group::state::Reply> groups,
             std::vector< ipc::message::forward::group::state::Reply> forwards)
          {
@@ -118,7 +119,26 @@ namespace casual
                };
 
                algorithm::transform( forward.queues, std::back_inserter( result.forward.queues), transform_queue);
+
             }
+
+            // find remote queues and add to model
+            for( auto [ queue_name, queue_instances] : state.queues)
+            {
+               auto remote_queues = algorithm::filter( queue_instances, []( const auto& instance) { return instance.remote();});
+
+               algorithm::for_each( remote_queues, [&result, &queue_name]( const auto& remote_queue)
+               {
+                  result.remote.queues.push_back( admin::model::remote::Queue{ queue_name, remote_queue.process.pid});
+               });
+            }
+
+            auto transform_remote_domains = []( const auto& remote)
+            {
+               return admin::model::remote::Domain{ remote.process, remote.order};
+            };
+
+            algorithm::transform( state.remotes, std::back_inserter( result.remote.domains), transform_remote_domains);
         
             return result;
          }

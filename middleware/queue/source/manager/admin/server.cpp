@@ -50,6 +50,7 @@ namespace casual
                });
 
                return transform::model::state( 
+                  state,
                   algorithm::transform( group_states, future_get),
                   algorithm::transform( forward_state, future_get));
             }

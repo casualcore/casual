@@ -103,6 +103,7 @@ alias: A
 )";
 
          auto model = transform::model::state( 
+            manager::State{},
             unittest::serialize::create::value< std::vector< ipc::message::group::state::Reply>>( "yaml", group_replies),
             unittest::serialize::create::value< std::vector< ipc::message::forward::group::state::Reply>>( "yaml", forward_replies)
          );
