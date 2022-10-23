@@ -49,16 +49,8 @@ namespace casual
 
                      std::vector< std::string> reset( const std::vector< std::string>& services)
                      {
-                        serviceframework::service::protocol::binary::Call call;
-                        call << CASUAL_NAMED_VALUE( services);
-
-                        auto reply = call( admin::service::name::metric::reset());
-
-                        std::vector< std::string> result;
-
-                        reply >> CASUAL_NAMED_VALUE( result);
-
-                        return result;
+                        auto reply = serviceframework::service::protocol::binary::Call{}( admin::service::name::metric::reset, services);
+                        return reply.extract< std::vector< std::string>>();
                      }
 
                   } // metric
@@ -199,8 +191,6 @@ namespace casual
                      using std::reference_wrapper< const admin::model::State>::reference_wrapper;
                   };
 
-
-
                   namespace instance
                   {
                      struct base_instances
@@ -327,10 +317,15 @@ namespace casual
 
                      // we need to set something when category is empty to help
                      // enable possible use of sort, cut, awk and such
-                     auto format_category = []( const admin::model::Service& value){
+                     auto format_category = []( const admin::model::Service& value) -> std::string_view{
                         if( value.category.empty())
                            return "-";
-                        return value.category.c_str();
+                        return value.category;
+                     };
+
+                     auto format_discoverable = []( auto& value)
+                     {
+                        return value.discoverable;
                      };
 
 
@@ -384,6 +379,7 @@ namespace casual
                         return terminal::format::formatter< admin::model::Service>::construct( 
                            terminal::format::column( "name", std::mem_fn( &admin::model::Service::name), terminal::color::yellow, terminal::format::Align::left),
                            terminal::format::column( "category", format_category, terminal::color::no_color, terminal::format::Align::left),
+                           terminal::format::column( "D", format_discoverable, terminal::color::no_color, terminal::format::Align::left),
                            terminal::format::column( "mode", format_mode, terminal::color::no_color, terminal::format::Align::right),
                            terminal::format::column( "timeout", format_timeout_duration, terminal::color::blue, terminal::format::Align::right),
                            terminal::format::column( "contract", format_timeout_contract, terminal::color::blue, terminal::format::Align::right),
@@ -416,7 +412,8 @@ namespace casual
                            terminal::format::column( "RI", format::instance::remote::total{}),
                            terminal::format::column( "RC", remote_invocations),
                            terminal::format::column( "last", format_last),
-                           terminal::format::column( "contract", format_timeout_contract)
+                           terminal::format::column( "contract", format_timeout_contract),
+                           terminal::format::column( "D", format_discoverable)
                         );
                      }
                   }
@@ -582,6 +579,8 @@ namespace casual
       the name of the service
    category:
       arbitrary category to help understand the 'purpose' with the service
+   D:
+      discoverable - true if service is discoverable from other domains
    mode: 
       transaction mode - can be one of the following (auto, join, none, atomic)
    timeout:

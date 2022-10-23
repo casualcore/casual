@@ -13,30 +13,14 @@
 
 namespace casual
 {
-   namespace service
+   namespace service::manager::admin::api
    {
-      namespace manager
+      model::State state()
       {
-         namespace admin
-         {
-            namespace api
-            {
-               model::State state()
-               {
-                  Trace trace{ "service::manager::admin::api::state"};
+         Trace trace{ "service::manager::admin::api::state"};
 
-                  serviceframework::service::protocol::binary::Call call;
+         return serviceframework::service::protocol::binary::Call{}( service::name::state).extract< model::State>();
+      }
 
-                  auto reply = call( service::name::state());
-
-                  model::State result;
-                  reply >> CASUAL_NAMED_VALUE( result);
-
-                  return result;
-               }
-
-            } // api
-         } // admin
-      } // manager  
-   } // service
+   } // service::manager::admin::api
 } // casual

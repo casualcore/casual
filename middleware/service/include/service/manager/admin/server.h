@@ -18,34 +18,27 @@
 
 namespace casual
 {
-   namespace service
+   namespace service::manager
    {
+      struct State;
 
-      namespace manager
+      namespace admin
       {
-         struct State;
-
-         namespace admin
+         namespace service::name
          {
-            namespace service
+            constexpr auto state = ".casual/service/state";
+
+            namespace metric
             {
-               namespace name
-               {
-                  constexpr auto state() { return ".casual/service/state";}
+               constexpr auto reset = ".casual/service/metric/reset";
+            } // metric
 
-                  namespace metric
-                  {
-                     constexpr auto reset() { return ".casual/service/metric/reset";}
-                  } // metric
-               } // name
-            } // service
+         } // service::name
 
-            common::server::Arguments services( manager::State& state);
+         common::server::Arguments services( manager::State& state);
 
-         } // admin
+      } // admin
 
-      } // manager
-
-   } // service
+   } // service::manager
 } // casual
 

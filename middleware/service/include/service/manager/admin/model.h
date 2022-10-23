@@ -154,6 +154,7 @@ namespace casual
          service::Execution execution;
          std::string category;
          Transaction transaction = Transaction::automatic;
+         bool discoverable{};
 
          service::Metric metric;
 
@@ -177,6 +178,7 @@ namespace casual
             CASUAL_SERIALIZE( execution);
             CASUAL_SERIALIZE( category);
             CASUAL_SERIALIZE( transaction);
+            CASUAL_SERIALIZE( discoverable);
             CASUAL_SERIALIZE( metric);
             CASUAL_SERIALIZE( instances);
             CASUAL_SERIALIZE_NAME( execution.timeout, "timeout");

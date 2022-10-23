@@ -121,11 +121,6 @@ domain:
           connections:
             - address: "some.host.org:7780"
             - address: "some.host.org:4242"
-              exclude:
-                services:
-                  - "foo.bar.*"
-                queues:
-                  - "queue[123]"
         - note: "(generated alias) listeners - no limits"
           connections:
             - address: "some.host.org:4242"
@@ -221,15 +216,7 @@ domain:
                                 "address": "some.host.org:7780"
                             },
                             {
-                                "address": "some.host.org:4242",
-                                "exclude": {
-                                    "services": [
-                                        "foo.bar.*"
-                                    ],
-                                    "queues": [
-                                        "queue[123]"
-                                    ]
-                                }
+                                "address": "some.host.org:4242"
                             }
                         ]
                     },
@@ -372,10 +359,6 @@ address=some.host.org:7780
 [domain.gateway.inbound.groups.connections]
 address=some.host.org:4242
 
-[domain.gateway.inbound.groups.connections.exclude]
-queues=queue[123]
-services=foo.bar.*
-
 [domain.gateway.inbound.groups.limit]
 messages=10
 size=10485760
@@ -493,14 +476,6 @@ note=one of possible many listining addresses.
       </element>
       <element>
        <address>some.host.org:4242</address>
-       <exclude>
-        <services>
-         <element>foo.bar.*</element>
-        </services>
-        <queues>
-         <element>queue[123]</element>
-        </queues>
-       </exclude>
       </element>
      </connections>
     </element>

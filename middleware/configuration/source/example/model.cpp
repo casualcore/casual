@@ -58,12 +58,33 @@ domain:
             value: 42
          -  key: SOME_OTHER_VARIABLE
             value: some value
+   global:
+      note: "'domain global' config. Aggregates right to left"
+      service:
+         note: Will be used for services that are not explicitly configured. 
+         execution:
+            timeout:
+               duration: 2h
+               contract: linger
+         discoverable: true
    default:
+      note: "'default', fallback, configuration. Will only affect 'local' configuration and will not aggregate 'between' configurations"
       server:
          instances: 1
          restart: true
+         memberships: [ customer-group]
+         environment:
+            variables:
+               -  key: SOME_VARIABLE
+                  value: foo
       executable:
          instances: 1
+         restart: false
+      service:
+         execution:
+            timeout:
+               duration: 20s
+         discoverable: false
 
    groups:
       -  name: common-group
@@ -73,19 +94,15 @@ domain:
          note: group that logically groups 'customer' stuff
          resources:
             -  customer-db
-
          dependencies:
             -  common-group
-
       -  name: sales-group
          note: group that logically groups 'customer' stuff
          resources:
             -  sales-db
             -  event-queue
-
          dependencies:
             -  customer-group
-
    servers:
       -  path: /some/path/customer-server-1
          memberships:
@@ -130,6 +147,15 @@ domain:
          memberships:
             -  common-group
 
+   services:
+      -  name: a
+         routes: [ b, c]
+         execution:
+            timeout:
+               duration: 64ms
+               contract: terminate
+         discoverable: false
+
 )");
             }
 
@@ -150,11 +176,13 @@ domain:
          routes:
             -  postSalesSaveService
             -  sales/post/save
-
       -  name: postSalesGetService
          execution:
             timeout:
                duration: 130ms
+      -  name: implementation/detail/service
+         discoverable: false
+         note: "service 'implementation/detail/service' is not discoverable from other domains"
 )");
             }
 
@@ -296,11 +324,6 @@ domain:
                connections:
                   -  address: some.host.org:7780
                   -  address: some.host.org:4242
-                     exclude:
-                        services:
-                           -  "foo.bar.*"
-                        queues:
-                           -  "queue[123]"
 
             -  note: (generated alias) listeners - no limits
                connections:

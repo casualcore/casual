@@ -89,10 +89,73 @@ course be used as a mean to help document actual production configuration.
                   auto out = documentation::file( root, "domain.general.operation.md");
 
                   out << "# configuration domain (general) " << domain::header << R"(
-             
+## structures
+
+General "structures" that other parts of the configuration refers to.
+
+
+### domain::Environment
+
+#### Variable
+
+property       | description
+---------------|----------------------------------------------------
+key            | environment variable name
+value          | the value to associate with the environment variable
+
+property       | description
+---------------|----------------------------------------------------
+variables      | `0..*` `domain::environment::Variable`, described above.
+
+
+### service::execution::Timeout
+
+property       | description
+---------------|----------------------------------------------------
+duration       | timeout of service, from the _caller_ perspective (example: `30ms`, `1h`, `3min`, `40s`. if no SI unit `s` is used)
+contract       | defines action to take if timeout is passed (linger = just wait, kill = send kill signal, terminate = send terminate signal)
+
+
+## domain.global
+
+Defines _domain global_ configuration.
+
+### domain.global.service
+
+_domain global_ settings for services. This will effect services that are not otherwise configured explicitly,
+
+property       | description
+---------------|----------------------------------------------------
+execution      | `service::execution::Timeout`, described above.
+discoverable   | if advertised services should be discoverable from other domains or not.
+
+
+## domain.default
+
+'default' configuration. Will be used as fallback within a configuration. Will not aggregate 'between' configurations.
+Only used to help user minimize common configuration.
+
+### domain.default.server
+
+property       | description
+---------------|----------------------------------------------------
+instances      | number of instances to start of the server.
+memberships    | `0..*` default group memberships.
+environment    | `domain::Environment` described above.
+restart        | if the server should be restarted, if exit.
+
+### domain.default.executable
+
+property       | description
+---------------|----------------------------------------------------
+instances      | number of instances to start of the server.
+memberships    | `0..*` default group memberships.
+environment    | `domain::Environment` described above.
+restart        | if the executable should be restarted, if exit.
+
 ## domain.groups
 
-Defines the groups in the configuration. Groups are used to associate `resources` to serveres/executables
+Defines the groups in the configuration. Groups are used to associate `resources` to servers/executables
 and to define the dependency order.
 
 property       | description
@@ -115,6 +178,7 @@ instances      | number of instances to start of the server.
 memberships    | which groups are the server member of (dictates order, and possible resource association)
 restrictions   | regex pattern, if provided only the services that matches at least one of the patterns are actually advertised.
 resources      | explicit resource associations (transaction.resources.name)
+restart        | if the server should be restarted, if exit.
 
 
 ## domain.executables
@@ -128,16 +192,8 @@ alias          | the logical (unique) name of the executable. If not provided ba
 arguments      | arguments to `main` during startup.
 instances      | number of instances to start of the server.
 memberships    | which groups are the server member of (dictates order)
+restart        | if the executable should be restarted, if exit.
 
-
-## domain.service
-
-Defines _global_ service information that will be used as configuration on services not specifying specific values in the _services_ section.
-
-property                   | description
----------------------------|----------------------------------------------------
-execution.timeout.duration | timeout of service, from the _caller_ perspective (example: `30ms`, `1h`, `3min`, `40s`. if no SI unit `s` is used)
-execution.timeout.contract | defines action to take if timeout is passed (linger = just wait, kill = send kill signal, terminate = send terminate signal)
 
 ## domain.services
 
@@ -145,12 +201,13 @@ Defines service related configuration.
 
 Note that this configuration is tied to the service, regardless who has advertised the service.
 
-property                   | description
----------------------------|----------------------------------------------------
-name                       | name of the service
-routes                     | defines what logical names are actually exposed. For _aliases_, it's important to include the original name.
-execution.timeout.duration | timeout of service, from the _caller_ perspective (example: `30ms`, `1h`, `3min`, `40s`. if no SI unit `s` is used)
-execution.timeout.contract | defines action to take if timeout is passed (linger = just wait, kill = send kill signal, terminate = send terminate signal)
+property         | description
+-----------------|----------------------------------------------------
+name             | name of the service
+routes           | defines what logical names are actually exposed. For _aliases_, it's important to include the original name.
+execution        | `service::execution::Timeout`, described above.
+discoverable     | if the service should be discoverable from other domains or not.
+
 
 )";
                   examples( out, example::user::part::domain::general());

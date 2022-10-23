@@ -12,10 +12,73 @@ The examples further down uses this to make it easier to understand the examples
 course be used as a mean to help document actual production configuration.  
 
 
-             
+## structures
+
+General "structures" that other parts of the configuration refers to.
+
+
+### domain::Environment
+
+#### Variable
+
+property       | description
+---------------|----------------------------------------------------
+key            | environment variable name
+value          | the value to associate with the environment variable
+
+property       | description
+---------------|----------------------------------------------------
+variables      | `0..*` `domain::environment::Variable`, described above.
+
+
+### service::execution::Timeout
+
+property       | description
+---------------|----------------------------------------------------
+duration       | timeout of service, from the _caller_ perspective (example: `30ms`, `1h`, `3min`, `40s`. if no SI unit `s` is used)
+contract       | defines action to take if timeout is passed (linger = just wait, kill = send kill signal, terminate = send terminate signal)
+
+
+## domain.global
+
+Defines _domain global_ configuration.
+
+### domain.global.service
+
+_domain global_ settings for services. This will effect services that are not otherwise configured explicitly,
+
+property       | description
+---------------|----------------------------------------------------
+execution      | `service::execution::Timeout`, described above.
+discoverable   | if advertised services should be discoverable from other domains or not.
+
+
+## domain.default
+
+'default' configuration. Will be used as fallback within a configuration. Will not aggregate 'between' configurations.
+Only used to help user minimize common configuration.
+
+### domain.default.server
+
+property       | description
+---------------|----------------------------------------------------
+instances      | number of instances to start of the server.
+memberships    | `0..*` default group memberships.
+environment    | `domain::Environment` described above.
+restart        | if the server should be restarted, if exit.
+
+### domain.default.executable
+
+property       | description
+---------------|----------------------------------------------------
+instances      | number of instances to start of the server.
+memberships    | `0..*` default group memberships.
+environment    | `domain::Environment` described above.
+restart        | if the executable should be restarted, if exit.
+
 ## domain.groups
 
-Defines the groups in the configuration. Groups are used to associate `resources` to serveres/executables
+Defines the groups in the configuration. Groups are used to associate `resources` to servers/executables
 and to define the dependency order.
 
 property       | description
@@ -38,6 +101,7 @@ instances      | number of instances to start of the server.
 memberships    | which groups are the server member of (dictates order, and possible resource association)
 restrictions   | regex pattern, if provided only the services that matches at least one of the patterns are actually advertised.
 resources      | explicit resource associations (transaction.resources.name)
+restart        | if the server should be restarted, if exit.
 
 
 ## domain.executables
@@ -51,16 +115,8 @@ alias          | the logical (unique) name of the executable. If not provided ba
 arguments      | arguments to `main` during startup.
 instances      | number of instances to start of the server.
 memberships    | which groups are the server member of (dictates order)
+restart        | if the executable should be restarted, if exit.
 
-
-## domain.service
-
-Defines _global_ service information that will be used as configuration on services not specifying specific values in the _services_ section.
-
-property                   | description
----------------------------|----------------------------------------------------
-execution.timeout.duration | timeout of service, from the _caller_ perspective (example: `30ms`, `1h`, `3min`, `40s`. if no SI unit `s` is used)
-execution.timeout.contract | defines action to take if timeout is passed (linger = just wait, kill = send kill signal, terminate = send terminate signal)
 
 ## domain.services
 
@@ -68,12 +124,13 @@ Defines service related configuration.
 
 Note that this configuration is tied to the service, regardless who has advertised the service.
 
-property                   | description
----------------------------|----------------------------------------------------
-name                       | name of the service
-routes                     | defines what logical names are actually exposed. For _aliases_, it's important to include the original name.
-execution.timeout.duration | timeout of service, from the _caller_ perspective (example: `30ms`, `1h`, `3min`, `40s`. if no SI unit `s` is used)
-execution.timeout.contract | defines action to take if timeout is passed (linger = just wait, kill = send kill signal, terminate = send terminate signal)
+property         | description
+-----------------|----------------------------------------------------
+name             | name of the service
+routes           | defines what logical names are actually exposed. For _aliases_, it's important to include the original name.
+execution        | `service::execution::Timeout`, described above.
+discoverable     | if the service should be discoverable from other domains or not.
+
 
 ## examples 
 
@@ -84,13 +141,34 @@ Below follows examples in human readable formats that `casual` can handle
 ---
 domain:
   name: "domain-name"
+  global:
+    note: "'domain global' config. Aggregates right to left"
+    service:
+      note: "Will be used for services that are not explicitly configured."
+      execution:
+        timeout:
+          duration: "2h"
+          contract: "linger"
+      discoverable: true
   default:
+    note: "'default', fallback, configuration. Will only affect 'local' configuration and will not aggregate 'between' configurations"
     server:
       instances: 1
       restart: true
+      memberships:
+        - "customer-group"
+      environment:
+        variables:
+          - key: "SOME_VARIABLE"
+            value: "foo"
     executable:
       instances: 1
       restart: false
+    service:
+      execution:
+        timeout:
+          duration: "20s"
+      discoverable: false
   environment:
     variables:
       - key: "SOME_VARIABLE"
@@ -151,6 +229,16 @@ domain:
         - "/path/to/configuration"
       memberships:
         - "common-group"
+  services:
+    - name: "a"
+      execution:
+        timeout:
+          duration: "64ms"
+          contract: "terminate"
+      routes:
+        - "b"
+        - "c"
+      discoverable: false
 ...
 
 ````
@@ -159,14 +247,47 @@ domain:
 {
     "domain": {
         "name": "domain-name",
+        "global": {
+            "note": "'domain global' config. Aggregates right to left",
+            "service": {
+                "note": "Will be used for services that are not explicitly configured.",
+                "execution": {
+                    "timeout": {
+                        "duration": "2h",
+                        "contract": "linger"
+                    }
+                },
+                "discoverable": true
+            }
+        },
         "default": {
+            "note": "'default', fallback, configuration. Will only affect 'local' configuration and will not aggregate 'between' configurations",
             "server": {
                 "instances": 1,
-                "restart": true
+                "restart": true,
+                "memberships": [
+                    "customer-group"
+                ],
+                "environment": {
+                    "variables": [
+                        {
+                            "key": "SOME_VARIABLE",
+                            "value": "foo"
+                        }
+                    ]
+                }
             },
             "executable": {
                 "instances": 1,
                 "restart": false
+            },
+            "service": {
+                "execution": {
+                    "timeout": {
+                        "duration": "20s"
+                    }
+                },
+                "discoverable": false
             }
         },
         "environment": {
@@ -273,6 +394,22 @@ domain:
                     "common-group"
                 ]
             }
+        ],
+        "services": [
+            {
+                "name": "a",
+                "execution": {
+                    "timeout": {
+                        "duration": "64ms",
+                        "contract": "terminate"
+                    }
+                },
+                "routes": [
+                    "b",
+                    "c"
+                ],
+                "discoverable": false
+            }
         ]
     }
 }
@@ -284,6 +421,7 @@ domain:
 name=domain-name
 
 [domain.default]
+note='default', fallback, configuration. Will only affect 'local' configuration and will not aggregate 'between' configurations
 
 [domain.default.executable]
 instances=1
@@ -291,7 +429,22 @@ restart=false
 
 [domain.default.server]
 instances=1
+memberships=customer-group
 restart=true
+
+[domain.default.server.environment]
+
+[domain.default.server.environment.variables]
+key=SOME_VARIABLE
+value=foo
+
+[domain.default.service]
+discoverable=false
+
+[domain.default.service.execution]
+
+[domain.default.service.execution.timeout]
+duration=20s
 
 [domain.environment]
 
@@ -308,6 +461,19 @@ arguments=--configuration
 arguments=/path/to/configuration
 memberships=common-group
 path=/some/path/mq-server
+
+[domain.global]
+note='domain global' config. Aggregates right to left
+
+[domain.global.service]
+discoverable=true
+note=Will be used for services that are not explicitly configured.
+
+[domain.global.service.execution]
+
+[domain.global.service.execution.timeout]
+contract=linger
+duration=2h
 
 [domain.groups]
 name=common-group
@@ -360,21 +526,66 @@ resources=event-queue
 key=SALES_BROKER_VARIABLE
 value=556
 
+[domain.services]
+discoverable=false
+name=a
+routes=b
+routes=c
+
+[domain.services.execution]
+
+[domain.services.execution.timeout]
+contract=terminate
+duration=64ms
+
 ````
 ### xml
 ```` xml
 <?xml version="1.0"?>
 <domain>
  <name>domain-name</name>
+ <global>
+  <note>'domain global' config. Aggregates right to left</note>
+  <service>
+   <note>Will be used for services that are not explicitly configured.</note>
+   <execution>
+    <timeout>
+     <duration>2h</duration>
+     <contract>linger</contract>
+    </timeout>
+   </execution>
+   <discoverable>true</discoverable>
+  </service>
+ </global>
  <default>
+  <note>'default', fallback, configuration. Will only affect 'local' configuration and will not aggregate 'between' configurations</note>
   <server>
    <instances>1</instances>
    <restart>true</restart>
+   <memberships>
+    <element>customer-group</element>
+   </memberships>
+   <environment>
+    <variables>
+     <element>
+      <key>SOME_VARIABLE</key>
+      <value>foo</value>
+     </element>
+    </variables>
+   </environment>
   </server>
   <executable>
    <instances>1</instances>
    <restart>false</restart>
   </executable>
+  <service>
+   <execution>
+    <timeout>
+     <duration>20s</duration>
+    </timeout>
+   </execution>
+   <discoverable>false</discoverable>
+  </service>
  </default>
  <environment>
   <variables>
@@ -481,6 +692,22 @@ value=556
    </memberships>
   </element>
  </executables>
+ <services>
+  <element>
+   <name>a</name>
+   <execution>
+    <timeout>
+     <duration>64ms</duration>
+     <contract>terminate</contract>
+    </timeout>
+   </execution>
+   <routes>
+    <element>b</element>
+    <element>c</element>
+   </routes>
+   <discoverable>false</discoverable>
+  </element>
+ </services>
 </domain>
 
 ````

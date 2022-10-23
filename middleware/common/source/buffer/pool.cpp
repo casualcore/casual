@@ -110,7 +110,7 @@ namespace casual
 
          if( payload.null())
          {
-            return { {}, 0};
+            return { {}, {}};
          }
          else 
          {

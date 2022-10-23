@@ -10,6 +10,7 @@
 #include "common/compare.h"
 #include "common/serialize/macro.h"
 #include "common/service/type.h"
+#include "casual/container/sorted/set.h"
 
 #include <vector>
 #include <string>
@@ -191,20 +192,37 @@ namespace casual::configuration
 
       namespace service
       {
+         namespace restriction
+         {
+            struct Server : common::Compare< Server>
+            {
+               std::string alias;
+               //! a set of regex, to match for allowed services. If empty all advertised services are allowed for the alias
+               std::vector< std::string> services;
+ 
+               inline friend bool operator == ( const Server& lhs, const std::string& alias) { return lhs.alias == alias;} 
+
+               CASUAL_CONST_CORRECT_SERIALIZE(
+                  CASUAL_SERIALIZE( alias);
+                  CASUAL_SERIALIZE( services);
+               )
+
+               inline auto tie() const { return std::tie( alias, services);}
+            };
+
+         } // restriction
+         
          struct Restriction : common::Compare< Restriction>
          {
-            std::string alias;
-            //! a set of regex, to match for allowed services. If empty all advertised services are allowed for the alias
-            std::vector< std::string> services;
+            std::vector< restriction::Server> servers;
 
-            inline friend bool operator == ( const Restriction& lhs, const std::string& alias) { return lhs.alias == alias;} 
+            Restriction& operator += ( Restriction rhs);
 
             CASUAL_CONST_CORRECT_SERIALIZE(
-               CASUAL_SERIALIZE( alias);
-               CASUAL_SERIALIZE( services);
-            )
+               CASUAL_SERIALIZE( servers);
 
-            inline auto tie() const { return std::tie( alias, services);}
+            )
+            inline auto tie() const { return std::tie( servers);}
          };
 
          struct Timeout : common::Compare< Timeout>
@@ -213,6 +231,8 @@ namespace casual::configuration
             
             std::optional< platform::time::unit> duration;
             Contract contract = Contract::linger;
+
+            Timeout& operator += ( Timeout rhs);
 
             inline explicit operator bool() const noexcept { return duration.has_value();}
 
@@ -229,6 +249,8 @@ namespace casual::configuration
             std::string name;
             std::vector< std::string> routes;
             service::Timeout timeout;
+            bool discoverable = true;
+            std::string note;
 
             inline friend bool operator == ( const Service& lhs, const std::string& name) { return lhs.name == name;}
 
@@ -236,29 +258,47 @@ namespace casual::configuration
                CASUAL_SERIALIZE( name);
                CASUAL_SERIALIZE( routes);
                CASUAL_SERIALIZE( timeout);
+               CASUAL_SERIALIZE( discoverable);
+               CASUAL_SERIALIZE( note);
             )
 
-            inline auto tie() const { return std::tie( name, routes, timeout);}
+            inline auto tie() const { return std::tie( name, routes, timeout, discoverable, note);}
+         };
+
+         struct Global : common::Compare< Global>
+         {
+            service::Timeout timeout;
+            std::optional< bool> discoverable;
+            std::string note;
+
+            Global& operator += ( Global rhs);
+
+            CASUAL_CONST_CORRECT_SERIALIZE(
+               CASUAL_SERIALIZE( timeout);
+               CASUAL_SERIALIZE( discoverable);
+               CASUAL_SERIALIZE( note);
+            )
+
+            inline auto tie() const { return std::tie( timeout, discoverable, note);}
          };
 
          struct Model : common::Compare< Model>
          {  
-            service::Timeout timeout;
+            //! "domain global" settings, for services that are not explicitly configured.
+            Global global;
+
             std::vector< service::Service> services;
-            std::vector< Restriction> restrictions;
+            Restriction restriction;
 
             Model& operator += ( Model rhs);
 
             CASUAL_CONST_CORRECT_SERIALIZE(
-               CASUAL_SERIALIZE( timeout);
+               CASUAL_SERIALIZE( global);
                CASUAL_SERIALIZE( services);
-               CASUAL_SERIALIZE( restrictions);
+               CASUAL_SERIALIZE( restriction);
             )
 
-            inline auto tie() const 
-            { 
-               return std::tie( timeout, services, restrictions);
-            }
+            inline auto tie() const { return std::tie( global, services, restriction);}
          };
       } // service
 
@@ -357,30 +397,17 @@ namespace casual::configuration
                      forward,
                   };
 
-                  inline std::ostream& operator << ( std::ostream& out, Directive value)
+                  constexpr std::string_view description( Directive value) noexcept
                   {
                      switch( value)
                      {
-                        case Directive::forward: return out << "forward";
-                        case Directive::localized: return out << "localized";
+                        case Directive::forward: return "forward";
+                        case Directive::localized: return "localized";
                      }
-                     return out << "<unknown>";
+                     return "<unknown>";
                   }
 
                } // discovery
-
-               struct Exclude : common::Compare< Exclude>
-               {
-                  std::vector< std::string> services;
-                  std::vector< std::string> queues;
-
-                  inline auto tie() const { return std::tie( services, queues);}
-
-                  CASUAL_CONST_CORRECT_SERIALIZE(
-                     CASUAL_SERIALIZE( services);
-                     CASUAL_SERIALIZE( queues);
-                  )
-               };
                
             } // connection
             
@@ -388,7 +415,6 @@ namespace casual::configuration
             {
                std::string address;
                connection::discovery::Directive discovery{};
-               connection::Exclude exclude;
                std::string note;
 
                Connection& operator += ( Connection rhs);
@@ -396,11 +422,10 @@ namespace casual::configuration
                CASUAL_CONST_CORRECT_SERIALIZE(
                   CASUAL_SERIALIZE( address);
                   CASUAL_SERIALIZE( discovery);
-                  CASUAL_SERIALIZE( exclude);
                   CASUAL_SERIALIZE( note);
                )
 
-               inline auto tie() const { return std::tie( address, discovery, exclude, note);}
+               inline auto tie() const { return std::tie( address, discovery, note);}
             };
 
             struct Limit : common::Compare< Limit>

@@ -12,6 +12,7 @@
 #include "common/algorithm/container.h"
 #include "common/service/type.h"
 #include "common/chronology.h"
+#include "common/algorithm/coalesce.h"
 
 namespace casual
 {
@@ -28,6 +29,18 @@ namespace casual
                if( value)
                   return std::move( value.value());
                return {};
+            }
+
+            //! If `optional` not contains a value, a default constructed value
+            //! is _inserted_ .
+            //! @returns `*optional`
+            template< typename T>
+            auto value_or_emplace( std::optional< T>& optional) -> decltype( optional.emplace())
+            {
+               if( optional)
+                  return *optional;
+
+               return optional.emplace();
             }
 
 
@@ -59,9 +72,9 @@ namespace casual
                      return result;
                   };
 
-                  if( model.system && model.system.value().resources)
+                  if( model.system && model.system->resources)
                   {
-                     result.resources = algorithm::transform( model.system.value().resources.value(), transform_resource);
+                     result.resources = algorithm::transform( model.system->resources.value(), transform_resource);
                   }
                   else if( model.resources)
                   {
@@ -75,12 +88,10 @@ namespace casual
 
 
             namespace domain
-            {
-
-         
+            {         
                auto environment( const user::domain::Environment& environment)
                {
-                  model::domain::Environment result;
+                  configuration::model::domain::Environment result;
                   result.variables = user::domain::environment::transform( user::domain::environment::fetch( environment));
                   return result;
                }
@@ -166,7 +177,7 @@ namespace casual
                {
                   Trace trace{ "configuration::model::local::domain"};
 
-                  model::domain::Model result;
+                  configuration::model::domain::Model result;
                   
                   result.name = domain.name.value_or( "");
 
@@ -177,7 +188,7 @@ namespace casual
                   if( domain.groups)
                      result.groups = common::algorithm::transform( domain.groups.value(), []( auto& group)
                      {
-                        model::domain::Group result;
+                        configuration::model::domain::Group result;
                         result.name = group.name;
                         result.note = group.note.value_or( "");
                         result.dependencies = group.dependencies.value_or( result.dependencies);
@@ -199,7 +210,7 @@ namespace casual
                         result.lifetime.restart = value.restart.value_or( result.lifetime.restart);
                         result.memberships = value.memberships.value_or( result.memberships);
 
-                        // TOOD performance: worst case we'd read env-files a lot of times...
+                        // TODO performance: worst case we'd read env-files a lot of times...
                         if( value.environment)
                            result.environment = local::domain::environment( value.environment.value());
                         return result;
@@ -207,9 +218,9 @@ namespace casual
                   };
 
                   if( domain.executables)
-                     result.executables = common::algorithm::transform( domain.executables.value(), transform_executable( model::domain::Executable{}));
+                     result.executables = common::algorithm::transform( domain.executables.value(), transform_executable( configuration::model::domain::Executable{}));
                   if( domain.servers)
-                     result.servers = common::algorithm::transform( domain.servers.value(), transform_executable( model::domain::Server{}));
+                     result.servers = common::algorithm::transform( domain.servers.value(), transform_executable( configuration::model::domain::Server{}));
 
                   return result;
                }
@@ -219,13 +230,13 @@ namespace casual
                   auto timeout( const std::optional< configuration::user::domain::service::Execution>& execution)
                   {
                      configuration::model::service::Timeout result;
-                     if( execution && execution.value().timeout)
+                     if( execution && execution->timeout)
                      {
-                        auto& timeout = execution.value().timeout.value();
+                        auto& timeout = *execution->timeout;
                         if( timeout.duration)
-                           result.duration = common::chronology::from::string( timeout.duration.value());
+                           result.duration = common::chronology::from::string( *timeout.duration);
                         if( timeout.contract)
-                           result.contract = common::service::execution::timeout::contract::transform( timeout.contract.value());
+                           result.contract = common::service::execution::timeout::contract::transform( *timeout.contract);
                      }
                      return result;
                   }
@@ -240,54 +251,54 @@ namespace casual
 
                   service::Model result;
 
-                  if( domain.defaults && domain.defaults.value().service && domain.defaults.value().service.value().timeout)
+                  // global
                   {
-                     log::line( log::category::warning, code::casual::invalid_configuration, " domain.default.service.timeout are deprecated - use domain.default.service.execution.duration instead");
-                     result.timeout.duration = common::chronology::from::string( domain.defaults.value().service.value().timeout.value());
-                  }
+                     if( domain.global && domain.global->service && domain.global->service->execution)
+                        result.global.timeout = detail::execution::timeout( *domain.global->service->execution);
 
-                  if( domain.service && domain.service.value().execution && domain.service.value().execution.value().timeout)
-                  {
-                     const auto& timeout = domain.service.value().execution.value().timeout;
-                     if( timeout.value().duration)
-                        result.timeout.duration = common::chronology::from::string( timeout.value().duration.value());
-
-                     if( timeout.value().contract)
-                        result.timeout.contract = contract::transform( timeout.value().contract.value());
+                     if( domain.global && domain.global->service)
+                        result.global.discoverable = domain.global->service->discoverable;
                   }
 
                   if( domain.services)
-                     result.services = common::algorithm::transform( domain.services.value(), []( const auto& service)
+                  {
+                     auto defaults = [ &domain]() -> user::domain::service::Default
+                     {
+                        if( domain.defaults && domain.defaults->service)
+                           return *domain.defaults->service;
+                        return {};
+                     }();
+
+                     result.services = common::algorithm::transform( *domain.services, [ &defaults]( const auto& service)
                      {
                         service::Service result;
 
                         result.name = service.name;
                         result.routes = service.routes.value_or( result.routes);
-                        if( service.timeout)
-                        {
-                           log::line( log::category::warning, code::casual::invalid_configuration, " domain.service.timeout are deprecated - use domain.service.execution.duration instead");
-         
-                           result.timeout.duration = common::chronology::from::string( service.timeout.value());
-                        }
 
+                        result.discoverable = algorithm::coalesce( service.discoverable, defaults.discoverable).value_or( true);
+                           
                         if( service.execution)
-                           result.timeout = detail::execution::timeout( service.execution);
+                           result.timeout = detail::execution::timeout( algorithm::coalesce( service.execution, defaults.execution));
 
                         return result;
                      });
+                  }
 
                   if( domain.servers)
-                     result.restrictions = algorithm::transform_if( domain.servers.value(), []( auto& service)
+                  {
+                     result.restriction.servers = algorithm::transform_if( *domain.servers, []( auto& server)
                      {
-                        service::Restriction result;
-                        result.alias = service.alias.value();
-                        result.services = service.restrictions.value();
+                        service::restriction::Server result;
+                        result.alias = *server.alias;
+                        result.services = *server.restrictions;
 
                         return result;
                      }, []( auto& service)
                      {
-                        return service.restrictions && ! service.restrictions.value().empty();
+                        return service.restrictions && ! service.restrictions->empty();
                      });
+                  }
 
                   return result;
                }
@@ -301,76 +312,14 @@ namespace casual
                   if( ! domain.gateway)
                      return result;
 
-                  auto& gateway = domain.gateway.value();
-
-                  // first we take care of deprecated stuff
-
-                  if( gateway.listeners && ! gateway.listeners.value().empty())
-                  {
-                     log::line( log::category::warning, code::casual::invalid_configuration, " domain.gateway.listeners are deprecated - use domain.gateway.inbounds");
-
-                     gateway::inbound::Group group;
-                     group.connect = decltype( group.connect)::regular;
-                     group.connections = common::algorithm::transform( gateway.listeners.value(), []( const auto& listener)
-                     {
-                        gateway::inbound::Connection result;
-                        result.note = listener.note.value_or( "");
-                        result.address = listener.address;
-                        return result;
-                     });
-
-
-                     group.limit = algorithm::accumulate( gateway.listeners.value(), gateway::inbound::Limit{}, [&]( auto current, auto& listener)
-                     {
-                        if( ! listener.limit)
-                           return current;
-
-                        auto size = listener.limit.value().size.value_or( 0);
-                        auto messages = listener.limit.value().messages.value_or( 0);
-
-                        if( size > 0 && current.size > size)
-                           current.size = size;
-
-                        if( messages > 0 && current.messages > messages)
-                           current.messages = messages;
-
-                        return current;
-                     });
-
-                     result.inbound.groups.push_back( std::move( group));
-                  }
-
-                  if( gateway.connections && ! gateway.connections.value().empty())
-                  {
-                     log::line( log::category::warning, code::casual::invalid_configuration, " domain.gateway.connections are deprecated - use domain.gateway.outbounds");
-
-                     result.outbound.groups = common::algorithm::transform( gateway.connections.value(), []( const auto& value)
-                     {
-                        gateway::outbound::Group result;
-                        result.connect = decltype( result.connect)::regular;
-                        result.note = value.note.value_or( "");
-                        gateway::outbound::Connection connection;
-                        
-                        connection.note = result.note;
-                        connection.address = value.address;
-                     
-                        if( value.services)
-                           connection.services = value.services.value();
-                        if( value.queues)
-                           connection.queues = value.queues.value();
-
-                        result.connections.push_back( std::move( connection));
-
-                        return result;
-                     });
-                  }
+                  auto& gateway = *domain.gateway;
 
                   auto append_inbounds = []( auto& source, auto& target, auto connect)
                   { 
                      if( ! source)
                         return;
 
-                     algorithm::transform( source.value().groups, std::back_inserter( target), [connect]( auto& source)
+                     algorithm::transform( source->groups, std::back_inserter( target), [connect]( auto& source)
                      {
                         gateway::inbound::Group result;
                         result.alias = source.alias.value_or( "");
@@ -379,8 +328,8 @@ namespace casual
 
                         if( source.limit)
                         {
-                           result.limit.size = source.limit.value().size.value_or( result.limit.size);
-                           result.limit.messages = source.limit.value().messages.value_or( result.limit.messages);
+                           result.limit.size = source.limit->size.value_or( result.limit.size);
+                           result.limit.messages = source.limit->messages.value_or( result.limit.messages);
                         }
 
                         result.connections = algorithm::transform( source.connections, []( auto& connection)
@@ -389,17 +338,8 @@ namespace casual
                            result.note = connection.note.value_or( "");
                            result.address = connection.address;
                            
-                           if( connection.discovery && connection.discovery.value().forward)
+                           if( connection.discovery && connection.discovery->forward)
                               result.discovery = decltype( result.discovery)::forward;
-
-                           if( connection.exclude)
-                           {
-                              if( connection.exclude.value().services)
-                                 result.exclude.services = connection.exclude.value().services.value();
-
-                              if( connection.exclude.value().queues)
-                                 result.exclude.queues = connection.exclude.value().queues.value();
-                           }
 
                            return result;
                         });
@@ -413,7 +353,7 @@ namespace casual
                      if( ! source)
                         return;
 
-                     algorithm::transform( source.value().groups, std::back_inserter( target), [connect]( auto& source)
+                     algorithm::transform( source->groups, std::back_inserter( target), [connect]( auto& source)
                      {
                         gateway::outbound::Group result;
                         result.alias = source.alias.value_or( "");
@@ -438,8 +378,8 @@ namespace casual
 
                   if( gateway.reverse)
                   {
-                     append_inbounds( gateway.reverse.value().inbound, result.inbound.groups, configuration::model::gateway::connect::Semantic::reversed);
-                     append_outbounds( gateway.reverse.value().outbound, result.outbound.groups, configuration::model::gateway::connect::Semantic::reversed);
+                     append_inbounds( gateway.reverse->inbound, result.inbound.groups, configuration::model::gateway::connect::Semantic::reversed);
+                     append_outbounds( gateway.reverse->outbound, result.outbound.groups, configuration::model::gateway::connect::Semantic::reversed);
                   }
 
                   return result;
@@ -490,9 +430,9 @@ namespace casual
                   }
                   
                   
-                  if( source.forward && source.forward.value().groups)
+                  if( source.forward && source.forward->groups)
                   {
-                     result.forward.groups = algorithm::transform( source.forward.value().groups.value(), []( auto& group)
+                     result.forward.groups = algorithm::transform( source.forward->groups.value(), []( auto& group)
                      {
                         queue::forward::Group result;
                         result.alias = group.alias.value_or( "");
@@ -519,10 +459,10 @@ namespace casual
                               if( service.reply)
                               {
                                  configuration::model::queue::forward::Service::Reply reply;
-                                 reply.queue = service.reply.value().queue;
+                                 reply.queue = service.reply->queue;
 
-                                 if( service.reply.value().delay)
-                                    reply.delay =  common::chronology::from::string( service.reply.value().delay.value());
+                                 if( service.reply->delay)
+                                    reply.delay =  common::chronology::from::string( service.reply->delay.value());
                
                                  result.reply = std::move( reply);
                               }
@@ -624,6 +564,48 @@ namespace casual
                   return result;
                }
 
+               namespace detail
+               {
+                  auto execution( const configuration::model::service::Timeout& model)
+                  {
+                     configuration::user::domain::service::execution::Timeout timeout;                  
+                     if( model.duration)
+                        timeout.duration = chronology::to::string( model.duration.value());
+
+                     timeout.contract = common::service::execution::timeout::contract::transform( model.contract);
+
+                     std::optional<configuration::user::domain::service::Execution> result;
+                     if( timeout.duration || timeout.contract)
+                        result.emplace().timeout = std::move( timeout);
+
+                     return result;                     
+                  }
+
+               }
+
+               auto global( const configuration::Model& model)
+               {
+                  Trace trace{ "configuration::model::local::model::global"};
+
+                  configuration::user::domain::Global result;
+
+                  result.note = null_if_empty( model.service.global.note);
+
+                  {
+                     auto& service = result.service.emplace();
+
+                     service.note = null_if_empty( model.service.global.note);
+
+                     if( local::model::any::has::values( model.service.global.timeout))
+                        service.execution = detail::execution( model.service.global.timeout);
+
+                     if( local::model::any::has::values( model.service.global.discoverable))
+                        service.discoverable = model.service.global.discoverable;
+                  }
+                  
+                  return result;
+               }
+
                auto domain( const configuration::Model& model)
                {
                   Trace trace{ "configuration::model::local::model::domain"};
@@ -632,8 +614,19 @@ namespace casual
 
                   result.name = null_if_empty( model.domain.name);
 
-                  if( model.service.timeout.duration)
-                     result.defaults.emplace().service.emplace().timeout = chronology::to::string( model.service.timeout.duration.value());
+                  // domain global service stuff
+                  {
+                     // We'll always produce _domain.global.service.execution.timeout.contract, hence
+                     // we always creates it. Makes it much easier...
+
+                     auto& timeout = result.global.emplace().service.emplace().execution.emplace().timeout.emplace();
+
+                     timeout.contract = common::service::execution::timeout::contract::transform( model.service.global.timeout.contract);
+
+                     if( model.service.global.timeout.duration)
+                        timeout.duration = chronology::to::string( *model.service.global.timeout.duration);
+                  }
+
 
                   if( ! model.domain.environment.variables.empty())
                      result.environment.emplace().variables = configuration::user::domain::environment::transform( model.domain.environment.variables);
@@ -666,7 +659,7 @@ namespace casual
                      if( auto found = algorithm::find( model.transaction.mappings, value.alias))
                         result.resources = null_if_empty( found->resources);
 
-                     if( auto found = algorithm::find( model.service.restrictions, value.alias))
+                     if( auto found = algorithm::find( model.service.restriction.servers, value.alias))
                         result.restrictions = null_if_empty( found->services);
 
                      return result;
@@ -692,36 +685,19 @@ namespace casual
                   return result;
                }
                
-               namespace detail
-               {
-                  auto execution( const configuration::model::service::Service& service)
-                  {
-                     configuration::user::domain::service::execution::Timeout timeout;                  
-                     if( service.timeout.duration)
-                        timeout.duration = chronology::to::string( service.timeout.duration.value());
-
-                     timeout.contract = common::service::execution::timeout::contract::transform( service.timeout.contract);
-
-                     std::optional<configuration::user::domain::service::Execution> result;
-                     if( timeout.duration || timeout.contract)
-                        result.emplace().timeout = std::move( timeout);
-
-                     return result;                     
-                  }
-
-               }
-
                auto service( const configuration::model::service::Model& service)
                {
                   Trace trace{ "configuration::model::local::model::service"};
 
                   return algorithm::transform( service.services, []( auto& service)
                   {
-                     user::domain::service::Service result;
+                     user::domain::Service result;
 
                      result.routes = null_if_empty( service.routes);
                      result.name = service.name;
-                     result.execution = detail::execution( service);
+                     result.discoverable = service.discoverable;
+                     result.execution = detail::execution( service.timeout);
+                     result.note = null_if_empty( service.note);
 
                      return result;
                   });
@@ -780,16 +756,6 @@ namespace casual
 
                         if( value.discovery == decltype( value.discovery)::forward)
                            result.discovery = configuration::user::domain::gateway::inbound::connection::Discovery{ true};
-
-                        if( ! value.exclude.services.empty() || ! value.exclude.queues.empty())
-                        {
-                           configuration::user::domain::gateway::inbound::connection::Exclude exclude;
-
-                           exclude.services = null_if_empty( value.exclude.services);
-                           exclude.queues = null_if_empty( value.exclude.queues);
-
-                           result.exclude = std::move( exclude);
-                        }
 
                         return result;
                      });
@@ -917,8 +883,8 @@ namespace casual
                            if( service.reply)
                            {
                               user::domain::queue::forward::Service::Reply reply;
-                              reply.queue = service.reply.value().queue;
-                              reply.delay = chronology::to::string( service.reply.value().delay);
+                              reply.queue = service.reply->queue;
+                              reply.delay = chronology::to::string( service.reply->delay);
                               result.reply = std::move( reply);
                            }
 
@@ -954,9 +920,7 @@ namespace casual
       configuration::Model transform( user::Model model)
       {
          Trace trace{ "configuration::model::transform model"};
-
-         // make sure we normalize alias placeholders and such..
-         //model = normalize( std::move( model));
+         log::line( verbose::log, "user model: ", model);
 
          configuration::Model result;
 
@@ -964,11 +928,11 @@ namespace casual
 
          if( model.domain)
          {
-            result.domain = local::domain::domain( model.domain.value());
-            result.transaction = local::domain::transaction( model.domain.value());
-            result.service = local::domain::service( model.domain.value());
-            result.gateway = local::domain::gateway( model.domain.value());
-            result.queue = local::domain::queue( model.domain.value());
+            result.domain = local::domain::domain( *model.domain);
+            result.transaction = local::domain::transaction( *model.domain);
+            result.service = local::domain::service( *model.domain);
+            result.gateway = local::domain::gateway( *model.domain);
+            result.queue = local::domain::queue( *model.domain);
          }
 
 
@@ -980,18 +944,19 @@ namespace casual
       user::Model transform( const configuration::Model& model)
       {
          Trace trace{ "configuration::model::transform model"};
+         log::line( verbose::log, "internal model: ", model);
 
          user::Model result;
 
          if( local::model::any::has::values( model.system))
-         {
             result.system = local::model::system( model.system);
-         }
-
 
          if( local::model::any::has::values( model.domain, model.transaction, model.service, model.queue, model.gateway))
          {
             auto domain = local::model::domain( model);
+
+            if( local::model::any::has::values( model.service.global))
+               domain.global = local::model::global( model);
 
             if( local::model::any::has::values( model.service))
                domain.services = local::model::service( model.service);

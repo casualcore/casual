@@ -285,7 +285,8 @@ namespace casual
                instances_type< state::service::instance::Sequential> sequential;
                instances_type< state::service::instance::Concurrent> concurrent;
 
-               inline bool empty() const { return sequential.empty() && concurrent.empty();}
+               inline bool empty() const noexcept { return sequential.empty() && concurrent.empty();}
+               inline explicit operator bool() const noexcept { return ! empty();}
 
                //! @returns and consumes associated caller to the correlation. 'empty' caller if not found.
                state::instance::Caller consume( const common::strong::correlation::id& correlation);
@@ -335,14 +336,13 @@ namespace casual
             common::message::service::call::Service information;
             casual::configuration::model::service::Timeout timeout;
             service::Metric metric;
+            bool discoverable = true;
 
             void remove( common::strong::process::id instance);
             state::instance::Sequential& sequential( common::strong::process::id instance);
 
             void add( state::instance::Sequential& instance);
             void add( state::instance::Concurrent& instance, state::service::instance::Concurrent::Property property);
-
-            inline bool sequential() const noexcept { return ! instances.sequential.empty();}
 
             common::process::Handle reserve_sequential( 
                const common::process::Handle& caller, 
@@ -353,7 +353,10 @@ namespace casual
                const common::process::Handle& caller, 
                const common::strong::correlation::id& correlation);
 
+            inline bool is_sequential() const noexcept { return ! instances.sequential.empty();}
+            inline bool is_concurrent() const noexcept { return ! instances.concurrent.empty();}
 
+            bool is_discoverable() const noexcept;
 
             bool timeoutable() const noexcept;
 
@@ -365,6 +368,7 @@ namespace casual
                CASUAL_SERIALIZE( instances);
                CASUAL_SERIALIZE( timeout);
                CASUAL_SERIALIZE( metric);
+               CASUAL_SERIALIZE( discoverable);
             )
          };
 
@@ -383,7 +387,9 @@ namespace casual
          State();
 
          common::state::Machine< state::Runlevel> runlevel;
+         
          common::communication::select::Directive directive;
+         common::communication::ipc::send::Coordinator multiplex{ directive};
 
          //! holds the total known services, including routes
          std::unordered_map< std::string, state::Service> services;
@@ -449,9 +455,9 @@ namespace casual
          std::map< std::string, std::string> reverse_routes;
 
          //! holds all alias restrictions.
-         std::vector< casual::configuration::model::service::Restriction> restrictions;
+         casual::configuration::model::service::Restriction restriction;
 
-         common::communication::ipc::send::Coordinator multiplex{ directive};
+         
 
          //! @returns true if we're ready to shutdown
          bool done() const noexcept;
@@ -502,6 +508,8 @@ namespace casual
 
          CASUAL_LOG_SERIALIZE(
             CASUAL_SERIALIZE( runlevel);
+            CASUAL_SERIALIZE( directive);
+            CASUAL_SERIALIZE( multiplex);
             CASUAL_SERIALIZE( services);
             CASUAL_SERIALIZE( pending);
             CASUAL_SERIALIZE( events);
@@ -509,8 +517,8 @@ namespace casual
             CASUAL_SERIALIZE( forward);
             CASUAL_SERIALIZE( timeout);
             CASUAL_SERIALIZE( routes);
-            CASUAL_SERIALIZE( restrictions);
-            CASUAL_SERIALIZE( multiplex);
+            CASUAL_SERIALIZE( restriction);
+            
          ) 
 
       };

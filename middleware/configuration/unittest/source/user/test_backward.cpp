@@ -45,26 +45,27 @@ gateway:
       groups:
          -  alias: outbound
             connect: 1 # regular ( not reversed)
-            note: 7001
+            # user normalize add this note...
+            note: "transformed from DEPRECATED domain.gateway.connections[]"
             connections:
                -  address: localhost:7001
                   note: 7001
          -  alias: outbound.2
             connect: 1 # regular ( not reversed)
-            note: 7002
+            note: "transformed from DEPRECATED domain.gateway.connections[]"
             connections:
                -  address: localhost:7002
                   note: 7002
          -  alias: outbound.3
             connect: 1 # regular ( not reversed)
-            note: 7003
+            note: "transformed from DEPRECATED domain.gateway.connections[]"
             connections:
                -  address: localhost:7003
                   note: 7003
                   services: [ a, b, c]
          -  alias: outbound.4
             connect: 1 # regular ( not reversed)
-            note: 7004
+            note: "transformed from DEPRECATED domain.gateway.connections[]"
             connections:
                -  address: localhost:7004
                   note: 7004
@@ -72,7 +73,8 @@ gateway:
 
 )";
 
-         auto user = normalize( model::transform( unittest::serialize::create::value< user::Model>( "yaml", user_yaml)));
+         // we need to 'normalize' both user and internal. user -> _backward to current (user) : internal -> alias mapping stuff. 
+         auto user = normalize( model::transform( normalize( unittest::serialize::create::value< user::Model>( "yaml", user_yaml))));
 
          auto model = unittest::serialize::create::value< configuration::Model>( "yaml", model_yaml);
 

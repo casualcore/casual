@@ -107,6 +107,7 @@ namespace casual
                   result.metric.remote = value.metric.remote;
                   result.category = value.information.category;
                   result.transaction = transform_mode( value.information.transaction);
+                  result.discoverable = value.discoverable;
                   result.metric.last = value.metric.last;
 
                   auto transform_concurrent = []( const auto& value)
@@ -143,10 +144,10 @@ namespace casual
          manager::admin::model::State result;
 
          common::algorithm::transform( state.instances.sequential, result.instances.sequential,
-               common::predicate::composition( local::Instance{}, common::predicate::adapter::second()));
+            common::predicate::composition( local::Instance{}, common::predicate::adapter::second()));
 
          common::algorithm::transform( state.instances.concurrent, result.instances.concurrent,
-               common::predicate::composition( local::Instance{}, common::predicate::adapter::second()));
+            common::predicate::composition( local::Instance{}, common::predicate::adapter::second()));
 
          common::algorithm::transform( state.pending.lookups, result.pending, local::pending());
 
@@ -172,21 +173,20 @@ namespace casual
       {
          configuration::model::service::Model result;
 
-         result.timeout = state.timeout;
-         result.restrictions = state.restrictions;
+         result.global.timeout = state.timeout;
+         result.restriction = state.restriction;
 
-         common::algorithm::sort( result.restrictions);
+         common::algorithm::sort( result.restriction.servers);
 
-         result.services = common::algorithm::transform( state.routes, []( auto& pair)
+         result.services = common::algorithm::sort( common::algorithm::transform( state.routes, []( auto& pair)
          {
             configuration::model::service::Service result;
             result.name = pair.first;
             result.routes = pair.second;
             return result;
-         });
-         common::algorithm::sort( result.restrictions);
+         }));
 
-         common::algorithm::for_each( state.services, [&result]( auto& pair)
+         common::algorithm::for_each( state.services, [ &result]( auto& pair)
          {
             auto& service = pair.second;
             if( service.information.category == ".admin")

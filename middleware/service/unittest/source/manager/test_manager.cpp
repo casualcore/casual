@@ -79,15 +79,8 @@ domain:
             {
                auto state()
                {
-                  serviceframework::service::protocol::binary::Call call;
-
-                  auto reply = call( manager::admin::service::name::state());
-
-                  manager::admin::model::State serviceReply;
-
-                  reply >> CASUAL_NAMED_VALUE( serviceReply);
-
-                  return serviceReply;
+                  return serviceframework::service::protocol::binary::Call{}( 
+                     manager::admin::service::name::state).extract< manager::admin::model::State>();
                }
 
             } // call
@@ -266,7 +259,7 @@ domain:
 
          auto state = local::call::state();
 
-         EXPECT_TRUE( local::has_services( state.services, { manager::admin::service::name::state()}));
+         EXPECT_TRUE( local::has_services( state.services, { manager::admin::service::name::state}));
          EXPECT_FALSE( local::has_services( state.services, { "non/existent/service"}));
       }
 
@@ -281,7 +274,7 @@ domain:
 
          auto state = local::call::state();
 
-         ASSERT_TRUE( local::has_services( state.services, { manager::admin::service::name::state(), "service1", "service2"}));
+         ASSERT_TRUE( local::has_services( state.services, { manager::admin::service::name::state, "service1", "service2"}));
          
          {
             auto service = local::service::find( state, "service1");
@@ -422,6 +415,60 @@ domain:
 
             ASSERT_TRUE( reply.content.services().size() == 1) << CASUAL_NAMED_VALUE( reply);
             EXPECT_TRUE( reply.content.services().at( 0).name == "B") << CASUAL_NAMED_VALUE( reply);
+         }
+      }
+
+      TEST( service_manager, advertise_a_b__b_non_discoverable__discover_a_b__expect_discover_a)
+      {
+         common::unittest::Trace trace;
+
+         constexpr auto configuration = R"(
+domain:
+   services:
+      -  name: a
+         discoverable: true
+      -  name: b
+         discoverable: false
+)";
+
+         auto domain = local::domain( configuration);
+         service::unittest::advertise( { "a", "b"});
+
+         // discover
+         {            
+            domain::message::discovery::Request request{ common::process::handle()};
+            request.content.services( {"a", "b"});
+            domain::discovery::request( request);
+            auto reply = common::communication::ipc::receive< domain::message::discovery::Reply>();
+
+            ASSERT_TRUE( reply.content.services().size() == 1) << CASUAL_NAMED_VALUE( reply);
+            EXPECT_TRUE( reply.content.services().at( 0).name == "a") << CASUAL_NAMED_VALUE( reply);
+         }
+      }
+
+      TEST( service_manager, advertise_a__route_a_b__non_discoverable___discover_a_b__expect_no_discover)
+      {
+         common::unittest::Trace trace;
+
+         constexpr auto configuration = R"(
+domain:
+   services:
+      -  name: a
+         routes: [ a, b]
+         discoverable: false
+)";
+
+         auto domain = local::domain( configuration);
+         service::unittest::advertise( { "a"});
+
+         // discover
+         {            
+            domain::message::discovery::Request request{ common::process::handle()};
+            request.content.services( { "a", "b"});
+            domain::discovery::request( request);
+            auto reply = common::communication::ipc::receive< domain::message::discovery::Reply>();
+
+            EXPECT_TRUE( reply.content.services().empty()) << CASUAL_NAMED_VALUE( reply);
          }
       }
 

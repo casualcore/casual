@@ -10,20 +10,15 @@
 
 namespace casual
 {
-   namespace service
+   namespace service::manager::api
    {
-      namespace manager
+      inline namespace v1 
       {
-         namespace api
-         {
-            inline namespace v1 
-            {
-               //! fetches the current state of casual-service-manager 
-               //! @throws ...
-               Model state();
+         //! fetches the current state of casual-service-manager 
+         //! @throws ...
+         Model state();
 
-            } // v1
-         } // api
-      } // manager
-   } // service
+      } // v1
+
+   } // service::manager::api
 } // casual

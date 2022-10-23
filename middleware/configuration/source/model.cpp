@@ -153,14 +153,39 @@ namespace casual
 
          namespace service
          {
+            Restriction& Restriction::operator += ( Restriction rhs)
+            {
+               local::range::replace( std::move( rhs.servers), servers, local::predicate::equal::alias());
+               return *this;
+            }
+
+            Timeout& Timeout::operator += ( Timeout rhs)
+            {
+               if( rhs.duration)
+                  duration = std::move( rhs.duration);
+
+               contract = rhs.contract;
+               return *this;
+            }
+
+            Global& Global::operator += ( Global rhs)
+            {
+               timeout += std::move( rhs.timeout);
+
+               if( rhs.discoverable)
+                  discoverable = std::move( rhs.discoverable);
+
+               return *this;
+            }
+
             Model& Model::operator += ( Model rhs)
             {
-               if( rhs.timeout.duration)
-                  timeout = std::move( rhs.timeout);
+               global += std::move( rhs.global);
 
                local::range::replace( std::move( rhs.services), services, local::predicate::equal::name());
-               local::range::replace( std::move( rhs.restrictions), restrictions, local::predicate::equal::alias());
 
+               restriction += std::move( rhs.restriction);
+               
                return *this;
             }
             
@@ -293,7 +318,7 @@ namespace casual
 
          {
             state.count = {};
-            auto forward_alias = alias::normalize::mutator( state, []( auto&){ return "forwrad";});
+            auto forward_alias = alias::normalize::mutator( state, []( auto&){ return "forward";});
 
             algorithm::for_each( model.queue.forward.groups, [&forward_alias, &state]( auto& group)
             {
@@ -334,13 +359,13 @@ namespace casual
 
          // take care of alias placeholder mappings...
          {
-            auto resolve_placeholders = [&state]( auto& value)
+            auto resolve_placeholders = [ &state]( auto& value)
             {
                if( alias::is::placeholder( value.alias))
                   value.alias = state.placeholders.at( value.alias);
             };
 
-            algorithm::for_each( model.service.restrictions, resolve_placeholders);
+            algorithm::for_each( model.service.restriction.servers, resolve_placeholders);
             algorithm::for_each( model.transaction.mappings, resolve_placeholders);
          }
 

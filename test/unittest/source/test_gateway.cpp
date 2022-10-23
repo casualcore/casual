@@ -683,17 +683,14 @@ domain:
          constexpr auto A = R"(
 domain: 
    name: A
-  
    gateway:
       connections:
          -  address: 127.0.0.1:7001
             services:
                -  casual/example/domain/name
-
          -  address: 127.0.0.1:7002
             services:
                -  casual/example/domain/name
-               
          -  address: 127.0.0.1:7003
             services:
                -  casual/example/domain/name

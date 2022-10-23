@@ -10,6 +10,7 @@
 
 #include "common/log/stream.h"
 #include "common/log/trace.h"
+#include "common/serialize/macro.h"
 
 #include "common/string/compose.h"
 
@@ -38,6 +39,11 @@ namespace casual
             {
                std::map< std::string, platform::size::type> count;
                std::map< std::string, std::string> placeholders;
+
+               CASUAL_LOG_SERIALIZE(
+                  CASUAL_SERIALIZE( count);
+                  CASUAL_SERIALIZE( placeholders);
+               )
             };
 
             template< typename P>
@@ -52,7 +58,7 @@ namespace casual
                   else if( alias::is::placeholder( value.alias))
                      placeholder = std::exchange( value.alias, prospect( value));
                      
-                  auto potentally_add_index = []( auto& state, auto& alias)
+                  auto potentially_add_index = []( auto& state, auto& alias)
                   {
                      auto count = ++state.count[ alias];
 
@@ -63,7 +69,7 @@ namespace casual
                      return true;
                   };
 
-                  while( potentally_add_index( state, value.alias))
+                  while( potentially_add_index( state, value.alias))
                      ; // no-op
 
                   if( ! placeholder.empty())

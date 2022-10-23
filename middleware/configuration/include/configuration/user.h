@@ -25,7 +25,6 @@ namespace casual
       {
          namespace resource
          {
-
             struct Paths
             {
                std::optional< std::vector< std::string>> include;
@@ -38,6 +37,7 @@ namespace casual
             };
             
          } // resource
+
          struct Resource 
          {
             std::string key;
@@ -64,7 +64,6 @@ namespace casual
          {
             std::optional< std::vector< system::Resource>> resources;
 
-            //! normalizes the 'manager', mostly to set default values
             friend Model normalize( Model model);
             
             CASUAL_CONST_CORRECT_SERIALIZE(
@@ -102,36 +101,6 @@ namespace casual
                CASUAL_SERIALIZE( files);
                CASUAL_SERIALIZE( variables);
             )
-         };
-
-         struct Service
-         {
-            struct Execution
-            {
-               struct Timeout
-               {
-                  std::optional<std::string> duration;
-                  std::optional<std::string> contract;
-
-                  CASUAL_CONST_CORRECT_SERIALIZE(
-                     CASUAL_SERIALIZE( duration);
-                     CASUAL_SERIALIZE( contract);
-                  )
-               };
-               
-               std::optional<Timeout> timeout;
-
-               CASUAL_CONST_CORRECT_SERIALIZE(
-                  CASUAL_SERIALIZE( timeout);
-               )
-            };
-            
-            std::optional<Execution> execution;
-
-            CASUAL_CONST_CORRECT_SERIALIZE(
-               CASUAL_SERIALIZE( execution);
-            )
-
          };
 
          struct Group
@@ -209,41 +178,8 @@ namespace casual
             )
          };
 
-
          namespace service
          {
-            struct Default
-            {
-               struct Execution
-               {
-                  struct Timeout
-                  {
-                     std::optional<std::string> duration;
-                     std::optional<std::string> contract;
-
-                     CASUAL_CONST_CORRECT_SERIALIZE(
-                        CASUAL_SERIALIZE( duration);
-                        CASUAL_SERIALIZE( contract);
-                     )
-                  };
-                  
-                  std::optional<Timeout> timeout;
-
-                  CASUAL_CONST_CORRECT_SERIALIZE(
-                     CASUAL_SERIALIZE( timeout);
-                  )
-
-               };
-               
-               std::optional<Execution> execution;
-               std::optional<std::string> timeout;
-
-               CASUAL_CONST_CORRECT_SERIALIZE(
-                  CASUAL_SERIALIZE( execution);
-                  CASUAL_SERIALIZE( timeout);
-               )
-            };
-
             namespace execution
             {
                struct Timeout
@@ -267,21 +203,66 @@ namespace casual
                )
             };
 
-            struct Service
+            //! Represent the default settings for services, within a
+            //! 'configuration file' 
+            struct Default
             {
-               std::string name;
+               std::optional< service::Execution> execution;
+               std::optional< bool> discoverable;
+
+               //! @deprecated
                std::optional< std::string> timeout;
-               std::optional< Execution> execution;
-               std::optional< std::vector< std::string>> routes;
 
                CASUAL_CONST_CORRECT_SERIALIZE(
-                  CASUAL_SERIALIZE( name);
-                  CASUAL_SERIALIZE( timeout);
                   CASUAL_SERIALIZE( execution);
-                  CASUAL_SERIALIZE( routes);
+                  CASUAL_SERIALIZE( discoverable);
+
+                  CASUAL_SERIALIZE( timeout);
                )
             };
+
          } // service
+
+         struct Service
+         {
+            std::string name;
+            std::optional< std::string> note;
+            std::optional< service::Execution> execution;
+            std::optional< std::vector< std::string>> routes;
+            std::optional< bool> discoverable;
+            
+            //! @deprecated
+            std::optional< std::string> timeout;
+
+            CASUAL_CONST_CORRECT_SERIALIZE(
+               CASUAL_SERIALIZE( name);
+               CASUAL_SERIALIZE( note);
+               CASUAL_SERIALIZE( execution);
+               CASUAL_SERIALIZE( routes);
+               CASUAL_SERIALIZE( discoverable);
+
+               CASUAL_SERIALIZE( timeout);
+            )
+         };
+
+         namespace global
+         {
+            //! Represent the "domain global" default settings for all services
+            //! that does not "override" with specific settings
+            struct Service
+            {
+               std::optional< std::string> note;
+               std::optional< domain::service::Execution> execution;
+               std::optional< bool> discoverable;
+
+               CASUAL_CONST_CORRECT_SERIALIZE(
+                  CASUAL_SERIALIZE( note);
+                  CASUAL_SERIALIZE( execution);
+                  CASUAL_SERIALIZE( discoverable);
+               )
+            };
+            
+         } // global
 
          namespace transaction
          {
@@ -340,8 +321,6 @@ namespace casual
                std::string log;
                std::vector< Resource> resources;
 
-
-               //! normalizes the 'manager', mostly to set default values
                friend Manager normalize( Manager manager);
 
                CASUAL_CONST_CORRECT_SERIALIZE(
@@ -379,17 +358,6 @@ namespace casual
                         CASUAL_SERIALIZE( forward);
                      )
                   };
-
-                  struct Exclude
-                  {
-                     std::optional< std::vector< std::string>> services;
-                     std::optional< std::vector< std::string>> queues;
-
-                     CASUAL_CONST_CORRECT_SERIALIZE(
-                        CASUAL_SERIALIZE( services);
-                        CASUAL_SERIALIZE( queues);
-                     )
-                  };
                   
                } // connection
 
@@ -397,13 +365,11 @@ namespace casual
                {
                   std::string address;
                   std::optional< connection::Discovery> discovery;
-                  std::optional< connection::Exclude> exclude;
                   std::optional< std::string> note;
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
                      CASUAL_SERIALIZE( address);
                      CASUAL_SERIALIZE( discovery);
-                     CASUAL_SERIALIZE( exclude);
                      CASUAL_SERIALIZE( note);
                   )
                };
@@ -413,11 +379,9 @@ namespace casual
                   struct Connection
                   {
                      std::optional< connection::Discovery> discovery;
-                     std::optional< connection::Exclude> exclude;
                      
                      CASUAL_CONST_CORRECT_SERIALIZE(
                         CASUAL_SERIALIZE( discovery);
-                        CASUAL_SERIALIZE( exclude);
                      )
                   };
 
@@ -453,7 +417,6 @@ namespace casual
                std::optional< inbound::Default> defaults;
                std::vector< inbound::Group> groups;
 
-               //! normalizes the 'inbound', mostly to set default values
                friend Inbound normalize( Inbound inbound);
 
                CASUAL_CONST_CORRECT_SERIALIZE(
@@ -616,8 +579,6 @@ namespace casual
                std::optional< std::vector< gateway::Connection>> connections;
                //! @}
 
-
-               //! normalizes the 'manager', mostly to set default values
                friend Manager normalize( Manager manager);
 
                CASUAL_CONST_CORRECT_SERIALIZE(
@@ -832,8 +793,6 @@ namespace casual
                std::optional< forward::Default> defaults;
                std::optional< std::vector< forward::Group>> groups;
 
-
-               //! normalizes the 'forward', mostly to set default values
                friend Forward normalize( Forward forward);
 
                CASUAL_CONST_CORRECT_SERIALIZE(
@@ -861,8 +820,6 @@ namespace casual
 
                std::optional< std::string> note;
 
-
-               //! normalizes the 'manager', mostly to set default values
                friend Manager normalize( Manager manager);
 
                CASUAL_CONST_CORRECT_SERIALIZE(
@@ -876,35 +833,53 @@ namespace casual
          } // queue
 
 
-
+         //! Default settings within a configuration file. This is only to help
+         //! user to have default settings for whats defined within one file. Does not
+         //! effect other "accumulated" files.
          struct Default
          {
+            std::optional< std::string> note;
+
             std::optional< executable::Default> server;
             std::optional< executable::Default> executable;
-            std::optional< service::Default> service;
 
+            //! Represent the default settings for the set of defined `services`.
+            //! Think of it as the initial value of a service that is (possible in part) 
+            //! overridden by the explicit settings for a given defined service.
+            std::optional< service::Default> service;
 
             //! @deprecated
             std::optional< Environment> environment;
 
             CASUAL_CONST_CORRECT_SERIALIZE(
-               CASUAL_SERIALIZE( environment);
+               CASUAL_SERIALIZE( note);
                CASUAL_SERIALIZE( server);
                CASUAL_SERIALIZE( executable);
                CASUAL_SERIALIZE( service);
+               CASUAL_SERIALIZE( environment);
             )
          };
 
-
+         //! Represent "domain global" configuration. 
+         struct Global
+         {
+            std::optional< std::string> note;
+            std::optional< domain::global::Service> service;
+            
+            CASUAL_CONST_CORRECT_SERIALIZE(
+               CASUAL_SERIALIZE( note);
+               CASUAL_SERIALIZE( service);
+            )
+         };
 
          struct Model
          {
             std::optional< std::string> name;
             std::optional< std::string> note;
+            std::optional< domain::Global> global;
             std::optional< domain::Default> defaults;
 
             std::optional< domain::Environment> environment;
-            std::optional< domain::Service> service;
 
             std::optional< domain::transaction::Manager> transaction;
 
@@ -912,20 +887,22 @@ namespace casual
             std::optional< std::vector< domain::Server>> servers;
             std::optional< std::vector< domain::Executable>> executables;
             
-            std::optional< std::vector< domain::service::Service>> services;
+            std::optional< std::vector< domain::Service>> services;
 
             std::optional< domain::gateway::Manager> gateway;
             std::optional< domain::queue::Manager> queue;
 
-            //! normalizes the 'manager', mostly to set default values
+            //! @deprecated
+            std::optional< domain::global::Service> service;
+
             friend Model normalize( Model domain);
 
             CASUAL_CONST_CORRECT_SERIALIZE(
                CASUAL_SERIALIZE( name);
                CASUAL_SERIALIZE( note);
+               CASUAL_SERIALIZE( global);
                CASUAL_SERIALIZE_NAME( defaults, "default");
                CASUAL_SERIALIZE( environment);
-               CASUAL_SERIALIZE( service);
                CASUAL_SERIALIZE( transaction);
                CASUAL_SERIALIZE( groups);
                CASUAL_SERIALIZE( servers);
@@ -933,6 +910,7 @@ namespace casual
                CASUAL_SERIALIZE( services);
                CASUAL_SERIALIZE( gateway);
                CASUAL_SERIALIZE( queue);
+               CASUAL_SERIALIZE( service);
             )
          };
 
@@ -944,7 +922,17 @@ namespace casual
          std::optional< system::Model> system;
          std::optional< domain::Model> domain;
 
-         //! normalizes the 'manager', mostly to set default values
+         //! Normalizes the 'model'. The most important work it
+         //! does is to handle deprecated stuff:
+         //!  * warn (log) user and suggest non deprecated alternatives.
+         //!  * transform/move from deprecated part of the model to 
+         //!    non deprecated alternatives.
+         //!
+         //! This keep the knowledge and complexity of "moving the user
+         //! configuration forward in a backward compatibility manner" to
+         //! this user model, and the transformation to the _internal_ model
+         //! does not need to bother with deprecated stuff (it's somewhat a 
+         //! a pain to manage, with all the optionals...)
          friend Model normalize( Model model);
 
 

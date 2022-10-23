@@ -356,45 +356,32 @@ domain:
       }
 
 
-      TEST( test_domain_gateway_discovery, domain_A_to_B_C__C_has_exclude_for_echo_C_and_queue_c___expect_TPENOENT_for_echo_C)
+      TEST( test_domain_gateway_discovery, domain_A_to_B_C__C_echo_not_discoverable____expect_TPENOENT_for_echo_C)
       {
          common::unittest::Trace trace;
 
          constexpr auto C = R"(
 domain: 
-   name: C
+   name: C      
    servers:
       - path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-server"
         memberships: [ user]
-   queue:
-      groups:
-         -  alias: C
-            queues:
-               -  name: c
+   services:
+      -  name: casual/example/domain/echo/C
+         discoverable: false
    gateway:
       inbound:
          groups:
             -  connections:
                -  address: 127.0.0.1:7010
-                  exclude:
-                     services:
-                        -  "casual/example/domain/echo/.*"
-                     queues:
-                        -  "c"
 )";
 
          constexpr auto B = R"(
 domain: 
    name: B
-
    servers:
       - path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-server"
         memberships: [ user]
-   queue:
-      groups:
-         -  alias: B
-            queues:
-               -  name: b
    gateway:
       inbound:
          groups:
@@ -406,7 +393,6 @@ domain:
          constexpr auto A = R"(
 domain: 
    name: A
-
    gateway:
       outbound:
          groups:
@@ -428,8 +414,6 @@ domain:
 
             EXPECT_TRUE( tpcall( "casual/example/domain/echo/B", buffer, 128, &buffer, &len, 0) != -1) << "tperrno: " << tperrnostring( tperrno);
             tpfree( buffer);
-
-            EXPECT_TRUE( queue::enqueue( "b", queue::Payload{ "foo", common::unittest::random::binary( 128)}));
          }
 
          // expect NOT to find stuff in C
@@ -440,8 +424,6 @@ domain:
             EXPECT_TRUE( tpcall( "casual/example/domain/echo/C", buffer, 128, &buffer, &len, 0) == -1);
             EXPECT_TRUE( tperrno == TPENOENT) << "tperrno: " << tperrnostring( tperrno); 
             tpfree( buffer);
-
-            EXPECT_CODE( queue::enqueue( "c", queue::Payload{ "foo", common::unittest::random::binary( 128)}), queue::code::no_queue);
          }
       }
 

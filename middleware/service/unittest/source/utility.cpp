@@ -75,7 +75,7 @@ namespace casual
       {
          serviceframework::service::protocol::binary::Call call;
 
-         auto reply = call( manager::admin::service::name::state());
+         auto reply = call( manager::admin::service::name::state);
 
          return reply.extract< manager::admin::model::State>();
       }

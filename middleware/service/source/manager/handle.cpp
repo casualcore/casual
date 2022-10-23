@@ -106,14 +106,15 @@ namespace casual
 
             environment::normalize( model);
 
-            state.timeout = model.service.timeout;
-            state.restrictions = model.service.restrictions;
+            state.timeout = model.service.global.timeout;
+            state.restriction = std::move( model.service.restriction);
 
             auto add_service = [&]( auto& service)
             {
                state::Service result;
                result.information.name = service.name;
                result.timeout = service.timeout;
+               result.discoverable = service.discoverable;
 
                if( service.routes.empty())
                   state.services.emplace( std::move( service.name), std::move( result));
@@ -468,7 +469,7 @@ namespace casual
 
                      bool internal_only( State& state, state::Service& service, common::message::service::lookup::Request& message, platform::time::unit pending)
                      {  
-                        if( service.sequential())
+                        if( service.is_sequential())
                         {
                            if( auto destination = service.reserve_sequential( message.process, message.correlation))
                               dispatch::lookup::reply( state, service, destination, message, pending);
@@ -608,7 +609,7 @@ namespace casual
                         if( pending.empty())
                            return;
 
-                        auto lookup = [&state, now = platform::time::clock::type::now()]( auto& pending)
+                        auto lookup = [ &state, now = platform::time::clock::type::now()]( auto& pending)
                         {
                            // context::wait is not relevant for pending time.
                            if( pending.request.context.semantic == decltype( pending.request.context.semantic)::wait)
@@ -769,15 +770,12 @@ namespace casual
 
                         auto reply = common::message::reverse::type( message);
 
-                        // accumulate our internal/local services intersected with the requested
+                        // accumulate our internal/local discoverable services intersected with the requested
                         {
                            auto service_accumulate = [ &state]( auto result, auto& name)
                            {
-                              auto service = state.service( name);
-
-                              // * We only answer with sequential (local) services
-                              // * We don't allow other domains to access or know about our admin services.
-                              if( service && ! service->instances.sequential.empty() && service->information.category != common::service::category::admin)
+                              // * We only answer with services that are _discoverable_
+                              if( auto service = state.service( name); service && service->is_discoverable())
                               {
                                  result.emplace_back(
                                     name,
@@ -797,6 +795,8 @@ namespace casual
                            if( auto found = algorithm::find( state.reverse_routes, name))
                               reply.routes.services.emplace_back( found->first, found->second);
 
+
+
                         local::optional::send( state, message.process.ipc, reply);
                      };
                   }
@@ -808,16 +808,14 @@ namespace casual
                   {
                      return [&state]( casual::domain::message::discovery::api::Reply& message)
                      {
-                        Trace trace{ "service::manager::handle::domain::discovery::external::reply"};
+                        Trace trace{ "service::manager::handle::domain::discovery::api::reply"};
                         common::log::line( verbose::log, "message: ", message);
 
                         if( auto found = algorithm::find( state.pending.lookups, message.correlation))
                         {
                            auto pending = algorithm::container::extract( state.pending.lookups, std::begin( found));
 
-                           auto service = state.service( pending.request.requested);
-
-                           if( service && ! service->instances.empty())
+                           if( auto service = state.service( pending.request.requested); service && service->instances)
                            {
                               // The requested service is now available, use
                               // the lookup to decide how to progress.
@@ -881,8 +879,9 @@ namespace casual
                         // all known "remote" services
                         reply.content.services( algorithm::accumulate( state.services, std::move( reply.content.services()), []( auto result, auto& pair)
                         {
-                           if( std::get< 1>( pair).instances.sequential.empty() && ! std::get< 1>( pair).instances.concurrent.empty())
-                              result.push_back( std::get< 0>( pair));
+                           const auto& [ name, service] = pair;
+                           if( service.is_concurrent() && ! service.is_sequential())
+                              result.push_back( name);
 
                            return result;
                         }));

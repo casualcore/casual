@@ -14,6 +14,7 @@
 #include "common/code/casual.h"
 
 
+
 namespace casual
 {
    using namespace common;
@@ -39,12 +40,22 @@ namespace casual
             {
                auto placeholder = []( auto& entity)
                {
-                  if( ! entity.alias || entity.alias.value().empty())
+                  if( ! entity.alias || entity.alias->empty())
                      entity.alias = configuration::alias::generate::placeholder();
                };
             } // alias
 
+            //! If `optional` not contains a value, a default constructed value
+            //! is _inserted_ .
+            //! @returns `*optional`
+            template< typename T>
+            auto value_or_emplace( std::optional< T>& optional) -> decltype( optional.emplace())
+            {
+               if( optional)
+                  return *optional;
 
+               return optional.emplace();
+            }
 
          } // <unnamed>
       } // local
@@ -67,7 +78,7 @@ namespace casual
                if( ! manager.defaults)
                   return manager;
 
-               auto update_resource = [&defaults = manager.defaults.value().resource]( auto& resource)
+               auto update_resource = [ &defaults = manager.defaults->resource]( auto& resource)
                {
                   resource.key = algorithm::coalesce( resource.key, defaults.key);
                   resource.instances = algorithm::coalesce( resource.instances, defaults.instances);
@@ -107,8 +118,8 @@ namespace casual
                   for( auto& group : inbound.groups)
                      if( group.limit)
                      {
-                        group.limit.value().size = algorithm::coalesce( group.limit.value().size, limit.size);
-                        group.limit.value().messages = algorithm::coalesce( group.limit.value().messages, limit.messages);
+                        group.limit->size = algorithm::coalesce( group.limit->size, limit.size);
+                        group.limit->messages = algorithm::coalesce( group.limit->messages, limit.messages);
                      }
                }
                return inbound;
@@ -125,60 +136,148 @@ namespace casual
                return outbound;
             }
 
+            namespace deprecated
+            {
+               Manager normalize( Manager manager)
+               {
+                  // deprecated listeners
+                  if( manager.listeners && ! manager.listeners->empty())
+                  {
+                     log::line( log::category::warning, code::casual::invalid_configuration, " domain.gateway.listeners[] is deprecated - use domain.gateway.inbound.groups[]");
+
+                     gateway::inbound::Group group;
+                     group.alias = "inbound";
+                     group.note = "transformed from DEPRECATED domain.gateway.listeners[]";
+
+                     group.connections = common::algorithm::transform( *manager.listeners, []( auto& listener)
+                     {
+                        gateway::inbound::Connection result;
+                        if( listener.note)
+                           result.note = std::move( *listener.note);
+                        result.address = std::move( listener.address);
+                        return result;
+                     });
+
+                     auto accumulate_limit = []( auto current, auto& listener)
+                     {
+                        if( ! listener.limit)
+                           return current;
+
+                        if( listener.limit->size)
+                           local::value_or_emplace( current).size = 
+                              std::max( listener.limit->size.value_or( 0), local::value_or_emplace( current).size.value_or( 0));
+
+                        if( listener.limit->messages)
+                           local::value_or_emplace( current).messages = 
+                              std::max( listener.limit->messages.value_or( 0), local::value_or_emplace( current).messages.value_or( 0));
+
+                        return current;
+                     };
+
+                     group.limit = algorithm::accumulate( *manager.listeners, std::optional< gateway::inbound::Limit>{}, accumulate_limit);
+
+                     local::value_or_emplace( manager.inbound).groups.push_back( std::move( group)); 
+
+                     // remove it...
+                     manager.listeners = {};
+                  }
+
+                  // deprecated connections
+                  if( manager.connections && ! manager.connections->empty())
+                  {
+                     log::line( log::category::warning, code::casual::invalid_configuration, " domain.gateway.connections[ is deprecated - use domain.gateway.outbound.groups[]");
+
+                     common::algorithm::transform( *manager.connections, local::value_or_emplace( manager.outbound).groups, []( gateway::Connection& value)
+                     {
+                        gateway::outbound::Group result;
+                        result.note = "transformed from DEPRECATED domain.gateway.connections[]";
+                        
+                        gateway::outbound::Connection connection;
+                        
+                        connection.note = std::move( value.note);
+                        connection.address = std::move( value.address);
+                     
+                        if( value.services)
+                           connection.services = *value.services;
+                        if( value.queues)
+                           connection.queues = *value.queues;
+
+                        result.connections.push_back( std::move( connection));
+
+                        return result;
+                     });
+
+                     // remove it...
+                     manager.connections = {};
+                  }
+
+                  if( ! manager.defaults)
+                     return manager;
+
+                  // TODO deprecated remove on 2.0
+                  if( manager.defaults->connection && manager.connections)
+                  {
+                     log::line( log::category::error, code::casual::invalid_configuration, " domain.gateway.default.connection is deprecated/removed - there is no replacement");
+
+                     auto update_connection = [ &defaults = *manager.defaults->connection]( auto& connection)
+                     {
+                        connection.address = algorithm::coalesce( connection.address, defaults.address);
+                        connection.restart = connection.restart.value_or( defaults.restart);
+                     };
+                     algorithm::for_each( manager.connections.value(), update_connection);
+                  }
+
+                  // either way, remove it
+                  manager.defaults->connection = {};
+
+                  // TODO deprecated remove on 2.0
+                  if( manager.defaults->listener && manager.listeners)
+                  {
+                     log::line( log::category::warning, code::casual::invalid_configuration, " domain.gateway.default.listener is deprecated - use domain.gateway.inbound.default");
+
+                     auto update_listener = [&defaults = manager.defaults->listener.value()]( auto& listener)
+                     {
+                        if( ! listener.limit)
+                        {
+                           listener.limit = defaults.limit;
+                           return;
+                        }
+                        auto& limit = listener.limit.value();
+                        limit.size = algorithm::coalesce( limit.size, defaults.limit.size);
+                        limit.messages = algorithm::coalesce( limit.messages, defaults.limit.messages);
+                     };
+                     algorithm::for_each( manager.listeners.value(), update_listener);
+                  }
+
+                  // either way, remove it
+                  manager.defaults->listener = {};
+
+                  
+
+                  return manager;
+               }
+            } // deprecated
+
             Manager normalize( Manager manager)
             {
+               // take care of deprecated stuff...
+               manager = deprecated::normalize( std::move( manager));
+
                if( manager.inbound)
-                  manager.inbound = normalize( std::move( manager.inbound.value()));
+                  manager.inbound = normalize( std::move( *manager.inbound));
 
                if( manager.outbound)
-                  manager.outbound = normalize( std::move( manager.outbound.value()));
+                  manager.outbound = normalize( std::move( *manager.outbound));
 
                if( manager.reverse)
                {
-                  if( manager.reverse.value().inbound)
-                     manager.reverse.value().inbound = normalize( std::move( manager.reverse.value().inbound.value()));
-                  if( manager.reverse.value().outbound)
-                     manager.reverse.value().outbound = normalize( std::move( manager.reverse.value().outbound.value()));
-               }
-
-               // the rest is deprecated...
-               if( ! manager.defaults)
-                  return manager;
-
-               // TODO deprecated remove on 2.0
-               if( manager.defaults.value().connection && manager.connections)
-               {
-                  log::line( log::category::warning, code::casual::invalid_configuration, " domain.gateway.default.connection is deprecated - there is no replacement");
-
-                  auto update_connection = [&defaults = manager.defaults.value().connection.value()]( auto& connection)
-                  {
-                     connection.address = algorithm::coalesce( connection.address, defaults.address);
-                     connection.restart = connection.restart.value_or( defaults.restart);
-                  };
-                  algorithm::for_each( manager.connections.value(), update_connection);
-               }
-
-               // TODO deprecated remove on 2.0
-               if( manager.defaults.value().listener && manager.listeners)
-               {
-                  log::line( log::category::warning, code::casual::invalid_configuration, " domain.gateway.default.listener is deprecated - use domain.gateway.inbound.default");
-
-                  auto update_listener = [&defaults = manager.defaults.value().listener.value()]( auto& listener)
-                  {
-                     if( ! listener.limit)
-                     {
-                        listener.limit = defaults.limit;
-                        return;
-                     }
-                     auto& limit = listener.limit.value();
-                     limit.size = algorithm::coalesce( limit.size, defaults.limit.size);
-                     limit.messages = algorithm::coalesce( limit.messages, defaults.limit.messages);
-                  };
-                  algorithm::for_each( manager.listeners.value(), update_listener);
+                  if( manager.reverse->inbound)
+                     manager.reverse->inbound = normalize( std::move( *manager.reverse->inbound));
+                  if( manager.reverse->outbound)
+                     manager.reverse->outbound = normalize( std::move( *manager.reverse->outbound));
                }
 
                return manager;
-
             }
 
          } // gateway
@@ -201,8 +300,8 @@ namespace casual
                      {
                         if( ! service.instances)
                            service.instances = default_service.instances;
-                        if( service.reply && ! service.reply.value().delay && default_service.reply)
-                           service.reply.value().delay = default_service.reply.value().delay;
+                        if( service.reply && ! service.reply->delay && default_service.reply)
+                           service.reply->delay = default_service.reply->delay;
                      });
                   }
 
@@ -214,7 +313,7 @@ namespace casual
                         if( ! queue.instances)
                            queue.instances = default_queue.instances;
                         if( ! queue.target.delay && default_queue.target)
-                           queue.target.delay = default_queue.target.value().delay;
+                           queue.target.delay = default_queue.target->delay;
                      });
                   }
                };
@@ -233,7 +332,7 @@ namespace casual
                      log::line( log::category::warning, "configuration - queue.retries is deprecated - use queue.retry.count instead");
                      
                      if( queue.retry)
-                        queue.retry.value().count = algorithm::coalesce( std::move( queue.retry.value().count), std::move( queue.retries));
+                        queue.retry->count = algorithm::coalesce( std::move( queue.retry->count), std::move( queue.retries));
                      else
                         queue.retry = Queue::Retry{ std::move( queue.retries), std::nullopt};
                   }
@@ -243,8 +342,8 @@ namespace casual
                if( manager.defaults)
                {
                   // queue
-                  if( manager.defaults.value().queue)
-                     normalize_queue_retry( manager.defaults.value().queue.value());
+                  if( manager.defaults->queue)
+                     normalize_queue_retry( manager.defaults->queue.value());
                }
                
 
@@ -265,15 +364,15 @@ namespace casual
                         normalize_queue_retry( queue);
 
                         // should we complement retry with defaults?
-                        if( manager.defaults && manager.defaults.value().queue)
+                        if( manager.defaults && manager.defaults->queue)
                         {
-                           if( queue.retry && manager.defaults.value().queue.value().retry)
+                           if( queue.retry && manager.defaults->queue->retry)
                            {
-                              queue.retry.value().count = algorithm::coalesce( std::move( queue.retry.value().count), manager.defaults.value().queue.value().retry.value().count);
-                              queue.retry.value().delay = algorithm::coalesce( std::move( queue.retry.value().delay), manager.defaults.value().queue.value().retry.value().delay);
+                              queue.retry->count = algorithm::coalesce( std::move( queue.retry->count), manager.defaults->queue->retry->count);
+                              queue.retry->delay = algorithm::coalesce( std::move( queue.retry->delay), manager.defaults->queue->retry->delay);
                            }
                            else
-                              queue.retry = algorithm::coalesce( std::move( queue.retry), manager.defaults.value().queue.value().retry);
+                              queue.retry = algorithm::coalesce( std::move( queue.retry), manager.defaults->queue->retry);
                         }
                      });
                      
@@ -296,29 +395,86 @@ namespace casual
             Trace trace{ "configuration::user::domain::Model::normalize"};
 
             if( model.executables)
-               algorithm::for_each( model.executables.value(), local::alias::placeholder);
+               algorithm::for_each( *model.executables, local::alias::placeholder);
             if( model.servers)
-            algorithm::for_each( model.servers.value(), local::alias::placeholder);
+               algorithm::for_each( *model.servers, local::alias::placeholder);
 
             auto apply_normalize = []( auto& manager)
             {
                if( manager)
-                  manager = normalize( std::move( manager.value()));
+                  manager = normalize( std::move( *manager));
             };
 
             apply_normalize( model.transaction);
             apply_normalize( model.gateway);
             apply_normalize( model.queue);
 
-            // validate? - no, we don't 'validate' user model
+
+            // global
+            {
+               if( model.service)
+               {
+                  auto get_global_service = []( Model& model) -> decltype( auto)
+                  {
+                     return local::value_or_emplace( local::value_or_emplace( model.global).service);
+                  };
+
+                  // use of deprecated config
+                  if( model.service->execution && model.service->execution->timeout 
+                     && ( model.service->execution->timeout->duration || model.service->execution->timeout->contract))
+                  {
+                     log::line( log::category::warning, code::casual::invalid_configuration, " domain.service.timeout.(duration|contract) is deprecated - use domain.global.service.timeout.(duration|contract) instead");
+                     local::value_or_emplace( get_global_service( model).execution).timeout = std::move( model.service->execution->timeout);
+                  }
+
+                  // Note: domain.service.discoverable is a new _artifact_ of reusing user model types, and we don't
+                  // need to be backward compatible with it, we just ignore it. 
+               }
+            }
+ 
+            if( model.services)
+            {
+               auto normalize_service = []( user::domain::Service& service)
+               {
+                  if( service.timeout)
+                  {
+                     log::line( log::category::warning, code::casual::invalid_configuration, 
+                        " domain.services[].timeout is deprecated - use domain.services[].execution.duration instead");
+
+                     if( service.execution && service.execution->timeout && service.execution->timeout->duration)
+                     {
+                        log::line( log::category::error, code::casual::invalid_configuration, 
+                           " ambiguity - domain.services[].timeout is used the same time as domain.services[].execution.duration - remove domain.services[].timeout");
+                     }
+                     else
+                     {
+                        local::value_or_emplace( local::value_or_emplace( service.execution).timeout).duration = std::move( service.timeout);
+                     }
+                  }
+               };
+
+               algorithm::for_each( *model.services, normalize_service);
+            }
+
+
+            // defaults
+            {
+               if( model.defaults && model.defaults->service && model.defaults->service->timeout)
+               {
+                  log::line( log::category::warning, code::casual::invalid_configuration, 
+                     " domain.default.service.timeout is deprecated - use domain.default.service.execution.duration instead");
+                  local::value_or_emplace( local::value_or_emplace( model.defaults->service->execution).timeout).duration 
+                     = std::move( model.defaults->service->timeout);
+               }
+            }
 
             if( ! model.defaults)
                return model; // nothing to normalize
 
-            if( model.defaults.value().environment)
+            if( model.defaults->environment)
             {
                log::line( log::category::warning, "configuration - domain.default.environment is deprecated - use domain.environment instead");
-               model.environment = algorithm::coalesce( std::move( model.environment), std::move( model.defaults.value().environment));
+               model.environment = algorithm::coalesce( std::move( model.environment), std::move( model.defaults->environment));
             }
 
             
@@ -333,46 +489,46 @@ namespace casual
                };
 
                if( entities)
-                  algorithm::for_each( entities.value(), normalize_entity);
+                  algorithm::for_each( *entities, normalize_entity);
             };
 
-            if( model.defaults.value().server)
-               normalize_entities( model.servers, model.defaults.value().server.value());
+            if( model.defaults->server)
+               normalize_entities( model.servers, *model.defaults->server);
 
-            if( model.defaults.value().executable)
-               normalize_entities( model.executables, model.defaults.value().executable.value());
+            if( model.defaults->executable)
+               normalize_entities( model.executables, *model.defaults->executable);
 
-            if( model.defaults.value().service)
+            if( model.defaults->service)
             {
-               auto normalize_service = [&defaults = model.defaults.value().service.value()]( auto& service)
+               auto normalize_service = [ &defaults = *model.defaults->service]( auto& service)
                {
                   if( defaults.timeout)
-                     service.timeout = service.timeout.value_or( defaults.timeout.value());
+                     service.timeout = service.timeout.value_or( *defaults.timeout);
 
                   if( defaults.execution)
                   {
                      if( ! service.execution) 
                         service.execution = service.execution.emplace();
 
-                     if( defaults.execution.value().timeout)
+                     if( defaults.execution->timeout)
                      {
-                        if( ! service.execution.value().timeout) 
-                           service.execution.value().timeout = service.execution.value().timeout.emplace();
+                        if( ! service.execution->timeout) 
+                           service.execution->timeout = service.execution->timeout.emplace();
 
-                        if( defaults.execution.value().timeout.value().duration)
-                           service.execution.value().timeout.value().duration =  
-                              service.execution.value().timeout.value().duration.value_or( defaults.execution.value().timeout.value().duration.value());
+                        if( defaults.execution->timeout->duration)
+                           service.execution->timeout->duration =  
+                              service.execution->timeout->duration.value_or( *defaults.execution->timeout->duration);
 
-                        if( defaults.execution.value().timeout.value().contract)
-                           service.execution.value().timeout.value().contract =  
-                              service.execution.value().timeout.value().contract.value_or( defaults.execution.value().timeout.value().contract.value());
+                        if( defaults.execution->timeout->contract)
+                           service.execution->timeout->contract =  
+                              service.execution->timeout->contract.value_or( *defaults.execution->timeout->contract);
 
                      }
                   } 
                };
 
                if( model.services)
-                  algorithm::for_each( model.services.value(), normalize_service);
+                  algorithm::for_each( *model.services, normalize_service);
             }
 
             return model;

@@ -304,9 +304,14 @@ namespace casual
             return instances.concurrent.front().process();
          }
 
+         bool Service::is_discoverable() const noexcept
+         {
+            return is_sequential() && discoverable && information.category != common::service::category::admin;
+         }
+
          bool Service::timeoutable() const noexcept
          {
-            return ! instances.sequential.empty() && timeout.duration > platform::time::unit::zero();
+            return is_sequential() && timeout.duration > platform::time::unit::zero();
          }         
 
 
@@ -460,7 +465,7 @@ namespace casual
             template< typename M>
             void restrict_add_services( const State& state, M& advertise)
             {
-               if( auto found = algorithm::find( state.restrictions, advertise.alias))
+               if( auto found = algorithm::find( state.restriction.servers, advertise.alias))
                {
                   // we transform all regex once.
                   auto expressions = algorithm::transform( found->services, []( auto& expression){ return std::regex{ expression};});

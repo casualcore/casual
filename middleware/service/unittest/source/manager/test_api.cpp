@@ -54,20 +54,20 @@ domain:
 
                auto manager = casual::domain::unittest::manager( configuration);
 
-               // we need to call twice since the service metric is only registred 
+               // we need to call twice since the service metric is only registered 
                // after the call.
                // -> 1 get state
                // -> 2 get state
                //   validates metric from #1 (since #2 is not part of the returned state)
                {
                   auto state = manager::api::state();
-                  ASSERT_TRUE( algorithm::find_if( state.services, local::is_service( admin::service::name::state())));
+                  ASSERT_TRUE( algorithm::find_if( state.services, local::is_service( admin::service::name::state)));
                }
                auto state = manager::api::state();
 
                ASSERT_TRUE( ! state.services.empty());
                {
-                  auto found = algorithm::find_if( state.services, local::is_service( admin::service::name::state()));
+                  auto found = algorithm::find_if( state.services, local::is_service( admin::service::name::state));
                   ASSERT_TRUE( found);
                   EXPECT_TRUE( found->category == ".admin") << "found->category: " << found->category;
                   EXPECT_TRUE( found->transaction == decltype( found->transaction)::none) << "found->transaction: " << found->transaction;

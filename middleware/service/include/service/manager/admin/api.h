@@ -11,20 +11,11 @@
 
 namespace casual
 {
-   namespace service
+   namespace service::manager::admin::api
    {
-      namespace manager
-      {
-         namespace admin
-         {
-            namespace api
-            {
-               //! internal casual api 
-               model::State state();
+      //! internal casual api 
+      model::State state();
                   
-            } // api
-         } // admin
-      } // manager  
-   } // service
+   } // service::manager::admin::api
 } // casual
 

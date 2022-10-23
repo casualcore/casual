@@ -38,7 +38,7 @@ namespace casual
 
          auto arguments = manager::admin::services( state);
 
-         EXPECT_TRUE( arguments.services.at( 0).name == admin::service::name::state());
+         EXPECT_TRUE( arguments.services.at( 0).name == admin::service::name::state);
       }
 
 

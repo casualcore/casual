@@ -56,12 +56,12 @@ namespace casual
       common::server::Arguments services( manager::State& state)
       {
          return { {
-               { service::name::state(),
+               { service::name::state,
                   std::bind( &local::state, std::placeholders::_1, std::ref( state)),
                   common::service::transaction::Type::none,
                   common::service::category::admin
                },
-               { service::name::metric::reset(),
+               { service::name::metric::reset,
                   std::bind( &local::metric::reset, std::placeholders::_1, std::ref( state)),
                   common::service::transaction::Type::none,
                   common::service::category::admin

@@ -26,14 +26,13 @@ namespace casual
          namespace
          {
             void restrictions( State& state, 
-               std::vector< casual::configuration::model::service::Restriction> current, 
-               std::vector< casual::configuration::model::service::Restriction> wanted)
+               casual::configuration::model::service::Restriction current, 
+               casual::configuration::model::service::Restriction wanted)
             {
-               auto change = casual::configuration::model::change::calculate( current, wanted, []( auto& l, auto& r){ return l.alias == r.alias;});
+               auto change = casual::configuration::model::change::calculate( current.servers, wanted.servers, []( auto& l, auto& r){ return l.alias == r.alias;});
                log::line( verbose::log, "change: ", change);
 
-
-               state.restrictions = std::move( wanted);
+               state.restriction = std::move( wanted);
             }
 
 
@@ -111,6 +110,7 @@ namespace casual
                   state::Service result;
                   result.information.name = service.name;
                   result.timeout = std::move( service.timeout);
+                  result.discoverable = service.discoverable;
 
                   if( service.routes.empty())
                      state.services.try_emplace( std::move( service.name), std::move( result));
@@ -131,7 +131,10 @@ namespace casual
                   auto services = find_services_with_origin_name( configuration.name);
 
                   for( auto iterator : services)
+                  {
                      iterator->second.timeout = configuration.timeout;
+                     iterator->second.discoverable = configuration.discoverable;
+                  }
 
                   auto [ origin, routes] = algorithm::partition( services, []( auto iterator)
                   {
@@ -208,9 +211,9 @@ namespace casual
          log::line( verbose::log, "current: ", current);
          log::line( verbose::log, "wanted: ", wanted);
 
-         state.timeout = std::move( wanted.timeout);
+         state.timeout = std::move( wanted.global.timeout);
 
-         local::restrictions( state, std::move( current.restrictions), std::move( wanted.restrictions));
+         local::restrictions( state, std::move( current.restriction), std::move( wanted.restriction));
          local::services( state, std::move( current.services), std::move( wanted.services));
 
       }

@@ -86,6 +86,7 @@ domain:
          EXPECT_TRUE( origin.domain.servers == result.domain.servers) << CASUAL_NAMED_VALUE( origin.domain.servers) << "\n" << CASUAL_NAMED_VALUE( result.domain.servers);
          EXPECT_TRUE( origin.domain.executables == result.domain.executables);
          EXPECT_TRUE( origin.domain.groups == result.domain.groups);
+         EXPECT_TRUE( origin.service.global == result.service.global) << CASUAL_NAMED_VALUE( origin.service.global) << "\n" << CASUAL_NAMED_VALUE( result.service.global);
          EXPECT_TRUE( origin.service == result.service) << CASUAL_NAMED_VALUE( origin.service) << "\n" << CASUAL_NAMED_VALUE( result.service);
          EXPECT_TRUE( origin.transaction == result.transaction) << CASUAL_NAMED_VALUE( origin.transaction) << "\n" << CASUAL_NAMED_VALUE( result.transaction);
          EXPECT_TRUE( origin.gateway == result.gateway) << CASUAL_NAMED_VALUE( origin.gateway) << "\n" << CASUAL_NAMED_VALUE( result.gateway);
@@ -95,7 +96,7 @@ domain:
          EXPECT_TRUE( origin == result) << "\n" << CASUAL_NAMED_VALUE( origin) << "\n " << CASUAL_NAMED_VALUE( result);
       }
 
-      TEST( configuration_model_transform, service_restrition)
+      TEST( configuration_model_transform, service_restriction)
       {
          common::unittest::Trace trace;
 
@@ -114,16 +115,16 @@ domain:
 
          EXPECT_TRUE( model.domain.name == "model");
          ASSERT_TRUE( model.domain.servers.size() == 3) << CASUAL_NAMED_VALUE( model);
-         ASSERT_TRUE( model.service.restrictions.size() == 2) << CASUAL_NAMED_VALUE( model);
+         ASSERT_TRUE( model.service.restriction.servers.size() == 2) << CASUAL_NAMED_VALUE( model);
 
          {
-            auto& restriction = model.service.restrictions.at( 0);
-            EXPECT_TRUE( restriction.alias == "a");
+            auto& restriction = model.service.restriction.servers.at( 0);
+            EXPECT_TRUE( restriction.alias == "a") << CASUAL_NAMED_VALUE( model.service.restriction.servers);
             EXPECT_TRUE(( restriction.services == std::vector< std::string>{ "a1", "a2", "a3"}));
          }
 
          {
-            auto& restriction = model.service.restrictions.at( 1);
+            auto& restriction = model.service.restriction.servers.at( 1);
             EXPECT_TRUE( restriction.alias == "c");
             EXPECT_TRUE(( restriction.services == std::vector< std::string>{ "c1", "c2"}));
          }
@@ -163,7 +164,7 @@ domain:
    
          )");
 
-         ASSERT_TRUE( model.gateway.outbound.groups.size() == 3);
+         ASSERT_TRUE( model.gateway.outbound.groups.size() == 3) << CASUAL_NAMED_VALUE( model.gateway.outbound.groups);
          {
             auto& group = model.gateway.outbound.groups.at( 0);
             EXPECT_TRUE( group.alias == "outbound");
@@ -325,6 +326,29 @@ domain:
          EXPECT_TRUE( model.service.services.at(0).timeout.contract == common::service::execution::timeout::contract::Type::kill );
       }
 
+
+      TEST( configuration_model_transform, deprecated_service__to_global_service)
+      {
+         common::unittest::Trace trace;
+
+         constexpr auto configuration = R"(
+domain:
+   name: model
+
+   service:
+      execution:
+         timeout:
+            duration: 53min
+            contract: terminate
+)";
+         
+         auto model = local::configuration( configuration);
+
+         EXPECT_TRUE( model.service.global.timeout.duration == common::chronology::from::string( "53min"));
+         EXPECT_TRUE( model.service.global.timeout.contract == common::service::execution::timeout::contract::Type::terminate);
+
+      }
+
       TEST( configuration_model_transform, service_with_default_and_global_service_config)
       {
          common::unittest::Trace trace;
@@ -369,8 +393,8 @@ domain:
          EXPECT_TRUE( model.service.services.at(1).timeout.duration == common::chronology::from::string( "97ms"));
          EXPECT_TRUE( model.service.services.at(1).timeout.contract == common::service::execution::timeout::contract::Type::linger );
 
-         EXPECT_TRUE( model.service.timeout.duration == common::chronology::from::string( "53min"));
-         EXPECT_TRUE( model.service.timeout.contract == common::service::execution::timeout::contract::Type::terminate );
+         EXPECT_TRUE( model.service.global.timeout.duration == common::chronology::from::string( "53min"));
+         EXPECT_TRUE( model.service.global.timeout.contract == common::service::execution::timeout::contract::Type::terminate );
 
       }
 
