@@ -143,16 +143,18 @@ namespace casual
          {
             common::unittest::Trace trace;
 
-            tx_set_transaction_control( TX_CHAINED);
+            ASSERT_EQ( tx_set_transaction_control( TX_CHAINED), TX_OK);
 
-            ASSERT_TRUE( tx_begin() == TX_OK);
-            EXPECT_TRUE( tx_info( nullptr) == 1);
-            EXPECT_TRUE( tx_commit() == TX_OK);
-            EXPECT_TRUE( tx_info( nullptr) == 1);
+            EXPECT_EQ( tx_begin(), TX_OK);
+            EXPECT_EQ( tx_info( nullptr), 1);
+            EXPECT_EQ( tx_commit(), TX_OK);
+            // expect a new transaction to start
+            EXPECT_EQ( tx_info( nullptr), 1);
 
-            tx_set_transaction_control( TX_UNCHAINED);
+            EXPECT_EQ( tx_set_transaction_control( TX_UNCHAINED), TX_OK);
 
-            EXPECT_TRUE( tx_commit() == TX_OK);
+            EXPECT_EQ( tx_commit(), TX_OK);
+            EXPECT_EQ( tx_info( nullptr), 0);
          }
 
          TEST( xatmi_tx, chained_control__tx_begin_tx_begin__expect_TX_PROTOCOLL_ERROR)

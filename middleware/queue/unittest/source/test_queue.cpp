@@ -582,9 +582,9 @@ domain:
 
          // dequeue, and rollback
          {
-            common::transaction::context().begin();
+            EXPECT_EQ( common::transaction::context().begin(), common::code::tx::ok);
             ASSERT_TRUE( ! queue::dequeue( name).empty());
-            common::transaction::context().rollback();
+            EXPECT_EQ( common::transaction::context().rollback(), common::code::tx::ok);
          }  
 
          // not available yet
@@ -782,7 +782,7 @@ domain:
 
          {
             // simulate a uncommitted dequeue
-            common::transaction::context().begin();
+            EXPECT_EQ( common::transaction::context().begin(), common::code::tx::ok);
             queue::dequeue( "a1");
             {
                auto messages = unittest::messages( "a1");
@@ -803,7 +803,7 @@ domain:
          }
 
          // rollback simulated uncommited dequeue, otherwise casual-queue-group has ongoing transactions
-         common::transaction::context().rollback();
+         EXPECT_EQ( common::transaction::context().rollback(), common::code::tx::ok);
       }
 
       TEST( casual_queue, enqueue_1___dequeue_message___recover_rollback____expect_1_message_in_queue)
@@ -827,7 +827,7 @@ domain:
 
          {
             // simulate a uncommitted dequeue
-            common::transaction::context().begin();
+            EXPECT_EQ( common::transaction::context().begin(), common::code::tx::ok);
             queue::dequeue( "a1");
             {
                auto messages = unittest::messages( "a1");
@@ -854,7 +854,7 @@ domain:
             }
 
             // rollback simulated uncommited dequeue, otherwise casual-queue-group has ongoing transactions
-            common::transaction::context().rollback();
+            EXPECT_EQ( common::transaction::context().rollback(), common::code::tx::ok);
          }
 
      }

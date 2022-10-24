@@ -90,9 +90,34 @@ namespace casual
 
          auto execute_reply = execute::scope( [&]()
          {
+            auto normalize_code = []( auto& reply) -> decltype(auto)
+            {
+               using Result = decltype( reply.code.result);
+               if( reply.code.result != Result::ok)
+                  return reply;
+
+               // if transaction state is _not good_ we need to indicate this on the
+               // normal "reply code channel".
+               switch( reply.transaction.state)
+               {
+                  // TODO: not totally sure about the exact correlation between 
+                  //    transaction.state -> reply.code.result. For now, we use "the worst".
+                  using Enum = decltype( reply.transaction.state);
+                  case Enum::active:
+                     break;
+                  case Enum::rollback:
+                  case Enum::timeout:
+                  case Enum::error:
+                     reply.code.result = Result::service_error;
+                     break;
+               }
+               return reply;
+            };
+
             // Send reply to caller.
             if( send_reply)
-               policy.reply( message.process.ipc, reply);
+               policy.reply( message.process.ipc, normalize_code( reply));
+               
          });
 
 
@@ -147,7 +172,7 @@ namespace casual
             execute_reply.release();
             execute_error_reply.release();
 
-            // reply.code.result is used to set outcomme in the 'ack'. We might want a _forward_ code?
+            // reply.code.result is used to set outcome in the 'ack'. We might want a _forward_ code?
             reply.code.result = code::xatmi::ok;
 
             return;

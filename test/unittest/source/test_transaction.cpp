@@ -26,7 +26,7 @@
 
 #include "gateway/unittest/utility.h"
 
-#include "tx.h"
+#include "casual/tx.h"
 #include "casual/xatmi.h"
 
 namespace casual
@@ -35,7 +35,7 @@ namespace casual
 
    namespace test
    {
-      namespace domain
+      namespace transaction
       {
          namespace local
          {
@@ -65,18 +65,19 @@ domain:
         dependencies: [ queue]
 
    servers:
-      - path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/service/bin/casual-service-manager
-        memberships: [ base]
-      - path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/transaction/bin/casual-transaction-manager
-        memberships: [ transaction]
-      - path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/queue/bin/casual-queue-manager
-        memberships: [ queue]
-      - path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-error-server
-        memberships: [ example]
-      - path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-server
-        memberships: [ example]
-      - path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-resource-server
-        memberships: [ example]
+      -  path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/service/bin/casual-service-manager
+         memberships: [ base]
+      -  path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/transaction/bin/casual-transaction-manager
+         memberships: [ transaction]
+      -  path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/queue/bin/casual-queue-manager
+         memberships: [ queue]
+      -  path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-error-server
+         memberships: [ example]
+      -  path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-server
+         memberships: [ example]
+      -  alias: resource-example
+         path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-resource-server
+         memberships: [ example]
 )";
 
            
@@ -376,13 +377,113 @@ domain:
             }
          }
 
-      namespace local
-      {
-         namespace
+         TEST( test_transaction, example_server_two_resources__service_commit__rm1_ok__rm_2_error__rollback___expect_TPESVCERR)
          {
-            namespace cli
+            common::unittest::Trace trace;
+            local::Clear clear;
+
+            constexpr auto configuration = R"(
+domain: 
+   name: TM
+   transaction:
+      resources:
+         -  name: rm1
+            key: rm-mockup
+            instances: 1
+         -  name: rm2
+            key: rm-mockup
+            instances: 1
+            # XAER_RMERR   -3 
+            openinfo: --prepare -3
+         -  name: example-resource-server
+            key: rm-mockup
+            instances: 1
+
+   groups: 
+      -  name: resource
+         dependencies: [ example]
+         resources: [ rm2, rm1]
+
+   servers:
+      -  alias: dynamic-resource-example
+         path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-dynamic-resource-server
+         memberships: [ resource]
+
+)";
+
+            auto a = local::domain( configuration);
+
             {
-               constexpr auto base = R"(
+               auto buffer = unittest::xatmi::buffer::x_octet{};
+               // will start transaction - distributed - prepare fail
+               EXPECT_TRUE( ::tpcall( "casual/example/dynamic/resource/echo", buffer.data, buffer.size, &buffer.data, &buffer.size, 0) == -1);
+               EXPECT_TRUE( tperrno == TPESVCERR) << "tperrno: " << tperrnostring( tperrno);
+            }
+         }
+
+
+         TEST( test_transaction, begin_transaction__example_server_two_resources__service_commit__rm1_ok__rm_2_error__rollback___expect_transaction_in_rollback_only)
+         {
+            common::unittest::Trace trace;
+            local::Clear clear;
+
+            constexpr auto configuration = R"(
+domain: 
+   name: TM
+   transaction:
+      resources:
+         -  name: rm1
+            key: rm-mockup
+            instances: 1
+         -  name: rm2
+            key: rm-mockup
+            instances: 1
+            # XAER_RMERR   -3 
+            openinfo: --prepare -3
+         -  name: example-resource-server
+            key: rm-mockup
+            instances: 1
+
+   groups: 
+      -  name: resource
+         dependencies: [ example]
+         resources: [ rm2, rm1]
+
+   servers:
+      -  alias: dynamic-resource-example
+         path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-dynamic-resource-server
+         memberships: [ resource]
+
+)";
+
+            auto a = local::domain( configuration);
+
+            EXPECT_EQ( tx_begin(), TX_OK);
+            EXPECT_TRUE( tx_info( nullptr) == 1);
+
+            {
+               auto buffer = unittest::xatmi::buffer::x_octet{};
+               // will involve 2 resources (rm1 and rm2) distributed - The call will go ok though
+               EXPECT_TRUE( ::tpcall( "casual/example/dynamic/resource/echo", buffer.data, buffer.size, &buffer.data, &buffer.size, 0) != -1);
+            }
+
+            // the prepare to rm2 will fail (XAER_RMERR), and the distributed transaction
+            // will be rolled backed
+            ASSERT_EQ( tx_commit(), TX_ROLLBACK);
+            // no ongoing transaction
+            EXPECT_TRUE( tx_info( nullptr) == 0);
+            
+         }
+
+
+         // TODO this should not be here - move it to middleware/administration/unittest
+         namespace local
+         {
+            namespace
+            {
+               namespace cli
+               {
+                  constexpr auto base = R"(
 domain:
    servers:
       - path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/service/bin/casual-service-manager"
@@ -390,29 +491,29 @@ domain:
       - path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/gateway/bin/casual-gateway-manager"
 )";
 
-               template< typename... C>
-               auto domain( C&&... configurations)
-               {
-                  return casual::domain::unittest::manager( base, std::forward< C>( configurations)...);
-               }
+                  template< typename... C>
+                  auto domain( C&&... configurations)
+                  {
+                     return casual::domain::unittest::manager( base, std::forward< C>( configurations)...);
+                  }
 
-               auto call( std::string_view service)
-               {
-                  auto buffer = tpalloc( X_OCTET, nullptr, 128);
-                  common::unittest::random::range( range::make( buffer, 128));
-                  auto len = tptypes( buffer, nullptr, nullptr);
+                  auto call( std::string_view service)
+                  {
+                     auto buffer = tpalloc( X_OCTET, nullptr, 128);
+                     common::unittest::random::range( range::make( buffer, 128));
+                     auto len = tptypes( buffer, nullptr, nullptr);
 
-                  tpcall( service.data(), buffer, 128, &buffer, &len, 0);
-                  EXPECT_TRUE( tperrno == 0) << "tperrno: " << tperrnostring( tperrno);
+                     tpcall( service.data(), buffer, 128, &buffer, &len, 0);
+                     EXPECT_TRUE( tperrno == 0) << "tperrno: " << tperrnostring( tperrno);
 
-                  return memory::guard( buffer, &tpfree);
-               };
+                     return memory::guard( buffer, &tpfree);
+                  };
 
-            } // cli
-         } // <unnamed>
-      } // local
+               } // cli
+            } // <unnamed>
+         } // local
 
-
+         // TODO this should not be here - move it to middleware/administration/unittest
          TEST( test_transaction, cli_list_external_resources__expect_outbound_gateways_to_be_listed)
          {
             common::unittest::Trace trace;
@@ -463,6 +564,6 @@ domain:
             EXPECT_TRUE( output == expected) << "output:  " << output << "expected: " << expected;
          }
 
-      } // domain
+      } // transaction
    } // test
 } // casual

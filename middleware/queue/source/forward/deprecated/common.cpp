@@ -38,11 +38,12 @@ namespace casual
                   {
                      Trace trace{ "queue::forward::local::perform"};
 
-                     common::transaction::context().begin();
+                     if( common::transaction::context().begin() != common::code::tx::ok)
+                        return false;
 
                      // Rollback unless we commit
                      auto rollback = common::execute::scope( [](){
-                        common::transaction::context().rollback();
+                        (void)common::transaction::context().rollback();
                      });
 
                      task.dispatch( blocking::available::dequeue( task.queue));
@@ -54,8 +55,8 @@ namespace casual
 
                         if( txinfo.transaction_state == TX_ACTIVE)
                         {
-                           common::transaction::context().commit();
-                           rollback.release();
+                           if( common::transaction::context().commit() == common::code::tx::ok)
+                              rollback.release();
                         }
                      }
                      return true;

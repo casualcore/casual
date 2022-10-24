@@ -53,32 +53,32 @@ namespace casual
 
          //! Correspond to the tx API
          //! @{
-         void open();
-         void close();
+         [[nodiscard]] code::tx open();
+         [[nodiscard]] code::tx close();
 
-         void begin();
-         void commit();
-         void rollback();
+         [[nodiscard]] code::tx begin();
+         [[nodiscard]] code::tx commit();
+         [[nodiscard]] code::tx rollback();
 
-         void set_commit_return( commit::Return value) noexcept;
-         commit::Return get_commit_return() const noexcept;
+         [[nodiscard]] code::tx set_commit_return( commit::Return value) noexcept;
+         [[nodiscard]] commit::Return get_commit_return() const noexcept;
          
-         void set_transaction_control( transaction::Control control);
-         void set_transaction_timeout( platform::time::unit timeout);
+         [[nodiscard]] code::tx set_transaction_control( transaction::Control control);
+         [[nodiscard]] code::tx set_transaction_timeout( platform::time::unit timeout);
          
          bool info( TXINFO* info);
          //! @}
 
          //! Correspond to casual extension of the tx API
          //! @{
-         void suspend( XID* xid);
-         void resume( const XID* xid);
+         [[nodiscard]] code::tx suspend( XID* xid);
+         [[nodiscard]] code::tx resume( const XID* xid);
          //! @}
 
          //! Correspond to the ax API
          //! @{
-         code::ax resource_registration( strong::resource::id rmid, XID* xid);
-         void resource_unregistration( strong::resource::id rmid);
+         [[nodiscard]] code::ax resource_registration( strong::resource::id rmid, XID* xid);
+         [[nodiscard]] code::ax resource_unregistration( strong::resource::id rmid);
          //! @}
 
          //! @ingroup service-start
@@ -117,13 +117,15 @@ namespace casual
          //! process
          bool pending() const;
 
-         std::vector< strong::resource::id> resources() const;
+         [[nodiscard]] std::vector< strong::resource::id> resources() const noexcept;
 
          //! @attention only for unittest... temporary until we fix the "context-fiasco".
          static Context& clear();
 
          //! return true if the context holds no transactions, only (?) for unittest
-         bool empty() const;
+         bool empty() const noexcept;
+
+         inline Control control() const noexcept { return m_control;}
          
          void resources_suspend( Transaction& transaction);
          void resources_resume( Transaction& transaction);
@@ -154,14 +156,15 @@ namespace casual
          Context();
          ~Context();
 
-         void commit( const Transaction& transaction);
-         void rollback( const Transaction& transaction);
+         [[nodiscard]] code::tx commit( const Transaction& transaction);
+         [[nodiscard]] code::tx rollback( const Transaction& transaction);
 
 
-         void resource_commit( strong::resource::id rm, const Transaction& transaction, flag::xa::Flags flags);
-         void resource_rollback( strong::resource::id rm, const Transaction& transaction);
+         [[nodiscard]] code::tx resource_commit( strong::resource::id rm, const Transaction& transaction, flag::xa::Flags flags);
+         [[nodiscard]] code::tx resource_rollback( strong::resource::id rm, const Transaction& transaction);
 
-         void pop_transaction();
+         [[nodiscard]] code::tx control_continuation( code::tx code);
+         
 
 
       };

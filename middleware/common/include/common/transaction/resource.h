@@ -21,64 +21,60 @@
 
 namespace casual
 {
-   namespace common
+   namespace common::transaction
    {
-      namespace transaction
+      class ID;
+
+      struct Resource
       {
-         class ID;
+         using Flag = flag::xa::Flag;
+         using Flags = flag::xa::Flags;
 
-         struct Resource
-         {
-            using code = code::xa;
-            using Flag = flag::xa::Flag;
-            using Flags = flag::xa::Flags;
-
-            Resource( resource::Link link, strong::resource::id id, std::string openinfo, std::string closeinfo);
-            
-            code start( const transaction::ID& transaction, Flags flags) noexcept;
-            code end( const transaction::ID& transaction, Flags flags) noexcept;
-
-            code open( Flags flags = Flag::no_flags) noexcept;
-            code close( Flags flags = Flag::no_flags) noexcept;
-
-            code prepare( const transaction::ID& transaction, Flags flags) noexcept;
-
-            code commit( const transaction::ID& transaction, Flags flags) noexcept;
-            code rollback( const transaction::ID& transaction, Flags flags) noexcept;
-
-            bool dynamic() const noexcept;
-
-            inline const std::string& key() const noexcept { return m_key;}
-            inline strong::resource::id id() const noexcept { return m_id;}
-            inline std::string_view name() const noexcept { return m_xa->name;}
-
-            bool migrate() const noexcept;
+         Resource( resource::Link link, strong::resource::id id, std::string openinfo, std::string closeinfo);
          
+         code::xa start( const transaction::ID& transaction, Flags flags) noexcept;
+         code::xa end( const transaction::ID& transaction, Flags flags) noexcept;
 
-            friend std::ostream& operator << ( std::ostream& out, const Resource& resource);
-            friend bool operator == ( const Resource& lhs, strong::resource::id rhs) { return lhs.m_id == rhs;}
-            friend bool operator == ( strong::resource::id lhs, const Resource& rhs) { return lhs == rhs.m_id;}
+         code::xa open( Flags flags = Flag::no_flags) noexcept;
+         code::xa close( Flags flags = Flag::no_flags) noexcept;
 
-         private:
-            //! tries to reopen the resource
-            code reopen();
+         code::xa prepare( const transaction::ID& transaction, Flags flags) noexcept;
 
-            //! if `functor` returns xa::resource_fail, reopen the resource, 
-            //! and apply the `functor` again
-            template< typename F>
-            code reopen_guard( F&& functor);
+         code::xa commit( const transaction::ID& transaction, Flags flags) noexcept;
+         code::xa rollback( const transaction::ID& transaction, Flags flags) noexcept;
 
-            bool prepared( const transaction::ID& transaction);
+         bool dynamic() const noexcept;
+
+         inline const std::string& key() const noexcept { return m_key;}
+         inline strong::resource::id id() const noexcept { return m_id;}
+         inline std::string_view name() const noexcept { return m_xa->name;}
+
+         bool migrate() const noexcept;
+      
+
+         friend std::ostream& operator << ( std::ostream& out, const Resource& resource);
+         friend bool operator == ( const Resource& lhs, strong::resource::id rhs) { return lhs.m_id == rhs;}
+         friend bool operator == ( strong::resource::id lhs, const Resource& rhs) { return lhs == rhs.m_id;}
+
+      private:
+         //! tries to reopen the resource
+         code::xa reopen();
+
+         //! if `functor` returns xa::resource_fail, reopen the resource, 
+         //! and apply the `functor` again
+         template< typename F>
+         code::xa reopen_guard( F&& functor);
+
+         bool prepared( const transaction::ID& transaction);
 
 
-            std::string m_key;
-            xa_switch_t* m_xa;
-            strong::resource::id m_id;
+         std::string m_key;
+         xa_switch_t* m_xa;
+         strong::resource::id m_id;
 
-            std::string m_openinfo;
-            std::string m_closeinfo;
-         };
+         std::string m_openinfo;
+         std::string m_closeinfo;
+      };
 
-      } // transaction
-   } //common
+   } //common::transaction
 } // casual

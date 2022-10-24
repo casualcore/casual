@@ -22,7 +22,7 @@ namespace casual
          Transaction::Transaction() = default;
          Transaction::Transaction( ID trid) : trid( std::move( trid)) {}
          
-         Transaction::operator bool() const { return static_cast< bool>( trid);}
+         Transaction::operator bool() const noexcept { return predicate::boolean( trid);}
 
          void Transaction::associate( const correlation_type& correlation)
          {
@@ -56,22 +56,22 @@ namespace casual
             return false;
          }
 
-         bool Transaction::pending() const
+         bool Transaction::pending() const noexcept
          {
             return ! m_pending.empty();
          }
 
-         bool Transaction::associated( const correlation_type& correlation) const
+         bool Transaction::associated( const correlation_type& correlation) const noexcept
          {
             return ! algorithm::find( m_pending, correlation).empty();
          }
 
-         const std::vector< Transaction::correlation_type>& Transaction::correlations() const
+         const std::vector< Transaction::correlation_type>& Transaction::correlations() const noexcept
          {
             return m_pending;
          }
 
-         bool Transaction::local() const
+         bool Transaction::local() const noexcept
          {
             return trid.owner().pid == process::id() && ! m_external;
          }
@@ -83,11 +83,11 @@ namespace casual
 
          void Transaction::suspend() { m_suspended = true;}
          void Transaction::resume() { m_suspended = false;}
-         bool Transaction::suspended() const { return m_suspended;}
+         bool Transaction::suspended() const noexcept { return m_suspended;}
 
-         bool operator == ( const Transaction& lhs, const ID& rhs) { return lhs.trid == rhs;}
+         bool operator == ( const Transaction& lhs, const ID& rhs) noexcept { return lhs.trid == rhs;}
 
-         bool operator == ( const Transaction& lhs, const XID& rhs) { return lhs.trid.xid == rhs;}
+         bool operator == ( const Transaction& lhs, const XID& rhs) noexcept { return lhs.trid.xid == rhs;}
 
          std::string_view description( Transaction::State value) noexcept
          {

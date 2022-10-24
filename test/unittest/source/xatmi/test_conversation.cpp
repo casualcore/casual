@@ -519,7 +519,7 @@ domain:
          // ( the service will also echo all data it receives before
          //  getting control with a tpsend before the tpreturn. In this test there
          // is no data in the connect and therefore no tpsend is done by the service)
-         EXPECT_TRUE( tx_begin() == TX_OK);
+         EXPECT_EQ( tx_begin(), TX_OK);
          auto descriptor = tpconnect( "casual/example/conversation_recv_send", nullptr, 0, TPRECVONLY);
          EXPECT_TRUE( descriptor != -1);
          EXPECT_TRUE( tperrno == 0) << "tperrno:" << tperrnostring( tperrno);
@@ -527,7 +527,7 @@ domain:
          auto result = local::receive::invoke( descriptor, TPSIGRSTRT);
          EXPECT_TRUE( result.payload == "Flags: 0x00000c10") << CASUAL_NAMED_VALUE( result);
 
-         EXPECT_TRUE( tx_rollback() == TX_OK);
+         EXPECT_EQ( tx_rollback(), TX_OK);
 
          EXPECT_TRUE( tpdiscon( descriptor) == -1);
 

@@ -164,8 +164,7 @@ domain:
             {
                try
                {
-                  action();
-                  return common::code::tx::ok;
+                  return action();
                }
                catch( ...)
                {
@@ -175,17 +174,17 @@ domain:
 
             auto begin() 
             {
-               return wrap( [](){ common::transaction::context().begin();});
+               return wrap( [](){ return common::transaction::context().begin();});
             }
 
             auto commit() 
             {
-               return wrap( [](){ common::transaction::context().commit();});
+               return wrap( [](){ return common::transaction::context().commit();});
             }
 
             auto rollback() 
             {
-               return wrap( [](){ common::transaction::context().rollback();});
+               return wrap( [](){ return common::transaction::context().rollback();});
             }
 
          } // <unnamed>
@@ -504,7 +503,7 @@ domain:
 
          auto domain = local::domain( local::configuration::system, local::configuration::base);
 
-         EXPECT_TRUE( local::begin() == common::code::tx::ok);
+         EXPECT_EQ( local::begin(), common::code::tx::ok);
 
          // Make sure we make the transaction distributed
          auto state = unittest::state();
@@ -521,10 +520,7 @@ domain:
             EXPECT_TRUE( reply.involved.empty());
          }
 
-         auto result = local::commit();
-         ASSERT_TRUE( result == common::code::tx::hazard) << "result: " << result;
-
-         EXPECT_TRUE( local::rollback() == common::code::tx::ok);
+         EXPECT_EQ( local::commit(), common::code::tx::hazard);
       }
 
 

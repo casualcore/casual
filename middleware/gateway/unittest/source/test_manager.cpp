@@ -1226,7 +1226,7 @@ domain:
          {
             using namespace std::literals;
 
-            transaction::context().begin();
+            EXPECT_EQ( transaction::context().begin(), code::tx::ok);
 
             buffer::Payload payload;
             payload.type = "X_OCTET/";
@@ -1265,6 +1265,8 @@ domain:
             EXPECT_TRUE( reply.trid == transaction::context().current().trid);
 
          }
+
+         EXPECT_EQ( transaction::context().commit(), code::tx::ok);
 
 
       }

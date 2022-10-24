@@ -254,6 +254,13 @@ domain:
                }
             } // lookup::domain
 
+            auto tx_info()
+            {
+               TXINFO info{};
+               tx_info( &info);
+               return info;
+            }
+
          } // <unnamed>
       } // local
 
@@ -2501,9 +2508,15 @@ domain:
 
          algorithm::for_n( transaction_count, [call_A_and_B]()
          {
-            ASSERT_TRUE( tx_begin() == TX_OK);
+            ASSERT_EQ( tx_begin(), TX_OK);
             call_A_and_B( call_count);
-            ASSERT_TRUE( tx_commit() == TX_ROLLBACK);
+            ASSERT_EQ( tx_commit(), TX_ROLLBACK);
+            ASSERT_EQ( tx_info( nullptr), 0);
+
+
+            auto info = local::tx_info();
+            EXPECT_TRUE( common::transaction::xid::null( info.xid));
+            EXPECT_TRUE( info.transaction_control == TX_UNCHAINED);
          });
 
          auto check_transaction_state = []( )
@@ -2724,7 +2737,10 @@ domain:
          {
             algorithm::for_n( count, []()
             {
-               local::call( "casual/example/resource/nested/calls/C", code::xatmi::ok);
+               // since one of the rm:s will fail during xa_start, the service call will 
+               // "degrade" to service_error (the actual service will not be invoked...). 
+               //! The call is pretty far from "ok".
+               local::call( "casual/example/resource/nested/calls/C", code::xatmi::service_error);
             });
          };
 

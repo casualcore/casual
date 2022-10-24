@@ -298,7 +298,7 @@ domain:
 
          auto domain = local::domain();
 
-         ASSERT_TRUE( tx_begin() == TX_OK);
+         ASSERT_EQ( tx_begin(), TX_OK);
 
          auto buffer = local::allocate( 128);
          auto len = tptypes( buffer, nullptr, nullptr);
@@ -307,7 +307,7 @@ domain:
          EXPECT_TRUE( tperrno == TPESVCERR) << "tperrno: " << tperrnostring( tperrno);
          tpfree( buffer);
 
-         EXPECT_TRUE( tx_rollback() == TX_OK);
+         EXPECT_EQ( tx_rollback(), TX_OK);
       }
 
       // Test with invalid arguments. Invalid flags should give TPEINVAL.

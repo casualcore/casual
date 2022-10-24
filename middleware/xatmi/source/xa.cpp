@@ -35,8 +35,8 @@ extern "C"
    {
       try
       {
-         casual::common::transaction::context().resource_registration( casual::common::strong::resource::id{ rmid}, xid);
-         return casual::common::cast::underlying( casual::common::code::ax::ok);
+         return casual::common::cast::underlying( 
+            casual::common::transaction::context().resource_registration( casual::common::strong::resource::id{ rmid}, xid));
       }
       catch( ...)
       {
@@ -48,8 +48,8 @@ extern "C"
    {
       try
       {
-         casual::common::transaction::context().resource_unregistration( casual::common::strong::resource::id{ rmid});
-         return casual::common::cast::underlying( casual::common::code::ax::ok);
+         return casual::common::cast::underlying( 
+            casual::common::transaction::context().resource_unregistration( casual::common::strong::resource::id{ rmid}));
       }
       catch( ...)
       {
