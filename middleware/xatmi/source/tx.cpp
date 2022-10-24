@@ -14,11 +14,18 @@
 #include "common/exception/capture.h"
 #include "common/cast.h"
 #include "common/algorithm/compare.h"
+#include "common/log/trace.h"
 
 namespace local
 {
    namespace
    {
+      struct Trace : casual::common::log::Trace
+      {
+         template< typename T>
+         Trace( T&& value) : casual::common::log::Trace( std::forward< T>( value), casual::common::log::category::transaction) {}
+      };
+
       auto convert( casual::common::code::tx value)
       {
          return casual::common::cast::underlying( value);
@@ -44,8 +51,7 @@ namespace local
       {
          try
          {
-            executer( std::forward< Args>( args)...);
-            return convert( casual::common::code::tx::ok);
+            return convert( executer( std::forward< Args>( args)...));
          }
          catch( ...)
          {
@@ -58,70 +64,77 @@ namespace local
 
 int tx_begin()
 {
+   local::Trace trace{ "tx_begin"};
    return local::wrap( [](){
-      casual::common::transaction::Context::instance().begin();
+      return casual::common::transaction::Context::instance().begin();
    });
 }
 
 int tx_close()
 {
+   local::Trace trace{ "tx_close"};
    return local::wrap( [](){
-      casual::common::transaction::Context::instance().close();
+      return casual::common::transaction::Context::instance().close();
    });
 }
 
 int tx_commit()
 {
+   local::Trace trace{ "tx_commit"};
    return local::wrap( [](){
-      casual::common::transaction::Context::instance().commit();
+      return casual::common::transaction::Context::instance().commit();
    });
 }
 
 int tx_open()
 {
+   local::Trace trace{ "tx_open"};
    return local::wrap( [](){
-      casual::common::transaction::Context::instance().open();
+      return casual::common::transaction::Context::instance().open();
    });
 }
 
 int tx_rollback()
 {
+   local::Trace trace{ "tx_rollback"};
    return local::wrap( [](){
-      casual::common::transaction::Context::instance().rollback();
+      return casual::common::transaction::Context::instance().rollback();
    });
 }
 
 int tx_set_commit_return( COMMIT_RETURN value)
 {
+   local::Trace trace{ "tx_set_commit_return"};
    return local::wrap( []( auto value)
    {
       using Return = casual::common::transaction::commit::Return;
-      auto commit_return = Return{ value};
-      if( ! casual::common::algorithm::compare::any( commit_return, Return::completed, Return::logged))
-         casual::common::code::raise::error( casual::common::code::tx::argument);
+      if( ! casual::common::algorithm::compare::any( Return{ value}, Return::completed, Return::logged))
+         return casual::common::code::tx::argument;
 
-      casual::common::transaction::Context::instance().set_commit_return( commit_return);
+      return casual::common::transaction::Context::instance().set_commit_return( Return{ value});
    }, value);
 }
 
 int tx_set_transaction_control( TRANSACTION_CONTROL value)
 {
+   local::Trace trace{ "tx_set_transaction_control"};
    return local::wrap( []( auto value)
    {
       using Control = casual::common::transaction::Control; 
       auto control = Control{ value};
 
       if( ! casual::common::algorithm::compare::any( control, Control::chained, Control::unchained, Control::stacked))
-         casual::common::code::raise::error( casual::common::code::tx::argument);
+         return casual::common::code::tx::argument;
       
-      casual::common::transaction::Context::instance().set_transaction_control( control);
+      return casual::common::transaction::Context::instance().set_transaction_control( control);
    }, value);
 }
 
 int tx_set_transaction_timeout( TRANSACTION_TIMEOUT timeout)
 {
+   local::Trace trace{ "tx_set_transaction_timeout"};
    return local::wrap( []( auto value){
-      casual::common::transaction::Context::instance().set_transaction_timeout( std::chrono::seconds{ value});
+      return casual::common::transaction::Context::instance().set_transaction_timeout( std::chrono::seconds{ value});
    }, timeout);
 }
 
@@ -129,6 +142,7 @@ int tx_info( TXINFO* info)
 {
    try
    {
+      local::Trace trace{ "tx_info"};
       return casual::common::transaction::Context::instance().info( info) ? 1 : 0;
    }
    catch( ...)
@@ -145,21 +159,24 @@ int tx_info( TXINFO* info)
 /* casual extension */
 int tx_suspend( XID* xid)
 {
+   local::Trace trace{ "tx_suspend"};
    return local::wrap( [xid](){
-      casual::common::transaction::Context::instance().suspend( xid);
+      return casual::common::transaction::Context::instance().suspend( xid);
    });
 }
 
 int tx_resume( const XID* xid)
 {
+   local::Trace trace{ "tx_resume"};
    return local::wrap( [xid](){
-      casual::common::transaction::Context::instance().resume( xid);
+      return casual::common::transaction::Context::instance().resume( xid);
    });
 }
 
 
 COMMIT_RETURN tx_get_commit_return()
 {
+   local::Trace trace{ "tx_get_commit_return"};
    return casual::common::cast::underlying( casual::common::transaction::Context::instance().get_commit_return());
 }
 

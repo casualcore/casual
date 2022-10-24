@@ -44,10 +44,10 @@ install_bin.append( target)
 # make sure we got a resource property file available when we build with a resource 
 make.Environment( 'CASUAL_RESOURCE_CONFIGURATION_FILE', casual_middleware_path + '/example/resources/resources.yaml')
 
+resource_objects = [ make.Compile( 'server/source/example/resource.cpp')]
+
 target = dsl.LinkServer( 'server/bin/casual-example-resource-server',
-    [ 
-       make.Compile( 'server/source/example/resource.cpp')
-    ],
+    resource_objects,
     [ 
         'casual-common',
         'casual-buffer'
@@ -55,6 +55,19 @@ target = dsl.LinkServer( 'server/bin/casual-example-resource-server',
     'server/source/example/resource.services.yaml')
 
 install_bin.append( target)
+
+# same as above, but does not name the resource, hence we can configure multiple
+# resources (of rm-mockup)
+target = dsl.LinkServer( 'server/bin/casual-example-dynamic-resource-server',
+    resource_objects,
+    [ 
+        'casual-common',
+        'casual-buffer'
+    ],
+    'server/source/example/dynamic.resource.services.yaml')
+
+install_bin.append( target)
+
 
 
 target = make.LinkExecutable( 'server/bin/casual-example-error-server',

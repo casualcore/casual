@@ -147,7 +147,7 @@ namespace casual
       {
          auto& state = local::global::state.at( id);
 
-         transaction::context().resource_registration( id, &state.transactions.current.xid);
+         log::line( log, "resource registration: ", transaction::context().resource_registration( id, &state.transactions.current.xid));
 
       }
 

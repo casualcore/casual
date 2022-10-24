@@ -39,6 +39,12 @@ namespace casual
       };
       std::string_view description( code::tx code) noexcept;
 
+
+      //! "adds" two tx codes, and return the most severe, which could be
+      //! the aggregated `no_begin_*` set. 
+      tx operator + ( tx lhs, tx rhs) noexcept;
+      tx& operator += ( tx& lhs, tx rhs) noexcept;
+
       static_assert( static_cast< int>( tx::ok) == 0, "tx::ok has to be 0");
 
       std::error_code make_error_code( code::tx code);

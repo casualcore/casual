@@ -131,6 +131,12 @@ namespace casual
                error,
             };
 
+            //! 'accumulate' State, only more severe
+            //! @{
+            inline State operator + ( State lhs, State rhs) noexcept { return std::max( lhs, rhs);}
+            inline State& operator += ( State& lhs, State rhs) noexcept { return lhs = lhs + rhs;}
+            //! @}
+
             inline constexpr std::string_view description( State value) noexcept
             {
                switch( value)
@@ -142,6 +148,8 @@ namespace casual
                }
                return "<unknown>";
             }
+
+            
             
          } // transaction
 

@@ -42,10 +42,10 @@ namespace casual
          State state = State::active;
 
          //! @return true if `trid` is _active_ 
-         explicit operator bool() const;
+         explicit operator bool() const noexcept;
 
          //! associated rm:s to this transaction
-         inline const std::vector< strong::resource::id>& involved() const { return m_involved;}
+         inline const std::vector< strong::resource::id>& involved() const noexcept { return m_involved;}
          
          //! associate resource
          void involve( strong::resource::id id);
@@ -58,7 +58,7 @@ namespace casual
          }  
 
          //! dynamic associated rm:s to this transaction, a subset to `involved`
-         inline const std::vector< strong::resource::id>& dynamic() const { return m_dynamic;}
+         inline const std::vector< strong::resource::id>& dynamic() const noexcept { return m_dynamic;}
          
          //! associate id to dynamic registration
          //! @attention will not associate with involved
@@ -74,31 +74,31 @@ namespace casual
 
          //! @return true if this transaction has any pending replies
          //! associated
-         bool pending() const;
+         bool pending() const noexcept;
 
          //! @return true if this transaction has @p correlation associated
-         bool associated( const correlation_type& correlation) const;
+         bool associated( const correlation_type& correlation) const noexcept;
 
          //! associated descriptors to this transaction
-         const std::vector< correlation_type>& correlations() const;
+         const std::vector< correlation_type>& correlations() const noexcept;
 
          //! functions to deduce or set if the transaction is suspended
          //! or not.
          void suspend();
          void resume();
-         bool suspended() const;
+         bool suspended() const noexcept;
 
          //! @return true if the transaction is only local, current process 
          //!  is the owner, no pending calls, and no external involvement
-         bool local() const;
+         bool local() const noexcept;
 
 
          //! Associate this transaction with 'external' resources. That is,
          //! make it "not local" so it will trigger a commit request to the TM
          void external();
 
-         friend bool operator == ( const Transaction& lhs, const ID& rhs);
-         friend bool operator == ( const Transaction& lhs, const XID& rhs);
+         friend bool operator == ( const Transaction& lhs, const ID& rhs) noexcept;
+         friend bool operator == ( const Transaction& lhs, const XID& rhs) noexcept;
 
          CASUAL_LOG_SERIALIZE({
             CASUAL_SERIALIZE( trid);

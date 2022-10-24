@@ -86,6 +86,72 @@ namespace casual
          return "unknown";
       }
 
+      tx operator + ( tx lhs, tx rhs) noexcept
+      {
+         if( lhs == rhs)
+            return lhs;
+
+         auto no_begin_combination = []( auto value)
+         {
+            switch( value)
+            {
+               case tx::rollback: return tx::no_begin_rollback;
+               case tx::mixed: return tx::no_begin_mixed;
+               case tx::hazard: return tx::no_begin_hazard;
+               case tx::committed: return tx::no_begin_committed;
+
+               default: return tx::no_begin;
+            }
+         };
+
+         if( lhs == tx::no_begin)
+            return no_begin_combination( rhs);
+
+         if( rhs == tx::no_begin)
+            return no_begin_combination( lhs);
+
+         static_assert( tx::no_begin_rollback < tx::no_begin);
+         static_assert( tx::no_begin_mixed < tx::no_begin);
+         static_assert( tx::no_begin_hazard < tx::no_begin);
+         static_assert( tx::no_begin_committed < tx::no_begin);
+
+         if( lhs < tx::no_begin)
+            return lhs;
+         if( rhs < tx::no_begin)
+            return rhs;
+
+
+
+         // prioritize between lhs and rhs.
+
+         // range with order of most prioritized first.
+         constexpr auto prioritized_range = array::make( 
+            tx::not_supported,
+            tx::argument,
+            tx::hazard,
+            tx::mixed,
+            tx::fail,
+            tx::error,
+            tx::committed,
+            tx::rollback,
+            tx::protocol,
+            tx::outside,
+            tx::ok
+            );
+
+         // if the found 'range' is smaller, it is farther back in the prioritization, hence less valuable.
+         if( auto found_lhs = algorithm::find( prioritized_range, lhs))
+            if( auto found_rhs = algorithm::find( prioritized_range, rhs))
+               return found_rhs.size() <= found_lhs.size() ? lhs : rhs;
+
+         return lhs;
+      }
+
+      tx& operator += ( tx& lhs, tx rhs) noexcept
+      {
+         return lhs = lhs + rhs;
+      }
+
       std::error_code make_error_code( tx code)
       {
          return { static_cast< int>( code), local::category};

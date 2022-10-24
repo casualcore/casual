@@ -15,20 +15,12 @@
 
 namespace casual
 {
-   namespace common
+   namespace common::code::convert::to
    {
-      namespace code
-      {
-         namespace convert
-         {
-            namespace to
-            {
-               code::tx tx( code::xa code);
+      code::tx tx( code::xa code);
 
-               code::casual casual( std::errc code);
-            } // to
-         } // convert
-      } // code
-   } // common
+      code::casual casual( std::errc code);
+
+   } // common::code::convert::to
 } // casual
 
