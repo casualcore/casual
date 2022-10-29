@@ -1,0 +1,10 @@
+#! /bin/bash
+
+set -e
+
+cd $REPOSITORY_ROOT && \
+    casual-make --stat --quiet --no-colors compile && \
+    casual-make --stat --no-colors link && \
+    casual-make --no-colors test --gtest_color=no --gtest_output='xml:report.xml' && \
+    casual-make --no-colors install && \
+    casual-make nginx

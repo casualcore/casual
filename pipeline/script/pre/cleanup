@@ -1,0 +1,8 @@
+#! /bin/bash
+
+find $REPOSITORY_ROOT -name "*.gc*" -print | xargs rm -f > /dev/null 2>&1
+find $REPOSITORY_ROOT -name "report.xml" -print | xargs rm -f > /dev/null 2>&1
+rm -rf $REPOSITORY_ROOT/middleware/.casual/unittest/.singleton/.domain-singleton > /dev/null 2>&1
+cd $REPOSITORY_ROOT && casual-make --stat --no-colors clean 
+rm -f $CASUAL_LOG_PATH > /dev/null 2>&1
+
