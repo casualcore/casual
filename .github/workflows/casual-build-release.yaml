@@ -30,7 +30,7 @@ jobs:
         id: regex-match
         with:
           text: ${{ github.ref }}
-          regex: '^.*/([0-9.]+)/.*$'
+          regex: '^.*/([0-9.]+)$'
 
       - name: set major/minor-version
         id: major_minor
