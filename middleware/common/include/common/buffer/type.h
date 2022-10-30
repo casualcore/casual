@@ -99,17 +99,17 @@ namespace casual
          bool null() const;
          inline explicit operator bool () const { return ! type.empty();}
 
-         inline buffer::handle::type handle() const noexcept { return buffer::handle::type{ memory.data()};}
-         inline buffer::handle::mutate::type handle() noexcept { return buffer::handle::mutate::type{ memory.data()};}
+         inline buffer::handle::type handle() const noexcept { return buffer::handle::type{ data.data()};}
+         inline buffer::handle::mutate::type handle() noexcept { return buffer::handle::mutate::type{ data.data()};}
 
          std::string type;
-         platform::binary::type memory;
+         platform::binary::type data;
 
          //inline friend bool operator == ( const Payload& lhs, buffer::handle::type rhs) { return lhs.handle() == rhs;}
 
          CASUAL_CONST_CORRECT_SERIALIZE(
             CASUAL_SERIALIZE( type);
-            CASUAL_SERIALIZE( memory);
+            CASUAL_SERIALIZE( data);
          )
 
          friend std::ostream& operator << ( std::ostream& out, const Payload& value);
@@ -127,7 +127,7 @@ namespace casual
                :  m_payload( payload), m_transport{ transport}, m_reserved{ reserved} {}
 
             inline Send( const Payload& payload)
-               : m_payload( payload), m_transport( payload.memory.size()) {}
+               : m_payload( payload), m_transport( payload.data.size()) {}
 
             inline const Payload& payload() const noexcept { return m_payload.get();};
 
@@ -138,7 +138,7 @@ namespace casual
             CASUAL_LOG_SERIALIZE(
                CASUAL_SERIALIZE_NAME( payload().type, "type");
                CASUAL_SERIALIZE_NAME( m_transport, "size"); // size of the memory
-               CASUAL_SERIALIZE_NAME( view::binary::make( std::begin( payload().memory), m_transport), "memory");
+               CASUAL_SERIALIZE_NAME( view::binary::make( std::begin( payload().data), m_transport), "memory");
             )
 
             friend std::ostream& operator << ( std::ostream& out, const Send& value);

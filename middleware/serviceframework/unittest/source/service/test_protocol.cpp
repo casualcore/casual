@@ -39,7 +39,7 @@ namespace casual
 
                auto writer = common::serialize::create::writer::from( result.payload.type);
                writer << CASUAL_NAMED_VALUE( value);
-               writer.consume( result.payload.memory);
+               writer.consume( result.payload.data);
 
                return result;
             }
@@ -66,7 +66,7 @@ namespace casual
 
          auto parameter = local::prepare( GetParam(), some_long);
 
-         EXPECT_TRUE( parameter.payload.memory.size() > 0) << "size: " << parameter.payload.memory.size();
+         EXPECT_TRUE( parameter.payload.data.size() > 0) << "size: " << parameter.payload.data.size();
 
          auto protocol = service::protocol::deduce( std::move( parameter));
 
@@ -121,7 +121,7 @@ namespace casual
          {
             test::SimpleVO value;
 
-            auto reader = common::serialize::create::reader::strict::from( result.payload.type, result.payload.memory);
+            auto reader = common::serialize::create::reader::strict::from( result.payload.type, result.payload.data);
             reader >> CASUAL_NAMED_VALUE( value);
 
             EXPECT_TRUE( value.m_bool == false);
@@ -156,7 +156,7 @@ namespace casual
          {
             test::SimpleVO value;
 
-            auto reader = common::serialize::create::reader::strict::from( result.payload.type, result.payload.memory);
+            auto reader = common::serialize::create::reader::strict::from( result.payload.type, result.payload.data);
             reader >> value;
 
             EXPECT_TRUE( value.m_bool == false);
@@ -195,7 +195,7 @@ namespace casual
          {
             test::SimpleVO value;
 
-            auto reader = common::serialize::create::reader::strict::from( result.payload.type, result.payload.memory);
+            auto reader = common::serialize::create::reader::strict::from( result.payload.type, result.payload.data);
             reader >> value;
 
             EXPECT_TRUE( value.m_bool == false);

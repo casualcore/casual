@@ -63,7 +63,7 @@ namespace casual
                   if( ! replyqueue.empty())
                   {
                      queue::Message reply;
-                     reply.payload.data = std::move( result.buffer.memory);
+                     reply.payload.data = std::move( result.buffer.data);
                      reply.payload.type = std::move( result.buffer.type);
                      queue::enqueue( replyqueue, reply);
                   }

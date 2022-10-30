@@ -88,10 +88,10 @@ namespace casual
 
                   } header;
 
-                  inline auto range() noexcept { return common::range::make( std::begin( payload.memory) + offset, std::end( payload.memory));}
+                  inline auto range() noexcept { return common::range::make( std::begin( payload.data) + offset, std::end( payload.data));}
                   inline void clear() noexcept
                   { 
-                     payload.memory.clear();
+                     payload.data.clear();
                      offset = 0;
                   }
                   

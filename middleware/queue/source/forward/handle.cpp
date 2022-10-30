@@ -483,8 +483,8 @@ namespace casual
                            state.multiplex.send( ipc::service::manager(), request);
 
                            forward::state::pending::service::Lookup lookup{ std::move( pending)};
-                           lookup.buffer.type = std::move( message.message[ 0].type);
-                           lookup.buffer.memory = std::move( message.message[ 0].payload);
+                           lookup.buffer.type = std::move( message.message[ 0].payload.type);
+                           lookup.buffer.data = std::move( message.message[ 0].payload.data);
 
                            state.pending.service.lookups.push_back( std::move( lookup));
 
@@ -504,7 +504,7 @@ namespace casual
 
                            
                            if( forward->target.delay > platform::time::unit::zero())
-                              request.message.available = platform::time::clock::type::now() + forward->target.delay;
+                              request.message.attributes.available = platform::time::clock::type::now() + forward->target.delay;
 
                            log::line( verbose::log, "enqueue request: ", request);
 
@@ -663,11 +663,11 @@ namespace casual
                               request.trid = call.trid;
                               request.queue = reply.id;
                               request.name = reply.queue;
-                              request.message.type = std::move( message.buffer.type);
-                              request.message.payload = std::move( message.buffer.memory);
+                              request.message.payload.type = std::move( message.buffer.type);
+                              request.message.payload.data = std::move( message.buffer.data);
 
                               if( reply.delay > platform::time::unit::zero())
-                                 request.message.available = platform::time::clock::type::now() + reply.delay;
+                                 request.message.attributes.available = platform::time::clock::type::now() + reply.delay;
 
                               log::line( verbose::log, "enqueue reply: ", request);
                               

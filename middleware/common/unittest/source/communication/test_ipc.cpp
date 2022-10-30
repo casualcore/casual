@@ -328,7 +328,7 @@ namespace casual
             message.buffer.type = ".binary";
             message.code.result = common::code::xatmi::ok;
             message.code.user = 0;
-            message.buffer.memory = unittest::random::binary( 1200);
+            message.buffer.data = unittest::random::binary( 1200);
          }
 
          const auto correlation = unittest::eventually::send( ipc::inbound::ipc(), message);
@@ -341,7 +341,7 @@ namespace casual
          EXPECT_TRUE( receive_message.execution == message.execution);
          EXPECT_TRUE( receive_message.transaction.trid == message.transaction.trid);
          EXPECT_TRUE( receive_message.transaction.state == message.transaction.state);
-         EXPECT_TRUE( receive_message.buffer.memory == message.buffer.memory);
+         EXPECT_TRUE( receive_message.buffer.data == message.buffer.data);
       }
 
       TEST( common_communication_ipc, send_multiplex_to_absent_ipc__expect_callback_invocation__and_empty_state_when_done)

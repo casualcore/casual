@@ -318,6 +318,7 @@ namespace casual
          cli_pipe_done = CLI_BASE,
          cli_payload,
          cli_queue_message_id,
+         cli_queue_message,
          
          cli_pipe_error_fatal = CLI_BASE + 100,
 

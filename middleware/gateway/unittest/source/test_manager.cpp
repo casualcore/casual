@@ -336,7 +336,7 @@ domain:
                common::message::service::call::callee::Request request;
                request.process = common::process::handle();
                request.service.name = "a";
-               request.buffer.memory = data;
+               request.buffer.data = data;
                
                common::communication::device::blocking::send( state.connections.at( 0).process.ipc, request);
             }
@@ -351,7 +351,7 @@ domain:
             common::message::service::call::Reply reply;
             common::communication::device::blocking::receive( common::communication::ipc::inbound::device(), reply);
 
-            EXPECT_TRUE( reply.buffer.memory ==  data);
+            EXPECT_TRUE( reply.buffer.data == data);
          }
       }
 
@@ -395,7 +395,7 @@ domain:
          trace.line( "receive the call and send call to outbound to simulate a _gateway loop_");
          {
             auto request = communication::ipc::receive< common::message::service::call::callee::Request>( correlation);
-            EXPECT_TRUE( request.buffer.memory == origin);
+            EXPECT_TRUE( request.buffer.data == origin);
 
             {
                trace.line( "emulate loop - later we should receive an error reply");
@@ -426,7 +426,7 @@ domain:
          {
             auto reply = communication::ipc::receive< common::message::service::call::Reply>( correlation);
             EXPECT_TRUE( reply.code.result == decltype( reply.code.result)::ok);
-            EXPECT_TRUE( reply.buffer.memory == origin);
+            EXPECT_TRUE( reply.buffer.data == origin);
 
          }
       }
@@ -467,7 +467,7 @@ domain:
                request.process = common::process::handle();
                request.service.name = "a";
                request.trid = trid;
-               request.buffer.memory = data;
+               request.buffer.data = data;
                
                common::communication::device::blocking::send( state.connections.at( 0).process.ipc, request);
             }
@@ -482,7 +482,7 @@ domain:
             common::message::service::call::Reply reply;
             common::communication::device::blocking::receive( common::communication::ipc::inbound::device(), reply);
 
-            EXPECT_TRUE( reply.buffer.memory == data);
+            EXPECT_TRUE( reply.buffer.data == data);
             EXPECT_TRUE( reply.transaction.trid == trid) << "reply.transaction.trid: " << reply.transaction.trid << "\ntrid: " << trid;
          }
 
@@ -850,7 +850,7 @@ domain:
                common::message::service::call::callee::Request request;
                request.process = common::process::handle();
                request.service.name = "a";
-               request.buffer.memory = data;
+               request.buffer.data = data;
                
                ASSERT_TRUE( common::communication::device::blocking::optional::send( outbound.ipc, request)) 
                   << CASUAL_NAMED_VALUE( outbound);
@@ -871,7 +871,7 @@ domain:
                common::message::service::call::Reply reply;
                common::communication::device::blocking::receive( common::communication::ipc::inbound::device(), reply);
 
-               EXPECT_TRUE( reply.buffer.memory ==  data);
+               EXPECT_TRUE( reply.buffer.data ==  data);
             });
          }
 
@@ -1230,11 +1230,11 @@ domain:
 
             buffer::Payload payload;
             payload.type = "X_OCTET/";
-            common::algorithm::copy( "casual"sv, std::back_inserter( payload.memory));
+            common::algorithm::copy( "casual"sv, std::back_inserter( payload.data));
 
             auto result = common::service::call::context().sync( "casual/example/domain/echo/B", common::buffer::payload::Send{ payload}, {});
 
-            EXPECT_TRUE( result.buffer.memory == payload.memory);
+            EXPECT_TRUE( result.buffer.data == payload.data);
 
          }
 

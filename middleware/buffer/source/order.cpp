@@ -44,27 +44,27 @@ namespace casual
 
                   void shrink()
                   {
-                     return payload.memory.shrink_to_fit();
+                     return payload.data.shrink_to_fit();
                   }
 
                   size_type capacity() const noexcept
                   {
-                     return payload.memory.capacity();
+                     return payload.data.capacity();
                   }
 
-                  void capacity( const decltype(payload.memory.capacity()) value)
+                  void capacity( const decltype(payload.data.capacity()) value)
                   {
-                     payload.memory.reserve( value);
+                     payload.data.reserve( value);
                   }
 
                   size_type utilized() const noexcept
                   {
-                     return payload.memory.size();
+                     return payload.data.size();
                   }
 
-                  void utilized( const decltype(payload.memory.size()) value)
+                  void utilized( const decltype(payload.data.size()) value)
                   {
-                     payload.memory.resize( value);
+                     payload.data.resize( value);
                   }
 
                   size_type consumed() const noexcept
@@ -72,13 +72,13 @@ namespace casual
                      return selector;
                   }
 
-                  void consumed( const decltype(payload.memory.size()) value) noexcept
+                  void consumed( const decltype(payload.data.size()) value) noexcept
                   {
                      selector = value;
                   }
 
-                  auto handle() const noexcept { return common::buffer::handle::type{ payload.memory.data()};}
-                  auto handle() noexcept { return common::buffer::handle::mutate::type{ payload.memory.data()};}
+                  auto handle() const noexcept { return common::buffer::handle::type{ payload.data.data()};}
+                  auto handle() noexcept { return common::buffer::handle::mutate::type{ payload.data.data()};}
 
                   //! Implement Buffer::transport
                   size_type transport( const platform::binary::size::type user_size) const
@@ -94,7 +94,7 @@ namespace casual
                   }
 
                private:
-                  decltype( payload.memory.size()) selector = 0;
+                  decltype( payload.data.size()) selector = 0;
                };
 
                using allocator_base = common::buffer::pool::implementation::Default< Buffer>;
@@ -281,7 +281,7 @@ namespace casual
                      });
 
                      // Append the data
-                     append( buffer.payload.memory, std::forward<A>( arguments)...);
+                     append( buffer.payload.data, std::forward<A>( arguments)...);
 
                   }
                   catch( ...)

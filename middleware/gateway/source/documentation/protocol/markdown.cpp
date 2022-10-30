@@ -627,7 +627,7 @@ Sent to and received from other domains when one domain wants call a service in 
                request.service.name = local::string::value( 128);
                request.parent = local::string::value( 128);
                request.buffer.type = local::string::value( 8) + '/' + local::string::value( 16);
-               request.buffer.memory = local::binary::value( 1024);
+               request.buffer.data = local::binary::value( 1024);
 
                local::format::type( out, request, {
                         { "execution", "uuid of the current execution context (breadcrumb)"},
@@ -646,8 +646,8 @@ Sent to and received from other domains when one domain wants call a service in 
 
                         { "buffer.type.size", "buffer type name size"},
                         { "buffer.type.data", "byte array with buffer type in the form 'type/subtype'"},
-                        { "buffer.memory.size", "buffer payload size (could be very big)"},
-                        { "buffer.memory.data", "buffer payload data (with the size of buffer.payload.size)"},
+                        { "buffer.data.size", "buffer payload size (could be very big)"},
+                        { "buffer.data.data", "buffer payload data (with the size of buffer.payload.size)"},
                      });
             }
 
@@ -664,7 +664,7 @@ Reply to call request
 
                message.transaction.trid = common::transaction::id::create();
                message.buffer.type = local::string::value( 8) + '/' + local::string::value( 16);
-               message.buffer.memory = local::binary::value( 1024);
+               message.buffer.data = local::binary::value( 1024);
 
                local::format::type( out, message, {
                         { "execution", "uuid of the current execution context (breadcrumb)"},
@@ -680,8 +680,8 @@ Reply to call request
 
                         { "buffer.type.size", "buffer type name size"},
                         { "buffer.type.data", "byte array with buffer type in the form 'type/subtype'"},
-                        { "buffer.memory.size", "buffer payload size (could be very big)"},
-                        { "buffer.memory.data", "buffer payload data (with the size of buffer.payload.size)"},
+                        { "buffer.data.size", "buffer payload size (could be very big)"},
+                        { "buffer.data.data", "buffer payload data (with the size of buffer.payload.size)"},
 
 
                      });
@@ -853,7 +853,7 @@ Represent enqueue request.
                message.trid = common::transaction::id::create();
 
                message.name = local::string::value( 128);
-               message.message.payload = local::binary::value( 1024);
+               message.message.payload.data = local::binary::value( 1024);
 
 
                local::format::type( out, message, {
@@ -936,10 +936,10 @@ Represent dequeue reply.
                message_type message;
 
                message.message.resize( 1);
-               message.message.at( 0).properties = local::string::value( 128);
-               message.message.at( 0).reply = local::string::value( 128);
-               message.message.at( 0).type = local::string::value( 128);
-               message.message.at( 0).payload = local::binary::value( 1024); 
+               message.message.at( 0).attributes.properties = local::string::value( 128);
+               message.message.at( 0).attributes.reply = local::string::value( 128);
+               message.message.at( 0).payload.type = local::string::value( 128);
+               message.message.at( 0).payload.data = local::binary::value( 1024); 
 
                local::format::type( out, message, {
                         { "execution", "uuid of the current execution context (breadcrumb)"},
@@ -977,7 +977,7 @@ Sent to establish a conversation
                message.parent = local::string::value( 128);
                message.trid = common::transaction::id::create();
                message.buffer.type = local::string::value( 8) + '/' + local::string::value( 16);
-               message.buffer.memory = local::binary::value( 1024);
+               message.buffer.data = local::binary::value( 1024);
                using Duplex = decltype( message.duplex);
                message.duplex = Duplex::receive;
 
@@ -995,8 +995,8 @@ Sent to establish a conversation
                         { "duplex", string::compose( "in what duplex the callee shall enter (", Duplex::receive, ":", cast::underlying( Duplex::receive), ", ", Duplex::send, ":", cast::underlying( Duplex::send),')') },
                         { "buffer.type.size", "buffer type name size"},
                         { "buffer.type.data", "byte array with buffer type in the form 'type/subtype'"},
-                        { "buffer.memory.size", "buffer payload size (could be very big)"},
-                        { "buffer.memory.data", "buffer payload data (with the size of buffer.payload.size)"},
+                        { "buffer.data.size", "buffer payload size (could be very big)"},
+                        { "buffer.data.data", "buffer payload data (with the size of buffer.payload.size)"},
                      });
             }
 
@@ -1027,7 +1027,7 @@ Represent a message sent 'over' an established connection
                message_type message;
 
                message.buffer.type = local::string::value( 8) + '/' + local::string::value( 16);
-               message.buffer.memory = local::binary::value( 1024); 
+               message.buffer.data = local::binary::value( 1024); 
                using Duplex = decltype( message.duplex);
                message.duplex = Duplex::receive;
 
@@ -1039,8 +1039,8 @@ Represent a message sent 'over' an established connection
                         { "code.user", "user code, if callee did a tpreturn and supplied user-code"},
                         { "buffer.type.size", "buffer type name size"},
                         { "buffer.type.data", "byte array with buffer type in the form 'type/subtype'"},
-                        { "buffer.memory.size", "buffer payload size (could be very big)"},
-                        { "buffer.memory.data", "buffer payload data (with the size of buffer.payload.size)"},
+                        { "buffer.data.size", "buffer payload size (could be very big)"},
+                        { "buffer.data.data", "buffer payload data (with the size of buffer.payload.size)"},
                      });
             }
 

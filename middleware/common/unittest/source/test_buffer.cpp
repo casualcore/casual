@@ -169,8 +169,8 @@ namespace casual
             auto holder = buffer::pool::Holder::instance().get( handle, 100);
 
             EXPECT_TRUE( holder.transport() == 100);
-            EXPECT_TRUE( holder.payload().memory.size() == 128) << "holder.payload.memory.size(): " << holder.payload().memory.size();
-            EXPECT_TRUE( holder.payload().memory.data() == info);
+            EXPECT_TRUE( holder.payload().data.size() == 128) << "holder.payload.memory.size(): " << holder.payload().data.size();
+            EXPECT_TRUE( holder.payload().data.data() == info);
 
             buffer::pool::Holder::instance().deallocate( handle);
          }
@@ -192,8 +192,8 @@ namespace casual
                message::service::call::caller::Request message( buffer::pool::Holder::instance().get( handle, 100));
 
                EXPECT_TRUE( message.buffer.transport() == 100);
-               EXPECT_TRUE( message.buffer.payload().memory.size() == 128) << "message.buffer.payload.memory.size(): " << message.buffer.payload().memory.size();
-               EXPECT_TRUE( message.buffer.payload().memory.data() == info);
+               EXPECT_TRUE( message.buffer.payload().data.size() == 128) << "message.buffer.payload.memory.size(): " << message.buffer.payload().data.size();
+               EXPECT_TRUE( message.buffer.payload().data.data() == info);
 
                serialize::native::binary::Writer output;
                output << message;
@@ -211,8 +211,8 @@ namespace casual
                input >> message;
 
                EXPECT_TRUE( message.buffer.type == type);
-               EXPECT_TRUE( message.buffer.memory.size() == 100);
-               EXPECT_TRUE( message.buffer.memory.data() == info)  << " message.buffer.memory.data(): " <<  message.buffer.memory.data();
+               EXPECT_TRUE( message.buffer.data.size() == 100);
+               EXPECT_TRUE( message.buffer.data.data() == info)  << " message.buffer.data.data(): " <<  message.buffer.data.data();
             }
          }
 
@@ -225,7 +225,7 @@ namespace casual
             buffer::Payload payload;
             {
                payload.type = "foo";
-               payload.memory = unittest::random::binary( 256);
+               payload.data = unittest::random::binary( 256);
             }
             {
                serialize::native::binary::Writer output;
@@ -239,7 +239,7 @@ namespace casual
                input >> serialized;
 
                EXPECT_TRUE( payload.type == serialized.type);
-               EXPECT_TRUE( algorithm::equal( payload.memory, serialized.memory)); 
+               EXPECT_TRUE( algorithm::equal( payload.data, serialized.data)); 
             }
          }
 

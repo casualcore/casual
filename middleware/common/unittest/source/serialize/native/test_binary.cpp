@@ -306,10 +306,10 @@ namespace casual
 
 
                   buffer::Payload payload{ type, 128};
-                  algorithm::copy( info, std::begin( payload.memory));
+                  algorithm::copy( info, std::begin( payload.data));
 
-                  EXPECT_TRUE( payload.memory.size() == 128) << " payload.memory.size(): " <<  payload.memory.size();
-                  EXPECT_TRUE( payload.memory.data() == info) << "payload.memory.data(): " <<  payload.memory.data();
+                  EXPECT_TRUE( payload.data.size() == 128) << " payload.data.size(): " <<  payload.data.size();
+                  EXPECT_TRUE( payload.data.data() == info) << "payload.data.data(): " <<  payload.data.data();
 
                   message::service::call::caller::Request message{ buffer::payload::Send{ payload, 100, 100}};
                   message.header = service::header::fields();
@@ -333,8 +333,8 @@ namespace casual
                   input >> message;
 
                   EXPECT_TRUE( message.buffer.type == type);
-                  EXPECT_TRUE( message.buffer.memory.size() == 100) << "message.buffer.memory.size(): " << message.buffer.memory.size();
-                  EXPECT_TRUE( message.buffer.memory.data() == info)  << " message.buffer.memory.data(): " <<  message.buffer.memory.data();
+                  EXPECT_TRUE( message.buffer.data.size() == 100) << "message.buffer.data.size(): " << message.buffer.data.size();
+                  EXPECT_TRUE( message.buffer.data.data() == info)  << " message.buffer.data.data(): " <<  message.buffer.data.data();
 
                   // header
                   {

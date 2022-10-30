@@ -337,7 +337,7 @@ domain:
                common::communication::ipc::inbound::device(),
                request);
 
-            EXPECT_TRUE( request.buffer.memory == payload);
+            EXPECT_TRUE( request.buffer.data == payload);
             EXPECT_TRUE( request.buffer.type == common::buffer::type::binary);
 
             auto reply = common::message::reverse::type( request);
@@ -383,7 +383,7 @@ domain:
                common::communication::ipc::inbound::device(),
                request);
 
-            EXPECT_TRUE( request.buffer.memory == payload);
+            EXPECT_TRUE( request.buffer.data == payload);
             EXPECT_TRUE( request.buffer.type == common::buffer::type::binary);
 
             auto reply = common::message::reverse::type( request);
@@ -545,7 +545,7 @@ domain:
                common::communication::ipc::inbound::device(),
                request);
 
-            EXPECT_TRUE( request.buffer.memory == payload);
+            EXPECT_TRUE( request.buffer.data == payload);
             EXPECT_TRUE( request.buffer.type == common::buffer::type::binary);
 
             auto reply = common::message::reverse::type( request);

@@ -120,7 +120,7 @@ if --verbose is provided the type of the buffer will be sent to stderr.
                      auto protocol = format.value_or( "");
 
                      casual::cli::message::Payload message;
-                     message.payload = casual::buffer::field::internal::payload::stream( std::cin, protocol);
+                     message.buffer = casual::buffer::field::internal::payload::stream( std::cin, protocol);
 
                      communication::stream::outbound::Device out{ std::cout};
                      communication::device::blocking::send( out, message);
@@ -143,7 +143,7 @@ if --verbose is provided the type of the buffer will be sent to stderr.
                         [&protocol]( casual::cli::message::Payload& message)
                         {
                            casual::buffer::field::internal::payload::stream( 
-                              std::move( message.payload), 
+                              std::move( message.buffer), 
                               std::cout, 
                               protocol);
                         },
@@ -162,10 +162,10 @@ if --verbose is provided the type of the buffer will be sent to stderr.
                   casual::cli::message::Payload message;
 
                   
-                  message.payload.type = type ? *type : common::buffer::type::x_octet;
+                  message.buffer.type = type ? *type : common::buffer::type::x_octet;
 
                   while( std::cin.peek() != std::istream::traits_type::eof())
-                     message.payload.memory.push_back( std::cin.get());
+                     message.buffer.data.push_back( std::cin.get());
 
                   communication::stream::outbound::Device out{ std::cout};
                   communication::device::blocking::send( out, message);
@@ -213,9 +213,9 @@ if --verbose is provided the type of the buffer will be sent to stderr.
                      []( const casual::cli::message::Payload& message)
                      {
                         if( terminal::output::directive().verbose())
-                           std::cerr << message.payload.type << '\n';
+                           std::cerr << message.buffer.type << '\n';
 
-                        std::cout.write( message.payload.memory.data(), message.payload.memory.size());
+                        std::cout.write( message.buffer.data.data(), message.buffer.data.size());
                      },
                      casual::cli::pipe::handle::done( done)
                   );

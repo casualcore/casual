@@ -105,7 +105,7 @@ namespace casual
 
                inline static platform::size::type size( const common::message::service::call::callee::Request& message)
                {
-                  return sizeof( message) + message.buffer.memory.size() + message.buffer.type.size();
+                  return sizeof( message) + message.buffer.data.size() + message.buffer.type.size();
                }
 
                std::vector< common::message::service::call::callee::Request> m_services;

@@ -194,7 +194,7 @@ domain:
          for( auto& correlation : correlations)
          {
             auto reply = common::unittest::service::receive< common::message::service::call::Reply>( communication::ipc::inbound::device(), correlation);
-            EXPECT_TRUE( reply.buffer.memory == payload);
+            EXPECT_TRUE( reply.buffer.data == payload);
          }
       }
 

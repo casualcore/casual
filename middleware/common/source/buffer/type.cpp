@@ -46,13 +46,13 @@ namespace casual
          Payload::Payload( string::Argument type) : type( std::move( type)) {}
 
          Payload::Payload( string::Argument type, platform::binary::type buffer)
-          : type( std::move( type)), memory( std::move( buffer)) {}
+          : type( std::move( type)), data( std::move( buffer)) {}
 
          Payload::Payload( string::Argument type, platform::binary::size::type size)
-          : type( std::move( type)), memory( size)
+          : type( std::move( type)), data( size)
          {
-            if( ! memory.data())
-               memory.reserve( 1);
+            if( ! data.data())
+               data.reserve( 1);
          }
 
          bool Payload::null() const
@@ -63,9 +63,9 @@ namespace casual
          std::ostream& operator << ( std::ostream& out, const Payload& value)
          {
             return out << "{ type: " << value.type 
-               << ", memory: " << static_cast< const void*>( value.memory.data()) 
-               << ", size: " << value.memory.size() 
-               << ", capacity: " << value.memory.capacity() 
+               << ", memory: @" << static_cast< const void*>( value.data.data()) 
+               << ", size: " << value.data.size() 
+               << ", capacity: " << value.data.capacity() 
                << '}';
          }
 
@@ -101,7 +101,7 @@ namespace casual
 
          platform::binary::size::type Buffer::reserved() const
          {
-            return payload.memory.size();
+            return payload.data.size();
          }
 
 

@@ -667,25 +667,25 @@ domain:
          {
             auto message = dequeue( ipc1);
             ASSERT_TRUE( message.message.size() == 1);
-            EXPECT_TRUE( common::algorithm::equal( message.message.at( 0).payload, payload));
+            EXPECT_TRUE( common::algorithm::equal( message.message.at( 0).payload.data, payload));
          }
 
          {
             auto message = dequeue( ipc2);
             ASSERT_TRUE( message.message.size() == 1);
-            EXPECT_TRUE( common::algorithm::equal( message.message.at( 0).payload, payload));
+            EXPECT_TRUE( common::algorithm::equal( message.message.at( 0).payload.data, payload));
          }
 
          {
             auto message = dequeue( ipc3);
             ASSERT_TRUE( message.message.size() == 1);
-            EXPECT_TRUE( common::algorithm::equal( message.message.at( 0).payload, payload));
+            EXPECT_TRUE( common::algorithm::equal( message.message.at( 0).payload.data, payload));
          }
 
          {
             auto message = dequeue( ipc4);
             ASSERT_TRUE( message.message.size() == 1);
-            EXPECT_TRUE( common::algorithm::equal( message.message.at( 0).payload, payload));
+            EXPECT_TRUE( common::algorithm::equal( message.message.at( 0).payload.data, payload));
          }
       }
 

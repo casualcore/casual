@@ -459,6 +459,31 @@ namespace casual
                };
             } // complete
 
+            namespace transform
+            {
+               template< typename M>
+               auto message( M&& message)
+               {
+                  auto transform_attributes = []( auto&& value)
+                  {
+                     cli::message::queue::message::Attributes result;
+                     result.properties = std::move( value.properties);
+                     result.reply = std::move( value.reply);
+                     result.available = value.available;
+                     return result;
+                  };
+
+                  cli::message::queue::Message result;
+                  result.id = message.id;
+                  result.attributes = transform_attributes( std::move( message.attributes));
+
+                  result.payload.type = std::move( message.payload.type);
+                  result.payload.data = std::move( message.payload.data);
+
+                  return result;
+               };
+            } // transform
+
 
             namespace legend
             {
@@ -810,8 +835,8 @@ use auto-complete to help which options has legends)"
                         request.trid = payload.transaction.trid;
                         request.name = name;
                         request.queue = destination.queue;
-                        std::swap( request.message.payload, payload.payload.memory);
-                        std::swap( request.message.type, payload.payload.type);
+                        std::swap( request.message.payload.data, payload.buffer.data);
+                        std::swap( request.message.payload.type, payload.buffer.type);
 
                         cli::message::queue::message::ID id{ process::handle()};
                         id.id = communication::ipc::call( destination.process.ipc, request).id;
@@ -877,17 +902,12 @@ cat somefile.bin | casual queue --enqueue <queue-name>
                   request.queue = destination.queue;
 
                   if( id)
-                     request.selector.id = id.value();
+                     request.selector.id = *id;
 
-                  auto reply = communication::ipc::call( destination.process.ipc, request);
-
-                  if( ! reply.message.empty())
+                  if( auto reply = communication::ipc::call( destination.process.ipc, request))
                   {
-                     cli::message::Payload payload{ process::handle()};
-                     std::swap( reply.message.front().payload, payload.payload.memory);
-                     std::swap( reply.message.front().type, payload.payload.type);
-                     payload.transaction.trid = request.trid;
-                     cli::pipe::forward::message( payload);
+                     auto result = local::transform::message( std::move( reply.message.front()));
+                     cli::pipe::forward::message( result);
 
                      return true;
                   }
@@ -1046,15 +1066,9 @@ casual queue --consume <queue-name> [<count>] | <some other part of casual-pipe>
                      // consume the pipe
                      common::message::dispatch::pump( cli::pipe::condition::done( done), handler, in);
 
-                     auto messages = queue::peek::messages( queue, ids);
-
-                     algorithm::for_each( messages, []( auto& message)
+                     algorithm::for_each( queue::peek::messages( queue, ids), []( auto& message)
                      {
-                        cli::message::Payload pipemessage;
-                        pipemessage.payload.type = std::move( message.payload.type);
-                        pipemessage.payload.memory = std::move( message.payload.data);
-
-                        cli::pipe::forward::message( pipemessage);
+                        cli::pipe::forward::message( local::transform::message( std::move( message)));
                      });
 
                      cli::pipe::done();
@@ -1239,93 +1253,84 @@ casual queue --clear a b c)"
 
             } // clear
 
-            namespace forward
+            namespace forward::scale::aliases
             {
-               namespace scale
+               auto option()
                {
-                  namespace aliases
+                  auto invoke = []( std::vector< std::tuple< std::string, platform::size::type>> values)
                   {
-                     auto option()
+                     auto aliases = algorithm::transform( values, []( auto& value)
                      {
-                        auto invoke = []( std::vector< std::tuple< std::string, platform::size::type>> values)
-                        {
-                           auto aliases = algorithm::transform( values, []( auto& value)
-                           {
-                              if( std::get< 1>( value) < 0)
-                                 code::raise::error( code::casual::invalid_argument, "number of instances cannot be negative");
-                                    
-                              manager::admin::model::scale::Alias result;
-                              result.name = std::move( std::get< 0>( value));
-                              result.instances = std::get< 1>( value);
-                              return result;
-                           });
+                        if( std::get< 1>( value) < 0)
+                           code::raise::error( code::casual::invalid_argument, "number of instances cannot be negative");
+                              
+                        manager::admin::model::scale::Alias result;
+                        result.name = std::move( std::get< 0>( value));
+                        result.instances = std::get< 1>( value);
+                        return result;
+                     });
 
-                           serviceframework::service::protocol::binary::Call call;
-                           call << CASUAL_NAMED_VALUE( aliases);
-                           call( manager::admin::service::name::forward::scale::aliases);
-                        };
+                     serviceframework::service::protocol::binary::Call call;
+                     call << CASUAL_NAMED_VALUE( aliases);
+                     call( manager::admin::service::name::forward::scale::aliases);
+                  };
 
-                        auto complete = []( auto&& values, bool help) -> std::vector< std::string>
-                        {
-                           if( help)
-                              return { "<alias>", "<# instances>"};
+                  auto complete = []( auto&& values, bool help) -> std::vector< std::string>
+                  {
+                     if( help)
+                        return { "<alias>", "<# instances>"};
 
-                           if( range::size( values) % 2 == 1)
-                              return { "<value>"};
+                     if( range::size( values) % 2 == 1)
+                        return { "<value>"};
 
-                           auto get_alias = []( auto& forward){ return forward.alias;};
+                     auto get_alias = []( auto& forward){ return forward.alias;};
 
-                           auto state = call::state();
+                     auto state = call::state();
 
-                           auto result = algorithm::transform( state.forward.services, get_alias);
-                           algorithm::transform( state.forward.services, std::back_inserter( result), get_alias);
+                     auto result = algorithm::transform( state.forward.services, get_alias);
+                     algorithm::transform( state.forward.services, std::back_inserter( result), get_alias);
 
-                           return result;
-                        };
+                     return result;
+                  };
 
-                        return argument::Option{
-                           argument::option::one::many( std::move( invoke)),
-                           complete,
-                           {  "--forward-scale-aliases"},
-                           R"(scales forward aliases to the requested number of instances
+                  return argument::Option{
+                     argument::option::one::many( std::move( invoke)),
+                     complete,
+                     {  "--forward-scale-aliases"},
+                     R"(scales forward aliases to the requested number of instances
 
 Example:
 casual queue --forward-scale-aliases a 2 b 0 c 10)"
-                        };
-                     };  
-                  } // aliases
+                  };
+               };  
 
-               } // scale
-            } // forward
+            } // forward::scale::aliases
 
-            namespace metric
+            namespace metric::reset
             {
-               namespace reset
+               auto option()
                {
-                  auto option()
+                  auto invoke = []( const std::vector< std::string>& queues)
                   {
-                     auto invoke = []( const std::vector< std::string>& queues)
-                     {
-                        serviceframework::service::protocol::binary::Call call;
-                        call << CASUAL_NAMED_VALUE( queues);
-                        auto reply = call( manager::admin::service::name::metric::reset);
-                     };
+                     serviceframework::service::protocol::binary::Call call;
+                     call << CASUAL_NAMED_VALUE( queues);
+                     auto reply = call( manager::admin::service::name::metric::reset);
+                  };
 
-                     return argument::Option{
-                        argument::option::one::many( std::move( invoke)),
-                        complete::queues,
-                        {  "--metric-reset"},
-                        R"(resets metrics for the provided queues
+                  return argument::Option{
+                     argument::option::one::many( std::move( invoke)),
+                     complete::queues,
+                     {  "--metric-reset"},
+                     R"(resets metrics for the provided queues
 
 if no queues are provided, metrics for all queues are reset.
 
 Example:
 casual queue --metric-reset a b)"
-                     };
-                  }
+                  };
+               }
                   
-               } // reset
-            } // metric
+            } // metric::reset
             
             namespace state
             {
@@ -1436,7 +1441,6 @@ casual queue --metric-reset a b)"
                   }
 
             } // information
-
 
          } // <unnamed>
       } // local

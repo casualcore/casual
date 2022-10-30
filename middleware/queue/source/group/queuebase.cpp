@@ -72,13 +72,13 @@ namespace casual
                      sql::database::row::get( row,
                         result.rowid,
                         result.message.id.get(),
-                        result.message.properties,
-                        result.message.reply,
+                        result.message.attributes.properties,
+                        result.message.attributes.reply,
                         result.message.redelivered,
-                        result.message.type,
-                        result.message.available,
+                        result.message.payload.type,
+                        result.message.attributes.available,
                         result.message.timestamp,
-                        result.message.payload
+                        result.message.payload.data
                      );
                   }
 
@@ -377,14 +377,14 @@ namespace casual
                message.queue.value(),
                message.queue.value(),
                gtrid,
-               message.message.properties,
+               message.message.attributes.properties,
                state,
-               message.message.reply,
+               message.message.attributes.reply,
                0,
-               message.message.type,
-               message.message.available,
+               message.message.payload.type,
+               message.message.attributes.available,
                platform::time::clock::type::now(),
-               message.message.payload);
+               message.message.payload.data);
 
          common::log::line( verbose::log, "reply: ", reply);
          return reply;

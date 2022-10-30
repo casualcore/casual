@@ -58,7 +58,7 @@ namespace casual
 
       Binary::Binary( protocol::parameter_type&& parameter)
          : Base( std::move( parameter)),
-            m_reader( common::serialize::binary::reader( m_parameter.payload.memory)), 
+            m_reader( common::serialize::binary::reader( m_parameter.payload.data)), 
             m_writer( common::serialize::binary::writer())
       {
          Trace trace{ "protocol::Binary::Binary"};
@@ -71,14 +71,14 @@ namespace casual
       protocol::result_type Binary::finalize()
       {
          auto result = Base::finalize();
-         m_writer.consume( result.payload.memory);
+         m_writer.consume( result.payload.data);
          return result;
       }
 
 
       Yaml::Yaml( protocol::parameter_type&& parameter)
          : Base( std::move( parameter)),
-            m_reader{ common::serialize::yaml::relaxed::reader( m_parameter.payload.memory)},
+            m_reader{ common::serialize::yaml::relaxed::reader( m_parameter.payload.data)},
             m_writer{ common::serialize::yaml::writer()}
       {
          Trace trace{ "protocol::Yaml::Yaml"};
@@ -88,7 +88,7 @@ namespace casual
 
          // We don't need the request-buffer any more, we can use the memory though...
          m_result.payload = std::move( m_parameter.payload);
-         m_result.payload.memory.clear();
+         m_result.payload.data.clear();
       }
 
       protocol::result_type Yaml::finalize()
@@ -96,14 +96,14 @@ namespace casual
          Trace trace{ "protocol::Yaml::finalize"};
 
          auto result = Base::finalize();
-         m_writer.consume( result.payload.memory);
+         m_writer.consume( result.payload.data);
          return result;
       }
 
 
       Json::Json( protocol::parameter_type&& parameter)
          : Base( std::move( parameter)),
-            m_reader{ common::serialize::json::relaxed::reader( m_parameter.payload.memory)},
+            m_reader{ common::serialize::json::relaxed::reader( m_parameter.payload.data)},
             m_writer{ common::serialize::json::writer()}
       {
          Trace trace{ "protocol::Json::Json"};
@@ -113,7 +113,7 @@ namespace casual
 
          // We don't need the request-buffer any more, we can use the memory though...
          m_result.payload = std::move( m_parameter.payload);
-         m_result.payload.memory.clear();
+         m_result.payload.data.clear();
       }
 
       protocol::result_type Json::finalize()
@@ -121,7 +121,7 @@ namespace casual
          Trace trace{ "protocol::Json::finalize"};
 
          auto result = Base::finalize();
-         m_writer.consume( result.payload.memory);
+         m_writer.consume( result.payload.data);
          return result;
       }
 
@@ -129,7 +129,7 @@ namespace casual
 
       Xml::Xml( protocol::parameter_type&& parameter)
          : Base( std::move( parameter)),
-            m_reader{ common::serialize::xml::relaxed::reader( m_parameter.payload.memory)},
+            m_reader{ common::serialize::xml::relaxed::reader( m_parameter.payload.data)},
             m_writer{ common::serialize::xml::writer()}
       {
          Trace trace{ "protocol::Xml::Xml"};
@@ -139,7 +139,7 @@ namespace casual
 
          // We don't need the request-buffer any more, we can use the memory though...
          m_result.payload = std::move( m_parameter.payload);
-         m_result.payload.memory.clear();
+         m_result.payload.data.clear();
 
       }
 
@@ -148,14 +148,14 @@ namespace casual
          Trace trace{ "protocol::Xml::finalize"};
 
          auto result = Base::finalize();
-         m_writer.consume( result.payload.memory);
+         m_writer.consume( result.payload.data);
          return result;
       }
 
 
       Ini::Ini( protocol::parameter_type&& parameter)
       : Base( std::move( parameter)),
-         m_reader( common::serialize::ini::relaxed::reader( m_parameter.payload.memory)),
+         m_reader( common::serialize::ini::relaxed::reader( m_parameter.payload.data)),
          m_writer( common::serialize::ini::writer())
       {
          Trace trace{ "protocol::Ini::Ini"};
@@ -165,7 +165,7 @@ namespace casual
 
          // We don't need the request-buffer any more, we can use the memory though...
          m_result.payload = std::move( m_parameter.payload);
-         m_result.payload.memory.clear();
+         m_result.payload.data.clear();
       }
 
       protocol::result_type Ini::finalize()
@@ -173,7 +173,7 @@ namespace casual
          Trace trace{ "protocol::Ini::finalize"};
 
          auto result = Base::finalize();
-         m_writer.consume( result.payload.memory);
+         m_writer.consume( result.payload.data);
          return result;
       }
 

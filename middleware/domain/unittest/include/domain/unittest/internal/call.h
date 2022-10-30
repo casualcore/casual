@@ -46,7 +46,7 @@ namespace casual
 
             auto archive = common::serialize::binary::writer();
             detail::serialize( archive, std::forward< Ts>( arguments)...);
-            archive.consume( request.buffer.memory);
+            archive.consume( request.buffer.data);
 
             return common::communication::device::blocking::send( common::communication::instance::outbound::domain::manager::device(), request);
          }();
@@ -54,7 +54,7 @@ namespace casual
 
          common::message::service::call::Reply reply;
          common::communication::device::blocking::receive( common::communication::ipc::inbound::device(), reply, correlation);
-         auto archive = common::serialize::binary::reader( reply.buffer.memory);
+         auto archive = common::serialize::binary::reader( reply.buffer.data);
 
          R result;
          archive >> result;

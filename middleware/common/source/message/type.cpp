@@ -190,6 +190,7 @@ namespace casual
             case Type::signal_hangup: return "signal_hangup";
             case Type::cli_pipe_done: return "cli_pipe_done";
             case Type::cli_payload: return "cli_payload";
+            case Type::cli_queue_message: return "cli_queue_message";
             case Type::cli_queue_message_id: return "cli_queue_message_id";
             case Type::cli_pipe_error_fatal: return "cli_pipe_error_fatal";
             case Type::cli_transaction_directive: return "cli_transaction_directive";

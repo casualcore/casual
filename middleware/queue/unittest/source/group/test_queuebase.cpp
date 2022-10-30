@@ -39,10 +39,10 @@ namespace casual
                result.trid = trid;
 
                result.message.id = common::uuid::make();
-               result.message.reply = "someQueue";
-               result.message.type = common::buffer::type::binary;
+               result.message.attributes.reply = "someQueue";
+               result.message.payload.type = common::buffer::type::binary;
 
-               common::algorithm::copy( common::uuid::string( common::uuid::make()), result.message.payload);
+               common::algorithm::copy( common::uuid::string( common::uuid::make()), result.message.payload.data);
 
                return result;
             }
@@ -279,7 +279,7 @@ namespace casual
 
          EXPECT_TRUE( info.name == "unittest_queue");
          EXPECT_TRUE( info.metric.count == 1) << "info.metric.count: " << info.metric.count;
-         EXPECT_TRUE( info.metric.size == static_cast< platform::size::type>( message.message.payload.size()));
+         EXPECT_TRUE( info.metric.size == static_cast< platform::size::type>( message.message.payload.data.size()));
       }
 
 
@@ -321,10 +321,10 @@ namespace casual
 
          ASSERT_TRUE( fetched.message.size() == 1);
          EXPECT_TRUE( origin.message.id == fetched.message.at( 0).id);
-         EXPECT_TRUE( origin.message.type == fetched.message.at( 0).type);
-         EXPECT_TRUE( origin.message.reply == fetched.message.at( 0).reply);
-         EXPECT_TRUE( origin.message.payload == fetched.message.at( 0).payload);
-         EXPECT_TRUE( origin.message.available == fetched.message.at( 0).available);
+         EXPECT_TRUE( origin.message.attributes.reply == fetched.message.at( 0).attributes.reply);
+         EXPECT_TRUE( origin.message.payload.type == fetched.message.at( 0).payload.type);
+         EXPECT_TRUE( origin.message.payload.data == fetched.message.at( 0).payload.data);
+         EXPECT_TRUE( origin.message.attributes.available == fetched.message.at( 0).attributes.available);
       }
 
       TEST( casual_queue_group_database, enqueue_deque__info__expect__count_0__size_0)
@@ -409,9 +409,9 @@ namespace casual
 
          ASSERT_TRUE( fetched.message.size() == 1);
          EXPECT_TRUE( origin.message.id == fetched.message.at( 0).id);
-         EXPECT_TRUE( origin.message.type == fetched.message.at( 0).type);
-         EXPECT_TRUE( origin.message.reply == fetched.message.at( 0).reply);
-         EXPECT_TRUE( origin.message.available == fetched.message.at( 0).available);
+         EXPECT_TRUE( origin.message.payload.type == fetched.message.at( 0).payload.type);
+         EXPECT_TRUE( origin.message.attributes.reply == fetched.message.at( 0).attributes.reply);
+         EXPECT_TRUE( origin.message.attributes.available == fetched.message.at( 0).attributes.available);
       }
 
       TEST( casual_queue_group_database, dequeue_message__from_properties)
@@ -423,20 +423,19 @@ namespace casual
          auto queue = database.create( queuebase::Queue{ "unittest_queue"});
 
          auto origin = local::message( queue);
-         origin.message.properties = "some: properties";
+         origin.message.attributes.properties = "some: properties";
          database.enqueue( origin);
 
          auto request = local::request( queue);
-         request.selector.properties = origin.message.properties;
+         request.selector.properties = origin.message.attributes.properties;
          auto fetched = database.dequeue( request, platform::time::clock::type::now());
-
 
          ASSERT_TRUE( fetched.message.size() == 1);
          EXPECT_TRUE( origin.message.id == fetched.message.at( 0).id);
-         EXPECT_TRUE( origin.message.type == fetched.message.at( 0).type);
-         EXPECT_TRUE( origin.message.reply == fetched.message.at( 0).reply);
-         EXPECT_TRUE( origin.message.payload == fetched.message.at( 0).payload);
-         EXPECT_TRUE( origin.message.available == fetched.message.at( 0).available);
+         EXPECT_TRUE( origin.message.payload.type == fetched.message.at( 0).payload.type);
+         EXPECT_TRUE( origin.message.payload.data == fetched.message.at( 0).payload.data);
+         EXPECT_TRUE( origin.message.attributes.reply == fetched.message.at( 0).attributes.reply);
+         EXPECT_TRUE( origin.message.attributes.available == fetched.message.at( 0).attributes.available);
       }
 
 
@@ -449,7 +448,7 @@ namespace casual
          auto queue = database.create( queuebase::Queue{ "unittest_queue"});
 
          auto origin = local::message( queue);
-         origin.message.properties = "some: properties";
+         origin.message.attributes.properties = "some: properties";
          database.enqueue( origin);
 
          auto request = local::request( queue);
@@ -472,7 +471,7 @@ namespace casual
          auto messages = common::algorithm::generate_n< 100>( [&]( auto index)
          {
             auto message = local::message( queue);
-            message.message.type = std::to_string( index);
+            message.message.payload.type = std::to_string( index);
             return message;
          });
 
@@ -489,10 +488,8 @@ namespace casual
 
             ASSERT_TRUE( fetched.message.size() == 1);
             EXPECT_TRUE( origin.message.id == fetched.message.at( 0).id);
-            EXPECT_TRUE( origin.message.type == fetched.message.at( 0).type) << "origin.type: " << origin.message.type << " fetched.type; " << fetched.message.at( 0).type;
-            EXPECT_TRUE( origin.message.reply == fetched.message.at( 0).reply);
-            EXPECT_TRUE( origin.message.payload == fetched.message.at( 0).payload);
-            EXPECT_TRUE( origin.message.available == fetched.message.at( 0).available);
+            EXPECT_TRUE( origin.message.payload == fetched.message.at( 0).payload) << CASUAL_NAMED_VALUE( origin.message.payload) << " fetched; " << CASUAL_NAMED_VALUE( fetched.message.at( 0).payload);
+            EXPECT_TRUE( origin.message.attributes == fetched.message.at( 0).attributes);
             //EXPECT_TRUE( origin.message.timestamp <= fetched.timestamp) << "origin: " << origin.timestamp.time_since_epoch().count() << " fetched: " << fetched.timestamp.time_since_epoch().count();
          });
 
@@ -533,9 +530,9 @@ namespace casual
 
             ASSERT_TRUE( fetched.message.size() == 1) << CASUAL_NAMED_VALUE( fetched) << "\n" << CASUAL_NAMED_VALUE( database.queues());
             EXPECT_TRUE( origin.message.id == fetched.message.at( 0).id);
-            EXPECT_TRUE( origin.message.type == fetched.message.at( 0).type);
-            EXPECT_TRUE( origin.message.reply == fetched.message.at( 0).reply);
-            EXPECT_TRUE( origin.message.available == fetched.message.at( 0).available);
+            EXPECT_TRUE( origin.message.payload.type == fetched.message.at( 0).payload.type);
+            EXPECT_TRUE( origin.message.attributes.reply == fetched.message.at( 0).attributes.reply);
+            EXPECT_TRUE( origin.message.attributes.available == fetched.message.at( 0).attributes.available);
          }
 
       }
@@ -662,7 +659,7 @@ namespace casual
             auto info = local::get_queue( database, queue.id).value();
 
             EXPECT_TRUE( info.metric.count == 1) << CASUAL_NAMED_VALUE( info);
-            EXPECT_TRUE( info.metric.size ==  static_cast< platform::size::type>( origin.message.payload.size()));
+            EXPECT_TRUE( info.metric.size ==  static_cast< platform::size::type>( origin.message.payload.data.size()));
          }
 
          {
@@ -685,7 +682,7 @@ namespace casual
             auto error = local::get_queue( database, queue.error).value();
          
             EXPECT_TRUE( error.metric.count == 1) << " queues.at( 1).count: " <<  error.metric.count;
-            EXPECT_TRUE( error.metric.size ==  static_cast< platform::size::type>( origin.message.payload.size()));
+            EXPECT_TRUE( error.metric.size ==  static_cast< platform::size::type>( origin.message.payload.data.size()));
 
             common::transaction::ID xid = common::transaction::id::create();
          
@@ -702,7 +699,7 @@ namespace casual
             auto error = local::get_queue( database, queue.error).value();
          
             EXPECT_TRUE( error.metric.count == 1) << " queues.at( 1).count: " <<  error.metric.count;
-            EXPECT_TRUE( error.metric.size ==  static_cast< platform::size::type>( origin.message.payload.size()));
+            EXPECT_TRUE( error.metric.size == static_cast< platform::size::type>( origin.message.payload.data.size()));
 
             common::transaction::ID xid = common::transaction::id::create();
 
@@ -739,7 +736,7 @@ namespace casual
             while( count++ < 100)
             {
                auto m = local::message( queue, xid);
-               m.message.type = std::to_string( count);
+               m.message.payload.type = std::to_string( count);
                database.enqueue( m);
                messages.push_back( std::move( m));
             }
@@ -756,9 +753,9 @@ namespace casual
 
             ASSERT_TRUE( fetched.message.size() == 1);
             EXPECT_TRUE( origin.message.id == fetched.message.at( 0).id);
-            EXPECT_TRUE( origin.message.type == fetched.message.at( 0).type) << "origin.type: " << origin.message.type << " fetched.type; " << fetched.message.at( 0).type;
-            EXPECT_TRUE( origin.message.reply == fetched.message.at( 0).reply);
-            EXPECT_TRUE( origin.message.available == fetched.message.at( 0).available);
+            EXPECT_TRUE( origin.message.payload.type == fetched.message.at( 0).payload.type) << "origin.type: " << origin.message.payload.type << " fetched.type; " << fetched.message.at( 0).payload.type;
+            EXPECT_TRUE( origin.message.attributes.reply == fetched.message.at( 0).attributes.reply);
+            EXPECT_TRUE( origin.message.attributes.available == fetched.message.at( 0).attributes.available);
             //EXPECT_TRUE( origin.message.timestamp <= fetched.timestamp) << "origin: " << origin.timestamp.time_since_epoch().count() << " fetched: " << fetched.timestamp.time_since_epoch().count();
          });
 

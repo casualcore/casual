@@ -82,8 +82,8 @@ namespace casual
                {
                   // Create an index upon creation
 
-                  const auto begin = payload.memory.begin();
-                  const auto end = payload.memory.end();
+                  const auto begin = payload.data.begin();
+                  const auto end = payload.data.end();
                   auto cursor = begin;
 
                   while( cursor < end)
@@ -103,14 +103,14 @@ namespace casual
                Buffer( Buffer&&) noexcept = default;
                Buffer& operator = ( Buffer&&) noexcept = default;
 
-               void shrink() { return payload.memory.shrink_to_fit();}
-               size_type capacity() const noexcept { return payload.memory.capacity();}
-               void capacity( platform::size::type value){ payload.memory.reserve( value); }
-               size_type utilized() const noexcept { return payload.memory.size();}
-               void utilized( platform::size::type value) { payload.memory.resize( value);}
+               void shrink() { return payload.data.shrink_to_fit();}
+               size_type capacity() const noexcept { return payload.data.capacity();}
+               void capacity( platform::size::type value){ payload.data.reserve( value); }
+               size_type utilized() const noexcept { return payload.data.size();}
+               void utilized( platform::size::type value) { payload.data.resize( value);}
 
-               auto handle() const noexcept { return common::buffer::handle::type{ payload.memory.data()};}
-               auto handle() noexcept { return common::buffer::handle::mutate::type{ payload.memory.data()};}
+               auto handle() const noexcept { return common::buffer::handle::type{ payload.data.data()};}
+               auto handle() noexcept { return common::buffer::handle::mutate::type{ payload.data.data()};}
 
                //! Implement Buffer::transport
                size_type transport( platform::size::type user_size) const
@@ -231,7 +231,7 @@ namespace casual
             template<typename B>
             void append( B& buffer, const_data_type data, platform::size::type size)
             {
-               buffer.payload.memory.insert( buffer.payload.memory.end(), data, data + size);
+               buffer.payload.data.insert( buffer.payload.data.end(), data, data + size);
             }
 
 
@@ -396,9 +396,9 @@ namespace casual
                const auto size = local::decode< size_type>( buffer.handle().underlying() + offset + size_offset);
 
                // Remove the data from the buffer
-               buffer.payload.memory.erase(
-                  buffer.payload.memory.begin() + offset,
-                  buffer.payload.memory.begin() + offset + data_offset + size);
+               buffer.payload.data.erase(
+                  buffer.payload.data.begin() + offset,
+                  buffer.payload.data.begin() + offset + data_offset + size);
 
                // Remove entry from index
 
@@ -452,7 +452,7 @@ namespace casual
                {
                   auto& buffer = pool_type::pool().get( common::buffer::handle::type{ handle});
 
-                  buffer.payload.memory.clear();
+                  buffer.payload.data.clear();
                   buffer.index.clear();
                }
                catch( ...)
@@ -546,7 +546,7 @@ namespace casual
                   });
 
                   // Update the data
-                  update( buffer.payload.memory, buffer.index, id, occurrence, std::forward<A>( arguments)...);
+                  update( buffer.payload.data, buffer.index, id, occurrence, std::forward<A>( arguments)...);
 
                }
                catch( ...)
@@ -572,7 +572,7 @@ namespace casual
 
                   const auto offset = buffer.index.at( id).at( occurrence);
 
-                  count = local::decode< size_type>( buffer.payload.memory.data() + offset + size_offset);
+                  count = local::decode< size_type>( buffer.payload.data.data() + offset + size_offset);
                }
                catch( ...)
                {
@@ -767,7 +767,7 @@ namespace casual
                   });
 
                   auto index = source.index;
-                  target.payload.memory = source.payload.memory;
+                  target.payload.data = source.payload.data;
                   std::swap( target.index, index);
                }
                catch( ...)
@@ -1925,7 +1925,7 @@ namespace casual
 
                            stream << '[' << idx << ']' << " = ";
 
-                           const auto offset = buffer.payload.memory.data() + occurrences[idx];
+                           const auto offset = buffer.payload.data.data() + occurrences[idx];
 
                            const auto data = offset + data_offset;
 

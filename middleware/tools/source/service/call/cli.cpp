@@ -148,7 +148,7 @@ namespace casual
 
                      // call
                   
-                     common::message::service::call::caller::Request request{ common::buffer::payload::Send{ message.payload}};
+                     common::message::service::call::caller::Request request{ common::buffer::payload::Send{ message.buffer}};
                      request.process = process::handle();
                      request.service = lookup.service;
                      request.pending = lookup.pending;
@@ -175,7 +175,7 @@ namespace casual
                      casual::cli::message::Payload result{ process::handle()};
                      result.correlation = message.correlation;
                      result.execution = message.execution;
-                     result.payload = std::move( message.buffer);
+                     result.buffer = std::move( message.buffer);
                      result.code = message.code;
                      result.transaction.trid = message.transaction.trid;
                      result.transaction.code = message.transaction.state == decltype( message.transaction.state)::active ? code::tx::ok : code::tx::rollback;

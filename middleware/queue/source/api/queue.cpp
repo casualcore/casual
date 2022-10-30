@@ -60,11 +60,11 @@ namespace casual
 
                   request.process = common::process::handle();
 
-                  request.message.payload = message.payload.data;
-                  request.message.type = message.payload.type;
-                  request.message.properties = message.attributes.properties;
-                  request.message.reply = message.attributes.reply;
-                  request.message.available = message.attributes.available;
+                  request.message.payload.data = message.payload.data;
+                  request.message.payload.type = message.payload.type;
+                  request.message.attributes.properties = message.attributes.properties;
+                  request.message.attributes.reply = message.attributes.reply;
+                  request.message.attributes.available = message.attributes.available;
 
                   request.name = lookup.name();
 
@@ -108,11 +108,11 @@ namespace casual
                         {
                            queue::Message result;
                            result.id = value.id;
-                           result.attributes.available = value.available;
-                           result.attributes.properties = std::move( value.properties);
-                           result.attributes.reply = std::move( value.reply);
-                           result.payload.type = std::move( value.type);
-                           result.payload.data = std::move( value.payload);
+                           result.attributes.available = value.attributes.available;
+                           result.attributes.properties = std::move( value.attributes.properties);
+                           result.attributes.reply = std::move( value.attributes.reply);
+                           result.payload.type = std::move( value.payload.type);
+                           result.payload.data = std::move( value.payload.data);
                            return result;
                         };
                      }
@@ -399,7 +399,7 @@ namespace casual
                //         we probably need to change the interface for 'binary' in write-archives (to take a range, or iterator first, last)
                copy::Message send_message{
                   message.id, message.attributes,
-                  { send.payload().type, common::range::make( std::begin( send.payload().memory), send.transport())}};
+                  { send.payload().type, common::range::make( std::begin( send.payload().data), send.transport())}};
 
                return local::enqueue( lookup, send_message);
             }
@@ -419,7 +419,7 @@ namespace casual
                   {
                      common::buffer::Payload payload;
                      payload.type = std::move( message.payload.type);
-                     payload.memory = std::move( message.payload.data);
+                     payload.data = std::move( message.payload.data);
 
                      auto buffer = common::buffer::pool::Holder::instance().insert( std::move( payload));
                      result.payload.buffer = std::get< 0>( buffer).underlying();
@@ -522,15 +522,15 @@ namespace casual
 
                auto reply = common::communication::ipc::call( queue.process.ipc, request);
 
-               return common::algorithm::transform( reply.messages, []( auto& m){
-                  Message message;
-                  message.id = m.id;
-                  message.attributes.available = m.available;
-                  message.attributes.reply = std::move( m.reply);
-                  message.attributes.properties = std::move( m.properties);
-                  message.payload.type = std::move( m.type);
-                  message.payload.data = std::move( m.payload);
-                  return message;
+               return common::algorithm::transform( reply.messages, []( auto& message){
+                  Message result;
+                  result.id = message.id;
+                  result.attributes.available = message.attributes.available;
+                  result.attributes.reply = std::move( message.attributes.reply);
+                  result.attributes.properties = std::move( message.attributes.properties);
+                  result.payload.type = std::move( message.payload.type);
+                  result.payload.data = std::move( message.payload.data);
+                  return result;
                });
             }
          } // peek

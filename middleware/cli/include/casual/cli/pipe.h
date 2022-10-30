@@ -78,6 +78,7 @@ namespace casual
                   return detail::create::handler( 
                      handle::message< message::transaction::Directive>(),
                      handle::message< message::Payload>(),
+                     handle::message< message::queue::Message>(),
                      handle::message< message::queue::message::ID>(),
                      handle::message< message::transaction::Propagate>());
                }

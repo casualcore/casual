@@ -129,8 +129,6 @@ namespace casual
                )
             };
 
-
-
          } // request
 
          using base_request = common::message::basic_request< common::message::Type::queue_manager_queue_lookup_request>;
@@ -209,7 +207,34 @@ namespace casual
          } // discard
       } // lookup
 
+      struct Attributes : common::compare::Equality< Attributes>
+      {
+         std::string properties;
+         std::string reply;
+         platform::time::point::type available;
 
+         inline auto tie() const noexcept { return std::tie( properties, reply, available);}
+         
+         CASUAL_CONST_CORRECT_SERIALIZE(
+            CASUAL_SERIALIZE( properties);
+            CASUAL_SERIALIZE( reply);
+            CASUAL_SERIALIZE( available);
+         ) 
+      };
+
+
+      struct Payload : common::compare::Equality< Payload>
+      {
+         std::string type;
+         platform::binary::type data;
+
+         inline auto tie() const noexcept { return std::tie( type, data);}
+
+         CASUAL_CONST_CORRECT_SERIALIZE(
+            CASUAL_SERIALIZE( type);
+            CASUAL_SERIALIZE( data);
+         ) 
+      };
 
       namespace group
       {
@@ -330,10 +355,9 @@ namespace casual
                common::Uuid id;
 
                CASUAL_CONST_CORRECT_SERIALIZE(
-               {
                   CASUAL_SERIALIZE( properties);
                   CASUAL_SERIALIZE( id);
-               })
+               )
             };
 
             using base_request = common::message::basic_request< common::message::Type::queue_group_dequeue_request>;
@@ -360,20 +384,14 @@ namespace casual
             struct Message
             {
                common::Uuid id;
-               std::string properties;
-               std::string reply;
-               platform::time::point::type available;
-               std::string type;
-               platform::binary::type payload;
+               ipc::message::Attributes attributes;
+               ipc::message::Payload payload;
                platform::size::type redelivered{};
                platform::time::point::type timestamp;
 
                CASUAL_CONST_CORRECT_SERIALIZE(
                   CASUAL_SERIALIZE( id);
-                  CASUAL_SERIALIZE( properties);
-                  CASUAL_SERIALIZE( reply);
-                  CASUAL_SERIALIZE( available);
-                  CASUAL_SERIALIZE( type);
+                  CASUAL_SERIALIZE( attributes);
                   CASUAL_SERIALIZE( payload);
                   CASUAL_SERIALIZE( redelivered);
                   CASUAL_SERIALIZE( timestamp);
@@ -386,6 +404,8 @@ namespace casual
                using base_reply::base_reply;
 
                std::vector< dequeue::Message> message;
+
+               inline explicit operator bool () const noexcept { return ! message.empty();}
 
                CASUAL_CONST_CORRECT_SERIALIZE(
                   base_reply::serialize( archive);
@@ -434,23 +454,17 @@ namespace casual
             {
                Message() = default;
                Message( dequeue::Message other)
-                  : id{ other.id}, properties{ std::move( other.properties)}, reply{ std::move( other.reply)}, available{ other.available},
-                     type{ std::move( other.type)}, payload{ std::move( other.payload)}
+                  : id{ other.id}, attributes{ std::move( other.attributes)},
+                     payload{ std::move( other.payload)}
                {}
 
                common::Uuid id;
-               std::string properties;
-               std::string reply;
-               platform::time::point::type available;
-               std::string type;
-               platform::binary::type payload;
+               ipc::message::Attributes attributes;
+               ipc::message::Payload payload;
 
                CASUAL_CONST_CORRECT_SERIALIZE(
                   CASUAL_SERIALIZE( id);
-                  CASUAL_SERIALIZE( properties);
-                  CASUAL_SERIALIZE( reply);
-                  CASUAL_SERIALIZE( available);
-                  CASUAL_SERIALIZE( type);
+                  CASUAL_SERIALIZE( attributes);
                   CASUAL_SERIALIZE( payload);
                )
             };

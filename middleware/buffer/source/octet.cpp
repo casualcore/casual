@@ -35,7 +35,7 @@ namespace casual
                {
 
                   // Just ignore user-size all together
-                  return payload.memory.size();
+                  return payload.data.size();
                }
             };
 
@@ -58,8 +58,8 @@ namespace casual
                   auto& buffer = allocator_base::emplace_back( type, size);
 
                   // If size() is ​0​, data() may or may not return a null pointer
-                  if( ! std::data( buffer.payload.memory))
-                     buffer.payload.memory.reserve( 1);
+                  if( ! std::data( buffer.payload.data))
+                     buffer.payload.data.reserve( 1);
 
                   return buffer.payload.handle();
                }
@@ -72,12 +72,12 @@ namespace casual
                   if( size)
                   {
                      // Allow user to reduce allocation
-                     buffer.payload.memory.shrink_to_fit();
+                     buffer.payload.data.shrink_to_fit();
                   }
                   else
                   {
                      // TODO What is this? How could this possible make sense?
-                     //m_pool.back().payload.memory.reserve( 1);
+                     //m_pool.back().payload.data.reserve( 1);
                   }
 
                   return buffer.payload.handle();
@@ -119,7 +119,7 @@ namespace casual
                   {
                      *name = std::get< 1>( common::algorithm::split( buffer.payload.type, '/')).data();
                   }
-                  if( size) *size = buffer.payload.memory.size();
+                  if( size) *size = buffer.payload.data.size();
                }
                catch( ...)
                {
@@ -140,7 +140,7 @@ namespace casual
 
                   *handle = casual::common::algorithm::copy(
                      casual::common::range::make( data, size),
-                     buffer.payload.memory).data();
+                     buffer.payload.data).data();
 
                }
                catch( ...)
@@ -160,8 +160,8 @@ namespace casual
                {
                   const auto& buffer = pool_type::pool().get( common::buffer::handle::type{ handle});
 
-                  data = buffer.payload.memory.data();
-                  size = buffer.payload.memory.size();
+                  data = buffer.payload.data.data();
+                  size = buffer.payload.data.size();
 
                }
                catch( ...)

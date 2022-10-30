@@ -46,8 +46,8 @@ namespace casual
             {
                auto validate( const common::buffer::Payload& payload)
                {
-                  const auto size = payload.memory.size();
-                  const auto used = std::strlen( payload.memory.data()) + 1;
+                  const auto size = payload.data.size();
+                  const auto used = std::strlen( payload.data.data()) + 1;
 
                   // We do need to check that it is a real null-terminated
                   // string within allocated area
@@ -89,7 +89,7 @@ namespace casual
                {
                   auto& buffer = allocator_base::emplace_back( type, size ? size : 1);
 
-                  buffer.payload.memory.front() = '\0';
+                  buffer.payload.data.front() = '\0';
 
                   return buffer.payload.handle();
                }
@@ -98,11 +98,11 @@ namespace casual
                {
                   auto& buffer = allocator_base::get( handle);
 
-                  buffer.payload.memory.resize( size ? size : 1);
-                  buffer.payload.memory.back() = '\0';
+                  buffer.payload.data.resize( size ? size : 1);
+                  buffer.payload.data.back() = '\0';
 
                   // Allow user to reduce allocation
-                  buffer.payload.memory.shrink_to_fit();
+                  buffer.payload.data.shrink_to_fit();
 
                   return buffer.payload.handle();
                }
@@ -151,8 +151,8 @@ namespace casual
                {
                   const auto& buffer = pool_type::pool().get( common::buffer::handle::type{ handle});
 
-                  if( size) *size = buffer.payload.memory.size();
-                  if( used) *used = std::strlen( buffer.payload.memory.data()) + 1;
+                  if( size) *size = buffer.payload.data.size();
+                  if( used) *used = std::strlen( buffer.payload.data.data()) + 1;
                }
                catch( ...)
                {
@@ -175,7 +175,7 @@ namespace casual
 
                   *handle = casual::common::algorithm::copy(
                      casual::common::range::make( value, count),
-                     buffer.payload.memory).data();
+                     buffer.payload.data).data();
 
                }
                catch( ...)
@@ -195,16 +195,16 @@ namespace casual
                {
                   const auto& buffer = pool_type::pool().get( common::buffer::handle::type{ handle});
 
-                  const auto used = std::strlen( buffer.payload.memory.data()) + 1;
-                  const auto size = buffer.payload.memory.size();
+                  const auto used = std::strlen( buffer.payload.data.data()) + 1;
+                  const auto size = buffer.payload.data.size();
 
                   if( used > size)
                   {
                      // We need to report this
-                     buffer.payload.memory.at( used);
+                     buffer.payload.data.at( used);
                   }
 
-                  if( value) *value = buffer.payload.memory.data();
+                  if( value) *value = buffer.payload.data.data();
 
                }
                catch( ...)

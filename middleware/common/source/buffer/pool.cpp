@@ -114,7 +114,7 @@ namespace casual
          }
          else 
          {
-            auto size = payload.memory.size();
+            auto size = payload.data.size();
             auto& holder = get_pool( payload.type);
             return { holder.insert( std::move( payload)), size};
          }

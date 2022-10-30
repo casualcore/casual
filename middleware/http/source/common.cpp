@@ -223,7 +223,7 @@ namespace casual
 
                   auto transcode_clear = []( common::buffer::Payload& payload)
                   {
-                     payload.memory.clear();
+                     payload.data.clear();
                   };
 
                } // <unnamed>
@@ -237,10 +237,10 @@ namespace casual
                   auto decode_base64 = []( common::buffer::Payload& payload)
                   {
                      // make sure we've got null termination on payload...
-                     payload.memory.push_back( '\0');
+                     payload.data.push_back( '\0');
 
-                     auto last = common::transcode::base64::decode( payload.memory, std::begin( payload.memory), std::end( payload.memory));
-                     payload.memory.erase( last, std::end( payload.memory));
+                     auto last = common::transcode::base64::decode( payload.data, std::begin( payload.data), std::end( payload.data));
+                     payload.data.erase( last, std::end( payload.data));
                   };
 
                   static const auto mapping = std::map< std::string_view, common::function< void( common::buffer::Payload&) const>>
@@ -273,8 +273,8 @@ namespace casual
                   
                   auto encode_base64 = []( common::buffer::Payload& payload)
                   {
-                     auto buffer = std::exchange( payload.memory, {});
-                     common::transcode::base64::encode( buffer, payload.memory);
+                     auto buffer = std::exchange( payload.data, {});
+                     common::transcode::base64::encode( buffer, payload.data);
                   };
 
                   static const auto mapping = std::map< std::string_view, common::function< void( common::buffer::Payload&) const>>

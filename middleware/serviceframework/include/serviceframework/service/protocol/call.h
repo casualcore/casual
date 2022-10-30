@@ -95,7 +95,7 @@ namespace casual
                   -> decltype( result_type{ service::call::invoke( std::move( service), std::declval< service::payload_type&>(), flags)})
                {
                   ( ( m_input.archive << std::forward< Args>( args)), ...);
-                  m_input.archive.consume( m_payload.memory);
+                  m_input.archive.consume( m_payload.data);
                   return result_type{ service::call::invoke( std::move( service), m_payload, flags)};
                }
 
@@ -104,7 +104,7 @@ namespace casual
                   -> decltype( result_type{ service::call::invoke( std::move( service), std::declval< service::payload_type&>())})
                {
                   ( ( m_input.archive << std::forward< Args>( args)), ...);
-                  m_input.archive.consume( m_payload.memory);
+                  m_input.archive.consume( m_payload.data);
                   return { service::call::invoke( std::move( service), m_payload)};
                }
 
@@ -190,7 +190,7 @@ namespace casual
                struct Result
                {
                   template< typename R>
-                  Result( R& result) : m_archive( common::serialize::binary::reader( result.buffer.memory)) {}
+                  Result( R& result) : m_archive( common::serialize::binary::reader( result.buffer.data)) {}
 
                   common::serialize::Reader& archive() { return m_archive;}
 

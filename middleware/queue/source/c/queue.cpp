@@ -310,7 +310,7 @@ namespace casual
 
                   common::buffer::Payload payload;
                   payload.type = std::move( message.front().payload.type);
-                  payload.memory = std::move( message.front().payload.data);
+                  payload.data = std::move( message.front().payload.data);
 
                   auto buffer = common::buffer::pool::Holder::instance().insert( std::move( payload));
                   result.payload.buffer = std::get< 0>( buffer).underlying();

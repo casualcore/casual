@@ -259,7 +259,7 @@ namespace casual
                         if( local::configuration().force_binary_base64)
                            http::buffer::transcode::to::wire( exception.result.buffer);
                         
-                        transport->payload = buffer::copy( exception.result.buffer.memory);
+                        transport->payload = buffer::copy( exception.result.buffer.data);
                         usercode = exception.result.user;
                      }
                      catch( ...)
@@ -395,7 +395,7 @@ namespace casual
                         if( reply.buffer.null())
                         {
                            ::strncpy( transport->protocol, http::protocol::null.data(), sizeof( transport->protocol));
-                           common::algorithm::copy( "NULL", reply.buffer.memory);
+                           common::algorithm::copy( "NULL", reply.buffer.data);
                            common::log::line( common::verbose::log, "protocol: ", transport->protocol);
                         }
                         else 
@@ -405,7 +405,7 @@ namespace casual
                               http::buffer::transcode::to::wire( reply.buffer);
                         }
                            
-                        transport->payload = buffer::copy( reply.buffer.memory);
+                        transport->payload = buffer::copy( reply.buffer.data);
 
                         // Handle reply headers
                         auto header = header::codes::add( common::cast::underlying( common::code::xatmi::ok), reply.user);

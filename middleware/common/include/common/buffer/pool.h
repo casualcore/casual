@@ -149,7 +149,7 @@ namespace casual
                log::line( log::category::buffer, "pool::release - payload: ", buffer.payload, " - transport: ", buffer.transport( user_size));
 
                // Adjust the buffer size, with regards to the user size
-               buffer.payload.memory.erase( std::begin( buffer.payload.memory) + buffer.transport( user_size), std::end( buffer.payload.memory));
+               buffer.payload.data.erase( std::begin( buffer.payload.data) + buffer.transport( user_size), std::end( buffer.payload.data));
                return std::move( buffer.payload);
             }
 
@@ -242,8 +242,8 @@ namespace casual
                auto& payload = m_buffers.emplace_back( std::move( type), size).payload;
 
                // Make sure we've got a handle
-               if( ! payload.memory.data())
-                  payload.memory.reserve( 1);
+               if( ! payload.data.data())
+                  payload.data.reserve( 1);
 
                return payload.handle();
             }
@@ -254,11 +254,11 @@ namespace casual
                {
                   auto& payload = found->payload;
 
-                  payload.memory.resize( size);
+                  payload.data.resize( size);
 
                   // Make sure we've got a handle
-                  if( ! payload.memory.data())
-                     payload.memory.reserve( 1);
+                  if( ! payload.data.data())
+                     payload.data.reserve( 1);
 
                   return payload.handle();
                }
@@ -280,8 +280,8 @@ namespace casual
             {
                auto& buffer = m_buffers.emplace_back( std::move( payload));
 
-               if( ! buffer.payload.memory.data())
-                  buffer.payload.memory.reserve( 1);
+               if( ! buffer.payload.data.data())
+                  buffer.payload.data.reserve( 1);
 
                return buffer.payload.handle();
             }

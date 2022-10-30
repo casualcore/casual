@@ -108,11 +108,10 @@ namespace casual
          payload_type payload;
 
          CASUAL_CONST_CORRECT_SERIALIZE(
-         {
             CASUAL_SERIALIZE( id);
             CASUAL_SERIALIZE( attributes);
             CASUAL_SERIALIZE( payload);
-         })
+         )
       };
 
 

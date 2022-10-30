@@ -134,7 +134,7 @@ namespace casual
                      
                      auto source = range::make( buffer, size);
 
-                     algorithm::append( source, state.payload.memory);
+                     algorithm::append( source, state.payload.data);
 
                      common::log::line( verbose::log, "wrote ", size, " bytes");
 
@@ -221,7 +221,7 @@ namespace casual
                      common::log::line( common::log::category::error, "failed to deduce buffer type for content-type: ", content.value());
 
                      if( std::regex_match( content.value(), local::global.loggable_content))
-                        common::log::line( common::log::category::verbose::error, "payload: ", string::view::make( request.state().payload.memory));
+                        common::log::line( common::log::category::verbose::error, "payload: ", string::view::make( request.state().payload.data));
 
                      return {};
                   }
@@ -293,7 +293,7 @@ namespace casual
 
          // prepare the send stuff
          {
-            curl::easy::set::option( easy, CURLOPT_POSTFIELDSIZE_LARGE , request.state().payload.memory.size());
+            curl::easy::set::option( easy, CURLOPT_POSTFIELDSIZE_LARGE , request.state().payload.data.size());
             curl::easy::set::option( easy, CURLOPT_READFUNCTION, &local::send::callback::read);
             curl::easy::set::option( easy, CURLOPT_READDATA , &request.state());
 
