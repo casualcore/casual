@@ -65,7 +65,7 @@ namespace casual
 
                   log::line( log::debug, "still on-line: ", running);
 
-                  algorithm::append( process::lifetime::terminate( range::to_vector( running), timeout), result);
+                  algorithm::append( process::lifetime::terminate( algorithm::container::vector::create( running), timeout), result);
 
                   log::line( log::debug, "hard off-line: ", std::get< 0>( algorithm::intersection( running, result)));
 

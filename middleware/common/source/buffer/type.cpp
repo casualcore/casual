@@ -63,7 +63,7 @@ namespace casual
          std::ostream& operator << ( std::ostream& out, const Payload& value)
          {
             return out << "{ type: " << value.type 
-               << ", memory: @" << static_cast< const void*>( value.data.data()) 
+               << ", data: @" << static_cast< const void*>( value.data.data()) 
                << ", size: " << value.data.size() 
                << ", capacity: " << value.data.capacity() 
                << '}';

@@ -629,7 +629,7 @@ namespace casual
             return true; // keep
          });
 
-         auto result = range::to_vector( remove);
+         auto result = algorithm::container::vector::create( remove);
          algorithm::container::trim( pending.lookups, keep);
          return result;
       }

@@ -718,7 +718,7 @@ namespace casual
                            auto callback = [ 
                               &state,
                               message = common::message::reverse::type( message), 
-                              instances = range::to_vector( busy),
+                              instances = algorithm::container::vector::create( busy),
                               destination = message.process]
                               ( auto&& replies, auto&& outcome) mutable
                            {

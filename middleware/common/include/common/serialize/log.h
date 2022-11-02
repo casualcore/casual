@@ -8,28 +8,17 @@
 
 #pragma once
 
-
 #include "common/serialize/archive.h"
 #include <iosfwd>
 
 namespace casual
 {
-   namespace common
+   namespace common::serialize::log
    {
-      namespace serialize
-      {
-         namespace log
-         {
-            //! @returns a 'writer' that serialize to a
-            //! _yaml-like_ format that is (subjectively) easy 
-            // to read for a human
-            Writer writer();
+      //! @returns a 'writer' that serialize to a
+      //! _yaml-like_ format that is (subjectively) easy 
+      // to read for a human
+      Writer writer();
 
-         } // log
-      } // serialize
-   } // common
+   } // common::serialize::log
 } // casual
-
-
-
-

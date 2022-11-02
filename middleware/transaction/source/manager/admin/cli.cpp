@@ -912,7 +912,8 @@ hence, only one 'directive' can be in flight within a link in the casual-pipe.
                            casual::cli::pipe::forward::handle::defaults(),
                            casual::cli::pipe::handle::done( done),
                            local::handle::terminate::directive(),
-                           detail::accumulate< cli::message::Payload>( result),
+                           detail::accumulate< cli::message::payload::Message>( result),
+                           detail::accumulate< cli::message::queue::Message>( result),
                            detail::accumulate< cli::message::queue::message::ID>( result),
                            [&result]( cli::message::transaction::Propagate& message)
                            {

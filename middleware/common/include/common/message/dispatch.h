@@ -376,7 +376,7 @@ namespace casual
       //! Creates a corresponding message-dispatch-handler to this
       //! inbound device
       template< typename D, typename... Args>
-      static auto handler( D&& device, Args&&... args)
+      auto handler( D&& device, Args&&... args)
       {
          using handler_type = basic_handler< typename std::decay_t< D>::complete_type>;
          return handler_type{ std::forward< Args>( args)...};

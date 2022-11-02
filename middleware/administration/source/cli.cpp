@@ -14,6 +14,9 @@
 #include "common/communication/instance.h"
 #include "common/build.h"
 
+#include "casual/cli/message.h"
+#include "casual/cli/pipe.h"
+
 #include "domain/manager/admin/cli.h"
 #include "domain/discovery/admin/cli.h"
 #include "service/manager/admin/cli.h"
@@ -37,6 +40,14 @@ namespace casual
          {
             namespace information
             {
+
+               using namespace std::string_view_literals;
+               constexpr auto names() noexcept { return array::make( 
+                  "information-domain"sv, 
+                  "information-service"sv, 
+                  "information-queue"sv, 
+                  "information-transaction"sv);}
+
                template< typename CLI>
                auto option( CLI& cli)
                {
@@ -44,15 +55,10 @@ namespace casual
                   {
                      if( help)
                         return { "<value>"};
-                     return { 
-                        "information-domain",
-                        "information-service",
-                        "information-queue",
-                        "information-transaction",
-                     };
+                     return algorithm::container::create< std::vector< std::string>>( information::names());
                   };
 
-                  auto invoke = [&cli, complete]( std::vector< std::string> managers)
+                  auto invoke = [ &cli, complete]( std::vector< std::string> managers)
                   {
                      stream::write( std::cout, "managers: ", managers, '\n');
 
@@ -72,7 +78,7 @@ namespace casual
                         };
                      };
 
-                     const std::vector< std::tuple< std::string, common::function< void( information_t&) const>>> mapping{
+                     const std::vector< std::tuple< std::string_view, common::function< void( information_t&) const>>> mapping{
                         { "information-domain", append_information( cli.domain)},
                         { "information-service", append_information( cli.service)},
                         { "information-queue", append_information( cli.queue)},
@@ -81,9 +87,9 @@ namespace casual
 
                      information_t information;
 
-                     auto dispatch = [&mapping, &information]( auto& key)
+                     auto dispatch = [ &mapping, &information]( auto& key)
                      {
-                        auto is_key = [&key]( auto& dispatch)
+                        auto is_key = [ &key]( auto& dispatch)
                         { 
                            return std::get< 0>( dispatch) == key;
                         };
@@ -262,6 +268,52 @@ Note: only works for 'servers' with a message pump)"
                
             } // internal
 
+            namespace pipe
+            {
+               namespace option
+               {
+                  auto human_sink()
+                  {
+                     auto invoke = []()
+                     {
+                        bool done = false;
+
+                        auto handler = cli::message::dispatch::create(
+                           // use all defaults, but force human readable
+                           cli::pipe::forward::handle::defaults( true),
+                           cli::pipe::handle::done( done)
+                        );
+
+                        // consume from casual-pipe
+                        communication::stream::inbound::Device in{ std::cin};
+                        common::message::dispatch::pump( 
+                           cli::pipe::condition::done( done), 
+                           handler, in);
+                     };
+
+                     return common::argument::Option{
+                        std::move( invoke),
+                        { "--human-sink"},
+                        R"(INCUBATION - serialize casual pipe messages to human readable form, and in practice sink the message 
+
+@attention INCUBATION - might change during, or in between minor version.
+
+@attention: This is one way, there is no possibility to go from the output 
+   back to _real_ pipe messages. Use only for stuff that are supposed to be discarded.)"
+                     };
+                  }
+               } // option
+
+               auto group()
+               {
+                  return common::argument::Group{
+                     [](){}, { "pipe"}, "pipe related options",
+                     option::human_sink()
+                  };
+               }
+               
+            } // pipe
+
          } // <unnamed>
       } // local
 
@@ -269,12 +321,12 @@ Note: only works for 'servers' with a message pump)"
       {
          struct
          {
-            domain::manager::admin::cli domain;
+            casual::domain::manager::admin::cli domain;
             casual::service::manager::admin::cli service;
             queue::manager::admin::cli queue;
             casual::transaction::manager::admin::CLI transaction;
             gateway::manager::admin::cli gateway;
-            domain::discovery::admin::cli discovery;
+            casual::domain::discovery::admin::cli discovery;
             tools::service::call::cli service_call;
             tools::service::describe::cli describe;
             casual::buffer::admin::CLI buffer;
@@ -304,6 +356,7 @@ Where <option> is one of the listed below
                cli.describe.options(),
                cli.buffer.options(),
                cli.configuration.options(),
+               local::pipe::group(),
                common::terminal::output::directive().options(),
                local::internal::group(),
                local::version::options(),

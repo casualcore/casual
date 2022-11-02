@@ -6,34 +6,31 @@
 
 #pragma once
 
-#include <iosfwd>
+#include <string_view>
 
 namespace casual
 {
-   namespace common
+   namespace common::serialize::archive
    {
-      namespace serialize
+      enum class Type : short
       {
-         namespace archive
-         {
-            enum class Type : short
-            {
-               static_need_named,
-               static_order_type,
-               dynamic_type,
-            }; 
-            std::ostream& operator << ( std::ostream& out, Type value);
+         static_need_named,
+         static_order_type,
+         dynamic_type,
+      };
 
-            namespace dynamic
-            {
-               enum class Type : short
-               {
-                  named,
-                  order_type,
-               }; 
-               std::ostream& operator << ( std::ostream& out, Type value);
-            } // dynamic
-         } // archive
-      } // serialize
-   } // common
+      std::string_view description( Type value) noexcept;
+
+      namespace dynamic
+      {
+         enum class Type : short
+         {
+            named,
+            order_type,
+         };
+
+         std::string_view description( Type value) noexcept;
+      } // dynamic
+
+   } // common::serialize::archive
 } // casual

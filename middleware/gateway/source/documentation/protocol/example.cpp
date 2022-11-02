@@ -93,7 +93,7 @@ namespace casual
 
             message.domain.id = common::strong::domain::id{ 0x315dacc6182e4c12bf9877efa924cb86_uuid};
             message.domain.name = "domain A";
-            message.versions = common::range::to_vector( gateway::message::protocol::versions);
+            message.versions = algorithm::container::vector::create( gateway::message::protocol::versions);
          }
 
          void fill( gateway::message::domain::connect::Reply& message)

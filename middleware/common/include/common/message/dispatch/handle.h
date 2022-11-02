@@ -20,7 +20,6 @@ namespace casual
 {
    namespace common::message::dispatch::handle
    {
-
       namespace dump
       {
          //! dumps the state to casual log.
@@ -35,7 +34,6 @@ namespace casual
             };
          }
       } // dump
-
 
       using handler_type = decltype( message::dispatch::handler( communication::ipc::inbound::device()));
 
@@ -73,6 +71,51 @@ namespace casual
             target = message;
          };
       }
+
+
+      namespace protocol
+      {
+         namespace detail
+         {
+            template< typename M, typename H>
+            auto create( H handler)
+            {
+               return [ handler = std::move( handler)]( M& message)
+               {
+                  handler( message);
+               };
+            }
+
+         } // detail
+
+         //! helper to 'define' the _protocol_ which is the same as what complete type
+         //! of the logical message should be used (for de(serialization) and stuff)
+         template< typename Complete>
+         struct basic
+         {
+            using dispatch_type = dispatch::basic_handler< Complete>;
+
+            //! @returns dispatch_type that holds the provided handlers.
+            template< typename... Ts>
+            static auto create( Ts&&... ts)
+            {
+               return dispatch_type{ std::forward< Ts>( ts)...};
+            }
+
+            //! composes a _dispatch handler_ for [2..*] message types, that uses the 
+            //! the same generic `handler`. Useful if one wants to handle several different
+            //! messages in exactly the same way.
+            //! @note  `handler` is copied to the actual handlers.
+            //! @returns `dispatch_type` that holds the handlers for each message.  
+            template< typename... Ms, typename H>
+            static auto compose( H handler)
+            {
+               return ( ... + dispatch_type{ detail::create< Ms>( handler)} );
+            }
+         };
+
+         using ipc = basic< traits::remove_cvref_t< decltype( communication::ipc::inbound::device())>::complete_type>;
+      } // protocol
 
    } // common::message::dispatch::handle
 } // casual

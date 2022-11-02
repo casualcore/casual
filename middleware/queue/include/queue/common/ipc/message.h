@@ -9,6 +9,7 @@
 #include "common/message/type.h"
 #include "common/transaction/id.h"
 #include "common/transaction/global.h"
+#include "common/buffer/type.h"
 
 #include "configuration/model.h"
 
@@ -222,19 +223,7 @@ namespace casual
          ) 
       };
 
-
-      struct Payload : common::compare::Equality< Payload>
-      {
-         std::string type;
-         platform::binary::type data;
-
-         inline auto tie() const noexcept { return std::tie( type, data);}
-
-         CASUAL_CONST_CORRECT_SERIALIZE(
-            CASUAL_SERIALIZE( type);
-            CASUAL_SERIALIZE( data);
-         ) 
-      };
+      using Payload = common::buffer::Payload;
 
       namespace group
       {

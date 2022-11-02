@@ -23,7 +23,7 @@
 #include "common/serialize/create.h"
 #include "common/communication/ipc.h"
 #include "common/communication/instance.h"
-
+#include "common/message/dispatch/handle.h"
 
 #include "casual/cli/pipe.h"
 #include "casual/cli/message.h"
@@ -473,7 +473,7 @@ namespace casual
                      return result;
                   };
 
-                  cli::message::queue::Message result;
+                  cli::message::queue::Message result{ process::handle()};
                   result.id = message.id;
                   result.attributes = transform_attributes( std::move( message.attributes));
 
@@ -482,8 +482,34 @@ namespace casual
 
                   return result;
                };
-            } // transform
 
+               auto enqueue( cli::message::payload::Message&& value)
+               {
+                  ipc::message::group::enqueue::Request result{ process::handle()};
+
+                  result.trid = value.transaction.trid;
+                  result.message.payload.data = std::move( value.payload.data);
+                  result.message.payload.type = std::move( value.payload.type);
+
+                  return result;
+               }
+
+               auto enqueue( cli::message::queue::Message&& message)
+               {
+                  ipc::message::group::enqueue::Request result{ process::handle()};
+
+                  result.message.attributes.properties = std::move( message.attributes.properties);
+                  result.message.attributes.reply = std::move( message.attributes.reply);
+                  result.message.attributes.available = message.attributes.available;
+
+                  result.trid = message.transaction.trid;
+                  result.message.payload.data = std::move( message.payload.data);
+                  result.message.payload.type = std::move( message.payload.type);
+
+                  return result;
+               }
+
+            } // transform
 
             namespace legend
             {
@@ -823,37 +849,33 @@ use auto-complete to help which options has legends)"
                      auto destination = queue::Lookup{ name}();
                      log::line( verbose::log, "queue: ", destination);
                      
-                     communication::stream::inbound::Device in{ std::cin};
-
                      cli::pipe::transaction::Association associate;
 
-                     auto enqueue = [&name, &destination, &associate]( cli::message::Payload& payload)
+                     // handle for the two message types cli::message::payload::Message and cli::message::queue::Message
+                     auto handle_payload = [ &name, &destination, &associate]( auto& message)
                      {
-                        associate( payload);
+                        associate( message);
+                        auto request = local::transform::enqueue( std::move( message));
 
-                        ipc::message::group::enqueue::Request request{ process::handle()};
-                        request.trid = payload.transaction.trid;
                         request.name = name;
                         request.queue = destination.queue;
-                        std::swap( request.message.payload.data, payload.buffer.data);
-                        std::swap( request.message.payload.type, payload.buffer.type);
 
                         cli::message::queue::message::ID id{ process::handle()};
                         id.id = communication::ipc::call( destination.process.ipc, request).id;
-                        id.transaction = payload.transaction;
+                        id.transaction = message.transaction;
                         cli::pipe::forward::message( id);
                      };
 
                      bool done = false;
 
-                     auto handler = common::message::dispatch::handler( in, 
+                     auto handler = cli::message::dispatch::create( 
                         cli::pipe::forward::handle::defaults(),
                         casual::cli::pipe::handle::done( done),
-                        cli::pipe::transaction::handle::directive( associate),
-                        std::move( enqueue)
-                     );
+                        cli::pipe::transaction::handle::directive( associate)) +
+                        cli::message::payload::handler( std::move( handle_payload));
 
                      // start the pump
+                     communication::stream::inbound::Device in{ std::cin};
                      common::message::dispatch::pump( cli::pipe::condition::done( done), handler, in);
 
                      cli::pipe::done();
@@ -932,20 +954,20 @@ cat somefile.bin | casual queue --enqueue <queue-name>
 
                      auto destination = queue::Lookup{ std::move( queue)}();
                      
-                     communication::stream::inbound::Device in{ std::cin};
                      cli::pipe::transaction::Association associate;
 
                      // we need to consume to see if we've got an ongoing transaction
 
                      bool done = false;
 
-                     auto handler = common::message::dispatch::handler( in, 
+                     auto handler = cli::message::dispatch::create(
                         cli::pipe::forward::handle::defaults(),
                         cli::pipe::handle::done( done),
                         cli::pipe::transaction::handle::directive( associate)
                      );
 
                      // consume the pipe
+                     communication::stream::inbound::Device in{ std::cin};
                      common::message::dispatch::pump( cli::pipe::condition::done( done), handler, in);
 
                      dequeue::forward( destination, associate, id);
@@ -994,20 +1016,20 @@ casual queue --dequeue <queue> <id> | <some other part in casual-pipe> | ... | <
                      Trace trace{ "queue::local::consume::invoke"};
                      auto destination = queue::Lookup{ std::move( queue)}();
 
-                     communication::stream::inbound::Device in{ std::cin};
                      cli::pipe::transaction::Association associate;
 
                      // we need to consume to see if we've got a ongoing transaction
 
                      bool done = false;
 
-                     auto handler = common::message::dispatch::handler( in, 
+                     auto handler = cli::message::dispatch::create(
                         cli::pipe::forward::handle::defaults(),
                         cli::pipe::handle::done( done),
                         cli::pipe::transaction::handle::directive( associate)
                      );
 
                      // consume the pipe
+                     communication::stream::inbound::Device in{ std::cin};
                      common::message::dispatch::pump( cli::pipe::condition::done( done), handler, in);
 
                      auto remaining = count.value_or( std::numeric_limits< platform::size::type>::max());
@@ -1051,19 +1073,17 @@ casual queue --consume <queue-name> [<count>] | <some other part of casual-pipe>
                {
                   auto invoke = [](const std::string& queue, const std::vector< queue::Message::id_type>& ids)
                   {
-                     // consume from casual-pipe
-                     communication::stream::inbound::Device in{ std::cin};
-
                      // we need to consume to see if we've got a ongoing transaction
 
                      bool done = false;
 
-                     auto handler = common::message::dispatch::handler( in, 
+                     auto handler = cli::message::dispatch::create(
                         cli::pipe::forward::handle::defaults(),
                         cli::pipe::handle::done( done)
                      );
 
                      // consume the pipe
+                     communication::stream::inbound::Device in{ std::cin};
                      common::message::dispatch::pump( cli::pipe::condition::done( done), handler, in);
 
                      algorithm::for_each( queue::peek::messages( queue, ids), []( auto& message)
@@ -1101,7 +1121,102 @@ casual queue --peek <queue-name> <id1> <id2> | <some other part of casual-pipe> 
                   };
                }
                
-            } // consume
+            } // peek
+
+            namespace attributes
+            {
+               using namespace std::string_view_literals;
+               constexpr auto names() noexcept { return array::make( "properties"sv, "reply"sv, "available"sv);}
+
+               auto option()
+               {
+                  auto invoke = []( const std::vector< std::tuple< std::string, std::string>>& attributes)
+                  {
+                     auto handle_queue_message = [ &attributes]( cli::message::queue::Message& message)
+                     {
+                        for( auto& [ name, value] : attributes)
+                        {
+                           if( name == "properties")
+                              message.attributes.properties = value;
+                           else if( name == "reply")
+                              message.attributes.reply = value;
+                           else if( name == "available")
+                              message.attributes.available = platform::time::point::type{ chronology::from::string( value)};
+                           else
+                              code::raise::error( code::casual::invalid_argument, "'", name, "' is not part of the valid set: ", attributes::names());
+                        }
+
+                        cli::pipe::forward::message( message);
+                     };
+
+                     auto handle_payload_message = [ handle_queue_message]( cli::message::payload::Message& message)
+                     {
+                        cli::message::queue::Message result{ message.process};
+                        result.correlation = message.correlation;
+                        result.execution = message.execution;
+                        result.payload = std::move( message.payload);
+                        result.transaction = std::move( message.transaction);
+
+                        handle_queue_message( result);
+                     };
+                     
+                     bool done = false;
+
+                     auto handler = cli::message::dispatch::create(
+                        cli::pipe::forward::handle::defaults(),
+                        std::move( handle_queue_message),
+                        std::move( handle_payload_message),
+                        cli::pipe::handle::done( done)
+                     );
+
+                     // consume from casual-pipe
+                     communication::stream::inbound::Device in{ std::cin};
+                     common::message::dispatch::pump( 
+                        cli::pipe::condition::done( done), 
+                        handler, in);
+
+                     cli::pipe::done();
+                  };
+
+                  auto complete = []( auto& values, bool help) -> std::vector< std::string>
+                  { 
+                     if( help) 
+                        return { "<attribute-name>", "<value>"};
+
+                     if( values.size() % 2 == 0)
+                        return algorithm::container::create< std::vector< std::string>>( attributes::names());   //{ "properties", "reply", "available"};
+                     
+                     if( values && range::back( values) == "available")
+                        return { chronology::to::string( std::chrono::duration_cast< std::chrono::seconds>( platform::time::clock::type::now().time_since_epoch()))};
+
+                     if( values && range::back( values) == "reply")
+                        return local::queues();
+
+                      return { "<value>"};
+                  };
+
+                  return argument::Option{
+                     argument::option::one::many( std::move( invoke)),
+                     std::move( complete),
+                     { "--attributes"},
+                     R"(INCUBATION - adds or mutates queue message attributes on piped messages
+
+@attention INCUBATION - might change during. or in between minor version.
+
+Valid attributes:
+* properties  | user defined string
+* reply       | queue name
+* available   | absolute time since epoch ([+]?<value>[h|min|s|ms|us|ns])+
+
+Example:
+`$ casual queue --dequeue a | casual queue --attributes reply a.reply properties foo | casual queue --enqueue a`
+
+@note: Can be used to add queue attributes to a service reply_
+@note: part of casual-pipe)"
+                  };
+
+               }
+            } // attributes
 
             namespace restore
             {
@@ -1468,6 +1583,7 @@ casual queue --metric-reset a b)"
                      local::dequeue::option(),
                      local::peek::option(),
                      local::consume::option(),
+                     local::attributes::option(),
                      local::clear::option(),
                      local::messages::remove::option(),
                      local::messages::recovery::commit::option(),

@@ -220,11 +220,11 @@ namespace casual
          {  
             static void stream( std::ostream& out, const T& value)
             {
-               stream::write( out, "{ type: ", value.type(), ", correlation: ", value.correlation, ", payload: ");
+               stream::write( out, "{ type: ", value.type(), ", correlation: ", value.correlation, ", body: { "); 
                serialize::line::Writer archive;
                value.serialize( archive);
                archive.consume( out);
-               out << '}';
+               out << "}}";
             }
          };
 

@@ -84,7 +84,7 @@ namespace casual
          }
       } // type
 
-      struct Payload
+      struct Payload : compare::Equality< Payload>
       {
          Payload();
          Payload( std::nullptr_t);
@@ -105,14 +105,14 @@ namespace casual
          std::string type;
          platform::binary::type data;
 
-         //inline friend bool operator == ( const Payload& lhs, buffer::handle::type rhs) { return lhs.handle() == rhs;}
+         inline auto tie() const noexcept { return std::tie( type, data);}
+
+         friend std::ostream& operator << ( std::ostream& out, const Payload& value);
 
          CASUAL_CONST_CORRECT_SERIALIZE(
             CASUAL_SERIALIZE( type);
             CASUAL_SERIALIZE( data);
          )
-
-         friend std::ostream& operator << ( std::ostream& out, const Payload& value);
       };
 
 

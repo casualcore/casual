@@ -52,8 +52,8 @@ namespace casual
 
          auto writer = serialize::ini::writer();
 
-         EXPECT_TRUE( writer.archive_type() == common::serialize::archive::Type::dynamic_type) << "writer.archive_type: " << writer.archive_type();
-         EXPECT_TRUE( writer.type() == common::serialize::archive::dynamic::Type::named) << "writer.type(): " << writer.type();
+         EXPECT_TRUE( writer.archive_type() == common::serialize::archive::Type::dynamic_type) << CASUAL_NAMED_VALUE( writer.archive_type());
+         EXPECT_TRUE( writer.type() == common::serialize::archive::dynamic::Type::named) << CASUAL_NAMED_VALUE( writer.type());
       }
 
       TEST( common_serialize_ini_archive, reader_archive_type)
@@ -63,8 +63,8 @@ namespace casual
          std::string buffer;
          auto reader = serialize::ini::strict::reader( buffer);
 
-         EXPECT_TRUE( reader.archive_type() == common::serialize::archive::Type::dynamic_type) << "reader.archive_type: " << reader.archive_type();
-         EXPECT_TRUE( reader.type() == common::serialize::archive::dynamic::Type::named) << "reader.type(): " << reader.type();
+         EXPECT_TRUE( reader.archive_type() == common::serialize::archive::Type::dynamic_type) << CASUAL_NAMED_VALUE( reader.archive_type());
+         EXPECT_TRUE( reader.type() == common::serialize::archive::dynamic::Type::named) << CASUAL_NAMED_VALUE( reader.type());
       }
 
       TEST( common_serialize_ini_archive, write_read_string_with_new_line)

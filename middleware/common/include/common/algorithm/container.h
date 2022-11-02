@@ -139,5 +139,34 @@ namespace casual
          return container;
       }
 
+      //! @returns a container of type `Container` with the copied content of `range`
+      template< typename Container, typename Range>
+      auto create( Range&& range)
+      {
+         return Container( std::begin( range), std::end( range));
+      }
+
+      namespace vector
+      {
+         //! @returns a `std::vector< _range::value_type_>` with the copied content of `range`
+         template< typename Range>
+         auto create( Range&& range)
+         {
+            using result_typ = std::vector< traits::iterable::value_t< Range>>;
+            return container::create< result_typ>( std::forward< Range>( range));
+         }
+
+         namespace reference
+         {
+            template< typename Range>
+            auto create( Range&& range)
+            {
+               using result_typ = std::vector< std::reference_wrapper< std::remove_reference_t< decltype( *std::begin( range))>>>;
+               return container::create< result_typ>( std::forward< Range>( range));
+            }
+         } // reference
+         
+      } // vector
+
    } // common::algorithm::container
 } // casual

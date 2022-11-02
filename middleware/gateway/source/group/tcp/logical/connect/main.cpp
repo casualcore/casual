@@ -92,7 +92,7 @@ namespace casual
 
                   gateway::message::domain::connect::Request request;
                   request.domain = common::domain::identity();
-                  request.versions = range::to_vector( gateway::message::protocol::versions);
+                  request.versions = algorithm::container::vector::create( gateway::message::protocol::versions);
 
                   auto reply = common::message::reverse::type( request);
                   

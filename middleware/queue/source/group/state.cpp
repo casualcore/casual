@@ -74,7 +74,7 @@ namespace casual
                return algorithm::find_if( queues, [&v]( auto q){ return q == v.queue;}).empty();
             });
 
-            auto result = range::to_vector( std::get< 1>( partition));
+            auto result = algorithm::container::vector::create( std::get< 1>( partition));
 
             // trim away the extracted 
             algorithm::container::trim( dequeues, std::get< 0>( partition));

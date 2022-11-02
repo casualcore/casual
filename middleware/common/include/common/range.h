@@ -347,36 +347,7 @@ namespace casual
 
          } // position
 
-
-         template< typename R>
-         auto to_vector( R&& range)
-         {
-            std::vector< typename std::decay< decltype( *std::begin( range))>::type> result;
-            result.reserve( size( range));
-
-            std::copy( std::begin( range), std::end( range), std::back_inserter( result));
-
-            return result;
-         }
-
-         template< typename R>
-         auto to_reference( R&& range)
-         {
-            using result_typ = std::vector< std::reference_wrapper< std::remove_reference_t< decltype( *std::begin( range))>>>;
-            return result_typ( std::begin( range), std::end( range));
-         }
-
-
-         template< typename R>
-         std::string to_string( R&& range)
-         {
-            std::ostringstream out;
-            out << make( range);
-            return out.str();
-         }
-
          //! Returns the first value in the range
-         //!
          //! @param range
          //! @return first value
          //! @throws std::out_of_range if range is empty

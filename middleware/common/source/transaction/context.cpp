@@ -563,8 +563,6 @@ namespace casual
 
             log::line( log::category::transaction, "transactions: ", transactions);
 
-            //const auto process = process::handle();
-
             message::service::Transaction result;
             result.trid = std::move( caller);
             result.state = message::service::transaction::State::active;
@@ -597,7 +595,6 @@ namespace casual
             auto invoke_commit_rollback = [ this, invoke_rollback, commit]( const Transaction& transaction)
             {
                if( commit && transaction.state == Transaction::State::active)
-                  //return local::log::code( Context::commit( transaction), "failed to commit transaction: ", transaction.trid);
                   return Context::commit( transaction);
                else
                   return invoke_rollback( transaction);

@@ -63,22 +63,23 @@ domain:
             {
                return casual::domain::unittest::manager( configuration::base, std::forward< C>( configurations)...);
             }
-         } // <unnamed> 
-
-         namespace check
-         {
-            template< typename C, typename... Ts>
-            auto format( const std::string& candidate, C code, Ts&&... ts)
+         
+            namespace check
             {
-               auto error_string = []( auto& error){ return string::view::make( std::begin( error), std::begin( algorithm::find( error, '\n')));};
+               template< typename C, typename... Ts>
+               auto format( const std::string& candidate, C code, Ts&&... ts)
+               {
+                  auto error_string = []( auto& error){ return string::view::make( std::begin( error), std::begin( algorithm::find( error, '\n')));};
 
-               std::ostringstream out;
-               exception::format::terminal( out, exception::compose( code, std::forward< Ts>( ts)...));
-               auto error = std::move( out).str();
+                  std::ostringstream out;
+                  exception::format::terminal( out, exception::compose( code, std::forward< Ts>( ts)...));
+                  auto error = std::move( out).str();
 
-               return error_string( candidate) == error_string( error);
-            }
-         } // check
+                  return error_string( candidate) == error_string( error);
+               }
+            } // check
+
+         } // <unnamed> 
 
       } // local
 

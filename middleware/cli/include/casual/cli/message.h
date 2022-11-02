@@ -12,6 +12,7 @@
 #include "common/buffer/type.h"
 #include "common/communication/stream.h"
 #include "common/message/dispatch.h"
+#include "common/message/dispatch/handle.h"
 #include "common/message/service.h"
 
 #include <iostream>
@@ -19,7 +20,8 @@
 namespace casual
 {
    namespace cli::message
-   {
+   {  
+      using dispatch = common::message::dispatch::handle::protocol::basic< common::communication::stream::inbound::Device::complete_type>;
 
       template< common::message::Type type>
       using base_message = common::message::basic_request< type>;
@@ -150,23 +152,6 @@ namespace casual
 
       } // transaction
 
-      using payload_base = base_message< common::message::Type::cli_payload>;
-      struct Payload : payload_base
-      {
-         using payload_base::payload_base;
-
-         common::message::service::Code code;
-         common::buffer::Payload buffer;
-         message::Transaction transaction;
-
-         CASUAL_CONST_CORRECT_SERIALIZE(
-            payload_base::serialize( archive);
-            CASUAL_SERIALIZE( code);
-            CASUAL_SERIALIZE( buffer);
-            CASUAL_SERIALIZE( transaction);
-         )  
-      };
-
       namespace queue
       {
          namespace message
@@ -198,17 +183,6 @@ namespace casual
                ) 
             };
 
-            struct Payload
-            {
-               std::string type;
-               platform::binary::type data;
-
-               CASUAL_CONST_CORRECT_SERIALIZE(
-                  CASUAL_SERIALIZE( type);
-                  CASUAL_SERIALIZE( data);
-               ) 
-            };
-
          } // message
 
          using message_base = base_message< common::message::Type::cli_queue_message>;
@@ -218,17 +192,54 @@ namespace casual
 
             common::Uuid id;
             message::Attributes attributes;
-            message::Payload payload;
+            common::buffer::Payload payload;
+            cli::message::Transaction transaction;
 
             CASUAL_CONST_CORRECT_SERIALIZE(
                message_base::serialize( archive);
                CASUAL_SERIALIZE( id);
                CASUAL_SERIALIZE( attributes);
                CASUAL_SERIALIZE( payload);
+               CASUAL_SERIALIZE( transaction);
             ) 
          };
 
       } // queue
+
+      namespace payload
+      {
+         using message_base = base_message< common::message::Type::cli_payload>;
+         struct Message : message_base
+         {
+            using message_base::message_base;
+
+            common::message::service::Code code;
+            common::buffer::Payload payload;
+            message::Transaction transaction;
+
+            CASUAL_CONST_CORRECT_SERIALIZE(
+               message_base::serialize( archive);
+               CASUAL_SERIALIZE( code);
+               CASUAL_SERIALIZE( payload);
+               CASUAL_SERIALIZE( transaction);
+            )  
+         };
+
+         //! @return a _dispatch handler_ that have handlers for the messages
+         //!  `payload::Message`and `queue::Message`, these uses the same 
+         //!  provided `handler`. Useful when one wants to handle both messages
+         //!  in a generic way. 
+         template< typename H>
+         auto handler( H handler)
+         {
+            return dispatch::compose< 
+               payload::Message, 
+               queue::Message>( std::move( handler));
+         }
+
+      } // payload
+
+
 
       namespace to
       {

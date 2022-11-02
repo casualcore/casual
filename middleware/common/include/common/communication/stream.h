@@ -111,7 +111,7 @@ namespace casual
          };
 
          using Device = communication::device::Inbound< Connector>;
-      } // outbound
+      } // inbound
 
    } // common::communication::stream
 

@@ -16,6 +16,7 @@ make.IncludePaths( [
     '../transaction/include',
     '../gateway/include',
     '../tools/include',
+    '../cli/include',
     '../buffer/include']
     + make.optional_include_paths()
     + dsl.paths().include.gtest
@@ -49,6 +50,7 @@ cli_library = make.LinkLibrary( 'bin/causal-administration-cli',
    ],
    [
       'casual-common',
+      'casual-cli',
       'casual-domain-admin-cli',
       'casual-domain-discovery-admin-cli',
       'casual-service-admin-cli',
@@ -85,18 +87,19 @@ make.LinkExecutable( 'bin/casual-administration-cli-documentation',
    ])
 
 unittest_lib = make.LinkLibrary( 'bin/casual-administration-unittest',
-    [ 
-        make.Compile( 'unittest/source/cli/command.cpp'),
-    ],
-    [ 
-        'casual-common',
-    ])
+   [ 
+      make.Compile( 'unittest/source/cli/command.cpp'),
+   ],
+   [ 
+      'casual-common',
+   ])
 
 make.LinkUnittest( 'unittest/bin/test-casual-administration',
    [
       make.Compile( 'unittest/source/cli/test_call.cpp'),
       make.Compile( 'unittest/source/cli/test_domain.cpp'),
       make.Compile( 'unittest/source/cli/configuration/test_normalize.cpp'),
+      make.Compile( 'unittest/source/cli/test_queue.cpp'),
       make.Compile( 'unittest/source/cli/test_internal.cpp'),
    ],
    [ 
@@ -107,8 +110,8 @@ make.LinkUnittest( 'unittest/bin/test-casual-administration',
    ])
 
 
-make.Install( install_exe,  dsl.paths().install + '/bin')
-make.Install( install_libs,  dsl.paths().install + '/lib')
+make.Install( install_exe, dsl.paths().install + '/bin')
+make.Install( install_libs, dsl.paths().install + '/lib')
 
 make.Install( 'etc/bash_completion.d/casual',  dsl.paths().install + '/etc/bash_completion.d')
 make.Install( 'etc/bash_completion.d/casual-log',  dsl.paths().install + '/etc/bash_completion.d')

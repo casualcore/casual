@@ -22,11 +22,11 @@ namespace casual
       {
          Trace trace{ "domain::manager::state::create::boot::order"};
 
-         auto group_wrapper = range::to_reference( state.groups);
+         auto group_wrapper = algorithm::container::vector::reference::create( state.groups);
          algorithm::stable_sort( group_wrapper, state::Group::boot::Order{});
 
-         auto server_wrappers = range::to_reference( source_servers);
-         auto excutable_wrappers = range::to_reference( source_executables);
+         auto server_wrappers = algorithm::container::vector::reference::create( source_servers);
+         auto excutable_wrappers = algorithm::container::vector::reference::create( source_executables);
 
          auto executables = range::make( excutable_wrappers);
 

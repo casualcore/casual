@@ -6,40 +6,32 @@
 
 #include "common/serialize/archive/type.h"
 
-#include <ostream>
-
 namespace casual
 {
-   namespace common
+   namespace common::serialize::archive
    {
-      namespace serialize
+      std::string_view description( Type value) noexcept
       {
-         namespace archive
+         switch( value)
          {
-            std::ostream& operator << ( std::ostream& out, Type value)
-            {
-               switch( value)
-               {
-                  case Type::dynamic_type: return out << "dynamic_type";
-                  case Type::static_need_named: return out << "static_need_named";
-                  case Type::static_order_type: return out << "static_order_type";
-               }
-               return out << "unknown";
-            }
+            case Type::dynamic_type: return "dynamic_type";
+            case Type::static_need_named: return "static_need_named";
+            case Type::static_order_type: return "static_order_type";
+         }
+         return "unknown";
+      }
 
-            namespace dynamic
+      namespace dynamic
+      {
+         std::string_view description( Type value) noexcept
+         {
+            switch( value)
             {
-               std::ostream& operator << ( std::ostream& out, Type value)
-               {
-                  switch( value)
-                  {
-                     case Type::named: return out << "named";
-                     case Type::order_type: return out << "order_type";
-                  }
-                  return out << "unknown";
-               }
-            } // dynamic
-         } // archive
-      } // serialize
-   } // common
+               case Type::named: return "named";
+               case Type::order_type: return "order_type";
+            }
+            return "unknown";
+         }
+      } // dynamic
+   } // common::serialize::archive
 } // casual
