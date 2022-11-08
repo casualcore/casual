@@ -61,7 +61,7 @@ namespace casual
                   }
 
                   return {};
-               }     
+               }
             } // tcp
 
             namespace internal
@@ -114,10 +114,12 @@ namespace casual
                                  state.multiplex.send( destination.ipc, reply);
                               });
 
-                              tcp::send( state, descriptor, message);
+                              // if we fail to send we want to invoke the error callback immediately
+                              if( ! tcp::send( state, descriptor, message).valid())
+                                 state.route.consume( message.correlation).error();
                            };
                         }
-                     } // basic                       
+                     } // basic
 
                      //! These messages has the extern branched transaction.
                      //! @{
