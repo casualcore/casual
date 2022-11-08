@@ -791,7 +791,20 @@ namespace casual
                         }
 
                         // check if some of the rest has _routes_
-                        for( auto& name : std::get< 1>( algorithm::sorted::intersection( message.content.services(), reply.content.services())))
+                        // Note:
+                        // The following commented for stmt generates a warning about
+                        // use of a possibly uninitialized variable in
+                        // commmon/range.h when compiling with g++-11 (and 10)
+                        // without --debug. The warning did not occur with g++-9.
+                        // Introducing a local variable to hold the result of the
+                        // call to intersection() makes the warning go away.
+                        //
+                        // Unknown why the warning appears. Possibly some rule about
+                        // lifetimes, order of evaluation or similiar affects the
+                        // involved code. 
+                        //for( auto& name : std::get< 1>( algorithm::sorted::intersection( message.content.services(), reply.content.services())))
+                        auto intersect = algorithm::sorted::intersection( message.content.services(), reply.content.services());
+                        for( auto& name : std::get< 1>( intersect))
                            if( auto found = algorithm::find( state.reverse_routes, name))
                               reply.routes.services.emplace_back( found->first, found->second);
 

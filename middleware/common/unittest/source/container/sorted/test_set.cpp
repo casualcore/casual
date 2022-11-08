@@ -46,7 +46,7 @@ namespace casual
       auto origin = array::make( 5, 6, 1, 3, 34, 32425, 2342, 23, 1231);
 
       container::sorted::Set< long> set( std::begin( origin), std::end( origin));
-      EXPECT_TRUE( set.size() == origin.size());
+      EXPECT_TRUE( range::size(set) == range::size(origin));
       EXPECT_TRUE( algorithm::is::sorted( set));
       EXPECT_TRUE( algorithm::equal( set, algorithm::sort( origin)));
    }
@@ -60,7 +60,7 @@ namespace casual
       auto b = std::move( a);
       EXPECT_TRUE( a.empty());
 
-      EXPECT_TRUE( b.size() == origin.size());
+      EXPECT_TRUE( range::size( b) == range::size( origin));
       EXPECT_TRUE( algorithm::is::sorted( b));
       EXPECT_TRUE( algorithm::equal( b, algorithm::sort( origin)));
    }
@@ -192,7 +192,7 @@ namespace casual
       auto b = std::move( a);
       EXPECT_TRUE( a.empty());
 
-      EXPECT_TRUE( b.size() == origin.size()) << CASUAL_NAMED_VALUE( b);
+      EXPECT_TRUE( range::size( b) == range::size( origin)) << CASUAL_NAMED_VALUE( b);
       EXPECT_TRUE( algorithm::is::sorted( b));
    }
 
