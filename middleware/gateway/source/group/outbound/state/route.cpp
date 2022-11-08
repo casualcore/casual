@@ -17,7 +17,7 @@ namespace casual
       {
          void Point::error()
          {
-            Trace trace{ "gateway::group::outbound::state::rout::Point::error"};
+            Trace trace{ "gateway::group::outbound::state::route::Point::error"};
             log::line( verbose::log, "point: ", *this);
 
             callback( destination);

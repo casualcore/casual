@@ -562,7 +562,7 @@ namespace casual
                }
             };
 
-            return manager::Task{ "remove alieases", scale::local::group::task( std::move( groups), std::move( done_callback)),
+            return manager::Task{ "remove aliases", scale::local::group::task( std::move( groups), std::move( done_callback)),
             {
                Task::Property::Execution::sequential,
                Task::Property::Completion::mandatory

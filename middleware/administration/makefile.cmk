@@ -15,6 +15,7 @@ make.IncludePaths( [
     '../queue/include',
     '../transaction/include',
     '../gateway/include',
+    '../gateway/unittest/include',
     '../tools/include',
     '../cli/include',
     '../buffer/include']
@@ -101,12 +102,16 @@ make.LinkUnittest( 'unittest/bin/test-casual-administration',
       make.Compile( 'unittest/source/cli/configuration/test_normalize.cpp'),
       make.Compile( 'unittest/source/cli/test_queue.cpp'),
       make.Compile( 'unittest/source/cli/test_internal.cpp'),
+      make.Compile( 'unittest/source/cli/test_transaction.cpp'),
    ],
    [ 
       unittest_lib,
-      'casual-common', 
+      'casual-common',
+      'casual-xatmi',
       'casual-unittest',
       'casual-domain-unittest',
+      'casual-gateway-unittest',
+      'casual-serviceframework',
    ])
 
 

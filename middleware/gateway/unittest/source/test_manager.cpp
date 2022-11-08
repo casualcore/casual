@@ -1271,6 +1271,89 @@ domain:
 
       }
 
+      TEST( gateway_manager_outbound, transaction_resource_error_reply_on_remote_domain_shutdown_before_commit_request)
+      {
+         common::unittest::Trace trace;
+
+         // Sink child signals
+         signal::callback::registration< code::signal::child>( [](){});
+
+         auto b = local::domain( R"(
+domain: 
+   name: B
+   groups:
+      -  name: user
+         dependencies: [ base]
+   
+   servers:
+      - path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-server
+        memberships: [ user]
+
+   gateway:
+      inbound:
+         groups:
+            -  connections: 
+                  -  address: 127.0.0.1:7012
+)");
+
+         // get a handle for b:s inbound
+         auto inbound = unittest::fetch::until( unittest::fetch::predicate::listeners( 1)).inbound.groups.at( 0).process;
+         ASSERT_TRUE( inbound);
+
+         auto a = local::domain( R"(
+domain: 
+   name: A
+   gateway:
+      outbound:
+         groups:
+            -  connections:
+                  -  address: 127.0.0.1:7012
+                     services: [ casual/example/domain/echo/B]
+)");
+
+         unittest::fetch::until( unittest::fetch::predicate::outbound::connected( 1));
+         
+         // call service in B in transaction
+         {
+            using namespace std::literals;
+
+            EXPECT_EQ( transaction::context().begin(), code::tx::ok);
+
+            buffer::Payload payload;
+            payload.type = "X_OCTET/";
+            common::algorithm::copy( "casual"sv, std::back_inserter( payload.memory));
+
+            auto result = common::service::call::context().sync( "casual/example/domain/echo/B", common::buffer::payload::Send{ payload}, {});
+
+            EXPECT_TRUE( result.buffer.memory == payload.memory);
+
+         }
+
+         // b shuts down
+         {
+            unittest::sink( b);
+            unittest::fetch::until( unittest::fetch::predicate::outbound::connected( 0));
+         }
+
+         // we try to commit our transaction
+         {
+            common::message::transaction::commit::Request request{ process::handle()};
+            request.trid = transaction::context().current().trid;
+            
+            communication::device::blocking::send( communication::instance::outbound::transaction::manager::device(), request);
+         }
+         
+         // expect a failure reply
+         {
+            auto reply = common::communication::ipc::receive< common::message::transaction::commit::Reply>();
+
+            EXPECT_TRUE( reply.state == decltype( reply.state)::fail) << CASUAL_NAMED_VALUE( reply);
+            EXPECT_TRUE( reply.trid == transaction::context().current().trid);
+         }
+
+         EXPECT_EQ( transaction::context().commit(), code::tx::ok);
+      }
+
    } // gateway
 
 } // casual
