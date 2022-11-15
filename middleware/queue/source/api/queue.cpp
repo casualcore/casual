@@ -518,7 +518,7 @@ namespace casual
                   common::code::raise::error( queue::code::argument, "not possible to peek a remote queue: ", queuename);
 
                if( ! queue.process)
-                  common::code::raise::error( queue::code::no_queue);
+                  common::code::raise::error( queue::code::no_queue, "failed to lookup up: ", lookup.name());
 
                auto reply = common::communication::ipc::call( queue.process.ipc, request);
 
@@ -534,6 +534,46 @@ namespace casual
                });
             }
          } // peek
+
+         namespace browse
+         {
+             void peek( std::string name, common::unique_function< bool(Message&&)> callback)
+            {
+               Trace trace{ "casual::queue::browse::peek"};
+               common::log::line( verbose::log, "name: ", name);
+
+               queue::Lookup lookup{ std::move( name)};
+
+               ipc::message::group::message::browse::Request request{ common::process::handle()};
+               
+               auto queue = lookup();
+
+               if( queue.order > 0)
+                  common::code::raise::error( queue::code::argument, "not possible to browse a remote queue: ", lookup.name());
+
+               if( ! queue.process)
+                  common::code::raise::error( queue::code::no_queue, "failed to lookup up: ", lookup.name());
+
+               request.queue = queue.queue;
+
+               while( auto reply = common::communication::ipc::call( queue.process.ipc, request))
+               {
+                  common::log::line( verbose::log, "reply: ", reply);
+
+                  if( ! reply.message)
+                     return;
+
+                  // respect if the user wants to end the browsing
+                  if( ! callback( local::dequeue::transform::message()( *reply.message)))
+                     return;
+
+                  // set last to move forward for the next request
+                  request.last = reply.message->timestamp;
+               }
+            }
+            
+         } // browse
+
 
          namespace restore
          {

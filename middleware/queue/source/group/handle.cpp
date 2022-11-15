@@ -322,7 +322,7 @@ namespace casual
                   {
                      auto request( State& state)
                      {
-                        return [&state]( const queue::ipc::message::group::message::meta::peek::Request& message)
+                        return [ &state]( const queue::ipc::message::group::message::meta::peek::Request& message)
                         {
                            Trace trace{ "queue::handle::local::peek::information::Request"};
 
@@ -336,9 +336,9 @@ namespace casual
                   {
                      auto request( State& state)
                      {
-                        return [&state]( const queue::ipc::message::group::message::peek::Request& message)
+                        return [ &state]( const queue::ipc::message::group::message::peek::Request& message)
                         {
-                           Trace trace{ "queue::handle::local::peek::information::Request"};
+                           Trace trace{ "queue::handle::local::peek::messages::Request"};
 
                            state.multiplex.send( message.process.ipc, state.queuebase.peek( message));
                         };
@@ -346,6 +346,19 @@ namespace casual
                   } // messages
 
                } // peek
+
+               namespace browse
+               {
+                  auto request( State& state)
+                  {
+                     return [ &state]( const queue::ipc::message::group::message::browse::Request& message)
+                     {
+                        Trace trace{ "queue::handle::local::browse::Request"};
+
+                        state.multiplex.send( message.process.ipc, state.queuebase.browse( message, platform::time::clock::type::now()));
+                     };
+                  }
+               } // browse
 
                namespace transaction
                {
@@ -865,6 +878,7 @@ namespace casual
             handle::local::state::request( state),
             handle::local::peek::information::request( state),
             handle::local::peek::messages::request( state),
+            handle::local::browse::request( state),
             handle::local::restore::request( state),
             handle::local::clear::request( state),
             handle::local::message::meta::request( state),

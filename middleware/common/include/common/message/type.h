@@ -224,17 +224,19 @@ namespace casual
          queue_group_message_meta_peek_reply,
          queue_group_message_peek_request = QUEUE_BASE + 320,
          queue_group_message_peek_reply,
-         queue_group_message_remove_request = QUEUE_BASE + 330,
+         queue_group_message_browse_request = QUEUE_BASE + 330,
+         queue_group_message_browse_reply,
+         queue_group_message_remove_request = QUEUE_BASE + 340,
          queue_group_message_remove_reply,
          queue_group_message_recovery_request,
          queue_group_message_recovery_reply,
 
-         queue_group_queue_restore_request = QUEUE_BASE + 340,
+         queue_group_queue_restore_request = QUEUE_BASE + 350,
          queue_group_queue_restore_reply,
          queue_group_queue_clear_request,
          queue_group_queue_clear_reply,
 
-         queue_group_metric_reset_request = QUEUE_BASE + 350,
+         queue_group_metric_reset_request = QUEUE_BASE + 360,
          queue_group_metric_reset_reply,
 
          queue_forward_group_connect = QUEUE_BASE + 400,

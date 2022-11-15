@@ -63,6 +63,12 @@ namespace casual
             sql::database::Statement one_message;
          } peek;
 
+         struct
+         {
+            sql::database::Statement first;
+         } browse;
+
+         
          sql::database::Statement restore;
          sql::database::Statement clear;
 

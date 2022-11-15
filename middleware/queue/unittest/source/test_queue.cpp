@@ -38,8 +38,7 @@
 #include <future>
 
 namespace casual
-{
-   
+{  
    namespace queue
    {
       namespace local
@@ -494,8 +493,8 @@ domain:
          }
 
          EXPECT_CODE({
-            queue::peek::information( "remote-queue");
-         },  queue::code::argument);
+            (void)queue::peek::information( "remote-queue");
+         }, queue::code::argument);
       }
 
       TEST( casual_queue, enqueue_1_message__dequeue_1_message)
@@ -783,7 +782,7 @@ domain:
          {
             // simulate a uncommitted dequeue
             EXPECT_EQ( common::transaction::context().begin(), common::code::tx::ok);
-            queue::dequeue( "a1");
+            EXPECT_TRUE( ! queue::dequeue( "a1").empty());
             {
                auto messages = unittest::messages( "a1");
                ASSERT_TRUE( messages.size() == 1);
@@ -828,7 +827,7 @@ domain:
          {
             // simulate a uncommitted dequeue
             EXPECT_EQ( common::transaction::context().begin(), common::code::tx::ok);
-            queue::dequeue( "a1");
+            EXPECT_TRUE( ! queue::dequeue( "a1").empty());
             {
                auto messages = unittest::messages( "a1");
                ASSERT_TRUE( messages.size() == 1);
@@ -982,7 +981,7 @@ domain:
 
          EXPECT_CODE( 
          {  
-            queue::blocking::dequeue( "a1");
+            (void)queue::blocking::dequeue( "a1");
          }, queue::code::no_message);
 
          // expect shutdown to 'stay'
@@ -1014,7 +1013,7 @@ domain:
 
          EXPECT_NO_THROW(
          {  
-            queue::blocking::dequeue( "a1");
+            (void)queue::blocking::dequeue( "a1");
          });
 
          // expect shutdown to 'stay'
@@ -1130,5 +1129,98 @@ domain:
             }
          }
       }
+
+      TEST( casual_queue, enqueue_10__browse__expect_all_10)
+      {
+         common::unittest::Trace trace;
+
+         constexpr auto number_of_messages = 10;
+
+         auto domain = local::domain();
+
+         common::algorithm::for_n< number_of_messages>( []( auto index)
+         {
+            queue::Message message;
+            message.payload.type = common::buffer::type::binary;
+            message.payload.data = common::unittest::random::binary( ( index * 10) + 10);
+
+            ASSERT_TRUE( queue::enqueue( "b1", message));
+         });
+
+         {
+            platform::size::type count = 0;
+            queue::browse::peek( "b1", [ &count]( auto&& message)
+            {
+               EXPECT_TRUE( common::range::size( message.payload.data) == ( 10 * count++) + 10);
+               return true;
+            });
+
+            EXPECT_TRUE( count == number_of_messages) << CASUAL_NAMED_VALUE( count);
+         }
+      }
+      
+      TEST( casual_queue, enqueue_10_available_in_the_future__browse__expect_none)
+      {
+         common::unittest::Trace trace;
+
+         constexpr auto number_of_messages = 10;
+
+         auto domain = local::domain();
+
+         common::algorithm::for_n< number_of_messages>( []( auto index)
+         {
+            queue::Message message;
+            message.payload.type = common::buffer::type::binary;
+            message.payload.data = common::unittest::random::binary( ( index * 10) + 10);
+            message.attributes.available = platform::time::clock::type::now() + std::chrono::hours{ 5};
+
+            ASSERT_TRUE( queue::enqueue( "b1", message));
+         });
+
+         {
+            platform::size::type count = 0;
+            queue::browse::peek( "b1", [ &count]( auto&& message)
+            {
+               EXPECT_TRUE( common::range::size( message.payload.data) == ( 10 * count++) + 10);
+               return true;
+            });
+
+            EXPECT_TRUE( count == 0) << CASUAL_NAMED_VALUE( count);
+         }
+      }
+
+      TEST( casual_queue, enqueue_20_10_available_in_the_future__browse__expect_10)
+      {
+         common::unittest::Trace trace;
+
+         constexpr auto number_of_messages = 10;
+
+         auto domain = local::domain();
+
+         common::algorithm::for_n< number_of_messages>( []( auto index)
+         {
+            queue::Message message;
+            message.payload.type = common::buffer::type::binary;
+            message.payload.data = common::unittest::random::binary( ( index * 10) + 10);
+
+            ASSERT_TRUE( queue::enqueue( "b1", message));
+
+            // this message will not be available for browse::peek
+            message.attributes.available = platform::time::clock::type::now() + std::chrono::hours{ 5};
+            ASSERT_TRUE( queue::enqueue( "b1", message));
+         });
+
+         {
+            platform::size::type count = 0;
+            queue::browse::peek( "b1", [ &count]( auto&& message)
+            {
+               EXPECT_TRUE( common::range::size( message.payload.data) == ( 10 * count++) + 10);
+               return true;
+            });
+
+            EXPECT_TRUE( count == number_of_messages) << CASUAL_NAMED_VALUE( count);
+         }
+      }
+
    } // queue
 } // casual

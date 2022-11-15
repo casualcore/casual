@@ -34,10 +34,8 @@ namespace casual
       {
          namespace
          {
-
             namespace transform
             {
-
                void row( sql::database::Row& row, queue::ipc::message::group::message::Meta& message)
                {
                   sql::database::row::get( row,
@@ -56,7 +54,7 @@ namespace casual
                   );  
                }
 
-               namespace dequeue
+               namespace message
                {
                   struct Result 
                   {
@@ -67,7 +65,7 @@ namespace casual
                   };
 
                   // SELECT ROWID, id, properties, reply, redelivered, type, available, timestamp, payload
-                  void result( sql::database::Row& row, Result& result)
+                  void fetch( sql::database::Row& row, Result& result)
                   {
                      sql::database::row::get( row,
                         result.rowid,
@@ -82,14 +80,14 @@ namespace casual
                      );
                   }
 
-                  auto result( sql::database::Row& row)
+                  auto fetch( sql::database::Row& row)
                   {
                      Result result;
-                     dequeue::result( row, result);
+                     message::fetch( row, result);
                      return result;
                   }
                   
-               } // dequeue
+               } // message
 
 
                struct Queue
@@ -412,10 +410,10 @@ namespace casual
             sql::database::Row row;
 
             if( query.fetch( row))
-               return local::transform::dequeue::result( row);
+               return local::transform::message::fetch( row);
 
             // default where result is "absent"
-            return decltype( local::transform::dequeue::result( row)){};
+            return decltype( local::transform::message::fetch( row)){};
          };
 
 
@@ -436,7 +434,7 @@ namespace casual
          }
          else
          {
-               common::log::line( log, "dequeue - qid: ", message.queue, " - no message");
+            common::log::line( log, "dequeue - qid: ", message.queue, " - no message");
             return common::message::reverse::type( message);
          }
 
@@ -480,11 +478,33 @@ namespace casual
 
             if( query.fetch( row))
             {
-               auto result = local::transform::dequeue::result( row);
+               auto result = local::transform::message::fetch( row);
                reply.messages.push_back( std::move( result.message));
             }
             else
                log::line( log, "failed to find message with id: ", id);
+         }
+
+         return reply;
+      }
+
+
+      queue::ipc::message::group::message::browse::Reply Queuebase::browse( 
+         const queue::ipc::message::group::message::browse::Request& request,
+         const platform::time::point::type& now)
+      {
+         Trace trace{ "queue::Queuebase::browse"};
+
+         auto reply = common::message::reverse::type( request);
+
+         auto query = m_statement.browse.first.query( request.queue.value(), request.last, now);
+
+         sql::database::Row row;
+
+         if( query.fetch( row))
+         {
+            auto result = local::transform::message::fetch( row);
+            reply.message = std::move( result.message);
          }
 
          return reply;

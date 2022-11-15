@@ -133,16 +133,21 @@ namespace casual
          std::optional< queuebase::Queue> queue( common::strong::queue::id id);
          //! @}
 
-         queue::ipc::message::group::enqueue::Reply enqueue( const queue::ipc::message::group::enqueue::Request& message);
+         queue::ipc::message::group::enqueue::Reply enqueue( const queue::ipc::message::group::enqueue::Request& request);
          
          queue::ipc::message::group::dequeue::Reply dequeue( 
-            const queue::ipc::message::group::dequeue::Request& message, 
+            const queue::ipc::message::group::dequeue::Request& request, 
             const platform::time::point::type& now);
 
          //! 'meta peek' to get information about messages
          queue::ipc::message::group::message::meta::peek::Reply peek( const queue::ipc::message::group::message::meta::peek::Request& request);
          //! actual peek of messages
          queue::ipc::message::group::message::peek::Reply peek( const queue::ipc::message::group::message::peek::Request& request);
+
+         //! browse the next message
+         queue::ipc::message::group::message::browse::Reply browse( 
+            const queue::ipc::message::group::message::browse::Request& request,
+            const platform::time::point::type& now);
 
          //! @returns all queues that is found in `queues` and has messages potentially available for dequeue
          std::vector< queuebase::message::Available> available( std::vector< common::strong::queue::id> queues) const;

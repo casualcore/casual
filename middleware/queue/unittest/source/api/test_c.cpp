@@ -7,6 +7,9 @@
 #include "common/unittest.h"
 
 #include "casual/queue/c/queue.h"
+#include "queue/api/queue.h"
+
+#include "common/buffer/type.h"
 
 #include "domain/unittest/manager.h"
 
@@ -343,6 +346,67 @@ domain:
             EXPECT_TRUE( casual_queue_selector_delete( selector) != -1);
             EXPECT_TRUE( casual_queue_message_delete( message) != -1);
          }
+      }
+
+
+      TEST( casual_queue_c_api, enqueue_10__browse_peek__return_false_after_half___expect_half_the_messages)
+      {
+         common::unittest::Trace trace;
+
+         static constexpr auto number_of_messages = 10;
+         static constexpr auto half_number_of_messages = number_of_messages / 2;
+
+         static constexpr auto calculate_size = []( auto value) { return ( value * 10) + 10;};
+
+         auto domain = local::domain();
+
+         // use the "real" api to enqueue
+         common::algorithm::for_n< number_of_messages>( []( auto index)
+         {
+            queue::Message message;
+            message.payload.type = common::buffer::type::binary;
+            message.payload.data = common::unittest::random::binary( calculate_size( index));
+            
+            ASSERT_TRUE( queue::enqueue( "B1", message));
+         });
+
+         auto handle_message = []( auto id, void* state)
+         {
+            auto& count = *static_cast< platform::size::type*>( state);
+            
+            casual_buffer_t buffer{};
+            EXPECT_TRUE( casual_queue_message_get_buffer( id, &buffer) == 0);
+            EXPECT_TRUE( buffer.size == calculate_size( count));
+
+            ++count;
+
+            if( count == half_number_of_messages)
+               return 0;
+
+            return 1;
+         };
+
+         platform::size::type count = 0;
+
+         EXPECT_TRUE( casual_queue_browse_peek( "B1", handle_message, &count) == 0) << "error: " << casual_queue_error_string( casual_qerrno);
+
+         EXPECT_TRUE( count == half_number_of_messages) << CASUAL_NAMED_VALUE( count);
+
+      }
+
+      TEST( casual_queue_c_api, browse_peek_non_existent_queue__expect_CASUAL_QE_NO_QUEUE)
+      {
+         common::unittest::Trace trace;
+
+         auto domain = local::domain();
+
+         auto handle_message = []( auto, void*)
+         {
+            return 1;
+         };
+
+         EXPECT_TRUE( casual_queue_browse_peek( "non-existent-queue", handle_message, nullptr) == -1);
+         EXPECT_TRUE( casual_qerrno == CASUAL_QE_NO_QUEUE) << "error: " << casual_queue_error_string( casual_qerrno);
       }
    } // queue
 } // casual

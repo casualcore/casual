@@ -44,26 +44,27 @@ namespace casual
          {
             Trace trace{ "queue::group::Database::Database precompile statements dequeue"};
 
-            result.dequeue.first = connection.precompile( 
-                  "SELECT"
-                     " ROWID, id, properties, reply, redelivered, type, available, timestamp, payload"
-                  " FROM"
-                     " message"
-                  " WHERE queue = :queue AND state = 2 AND available < :available ORDER BY timestamp ASC, available ASC LIMIT 1;");
+            result.dequeue.first = connection.precompile( R"(
+SELECT
+   ROWID, id, properties, reply, redelivered, type, available, timestamp, payload
+FROM
+   message
+WHERE queue = :queue AND state = 2 AND available < :available ORDER BY timestamp ASC, available ASC LIMIT 1; )");
 
-            result.dequeue.first_id = connection.precompile(  
-                  "SELECT"
-                     " ROWID, id, properties, reply, redelivered, type, available, timestamp, payload"
-                  " FROM "
-                     " message"
-                  " WHERE id = :id AND queue = :queue AND state = 2 AND available < :available;");
+            result.dequeue.first_id = connection.precompile( R"(
+SELECT
+   ROWID, id, properties, reply, redelivered, type, available, timestamp, payload
+FROM 
+   message
+WHERE id = :id AND queue = :queue AND state = 2 AND available < :available; )");
 
-            result.dequeue.first_match = connection.precompile(
-                  "SELECT"
-                     " ROWID, id, properties, reply, redelivered, type, available, MIN( timestamp), payload"
-                  " FROM"
-                     " message"
-                  " WHERE queue = :queue AND state = 2 AND properties = :properties AND available < :available;");
+            result.dequeue.first_match = connection.precompile( R"(
+SELECT
+   ROWID, id, properties, reply, redelivered, type, available, MIN( timestamp), payload
+FROM
+   message
+WHERE queue = :queue AND state = 2 AND properties = :properties AND available < :available; )");
+
          }
 
 
@@ -204,6 +205,8 @@ WHERE
 
          }
 
+
+         // peek
          {
             Trace trace{ "queue::group::Database::Database precompile statements peek"};
 
@@ -242,6 +245,22 @@ FROM
 WHERE id = :id; )");
 
          }
+
+
+         // browse
+         {
+            Trace trace{ "queue::group::Database::Database precompile statements browse"};
+
+            result.browse.first = connection.precompile( R"(
+SELECT
+   ROWID, id, properties, reply, redelivered, type, available, timestamp, payload
+FROM
+   message
+WHERE queue = :queue AND state = 2 AND timestamp > :timestamp AND available < :available ORDER BY timestamp ASC, available ASC LIMIT 1; )");
+
+
+         }
+
 
          result.restore = connection.precompile(R"( 
             UPDATE message 

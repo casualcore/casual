@@ -20,6 +20,7 @@
 #include "common/code/category.h"
 #include "common/buffer/type.h"
 #include "common/buffer/pool.h"
+#include "common/execute.h"
 
 namespace casual
 {
@@ -265,6 +266,8 @@ namespace casual
 
             auto enqueue( const char* queue, message::descriptor::id descriptor)
             {
+               Trace trace{ "queue::local::enqueue"};
+
                auto& message = message::global::cache.get( descriptor);
                message.value.id = queue::xatmi::enqueue( queue, message.value);
                return 0;
@@ -272,6 +275,8 @@ namespace casual
 
             auto dequeue( const char* queue, selector::descriptor::id selector)
             {
+               Trace trace{ "queue::local::dequeue"};
+
                auto message = []( auto queue, auto selector)
                {
                   if( selector)
@@ -288,6 +293,8 @@ namespace casual
 
             auto peek( const char* queue, selector::descriptor::id selector)
             {
+               Trace trace{ "queue::local::peek"};
+
                auto information = []( auto queue, auto selector)
                {
                   if( selector)
@@ -319,103 +326,156 @@ namespace casual
                return local::message::global::cache.add( std::move( result)).id.value();
             }
 
+            namespace browse
+            {
+               auto peek( const char* queue,common::unique_function< int( casual_selector_descriptor_t, void*) const> callback, void* state)
+               {
+                  Trace trace{ "queue::local::browse::peek"};                  
+
+                  casual::queue::browse::peek( queue, [ callback = std::move( callback), state]( auto&& message)
+                  {
+                     xatmi::Message result;
+                     {
+                        result.id = std::move( message.id);
+                        result.attributes = std::move( message.attributes);
+
+                        common::buffer::Payload payload;
+                        payload.type = std::move( message.payload.type);
+                        payload.data = std::move( message.payload.data);
+
+                        auto buffer = common::buffer::pool::Holder::instance().insert( std::move( payload));
+                        result.payload.buffer = std::get< 0>( buffer).underlying();
+                        result.payload.size = std::get< 1>( buffer);
+                     }
+
+                     auto id = local::message::global::cache.add( std::move( result)).id;
+
+                     auto erase_scope = common::execute::scope( [ id](){ local::message::global::cache.erase( id);});
+
+                     return callback( id.value(), state) != 0;
+                  });
+
+
+                  return 0;
+               }
+            } // browse
+
          } // <unnamed>
       } // local         
+
+      extern "C" 
+      {
+         const char* casual_queue_error_string( int code)
+         {
+            switch( code)
+            {
+               case CASUAL_QE_OK: return "CASUAL_QE_OK";
+               case CASUAL_QE_NO_MESSAGE: return "CASUAL_QE_NO_MESSAGE";
+               case CASUAL_QE_NO_QUEUE : return "CASUAL_QE_NO_QUEUE";
+               case CASUAL_QE_INVALID_ARGUMENTS: return "CASUAL_QE_INVALID_ARGUMENTS"; 
+               case CASUAL_QE_SYSTEM: return "CASUAL_QE_SYSTEM";
+            }
+
+            return "<unknown>";
+         }
+
+         int casual_queue_get_errno()
+         {
+            return casual::common::cast::underlying( local::global::code);
+         }
+
+         casual_message_descriptor_t casual_queue_message_create( casual_buffer_t buffer)
+         {
+            return local::wrap( local::message::create, -1l, buffer);
+         }
+
+         int casual_queue_message_attribute_set_properties( casual_message_descriptor_t message, const char* properties)
+         {
+            return local::wrap( local::message::attribute::properties::set, -1, local::message::descriptor::id{ message}, properties);
+         }
+
+         const char* casual_queue_message_attribute_get_properties( casual_message_descriptor_t message)
+         {
+            return local::wrap( local::message::attribute::properties::get, nullptr, local::message::descriptor::id{ message});
+         }
+
+         int casual_queue_message_attribute_set_reply( casual_message_descriptor_t message, const char* queue)
+         {
+            return local::wrap( local::message::attribute::reply::set, -1, local::message::descriptor::id{ message}, queue);
+         }
+
+         int casual_queue_message_attribute_set_available( casual_message_descriptor_t message, long ms_since_epoch)
+         {
+            return local::wrap( local::message::attribute::available::set, -1, local::message::descriptor::id{ message}, std::chrono::milliseconds{ ms_since_epoch});
+         }
+
+         int casual_queue_message_set_buffer( casual_message_descriptor_t message, casual_buffer_t buffer)
+         {
+            return local::wrap( local::message::buffer::set, -1, local::message::descriptor::id{ message}, buffer);
+         }
+
+         int casual_queue_message_get_buffer( casual_message_descriptor_t message, casual_buffer_t* buffer)
+         {
+            return local::wrap( local::message::buffer::get, -1, local::message::descriptor::id{ message}, buffer);
+         }
+
+         int casual_queue_message_set_id( casual_message_descriptor_t message, const uuid_t* id)
+         {
+            return local::wrap( local::message::id::set, -1, local::message::descriptor::id{ message}, id);
+         }
+
+         int casual_queue_message_get_id( casual_message_descriptor_t message, uuid_t* id)
+         {
+            return local::wrap( local::message::id::get, -1, local::message::descriptor::id{ message}, id);
+         }
+
+         int casual_queue_message_delete( casual_message_descriptor_t message)
+         {
+            return local::wrap( local::message::clean, -1, local::message::descriptor::id{ message});
+         }
+
+         casual_selector_descriptor_t casual_queue_selector_create()
+         {
+            return local::wrap( local::selector::create, -1l);
+         }
+         
+         int casual_queue_selector_delete( casual_selector_descriptor_t selector)
+         {
+            return local::wrap( local::selector::clear, -1, local::selector::descriptor::id{ selector});
+         }
+         
+         int casual_queue_selector_set_properties( casual_selector_descriptor_t selector, const char* properties)
+         {
+            return local::wrap( local::selector::properties::set, -1, local::selector::descriptor::id{ selector}, properties);
+         }
+
+         int casual_queue_selector_set_id( casual_selector_descriptor_t selector, const uuid_t* id)
+         {
+            return local::wrap( local::selector::id::set, -1, local::selector::descriptor::id{ selector}, id);
+         }
+
+         int casual_queue_enqueue( const char* queue, const casual_message_descriptor_t message)
+         {
+            return local::wrap( local::enqueue, -1, queue, local::message::descriptor::id{ message});
+         }
+
+         casual_message_descriptor_t casual_queue_dequeue( const char* queue, casual_selector_descriptor_t selector)
+         {
+            return local::wrap( local::dequeue, -1l, queue, local::selector::descriptor::id{ selector});
+         }
+
+         casual_message_descriptor_t casual_queue_peek( const char* queue, casual_selector_descriptor_t selector)
+         {
+            return local::wrap( local::peek, -1l, queue, local::selector::descriptor::id{ selector});
+         }
+
+         //int casual_queue_browse_peek( const char* queue, int (*callback)( casual_selector_descriptor_t))
+         int casual_queue_browse_peek( const char* queue, ::casual_browse_callback_t callback, void* state)
+         {
+            return local::wrap( local::browse::peek, -1, queue, callback, state);
+         }
+
+      } // extern C
+
    } // queue
 } // casual
-
-extern "C" 
-{
-   using namespace casual::queue;
-
-   int casual_queue_get_errno()
-   {
-      return casual::common::cast::underlying( local::global::code);
-   }
-
-   casual_message_descriptor_t casual_queue_message_create( casual_buffer_t buffer)
-   {
-      return local::wrap( local::message::create, -1l, buffer);
-   }
-
-   int casual_queue_message_attribute_set_properties( casual_message_descriptor_t message, const char* properties)
-   {
-      return local::wrap( local::message::attribute::properties::set, -1, local::message::descriptor::id{ message}, properties);
-   }
-
-   const char* casual_queue_message_attribute_get_properties( casual_message_descriptor_t message)
-   {
-      return local::wrap( local::message::attribute::properties::get, nullptr, local::message::descriptor::id{ message});
-   }
-
-   int casual_queue_message_attribute_set_reply( casual_message_descriptor_t message, const char* queue)
-   {
-      return local::wrap( local::message::attribute::reply::set, -1, local::message::descriptor::id{ message}, queue);
-   }
-
-   int casual_queue_message_attribute_set_available( casual_message_descriptor_t message, long ms_since_epoch)
-   {
-      return local::wrap( local::message::attribute::available::set, -1, local::message::descriptor::id{ message}, std::chrono::milliseconds{ ms_since_epoch});
-   }
-
-   int casual_queue_message_set_buffer( casual_message_descriptor_t message, casual_buffer_t buffer)
-   {
-      return local::wrap( local::message::buffer::set, -1, local::message::descriptor::id{ message}, buffer);
-   }
-
-   int casual_queue_message_get_buffer( casual_message_descriptor_t message, casual_buffer_t* buffer)
-   {
-      return local::wrap( local::message::buffer::get, -1, local::message::descriptor::id{ message}, buffer);
-   }
-
-   int casual_queue_message_set_id( casual_message_descriptor_t message, const uuid_t* id)
-   {
-      return local::wrap( local::message::id::set, -1, local::message::descriptor::id{ message}, id);
-   }
-
-   int casual_queue_message_get_id( casual_message_descriptor_t message, uuid_t* id)
-   {
-      return local::wrap( local::message::id::get, -1, local::message::descriptor::id{ message}, id);
-   }
-
-   int casual_queue_message_delete( casual_message_descriptor_t message)
-   {
-      return local::wrap( local::message::clean, -1, local::message::descriptor::id{ message});
-   }
-
-   casual_selector_descriptor_t casual_queue_selector_create()
-   {
-      return local::wrap( local::selector::create, -1l);
-   }
-   
-   int casual_queue_selector_delete( casual_selector_descriptor_t selector)
-   {
-      return local::wrap( local::selector::clear, -1, local::selector::descriptor::id{ selector});
-   }
-   
-   int casual_queue_selector_set_properties( casual_selector_descriptor_t selector, const char* properties)
-   {
-      return local::wrap( local::selector::properties::set, -1, local::selector::descriptor::id{ selector}, properties);
-   }
-
-   int casual_queue_selector_set_id( casual_selector_descriptor_t selector, const uuid_t* id)
-   {
-      return local::wrap( local::selector::id::set, -1, local::selector::descriptor::id{ selector}, id);
-   }
-
-   int casual_queue_enqueue( const char* queue, const casual_message_descriptor_t message)
-   {
-      return local::wrap( local::enqueue, -1, queue, local::message::descriptor::id{ message});
-   }
-
-   casual_message_descriptor_t casual_queue_dequeue( const char* queue, casual_selector_descriptor_t selector)
-   {
-      return local::wrap( local::dequeue, -1l, queue, local::selector::descriptor::id{ selector});
-   }
-
-   casual_message_descriptor_t casual_queue_peek( const char* queue, casual_selector_descriptor_t selector)
-   {
-      return local::wrap( local::peek, -1l, queue, local::selector::descriptor::id{ selector});
-   }
-
-} // extern C
