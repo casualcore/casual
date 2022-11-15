@@ -14,6 +14,7 @@
 #include "casual/platform.h"
 #include "common/uuid.h"
 #include "common/transaction/global.h"
+#include "common/functional.h"
 
 
 namespace casual
@@ -24,21 +25,21 @@ namespace casual
 
       common::Uuid enqueue( const std::string& queue, const Message& message);
 
-      std::vector< Message> dequeue( const std::string& queue);
-      std::vector< Message> dequeue( const std::string& queue, const Selector& selector);
+      [[nodiscard]] std::vector< Message> dequeue( const std::string& queue);
+      [[nodiscard]] std::vector< Message> dequeue( const std::string& queue, const Selector& selector);
 
       namespace blocking
       {
-         Message dequeue( const std::string& queue);
-         Message dequeue( const std::string& queue, const Selector& selector);
+         [[nodiscard]] Message dequeue( const std::string& queue);
+         [[nodiscard]] Message dequeue( const std::string& queue, const Selector& selector);
 
          namespace available
          {
             //! If requested queue is not found (advertised), we will wait until it's
             //! available, and then block.
             //! @{
-            Message dequeue( const std::string& queue);
-            Message dequeue( const std::string& queue, const Selector& selector);
+            [[nodiscard]] Message dequeue( const std::string& queue);
+            [[nodiscard]] Message dequeue( const std::string& queue, const Selector& selector);
             //! @}
 
          } // available
@@ -46,19 +47,28 @@ namespace casual
 
       namespace peek
       {
-         std::vector< message::Information> information( const std::string& queue);
-         std::vector< message::Information> information( const std::string& queue, const Selector& selector);
+         [[nodiscard]] std::vector< message::Information> information( const std::string& queue);
+         [[nodiscard]] std::vector< message::Information> information( const std::string& queue, const Selector& selector);
 
-         std::vector< Message> messages( const std::string& queue, const std::vector< queue::Message::id_type>& ids);
+         [[nodiscard]] std::vector< Message> messages( const std::string& queue, const std::vector< queue::Message::id_type>& ids);
       } // peek
 
+      namespace browse
+      {
+         // we could add _browse::dequeue_ 
+
+         //! peeks the next messages until queue is empty or user return false from `callback`
+         void peek( std::string queue, common::unique_function< bool(Message&&)> callback);
+         
+      } // browse
+
+      
       namespace xatmi
       {
-
          common::Uuid enqueue( const std::string& queue, const Message& message);
 
-         std::vector< Message> dequeue( const std::string& queue);
-         std::vector< Message> dequeue( const std::string& queue, const Selector& selector);
+         [[nodiscard]] std::vector< Message> dequeue( const std::string& queue);
+         [[nodiscard]] std::vector< Message> dequeue( const std::string& queue, const Selector& selector);
 
       } // xatmi
 

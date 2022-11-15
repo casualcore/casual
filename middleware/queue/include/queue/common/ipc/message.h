@@ -771,6 +771,43 @@ namespace casual
 
             } // peek
 
+            namespace browse
+            {
+               using base_request = common::message::basic_request< common::message::Type::queue_group_message_browse_request>;
+               struct Request : base_request
+               {
+                  using base_request::base_request;
+
+                  common::strong::queue::id queue;
+
+                  //! Should be set to the last browsed message timestamp (or nothing if it's the first request),
+                  //! hence act as the pivot point of which messages to browse.
+                  platform::time::point::type last{};
+
+                  CASUAL_CONST_CORRECT_SERIALIZE(
+                     base_request::serialize( archive);
+                     CASUAL_SERIALIZE( queue);
+                     CASUAL_SERIALIZE( last);
+                  )
+               };
+
+               using base_reply = common::message::basic_message< common::message::Type::queue_group_message_browse_reply>;
+               struct Reply : base_reply
+               {
+                  using base_reply::base_reply;
+
+                  std::optional< dequeue::Message> message;
+
+                  inline explicit operator bool() const noexcept { return common::predicate::boolean( message);}
+
+                  CASUAL_CONST_CORRECT_SERIALIZE(
+                     base_reply::serialize( archive);
+                     CASUAL_SERIALIZE( message);
+                  )
+               };
+               
+            } // browse
+
             namespace remove
             {
                using base_request = common::message::basic_request< common::message::Type::queue_group_message_remove_request>;
@@ -1026,69 +1063,64 @@ namespace casual
 
    } // queue::ipc::message
    
-   namespace common
+   namespace common::message::reverse
    {
-      namespace message
-      {
-         namespace reverse
-         {
-            template<>
-            struct type_traits< casual::queue::ipc::message::lookup::Request> : detail::type< casual::queue::ipc::message::lookup::Reply> {};
+      template<>
+      struct type_traits< casual::queue::ipc::message::lookup::Request> : detail::type< casual::queue::ipc::message::lookup::Reply> {};
 
-            template<>
-            struct type_traits< casual::queue::ipc::message::lookup::discard::Request> : detail::type< casual::queue::ipc::message::lookup::discard::Reply> {};
+      template<>
+      struct type_traits< casual::queue::ipc::message::lookup::discard::Request> : detail::type< casual::queue::ipc::message::lookup::discard::Reply> {};
 
 
-            template<>
-            struct type_traits< casual::queue::ipc::message::group::configuration::update::Request> : detail::type< casual::queue::ipc::message::group::configuration::update::Reply> {};
+      template<>
+      struct type_traits< casual::queue::ipc::message::group::configuration::update::Request> : detail::type< casual::queue::ipc::message::group::configuration::update::Reply> {};
 
-            template<>
-            struct type_traits< casual::queue::ipc::message::group::state::Request> : detail::type< casual::queue::ipc::message::group::state::Reply> {};
+      template<>
+      struct type_traits< casual::queue::ipc::message::group::state::Request> : detail::type< casual::queue::ipc::message::group::state::Reply> {};
 
-            template<>
-            struct type_traits< casual::queue::ipc::message::group::message::meta::Request> : detail::type< casual::queue::ipc::message::group::message::meta::Reply> {};
+      template<>
+      struct type_traits< casual::queue::ipc::message::group::message::meta::Request> : detail::type< casual::queue::ipc::message::group::message::meta::Reply> {};
 
-            template<>
-            struct type_traits< casual::queue::ipc::message::group::message::meta::peek::Request> : detail::type< casual::queue::ipc::message::group::message::meta::peek::Reply> {};
+      template<>
+      struct type_traits< casual::queue::ipc::message::group::message::meta::peek::Request> : detail::type< casual::queue::ipc::message::group::message::meta::peek::Reply> {};
 
-            template<>
-            struct type_traits< casual::queue::ipc::message::group::message::peek::Request> : detail::type< casual::queue::ipc::message::group::message::peek::Reply> {};
+      template<>
+      struct type_traits< casual::queue::ipc::message::group::message::peek::Request> : detail::type< casual::queue::ipc::message::group::message::peek::Reply> {};
 
-            template<>
-            struct type_traits< casual::queue::ipc::message::group::message::remove::Request> : detail::type< casual::queue::ipc::message::group::message::remove::Reply> {};
+      template<>
+      struct type_traits< casual::queue::ipc::message::group::message::browse::Request> : detail::type< casual::queue::ipc::message::group::message::browse::Reply> {};
 
-            template<>
-            struct type_traits< casual::queue::ipc::message::group::message::recovery::Request> : detail::type< casual::queue::ipc::message::group::message::recovery::Reply> {};
+      template<>
+      struct type_traits< casual::queue::ipc::message::group::message::remove::Request> : detail::type< casual::queue::ipc::message::group::message::remove::Reply> {};
 
-            template<>
-            struct type_traits< casual::queue::ipc::message::group::enqueue::Request> : detail::type< casual::queue::ipc::message::group::enqueue::Reply> {};
+      template<>
+      struct type_traits< casual::queue::ipc::message::group::message::recovery::Request> : detail::type< casual::queue::ipc::message::group::message::recovery::Reply> {};
 
-            template<>
-            struct type_traits< casual::queue::ipc::message::group::dequeue::Request> : detail::type< casual::queue::ipc::message::group::dequeue::Reply> {};
+      template<>
+      struct type_traits< casual::queue::ipc::message::group::enqueue::Request> : detail::type< casual::queue::ipc::message::group::enqueue::Reply> {};
 
-            template<>
-            struct type_traits< casual::queue::ipc::message::group::dequeue::forget::Request> : detail::type< casual::queue::ipc::message::group::dequeue::forget::Reply> {};
+      template<>
+      struct type_traits< casual::queue::ipc::message::group::dequeue::Request> : detail::type< casual::queue::ipc::message::group::dequeue::Reply> {};
 
-
-            template<>
-            struct type_traits< casual::queue::ipc::message::group::queue::restore::Request> : detail::type< casual::queue::ipc::message::group::queue::restore::Reply> {};
-
-            template<>
-            struct type_traits< casual::queue::ipc::message::group::queue::clear::Request> : detail::type< casual::queue::ipc::message::group::queue::clear::Reply> {};
-
-            template<>
-            struct type_traits< casual::queue::ipc::message::group::metric::reset::Request> : detail::type< casual::queue::ipc::message::group::metric::reset::Reply> {};
+      template<>
+      struct type_traits< casual::queue::ipc::message::group::dequeue::forget::Request> : detail::type< casual::queue::ipc::message::group::dequeue::forget::Reply> {};
 
 
-            template<>
-            struct type_traits< casual::queue::ipc::message::forward::group::configuration::update::Request> : detail::type< casual::queue::ipc::message::forward::group::configuration::update::Reply> {};
+      template<>
+      struct type_traits< casual::queue::ipc::message::group::queue::restore::Request> : detail::type< casual::queue::ipc::message::group::queue::restore::Reply> {};
 
-            template<>
-            struct type_traits< casual::queue::ipc::message::forward::group::state::Request> : detail::type< casual::queue::ipc::message::forward::group::state::Reply> {};
-         
+      template<>
+      struct type_traits< casual::queue::ipc::message::group::queue::clear::Request> : detail::type< casual::queue::ipc::message::group::queue::clear::Reply> {};
 
-         } // reverse
+      template<>
+      struct type_traits< casual::queue::ipc::message::group::metric::reset::Request> : detail::type< casual::queue::ipc::message::group::metric::reset::Reply> {};
 
-      } // message
-   } // common
+
+      template<>
+      struct type_traits< casual::queue::ipc::message::forward::group::configuration::update::Request> : detail::type< casual::queue::ipc::message::forward::group::configuration::update::Reply> {};
+
+      template<>
+      struct type_traits< casual::queue::ipc::message::forward::group::state::Request> : detail::type< casual::queue::ipc::message::forward::group::state::Reply> {};
+   
+   } // common::message::reverse
 } // casual

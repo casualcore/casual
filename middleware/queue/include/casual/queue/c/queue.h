@@ -16,6 +16,9 @@ extern "C" {
 typedef long casual_message_descriptor_t;
 typedef long casual_selector_descriptor_t;
 
+/* */
+typedef int (*casual_browse_callback_t)( casual_selector_descriptor_t, void* state);
+
 struct casual_buffer_t 
 {
    char* data;
@@ -40,6 +43,9 @@ typedef struct casual_buffer_t casual_buffer_t;
 
 extern int casual_queue_get_errno();
 #define casual_qerrno casual_queue_get_errno()
+
+/* @returns the error string associated with the code. if not found "<unknown>" is returned*/
+extern const char* casual_queue_error_string( int code);
 
 
 
@@ -120,6 +126,17 @@ extern casual_message_descriptor_t casual_queue_dequeue( const char* queue, casu
      and call `tpfree` on the buffer associated with the descriptor
  */
 extern casual_message_descriptor_t casual_queue_peek( const char* queue, casual_selector_descriptor_t selector);
+
+/*
+   browse peek the given `queue`, for each message on the queue invoke the `callback`, with current 
+   message and the provided `state`, until the there is no messages left to peek, or user returns 
+   _false_ (0) from the callback.
+   `state` can of course bi null if no state is needed.
+   @attention No memory management is needed by the user, all memory management is taken care of by the
+         unction. Hence, no deletion of the _message description_.
+   @returns 0 on success -1 on error and casual_qerrno is set
+*/
+extern int casual_queue_browse_peek( const char* queue, casual_browse_callback_t callback, void* state);
 
 
 #ifdef __cplusplus
