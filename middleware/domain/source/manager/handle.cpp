@@ -570,10 +570,22 @@ namespace casual
                            // We don't want to handle any signals in this task
                            signal::thread::scope::Block block;
 
+                           auto get_alias = [ &state]( strong::process::id pid) -> std::string
+                           {
+                              if( auto server = state.server( pid))
+                                 return server->alias;
+                              else if( auto executable = state.executable( pid))
+                                 return executable->alias;
+                              else if( auto grandchild = state.grandchild( pid))
+                                 return grandchild->alias;
+
+                              return "<unknown>";
+                           };
+
                            if( message.state.reason == decltype( message.state.reason)::core)
-                              log::line( log::category::error, "process cored: ", message.state);
+                              log::line( log::category::error, "process cored, alias: ", get_alias( message.state.pid), ", details: ", message.state);
                            else
-                              log::line( log::category::information, "process exited: ", message.state);
+                              log::line( log::category::information, "process exited, alias: ", get_alias( message.state.pid), ", details: ", message.state);
 
                            auto [ server, executable] = state.remove( message.state.pid);
 
