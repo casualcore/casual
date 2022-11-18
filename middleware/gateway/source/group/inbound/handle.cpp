@@ -561,7 +561,7 @@ namespace casual
                            // Send lookup
                            if( ! queue::lookup::send( state, state.external.last(), message))
                            {
-                              common::log::line( common::log::category::error, "failed to lookup queue - action: send error reply");
+                              common::log::line( common::log::category::error, "failed to lookup queue: ", message.name, " - action: send error reply");
 
                               casual::queue::ipc::message::group::enqueue::Reply reply;
                               reply.correlation = message.correlation;
@@ -590,7 +590,7 @@ namespace casual
                            // Send lookup
                            if( ! queue::lookup::send( state, state.external.last(), message))
                            {
-                              common::log::line( common::log::category::error, "failed to lookup queue - action: send error reply");
+                              common::log::line( common::log::category::error, "failed to lookup queue: ", message.name, " - action: send error reply");
 
                               casual::queue::ipc::message::group::enqueue::Reply reply;
                               reply.correlation = message.correlation;
