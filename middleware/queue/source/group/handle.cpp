@@ -224,7 +224,7 @@ namespace casual
                         }
                         catch( ...)
                         {
-                           log::line( log::category::error, exception::capture(), " failed with enqueue request");
+                           log::line( log::category::error, exception::capture(), " failed with enqueue request to queue: ", message.name);
                         }
                      };
                   }
@@ -294,7 +294,7 @@ namespace casual
                         }
                         catch( ...)
                         {
-                           log::line( log::category::error, exception::capture(), " failed with dequeue request");
+                           log::line( log::category::error, exception::capture(), " failed with dequeue request from queue: ", message.name);
                            return true;
                         }
                         
