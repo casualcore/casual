@@ -17,72 +17,122 @@
 #include "common/code/raise.h"
 #include "common/code/casual.h"
 
+#include "casual/assert.h"
+
 namespace casual
 {
    namespace common::communication::instance
    {
-      std::ostream& operator << ( std::ostream& out, const Identity& value)
+      namespace lookup
       {
-         stream::write( out, "{ id: ", value.id, ", environment: ", value.environment, "}");
-         return out;
-      }
-   
+         namespace local
+         {
+            namespace
+            {
+
+               template< typename F>
+               auto send( Directive directive, F callback, const process::Handle& caller = process::handle())
+               {
+                  auto transform_directive = []( Directive directive)
+                  {
+                     switch( directive)
+                     {
+                        using Enum = common::message::domain::process::lookup::request::Directive;
+                        case Directive::direct: return Enum::direct;
+                        case Directive::wait: return Enum::wait;
+                     }
+                     casual::terminate( "invalid lookup directive: ", cast::underlying( directive));
+                  };
+
+                  common::message::domain::process::lookup::Request request{ caller};
+                  request.directive = transform_directive( directive);
+                  // let caller mutate
+                  callback( request);
+
+                  return device::blocking::send( outbound::domain::manager::device(), request);
+               }
+            } // <unnamed>
+         } // local
+         
+         std::string_view description( Directive directive) noexcept
+         {
+            switch( directive)
+            {
+               case Directive::wait: return "wait";
+               case Directive::direct: return "direct";
+            }
+            return "unknown";
+         }
+
+         strong::correlation::id request( const Uuid& identity, Directive directive)
+         {
+            Trace trace{ "common::communication::instance::lookup::request"};
+            common::log::line( log, "identity: ", identity, ", directive: ", directive);
+
+            return local::send( directive, [ &identity]( auto& request)
+            {
+               request.identification = identity;
+            });
+         }
+
+         strong::correlation::id request( strong::process::id pid, Directive directive)
+         {
+            Trace trace{ "common::communication::instance::fetch::handle (pid)"};
+            log::line( log::debug, "pid: ", pid, ", directive: ", directive);
+
+            return local::send( directive, [ pid]( auto& request)
+            {
+               request.pid = pid;
+            });
+         }
+
+      } // lookup
+
+
       namespace fetch
       {
          namespace local
          {
             namespace
             {
-               auto call( common::message::domain::process::lookup::Request& request)
+               template< typename F>
+               auto call( Directive directive, F callback)
                {
-                  // We create a temporary inbound, so we don't rely on the 'global' inbound
+                  // We create a temporary inbound, so we don't rely on the 'global' inbound.
+                  // Why? Only because we're using threads in unittest that consumes _global inbound_
+                  // TODO: Do we use the  _global inbound_ in threads any more? If, not remove this.
                   communication::ipc::inbound::Device inbound;
 
-                  request.process.pid = common::process::id();
-                  request.process.ipc = inbound.connector().handle().ipc();
+                  auto caller = process::Handle{ process::id(), inbound.connector().handle().ipc()};
 
-                  return communication::ipc::call(
-                        outbound::domain::manager::device(),
-                        request,
-                        inbound).process;
+                  return device::receive< common::message::domain::process::lookup::Reply>(
+                     inbound,
+                     lookup::local::send( directive, std::move( callback), caller)).process;
+
                }
             } // <unnamed>
          } // local
 
-         std::ostream& operator << ( std::ostream& out, Directive directive)
-         {
-            switch( directive)
-            {
-               case Directive::wait: return out << "wait";
-               case Directive::direct: return out << "direct";
-            }
-            return out << "unknown";
-         }
-
          process::Handle handle( const Uuid& identity, Directive directive)
          {
             Trace trace{ "common::communication::instance::fetch::handle"};
-
             common::log::line( log, "identity: ", identity, ", directive: ", directive);
-
-            common::message::domain::process::lookup::Request request;
-            request.directive = directive == Directive::wait ? decltype( request.directive)::wait : decltype( request.directive)::direct;
-            request.identification = identity;
-
-            return local::call( request);
+            
+            return local::call( directive, [ &identity]( auto& request)
+            {
+               request.identification = identity;
+            });
          }
 
-         process::Handle handle( strong::process::id pid , Directive directive)
+         process::Handle handle( strong::process::id pid, Directive directive)
          {
             Trace trace{ "common::communication::instance::fetch::handle (pid)"};
-
             log::line( log::debug, "pid: ", pid, ", directive: ", directive);
 
-            common::message::domain::process::lookup::Request request;
-            request.directive = directive == Directive::wait ? decltype( request.directive)::wait : decltype( request.directive)::direct;
-            request.pid = pid;
-
-            return local::call( request);
+            return local::call( directive, [ pid]( auto& request)
+            {
+               request.pid = pid;
+            });
          }
 
       } // fetch
@@ -91,7 +141,6 @@ namespace casual
       {
          namespace
          {
-
             template< typename M>
             void connect( M&& message)
             {
@@ -181,7 +230,7 @@ namespace casual
 
                   process::Handle fetch(
                         const instance::Identity& identity,
-                        fetch::Directive directive)
+                        lookup::Directive directive)
                   {
                      Trace trace{ "communication::instance::outbound::instance::local::fetch"};
 
@@ -229,7 +278,7 @@ namespace casual
                m_connector = ipc::outbound::Connector{ m_process.ipc};
             }
 
-            template< fetch::Directive directive>
+            template< lookup::Directive directive>
             basic_connector< directive>::basic_connector( instance::Identity identity)
                : m_identity{ identity}
             {
@@ -237,7 +286,7 @@ namespace casual
                log::line( verbose::log, "connector: ", *this);
             }
 
-            template< fetch::Directive directive>
+            template< lookup::Directive directive>
             const process::Handle& basic_connector< directive>::process() 
             { 
                if( ! m_process)
@@ -247,7 +296,7 @@ namespace casual
             }
 
 
-            template< fetch::Directive directive>
+            template< lookup::Directive directive>
             void basic_connector< directive>::reconnect()
             {
                Trace trace{ "communication::instance::outbound::Connector::reconnect"};
@@ -260,7 +309,7 @@ namespace casual
                log::line( verbose::log, "connector: ", *this);
             }
 
-            template< fetch::Directive directive>
+            template< lookup::Directive directive>
             void basic_connector< directive>::clear()
             {
                Trace trace{ "communication::instance::outbound::Connector::clear"};
@@ -269,8 +318,8 @@ namespace casual
                m_connector.clear();
             }
 
-            template struct basic_connector< fetch::Directive::direct>;
-            template struct basic_connector< fetch::Directive::wait>;
+            template struct basic_connector< lookup::Directive::direct>;
+            template struct basic_connector< lookup::Directive::wait>;
          } // detail
 
          namespace service

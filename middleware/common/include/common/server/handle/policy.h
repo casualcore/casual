@@ -18,68 +18,60 @@
 
 namespace casual
 {
-   namespace common
+   namespace common::server::handle::policy
    {
-      namespace server
+      void advertise( std::vector< server::Service> services);
+
+      namespace call
       {
-         namespace handle
+         //! Default policy for basic_call.
+         struct Default
          {
-            namespace policy
-            {
-               namespace call
-               {
-                  //! Default policy for basic_call.
-                  struct Default
-                  {
-                     void configure( server::Arguments&& arguments);
+            void configure( server::Arguments&& arguments);
 
-                     void reply( strong::ipc::id id, message::service::call::Reply& message);
-                     void reply( strong::ipc::id id, message::conversation::callee::Send& message);
+            void reply( strong::ipc::id id, message::service::call::Reply& message);
+            void reply( strong::ipc::id id, message::conversation::callee::Send& message);
 
-                     void ack( const message::service::call::ACK& message);
+            void ack( const message::service::call::ACK& message);
 
-                     void statistics( strong::ipc::id id, message::event::service::Call& event);
+            void statistics( strong::ipc::id id, message::event::service::Call& event);
 
-                     void transaction(
-                           const common::transaction::ID& trid,
-                           const server::Service& service,
-                           const platform::time::unit& timeout,
-                           const platform::time::point::type& now);
+            void transaction(
+                  const common::transaction::ID& trid,
+                  const server::Service& service,
+                  const platform::time::unit& timeout,
+                  const platform::time::point::type& now);
 
 
-                     message::service::Transaction transaction( bool commit);
+            message::service::Transaction transaction( bool commit);
 
-                     void forward( common::service::invoke::Forward&& forward, const message::service::call::callee::Request& message);
-                     void forward( common::service::invoke::Forward&& forward, const message::conversation::connect::callee::Request& message);
-                  };
-
-
-                  struct Admin
-                  {
-                     void configure( server::Arguments&& arguments);
-                     void reply( strong::ipc::id id, message::service::call::Reply& message);
-                     void ack( const message::service::call::ACK& message);
-                     void statistics( strong::ipc::id id, message::event::service::Call& event);
-
-                     message::service::Transaction transaction( bool commit);
-
-                     void transaction(
-                           const common::transaction::ID& trid,
-                           const server::Service& service,
-                           const platform::time::unit& timeout,
-                           const platform::time::point::type& now);
+            void forward( common::service::invoke::Forward&& forward, const message::service::call::callee::Request& message);
+            void forward( common::service::invoke::Forward&& forward, const message::conversation::connect::callee::Request& message);
+         };
 
 
-                     void forward( common::service::invoke::Forward&& forward, const message::service::call::callee::Request& message);
-                  };
+         struct Admin
+         {
+            void configure( server::Arguments&& arguments);
+            void reply( strong::ipc::id id, message::service::call::Reply& message);
+            void ack( const message::service::call::ACK& message);
+            void statistics( strong::ipc::id id, message::event::service::Call& event);
 
-               } // call
+            message::service::Transaction transaction( bool commit);
 
-            } // policy
+            void transaction(
+                  const common::transaction::ID& trid,
+                  const server::Service& service,
+                  const platform::time::unit& timeout,
+                  const platform::time::point::type& now);
 
-         } // handle
-      } // server
-   } // common
+
+            void forward( common::service::invoke::Forward&& forward, const message::service::call::callee::Request& message);
+         };
+
+      } // call
+
+   } // common::server::handle::policy
 } // casual
 
 

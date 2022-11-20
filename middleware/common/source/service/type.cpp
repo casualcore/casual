@@ -18,80 +18,73 @@
 
 namespace casual
 {
-   namespace common
+   namespace common::service
    {
-      namespace service
+      namespace execution::timeout::contract
       {
-         namespace execution::timeout::contract
+         Type transform( std::string_view contract)
          {
-            Type transform( const std::string& contract)
-            {
-               if ( contract == "linger") return Type::linger;
-               if ( contract == "kill") return Type::kill;
-               if ( contract == "terminate") return Type::terminate;
-               
-               code::raise::error( code::casual::invalid_configuration, "unexpected value: ", contract);
-            }
-
-            std::string transform( Type contract)
-            {
-               std::ostringstream stream{};
-               stream << contract;
-               return stream.str();
-            }
-
-            std::ostream& operator << ( std::ostream& out, Type value)
-            {
-               switch( value)
-               {
-                  case Type::linger: return out << "linger";
-                  case Type::kill: return out << "kill";
-                  case Type::terminate: return out << "terminate";
-               }
-               return out << "unknown";
-            }
-
+            if( contract == "linger") return Type::linger;
+            if( contract == "kill") return Type::kill;
+            if( contract == "terminate") return Type::terminate;
+            
+            code::raise::error( code::casual::invalid_configuration, "unexpected value: ", contract);
          }
 
-         namespace transaction
+         std::string transform( Type contract)
          {
-            std::ostream& operator << ( std::ostream& out, Type value)
+            std::ostringstream stream{};
+            stream::write( stream, contract);
+            return std::move( stream).str();
+         }
+
+         std::string_view description( Type value) noexcept
+         {
+            switch( value)
             {
-               switch( value)
-               {
-                  case Type::atomic: return out << "atomic";
-                  case Type::join: return out << "join";
-                  case Type::automatic: return out << "automatic";
-                  case Type::none: return out << "none";
-                  case Type::branch: return out << "branch";
-               }
-               return out << "unknown";
+               case Type::linger: return "linger";
+               case Type::kill: return "kill";
+               case Type::terminate: return "terminate";
             }
+            return "unknown";
+         }
 
-            Type mode( const std::string& mode)
+      }
+
+      namespace transaction
+      {
+         std::string_view description( Type value) noexcept
+         {
+            switch( value)
             {
-               if( mode == "automatic" || mode == "auto") return Type::automatic;
-               if( mode == "join") return Type::join;
-               if( mode == "atomic") return Type::atomic;
-               if( mode == "none") return Type::none;
-               if( mode == "branch") return Type::branch;
+               case Type::atomic: return "atomic";
+               case Type::join: return "join";
+               case Type::automatic: return "automatic";
+               case Type::none: return "none";
+               case Type::branch: return "branch";
+            }
+            return "unknown";
+         }
 
+         Type mode( std::string_view mode)
+         {
+            if( mode == "automatic" || mode == "auto") return Type::automatic;
+            if( mode == "join") return Type::join;
+            if( mode == "atomic") return Type::atomic;
+            if( mode == "none") return Type::none;
+            if( mode == "branch") return Type::branch;
+
+            code::raise::error( code::casual::invalid_argument, "transaction mode: ", mode);
+         }
+
+         Type mode( std::uint16_t mode)
+         {
+            if( mode < cast::underlying( Type::automatic) || mode > cast::underlying( Type::branch))
                code::raise::error( code::casual::invalid_argument, "transaction mode: ", mode);
-            }
 
-            Type mode( std::uint16_t mode)
-            {
-               if( mode < cast::underlying( Type::automatic) || mode > cast::underlying( Type::branch))
-                  code::raise::error( code::casual::invalid_argument, "transaction mode: ", mode);
+            return static_cast< Type>( mode);
+         }
 
-               return static_cast< Type>( mode);
-            }
-
-         } // transaction
-
-      } // service
-
-   } // common
-
-
+      } // transaction
+   } // common::service
 } // casual

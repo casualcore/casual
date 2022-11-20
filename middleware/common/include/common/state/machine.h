@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include "common/serialize/macro.h"
+
 #include <iosfwd>
 #include <type_traits>
 
@@ -42,6 +44,8 @@ namespace casual
          inline friend bool operator >= ( Machine lhs, Enum rhs) { return lhs.m_current >= rhs;}
 
          inline friend std::ostream& operator << ( std::ostream& out, Machine value) { return out << description( value.m_current);}
+
+         CASUAL_FORWARD_SERIALIZE( m_current);
 
       private:
          Enum m_current = initialize;

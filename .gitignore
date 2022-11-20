@@ -1,6 +1,4 @@
-#
-# eclipse project
-#
+# eclipse project (do anybody use this anymore?)
 .settings/
 .pydevproject
 .cproject
@@ -11,52 +9,38 @@
 
 # vs code
 .vscode/
+*.code-workspace
+.unititest_domain_home/
 
 casual.env
-
-.unittest_domain_home/
-
-
 core
 
 
-#
 # Build directories
-#
 dependencies/
 obj/
 bin/
 
-#
 # Build files
-#
-*.mk
 *.pyc
-
 *.log
 /Debug/
 
-
-#
 # casual stuff
-#
 .casual/
-
 
 /Default/
 /Release/
 
-#
-# Tag files produced by Global
-#
+# Tag files produced by Global (what is this?)
 GPATH
 GRTAGS
 GSYMS
 GTAGS
-#
-# Visual code workspace
-#
-*.code-workspace
 
 # Test artifacts
 report.xml
+
+# osx crap files
+.DS_Store
+

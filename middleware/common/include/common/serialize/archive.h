@@ -23,10 +23,8 @@ namespace casual
    namespace common::serialize
    {
 
-      class Reader
+      struct Reader
       {
-      public:
-
          inline constexpr static auto archive_type() { return archive::Type::dynamic_type;}
 
          ~Reader();
@@ -155,11 +153,9 @@ namespace casual
       static_assert( traits::archive::type_v< Reader> == archive::Type::dynamic_type);
 
 
-      class Writer
+      struct Writer
       {
-      public:
-
-         inline constexpr static auto archive_type() { return archive::Type::dynamic_type;}
+         constexpr static auto archive_type() { return archive::Type::dynamic_type;}
 
          ~Writer();
 
@@ -192,7 +188,7 @@ namespace casual
          inline void consume( std::string& destination) { m_protocol->consume( destination);};
 
          template< typename T>
-         auto consume()
+         [[nodiscard]] auto consume()
          {
             T destination;
             consume( destination);
@@ -200,9 +196,7 @@ namespace casual
          }
          //! @}
 
-
-         inline auto type() const { return m_type;};
-
+         inline auto type() const noexcept { return m_type;};
 
          template< typename V>
          [[maybe_unused]] Writer& operator << ( V&& value)
@@ -287,7 +281,6 @@ namespace casual
          private:
             protocol_type m_protocol;
          };
-
 
          template< typename Protocol>
          Writer( std::unique_ptr< model< Protocol>>&& model) 

@@ -10,6 +10,7 @@
 
 #include "common/service/type.h"
 #include "common/service/invoke.h"
+#include "common/string.h"
 
 #include "casual/xatmi/defines.h"
 
@@ -20,58 +21,54 @@
 
 namespace casual
 {
-   namespace common
+   namespace common::server
    {
-      namespace server
+
+      struct Service
       {
 
-         struct Service
-         {
+         using function_type = std::function< service::invoke::Result( service::invoke::Parameter&&)>;
 
-            using function_type = std::function< service::invoke::Result( service::invoke::Parameter&&)>;
+         Service( string::Argument name, function_type function, service::transaction::Type transaction, string::Argument category);
+         Service( string::Argument name, function_type function);
 
-            Service( std::string name, function_type function, service::transaction::Type transaction, std::string category);
-            Service( std::string name, function_type function);
+         service::invoke::Result operator () ( service::invoke::Parameter&& argument);
 
-            service::invoke::Result operator () ( service::invoke::Parameter&& argument);
+         std::string name;
+         function_type function;
 
-            std::string name;
-            function_type function;
+         service::transaction::Type transaction = service::transaction::Type::automatic;
+         std::string category;
 
-            service::transaction::Type transaction = service::transaction::Type::automatic;
-            std::string category;
+         //! Only to be able to compare 'c-functions', which we have to do according to the XATMI-spec
+         const void* compare = nullptr;
 
-            //! Only to be able to compare 'c-functions', which we have to do according to the XATMI-spec
-            const void* compare = nullptr;
+         friend bool operator == ( const Service& lhs, const Service& rhs);
+         friend bool operator == ( const Service& lhs, const void* rhs);
+         friend bool operator != ( const Service& lhs, const Service& rhs);
+         friend bool operator == ( const Service& lhs, const std::string& rhs);
 
-            friend bool operator == ( const Service& lhs, const Service& rhs);
-            friend bool operator == ( const Service& lhs, const void* rhs);
-            friend bool operator != ( const Service& lhs, const Service& rhs);
-            friend bool operator == ( const Service& lhs, const std::string& rhs);
+         CASUAL_LOG_SERIALIZE(
+            CASUAL_SERIALIZE( name);
+            CASUAL_SERIALIZE( transaction);
+            CASUAL_SERIALIZE( category);
+            CASUAL_SERIALIZE( compare);
+         )
 
-            // for logging only
-            CASUAL_LOG_SERIALIZE(
-               CASUAL_SERIALIZE( name);
-               CASUAL_SERIALIZE( transaction);
-               CASUAL_SERIALIZE( category);
-               CASUAL_SERIALIZE( compare);
-            )
+      };
 
-         };
+      namespace xatmi
+      {
+         using function_type = std::function< void( TPSVCINFO*)>;
 
-         namespace xatmi
-         {
-            using function_type = std::function< void( TPSVCINFO*)>;
+         server::Service service( std::string name, function_type function, service::transaction::Type transaction, std::string category);
+         server::Service service( std::string name, function_type function);
 
-            server::Service service( std::string name, function_type function, service::transaction::Type transaction, std::string category);
-            server::Service service( std::string name, function_type function);
+         const void* address( const function_type& function);
 
-            const void* address( const function_type& function);
+      } // xatmi
 
-         } // xatmi
-
-      } // server
-   } // common
+   } // common::server
 } // casual
 
 

@@ -42,22 +42,21 @@ namespace casual
                }
             }
 
-            void advertise( std::vector< server::Service> services)
-            {
-               local::advertise( algorithm::transform( services, []( auto& service)
-               {
-                  message::service::advertise::Service result;
-                  result.name = service.name;
-                  result.category = service.category;
-                  result.transaction = service.transaction;
-
-                  return result;
-               }));
-
-            }
-
          } // <unnamed>
       } // local
+
+      void advertise( std::vector< server::Service> services)
+      {
+         local::advertise( algorithm::transform( services, []( auto& service)
+         {
+            message::service::advertise::Service result;
+            result.name = service.name;
+            result.category = service.category;
+            result.transaction = service.transaction;
+
+            return result;
+         }));
+      }
 
       namespace call
       {
@@ -73,7 +72,7 @@ namespace casual
             transaction::Context::instance().configure( arguments.resources);
 
             // Let the service-manager know about our services...
-            policy::local::advertise( std::move( arguments.services));
+            policy::advertise( std::move( arguments.services));
          }
 
          void Default::reply( strong::ipc::id id, message::service::call::Reply& message)
@@ -245,7 +244,7 @@ namespace casual
             if( ! arguments.resources.empty())
                code::raise::error( code::casual::invalid_semantics, "can't build and link an administration server with resources");
 
-            policy::local::advertise( std::move( arguments.services));
+            policy::advertise( std::move( arguments.services));
 
          }
 

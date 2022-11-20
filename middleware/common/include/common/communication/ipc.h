@@ -267,23 +267,21 @@ namespace casual
 
       } // outbound
 
-
+      //! sends the `message` and receive the the reply.
+      //! @returns the reply (_reverse type_ of message)
+      //! @note blocking (of course)
       template< typename D, typename M, typename Device = inbound::Device>
-      auto call(
-            D&& destination,
-            M&& message,
-            Device& device = inbound::device())
+      auto call( D&& destination, M&& message, Device& device = inbound::device())
+         -> decltype( device::call( std::forward< D>( destination), std::forward< M>( message), device))
       {
          return device::call( std::forward< D>( destination), std::forward< M>( message), device);
       }
 
       //! @returns the received message of type `R`
       template< typename R, typename... Ts>
-      R receive( Ts&&... ts)
+      auto receive( Ts&&... ts) -> decltype( device::receive< R>( inbound::device(), std::forward< Ts>( ts)...))
       {
-         R reply;
-         device::blocking::receive( inbound::device(), reply, std::forward< Ts>( ts)...);
-         return reply;
+         return device::receive< R>( inbound::device(), std::forward< Ts>( ts)...);
       }
 
 

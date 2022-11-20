@@ -28,10 +28,10 @@ namespace casual
       namespace server
       {
 
-         Service::Service( std::string name, function_type function, service::transaction::Type transaction, std::string category)
+         Service::Service( string::Argument name, function_type function, service::transaction::Type transaction, string::Argument category)
            : name( std::move( name)), function( std::move( function)), transaction( transaction), category( std::move( category)) {}
 
-         Service::Service( std::string name, function_type function)
+         Service::Service( string::Argument name, function_type function)
          : name( std::move( name)), function( std::move( function)) {}
 
          service::invoke::Result Service::operator () ( service::invoke::Parameter&& argument)

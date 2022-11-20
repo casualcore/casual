@@ -13,6 +13,7 @@
 #include "common/service/invoke.h"
 #include "common/executable/start.h"
 #include "common/functional.h"
+#include "common/string.h"
 
 #include "casual/xa.h"
 #include "casual/xatmi/defines.h"
@@ -35,13 +36,13 @@ namespace casual
                {
                   using function_type = F;
 
-                  basic_service( std::string name, function_type function, service::transaction::Type transaction, std::string category)
+                  basic_service( string::Argument name, function_type function, service::transaction::Type transaction, string::Argument category)
                    : name( std::move( name)), function( std::move( function)), transaction( transaction), category( std::move( category)) {}
 
-                  basic_service( std::string name, function_type function, service::transaction::Type transaction)
+                  basic_service( string::Argument name, function_type function, service::transaction::Type transaction)
                      : name( std::move( name)), function( std::move( function)), transaction( transaction) {}
 
-                  basic_service( std::string name, function_type function)
+                  basic_service( string::Argument name, function_type function)
                      : name( std::move( name)), function( std::move( function)) {}
 
                   std::string name;

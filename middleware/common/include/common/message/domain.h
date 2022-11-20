@@ -148,14 +148,14 @@ namespace casual
                      direct
                   };
 
-                  inline std::ostream& operator << ( std::ostream& out, Directive value)
+                  constexpr std::string_view description( Directive value) noexcept
                   {
                      switch( value)
                      {
-                        case Directive::wait: return out << "wait";
-                        case Directive::direct: return out << "direct";
+                        case Directive::wait: return "wait";
+                        case Directive::direct: return "direct";
                      }
-                     return out << "unknown";
+                     return "unknown";
                   }
   
                } // request

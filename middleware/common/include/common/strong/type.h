@@ -86,10 +86,8 @@ namespace casual
       //! enable overloading on a specific id-type
       //! `Policy` can be 'empty' and just act as a `tag` to make the type unique
       template< typename T, typename Policy>
-      class Type : public Compare< Type< T, Policy>>
+      struct Type : public Compare< Type< T, Policy>>
       {
-      public:
-
          using value_type = T;
          using policy_type = Policy;
          using value_traits = common::traits::type< value_type>;
@@ -158,8 +156,7 @@ namespace casual
          constexpr decltype( auto) tie() const noexcept { return value();}
 
       protected:
-
-
+      
          constexpr static value_type initialize() noexcept
          {
             if constexpr( detail::traits::has::initialize_v< policy_type>)

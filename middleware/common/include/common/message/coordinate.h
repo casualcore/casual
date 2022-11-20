@@ -40,15 +40,15 @@ namespace casual
                   failed,
                };
 
-               inline friend std::ostream& operator << ( std::ostream& out, State state)
+               inline constexpr std::string_view description( State state) noexcept
                {
                   switch( state)
                   {
-                     case State::pending: return out << "pending";
-                     case State::received: return out << "received";
-                     case State::failed: return out << "failed";
+                     case State::pending: return "pending";
+                     case State::received: return "received";
+                     case State::failed: return "failed";
                   }
-                  return out << "<unknown>";
+                  return "<unknown>";
                }
 
                Pending() = default;
@@ -62,7 +62,7 @@ namespace casual
                inline friend bool operator == ( const Pending& lhs, const strong::correlation::id& rhs) { return lhs.correlation == rhs;}
 
                template< typename I>
-               friend auto operator == ( const Pending& lhs, I&& rhs) -> decltype( std::declval< const id_type&>() == rhs) { return lhs.id == rhs;}
+               friend auto operator == ( const Pending& lhs, I&& rhs) noexcept -> decltype( std::declval< const id_type&>() == rhs) { return lhs.id == rhs;}
                inline friend bool operator == ( const Pending& lhs, State rhs) { return lhs.state == rhs;}
 
                CASUAL_LOG_SERIALIZE(

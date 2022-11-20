@@ -9,7 +9,9 @@
 
 
 #include "serviceframework/service/call.h"
+
 #include "common/serialize/binary.h"
+#include "common/string.h"
 
 namespace casual
 {
@@ -83,7 +85,7 @@ namespace casual
                //! be used as flags to the call, and not part of the payload.
                //! @returns the result...
                template< typename... Args>
-               auto operator () ( std::string service, Args&&... args)
+               auto operator () ( common::string::Argument service, Args&&... args)
                {
                   return call( std::move( service), common::traits::priority::tag< 1>{}, std::forward< Args>( args)...);
                }
@@ -91,7 +93,7 @@ namespace casual
 
             private:
                template< typename Arg, typename... Args>
-               auto call( std::string service, common::traits::priority::tag< 1>, Arg flags, Args&&... args)
+               auto call( common::string::Argument service, common::traits::priority::tag< 1>, Arg flags, Args&&... args)
                   -> decltype( result_type{ service::call::invoke( std::move( service), std::declval< service::payload_type&>(), flags)})
                {
                   ( ( m_input.archive << std::forward< Args>( args)), ...);
@@ -100,7 +102,7 @@ namespace casual
                }
 
                template< typename... Args>
-               auto call( std::string service, common::traits::priority::tag< 0>, Args&&... args)
+               auto call( common::string::Argument service, common::traits::priority::tag< 0>, Args&&... args)
                   -> decltype( result_type{ service::call::invoke( std::move( service), std::declval< service::payload_type&>())})
                {
                   ( ( m_input.archive << std::forward< Args>( args)), ...);

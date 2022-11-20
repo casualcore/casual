@@ -190,7 +190,7 @@ namespace casual
          inline Argument( std::string_view value) : Argument( std::string( value)) {}
          inline Argument( const char* value) : Argument( std::string( value)) {}
 
-         operator std::string() && { return std::move( m_value);}
+         operator std::string&& () && { return std::move( m_value);}
 
       private:
          std::string m_value;

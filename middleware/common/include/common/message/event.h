@@ -13,6 +13,7 @@
 #include "common/transaction/id.h"
 #include "common/domain.h"
 #include "common/code/xatmi.h"
+#include "common/communication/instance/identity.h"
 
 namespace casual
 {
@@ -50,10 +51,9 @@ namespace casual
             {
                using base_end::base_end;
             };
-            
 
          } // subscription
-
+               
          using base_error = basic_event< Type::event_error>;
          struct Error : base_error
          {
@@ -65,7 +65,7 @@ namespace casual
                error, // keep going
             };
 
-            friend std::ostream& operator << ( std::ostream& out, Severity value);
+            friend std::string_view description( Severity value) noexcept;
 
             std::error_code code;
             std::string message;
@@ -103,7 +103,7 @@ namespace casual
                error,
             };
 
-            std::ostream& operator << ( std::ostream& out, State state);
+            std::string_view description( State value) noexcept;
          } // task
 
          template< Type type>
@@ -207,14 +207,14 @@ namespace casual
                   concurrent = 2,
                };
 
-               inline std::ostream& operator << ( std::ostream& out, Type value)
+               constexpr std::string_view description( Type value) noexcept
                {
                   switch( value)
                   {
-                     case Type::sequential: return out << "sequential";
-                     case Type::concurrent: return out << "concurrent";
+                     case Type::sequential: return "sequential";
+                     case Type::concurrent: return "concurrent";
                   }
-                  return out << "<unknown>";
+                  return "<unknown>";
                }
             } // metric
 
@@ -238,8 +238,7 @@ namespace casual
 
                auto duration() const noexcept { return end - start;}
 
-               CASUAL_CONST_CORRECT_SERIALIZE
-               (
+               CASUAL_CONST_CORRECT_SERIALIZE(
                   CASUAL_SERIALIZE( service);
                   CASUAL_SERIALIZE( parent);
                   CASUAL_SERIALIZE( type);
@@ -308,13 +307,8 @@ namespace casual
             template< typename M>
             constexpr bool message( M&& message)
             {
-               return type( message) > Type::EVENT_BASE && type( message) < Type::EVENT_BASE_END; 
+               return is::event::message< traits::remove_cvref_t< M>>();
             }
-            struct Message 
-            {
-               template< typename M>
-               constexpr bool operator () ( M&& message) { return is::event::message( message);}
-            };
          } // event
       } // is
 

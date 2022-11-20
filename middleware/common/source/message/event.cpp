@@ -30,31 +30,31 @@ namespace casual
                } // <unnamed>
             } // local
             
-            std::ostream& operator << ( std::ostream& out, Error::Severity value)
+            std::string_view description( Error::Severity value) noexcept
             {
                switch( value)
                {
                   using Enum = Error::Severity;
-                  case Enum::fatal: return out << "fatal";
-                  case Enum::error: return out << "error";
+                  case Enum::fatal: return "fatal";
+                  case Enum::error: return "error";
                }
-               return out << "<unknown>";
+               return "<unknown>";
             }
 
             namespace task
             {
-               std::ostream& operator << ( std::ostream& out, State state)
+               std::string_view description( State state) noexcept
                {
                   switch( state)
                   {
                      using Enum = decltype( state);
-                     case Enum::started: return out << "started";
-                     case Enum::done: return out << "done";
-                     case Enum::aborted: return out << "aborted";
-                     case Enum::warning: return out << "warning";
-                     case Enum::error: return out << "error";
+                     case Enum::started: return "started";
+                     case Enum::done: return "done";
+                     case Enum::aborted: return "aborted";
+                     case Enum::warning: return "warning";
+                     case Enum::error: return "error";
                   }
-                  return out << "<unknown>";
+                  return "<unknown>";
                }
             } // task
 

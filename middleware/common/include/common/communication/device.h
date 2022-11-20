@@ -700,6 +700,9 @@ namespace casual
          }
       } // async
 
+      //! sends the `message` and receive the the reply.
+      //! @returns the reply (_reverse type_ of message)
+      //! @note blocking (of course)
       template< typename D, typename M, typename Device>
       auto call(
             D&& destination,
@@ -710,6 +713,17 @@ namespace casual
          auto correlation = blocking::send( std::forward< D>( destination), std::forward< M>( message));
 
          blocking::receive( device, reply, correlation);
+         return reply;
+      }
+
+      //! @returns the received message of type `R`
+      //! @note blocking (of course)
+      template< typename R, typename D, typename... Ts>
+      auto receive( D&& device, Ts&&... ts)
+         -> decltype( void( blocking::receive( std::forward< D>( device), std::declval< R&>(), std::forward< Ts>( ts)...)), R{})
+      {
+         R reply;
+         device::blocking::receive( std::forward< D>( device), reply, std::forward< Ts>( ts)...);
          return reply;
       }
 

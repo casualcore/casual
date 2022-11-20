@@ -16,56 +16,54 @@
 
 namespace casual
 {
-   namespace common
+   namespace common::service
    {
-      namespace service
+
+      namespace category
       {
-         namespace category
+         constexpr std::string_view none = "";
+         constexpr std::string_view admin = ".admin";
+         constexpr std::string_view deprecated = ".deprecated";
+      } // category
+
+      namespace execution::timeout::contract
+      {
+         enum class Type : short
          {
-            constexpr auto none = "";
-            constexpr auto admin = ".admin";
-            constexpr auto deprecated = ".deprecated";
-         } // category
+            linger,
+            kill,
+            terminate
+         };
+         
+         std::string_view description( Type value) noexcept;
 
-         namespace execution::timeout::contract
+         Type transform( std::string_view contract);
+         std::string transform( Type contract);
+      }
+
+      namespace transaction
+      {
+         enum class Type : short
          {
-            enum class Type : short
-            {
-               linger,
-               kill,
-               terminate
-            };
-            
-            std::ostream& operator << ( std::ostream& out, Type value);
+            //! join transaction if present else start a new transaction
+            automatic = 0,
+            //! join transaction if present else execute outside transaction
+            join = 1,
+            //! start a new transaction regardless
+            atomic = 2,
+            //! execute outside transaction regardless
+            none = 3,
+            //! branch transaction if present, else start a new transaction
+            branch,
+         };
 
-            Type transform( const std::string& constract);
-            std::string transform( Type contract);
-         }
+         std::string_view description( Type value) noexcept;
 
-         namespace transaction
-         {
-            enum class Type : short
-            {
-               //! join transaction if present else start a new transaction
-               automatic = 0,
-               //! join transaction if present else execute outside transaction
-               join = 1,
-               //! start a new transaction regardless
-               atomic = 2,
-               //! execute outside transaction regardless
-               none = 3,
-               //! branch transaction if present, else start a new transaction
-               branch,
-            };
+         Type mode( std::string_view mode);
+         Type mode( std::uint16_t mode);
 
-            std::ostream& operator << ( std::ostream& out, Type value);
-
-            Type mode( const std::string& mode);
-            Type mode( std::uint16_t mode);
-
-         } // transaction
-      } // service
-   } // common
+      } // transaction
+   } // common::service
 } // casual
 
 
