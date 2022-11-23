@@ -12,6 +12,7 @@ make.IncludePaths([
    '../buffer/include',
    '../configuration/include',
    '../xatmi/include',
+   '../cli/include',
    '../serviceframework/include']
    + make.optional_include_paths()
    + dsl.paths().include.gtest

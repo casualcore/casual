@@ -10,6 +10,7 @@ make.IncludePaths( [
     '../domain/include',
     '../domain/unittest/include',
 	'../xatmi/include',
+    '../cli/include',
 	'../serviceframework/include',
     ]
     + make.optional_include_paths()

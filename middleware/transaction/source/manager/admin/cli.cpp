@@ -23,6 +23,7 @@
 #include "serviceframework/service/protocol/call.h"
 
 #include "casual/cli/pipe.h"
+#include "casual/cli/state.h"
 
 
 namespace casual
@@ -288,30 +289,6 @@ namespace casual
 
                      }
                   } // format
-
-                  namespace state
-                  {
-                     auto option()
-                     {
-                        auto complete = []( auto values, bool)
-                        {
-                           return std::vector< std::string>{ "json", "yaml", "xml", "ini"};
-                        };
-
-                        return argument::Option{
-                           []( const std::optional< std::string>& format)
-                           {
-                              auto state = call::state();
-                              auto archive = common::serialize::create::writer::from( format.value_or( "yaml"));
-                              archive << CASUAL_NAMED_VALUE( state);
-                              archive.consume( std::cout);
-                           },
-                           complete,
-                           { "--state"},
-                           R"(view current state in optional format)"
-                        };
-                     }
-                  } // state
 
                   namespace list
                   {
@@ -1044,7 +1021,7 @@ hence, directly downstream there will be no transaction, but users can start new
                      local::scale::instances::option(),
                      local::list::pending::option(),
                      local::information::option(),
-                     local::state::option(),
+                     casual::cli::state::option( &local::call::state),
                   };
                }
             };

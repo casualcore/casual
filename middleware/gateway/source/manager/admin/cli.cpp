@@ -15,10 +15,12 @@
 #include "common/transcode.h"
 #include "common/exception/capture.h"
 #include "common/event/listen.h"
+#include "common/serialize/create.h"
 
 #include "serviceframework/service/protocol/call.h"
-#include "common/serialize/create.h"
 #include "serviceframework/log.h"
+
+#include "casual/cli/state.h"
 
 #include "xatmi.h"
 
@@ -538,29 +540,6 @@ namespace casual
                      }
                   }
                } // list
-               
-               auto state()
-               {
-                  auto invoke = []( const std::optional< std::string>& format)
-                  {
-                     auto state = call::state();
-
-                     auto archive = common::serialize::create::writer::from( format.value_or( ""));
-                     archive << CASUAL_NAMED_VALUE( state);
-                     archive.consume( std::cout);
-                  };
-
-                  auto complete = []( auto values, bool) -> std::vector< std::string>
-                  {
-                     return { "json", "yaml", "xml", "ini"};
-                  };
-
-                  return argument::Option{ 
-                     std::move( invoke),
-                     std::move( complete),
-                     {"--state"}, 
-                     "gateway state"};
-               }
 
                auto rediscover()
                {
@@ -592,7 +571,7 @@ namespace casual
                local::option::list::resource::queues(),
                local::option::list::groups::inbound(),
                local::option::list::groups::outbound(),
-               local::option::state(),
+               casual::cli::state::option( &local::call::state),
 
                local::option::rediscover() // removed... TODO: remove in 2.0
             };

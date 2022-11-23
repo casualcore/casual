@@ -15,6 +15,7 @@ make.IncludePaths([
     '../service/include',
     '../queue/include',
     '../xatmi/include',
+    '../cli/include',
     '../serviceframework/include',
     '../service/unittest/include',
     ]    

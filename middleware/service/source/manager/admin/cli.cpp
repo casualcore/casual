@@ -24,6 +24,7 @@
 
 #include "serviceframework/service/protocol/call.h"
 
+#include "casual/cli/state.h"
 
 #include <iostream>
 #include <iomanip>
@@ -54,6 +55,7 @@ namespace casual
                      }
 
                   } // metric
+
 
                   struct State
                   {
@@ -627,16 +629,6 @@ namespace casual
                      print::instances( std::cout, state);
                   }
 
-
-                  void output_state( const std::optional< std::string>& format)
-                  {
-                     auto state = admin::api::state();
-
-                     auto archive = common::serialize::create::writer::from( format.value_or( ""));
-                     archive << CASUAL_NAMED_VALUE( state);
-                     archive.consume( std::cout);
-                  }
-
                   namespace metric
                   {
 
@@ -785,9 +777,6 @@ note: not all options has legend, use 'auto complete' to find out which legends 
             {
                common::argument::Group options()
                {
-                  auto complete_state = []( auto values, bool){
-                     return std::vector< std::string>{ "json", "yaml", "xml", "ini"};
-                  };
                   return common::argument::Group{ [](){}, { "service"}, "service related administration",
                      common::argument::Option{ &local::action::list::services::invoke , { "-ls", "--list-services"}, local::action::list::services::description},
                      common::argument::Option{ &local::action::list_instances,  { "-li", "--list-instances"}, "list instances"},
@@ -796,7 +785,7 @@ note: not all options has legend, use 'auto complete' to find out which legends 
                      common::argument::Option{ &local::action::list_admin_services,  { "--list-admin-services"}, "list casual administration services"},
                      common::argument::Option{ &local::action::legend::invoke, local::action::legend::complete(), { "--legend"}, local::action::legend::description},
                      common::argument::Option{ &local::action::information::invoke, { "--information"}, local::action::information::description},
-                     common::argument::Option{ &local::action::output_state, complete_state, { "--state"}, "service state"},
+                     casual::cli::state::option( &api::state),
                   };
                }
             };

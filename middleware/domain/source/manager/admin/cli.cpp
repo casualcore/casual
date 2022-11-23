@@ -30,6 +30,8 @@
 #include "serviceframework/service/protocol/call.h"
 #include "serviceframework/log.h"
 
+#include "casual/cli/state.h"
+
 namespace casual
 {
    using namespace common;
@@ -550,16 +552,7 @@ for all servers and executables
 
                   } // set
                } // environment 
-
-
-               void state( const std::optional< std::string>& format)
-               {
-                  auto state = call::state();
-                  auto archive = common::serialize::create::writer::from( format.value_or( ""));
-                  archive << CASUAL_NAMED_VALUE( state);
-                  archive.consume( std::cout);
-               }
-
+               
                namespace ping
                {
                   void invoke( std::vector< std::string> aliases)
@@ -1156,8 +1149,6 @@ The semantics are similar to http PUT:
       {
          argument::Group options()
          {
-            auto state_format = []( auto, bool){ return std::vector< std::string>{ "json", "yaml", "xml", "ini"};};
-
             return argument::Group{ [](){}, { "domain"}, "local casual domain related administration",
                argument::Option( &local::action::list::servers::invoke, { "-ls", "--list-servers"}, local::action::list::servers::description),
                argument::Option( &local::action::list::executables::invoke, { "-le", "--list-executables"}, local::action::list::executables::description),
@@ -1178,8 +1169,7 @@ The semantics are similar to http PUT:
                argument::Option( &local::action::global::state::invoke, local::action::global::state::complete(), { "--instance-global-state"}, local::action::global::state::description),
                argument::Option( &local::action::legend::invoke, local::action::legend::complete(), { "--legend"}, local::action::legend::description),
                argument::Option( &local::action::information::invoke, { "--information"}, local::action::information::description),
-               argument::Option( &local::action::state, state_format, { "--state"}, "domain state (as provided format)"),
-
+               casual::cli::state::option( &local::call::state),
                local::option::log::reopen(),
             };
          }

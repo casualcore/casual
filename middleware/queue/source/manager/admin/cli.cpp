@@ -27,6 +27,7 @@
 
 #include "casual/cli/pipe.h"
 #include "casual/cli/message.h"
+#include "casual/cli/state.h"
 
 #include "serviceframework/service/protocol/call.h"
 #include "serviceframework/log.h"
@@ -1447,37 +1448,8 @@ casual queue --metric-reset a b)"
                   
             } // metric::reset
             
-            namespace state
-            {
-               auto option()
-               {
-                  auto invoke = []( const std::optional< std::string>& format)
-                  {
-                     auto state = call::state();
-
-                     auto archive = common::serialize::create::writer::from( format.value_or( ""));
-                     archive << CASUAL_NAMED_VALUE( state);
-                     archive.consume( std::cout);
-                  };
-
-                  auto complete = []( auto values, bool) -> std::vector< std::string>
-                  {
-                     return { "json", "yaml", "xml", "ini"};
-                  };
-
-                  return argument::Option{
-                     std::move( invoke),
-                     complete,
-                     {  "--state"},
-                     "queue state"
-                  };
-               }
-               
-            } // state
-
             namespace information
             {
-
                auto call() -> std::vector< std::tuple< std::string, std::string>> 
                {
                   auto state = local::call::state();
@@ -1568,7 +1540,6 @@ casual queue --metric-reset a b)"
             {
                common::argument::Group options()
                {
-
                   return argument::Group{ [](){}, { "queue"}, "queue related administration",
                      local::list::queues::option(),
                      local::list::zombies::option(),
@@ -1592,7 +1563,7 @@ casual queue --metric-reset a b)"
                      local::metric::reset::option(),
                      local::legend::option(),
                      local::information::option(),
-                     local::state::option(),
+                     casual::cli::state::option( &local::call::state),
                   };
                }
             };
