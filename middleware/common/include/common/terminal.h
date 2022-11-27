@@ -124,7 +124,7 @@ namespace casual
             template< typename T>
             void operator () ( std::ostream& out, T&& value)
             {
-               out << m_color << value;
+               stream::write( out, m_color, value);
             }
          private:
             Color& m_color;
@@ -406,7 +406,7 @@ namespace casual
                std::ostringstream string_value;
                string_value.precision( out.precision());
                string_value.flags( out.flags());
-                  stream::write( string_value, binder( value));
+               stream::write( string_value, binder( value));
 
                out << std::setfill( ' ');
 

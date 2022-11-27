@@ -8,6 +8,7 @@
 
 #include "domain/message/discovery.h"
 #include "domain/discovery/common.h"
+#include "domain/discovery/admin/server.h"
 
 #include "common/message/dispatch/handle.h"
 #include "common/message/event.h"
@@ -17,6 +18,8 @@
 #include "common/event/send.h"
 #include "common/message/internal.h"
 #include "common/algorithm/sorted.h"
+#include "common/server/handle/call.h"
+#include "common/communication/instance.h"
 
 #include "casual/assert.h"
 
@@ -30,6 +33,16 @@ namespace casual
       {
          namespace
          {
+            namespace handler
+            {
+               template< typename M>
+               void entry( const M& message)
+               {
+                  log::line( verbose::log, "message: ", message);
+                  state::metric::message::count::receive( message);
+               }
+            
+            } // handler
 
             namespace extract
             {
@@ -66,15 +79,19 @@ namespace casual
                   {
                      Trace trace{ "discovery::handle::local::detail::send::requests"};
                      log::line( verbose::log, "providers: ", providers);
-                     casual::assertion( ! message.correlation);
-                     casual::assertion( message.process == process::handle());
+
+                     CASUAL_ASSERT( ! message.correlation);
+                     CASUAL_ASSERT( message.process == process::handle());
 
                      log::line( verbose::log, "message: ", message);
 
                      result = algorithm::accumulate( providers, std::move( result), [ &state, &message]( auto result, const auto& provider)
                      {
                         if( auto correlation = state.multiplex.send( provider.process.ipc, message))
+                        {
+                           state::metric::message::count::send( message);
                            result.emplace_back( correlation, provider.process.pid);
+                        }
 
                         return result;
                      });
@@ -133,7 +150,7 @@ namespace casual
 
                         // send request to all with the discover ability, if any.
                         auto pending = detail::send::requests( state, state.coordinate.needs.empty_pendings(), 
-                           state.providers.filter( state::provider::Ability::needs), message::discovery::needs::Request{ process::handle()});
+                           state.providers.filter( state::provider::Ability::needs), message::discovery::needs::Request{ common::process::handle()});
 
                         state.coordinate.needs( std::move( pending), collect::helper::discover( state, std::move( continuation)));
                      }
@@ -149,7 +166,7 @@ namespace casual
 
                         // send request to all with the discover ability, if any.
                         auto pending = detail::send::requests( state, state.coordinate.known.empty_pendings(), 
-                           state.providers.filter( state::provider::Ability::known), message::discovery::known::Request{ process::handle()});
+                           state.providers.filter( state::provider::Ability::known), message::discovery::known::Request{ common::process::handle()});
 
                         // note: everything captured needs to by value (besides State if used)
                         state.coordinate.known( std::move( pending), collect::helper::discover( state, std::move( continuation), std::move( content)));
@@ -170,7 +187,7 @@ namespace casual
                      return [&state]( const message::discovery::api::provider::registration::Request& message)
                      {
                         Trace trace{ "discovery::handle::local::provider::registration"};
-                        log::line( verbose::log, "message: ", message);
+                        local::handler::entry( message);
 
                         // send reply and registrate
                         if( state.multiplex.send( message.process.ipc, common::message::reverse::type( message)))
@@ -184,7 +201,7 @@ namespace casual
                   return [&state]( message::discovery::api::Request&& message)
                   {
                      Trace trace{ "discovery::handle::local::api::request"};
-                     log::line( verbose::log, "message: ", message);
+                     local::handler::entry( message);
 
                      if( state.runlevel > decltype( state.runlevel())::running || ! message.content)
                      {
@@ -196,7 +213,7 @@ namespace casual
                      // mutate the message and extract 'reply destination'
                      auto destination = local::extract::destination( message);
 
-                     message::discovery::Request request{ process::handle()};
+                     message::discovery::Request request{ common::process::handle()};
                      request.content = std::move( message.content);
                      request.domain = common::domain::identity();
 
@@ -230,7 +247,7 @@ namespace casual
                      return [ &state]( const message::discovery::api::rediscovery::Request& message)
                      {
                         Trace trace{ "discovery::handle::local::rediscovery::request"};
-                        log::line( verbose::log, "message: ", message);
+                        local::handler::entry( message);
 
                         // mutate the message and extract 'reply destination'
                         auto destination = local::extract::destination( message);
@@ -266,7 +283,7 @@ namespace casual
                   return [&state]( message::discovery::needs::Reply&& message)
                   {
                      Trace trace{ "discovery::handle::local::needs::reply"};
-                     log::line( verbose::log, "message: ", message);
+                     local::handler::entry( message);
 
                      state.coordinate.needs( std::move( message));
                   };
@@ -280,7 +297,7 @@ namespace casual
                   return [&state]( message::discovery::known::Reply&& message)
                   {
                      Trace trace{ "discovery::handle::local::known::reply"};
-                     log::line( verbose::log, "message: ", message);
+                     local::handler::entry( message);
 
                      state.coordinate.known( std::move( message));
                   };
@@ -329,7 +346,7 @@ namespace casual
                return [&state]( message::discovery::Request&& message)
                {
                   Trace trace{ "discovery::handle::local::request"};
-                  log::line( verbose::log, "message: ", message);
+                  local::handler::entry( message);
 
                   // assert preconditions
                   CASUAL_ASSERT( algorithm::is::sorted( message.content.services) && algorithm::is::unique( message.content.services));
@@ -354,7 +371,7 @@ namespace casual
 
                   // first we call the internal providers, to get the _local stuff_ and possible routes
                   auto internal_providers = state.providers.filter( state::provider::Ability::discover_internal);
-                  message::discovery::internal::Request request{ process::handle()};
+                  message::discovery::internal::Request request{ common::process::handle()};
                   request.content = message.content;
                   auto pending = detail::send::requests( state, state.coordinate.internal.empty_pendings(), internal_providers, request);
 
@@ -444,7 +461,7 @@ namespace casual
                   return [&state]( message::discovery::internal::Reply&& message)
                   {
                      Trace trace{ "discovery::handle::local::internal::reply"};
-                     log::line( verbose::log, "message: ", message);
+                     local::handler::entry( message);
 
                      state.coordinate.internal( std::move( message));
                   };
@@ -456,7 +473,7 @@ namespace casual
                return [&state]( message::discovery::Reply&& message)
                {
                   Trace trace{ "discovery::handle::local::reply"};
-                  log::line( verbose::log, "message: ", message);
+                  local::handler::entry( message);
 
                   state.coordinate.discovery( std::move( message));
          
@@ -507,7 +524,7 @@ namespace casual
                      return [ &state]( message::discovery::topology::implicit::Update&& message)
                      {
                         Trace trace{ "discovery::handle::local::topology::update"};
-                        log::line( verbose::log, "message: ", message);
+                        local::handler::entry( message);
 
                         if( state.runlevel > decltype( state.runlevel())::running)
                            return;
@@ -556,7 +573,7 @@ namespace casual
                      return [ &state]( message::discovery::topology::direct::Update&& message)
                      {
                         Trace trace{ "discovery::handle::local::topology::direct::update"};
-                        log::line( verbose::log, "message: ", message);
+                        local::handler::entry( message);
 
                         if( state.runlevel > decltype( state.runlevel())::running)
                            return;
@@ -598,12 +615,56 @@ namespace casual
                   return [&state]( const common::message::shutdown::Request& message)
                   {
                      Trace trace{ "discovery::handle::local::shutdown::request"};
-                     log::line( verbose::log, "message: ", message);
+                     local::handler::entry( message);
 
                      state.runlevel = decltype( state.runlevel())::shutdown;
                   };
                }
             } // shutdown
+
+            namespace service::manager::lookup
+            {
+               auto reply( State& state)
+               {
+                  Trace trace{ "discovery::handle::local::process::lookup::reply create"};
+
+                  // Need to lookup service-manager with _wait_, and when we get the reply
+                  // we advertise our services.
+                  auto send_request = []()
+                  {
+                     return common::communication::instance::lookup::request( common::communication::instance::identity::service::manager.id);
+                  };
+
+                  return [ &state, correlation = send_request()]( const common::message::domain::process::lookup::Reply& message)
+                  {
+                     Trace trace{ "discovery::handle::local::process::lookup::reply"};
+                     log::line( verbose::log, "message: ", message);
+
+                     if( message.correlation == correlation)
+                     {
+                        casual::assertion( communication::instance::identity::service::manager == message.identification, "message.identification is not service-manager ",  message.identification);
+                        log::line( verbose::log, "service-manager is online");
+
+                        common::server::handle::policy::advertise( admin::services( state).services);
+                     }
+                  };
+
+               }
+            } // service::manager::lookup
+
+            namespace server
+            {
+               using base_type = common::server::handle::policy::call::Admin;
+               struct Policy : base_type
+               {
+                  void configure( common::server::Arguments&& arguments)
+                  {
+                     // no-op, we'll advertise our services when the service-manager comes online.
+                  }
+               };
+
+               using Handle = common::server::handle::basic_call< Policy>;
+            } // server
 
          } // <unnamed>
       } // local
@@ -628,6 +689,10 @@ namespace casual
 
       dispatch_type create( State& state)
       {
+         Trace trace{ "discovery::handle::create"};
+
+
+
          return dispatch_type{
             common::message::dispatch::handle::defaults( state),
             common::event::listener( local::event::process::exit( state)),
@@ -641,7 +706,11 @@ namespace casual
             local::reply( state),
             local::topology::direct::update( state),
             local::topology::implicit::update( state),
-            local::shutdown::request( state)
+            local::shutdown::request( state),
+            local::service::manager::lookup::reply( state),
+            local::server::Handle{ 
+               admin::services( state)
+            }
          };
       }
 

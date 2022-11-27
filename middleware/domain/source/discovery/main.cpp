@@ -35,7 +35,6 @@ namespace casual
 
                communication::instance::whitelist::connect( discovery::instance::identity);
 
-
                return State{};
             }
 

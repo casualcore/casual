@@ -1008,8 +1008,6 @@ namespace casual
                using base_type = common::server::handle::policy::call::Admin;
                struct Policy : base_type
                {
-                  using common::server::handle::policy::call::Admin::Admin;
-
                   Policy( manager::State& state)
                      :  m_state( state) {}
 

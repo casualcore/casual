@@ -72,50 +72,6 @@ namespace casual
                )
             };
 
-            //! register pending 'fan outs' and a callback which is invoked when all pending
-            //! has been 'received'.
-            template< typename C>
-            void operator () ( std::vector< Pending> pending, C&& callback)
-            {
-               auto& entry = m_entries.emplace_back( std::move( pending), std::forward< C>( callback));
-
-               // to make it symmetrical and 'impossible' to add 'dead letters'.
-               if( entry.done())
-                  m_entries.pop_back();
-            }
-
-            //! 'pipe' the `message` to the 'fan-out-coordination'. Will invoke callback if `message` is
-            //! the last pending message for an entry.
-            inline void operator () ( message_type message)
-            {
-               if( auto found = algorithm::find( m_entries, message.correlation))
-                  if( found->coordinate( std::move( message)))
-                     m_entries.erase( std::begin( found));
-            }
-
-            template< typename I>
-            inline auto failed( I&& id) -> decltype( void( std::declval< const id_type&>() == id))
-            {
-               algorithm::container::trim( m_entries, algorithm::remove_if( m_entries, [id]( auto& entry)
-               {
-                  return entry.failed( id);
-               }));
-            }
-
-            inline auto empty() const noexcept { return m_entries.empty();}
-
-            using pending_type = std::vector< Pending>;
-            
-            //! @returns an empty 'pending_type' vector
-            //! convince function to get 'the right type' 
-            inline auto empty_pendings() const noexcept { return pending_type{};}
-
-            CASUAL_LOG_SERIALIZE(
-               CASUAL_SERIALIZE_NAME( m_entries, "entries");
-            )
-
-         private:
-
             struct Entry
             {
                using callback_t = common::unique_function< void( std::vector< message_type> received, std::vector< Pending> outcome)>;
@@ -166,12 +122,63 @@ namespace casual
                   return true;
                }
 
+               inline auto& pending() const noexcept { return m_pending;}
+               inline auto& received() const noexcept { return m_received;}
+
+               constexpr auto type() const noexcept { return message_type::type();}
+
             private:
                std::vector< Pending> m_pending;
                std::vector< message_type> m_received;
                callback_t m_callback;
                
             };
+
+            //! register pending 'fan outs' and a callback which is invoked when all pending
+            //! has been 'received'.
+            template< typename C>
+            void operator () ( std::vector< Pending> pending, C&& callback)
+            {
+               auto& entry = m_entries.emplace_back( std::move( pending), std::forward< C>( callback));
+
+               // to make it symmetrical and 'impossible' to add 'dead letters'.
+               if( entry.done())
+                  m_entries.pop_back();
+            }
+
+            //! 'pipe' the `message` to the 'fan-out-coordination'. Will invoke callback if `message` is
+            //! the last pending message for an entry.
+            inline void operator () ( message_type message)
+            {
+               if( auto found = algorithm::find( m_entries, message.correlation))
+                  if( found->coordinate( std::move( message)))
+                     m_entries.erase( std::begin( found));
+            }
+
+            template< typename I>
+            inline auto failed( I&& id) -> decltype( void( std::declval< const id_type&>() == id))
+            {
+               algorithm::container::trim( m_entries, algorithm::remove_if( m_entries, [id]( auto& entry)
+               {
+                  return entry.failed( id);
+               }));
+            }
+
+            inline auto empty() const noexcept { return m_entries.empty();}
+
+            inline auto& entries() const noexcept { return m_entries;}
+
+            using pending_type = std::vector< Pending>;
+            
+            //! @returns an empty 'pending_type' vector
+            //! convince function to get 'the right type' 
+            inline auto empty_pendings() const noexcept { return pending_type{};}
+
+            CASUAL_LOG_SERIALIZE(
+               CASUAL_SERIALIZE_NAME( m_entries, "entries");
+            )
+
+         private:
 
             std::deque< Entry> m_entries;
          };            

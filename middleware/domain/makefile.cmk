@@ -123,6 +123,7 @@ install_headers += [
 discovery_archive = make.LinkArchive( 'bin/casual-domain-discovery-archive',
     [
         make.Compile( 'source/discovery/common.cpp'),
+        make.Compile( 'source/discovery/state.cpp'),
     ]
 )
 
@@ -131,11 +132,13 @@ discovery_executable = make.LinkExecutable( 'bin/casual-domain-discovery',
     [
         make.Compile( 'source/discovery/main.cpp'),
         make.Compile( 'source/discovery/handle.cpp'),
-        make.Compile( 'source/discovery/state.cpp'),
+        make.Compile( 'source/discovery/admin/server.cpp'),
+        make.Compile( 'source/discovery/admin/transform.cpp'),
     ],
     [
         discovery_archive,
         'casual-common',
+        'casual-serviceframework',
     ]
 )
 install_bins.append( discovery_executable)
@@ -158,7 +161,9 @@ target = make.LinkLibrary( 'bin/casual-domain-discovery-admin-cli',
     ],
     [
         domain_discovery_library,
+        discovery_archive,
         'casual-common',
+        'casual-serviceframework',
     ]
 )
 

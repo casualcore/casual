@@ -11,6 +11,57 @@ namespace casual
 {
    namespace common::communication::ipc::send
    {
+      namespace coordinator
+      {
+
+         void Message::error( const strong::ipc::id& destination) const noexcept
+         {
+            Trace trace{ "communication::ipc::send::Coordinator::Message::error"};
+            
+            if( ! callback)
+            {
+               log::line( log, "no callback for 'message': ", *this);
+               return;
+            }
+
+            try
+            {
+               callback( destination, complete.complete());
+            }
+            catch( ...)
+            {
+               log::line( log::category::error, exception::capture(), " callback failed for 'message': ", *this, " - destination: ", destination);
+            }
+         }
+
+         bool Remote::send( select::Directive& directive) noexcept
+         {
+            Trace trace{ "communication::ipc::send::Coordinator::Remote::send"};
+
+            try
+            {
+               while( ! m_queue.empty())
+               {
+                  if( ipc::partial::send( m_destination, m_queue.front().complete))
+                     m_queue.pop_front();
+                  else
+                     return false;
+               }
+            }
+            catch( ...)
+            {
+               log::line( log, exception::capture(), " failed to send to destination: ", m_destination, " - action: invoke callback (if any) and discard for all pending messages to the destination");
+
+               for( auto& message : m_queue)
+                  message.error( m_destination.ipc());
+            }
+            
+            directive.write.remove( descriptor());
+            return true;
+         }
+         
+      } // coordinator
+
       bool Coordinator::operator () ( strong::file::descriptor::id descriptor, communication::select::tag::write) &
       {
          Trace trace{ "communication::ipc::send::Coordinator::operator <select>"};
@@ -50,7 +101,7 @@ namespace casual
          });
       }
 
-      strong::correlation::id Coordinator::send( const strong::ipc::id& ipc, Coordinator::Message&& message)
+      strong::correlation::id Coordinator::send( const strong::ipc::id& ipc, coordinator::Message&& message)
       {
          Trace trace{ "communication::ipc::send::Coordinator::send"};
          
@@ -80,51 +131,7 @@ namespace casual
          return result;
       }
 
-      void Coordinator::Message::error( const strong::ipc::id& destination) const noexcept
-      {
-         Trace trace{ "communication::ipc::send::Coordinator::Message::error"};
-         
-         if( ! callback)
-         {
-            log::line( log, "no callback for 'message': ", *this);
-            return;
-         }
 
-         try
-         {
-            callback( destination, complete.complete());
-         }
-         catch( ...)
-         {
-            log::line( log::category::error, exception::capture(), " callback failed for 'message': ", *this, " - destination: ", destination);
-         }
-      }
-
-      bool Coordinator::Remote::send( select::Directive& directive) noexcept
-      {
-         Trace trace{ "communication::ipc::send::Coordinator::Remote::send"};
-
-         try
-         {
-            while( ! m_queue.empty())
-            {
-               if( ipc::partial::send( m_destination, m_queue.front().complete))
-                  m_queue.pop_front();
-               else
-                  return false;
-            }
-         }
-         catch( ...)
-         {
-            log::line( log, exception::capture(), " failed to send to destination: ", m_destination, " - action: invoke callback (if any) and discard for all pending messages to the destination");
-
-            for( auto& message : m_queue)
-               message.error( m_destination.ipc());
-         }
-         
-         directive.write.remove( descriptor());
-         return true;
-      }
 
    } // common::communication::ipc::send
 } // casual

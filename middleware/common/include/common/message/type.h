@@ -343,9 +343,15 @@ namespace casual
 
       //! Deduce witch type of message it is.
       template< typename M>
-      constexpr Type type( const M& message)
+      constexpr Type type( const M& message) noexcept
       {
          return message.type();
+      }
+
+      template< typename M>
+      constexpr Type type() noexcept
+      {
+         return M::type();
       }
 
 
