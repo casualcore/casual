@@ -39,7 +39,6 @@ namespace casual
 
       namespace state
       {
-
          struct Group
          {
             using id_type = strong::group::id;

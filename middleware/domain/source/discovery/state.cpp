@@ -13,15 +13,18 @@ namespace casual
    {
       namespace state
       {
-         std::string_view description( Runlevel value)
+         namespace runlevel
          {
-            switch( value)
+            std::string_view description( State value) noexcept
             {
-               case Runlevel::running: return "running";
-               case Runlevel::shutdown: return "shutdown";
+               switch( value)
+               {
+                  case State::running: return "running";
+                  case State::shutdown: return "shutdown";
+               }
+               return "<unknown>";
             }
-            return "<unknown>";
-         }
+         } // runlevel
             
          void Providers::registration( const message::discovery::api::provider::registration::Request& message)
          {
@@ -59,6 +62,7 @@ namespace casual
                else
                   m_domains.push_back( common::domain::identity());
 
+               ++m_count;
                algorithm::sorted::append_unique( algorithm::sort( domains), m_domains);
             }
 
@@ -70,7 +74,7 @@ namespace casual
 
             void Direct::add( message::discovery::request::Content content) noexcept
             {
-               m_content += content;
+               m_content += std::move( content);
                ++m_count;
             }
 

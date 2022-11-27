@@ -21,37 +21,35 @@
 
 namespace casual
 {
-
-   namespace domain
+   namespace domain::manager
    {
-      namespace manager
+
+      namespace local
       {
-         namespace local
+         namespace
          {
-            namespace
+            State configure( const std::string configuration)
             {
-               State configure( const std::string configuration)
-               {
-                  auto file = common::unittest::file::temporary::content( ".yaml", configuration);
+               auto file = common::unittest::file::temporary::content( ".yaml", configuration);
 
-                  return transform::model( casual::configuration::model::load( { file}));
-               }
+               return transform::model( casual::configuration::model::load( { file}));
+            }
 
 
-               const state::dependency::Group& find_batch( const State& state, const std::vector< state::dependency::Group>& bootorder, const std::string& group)
-               {
-                  return common::range::front( common::algorithm::find_if( bootorder, [&]( const state::dependency::Group& dependency){
-                     return dependency.description == group;
-                  }));
-               }
+            const state::dependency::Group& find_batch( const State& state, const std::vector< state::dependency::Group>& bootorder, const std::string& group)
+            {
+               return common::range::front( common::algorithm::find_if( bootorder, [&]( const state::dependency::Group& dependency){
+                  return dependency.description == group;
+               }));
+            }
 
-            } // <unnamed>
-         } // local
+         } // <unnamed>
+      } // local
 
-         TEST( domain_state_environemnt, no_default__no_explict__expect_0_variables)
-         {
-            common::unittest::Trace trace;
-            auto state = local::configure( R"(
+      TEST( domain_state_environemnt, no_default__no_explict__expect_0_variables)
+      {
+         common::unittest::Trace trace;
+         auto state = local::configure( R"(
 domain:
 
   name: unittest-domain
@@ -61,13 +59,13 @@ domain:
 
 )" );
 
-            EXPECT_TRUE( state.variables( state.executables.at( 0)).empty());
-         }
+         EXPECT_TRUE( state.variables( state.executables.at( 0)).empty());
+      }
 
-         TEST( domain_state_environemnt, no_default__2_explict__expect_2_variables)
-         {
-            common::unittest::Trace trace;
-            auto state = local::configure( R"(
+      TEST( domain_state_environemnt, no_default__2_explict__expect_2_variables)
+      {
+         common::unittest::Trace trace;
+         auto state = local::configure( R"(
 domain:
 
   name: unittest-domain
@@ -107,13 +105,13 @@ domain:
 
 )" );
 
-            EXPECT_TRUE( state.variables( state.executables.at( 0)).size() == 2) << CASUAL_NAMED_VALUE( state);
-         }
+         EXPECT_TRUE( state.variables( state.executables.at( 0)).size() == 2) << CASUAL_NAMED_VALUE( state);
+      }
 
-         TEST( domain_state_environemnt, default_2___explict_2___expect_4_variables)
-         {
-            common::unittest::Trace trace;
-            auto state = local::configure( R"(
+      TEST( domain_state_environemnt, default_2___explict_2___expect_4_variables)
+      {
+         common::unittest::Trace trace;
+         auto state = local::configure( R"(
 domain:
 
   name: unittest-domain
@@ -136,25 +134,25 @@ domain:
 
 )" );
 
-            auto result = state.variables( state.executables.at( 0));
-            ASSERT_TRUE( result.size() == 4) << CASUAL_NAMED_VALUE( result);
-            EXPECT_TRUE( result.at( 0) == "a=1");
-            EXPECT_TRUE( result.at( 3) == "d=4");
-         }
+         auto result = state.variables( state.executables.at( 0));
+         ASSERT_TRUE( result.size() == 4) << CASUAL_NAMED_VALUE( result);
+         EXPECT_TRUE( result.at( 0) == "a=1");
+         EXPECT_TRUE( result.at( 3) == "d=4");
+      }
 
-         TEST( domain_state_boot_order, empty_state___expect_empty_boot_order)
-         {
-            common::unittest::Trace trace;
-            State state;
+      TEST( domain_state_boot_order, empty_state___expect_empty_boot_order)
+      {
+         common::unittest::Trace trace;
+         State state;
 
-            EXPECT_TRUE( state::order::boot( state).empty());
+         EXPECT_TRUE( state::order::boot( state).empty());
 
-         }
+      }
 
-         TEST( domain_state_boot_order, executable_1___expect_1_boot_order)
-         {
-            common::unittest::Trace trace;
-            auto state = local::configure( R"(
+      TEST( domain_state_boot_order, executable_1___expect_1_boot_order)
+      {
+         common::unittest::Trace trace;
+         auto state = local::configure( R"(
 domain:
 
   name: unittest-domain
@@ -195,65 +193,62 @@ domain:
 )" );
 
 
-            auto bootorder = state::order::boot( state);
+         auto bootorder = state::order::boot( state);
 
-            {
-               auto& batch = local::find_batch( state, bootorder, ".global");
-               ASSERT_TRUE( batch.executables.size() == 1) << CASUAL_NAMED_VALUE( state) << "\n" << CASUAL_NAMED_VALUE( batch);
-               EXPECT_TRUE( state.entity( batch.executables.at( 0)).path == "exe2");
-            }
-            {
-               auto& batch = local::find_batch( state, bootorder, "group_1");
-               ASSERT_TRUE( batch.executables.size() == 1);
-               EXPECT_TRUE(state.entity( batch.executables.at( 0)).path == "exe1");
-            }
-         }
-
-         TEST( domain_state_instances, executable_default)
          {
-            common::unittest::Trace trace;
-
-            auto executable = state::Executable::create();
-
-            EXPECT_TRUE( executable.spawnable().empty());
-            EXPECT_TRUE( executable.shutdownable().empty());
+            auto& batch = local::find_batch( state, bootorder, ".global");
+            ASSERT_TRUE( batch.executables.size() == 1) << CASUAL_NAMED_VALUE( state) << "\n" << CASUAL_NAMED_VALUE( batch);
+            EXPECT_TRUE( state.entity( batch.executables.at( 0)).path == "exe2");
          }
-
-         TEST( domain_state_instances, executable_instance_resize__expect_spawnable)
          {
-            common::unittest::Trace trace;
-
-            auto executable = state::Executable::create();
-            executable.instances.resize( 5);
-
-            EXPECT_TRUE( executable.spawnable().size() == 5);
-            EXPECT_TRUE( executable.shutdownable().empty()) << CASUAL_NAMED_VALUE( executable);
+            auto& batch = local::find_batch( state, bootorder, "group_1");
+            ASSERT_TRUE( batch.executables.size() == 1);
+            EXPECT_TRUE(state.entity( batch.executables.at( 0)).path == "exe1");
          }
+      }
 
-         TEST( domain_state_instances, server_default)
-         {
-            common::unittest::Trace trace;
+      TEST( domain_state_instances, executable_default)
+      {
+         common::unittest::Trace trace;
 
-            auto server = state::Server::create();
+         auto executable = state::Executable::create();
 
-            EXPECT_TRUE( server.spawnable().empty());
-            EXPECT_TRUE( server.shutdownable().empty());
-         }
+         EXPECT_TRUE( executable.spawnable().empty());
+         EXPECT_TRUE( executable.shutdownable().empty());
+      }
 
-         TEST( domain_state_instances, server_instance_resize__expect_spawnable)
-         {
-            common::unittest::Trace trace;
+      TEST( domain_state_instances, executable_instance_resize__expect_spawnable)
+      {
+         common::unittest::Trace trace;
 
-            auto server = state::Server::create();
-            server.instances.resize( 5);
+         auto executable = state::Executable::create();
+         executable.instances.resize( 5);
 
-            EXPECT_TRUE( server.spawnable().size() == 5);
-            EXPECT_TRUE( server.shutdownable().empty()) << CASUAL_NAMED_VALUE( server);
-         }
+         EXPECT_TRUE( executable.spawnable().size() == 5);
+         EXPECT_TRUE( executable.shutdownable().empty()) << CASUAL_NAMED_VALUE( executable);
+      }
 
-      } // manager
+      TEST( domain_state_instances, server_default)
+      {
+         common::unittest::Trace trace;
 
-   } // domain
+         auto server = state::Server::create();
 
+         EXPECT_TRUE( server.spawnable().empty());
+         EXPECT_TRUE( server.shutdownable().empty());
+      }
+
+      TEST( domain_state_instances, server_instance_resize__expect_spawnable)
+      {
+         common::unittest::Trace trace;
+
+         auto server = state::Server::create();
+         server.instances.resize( 5);
+
+         EXPECT_TRUE( server.spawnable().size() == 5);
+         EXPECT_TRUE( server.shutdownable().empty()) << CASUAL_NAMED_VALUE( server);
+      }
+
+   } // domain::manager
 
 } // casual

@@ -11,58 +11,46 @@
 
 namespace casual
 {
-   namespace domain
+   namespace domain::manager
    {
+      struct State;
+   }
 
-      namespace manager
+   namespace domain::manager::admin
+   {
+      namespace service::name
       {
-         struct State;
-
-         namespace admin
+         constexpr auto state = ".casual/domain/state";
+         namespace scale
          {
-            namespace service
-            {
-               namespace name
-               {
-                  constexpr auto state = ".casual/domain/state";
-                  namespace scale
-                  {
-                     constexpr auto aliases = ".casual/domain/scale/aliases";
-                     // [[deprecated]] constexpr auto instances = ".casual/domain/scale/instances";
-                  } // scale
+            constexpr auto aliases = ".casual/domain/scale/aliases";
+         } // scale
 
-                  namespace restart
-                  {
-                     constexpr auto aliases = ".casual/domain/restart/aliases";
-                     constexpr auto groups = ".casual/domain/restart/groups";
+         namespace restart
+         {
+            constexpr auto aliases = ".casual/domain/restart/aliases";
+            constexpr auto groups = ".casual/domain/restart/groups";
+         } // restart
 
-                     // [[deprecated]] constexpr auto instances = ".casual/domain/restart/instances";
-                  } // restart
+         constexpr auto shutdown = ".casual/domain/shutdown";
 
-                  constexpr auto shutdown = ".casual/domain/shutdown";
+         namespace configuration
+         {
+            constexpr auto get = ".casual/domain/configuration/get";
+            constexpr auto put = ".casual/domain/configuration/put";
+            constexpr auto post = ".casual/domain/configuration/post";
+         } // configuration
 
-                  namespace configuration
-                  {
-                     constexpr auto get = ".casual/domain/configuration/get";
-                     constexpr auto put = ".casual/domain/configuration/put";
-                     constexpr auto post = ".casual/domain/configuration/post";
-                  } // configuration
+         namespace environment
+         {
+            constexpr auto set = ".casual/domain/environment/set";
+         } // environment
 
-                  namespace environment
-                  {
-                     constexpr auto set = ".casual/domain/environment/set";
-                  } // environment
+      } // service::name
 
-               } // name
-            } // service
+      common::server::Arguments services( manager::State& state);
 
-            common::server::Arguments services( manager::State& state);
-
-
-         } // admin
-      } // manager
-   } // admin
-
+   } // domain::manager::admin
 } // casual
 
 

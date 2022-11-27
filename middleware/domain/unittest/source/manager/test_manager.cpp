@@ -551,7 +551,7 @@ domain:
          common::signal::send( instance.handle.pid, common::code::signal::hangup);
 
          // check that the signal has been received.
-         // There are no guarantess when the signal is received, just that it will be
+         // There are no guarantees when the signal is received, just that it will be
          // eventually, so we need to loop...
          while( true)
          {

@@ -323,7 +323,7 @@ namespace casual
                topology = 16,
             };
 
-            using Abilites = common::Flags< registration::Ability>;
+            using Abilities = common::Flags< registration::Ability>;
 
             constexpr std::string_view description( Ability value)
             {
@@ -343,7 +343,7 @@ namespace casual
             {
                using base_request::base_request;
 
-               Abilites abilities;
+               Abilities abilities;
 
                CASUAL_CONST_CORRECT_SERIALIZE(
                   base_request::serialize( archive);
