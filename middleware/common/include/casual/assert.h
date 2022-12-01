@@ -29,7 +29,23 @@ namespace casual
          casual::terminate( std::forward< Ts>( context)...);
 
       return std::forward< P>( predicate);
-
    }
 
+   namespace detail
+   {
+      void log( std::string_view function, std::string_view expression, std::string_view file, platform::size::type line) noexcept;
+      inline bool terminate( std::string_view function, std::string_view expression, std::string_view file, platform::size::type line) noexcept
+      { 
+         log( function, expression, file, line);
+         std::terminate();
+         return true;
+      }
+   } // detail
+
 } // casual
+
+#ifndef CASUAL_COMPILE_NO_ASSERT
+#define CASUAL_ASSERT(expression) ((void)(!(expression) && ::casual::detail::terminate( __func__, #expression, __FILE__, __LINE__)))
+#else
+#define CASUAL_ASSERT(x) ((void)sizeof(x))
+#endif
