@@ -196,7 +196,7 @@ namespace casual
          {
             common::message::service::Advertise message;
             message.process = common::process::handle();
-            message.services.remove = { { "s4"}, { "s7"}};
+            message.services.remove = { "s4", "s7"};
             EXPECT_TRUE( state.update( message).empty());
          }
          {

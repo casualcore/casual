@@ -187,5 +187,6 @@ namespace casual
          auto first = std::find_if( std::begin( range), std::end( range), predicate);
          return range::make( first, std::find_if( first, std::end( range), predicate::negate( predicate)));
       }
+
    } // common::algorithm::sorted
 } // casual

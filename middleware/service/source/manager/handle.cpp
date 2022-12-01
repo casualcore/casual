@@ -16,6 +16,7 @@
 #include "common/environment.h"
 #include "common/environment/normalize.h"
 #include "common/algorithm.h"
+#include "common/algorithm/is.h"
 #include "common/process.h"
 #include "common/message/dispatch.h"
 #include "common/message/dispatch/handle.h"
@@ -29,6 +30,8 @@
 #include "configuration/model/change.h"
 
 #include "domain/discovery/api.h"
+
+#include "casual/assert.h"
 
 // std
 #include <vector>
@@ -648,7 +651,7 @@ namespace casual
                            return result;
                         });
 
-                        algorithm::container::trim( services, algorithm::unique( algorithm::sort( services)));
+                        algorithm::container::sort::unique( services);
 
                         // extract the corresponding pending lookups and 'emulate' new lookups, if any.
                         {
@@ -767,10 +770,14 @@ namespace casual
                      {
                         Trace trace{ "service::manager::handle::domain::discovery::internal::request"};
                         common::log::line( verbose::log, "message: ", message);
+                        
+                        // check the preconditions
+                        CASUAL_ASSERT( algorithm::is::sorted( message.content.services) && algorithm::is::unique( message.content.services));
 
                         auto reply = common::message::reverse::type( message);
 
                         // accumulate our internal/local discoverable services intersected with the requested
+                        // we know that request is sorted unique -> the reply is sorted unique
                         {
                            auto service_accumulate = [ &state]( auto result, auto& name)
                            {
@@ -786,17 +793,17 @@ namespace casual
                               return result;
                            };
                            
-                           using Services = std::remove_reference_t< decltype( reply.content.services())>;
-                           reply.content.services( algorithm::sort( algorithm::accumulate( algorithm::sort( message.content.services()), Services{}, service_accumulate)));
+                           using Services = std::remove_reference_t< decltype( reply.content.services)>;
+                           reply.content.services = algorithm::accumulate( message.content.services, Services{}, service_accumulate);
                         }
 
                         // 'lookup' routes for services that the caller is interested in
                         {
-                           const auto difference = std::get< 1>( algorithm::sorted::intersection( message.content.services(), reply.content.services()));
+                           const auto difference = std::get< 1>( algorithm::sorted::intersection( message.content.services, reply.content.services));
 
                            for( auto& name : difference)
                               if( auto found = algorithm::find( state.reverse_routes, name))
-                                 reply.routes.services.emplace_back( found->first, found->second); 
+                                 reply.routes.services.emplace_back( found->first, found->second);
                         }
 
                         local::optional::send( state, message.process.ipc, reply);
@@ -856,9 +863,10 @@ namespace casual
                         // only 'wait' pending
                         for( auto& pending : state.pending.lookups)
                            if( pending.request.context.semantic == decltype( pending.request.context.semantic)::wait)
-                              reply.content.add_service( pending.request.requested);
+                              reply.content.services.push_back( pending.request.requested);
 
-                        algorithm::container::trim( reply.content.services(), algorithm::unique( algorithm::sort( reply.content.services())));
+                        // make sure we respect the invariants
+                        algorithm::container::sort::unique( reply.content.services);
 
                         log::line( verbose::log, "reply: ", reply);
                         communication::device::blocking::optional::send( message.process.ipc, reply);
@@ -879,23 +887,22 @@ namespace casual
                         auto reply = common::message::reverse::type( message, common::process::handle());
 
                         // all known "remote" services
-                        reply.content.services( algorithm::accumulate( state.services, std::move( reply.content.services()), []( auto result, auto& pair)
+                        reply.content.services = algorithm::accumulate( state.services, std::move( reply.content.services), []( auto result, auto& pair)
                         {
                            const auto& [ name, service] = pair;
                            if( service.is_concurrent() && ! service.is_sequential())
                               result.push_back( name);
 
                            return result;
-                        }));
+                        });
 
                         // append all waiting requests
                         for( auto& pending : state.pending.lookups)
                            if( pending.request.context.semantic == decltype( pending.request.context.semantic)::wait)
-                              reply.content.add_service( pending.request.requested);
-                        
+                              reply.content.services.push_back( pending.request.requested);
 
-                        // groom the content to be unique and sorted
-                        algorithm::container::trim( reply.content.services(), algorithm::unique( algorithm::sort( reply.content.services())));
+                        // make sure we respect the invariants
+                        algorithm::container::sort::unique( reply.content.services);
 
                         log::line( verbose::log, "reply: ", reply);
                         state.multiplex.send( message.process.ipc, reply);

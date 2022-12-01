@@ -150,16 +150,16 @@ domain:
 
          casual::domain::discovery::Request request{ common::process::handle()};
          request.domain = common::domain::identity();
-         request.content.services( { "do/not/discard/transaction", "discard/transaction"});
+         request.content.services = { "do/not/discard/transaction", "discard/transaction"};
+         common::algorithm::sort( request.content.services);
+         
          request.directive = decltype( request.directive)::forward;
          auto correlation = casual::domain::discovery::request( request);
 
-         casual::domain::discovery::Reply reply;
-         EXPECT_TRUE( common::communication::device::blocking::receive( common::communication::ipc::inbound::device(), reply, correlation));
-
-         EXPECT_TRUE( reply.content.services().size() == 2);
-         EXPECT_TRUE( common::algorithm::find( reply.content.services(), "do/not/discard/transaction")) << CASUAL_NAMED_VALUE( reply);
-         EXPECT_TRUE( common::algorithm::find( reply.content.services(), "discard/transaction")) << CASUAL_NAMED_VALUE( reply);
+         auto reply = common::communication::ipc::receive< casual::domain::discovery::Reply>( correlation);
+         EXPECT_TRUE( reply.content.services.size() == 2);
+         EXPECT_TRUE( common::algorithm::find( reply.content.services, "do/not/discard/transaction")) << CASUAL_NAMED_VALUE( reply);
+         EXPECT_TRUE( common::algorithm::find( reply.content.services, "discard/transaction")) << CASUAL_NAMED_VALUE( reply);
       }
 
    } // http::outbound

@@ -27,6 +27,7 @@
 #include "common/instance.h"
 #include "common/communication/instance.h"
 #include "common/communication/ipc/send.h"
+#include "common/algorithm/is.h"
 
 #include "common/code/raise.h"
 #include "common/code/casual.h"
@@ -425,20 +426,22 @@ namespace casual
                         Trace trace{ "queue::manager::handle::local::domain::discovery::internal::request"};
                         common::log::line( verbose::log, "message: ", message);
 
+                        CASUAL_ASSERT( algorithm::is::sorted( message.content.queues) && algorithm::is::unique( message.content.queues));
+
                         auto reply = common::message::reverse::type( message);
 
-                        auto is_local = [&state]( auto& name)
+                        auto is_local = [ &state]( auto& name)
                         {
                            if( auto found = algorithm::find( state.queues, name))
                               return algorithm::any_of( found->second, []( auto& instance){ return instance.local();});
 
                            return false;
                         };
-
-
-                        for( auto& queue : algorithm::filter( message.content.queues(), is_local))
-                           reply.content.add_queue( std::move( queue));
-
+                        
+                        // we know that message.content.queues is sorted unique -> reply.content.queues the same...
+                        for( auto& queue : algorithm::filter( message.content.queues, is_local))
+                           reply.content.queues.push_back( std::move( queue));
+                        
                         common::log::line( verbose::log, "reply: ", reply);
 
                         state.multiplex.send( message.process.ipc, reply);
@@ -454,8 +457,6 @@ namespace casual
                      {
                         Trace trace{ "queue::manager::handle::local::domain::discovery::api::reply"};
                         common::log::line( verbose::log, "message: ", message);
-
-                        
 
                         pending::lookups::check( state);
 
@@ -487,9 +488,11 @@ namespace casual
                         // add the pending _wait for ever_ requests
                         for( auto& pending : state.pending.lookups)
                            if( pending.context.semantic == decltype( pending.context.semantic)::wait)
-                              reply.content.add_queue( pending.name);
-                        
-                        algorithm::container::trim( reply.content.queues(), algorithm::unique( algorithm::sort( reply.content.queues())));
+                              reply.content.queues.push_back( pending.name);
+
+                        // make sure we respect invariants
+                        algorithm::container::sort::unique( reply.content.queues);
+
                         common::log::line( verbose::log, "reply: ", reply);
 
                         state.multiplex.send( message.process.ipc, reply);
@@ -509,23 +512,23 @@ namespace casual
 
                         auto reply = common::message::reverse::type( message);
 
-
                         // all known "remote" queues
-                        reply.content.queues( algorithm::accumulate( state.queues, std::move( reply.content.queues()), []( auto result, auto& pair)
+                        reply.content.queues = algorithm::accumulate( state.queues, std::move( reply.content.queues), []( auto result, auto& pair)
                         {
                            auto is_remote = []( auto& queue){ return queue.remote();};
                            if( algorithm::find_if( std::get< 1>( pair), is_remote))
                               result.push_back( std::get< 0>( pair));
 
                            return result;
-                        }));
+                        });
 
                         // all 'wait for ever'
                         for( auto& pending : state.pending.lookups)
                            if( pending.context.semantic == decltype( pending.context.semantic)::wait)
-                              reply.content.add_queue( pending.name);
+                              reply.content.queues.push_back( pending.name);
 
-                        algorithm::container::trim( reply.content.queues(), algorithm::unique( algorithm::sort( reply.content.queues())));
+                        // make sure we respect invariants
+                        algorithm::container::sort::unique( reply.content.queues);
 
                         common::log::line( verbose::log, "reply: ", reply);
 

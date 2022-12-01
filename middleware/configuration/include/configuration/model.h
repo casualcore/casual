@@ -10,7 +10,6 @@
 #include "common/compare.h"
 #include "common/serialize/macro.h"
 #include "common/service/type.h"
-#include "casual/container/sorted/set.h"
 
 #include <vector>
 #include <string>

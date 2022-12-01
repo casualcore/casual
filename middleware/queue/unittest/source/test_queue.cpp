@@ -250,10 +250,10 @@ domain:
             // Receive discovery request and send reply
             auto request = common::communication::ipc::receive< domain::message::discovery::Request>();
 
-            EXPECT_TRUE( common::algorithm::equal( request.content.queues(), common::array::make( "a")));
+            EXPECT_TRUE( common::algorithm::equal( request.content.queues, common::array::make( "a")));
 
             auto reply = common::message::reverse::type( request);
-            reply.content.add_queue( {"a"});
+            reply.content.queues = { { "a"}};
             common::communication::device::blocking::send( request.process.ipc, reply);
          }
          

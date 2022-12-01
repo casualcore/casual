@@ -664,16 +664,16 @@ template< typename A> struct Value< type, A, std::enable_if_t< common::serialize
          {
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( execution);
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( domain);
-            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( content.services());
-            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( content.queues());
+            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( content.services);
+            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( content.queues);
          })
 
          CASUAL_CUSTOMIZATION_POINT_NETWORK( casual::domain::message::discovery::Reply,
          {
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( execution);
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( domain);
-            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( content.services());
-            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( content.queues());
+            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( content.services);
+            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( content.queues);
          })
          
          CASUAL_CUSTOMIZATION_POINT_NETWORK( casual::domain::message::discovery::topology::implicit::Update,

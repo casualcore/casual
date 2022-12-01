@@ -122,8 +122,8 @@ namespace casual
             message.domain.id = common::strong::domain::id{ 0x315dacc6182e4c12bf9877efa924cb86_uuid};
             message.domain.name = "domain A";
 
-            message.content.services( { "service1", "service2", "service3"});
-            message.content.queues( { "queue1", "queue2", "queue3"});
+            message.content.services = { "service1", "service2", "service3"};
+            message.content.queues = { "queue1", "queue2", "queue3"};
          }
 
          void fill( casual::domain::message::discovery::Reply& message)
@@ -133,7 +133,7 @@ namespace casual
             message.domain.id = common::strong::domain::id{ 0xe2f6b7c37f734a0982a0ab1581b21fa5_uuid};
             message.domain.name = "domain B";
 
-            message.content.services( {
+            message.content.services = { {
                   [](){
                      casual::domain::message::discovery::reply::Service service;
                      service.name = "service1";
@@ -143,15 +143,15 @@ namespace casual
                      // TODO: 
                      return service;
                   }()
-            });
-            message.content.queues( {
+            }};
+            message.content.queues = { {
                   [](){
                      casual::domain::message::discovery::reply::Queue queue;
                      queue.name = "queue1";
                      queue.retries = 10;
                      return queue;
                   }()
-            });
+            }};
          }
 
          void fill( common::message::service::call::callee::Request& message)

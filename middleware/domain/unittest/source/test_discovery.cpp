@@ -89,15 +89,15 @@ namespace casual
          discovery::provider::registration( discovery::provider::Ability::discover_internal);
 
          auto request = message::discovery::Request{ process::handle()};
-         request.content.services( { "a"});
+         request.content.services = { "a"};
          auto correlation = discovery::request( request);
 
          // wait for the internal request, and send reply reply
          {
             auto request = communication::ipc::receive< message::discovery::internal::Request>();
-            EXPECT_TRUE( algorithm::equal( request.content.services(), array::make( "a")));
+            EXPECT_TRUE( algorithm::equal( request.content.services, array::make( "a")));
             auto reply = common::message::reverse::type( request);
-            reply.content.add_service( { "a", "foo", common::service::transaction::Type::branch});
+            reply.content.services = { { "a", "foo", common::service::transaction::Type::branch}};
             communication::device::blocking::send( request.process.ipc, reply);
          }
 
@@ -105,7 +105,7 @@ namespace casual
          {
             auto reply = communication::ipc::receive< message::discovery::Reply>();
             EXPECT_TRUE( reply.correlation == correlation);
-            ASSERT_TRUE( reply.content.services().size() == 1);
+            ASSERT_TRUE( reply.content.services.size() == 1);
          }
       }
 
@@ -155,7 +155,7 @@ namespace casual
          auto correlation = discovery::request( [](){
             message::discovery::Request request{ process::handle()};
             request.directive = decltype( request.directive)::forward;
-            request.content.queues( { "a", "b"});
+            request.content.queues = { "a", "b"};
             return request;
          }());
          
@@ -163,7 +163,7 @@ namespace casual
          {
             communication::device::blocking::receive( communication::ipc::inbound::device(), request);
             auto reply = common::message::reverse::type( request);
-            reply.content.add_queue({"a"});
+            reply.content.queues = { { "a"}};
             communication::device::blocking::send( request.process.ipc, reply);
          };
 
@@ -176,8 +176,8 @@ namespace casual
             message::discovery::Reply reply;
             communication::device::blocking::receive( communication::ipc::inbound::device(), reply);
             EXPECT_TRUE( reply.correlation == correlation);
-            ASSERT_TRUE( reply.content.queues().size() == 1) << CASUAL_NAMED_VALUE( reply);
-            EXPECT_TRUE( reply.content.queues().at( 0).name == "a");
+            ASSERT_TRUE( reply.content.queues.size() == 1) << CASUAL_NAMED_VALUE( reply);
+            EXPECT_TRUE( reply.content.queues.at( 0).name == "a");
          }
       }
 
@@ -196,16 +196,16 @@ namespace casual
          {
             auto request = communication::ipc::receive< message::discovery::needs::Request>();
             auto reply = common::message::reverse::type( request, process::handle());
-            reply.content.queues( { "a", "b"});
+            reply.content.queues = { "a", "b"};
             communication::device::blocking::send( request.process.ipc, reply);
          }
 
          // discovery external
          {
             auto request = communication::ipc::receive< message::discovery::Request>();
-            EXPECT_TRUE( algorithm::equal( request.content.queues(), array::make( "a"sv, "b"sv)));
+            EXPECT_TRUE( algorithm::equal( request.content.queues, array::make( "a"sv, "b"sv))) << CASUAL_NAMED_VALUE( request.content.queues);
             auto reply = common::message::reverse::type( request);
-            reply.content.add_queue({"a"});
+            reply.content.queues = { { "a"}};
             communication::device::blocking::send( request.process.ipc, reply);
          };
 
@@ -214,7 +214,7 @@ namespace casual
          {
             auto reply = communication::ipc::receive< message::discovery::api::rediscovery::Reply>();
             EXPECT_TRUE( reply.correlation == correlation);
-            EXPECT_TRUE( algorithm::equal( reply.content.queues(), array::make( "a"sv)));
+            EXPECT_TRUE( algorithm::equal( reply.content.queues, array::make( "a"sv)));
          }
       }
 
@@ -232,8 +232,8 @@ namespace casual
 
          {
             message::discovery::topology::direct::Update update;
-            update.content.services({ "x", "z"});
-            update.content.queues( { "q1", "q2"});
+            update.content.services = { "x", "z"};
+            update.content.queues = { "q1", "q2"};
             discovery::topology::direct::update( multiplex, update);
          }
 
@@ -244,17 +244,17 @@ namespace casual
          {
             auto request = communication::ipc::receive< message::discovery::known::Request>();
             auto reply = common::message::reverse::type( request, process::handle());
-            reply.content.queues( { "a", "b"});
+            reply.content.queues = { "a", "b"};
             communication::device::blocking::send( request.process.ipc, reply);
          }
 
          // discovery external
          {
             auto request = communication::ipc::receive< message::discovery::Request>();
-            EXPECT_TRUE( algorithm::equal( request.content.queues(), array::make( "a"sv, "b"sv, "q1"sv, "q2"sv)));
-            EXPECT_TRUE( algorithm::equal( request.content.services(), array::make( "x"sv, "z"sv))) << CASUAL_NAMED_VALUE( request.content.services());
+            EXPECT_TRUE( algorithm::equal( request.content.queues, array::make( "a"sv, "b"sv, "q1"sv, "q2"sv)));
+            EXPECT_TRUE( algorithm::equal( request.content.services, array::make( "x"sv, "z"sv))) << CASUAL_NAMED_VALUE( request.content.services);
             auto reply = common::message::reverse::type( request);
-            reply.content.add_queue( {"a"});
+            reply.content.queues = { { "a"}};
             communication::device::blocking::send( request.process.ipc, reply);
          };
 
@@ -294,16 +294,16 @@ namespace casual
          {
             auto request = communication::ipc::receive< message::discovery::needs::Request>();
             auto reply = common::message::reverse::type( request, process::handle());
-            reply.content.services({ "a"});
+            reply.content.services = { "a"};
             communication::device::blocking::send( request.process.ipc, reply);
          }
 
          // discovery external
          {
             auto request = communication::ipc::receive< message::discovery::Request>();
-            EXPECT_TRUE( algorithm::equal( request.content.services(), array::make( "a"sv)));
+            EXPECT_TRUE( algorithm::equal( request.content.services, array::make( "a"sv)));
             auto reply = common::message::reverse::type( request);
-            reply.content.add_service( {"a", "test", common::service::transaction::Type::automatic});
+            reply.content.services = { { "a", "test", common::service::transaction::Type::automatic}};
             communication::device::blocking::send( request.process.ipc, reply);
          };
 

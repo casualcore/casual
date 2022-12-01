@@ -214,7 +214,6 @@ unittest_objectfiles = [
     make.Compile( 'unittest/source/test_conformance.cpp'),
     
     make.Compile( 'unittest/source/test_algorithm.cpp'),
-    make.Compile( 'unittest/source/container/sorted/test_set.cpp'),
 
     make.Compile( 'unittest/source/test_code.cpp'),
 

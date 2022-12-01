@@ -409,12 +409,12 @@ domain:
          // discover
          {            
             domain::message::discovery::Request request{ common::process::handle()};
-            request.content.services( {"B"});
+            request.content.services = { "B"};
             domain::discovery::request( request);
             auto reply = common::communication::ipc::receive< domain::message::discovery::Reply>();
 
-            ASSERT_TRUE( reply.content.services().size() == 1) << CASUAL_NAMED_VALUE( reply);
-            EXPECT_TRUE( reply.content.services().at( 0).name == "B") << CASUAL_NAMED_VALUE( reply);
+            ASSERT_TRUE( reply.content.services.size() == 1) << CASUAL_NAMED_VALUE( reply);
+            EXPECT_TRUE( reply.content.services.at( 0).name == "B") << CASUAL_NAMED_VALUE( reply);
          }
       }
 
@@ -437,12 +437,12 @@ domain:
          // discover
          {            
             domain::message::discovery::Request request{ common::process::handle()};
-            request.content.services( {"a", "b"});
+            request.content.services = { "a", "b"};
             domain::discovery::request( request);
             auto reply = common::communication::ipc::receive< domain::message::discovery::Reply>();
 
-            ASSERT_TRUE( reply.content.services().size() == 1) << CASUAL_NAMED_VALUE( reply);
-            EXPECT_TRUE( reply.content.services().at( 0).name == "a") << CASUAL_NAMED_VALUE( reply);
+            ASSERT_TRUE( reply.content.services.size() == 1) << CASUAL_NAMED_VALUE( reply);
+            EXPECT_TRUE( reply.content.services.at( 0).name == "a") << CASUAL_NAMED_VALUE( reply);
          }
       }
 
@@ -464,11 +464,11 @@ domain:
          // discover
          {            
             domain::message::discovery::Request request{ common::process::handle()};
-            request.content.services( { "a", "b"});
+            request.content.services = { "a", "b"};
             domain::discovery::request( request);
             auto reply = common::communication::ipc::receive< domain::message::discovery::Reply>();
 
-            EXPECT_TRUE( reply.content.services().empty()) << CASUAL_NAMED_VALUE( reply);
+            EXPECT_TRUE( reply.content.services.empty()) << CASUAL_NAMED_VALUE( reply);
          }
       }
 

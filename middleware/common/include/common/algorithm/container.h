@@ -7,6 +7,7 @@
 #pragma once
 
 #include "common/traits.h"
+#include "common/algorithm.h"
 
 namespace casual
 {
@@ -167,6 +168,16 @@ namespace casual
          } // reference
          
       } // vector
+
+     namespace sort
+     {
+         //! a convenience function to make a container sorted and unique
+         template< typename C>
+         C& unique( C& container)
+         {
+            return container::trim( container, algorithm::unique( algorithm::sort( container)));    
+         }
+     } // sort
 
    } // common::algorithm::container
 } // casual
