@@ -65,8 +65,8 @@ namespace casual
          {
             try
             {
-               ipc::outbound::partial::Destination destination{ ipc};
-               if( ! ipc::outbound::partial::send( destination, message.complete))
+               ipc::partial::Destination destination{ ipc};
+               if( ! ipc::partial::send( destination, message.complete))
                   m_destinations.emplace_back( *m_directive, std::move( destination), std::move( message));
             }
             catch( ...)
@@ -108,7 +108,7 @@ namespace casual
          {
             while( ! m_queue.empty())
             {
-               if( ipc::outbound::partial::send( m_destination, m_queue.front().complete))
+               if( ipc::partial::send( m_destination, m_queue.front().complete))
                   m_queue.pop_front();
                else
                   return false;

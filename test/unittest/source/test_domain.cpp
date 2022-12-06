@@ -7,10 +7,15 @@
 
 #include "common/unittest.h"
 
+#include "common/message/server.h"
+
 #include "domain/unittest/manager.h"
 #include "domain/unittest/utility.h"
 
 #include "common/communication/instance.h"
+#include "common/communication/ipc/send.h"
+
+
 
 namespace casual
 {
@@ -80,7 +85,51 @@ domain:
          }
 
          casual::domain::unittest::fetch::until( casual::domain::unittest::fetch::predicate::alias::has::instances( "example", 3));
+      }
 
+      TEST( test_domain, kill_QM_restart__multiplex_send_via_QM_outbound_instance___expect_device_to_reconnect)
+      {
+         common::unittest::Trace trace;
+
+         auto domain = casual::domain::unittest::manager( local::configuration::base, R"(
+domain:
+   servers:
+      - path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/queue/bin/casual-queue-manager"
+        memberships: [ base]
+        restart: true
+)");
+
+         auto& manager = communication::instance::outbound::queue::manager::device();
+         auto origin_pid = manager.connector().process().pid;
+
+         // kill TM
+         {
+            signal::send( origin_pid, code::signal::terminate);
+
+            casual::domain::unittest::fetch::until( [ origin_pid]( auto& state)
+            {
+               if( auto found = algorithm::find( state.servers, "casual-queue-manager"))
+                  return found->instances.at( 0).handle != origin_pid;
+
+               return false;
+            });
+         }
+
+         // Call ping, to QM-outbound-instance that is referring to the "old" address of QM.
+         // This will trigger "reconnect", and the the new address will be looked up via DM.
+         {
+            communication::select::Directive directive;
+            communication::ipc::send::Coordinator multiplex{ directive};
+
+            auto correlation = multiplex.send(
+               manager,
+               common::message::server::ping::Request{ process::handle()}
+            );
+
+            EXPECT_TRUE( correlation);
+            EXPECT_TRUE( communication::ipc::receive< common::message::server::ping::Reply>( correlation).process != origin_pid);
+         }
+         
       }
 
 

@@ -15,7 +15,7 @@ namespace casual
 {
    namespace common::communication::ipc::send
    {
-      namespace detail::coordinator::deduce
+      namespace coordinator::detail::deduce
       {
          template< typename D>
          constexpr auto& destination( D& destination) noexcept
@@ -24,10 +24,8 @@ namespace casual
                return std::as_const( destination);
             else if constexpr( std::is_same_v< traits::remove_cvref_t< D>, process::Handle>)
                return std::as_const( destination.ipc);
-            else
-               return std::as_const( destination.connector().process().ipc);
          }
-      } // detail::coordinator::deduce
+      } // coordinator::detail::deduce
 
       struct Coordinator
       {
@@ -62,21 +60,24 @@ namespace casual
 
             if constexpr( std::is_same_v< traits::remove_cvref_t< M>, ipc::message::Complete>)
             {
-               return send( 
-                  detail::coordinator::deduce::destination( destination), 
-                  Message{ ipc::message::complete::Send{ std::forward< M>( message)}, std::forward< C>( callback)...});
+               return send_dispatch( 
+                  destination, 
+                  Message{ ipc::message::complete::Send{ std::forward< M>( message)}, std::forward< C>( callback)...},
+                  traits::priority::tag< 1>{});
             }
             else if constexpr( std::is_same_v< traits::remove_cvref_t< M>, ipc::message::complete::Send>)
             {
-               return send( 
-                  detail::coordinator::deduce::destination( destination), 
-                  Message{ std::forward< M>( message), std::forward< C>( callback)...});
+               return send_dispatch( 
+                  destination, 
+                  Message{ std::forward< M>( message), std::forward< C>( callback)...},
+                  traits::priority::tag< 1>{});
             }
             else
             {
-               return send( 
-                  detail::coordinator::deduce::destination( destination), 
-                  Message{ ipc::message::complete::Send{ serialize::native::complete< ipc::message::Complete>( std::forward< M>( message))}, std::forward< C>( callback)...});
+               return send_dispatch( 
+                  destination, 
+                  Message{ ipc::message::complete::Send{ serialize::native::complete< ipc::message::Complete>( std::forward< M>( message))}, std::forward< C>( callback)...},
+                  traits::priority::tag< 1>{});
             }
          }
          //! @}
@@ -127,7 +128,7 @@ namespace casual
          {
             using queue_type = std::deque< Message>;
 
-            inline Remote( select::Directive& directive, ipc::outbound::partial::Destination&& destination, Message&& message)
+            inline Remote( select::Directive& directive, ipc::partial::Destination&& destination, Message&& message)
                : m_destination{ std::move( destination)}
             {
                m_queue.emplace_back( std::move( message));
@@ -157,11 +158,66 @@ namespace casual
 
          private:
 
-            ipc::outbound::partial::Destination m_destination;
+            ipc::partial::Destination m_destination;
             queue_type m_queue;
          };
 
          strong::correlation::id send( const strong::ipc::id& ipc, Message&& message);
+
+         //! Take care of devices that can "reconnect"
+         template< typename D>
+         auto send_dispatch( D& device, Message&& message, traits::priority::tag< 1>) 
+            -> decltype( void( device.connector().reconnect()), strong::correlation::id{})
+         {
+            //! TODO: this does not feel that good, at all.. The whole "reconnect" thing should
+            //!   be at "one place". Now we we have this copy... Try to consolidate...
+
+            auto result = message.complete.correlation();
+
+            if( auto found = algorithm::find( m_destinations, device.connector().process().ipc))
+            {
+               if( found->push( std::move( message)).send( *m_directive))
+                  m_destinations.erase( std::begin( found));
+
+               return result;
+            }
+            else
+            {
+               while( true)
+               {
+                  try
+                  {
+                     ipc::partial::Destination destination{ device.connector().process().ipc};
+                     if( ! ipc::partial::send( destination, message.complete))
+                        m_destinations.emplace_back( *m_directive, std::move( destination), std::move( message));
+
+                     return result;
+                  }
+                  catch( ...)
+                  {
+                     auto error = exception::capture();
+                     if( error.code() == code::casual::communication_unavailable || error.code() == code::casual::invalid_argument)
+                     {
+                        // Let connector take a crack at resolving this problem, if implemented...
+                        device.connector().reconnect();
+                     }
+                     else if( error.code() == code::casual::interrupted)
+                        signal::dispatch();
+                     else
+                        throw;
+                  }
+               }
+
+               return result;
+            }
+         }
+
+         template< typename D>
+         strong::correlation::id send_dispatch( D& device, Message&& message, traits::priority::tag< 0>)
+         {
+            return send( coordinator::detail::deduce::destination( device), std::move( message));
+         }
+
 
          std::vector< Remote> m_destinations;
 

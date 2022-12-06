@@ -209,14 +209,11 @@ namespace casual
       } // whitelist
 
 
-      process::Handle ping( strong::ipc::id queue)
+      process::Handle ping( strong::ipc::id id)
       {
          Trace trace{ "communication::instance::ping"};
-
-         common::message::server::ping::Request request;
-         request.process = process::handle();
-
-         return communication::ipc::call( queue, request).process;
+         
+         return communication::ipc::call( id, common::message::server::ping::Request{ process::handle()}).process;
       }
 
       namespace outbound

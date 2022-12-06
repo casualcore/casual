@@ -235,37 +235,36 @@ namespace casual
 
          using Device = device::Outbound< Connector>;
 
-
-         namespace partial
-         { 
-            struct Destination
-            {
-               inline Destination( const strong::ipc::id& ipc)
-                  : m_ipc{ ipc}, m_socket{ ipc::native::detail::create::domain::socket()}, m_address{ ipc} {}
-
-               inline auto& ipc() const noexcept { return m_ipc;}
-               inline auto& socket() const noexcept { return m_socket;}
-               inline auto& address() const noexcept { return m_address;}
-               
-               CASUAL_LOG_SERIALIZE(
-                  CASUAL_SERIALIZE_NAME( m_ipc, "ipc");
-                  CASUAL_SERIALIZE_NAME( m_socket, "socket");
-                  CASUAL_SERIALIZE_NAME( m_address, "address");
-               )
-
-            private:
-               strong::ipc::id m_ipc;
-               Socket m_socket;
-               Address m_address;
-            }; 
-
-            //! tries to send as much as possible of whats left in the complete send message
-            //! @returns true if the complete send message
-            bool send( const Destination& destination, message::complete::Send& complete);
-            
-         } // partial
-
       } // outbound
+
+      namespace partial
+      { 
+         struct Destination
+         {
+            inline Destination( const strong::ipc::id& ipc)
+               : m_ipc{ ipc}, m_socket{ ipc::native::detail::create::domain::socket()}, m_address{ ipc} {}
+
+            inline auto& ipc() const noexcept { return m_ipc;}
+            inline auto& socket() const noexcept { return m_socket;}
+            inline auto& address() const noexcept { return m_address;}
+            
+            CASUAL_LOG_SERIALIZE(
+               CASUAL_SERIALIZE_NAME( m_ipc, "ipc");
+               CASUAL_SERIALIZE_NAME( m_socket, "socket");
+               CASUAL_SERIALIZE_NAME( m_address, "address");
+            )
+
+         private:
+            strong::ipc::id m_ipc;
+            Socket m_socket;
+            Address m_address;
+         }; 
+
+         //! tries to send as much as possible of whats left in the complete send message
+         //! @returns true if the complete send message
+         bool send( const Destination& destination, message::complete::Send& complete);
+         
+      } // partial
 
       //! sends the `message` and receive the the reply.
       //! @returns the reply (_reverse type_ of message)

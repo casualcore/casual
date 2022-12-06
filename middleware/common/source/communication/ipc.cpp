@@ -465,33 +465,31 @@ namespace casual
          {
          }
 
-
-         namespace partial
-         {
-            bool send( const Destination& destination, message::complete::Send& complete)
-            {
-               Trace trace{ "common::communication::ipc::outbound::partial::send"};
-               log::line( verbose::log, "destination: ", destination, ", complete: ", complete);
-
-               auto transport = complete.transport();
-
-               while( auto front = complete.front())
-               {
-                  transport.assign( front.range, front.offset);
-                  log::line( verbose::log, "transport: ", transport);
-
-                  if( ! native::non::blocking::send( destination.socket(), destination.address(), transport))
-                     return false;
-
-                  complete.pop();
-               }
-               return true;
-            }
-            
-         } // partial
-
       } // outbound
 
+      namespace partial
+      {
+         bool send( const Destination& destination, message::complete::Send& complete)
+         {
+            Trace trace{ "common::communication::ipc::outbound::partial::send"};
+            log::line( verbose::log, "destination: ", destination, ", complete: ", complete);
+
+            auto transport = complete.transport();
+
+            while( auto front = complete.front())
+            {
+               transport.assign( front.range, front.offset);
+               log::line( verbose::log, "transport: ", transport);
+
+               if( ! native::non::blocking::send( destination.socket(), destination.address(), transport))
+                  return false;
+
+               complete.pop();
+            }
+            return true;
+         }
+         
+      } // partial
 
       bool exists( strong::ipc::id id)
       {

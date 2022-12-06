@@ -562,7 +562,7 @@ domain:
             process::sleep( std::chrono::milliseconds{ 1});
          }
 
-         common::communication::instance::ping( instance.handle.ipc);
+         EXPECT_TRUE( common::communication::instance::ping( instance.handle.ipc) == instance.handle);
 
          // check that the internal message that simple-server has pushed to it self has been received
          {
