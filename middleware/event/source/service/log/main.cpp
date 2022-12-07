@@ -118,6 +118,7 @@ namespace casual
                      }),
                      common::event::condition::done( [&done]() { return done;})
                   );
+                  
 
                   common::event::listen(
                      std::move( conditions),
@@ -127,8 +128,10 @@ namespace casual
                         {
                            if( ! filter( metric))
                               return;
-
+                           
                            common::log::line( event::verbose::log, "metric: ", metric);
+
+                           auto service_category = []( auto type){ return type == decltype( type)::sequential ? 'S' : 'C';};
 
                            log.file << metric.service
                               << log.delimiter << metric.parent
@@ -139,6 +142,7 @@ namespace casual
                               << log.delimiter << std::chrono::duration_cast< std::chrono::microseconds>( metric.end.time_since_epoch()).count()
                               << log.delimiter << std::chrono::duration_cast< std::chrono::microseconds>( metric.pending).count()
                               << log.delimiter << common::code::description( metric.code)
+                              << log.delimiter << service_category( metric.type)
                               << '\n';
                         };
 
