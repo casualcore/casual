@@ -29,10 +29,20 @@ namespace casual
             {
                constexpr auto base = R"(
 domain:
+   groups:
+      -  name: base
+      -  name: user
+         dependencies: [ base]
+      -  name: gateway
+         dependencies: [ user]
    servers:
-      - path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/service/bin/casual-service-manager"
-      - path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/transaction/bin/casual-transaction-manager"
-      - path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/gateway/bin/casual-gateway-manager"
+      -  path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/service/bin/casual-service-manager"
+         memberships: [ base]
+      -  path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/transaction/bin/casual-transaction-manager"
+         memberships: [ base]
+      -  path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/gateway/bin/casual-gateway-manager"
+         memberships: [ gateway]
+
 )";
 
                template< typename... C>
@@ -64,10 +74,9 @@ domain:
          auto b = local::cli::domain( R"(
 domain: 
    name: B
-
    servers:
-      - path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-server"
-
+      -  path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-server"
+         memberships: [ user]
    gateway:
       inbound:
          groups:

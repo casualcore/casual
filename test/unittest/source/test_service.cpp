@@ -38,6 +38,8 @@ domain:
       -  name: base
       -  name: user
          dependencies: [ base]
+      -  name: gateway
+         dependencies: [ user]
    
    servers:
       -  path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/service/bin/casual-service-manager"
@@ -45,7 +47,7 @@ domain:
       -  path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/transaction/bin/casual-transaction-manager"
          memberships: [ base]
       -  path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/gateway/bin/casual-gateway-manager"
-         memberships: [ base]
+         memberships: [ gateway]
    
 )";
             } // configuration
