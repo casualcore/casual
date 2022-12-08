@@ -164,12 +164,12 @@ namespace casual
 
          strong::correlation::id send( const strong::ipc::id& ipc, Message&& message);
 
-         //! Take care of devices that can "reconnect"
+         //! Take care of devices that can "connect"
          template< typename D>
          auto send_dispatch( D& device, Message&& message, traits::priority::tag< 1>) 
-            -> decltype( void( device.connector().reconnect()), strong::correlation::id{})
+            -> decltype( void( device.connector().connect()), strong::correlation::id{})
          {
-            //! TODO: this does not feel that good, at all.. The whole "reconnect" thing should
+            //! TODO: this does not feel that good, at all.. The whole "connect" thing should
             //!   be at "one place". Now we we have this copy... Try to consolidate...
 
             auto result = message.complete.correlation();
@@ -199,7 +199,8 @@ namespace casual
                      if( error.code() == code::casual::communication_unavailable || error.code() == code::casual::invalid_argument)
                      {
                         // Let connector take a crack at resolving this problem, if implemented...
-                        device.connector().reconnect();
+                        if( ! device.connector().connect())
+                           throw;
                      }
                      else if( error.code() == code::casual::interrupted)
                         signal::dispatch();

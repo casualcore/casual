@@ -287,23 +287,21 @@ namespace casual
             const process::Handle& basic_connector< directive>::process() 
             { 
                if( ! m_process)
-                  reconnect();
+                  (void)connect();
 
                return m_process;
             }
 
 
             template< lookup::Directive directive>
-            void basic_connector< directive>::reconnect()
+            bool basic_connector< directive>::connect()
             {
-               Trace trace{ "communication::instance::outbound::Connector::reconnect"};
+               Trace trace{ "communication::instance::outbound::Connector::connect"};
 
                reset( local::fetch( m_identity, directive));
-
-               if( ! m_process)
-                  code::raise::error( code::casual::communication_unavailable, "process absent: ", m_process);
-
                log::line( verbose::log, "connector: ", *this);
+
+               return predicate::boolean( m_process);
             }
 
             template< lookup::Directive directive>
@@ -447,19 +445,20 @@ namespace casual
                } // local
 
 
-               void Connector::reconnect()
+               bool Connector::connect()
                {
-                  Trace trace{ "communication::instance::outbound::domain::manager::Connector::reconnect"};
+                  Trace trace{ "communication::instance::outbound::domain::manager::Connector::connect"};
 
                   reset( local::connect( [](){ return common::domain::singleton::read().process;}));
-
                   log::line( verbose::log, "connector: ", *this);
+
+                  return predicate::boolean( m_process);
                }
 
                const process::Handle& Connector::process()
                {
                   if( ! m_process)
-                     reconnect();
+                     (void)connect();
                   return m_process;
                }
 
@@ -480,21 +479,23 @@ namespace casual
 
                namespace optional
                {
-                  void Connector::reconnect()
+                  bool Connector::connect()
                   {
-                     Trace trace{ "communication::instance::outbound::domain::manager::optional::Connector::reconnect"};
+                     Trace trace{ "communication::instance::outbound::domain::manager::optional::Connector::connect"};
 
                      reset( local::connect( [](){
                         return common::domain::singleton::read().process;
                      }));
 
                      log::line( verbose::log, "connector: ", *this);
+
+                     return predicate::boolean( m_process);
                   }
 
                   const process::Handle& Connector::process()
                   {
                      if( ! m_process)
-                        reconnect();
+                        (void)connect();
                      return m_process;
                   }
 

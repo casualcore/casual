@@ -120,7 +120,7 @@ namespace casual
             {
                basic_connector( instance::Identity identity);
                
-               void reconnect();
+               [[nodiscard]] bool connect();
                [[nodiscard]] const process::Handle& process();
 
                //! clear the connector
@@ -190,7 +190,7 @@ namespace casual
          {
             struct Connector : detail::base_connector
             {
-               void reconnect();
+               [[nodiscard]] bool connect();
                const process::Handle& process();
                void clear();
             };
@@ -201,7 +201,7 @@ namespace casual
             {
                struct Connector : detail::base_connector
                {
-                  void reconnect();
+                  [[nodiscard]] bool connect();
                   const process::Handle& process();
                   void clear();
                };

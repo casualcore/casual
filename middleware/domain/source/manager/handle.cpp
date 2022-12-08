@@ -717,7 +717,7 @@ namespace casual
 
                      auto request( State& state)
                      {
-                        return [&state]( const common::message::domain::process::lookup::Request& message)
+                        return [ &state]( const common::message::domain::process::lookup::Request& message)
                         {
                            Trace trace{ "domain::manager::handle::process::local::Lookup"};
                            log::line( verbose::log, "message: ", message);
@@ -727,6 +727,11 @@ namespace casual
                            auto reply = common::message::reverse::type( message);
                            reply.identification = message.identification;
 
+                           auto reply_direct = []( const State& state, auto& message)
+                           {
+                              return message.directive == Directive::direct || state.runlevel > decltype( state.runlevel())::running;
+                           };
+
                            if( message.identification)
                            {
                               if( auto found = algorithm::find( state.singletons, message.identification))
@@ -734,7 +739,7 @@ namespace casual
                                  reply.process = found->second;
                                  state.multiplex.send( message.process, reply);
                               }
-                              else if( message.directive == Directive::direct)
+                              else if( reply_direct( state, message))
                                  state.multiplex.send( message.process, reply);
                               else
                                  return false;
@@ -743,7 +748,7 @@ namespace casual
                            {
                               reply.process = detail::lookup::pid( state, message.pid);
 
-                              if( reply.process || message.directive == Directive::direct)
+                              if( reply.process || reply_direct( state, message))
                                  state.multiplex.send( message.process, reply);
                               else
                                  return false;
