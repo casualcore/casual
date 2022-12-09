@@ -945,9 +945,8 @@ note: some aliases are unrestartable
                   {
                      auto invoke = []( const std::optional< std::string>& format)
                      {
-                        auto domain = call::configuration::get();
                         auto archive = common::serialize::create::writer::from( format.value_or( "yaml"));
-                        archive << CASUAL_NAMED_VALUE( domain);
+                        archive << call::configuration::get();
                         archive.consume( std::cout);
                      };
 
@@ -1002,7 +1001,7 @@ depending on what parts are updated.
                            file::scoped::Path scoped{ file.path()};
                            
                            auto archive = common::serialize::create::writer::from( format);
-                           archive << CASUAL_NAMED_VALUE( domain);
+                           archive << domain;
                            archive.consume( file);
 
                            return scoped;
