@@ -374,8 +374,11 @@ namespace casual
          {
             using base_reply::base_reply;
 
+            discovery::reply::Content content;
+
             CASUAL_CONST_CORRECT_SERIALIZE(
                base_reply::serialize( archive);
+               CASUAL_SERIALIZE( content);
             )
          };
 

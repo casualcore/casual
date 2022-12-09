@@ -213,6 +213,10 @@ namespace casual
 
                         message::discovery::api::Reply message;
                         message.correlation = destination.correlation;
+                        message.content = algorithm::accumulate( replies, message.content, []( auto result, auto& reply)
+                        {
+                           return result + std::move( reply.content);
+                        });
 
                         state.multiplex.send( destination.ipc, message);
                      });
