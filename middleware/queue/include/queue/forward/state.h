@@ -101,6 +101,13 @@ namespace casual
                   return configured - running;
                }
 
+               inline platform::size::type surplus() const
+               {
+                  if( configured > running)
+                     return 0;
+                  return running - configured;
+               }
+
                //! @returns true if there are no configured and running currently
                inline auto absent() const { return configured == 0 && running == 0;}
 
@@ -405,7 +412,7 @@ namespace casual
          state::Pending pending;
 
          std::string alias;
-         
+
          //! we're done when we're in shutdown mode
          //! and all forwards has no concurrent stuff in flight.
          bool done() const noexcept;
