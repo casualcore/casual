@@ -271,16 +271,33 @@ namespace casual
                } // transaction
             } // send
 
+            namespace detail::send::discard
+            {
+               template< typename F>
+               void request( State& state, const F& forward, const state::pending::Dequeue& pending)
+               {
+                  ipc::message::group::dequeue::forget::Request request{ process::handle()};
+                  request.correlation = pending.correlation;
+                  
+                  state.multiplex.send( forward.source.process.ipc, request);
+               }
+
+               template< typename F>
+               void request( State& state, const F& forward, const state::pending::service::Lookup& pending)
+               {
+                  message::service::lookup::discard::Request request{ process::handle()};
+                  request.correlation = pending.correlation;
+                  request.requested = forward.target.service;
+
+                  state.multiplex.send( ipc::service::manager(), request);
+               }
+            } // detail::send::discard
+
             namespace comply::to
             {
                void state( State& state)
                {
                   Trace trace{ "queue::forward::service::local::comply::to::state"};
-
-                  // to make it easy to comply, we just cancel everything we can cancel
-                  // and start over (for the forwards that has configured instances)
-                  // the only downside is that there is a chance that dequeued messages
-                  // will be rollbacked.
 
                   // take care of pending lookups
                   {
@@ -295,47 +312,36 @@ namespace casual
                      algorithm::for_each( state.pending.queue.lookups, send_discard_request);
                   }
 
-                  // take care of pending dequeues 
+                  // Forwards will wait forever for dequeues and service lookups, so we cancel enough
+                  // to ensure that enough flows will reach a final state
                   {
-                     Trace trace{ "queue::forward::service::local::comply::to::state send_forget_request"};
-
-                     auto send_forget_request = [ &state]( auto& pending)
+                     auto cancel_surplus_instances = [ &state]( const auto& forward)
                      {
-                        return state.forward_apply( pending.id, [ &state, &pending]( auto& forward)
+                        auto surplus = forward.instances.surplus();
+                        if( surplus == 0)
+                           return;
+
+                        // Pendings for a given forward
+                        auto get_pendings = [ &forward]( auto& pendings)
                         {
-                           ipc::message::group::dequeue::forget::Request request{ process::handle()};
-                           request.correlation = pending.correlation;
-                           
-                           state.multiplex.send( forward.source.process.ipc, request);
-                           
-                        });
+                           return algorithm::filter( pendings, [ &forward]( const auto& pending){ return pending.id == forward.id;});
+                        };
+
+                        auto send_discard_request = [ &state, &forward, &surplus]( const auto& pending)
+                        {
+                           detail::send::discard::request( state, forward, pending);
+                           return --surplus > 0;
+                        };
+
+                        algorithm::for_each_while( get_pendings( state.pending.dequeues), send_discard_request);
+
+                        if constexpr( std::is_same_v< traits::remove_cvref_t< decltype( forward)>, state::forward::Service>)
+                           algorithm::for_each_while( get_pendings( state.pending.service.lookups), send_discard_request);
                      };
 
-                     algorithm::for_each( state.pending.dequeues, send_forget_request);
-
+                     algorithm::for_each( state.forward.queues, cancel_surplus_instances);
+                     algorithm::for_each( state.forward.services, cancel_surplus_instances);
                   }
-
-                  // take care of pending service lookups
-                  {
-                     Trace trace{ "queue::forward::service::local::comply::to::state send_service_lookup_discard_request"};
-
-                     auto send_service_lookup_discard_request = [ &state]( auto& pending)
-                     {
-                        // we know that this pending is from a service-forward
-                        auto& forward = *state.forward_service( pending.id);
-
-                        message::service::lookup::discard::Request request{ process::handle()};
-                        request.correlation = pending.correlation;
-                        request.requested = forward.target.service;
-                        
-                        // we assume service-manager are always 'online'...
-                        state.multiplex.send( ipc::service::manager(), request);
-                     };
-
-                     auto& pending = state.pending.service.lookups;
-                     algorithm::for_each( pending, send_service_lookup_discard_request);
-                  }
-
 
                   // start the "flows" for configured forwards
                   auto lookup_request = []( auto& state, auto& forwards)
@@ -542,6 +548,7 @@ namespace casual
                         
                      } // detail::discard::pending
 
+                     // Possible final state of the casual-forward "state-machine"
                      auto request( State& state)
                      {
                         // we get this from queue group if it's 'going down' or some other configuration
@@ -555,6 +562,7 @@ namespace casual
                         };
                      }
 
+                     // Possible final state of the casual-forward "state-machine"
                      auto reply( State& state)
                      {
                         // We've requested to forget the blocking dequeue. 
@@ -564,7 +572,19 @@ namespace casual
                            common::log::line( verbose::log, "message: ", message);
 
                            if( message.discarded)
-                              detail::discard::pending::dequeue( state, message);
+                           {
+                              // If a lookup was discarded, we should be find a matching pending
+                              auto pending = pending::consume( state.pending.dequeues, message.correlation);
+
+                              state.forward_apply( pending.id, [ &state]( auto& forward)
+                              {
+                                 --forward;
+                                 common::log::line( verbose::log, "forward: ", forward);
+
+                                 // We try to restart the flow
+                                 send::dequeue::request( state, forward);
+                              });
+                           }
 
                            // if not found, we've already got a dequeue, and we're mid 'state flow'.
                            // the forward has been configured already, and we do nothing and let the
@@ -627,7 +647,7 @@ namespace casual
                               log::line( verbose::log, "pending: ", pending);
 
                               // rollback the 'flow'
-                              send::transaction::rollback::request( state, std::move( pending));                                       
+                              send::transaction::rollback::request( state, std::move( pending));
                            };
                         }
 
@@ -708,6 +728,7 @@ namespace casual
                {
                   namespace rollback
                   {
+                     // Possible final state of the casual-forward "state-machine"
                      auto reply( State& state)
                      {
                         return [&state]( const common::message::transaction::rollback::Reply& message)
@@ -737,6 +758,7 @@ namespace casual
 
                   namespace commit
                   {
+                     // Possible final state of the casual-forward "state-machine"
                      auto reply( State& state)
                      {
                         return [&state]( const common::message::transaction::commit::Reply& message)

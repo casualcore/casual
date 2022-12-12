@@ -283,6 +283,72 @@ domain:
          EXPECT_TRUE( common::algorithm::all_of( state.forward.services, has_instances));
       }
 
+      TEST( casual_queue_forward, scale_alias_up_and_down__expect_running_and_configured_to_match)
+      {
+         common::unittest::Trace trace;
+
+         constexpr auto configuration = R"(
+domain: 
+   name: unittest
+
+   queue:
+      groups:
+         -  alias: a
+            queuebase: ":memory:"
+            queues:
+               - name: a1
+               - name: a2
+               - name: a3
+
+      forward:
+         groups:
+            -  alias: forward-group-1
+               services:
+                  -  alias: foo
+                     source: a1
+                     target: 
+                        service: queue/unittest/service
+                     instances: 1
+                     reply:
+                        queue: a2
+                  -  alias: bar
+                     source: a2
+                     target: 
+                        service: queue/unittest/service
+                     instances: 1
+                     reply:
+                        queue: a3
+)";
+
+         auto domain = local::domain( configuration);
+
+         auto scale_forward = []( platform::size::type instances, std::string_view alias)
+         {
+            manager::admin::model::scale::Alias request;
+            request.name = alias;
+            request.instances = instances;
+
+            unittest::scale::aliases( { request});
+
+            // Fetch until we have as many running instances as configured
+            unittest::fetch::until( [ instances, alias]( auto& state)
+            {
+               auto found = algorithm::find_if( state.forward.services, [ &alias]( const auto& forward)
+               {
+                  return forward.alias == alias;
+               });
+
+               return found && found->instances.configured == instances && found->instances.running == instances;
+            });
+         };
+
+         algorithm::for_n< 10>( [ &scale_forward]
+         {
+            scale_forward( 5, "foo");
+            scale_forward( 1, "foo");
+         });
+      }
+
       TEST( casual_queue_forward, advertise_service__enqueue__expect_forward)
       {
          common::unittest::Trace trace;
