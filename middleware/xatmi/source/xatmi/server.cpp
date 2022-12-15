@@ -66,7 +66,6 @@ namespace casual
                   return common::exception::main::log::guard( [&argument]()
                   {
                      casual::xatmi::Trace trace{ "casual::xatmi::server::local::start"};
-
                      auto done = common::execute::scope( [done = argument.server_done]()
                      {
                         if( done)
@@ -86,7 +85,12 @@ namespace casual
                               // if init is not ok, then we don't call done, symmetry with ctor/dtor
                               done.release();
                               common::event::error::raise( common::code::xatmi::argument, "server initialize failed - action: exit");
-                           }
+                           }                           
+                           if( !argument.server_init)
+                           {
+                              // if there is no init, done should never be called - symmetry with ctor/dtor
+                              done.release();
+                           }                        
                         });
                   });
                }
