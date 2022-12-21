@@ -307,7 +307,7 @@ namespace casual::configuration
          {
             std::string name;
             std::string key;
-            platform::size::type instances = 0;
+            platform::size::type instances = 1;
             std::string note;
 
             std::string openinfo;
@@ -621,7 +621,7 @@ namespace casual::configuration
             {
                std::string alias;
                std::string source;
-               platform::size::type instances{};
+               platform::size::type instances = 1;
                std::string note;
 
                CASUAL_CONST_CORRECT_SERIALIZE(
