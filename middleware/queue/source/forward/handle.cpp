@@ -21,6 +21,7 @@
 #include "common/communication/ipc.h"
 #include "common/communication/instance.h"
 #include "common/exception/guard.h"
+#include "common/execution.h"
 
 namespace casual
 {
@@ -619,6 +620,9 @@ namespace casual
                               send::transaction::rollback::request( state, std::move( pending));
                               return;
                            }
+
+                           // Generate a new execution id for each service call
+                           common::execution::reset();
 
                            message::service::call::caller::Request request{ pending.buffer};
                            request.process = process::handle();
