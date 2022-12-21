@@ -255,9 +255,6 @@ namespace casual
                   {
                      if( domain.global && domain.global->service && domain.global->service->execution)
                         result.global.timeout = detail::execution::timeout( *domain.global->service->execution);
-
-                     if( domain.global && domain.global->service)
-                        result.global.discoverable = domain.global->service->discoverable;
                   }
 
                   if( domain.services)
@@ -276,7 +273,8 @@ namespace casual
                         result.name = service.name;
                         result.routes = service.routes.value_or( result.routes);
 
-                        result.discoverable = algorithm::coalesce( service.discoverable, defaults.discoverable).value_or( true);
+                        if( service.visibility)
+                           result.visibility = common::service::visibility::transform( *service.visibility);
                            
                         if( service.execution)
                            result.timeout = detail::execution::timeout( algorithm::coalesce( service.execution, defaults.execution));
@@ -598,9 +596,6 @@ namespace casual
 
                      if( local::model::any::has::values( model.service.global.timeout))
                         service.execution = detail::execution( model.service.global.timeout);
-
-                     if( local::model::any::has::values( model.service.global.discoverable))
-                        service.discoverable = model.service.global.discoverable;
                   }
                   
                   return result;
@@ -695,7 +690,9 @@ namespace casual
 
                      result.routes = null_if_empty( service.routes);
                      result.name = service.name;
-                     result.discoverable = service.discoverable;
+                     if( service.visibility) 
+                        result.visibility = common::service::visibility::transform( *service.visibility);
+
                      result.execution = detail::execution( service.timeout);
                      result.note = null_if_empty( service.note);
 

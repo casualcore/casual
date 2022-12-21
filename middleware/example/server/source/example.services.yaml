@@ -29,6 +29,11 @@ server:
       # name of the function the service should bind to
       function: casual_example_echo
 
+    - name: casual/example/undiscoverable/echo
+      function: casual_example_undiscoverable_echo
+      visibility: undiscoverable
+      
+
     - name: casual/example/domain/name
       function: casual_example_domain_name
 

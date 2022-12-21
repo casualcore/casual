@@ -57,16 +57,25 @@ namespace casual
                //! default is 'auto'
                std::optional< std::string> transaction;
 
+               //! Cant be:
+               //! - 'discoverable': If the service (and all advertised names to the function) will be discoverable from
+               //!                   other domains (without explicit configuration for service names)
+               //! - 'undiscoverable'
+               //! default is: 'discoverable'
+               std::optional< std::string> visibility;
+
                //! Arbitrary category.
-               //!
                //! @attention categories starting with '.' is reserved by casual
                std::optional< std::string> category;
+
 
                CASUAL_CONST_CORRECT_SERIALIZE(
                   CASUAL_SERIALIZE( name);
                   CASUAL_SERIALIZE( function);
                   CASUAL_SERIALIZE( transaction);
+                  CASUAL_SERIALIZE( visibility);
                   CASUAL_SERIALIZE( category);
+                  
                )
             };
 
@@ -78,10 +87,12 @@ namespace casual
                   {
                      std::string transaction = "auto";
                      std::optional< std::string> category;
+                     std::optional< std::string> visibility;
 
                      CASUAL_CONST_CORRECT_SERIALIZE(
                         CASUAL_SERIALIZE( transaction);
                         CASUAL_SERIALIZE( category);
+                        CASUAL_SERIALIZE( visibility);
                      )
 
                   } service;

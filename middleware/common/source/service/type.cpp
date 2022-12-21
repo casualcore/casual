@@ -12,6 +12,7 @@
 #include "common/code/raise.h"
 #include "common/code/casual.h"
 
+#include "casual/assert.h"
 
 #include <map>
 #include <ostream>
@@ -20,6 +21,40 @@ namespace casual
 {
    namespace common::service
    {
+      namespace visibility
+      {
+         std::string_view description( Type value) noexcept
+         {
+            switch( value)
+            {
+               case Type::discoverable: return "discoverable";
+               case Type::undiscoverable: return "undiscoverable";
+            }
+            return "<unknown>";
+         }
+
+         Type transform( std::string_view value)
+         {
+            if( value == "discoverable") return Type::discoverable;
+            if( value == "undiscoverable") return Type::undiscoverable;
+            
+            code::raise::error( code::casual::invalid_configuration, "unexpected value: ", value);
+         }
+
+         std::string transform( Type value)
+         {
+            return std::string{ description( value)};
+         }
+
+         Type transform( short value)
+         {
+            CASUAL_ASSERT( value >= cast::underlying( Type::discoverable) && value <= cast::underlying( Type::undiscoverable));
+
+            return static_cast< Type>( value);
+         }
+         
+      } // visibility
+
       namespace execution::timeout::contract
       {
          Type transform( std::string_view contract)
@@ -31,11 +66,9 @@ namespace casual
             code::raise::error( code::casual::invalid_configuration, "unexpected value: ", contract);
          }
 
-         std::string transform( Type contract)
+         std::string transform( Type value)
          {
-            std::ostringstream stream{};
-            stream::write( stream, contract);
-            return std::move( stream).str();
+            return std::string{ description( value)};
          }
 
          std::string_view description( Type value) noexcept
@@ -59,7 +92,7 @@ namespace casual
             {
                case Type::atomic: return "atomic";
                case Type::join: return "join";
-               case Type::automatic: return "automatic";
+               case Type::automatic: return "auto";
                case Type::none: return "none";
                case Type::branch: return "branch";
             }

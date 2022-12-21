@@ -336,7 +336,7 @@ namespace casual
             common::message::service::call::Service information;
             casual::configuration::model::service::Timeout timeout;
             service::Metric metric;
-            bool discoverable = true;
+            std::optional< common::service::visibility::Type> visibility;
 
             void remove( common::strong::process::id instance);
             state::instance::Sequential& sequential( common::strong::process::id instance);
@@ -368,7 +368,7 @@ namespace casual
                CASUAL_SERIALIZE( instances);
                CASUAL_SERIALIZE( timeout);
                CASUAL_SERIALIZE( metric);
-               CASUAL_SERIALIZE( discoverable);
+               CASUAL_SERIALIZE( visibility);
             )
          };
 

@@ -56,7 +56,7 @@ namespace casual
             message.alias = instance::alias();
             message.services.add = algorithm::transform( services, []( auto& service)
             {
-               return message::service::concurrent::advertise::Service{ std::move( service), "remote", common::service::transaction::Type::automatic};
+               return message::service::concurrent::advertise::Service{ std::move( service), "remote", common::service::transaction::Type::automatic, common::service::visibility::Type::discoverable};
             });
 
             communication::device::blocking::send( local::ipc::manager(), message);

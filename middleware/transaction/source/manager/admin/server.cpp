@@ -61,11 +61,13 @@ namespace casual
                      { service::name::state(),
                         std::bind( &local::state, std::placeholders::_1, std::ref( state)),
                         common::service::transaction::Type::none,
+                        common::service::visibility::Type::undiscoverable,
                         common::service::category::admin
                      },
                      { service::name::scale::instances(),
                         std::bind( &local::scale::instances, std::placeholders::_1, std::ref( state)),
                         common::service::transaction::Type::none,
+                        common::service::visibility::Type::undiscoverable,
                         common::service::category::admin
                      }
                }};

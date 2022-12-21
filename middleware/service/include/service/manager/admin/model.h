@@ -11,6 +11,7 @@
 
 #include "common/serialize/macro.h"
 #include "common/process.h"
+#include "common/service/type.h"
 
 #include "configuration/model.h"
 
@@ -141,20 +142,11 @@ namespace casual
 
       struct Service
       {
-         enum class Transaction : platform::size::type
-         {
-            automatic = 0,
-            join = 1,
-            atomic = 2,
-            none = 3,
-            branch,
-         };
-
          std::string name;
          service::Execution execution;
          std::string category;
-         Transaction transaction = Transaction::automatic;
-         bool discoverable{};
+         common::service::transaction::Type transaction = common::service::transaction::Type::automatic;
+         common::service::visibility::Type visibility = common::service::visibility::Type::discoverable;
 
          service::Metric metric;
 
@@ -178,7 +170,7 @@ namespace casual
             CASUAL_SERIALIZE( execution);
             CASUAL_SERIALIZE( category);
             CASUAL_SERIALIZE( transaction);
-            CASUAL_SERIALIZE( discoverable);
+            CASUAL_SERIALIZE( visibility);
             CASUAL_SERIALIZE( metric);
             CASUAL_SERIALIZE( instances);
             CASUAL_SERIALIZE_NAME( execution.timeout, "timeout");

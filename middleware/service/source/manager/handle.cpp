@@ -117,7 +117,7 @@ namespace casual
                state::Service result;
                result.information.name = service.name;
                result.timeout = service.timeout;
-               result.discoverable = service.discoverable;
+               result.visibility = service.visibility;
 
                if( service.routes.empty())
                   state.services.emplace( std::move( service.name), std::move( result));
@@ -787,7 +787,8 @@ namespace casual
                                  result.emplace_back(
                                     name,
                                     service->information.category,
-                                    service->information.transaction);
+                                    service->information.transaction, 
+                                    service->information.visibility);
                               }
 
                               return result;

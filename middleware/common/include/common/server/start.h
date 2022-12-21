@@ -23,10 +23,9 @@
 
 namespace casual
 {
-   namespace common
+   namespace common::server
    {
-      namespace server
-      {
+
          inline namespace v1
          {
             namespace argument
@@ -35,6 +34,9 @@ namespace casual
                struct basic_service
                {
                   using function_type = F;
+
+                  basic_service( string::Argument name, function_type function, service::transaction::Type transaction, service::visibility::Type visibility, string::Argument category)
+                   : name( std::move( name)), function( std::move( function)), transaction( transaction), visibility( visibility), category( std::move( category)) {}
 
                   basic_service( string::Argument name, function_type function, service::transaction::Type transaction, string::Argument category)
                    : name( std::move( name)), function( std::move( function)), transaction( transaction), category( std::move( category)) {}
@@ -48,7 +50,15 @@ namespace casual
                   std::string name;
                   function_type function;
                   service::transaction::Type transaction = service::transaction::Type::automatic;
+                  service::visibility::Type visibility = service::visibility::Type::discoverable;
                   std::string category;
+
+                  CASUAL_LOG_SERIALIZE(
+                     CASUAL_SERIALIZE( name);
+                     CASUAL_SERIALIZE( transaction);
+                     CASUAL_SERIALIZE( visibility);
+                     CASUAL_SERIALIZE( category);
+                  );
 
                };
 
@@ -81,8 +91,8 @@ namespace casual
                common::function<void()const> initialize);
 
          } // v1
-      } // server
-   } // common
+
+   } // common::server
 } // casual
 
 

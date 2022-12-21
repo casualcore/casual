@@ -28,23 +28,25 @@ namespace casual
                   {
                      struct Service
                      {
-                        server::Service operator() ( argument::Service& s)
+                        server::Service operator() ( argument::Service& service)
                         {
                            return {
-                              std::move( s.name),
-                              std::move( s.function),
-                              s.transaction,
-                              std::move( s.category)
+                              std::move( service.name),
+                              std::move( service.function),
+                              service.transaction,
+                              service.visibility,
+                              std::move( service.category),
                            };
                         }
 
-                        server::Service operator() ( argument::xatmi::Service& s)
+                        server::Service operator() ( argument::xatmi::Service& service)
                         {
                            return server::xatmi::service(
-                              std::move( s.name),
-                              std::move( s.function),
-                              s.transaction,
-                              std::move( s.category));
+                              std::move( service.name),
+                              std::move( service.function),
+                              service.transaction,
+                              service.visibility,
+                              std::move( service.category));
                         }
                      };
 
@@ -66,6 +68,7 @@ namespace casual
                   void start( S&& services, std::vector< argument::transaction::Resource> resources, common::function<void()const> initialize)
                   {
                      Trace trace{ "common::server::start"};
+                     log::line( verbose::log, "services: ", services);
 
                      auto& inbound = communication::ipc::inbound::device();
 
@@ -124,9 +127,9 @@ namespace casual
             }
 
             void start(
-                  std::vector< argument::xatmi::Service> services,
-                  std::vector< argument::transaction::Resource> resources,
-                  common::function<void()const> initialize)
+               std::vector< argument::xatmi::Service> services,
+               std::vector< argument::transaction::Resource> resources,
+               common::function< void() const> initialize)
             {
                local::start( std::move( services), std::move( resources), std::move( initialize));
             }

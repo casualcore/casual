@@ -84,20 +84,6 @@ namespace casual
                      return result;
                   };
 
-                  auto transform_mode = []( auto mode)
-                  {
-                     using Enum = decltype( mode);
-                     switch( mode)
-                     {
-                        case Enum::automatic: return manager::admin::model::Service::Transaction::automatic;
-                        case Enum::join: return manager::admin::model::Service::Transaction::join;
-                        case Enum::atomic: return manager::admin::model::Service::Transaction::atomic;
-                        case Enum::none: return manager::admin::model::Service::Transaction::none;
-                        case Enum::branch: return manager::admin::model::Service::Transaction::branch;
-                     }
-                     assert( ! "unknown transaction mode");
-                  }; 
-
                   manager::admin::model::Service result;
 
                   result.name = name;
@@ -106,8 +92,8 @@ namespace casual
                   result.metric.pending = transform_metric( value.metric.pending);
                   result.metric.remote = value.metric.remote;
                   result.category = value.information.category;
-                  result.transaction = transform_mode( value.information.transaction);
-                  result.discoverable = value.discoverable;
+                  result.transaction = value.information.transaction;
+                  result.visibility = value.information.visibility;
                   result.metric.last = value.metric.last;
 
                   auto transform_concurrent = []( const auto& value)

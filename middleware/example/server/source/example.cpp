@@ -79,6 +79,11 @@ namespace casual
             tpreturn( TPSUCCESS, 0, info->data, info->len, 0);
          }
 
+         void casual_example_undiscoverable_echo( TPSVCINFO* info)
+         {
+            casual_example_echo( info);
+         }
+
          void casual_example_domain_name( TPSVCINFO* info)
          {
             auto buffer = ::tpalloc( X_OCTET, nullptr, common::domain::identity().name.size() + 1);

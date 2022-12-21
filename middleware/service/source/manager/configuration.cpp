@@ -110,7 +110,7 @@ namespace casual
                   state::Service result;
                   result.information.name = service.name;
                   result.timeout = std::move( service.timeout);
-                  result.discoverable = service.discoverable;
+                  result.visibility = service.visibility;
 
                   if( service.routes.empty())
                      state.services.try_emplace( std::move( service.name), std::move( result));
@@ -133,7 +133,7 @@ namespace casual
                   for( auto iterator : services)
                   {
                      iterator->second.timeout = configuration.timeout;
-                     iterator->second.discoverable = configuration.discoverable;
+                     iterator->second.visibility = configuration.visibility;
                   }
 
                   auto [ origin, routes] = algorithm::partition( services, []( auto iterator)

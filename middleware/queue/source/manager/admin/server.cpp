@@ -403,41 +403,49 @@ namespace casual
                { service::name::state,
                   local::service::state( state),
                   common::service::transaction::Type::none,
+                  common::service::visibility::Type::undiscoverable,
                   common::service::category::admin
                },
                { service::name::messages::list,
                   local::service::messages::list( state),
                   common::service::transaction::Type::none,
+                  common::service::visibility::Type::undiscoverable,
                   common::service::category::admin
                },
                { service::name::messages::remove,
                   local::service::messages::remove( state),
                   common::service::transaction::Type::none,
+                  common::service::visibility::Type::undiscoverable,
                   common::service::category::admin
                },
                { service::name::restore,
                   local::service::restore( state),
                   common::service::transaction::Type::none,
+                  common::service::visibility::Type::undiscoverable,
                   common::service::category::admin
                },
                { service::name::clear,
                   local::service::clear( state),
                   common::service::transaction::Type::none,
+                  common::service::visibility::Type::undiscoverable,
                   common::service::category::admin
                },
                { service::name::recover,
                   local::service::recover( state),
                   common::service::transaction::Type::none,
+                  common::service::visibility::Type::undiscoverable,
                   common::service::category::admin
                },
                { service::name::metric::reset,
                   local::service::metric::reset( state),
                   common::service::transaction::Type::none,
+                  common::service::visibility::Type::undiscoverable,
                   common::service::category::admin
                },
                { service::name::forward::scale::aliases,
                   local::service::forward::scale::aliases( state),
                   common::service::transaction::Type::none,
+                  common::service::visibility::Type::undiscoverable,
                   common::service::category::admin
                },
 

@@ -136,22 +136,22 @@ namespace casual
             {
                message::service::Advertise message{ process::handle()};
                message.alias = instance::alias();
-               message.process = process::handle();
 
                auto is_prospect = [&prospect]( auto& service) { return service == prospect;};
 
                if( auto found = algorithm::find_if( m_state.physical_services, is_prospect))
                {
                   m_state.services.emplace( prospect.name, *found);
-                  message.services.add.emplace_back( prospect.name, found->category, found->transaction);
+                  message.services.add.emplace_back( prospect.name, found->category, found->transaction, found->visibility);
                }
                else
                {
-                  message.services.add.emplace_back( prospect.name, prospect.category, prospect.transaction);
+                  message.services.add.emplace_back( prospect.name, prospect.category, prospect.transaction, prospect.visibility);
 
                   m_state.physical_services.push_back( prospect);
                   m_state.services.emplace( prospect.name, m_state.physical_services.back());
                }
+               log::line( verbose::log, "message: ", message);
                communication::device::blocking::send( communication::instance::outbound::service::manager::device(), message);
             }
          }
@@ -191,12 +191,9 @@ namespace casual
                template< typename S, typename P>
                server::Service* find_physical( S& services, P&& predicate)
                {
-                  auto found = algorithm::find_if( services, predicate);
+                  if( auto found = algorithm::find_if( services, predicate))
+                     return found.data();
 
-                  if( found)
-                  {
-                     return &( *found);
-                  }
                   return nullptr;
                }
             } // <unnamed>

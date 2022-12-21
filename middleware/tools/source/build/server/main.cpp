@@ -115,12 +115,19 @@ namespace casual
                {
                   std::vector< model::Service> services;
                   std::vector< model::Resource> resources;
+
+                  CASUAL_LOG_SERIALIZE(
+                     CASUAL_SERIALIZE( services);
+                     CASUAL_SERIALIZE( resources);
+                  )
                };
 
                namespace transform
                {
                   auto state( const Settings& settings)
                   {
+                     Trace trace{ "tools::build::local::transform::state"};
+                     
                      auto system = settings.files.system.empty() ?
                         configuration::system::get() : configuration::system::get( settings.files.system);
 
@@ -138,6 +145,8 @@ namespace casual
                         definition,
                         settings.service.names,
                         settings.service.transaction.mode);
+
+                     log::line( verbose::log, "result: ", result);
 
                      return result;
                   };

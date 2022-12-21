@@ -29,7 +29,7 @@ namespace casual
 
          using function_type = std::function< service::invoke::Result( service::invoke::Parameter&&)>;
 
-         Service( string::Argument name, function_type function, service::transaction::Type transaction, string::Argument category);
+         Service( string::Argument name, function_type function, service::transaction::Type transaction, service::visibility::Type visibility, string::Argument category);
          Service( string::Argument name, function_type function);
 
          service::invoke::Result operator () ( service::invoke::Parameter&& argument);
@@ -38,6 +38,7 @@ namespace casual
          function_type function;
 
          service::transaction::Type transaction = service::transaction::Type::automatic;
+         service::visibility::Type visibility = service::visibility::Type::discoverable;
          std::string category;
 
          //! Only to be able to compare 'c-functions', which we have to do according to the XATMI-spec
@@ -51,8 +52,10 @@ namespace casual
          CASUAL_LOG_SERIALIZE(
             CASUAL_SERIALIZE( name);
             CASUAL_SERIALIZE( transaction);
+            CASUAL_SERIALIZE( visibility);
             CASUAL_SERIALIZE( category);
             CASUAL_SERIALIZE( compare);
+            
          )
 
       };
@@ -61,7 +64,7 @@ namespace casual
       {
          using function_type = std::function< void( TPSVCINFO*)>;
 
-         server::Service service( std::string name, function_type function, service::transaction::Type transaction, std::string category);
+         server::Service service( std::string name, function_type function, service::transaction::Type transaction, service::visibility::Type visibility, std::string category);
          server::Service service( std::string name, function_type function);
 
          const void* address( const function_type& function);

@@ -28,8 +28,8 @@ namespace casual
       namespace server
       {
 
-         Service::Service( string::Argument name, function_type function, service::transaction::Type transaction, string::Argument category)
-           : name( std::move( name)), function( std::move( function)), transaction( transaction), category( std::move( category)) {}
+         Service::Service( string::Argument name, function_type function, service::transaction::Type transaction, service::visibility::Type visibility, string::Argument category)
+           : name( std::move( name)), function( std::move( function)), transaction( transaction), visibility{ visibility}, category( std::move( category)) {}
 
          Service::Service( string::Argument name, function_type function)
          : name( std::move( name)), function( std::move( function)) {}
@@ -124,7 +124,6 @@ namespace casual
                   {
                      Invoke( function_type function) : m_function( std::move( function))
                      {
-
                      }
 
                      service::invoke::Result operator () ( service::invoke::Parameter&& argument)
@@ -224,10 +223,10 @@ namespace casual
                } // <unnamed>
             } // local
 
-            server::Service service( std::string name, function_type function, service::transaction::Type transaction, std::string category)
+            server::Service service( std::string name, function_type function, service::transaction::Type transaction, service::visibility::Type visibility, std::string category)
             {
                auto compare = address( function);
-               server::Service result{ std::move( name), local::Invoke{ std::move( function)}, transaction, std::move( category)};
+               server::Service result{ std::move( name), local::Invoke{ std::move( function)}, transaction, visibility, std::move( category)};
                result.compare = compare;
 
                return result;
@@ -235,7 +234,7 @@ namespace casual
 
             server::Service service( std::string name, function_type function)
             {
-               return service( std::move( name), std::move( function), service::transaction::Type::automatic, {});
+               return service( std::move( name), std::move( function), service::transaction::Type::automatic, service::visibility::Type::discoverable, {});
             }
 
             const void* address( const function_type& function)
