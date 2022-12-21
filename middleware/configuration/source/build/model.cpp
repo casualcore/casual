@@ -22,6 +22,8 @@ namespace casual
                   service.function = service.name;
                if( ! service.category)
                   service.category = model.server.server_default.service.category;
+               if( ! service.visibility)
+                  service.visibility = model.server.server_default.service.visibility;
             }
             return model;
          }

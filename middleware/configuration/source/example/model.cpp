@@ -66,7 +66,6 @@ domain:
             timeout:
                duration: 2h
                contract: linger
-         discoverable: true
    default:
       note: "'default', fallback, configuration. Will only affect 'local' configuration and will not aggregate 'between' configurations"
       server:
@@ -84,7 +83,7 @@ domain:
          execution:
             timeout:
                duration: 20s
-         discoverable: false
+         visibility: discoverable
 
    groups:
       -  name: common-group
@@ -154,8 +153,7 @@ domain:
             timeout:
                duration: 64ms
                contract: terminate
-         discoverable: false
-
+         visibility: undiscoverable
 )");
             }
 
@@ -181,7 +179,7 @@ domain:
             timeout:
                duration: 130ms
       -  name: implementation/detail/service
-         discoverable: false
+         visibility: undiscoverable
          note: "service 'implementation/detail/service' is not discoverable from other domains"
 )");
             }

@@ -306,7 +306,8 @@ namespace casual
 
          bool Service::is_discoverable() const noexcept
          {
-            return is_sequential() && discoverable && information.category != common::service::category::admin;
+            return is_sequential()
+               && ( information.visibility == decltype( information.visibility)::discoverable );
          }
 
          bool Service::timeoutable() const noexcept
@@ -404,16 +405,24 @@ namespace casual
                   // is the service advertised before?
                   if( auto found = algorithm::find( state.services, name))
                   {
+                     log::line( log, "found: ", *found);
+
+
                      // update properties.
                      // TODO: semantics - should we do this? We might degrade the properties
 
-                     auto asssign_if_not_equal = []( auto& target, auto&& source)
+                     auto assign_if_not_equal = []( auto&& source, auto& target)
                      {
-                        if( target != source) target = source;
+                        if( source != target) 
+                           target = source;
                      };
 
-                     asssign_if_not_equal( found->second.information.category, service.information.category);
-                     asssign_if_not_equal( found->second.information.transaction, service.information.transaction);
+                     assign_if_not_equal( service.information.category, found->second.information.category);
+                     assign_if_not_equal( service.information.transaction, found->second.information.transaction);
+
+                     // is there config override for visibility?
+                     found->second.information.visibility = found->second.visibility ? *found->second.visibility : service.information.visibility;
+
 
                      add_instance( found->second);
                      log::line( verbose::log, "existing service: ", found->second);
@@ -445,6 +454,7 @@ namespace casual
 
                result.information.name = service.name;
                result.information.transaction = service.transaction;
+               result.information.visibility = service.visibility;
                result.information.category = service.category;
                result.timeout = std::move( timeout);
 
@@ -689,6 +699,7 @@ namespace casual
             result.category = service.category;
             result.name = service.name;
             result.transaction = service.transaction;
+            result.visibility = service.visibility;
             return result;
          };
 

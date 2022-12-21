@@ -302,10 +302,9 @@ namespace casual
                         return value.execution.timeout.contract;
                      };
 
-
+/*
                      auto format_mode = []( auto& service)
                      {
-                        using Enum = admin::model::Service::Transaction;
                         switch( service.transaction)
                         {
                            case Enum::automatic: return "auto";
@@ -316,6 +315,8 @@ namespace casual
                         };
                         assert( ! "unknown transaction mode");
                      };
+                     */
+
 
                      // we need to set something when category is empty to help
                      // enable possible use of sort, cut, awk and such
@@ -325,9 +326,15 @@ namespace casual
                         return value.category;
                      };
 
-                     auto format_discoverable = []( auto& value)
+                     auto format_visibility = []( auto& value) -> std::string_view
                      {
-                        return value.discoverable;
+                        using Enum = decltype( value.visibility);
+                        switch( value.visibility)
+                        {
+                           case Enum::discoverable: return "D";
+                           case Enum::undiscoverable: return "U";
+                        }
+                        return "<unknown>";
                      };
 
 
@@ -381,8 +388,8 @@ namespace casual
                         return terminal::format::formatter< admin::model::Service>::construct( 
                            terminal::format::column( "name", std::mem_fn( &admin::model::Service::name), terminal::color::yellow, terminal::format::Align::left),
                            terminal::format::column( "category", format_category, terminal::color::no_color, terminal::format::Align::left),
-                           terminal::format::column( "D", format_discoverable, terminal::color::no_color, terminal::format::Align::left),
-                           terminal::format::column( "mode", format_mode, terminal::color::no_color, terminal::format::Align::right),
+                           terminal::format::column( "V", format_visibility, terminal::color::no_color, terminal::format::Align::left),
+                           terminal::format::column( "mode", std::mem_fn( &admin::model::Service::transaction), terminal::color::no_color, terminal::format::Align::left),
                            terminal::format::column( "timeout", format_timeout_duration, terminal::color::blue, terminal::format::Align::right),
                            terminal::format::column( "contract", format_timeout_contract, terminal::color::blue, terminal::format::Align::right),
                            terminal::format::column( "I", format::instance::local::total{}, terminal::color::white, terminal::format::Align::right),
@@ -402,7 +409,7 @@ namespace casual
                         return terminal::format::formatter< admin::model::Service>::construct( 
                            terminal::format::column( "name", std::mem_fn( &admin::model::Service::name)),
                            terminal::format::column( "category", format_category),
-                           terminal::format::column( "mode", format_mode),
+                           terminal::format::column( "mode", std::mem_fn( &admin::model::Service::transaction)),
                            terminal::format::column( "timeout", format_timeout_duration),
                            terminal::format::column( "I", format::instance::local::total{}),
                            terminal::format::column( "C", format_invoked),
@@ -415,7 +422,7 @@ namespace casual
                            terminal::format::column( "RC", remote_invocations),
                            terminal::format::column( "last", format_last),
                            terminal::format::column( "contract", format_timeout_contract),
-                           terminal::format::column( "D", format_discoverable)
+                           terminal::format::column( "V", format_visibility)
                         );
                      }
                   }
@@ -581,8 +588,10 @@ namespace casual
       the name of the service
    category:
       arbitrary category to help understand the 'purpose' with the service
-   D:
-      discoverable - true if service is discoverable from other domains
+   V:
+      visibility - can be one of the following:
+        - D: discoverable -> the service is discoverable from other domains
+        - U: undiscoverable -> the service is NOT discoverable from other domains
    mode: 
       transaction mode - can be one of the following (auto, join, none, atomic)
    timeout:

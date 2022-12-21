@@ -45,6 +45,7 @@ namespace casual
             { admin::service::name::state,
                local::service::state( state),
                common::service::transaction::Type::none,
+               common::service::visibility::Type::undiscoverable,
                common::service::category::admin
             }
          }};

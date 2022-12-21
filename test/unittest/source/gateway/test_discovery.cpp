@@ -368,7 +368,7 @@ domain:
         memberships: [ user]
    services:
       -  name: casual/example/domain/echo/C
-         discoverable: false
+         visibility: undiscoverable
    gateway:
       inbound:
          groups:
@@ -418,12 +418,21 @@ domain:
 
          // expect NOT to find stuff in C
          {
-            auto buffer = local::allocate( 128);
-            auto len = tptypes( buffer, nullptr, nullptr);
+            auto expect_tpnoent = []( auto&& service)
+            {
+               auto buffer = local::allocate( 128);
+               auto len = tptypes( buffer, nullptr, nullptr);
 
-            EXPECT_TRUE( tpcall( "casual/example/domain/echo/C", buffer, 128, &buffer, &len, 0) == -1);
-            EXPECT_TRUE( tperrno == TPENOENT) << "tperrno: " << tperrnostring( tperrno); 
-            tpfree( buffer);
+               EXPECT_TRUE( tpcall( "casual/example/domain/echo/C", buffer, 128, &buffer, &len, 0) == -1);
+               EXPECT_TRUE( tperrno == TPENOENT) << "service: " << service << ", tperrno: " << tperrnostring( tperrno); 
+               tpfree( buffer);
+            };
+
+            // the configured undiscoverable
+            expect_tpnoent( "casual/example/domain/echo/C");
+
+            // the built undiscoverable
+            expect_tpnoent( "casual/example/undiscoverable/echo");
          }
       }
 

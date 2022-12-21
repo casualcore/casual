@@ -82,16 +82,16 @@ namespace casual
                      return [&services]( std::ostream& out)
                      {
                         out << R"(
-     struct casual_service_name_mapping service_mapping[] = {)";
+     struct casual_service_definition service_mapping[] = {)";
 
                   for( auto& service : services)
                   {
                      out << R"(
-      {&)" << service.function << R"(, ")" << service.name << R"(", ")" << service.category << R"(", )" << common::cast::underlying( service.transaction) << "},";
+      {&)" << service.function << R"(, ")" << service.name << R"(", ")" << service.category << R"(", )" << common::cast::underlying( service.transaction) << R"(, )" << common::cast::underlying( service.visibility) << "},";
                   }
 
                   out << R"(
-      { 0, 0, 0, 0} /* null ending */
+      { 0, 0, 0, 0, 0} /* null ending */
    };
                         
                         )";
@@ -105,7 +105,7 @@ namespace casual
                      {
                         out << R"(
 
-   struct casual_server_arguments arguments = {
+   struct casual_server_arguments_v2 arguments = {
          service_mapping,
          &tpsvrinit,
          &tpsvrdone,
@@ -114,7 +114,7 @@ namespace casual
          xa_mapping
    };
 
-   return casual_run_server( &arguments);
+   return casual_run_server_v2( &arguments);
 )";
 
                      };

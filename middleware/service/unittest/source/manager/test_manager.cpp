@@ -418,7 +418,7 @@ domain:
          }
       }
 
-      TEST( service_manager, advertise_a_b__b_non_discoverable__discover_a_b__expect_discover_a)
+      TEST( service_manager, advertise_a_b__b_undiscoverable__discover_a_b__expect_discover_a)
       {
          common::unittest::Trace trace;
 
@@ -426,9 +426,9 @@ domain:
 domain:
    services:
       -  name: a
-         discoverable: true
+         visibility: discoverable
       -  name: b
-         discoverable: false
+         visibility: undiscoverable
 )";
 
          auto domain = local::domain( configuration);
@@ -446,7 +446,7 @@ domain:
          }
       }
 
-      TEST( service_manager, advertise_a__route_a_b__non_discoverable___discover_a_b__expect_no_discover)
+      TEST( service_manager, advertise_a__route_a_b__undiscoverable___discover_a_b__expect_no_discover)
       {
          common::unittest::Trace trace;
 
@@ -455,7 +455,7 @@ domain:
    services:
       -  name: a
          routes: [ a, b]
-         discoverable: false
+         visibility: undiscoverable
 )";
 
          auto domain = local::domain( configuration);
@@ -959,7 +959,7 @@ domain:
          common::algorithm::for_n< 3>( []()
          {
             common::message::service::concurrent::Advertise message{ common::process::handle()};
-            message.services.add.emplace_back( "concurrent_a", "", common::service::transaction::Type::none);
+            message.services.add.emplace_back( "concurrent_a", "", common::service::transaction::Type::none, common::service::visibility::Type::discoverable);
             
             common::communication::device::blocking::send( 
                common::communication::instance::outbound::service::manager::device(),

@@ -255,57 +255,68 @@ namespace casual
                { service::name::state,
                   local::service::state( state),
                   common::service::transaction::Type::none,
+                  common::service::visibility::Type::undiscoverable,
                   common::service::category::admin
                },
                { service::name::scale::aliases,
                      local::service::scale::aliases( state),
                      common::service::transaction::Type::none,
+                     common::service::visibility::Type::undiscoverable,
                      common::service::category::admin
                },
                { service::name::restart::aliases,
                      local::service::restart::aliases( state),
                      common::service::transaction::Type::none,
+                     common::service::visibility::Type::undiscoverable,
                      common::service::category::admin
                },
                { service::name::restart::groups,
                      local::service::restart::groups( state),
                      common::service::transaction::Type::none,
+                     common::service::visibility::Type::undiscoverable,
                      common::service::category::admin
                },
                { service::name::shutdown,
                      local::service::shutdown( state),
                      common::service::transaction::Type::none,
+                     common::service::visibility::Type::undiscoverable,
                      common::service::category::admin
                },
                { service::name::configuration::get,
                      local::service::configuration::get( state),
                      common::service::transaction::Type::none,
+                     common::service::visibility::Type::undiscoverable,
                      common::service::category::admin
                },
                { service::name::configuration::post,
                      local::service::configuration::post( state),
                      common::service::transaction::Type::none,
+                     common::service::visibility::Type::undiscoverable,
                      common::service::category::admin
                },
                { service::name::configuration::put,
                      local::service::configuration::put( state),
                      common::service::transaction::Type::none,
+                     common::service::visibility::Type::undiscoverable,
                      common::service::category::admin
                },
                { service::name::environment::set,
                      local::service::environment::set( state),
                      common::service::transaction::Type::none,
+                     common::service::visibility::Type::undiscoverable,
                      common::service::category::admin
                },
                // deprecated
                { ".casual/domain/scale/instances",
                      local::service::scale::aliases( state),
                      common::service::transaction::Type::none,
+                     common::service::visibility::Type::undiscoverable,
                      common::service::category::deprecated
                },
                { ".casual/domain/restart/instances",
                      local::service::restart::aliases( state),
                      common::service::transaction::Type::none,
+                     common::service::visibility::Type::undiscoverable,
                      common::service::category::deprecated
                },
          }};

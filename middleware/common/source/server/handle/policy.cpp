@@ -53,6 +53,7 @@ namespace casual
             result.name = service.name;
             result.category = service.category;
             result.transaction = service.transaction;
+            result.visibility = service.visibility;
 
             return result;
          }));

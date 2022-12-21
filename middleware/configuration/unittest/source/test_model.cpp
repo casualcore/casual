@@ -130,6 +130,36 @@ domain:
          }
       }
 
+      TEST( configuration_model_transform, service_visibility)
+      {
+         common::unittest::Trace trace;
+
+         constexpr auto configuration = R"(
+domain:
+   name: model
+   default:
+      service:
+         visibility: undiscoverable
+   services:
+      -  name: discoverable
+         visibility: discoverable
+      -  name: undiscoverable
+         visibility: undiscoverable
+      -  name: default
+)";
+         
+         auto model = local::configuration( configuration);
+
+         ASSERT_TRUE( algorithm::find( model.service.services, "discoverable"));
+         ASSERT_TRUE( algorithm::find( model.service.services, "undiscoverable"));
+         ASSERT_TRUE( algorithm::find( model.service.services, "default"));
+
+         using Visibility = common::service::visibility::Type;
+         EXPECT_TRUE( algorithm::find( model.service.services, "discoverable")->visibility == Visibility::discoverable);
+         EXPECT_TRUE( algorithm::find( model.service.services, "undiscoverable")->visibility == Visibility::undiscoverable);
+         EXPECT_TRUE( algorithm::find( model.service.services, "default")->visibility == Visibility::undiscoverable);
+      }
+
       TEST( configuration_model_transform, gateway)
       {
          common::unittest::Trace trace;

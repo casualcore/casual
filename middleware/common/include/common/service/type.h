@@ -26,6 +26,22 @@ namespace casual
          constexpr std::string_view deprecated = ".deprecated";
       } // category
 
+      namespace visibility
+      {
+         enum class Type : short
+         {
+            discoverable,
+            undiscoverable
+         };
+         
+         std::string_view description( Type value) noexcept;
+
+         Type transform( std::string_view contract);
+         std::string transform( Type contract);
+         Type transform( short mode);
+         
+      } // visibility
+
       namespace execution::timeout::contract
       {
          enum class Type : short

@@ -208,14 +208,14 @@ namespace casual
             struct Default
             {
                std::optional< service::Execution> execution;
-               std::optional< bool> discoverable;
+               std::optional< std::string> visibility;
 
                //! @deprecated
                std::optional< std::string> timeout;
 
                CASUAL_CONST_CORRECT_SERIALIZE(
                   CASUAL_SERIALIZE( execution);
-                  CASUAL_SERIALIZE( discoverable);
+                  CASUAL_SERIALIZE( visibility);
 
                   CASUAL_SERIALIZE( timeout);
                )
@@ -229,7 +229,7 @@ namespace casual
             std::optional< std::string> note;
             std::optional< service::Execution> execution;
             std::optional< std::vector< std::string>> routes;
-            std::optional< bool> discoverable;
+            std::optional< std::string> visibility;
             
             //! @deprecated
             std::optional< std::string> timeout;
@@ -239,7 +239,7 @@ namespace casual
                CASUAL_SERIALIZE( note);
                CASUAL_SERIALIZE( execution);
                CASUAL_SERIALIZE( routes);
-               CASUAL_SERIALIZE( discoverable);
+               CASUAL_SERIALIZE( visibility);
 
                CASUAL_SERIALIZE( timeout);
             )
@@ -253,12 +253,10 @@ namespace casual
             {
                std::optional< std::string> note;
                std::optional< domain::service::Execution> execution;
-               std::optional< bool> discoverable;
 
                CASUAL_CONST_CORRECT_SERIALIZE(
                   CASUAL_SERIALIZE( note);
                   CASUAL_SERIALIZE( execution);
-                  CASUAL_SERIALIZE( discoverable);
                )
             };
             

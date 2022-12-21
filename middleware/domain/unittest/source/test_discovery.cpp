@@ -97,7 +97,7 @@ namespace casual
             auto request = communication::ipc::receive< message::discovery::internal::Request>();
             EXPECT_TRUE( algorithm::equal( request.content.services, array::make( "a")));
             auto reply = common::message::reverse::type( request);
-            reply.content.services = { { "a", "foo", common::service::transaction::Type::branch}};
+            reply.content.services = { { "a", "foo", common::service::transaction::Type::branch, common::service::visibility::Type::discoverable}};
             communication::device::blocking::send( request.process.ipc, reply);
          }
 
@@ -303,7 +303,7 @@ namespace casual
             auto request = communication::ipc::receive< message::discovery::Request>();
             EXPECT_TRUE( algorithm::equal( request.content.services, array::make( "a"sv)));
             auto reply = common::message::reverse::type( request);
-            reply.content.services = { { "a", "test", common::service::transaction::Type::automatic}};
+            reply.content.services = { { "a", "test", common::service::transaction::Type::automatic, common::service::visibility::Type::discoverable}};
             communication::device::blocking::send( request.process.ipc, reply);
          };
 

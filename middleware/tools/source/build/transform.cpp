@@ -109,8 +109,10 @@ namespace casual
                   result.function = service.function.value_or( service.name);
                   result.category = service.category.value_or( "");
                   if( service.transaction)
-                     result.transaction = common::service::transaction::mode( service.transaction.value());
-
+                     result.transaction = common::service::transaction::mode( *service.transaction);
+                  if( service.visibility)
+                     result.visibility = common::service::visibility::transform( *service.visibility);
+               
                   return result;
                });
 

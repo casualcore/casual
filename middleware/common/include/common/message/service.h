@@ -48,8 +48,8 @@ namespace casual
          {
             Base() = default;
 
-            explicit Base( std::string name, std::string category, common::service::transaction::Type transaction)
-               : name( std::move( name)), category( std::move( category)), transaction( transaction)
+            explicit Base( std::string name, std::string category, common::service::transaction::Type transaction, common::service::visibility::Type visibility)
+               : name( std::move( name)), category( std::move( category)), transaction( transaction), visibility{ visibility}
             {}
 
             Base( std::string name)
@@ -59,6 +59,7 @@ namespace casual
             std::string name;
             std::string category;
             common::service::transaction::Type transaction = common::service::transaction::Type::automatic;
+            common::service::visibility::Type visibility = common::service::visibility::Type::discoverable;
             service::Type type = service::Type::sequential;
 
             inline friend bool operator == ( const Base& lhs, const std::string& rhs) { return lhs.name == rhs;}
@@ -70,6 +71,7 @@ namespace casual
                CASUAL_SERIALIZE( name);
                CASUAL_SERIALIZE( category);
                CASUAL_SERIALIZE( transaction);
+               CASUAL_SERIALIZE( visibility);
                CASUAL_SERIALIZE( type);
             )
          };
@@ -249,8 +251,9 @@ namespace casual
                   inline Service( std::string name, 
                      std::string category, 
                      common::service::transaction::Type transaction,
+                     common::service::visibility::Type visibility,
                      service::Property property = service::Property{})
-                     : message::Service( std::move( name), std::move( category), transaction), property( property) {}
+                     : message::Service( std::move( name), std::move( category), transaction, visibility), property( property) {}
 
                   service::Property property;
 

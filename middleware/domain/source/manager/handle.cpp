@@ -799,12 +799,13 @@ namespace casual
                      {
                         Trace trace{ "domain::manager::handle::local::process::detail::singleton::service"};
                         
-                        auto transform_service = []( const auto& s)
+                        auto transform_service = []( const auto& service)
                         {
                            common::message::service::advertise::Service result;
-                           result.name = s.name;
-                           result.category = s.category;
-                           result.transaction = s.transaction;
+                           result.name = service.name;
+                           result.category = service.category;
+                           result.transaction = service.transaction;
+                           result.visibility = service.visibility;
                            return result;
                         };
 

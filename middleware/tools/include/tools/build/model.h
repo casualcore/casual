@@ -8,46 +8,63 @@
 
 
 #include "common/service/type.h"
+#include "common/serialize/macro.h"
 
 #include <vector>
 #include <string>
 
 namespace casual
 {
-   namespace tools
+   namespace tools::build::model
    {
-      namespace build
+      struct Service
       {
-         namespace model
+         Service( std::string name) : name( name), function( std::move( name)) {}
+         Service() = default;
+
+         std::string name;
+         std::string function;
+         std::string category;
+         common::service::transaction::Type transaction = common::service::transaction::Type::automatic;
+         common::service::visibility::Type visibility = common::service::visibility::Type::discoverable;
+
+         CASUAL_LOG_SERIALIZE(
+            CASUAL_SERIALIZE( name);
+            CASUAL_SERIALIZE( function);
+            CASUAL_SERIALIZE( category);
+            CASUAL_SERIALIZE( transaction);
+            CASUAL_SERIALIZE( visibility);
+         )
+      };
+
+      struct Resource
+      {
+         std::string key;
+         std::string name;
+         std::string xa_struct_name;
+
+         std::vector< std::string> libraries;
+
+         struct
          {
-            struct Service
-            {
-               Service( std::string name) : name( name), function( std::move( name)) {}
-               Service() = default;
-               std::string name;
-               std::string function;
-               std::string category;
-               common::service::transaction::Type transaction = common::service::transaction::Type::automatic;
-            };
+            std::vector< std::string> include;
+            std::vector< std::string> library;
 
-            struct Resource
-            {
-               std::string key;
-               std::string name;
-               std::string xa_struct_name;
+            CASUAL_LOG_SERIALIZE(
+               CASUAL_SERIALIZE( include);
+               CASUAL_SERIALIZE( library);
+            )
+         } paths;
 
-               std::vector< std::string> libraries;
+         CASUAL_LOG_SERIALIZE(
+            CASUAL_SERIALIZE( key);
+            CASUAL_SERIALIZE( name);
+            CASUAL_SERIALIZE( xa_struct_name);
+            CASUAL_SERIALIZE( libraries);
+            CASUAL_SERIALIZE( paths);
+         )
 
-               struct
-               {
-                  std::vector< std::string> include;
-                  std::vector< std::string> library;
-               } paths;
-            };
+      };
             
-         } // model
-
-
-      } // build
-   } // tools
+   } // tools::build::model
 } // casual

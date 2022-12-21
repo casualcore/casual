@@ -524,7 +524,10 @@ namespace casual
                               service.execution->timeout->contract.value_or( *defaults.execution->timeout->contract);
 
                      }
-                  } 
+                  }
+
+                  if( defaults.visibility && ! service.visibility)
+                     service.visibility = defaults.visibility;
                };
 
                if( model.services)
@@ -544,10 +547,10 @@ namespace casual
          Trace trace{ "configuration::user::Model::normalize"};
 
          if( model.system)
-            model.system = normalize( std::move( model.system.value()));
+            model.system = normalize( std::move( *model.system));
 
          if( model.domain)
-            model.domain = normalize( std::move( model.domain.value()));
+            model.domain = normalize( std::move( *model.domain));
 
          return model;
       }

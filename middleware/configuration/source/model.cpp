@@ -171,10 +171,6 @@ namespace casual
             Global& Global::operator += ( Global rhs)
             {
                timeout += std::move( rhs.timeout);
-
-               if( rhs.discoverable)
-                  discoverable = std::move( rhs.discoverable);
-
                return *this;
             }
 

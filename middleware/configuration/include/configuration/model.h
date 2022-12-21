@@ -248,7 +248,7 @@ namespace casual::configuration
             std::string name;
             std::vector< std::string> routes;
             service::Timeout timeout;
-            bool discoverable = true;
+            std::optional< common::service::visibility::Type> visibility;
             std::string note;
 
             inline friend bool operator == ( const Service& lhs, const std::string& name) { return lhs.name == name;}
@@ -257,28 +257,26 @@ namespace casual::configuration
                CASUAL_SERIALIZE( name);
                CASUAL_SERIALIZE( routes);
                CASUAL_SERIALIZE( timeout);
-               CASUAL_SERIALIZE( discoverable);
+               CASUAL_SERIALIZE( visibility);
                CASUAL_SERIALIZE( note);
             )
 
-            inline auto tie() const { return std::tie( name, routes, timeout, discoverable, note);}
+            inline auto tie() const { return std::tie( name, routes, timeout, visibility, note);}
          };
 
          struct Global : common::Compare< Global>
          {
             service::Timeout timeout;
-            std::optional< bool> discoverable;
             std::string note;
 
             Global& operator += ( Global rhs);
 
             CASUAL_CONST_CORRECT_SERIALIZE(
                CASUAL_SERIALIZE( timeout);
-               CASUAL_SERIALIZE( discoverable);
                CASUAL_SERIALIZE( note);
             )
 
-            inline auto tie() const { return std::tie( timeout, discoverable, note);}
+            inline auto tie() const { return std::tie( timeout, note);}
          };
 
          struct Model : common::Compare< Model>
