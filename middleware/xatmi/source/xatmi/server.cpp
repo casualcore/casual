@@ -74,9 +74,12 @@ namespace casual
                {
                   casual::xatmi::Trace trace{ "casual::xatmi::server::local::start"};
 
-                  auto done = common::execute::scope( [done = argument.server_done]()
+                  bool init_called = false;
+
+                  auto done_scope = common::execute::scope( [ &init_called, done = argument.server_done]()
                   {
-                     if( done)
+                     // Only if init has been called successfully then we call done, symmetry with ctor/dtor
+                     if( done && init_called)
                         common::invoke( done);
                   });
 
@@ -88,12 +91,13 @@ namespace casual
                      xatmi::transform::resources( argument.xa_switches),
                      [&]()
                      {
-                        if( argument.server_init && common::invoke( argument.server_init, argument.argc, argument.argv) == -1)
-                        {      
-                           // if init is not ok, then we don't call done, symmetry with ctor/dtor
-                           done.release();
+                        if( ! argument.server_init)
+                           return;
+
+                        if( common::invoke( argument.server_init, argument.argc, argument.argv) != -1)
+                           init_called = true;
+                        else
                            common::event::error::raise( common::code::xatmi::argument, "server initialize failed - action: exit");
-                        }
                      });
                });
             }
