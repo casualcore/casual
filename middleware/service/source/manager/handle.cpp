@@ -887,11 +887,11 @@ namespace casual
 
                         auto reply = common::message::reverse::type( message, common::process::handle());
 
-                        // all known "remote" services
+                        // all known "remote" (not "local") services
                         reply.content.services = algorithm::accumulate( state.services, std::move( reply.content.services), []( auto result, auto& pair)
                         {
                            const auto& [ name, service] = pair;
-                           if( service.is_concurrent() && ! service.is_sequential())
+                           if( ! service.is_sequential())
                               result.push_back( name);
 
                            return result;

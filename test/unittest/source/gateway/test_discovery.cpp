@@ -45,6 +45,17 @@ namespace casual
                return buffer;
             }
 
+            auto call( std::string_view service)
+            {
+               auto buffer = local::allocate( 128);
+               auto len = tptypes( buffer, nullptr, nullptr);
+
+               tpcall( service.data(), buffer, 128, &buffer, &len, 0);
+               auto result = tperrno;
+               tpfree( buffer);
+               return result;
+            }
+
             namespace configuration
             {
                constexpr auto base = R"(
@@ -501,6 +512,78 @@ domain:
             EXPECT_TRUE( algorithm::find( update.domains, "B")) << CASUAL_NAMED_VALUE( update.domains);
             EXPECT_TRUE( algorithm::find( update.domains, "A")) << CASUAL_NAMED_VALUE( update.domains);
          }
+
+      }
+
+      TEST( test_gateway_discovery, A_GW_B__echo_in_B__reboot_B___expect_topology_direct__discovery_echo)
+      {
+         common::unittest::Trace trace;
+
+         auto create_b = [](){ return local::manager( local::configuration::base, R"(
+domain: 
+   name: B
+   servers:
+      - path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-server"
+        memberships: [ user]
+   gateway:
+      inbound:
+         groups:
+            -  connections:
+               -  address: 127.0.0.1:7010
+)");
+         };
+
+         auto b = create_b();
+
+         auto gw = local::manager( local::configuration::base, R"(
+domain: 
+   name: GW
+   gateway:
+      outbound:
+         groups:
+            -  connections:
+               -  address: 127.0.0.1:7010
+      inbound:
+         groups:
+            -  connections:
+               -  address: 127.0.0.1:7020
+                  discovery:
+                     forward: true
+)");
+
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected( "B"));
+
+
+         auto a = local::manager( local::configuration::base, R"(
+domain: 
+   name: A
+   gateway:
+      outbound:
+         groups:
+            -  connections:
+               -  address: 127.0.0.1:7020
+)");
+
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected( "GW"));
+
+         
+         // expect call to casual/example/domain/echo/B 
+         EXPECT_TRUE( local::call( "casual/example/domain/echo/B") == TPOK);
+
+
+         // reboot B, expect discovery of known services in our case casual/example/domain/echo/B
+         {
+            unittest::sink( std::move( b));
+            b = create_b();
+
+            gw.activate();
+            gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected( "B"));
+         }
+
+         a.activate();
+
+         // expect call to casual/example/domain/echo/B 
+         EXPECT_TRUE( local::call( "casual/example/domain/echo/B") == TPOK);
 
       }
 
