@@ -46,6 +46,7 @@ server:
       transaction: "auto"
     - name: "s3"
       function: "f3"
+      visibility: "undiscoverable"
     - name: "s4"
       function: "f4"
       category: "some.other.category"
@@ -79,7 +80,8 @@ server:
             },
             {
                 "name": "s3",
-                "function": "f3"
+                "function": "f3",
+                "visibility": "undiscoverable"
             },
             {
                 "name": "s4",
@@ -116,6 +118,7 @@ transaction=auto
 [server.services]
 function=f3
 name=s3
+visibility=undiscoverable
 
 [server.services]
 category=some.other.category
@@ -151,6 +154,7 @@ name=s4
   <element>
    <name>s3</name>
    <function>f3</function>
+   <visibility>undiscoverable</visibility>
   </element>
   <element>
    <name>s4</name>

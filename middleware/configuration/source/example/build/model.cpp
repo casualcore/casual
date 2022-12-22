@@ -36,6 +36,7 @@ server:
 
     - name: s3
       function: f3
+      visibility: undiscoverable
 
     - name: s4
       function: f4
