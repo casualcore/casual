@@ -50,8 +50,6 @@ _domain global_ settings for services. This will effect services that are not ot
 property       | description
 ---------------|----------------------------------------------------
 execution      | `service::execution::Timeout`, described above.
-discoverable   | if advertised services should be discoverable from other domains or not.
-
 
 ## domain.default
 
@@ -75,6 +73,13 @@ instances      | number of instances to start of the server.
 memberships    | `0..*` default group memberships.
 environment    | `domain::Environment` described above.
 restart        | if the executable should be restarted, if exit.
+
+### domain.default.service
+
+property         | description
+-----------------|----------------------------------------------------
+execution        | `service::execution::Timeout`, described above.
+visibility       | visibility (from other domains). Possible values: [ 'discoverable', 'undiscoverable'] 
 
 ## domain.groups
 
@@ -129,7 +134,7 @@ property         | description
 name             | name of the service
 routes           | defines what logical names are actually exposed. For _aliases_, it's important to include the original name.
 execution        | `service::execution::Timeout`, described above.
-discoverable     | if the service should be discoverable from other domains or not.
+visibility       | visibility (from other domains). Possible values: [ 'discoverable', 'undiscoverable'] 
 
 
 ## examples 
@@ -149,7 +154,6 @@ domain:
         timeout:
           duration: "2h"
           contract: "linger"
-      discoverable: true
   default:
     note: "'default', fallback, configuration. Will only affect 'local' configuration and will not aggregate 'between' configurations"
     server:
@@ -168,7 +172,7 @@ domain:
       execution:
         timeout:
           duration: "20s"
-      discoverable: false
+      visibility: "discoverable"
   environment:
     variables:
       - key: "SOME_VARIABLE"
@@ -238,7 +242,7 @@ domain:
       routes:
         - "b"
         - "c"
-      discoverable: false
+      visibility: "undiscoverable"
 ...
 
 ````
@@ -256,8 +260,7 @@ domain:
                         "duration": "2h",
                         "contract": "linger"
                     }
-                },
-                "discoverable": true
+                }
             }
         },
         "default": {
@@ -287,7 +290,7 @@ domain:
                         "duration": "20s"
                     }
                 },
-                "discoverable": false
+                "visibility": "discoverable"
             }
         },
         "environment": {
@@ -408,7 +411,7 @@ domain:
                     "b",
                     "c"
                 ],
-                "discoverable": false
+                "visibility": "undiscoverable"
             }
         ]
     }
@@ -439,7 +442,7 @@ key=SOME_VARIABLE
 value=foo
 
 [domain.default.service]
-discoverable=false
+visibility=discoverable
 
 [domain.default.service.execution]
 
@@ -466,7 +469,6 @@ path=/some/path/mq-server
 note='domain global' config. Aggregates right to left
 
 [domain.global.service]
-discoverable=true
 note=Will be used for services that are not explicitly configured.
 
 [domain.global.service.execution]
@@ -527,10 +529,10 @@ key=SALES_BROKER_VARIABLE
 value=556
 
 [domain.services]
-discoverable=false
 name=a
 routes=b
 routes=c
+visibility=undiscoverable
 
 [domain.services.execution]
 
@@ -554,7 +556,6 @@ duration=64ms
      <contract>linger</contract>
     </timeout>
    </execution>
-   <discoverable>true</discoverable>
   </service>
  </global>
  <default>
@@ -584,7 +585,7 @@ duration=64ms
      <duration>20s</duration>
     </timeout>
    </execution>
-   <discoverable>false</discoverable>
+   <visibility>discoverable</visibility>
   </service>
  </default>
  <environment>
@@ -705,7 +706,7 @@ duration=64ms
     <element>b</element>
     <element>c</element>
    </routes>
-   <discoverable>false</discoverable>
+   <visibility>undiscoverable</visibility>
   </element>
  </services>
 </domain>

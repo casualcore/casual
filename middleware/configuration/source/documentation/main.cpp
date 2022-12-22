@@ -127,8 +127,6 @@ _domain global_ settings for services. This will effect services that are not ot
 property       | description
 ---------------|----------------------------------------------------
 execution      | `service::execution::Timeout`, described above.
-discoverable   | if advertised services should be discoverable from other domains or not.
-
 
 ## domain.default
 
@@ -152,6 +150,13 @@ instances      | number of instances to start of the server.
 memberships    | `0..*` default group memberships.
 environment    | `domain::Environment` described above.
 restart        | if the executable should be restarted, if exit.
+
+### domain.default.service
+
+property         | description
+-----------------|----------------------------------------------------
+execution        | `service::execution::Timeout`, described above.
+visibility       | visibility (from other domains). Possible values: [ 'discoverable', 'undiscoverable'] 
 
 ## domain.groups
 
@@ -206,7 +211,7 @@ property         | description
 name             | name of the service
 routes           | defines what logical names are actually exposed. For _aliases_, it's important to include the original name.
 execution        | `service::execution::Timeout`, described above.
-discoverable     | if the service should be discoverable from other domains or not.
+visibility       | visibility (from other domains). Possible values: [ 'discoverable', 'undiscoverable'] 
 
 
 )";
