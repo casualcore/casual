@@ -566,9 +566,10 @@ domain:
 
          gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected( "GW"));
 
+         constexpr std::string_view service_echo = "casual/example/domain/echo/B";
          
          // expect call to casual/example/domain/echo/B 
-         EXPECT_TRUE( local::call( "casual/example/domain/echo/B") == TPOK);
+         EXPECT_TRUE( local::call( service_echo) == TPOK);
 
 
          // reboot B, expect discovery of known services in our case casual/example/domain/echo/B
@@ -578,12 +579,15 @@ domain:
 
             gw.activate();
             gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected( "B"));
+
+            // need to wait until the discovery has found the instance...
+            casual::service::unittest::fetch::until( casual::service::unittest::fetch::predicate::instances( service_echo, 1));
          }
 
          a.activate();
 
          // expect call to casual/example/domain/echo/B 
-         EXPECT_TRUE( local::call( "casual/example/domain/echo/B") == TPOK);
+         EXPECT_TRUE( local::call( service_echo) == TPOK);
 
       }
 
