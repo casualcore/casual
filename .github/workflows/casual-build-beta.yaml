@@ -289,7 +289,7 @@ jobs:
     needs: [build-centos,build-suse,tag-repo]
     if: always()
     steps: 
-      - uses: martialonline/workflow-status@v2
+      - uses: martialonline/workflow-status@v4
         id: check
       - name: Discord notification
         env:
