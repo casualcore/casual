@@ -43,6 +43,7 @@ namespace casual
                {
                   namespace transaction
                   {
+                     //! blocking "involve" send to TM
                      template< typename M>
                      void involved( State& state, M& message)
                      {
@@ -50,21 +51,24 @@ namespace casual
 
                         if( ! algorithm::find( state.involved, message.trid))
                         {
-                           state.multiplex.send( 
-                              queue::ipc::transaction::manager(), 
+                           // we need to send this blocking to guarantee that TM knows about our
+                           // association with the transaction BEFORE any potential prepare/commit 
+                           // stage from caller.
+                           communication::device::blocking::send( 
+                              queue::ipc::transaction::manager(),
                               common::message::transaction::resource::external::involved::create( message));
 
                            state.involved.push_back( message.trid);
                         }
-                        log::line( verbose::log, "involved: ", state.involved);
+                        log::line( verbose::log, "state.involve: ", state.involved);
                      }
 
                      template< typename M>
                      void done( State& state, M& message)
                      {
                         Trace trace{ "queue::group::handle::local::detail::transaction::done"};
-                        algorithm::container::trim( state.involved, algorithm::remove( state.involved, message.trid));
-                        log::line( verbose::log, "involved: ", state.involved);
+                        algorithm::container::erase( state.involved, message.trid);
+                        log::line( verbose::log, "state.involved: ", state.involved);
                      }
 
                   } // transaction
