@@ -28,6 +28,13 @@ namespace casual
       Stream transaction{ "casual.transaction"};
       Stream buffer{ "casual.buffer"};
 
+      namespace event
+      {
+         Stream service{ "casual.event.service"};
+         Stream server{ "casual.event.server"};
+         Stream transaction{ "casual.event.transaction"}; 
+      } // event
+
    } // common::log::category
 } // casual
 

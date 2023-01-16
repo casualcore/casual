@@ -39,6 +39,8 @@ namespace casual
                   signal::thread::scope::Mask block{ signal::set::filled( code::signal::terminate, code::signal::interrupt)};
 
                   communication::device::blocking::send( communication::instance::outbound::service::manager::device(), advertise);
+
+                  log::line( log::category::event::server, "advertise");
                }
             }
 
@@ -74,6 +76,8 @@ namespace casual
 
             // Let the service-manager know about our services...
             policy::advertise( std::move( arguments.services));
+
+            log::line( log::category::event::server, "configure");
          }
 
          void Default::reply( strong::ipc::id id, message::service::call::Reply& message)
@@ -82,6 +86,8 @@ namespace casual
             log::line( log::debug, "ipc: ", id, "reply: ", message);
 
             communication::device::blocking::send( id, message);
+
+            log::line( log::category::event::service, "reply");
          }
 
          void Default::reply( strong::ipc::id id, message::conversation::callee::Send& message)
@@ -90,6 +96,8 @@ namespace casual
             log::line( log::debug, "ipc: ", id, "reply: ", message);
 
             communication::device::blocking::send( id, message);
+
+            log::line( log::category::event::service, "reply");
          }
 
          void Default::ack( const message::service::call::ACK& message)
@@ -99,9 +107,11 @@ namespace casual
             log::line( verbose::log, "reply: ", message);
 
             communication::device::blocking::send( communication::instance::outbound::service::manager::device(), message);
+
+            log::line( log::category::event::service, "ack");
          }
 
-         void Default::statistics( strong::ipc::id id,  message::event::service::Call& event)
+         void Default::statistics( strong::ipc::id id, message::event::service::Call& event)
          {
             Trace trace{ "server::handle::policy::Default::statistics"};
 
@@ -115,6 +125,8 @@ namespace casual
             {
                log::line( log::category::error, exception::capture());
             }
+
+            log::line( log::category::event::service, "statistics");
          }
 
          void Default::transaction(

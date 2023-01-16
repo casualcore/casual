@@ -23,7 +23,12 @@ namespace casual
       namespace trace
       {
          common::log::Stream log{ "casual.queue.trace"};  
-      } // verbose
+      } // trace
 
+      namespace event
+      {
+         common::log::Stream log{ "casual.event.queue"};
+      } // event
+      
    } // queue
 } // casual

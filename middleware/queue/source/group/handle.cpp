@@ -601,7 +601,7 @@ namespace casual
                            if( std::filesystem::exists( old))
                            {
                               std::filesystem::rename( old, file);
-                              event::notification::send( "queuebase file moved: ", std::filesystem::relative( old), " -> ", std::filesystem::relative( file));
+                              common::event::notification::send( "queuebase file moved: ", std::filesystem::relative( old), " -> ", std::filesystem::relative( file));
                               log::line( log::category::warning, "queuebase file moved: ", old, " -> ", file);
                            }
                         }
@@ -697,7 +697,7 @@ namespace casual
                         log::line( verbose::log, "remove: ", remove);
 
                         // if something goes wrong we send fatal event
-                        auto queues = event::guard::fatal( [&]()
+                        auto queues = common::event::guard::fatal( [&]()
                         { 
                            return detail::update( state, wanted, remove, state.zombies);
                         });

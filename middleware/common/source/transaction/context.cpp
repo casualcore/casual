@@ -130,7 +130,7 @@ namespace casual
                      auto result = common::environment::normalize( 
                         communication::ipc::call( communication::instance::outbound::transaction::manager::device(), request)).resources;
 
-                     log::line( verbose::log, "result: ", result);
+                     common::log::line( verbose::log, "result: ", result);
 
                      return result;
                   }
@@ -223,6 +223,11 @@ namespace casual
                         common::log::line( common::log::category::error, code, ' ', std::forward< Ts>( ts)...);
 
                      return code;
+                  }
+
+                  void event( std::string_view context, const transaction::ID& trid)
+                  {
+                     common::log::line( common::log::category::event::transaction, context, '|', trid);
                   }
                } // log
 
@@ -489,6 +494,8 @@ namespace casual
                local::raise::code( local::resources::start::invoke( local::resources::start::policy::join(), transaction, m_resources.fixed), 
                   "failed to join one or more fixed resources");
 
+            local::log::event( "join", trid);
+
             return transaction;
          }
 
@@ -500,6 +507,8 @@ namespace casual
 
             local::raise::code( local::resources::start::invoke( local::resources::start::policy::start(), transaction, m_resources.fixed),
                "failed to start on ore more fixed resources");
+
+            local::log::event( "start", transaction.trid);
 
             m_transactions.push_back( std::move( transaction));
             return m_transactions.back();
@@ -514,6 +523,8 @@ namespace casual
             if( transaction)
                local::raise::code( local::resources::start::invoke( local::resources::start::policy::branch(), transaction, m_resources.fixed),
                   "failed to branch one or more fixed resources");
+
+            local::log::event( "branch", transaction.trid);
 
             return transaction;
          }
@@ -663,6 +674,7 @@ namespace casual
             result.state += transform_state( code);
 
             log::line( log::category::transaction, "result: ", result);
+            log::line( log::category::event::transaction , "finalize");
 
             return result;
          }
@@ -770,7 +782,7 @@ namespace casual
             }            
 
             m_transactions.push_back( std::move( transaction));
-            log::line( log::category::transaction, "transaction: ", m_transactions.back().trid, " started");
+            local::log::event( "begin", m_transactions.back().trid);
 
             return code::tx::ok;
          }
@@ -867,6 +879,8 @@ namespace casual
                if( ! transaction.involved().empty())
                   return resource_commit( transaction.involved().front(), transaction, flag::xa::Flag::one_phase);
 
+               local::log::event( "commit", transaction.trid); 
+
                // No resources associated to this transaction, hence the commit is successful.
                return code::tx::ok;
             }
@@ -913,11 +927,14 @@ namespace casual
                      break;
                   }
                   case Stage::commit:
+                     local::log::event( "commit", transaction.trid);
                      return local::log::code( reply.state, "commit - stage commit");
                   case Stage::rollback:
+                     local::log::event( "commit", transaction.trid);
                      return local::log::code( code::tx::rollback, "commit - stage rollback - state: ", reply.state);
                }
 
+               local::log::event( "commit", transaction.trid);
                return local::log::code( reply.state, "during commit");
             }
          }
@@ -952,10 +969,14 @@ namespace casual
                auto involved = transaction.involved();
                algorithm::transform( m_resources.fixed, involved, []( auto& r){ return r.id();});
 
-               return algorithm::accumulate( algorithm::unique( algorithm::sort( involved)), code::tx::ok, local::accumulate::code( [&]( auto id)
+               auto result = algorithm::accumulate( algorithm::unique( algorithm::sort( involved)), code::tx::ok, local::accumulate::code( [&]( auto id)
                {
                   return resource_rollback( id, transaction);
                }));
+
+               local::log::event( "rollback", transaction.trid);
+
+               return result;
             }
             else 
             {
@@ -967,7 +988,7 @@ namespace casual
 
                auto reply = communication::ipc::call( communication::instance::outbound::transaction::manager::device(), request);
 
-               log::line( log::category::transaction, "rollback reply tx: ", reply.state);
+               local::log::event( "rollback", transaction.trid);
 
                return local::log::code( reply.state, "during rollback");
             }
@@ -1085,6 +1106,8 @@ namespace casual
 
             *xid = ongoing.trid.xid;
 
+            local::log::event( "suspend", ongoing.trid);
+
             return code::tx::ok;
          }
 
@@ -1108,6 +1131,8 @@ namespace casual
 
                // We rotate the wanted to end;
                algorithm::rotate( m_transactions, ++found);
+
+               local::log::event( "resume", current().trid);
 
                return code::tx::ok;
             }
