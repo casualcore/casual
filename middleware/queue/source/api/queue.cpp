@@ -78,7 +78,7 @@ namespace casual
                   common::log::line( verbose::log, "request: ", request);
 
                   auto id = common::communication::ipc::call( group.process.ipc, request).id;
-                  common::log::line( verbose::log, "id: ", id);
+                  common::log::line( queue::event::log, "enqueue|", id);
 
                   return id;
                }
@@ -135,19 +135,21 @@ namespace casual
                            group.process.ipc,  
                            dequeue::request( group, selector, transaction.trid, false));
 
-                        if( ! reply.message.empty() && transaction)
+                        if( ! reply.message.empty())
                         {
-                           // Make sure we trigger an interaction with the TM.
-                           // Since the queue-groups act as 'external resources' to
-                           // the TM
-                           transaction.external();
+                           if( transaction)
+                           {
+                              // Make sure we trigger an interaction with the TM.
+                              // Since the queue-groups act as 'external resources' to
+                              // the TM
+                              transaction.external();
+                           }
+                           common::log::line( queue::event::log, "dequeue|", reply.message.front().id);
                         }
 
                         return common::algorithm::transform( reply.message, transform::message());
                      }  
                   } // non
-
-
 
                   auto blocking( const queue::Lookup& lookup, const Selector& selector)
                   {
@@ -178,12 +180,17 @@ namespace casual
                         Trace trace{ "casual::queue::local::dequeue::blocking handler - dequeue::Reply"};
                         common::log::line( verbose::log, "message: ", message);
 
-                        if( ! message.message.empty() && transaction)
+                        if( ! message.message.empty())
                         {
-                           // Make sure we trigger an interaction with the TM.
-                           // Since the queue-groups act as 'external resources' to
-                           // the TM
-                           transaction.external();
+                           if( transaction)
+                           {
+                              // Make sure we trigger an interaction with the TM.
+                              // Since the queue-groups act as 'external resources' to
+                              // the TM
+                              transaction.external();
+                           }
+
+                           common::log::line( queue::event::log, "dequeue|", message.message.front().id);
                         }
 
                         if( message.correlation != correlation)

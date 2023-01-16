@@ -60,6 +60,14 @@ namespace casual
 
                   return code;
                }
+
+               template< typename... Ts>
+               void event( std::string_view context, Ts&&... ts)
+               {
+                  common::log::line( common::log::category::event::transaction, context, std::forward< Ts>( ts)...);
+                  
+               }
+
             } // log
 
 
@@ -97,6 +105,8 @@ namespace casual
             result = local::convert( m_xa->xa_start_entry( local::non_const_xid( transaction), m_id.value(), flags.underlying()));
          }
 
+         local::log::event( "resource-start|", m_id, '|', transaction, '|', result);
+
          return local::log::code( result, m_id, "failed to start trid: ", transaction, ", flags: ", flags);
       }
 
@@ -108,6 +118,8 @@ namespace casual
          {
             return local::convert( m_xa->xa_end_entry( local::non_const_xid( transaction), m_id.value(), flags.underlying()));
          });
+
+         local::log::event( "resource-end|", m_id, '|', transaction, '|', result);
 
          return local::log::code( result, m_id, "failed to end trid: ", transaction, ", flags: ", flags);
       }
@@ -123,6 +135,8 @@ namespace casual
          if( result != code::xa::ok)
             common::event::error::send( result, "failed to open resource: ", m_id, " '", m_xa->name, "'");
 
+         local::log::event( "resource-open|", m_id, '|', result);
+
          return result;
       }
 
@@ -132,6 +146,8 @@ namespace casual
          log::line( log::category::transaction, "close resource: ", m_id, ", closeinfo: ", info, ", flags: ", flags);
 
          auto result = local::convert( m_xa->xa_close_entry( info.c_str(), m_id.value(), flags.underlying()));
+
+         local::log::event( "resource-close|", m_id, '|', result);
 
          return local::log::code( result, m_id, "failed to close - flags: ", flags);
       }
@@ -157,6 +173,8 @@ namespace casual
             }
          }
 
+         local::log::event( "resource-prepare|", m_id, '|', transaction, '|', result);
+
          log::line( log::category::transaction, result, " prepare rm: ", m_id, " trid: ", transaction, " flags: ", flags);
 
          return result;
@@ -166,20 +184,28 @@ namespace casual
       {
          log::line( log::category::transaction, "commit resource: ", m_id, " transaction: ", transaction, " flags: ", flags);
 
-         return reopen_guard( [&]()
+         auto result = reopen_guard( [&]()
          {
             return local::convert( m_xa->xa_commit_entry( local::non_const_xid( transaction), m_id.value(), flags.underlying()));
          });
+
+         local::log::event( "resource-commit|", m_id, '|', transaction, '|', result);
+
+         return result;
       }
 
       code::xa Resource::rollback( const transaction::ID& transaction, Flags flags) noexcept
       {
          log::line( log::category::transaction, "rollback resource: ", m_id, " transaction: ", transaction, " flags: ", flags);
 
-         return reopen_guard( [&]()
+         auto result =  reopen_guard( [&]()
          {
             return local::convert( m_xa->xa_rollback_entry( local::non_const_xid( transaction), m_id.value(), flags.underlying()));
          });
+
+         local::log::event( "resource-rollback|", m_id, '|', transaction, '|', result);
+
+         return result;
       }
 
       bool Resource::dynamic() const noexcept

@@ -42,6 +42,14 @@ namespace casual
 
       //! Log with category 'casual.buffer'
       extern Stream buffer;
+
+      namespace event
+      {
+         extern Stream service;
+         extern Stream server;
+         extern Stream transaction;
+         
+      } // event
       
    } // common::log::category
 } // casual

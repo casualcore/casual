@@ -177,6 +177,7 @@ namespace casual
 
             communication::device::blocking::send( target.process.ipc, prepared.message);
          }
+         log::line( log::category::event::service, "send|", target.service.name, '|', prepared.descriptor);
 
          unreserve.release();
          return prepared.descriptor;
@@ -258,7 +259,7 @@ namespace casual
          reply::Result result;
          auto [ reply, xatmi_descriptor] = get_reply();
 
-         log::line( log::debug, "reply: ", reply);
+         log::line( log::category::event::service , "receive|", xatmi_descriptor, '|', reply.code.result);
 
          result.descriptor = xatmi_descriptor;
          result.user = reply.code.user;

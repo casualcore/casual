@@ -25,13 +25,18 @@ namespace casual
       namespace trace
       {
          extern common::log::Stream log;  
-      } // verbose
+      } // trace
 
       struct Trace : common::log::Trace
       {
          template< typename T>
          Trace( T&& value) : common::log::Trace( std::forward< T>( value), trace::log) {}
       };
+
+      namespace event
+      {
+         extern common::log::Stream log;  
+      } // event
 
    } // queue
 } // casual
