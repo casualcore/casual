@@ -62,7 +62,12 @@ namespace casual
                std::string queue;
                common::process::Handle process;
 
-               explicit operator bool () const { return id && process;}
+               inline explicit operator bool () const { return id && process;}
+               inline void invalidate() noexcept 
+               {
+                  id = {};
+                  process = {};
+               }
 
                friend inline bool operator == ( const Source& lhs, common::strong::queue::id id) { return lhs.id == id;}
                friend inline bool operator == ( const Source& lhs, common::strong::process::id pid) { return lhs.process.pid == pid;}
@@ -172,7 +177,13 @@ namespace casual
 
                void invalidate() noexcept;
 
-               inline bool valid_queues() const { return source && ( ! reply || reply.value());}
+               inline bool valid_queues() const { return source && ( ! reply || *reply);}
+               inline void invalidate_queues() noexcept
+               { 
+                  source.invalidate();
+                  if( reply)
+                     reply->invalidate();
+               }
 
                inline friend bool operator == ( const Service& lhs, forward::id rhs) { return lhs.id == rhs;}
                inline friend bool operator == ( const Service& lhs, common::strong::process::id rhs) { return lhs.source.process == rhs || lhs.reply == rhs;}
@@ -208,6 +219,11 @@ namespace casual
                Queue& operator--();
 
                void invalidate() noexcept;
+               inline void invalidate_queues() noexcept
+               { 
+                  source.invalidate();
+                  target.invalidate();
+               }
 
                inline bool valid_queues() const { return source && target;}
 

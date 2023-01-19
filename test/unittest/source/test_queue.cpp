@@ -5,6 +5,7 @@
 //!
 #include "common/unittest.h"
 
+#include "queue/api/queue.h"
 #include "queue/common/ipc/message.h"
 
 #include "domain/unittest/manager.h"
@@ -12,6 +13,8 @@
 #include "gateway/unittest/utility.h"
 
 #include "common/communication/instance.h"
+#include "common/transaction/context.h"
+#include "common/execute.h"
 
 namespace casual
 {
@@ -62,6 +65,28 @@ domain:
                request.name = std::move( name);
                return communication::ipc::call( communication::instance::outbound::queue::manager::device(), request);
             }
+
+
+            auto message()
+            {
+               queue::Message result{ queue::Payload{ "payload", unittest::random::binary( 1024) }};
+               return result;
+            }
+
+            namespace dequeue
+            {
+               auto until( const std::string& queue)
+               {
+                  return unittest::fetch::until( [ queue]()
+                  { 
+                     return queue::dequeue( queue);
+                  })
+                  ( []( auto&& message)
+                  {
+                     return ! message.empty();
+                  });
+               }
+            } // dequeue
 
          } // <unnamed>
       } // local
@@ -136,6 +161,106 @@ domain:
             EXPECT_TRUE( local::lookup( "a1", context));
          }
 
+      }
+
+      TEST( test_queue, forward_a1_to_b1___shutdown_B__enqueue_a1__expect_forward_fail_to_a1_error___boot_B__enqueue_a1_expect_forward_success_to_b1)
+      {
+         common::unittest::Trace trace;
+
+         // sink child signals 
+         common::signal::callback::registration< common::code::signal::child>( [](){});
+
+
+         auto boot_domain_b = []()
+         {
+            return local::domain( R"(
+domain: 
+   name: B
+   queue:
+      groups:
+         -  alias: B
+            queuebase: ':memory:'
+            queues:
+               -  name: b1
+   gateway:
+      inbound:
+         groups:
+            -  connections:
+                  -  address: 127.0.0.1:7010
+)");
+
+         };
+
+         auto b = boot_domain_b();
+
+         auto a = local::domain( R"(
+domain: 
+   name: A
+   queue:
+      groups:
+         -  alias: A
+            queuebase: ':memory:'
+            queues:
+               -  name: a1
+      forward:
+         groups:
+            -  alias: A
+               queues:
+               -  source: a1
+                  instances: 2
+                  target: 
+                     queue: b1
+   gateway:
+      outbound:
+         groups:
+            -  connections:
+                  -  address: 127.0.0.1:7010
+)");
+
+
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected());
+
+         const auto origin = local::message();
+         
+         // make sure all parts knows about b1
+         queue::enqueue( "b1", origin);
+         EXPECT_TRUE( ! queue::dequeue( "b1").empty());
+         
+         // shutdown b
+         unittest::sink( std::move( b));
+
+         {
+            // to local forward. The forward will fail, since b1 is not online
+            // anymore. Rollback -> a1.error
+            queue::enqueue( "a1", origin);
+
+            auto message = local::dequeue::until( "a1.error");
+
+            ASSERT_TRUE( ! message.empty());
+            EXPECT_TRUE( message.front().payload.data == origin.payload.data);
+            
+            // should fail, of course...
+            EXPECT_ANY_THROW( queue::enqueue( "b1", origin));
+         }
+
+         // boot b again...
+         b = boot_domain_b();
+         a.activate();
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected());
+
+         // the forward should "self heal" and work.
+         algorithm::for_n< 5>( [ &origin]()
+         {
+            queue::enqueue( "a1", origin);
+         });
+
+         algorithm::for_n< 5>( [ &origin]()
+         {
+            auto message = local::dequeue::until( "b1");
+
+            ASSERT_TRUE( ! message.empty());
+            EXPECT_TRUE( message.front().payload.data == origin.payload.data);
+         });
       }
       
    } // test

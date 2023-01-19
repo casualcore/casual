@@ -65,7 +65,6 @@ namespace casual
                   request.message.attributes.properties = message.attributes.properties;
                   request.message.attributes.reply = message.attributes.reply;
                   request.message.attributes.available = message.attributes.available;
-
                   request.name = lookup.name();
 
                   auto group = lookup();
@@ -78,6 +77,11 @@ namespace casual
                   common::log::line( verbose::log, "request: ", request);
 
                   auto id = common::communication::ipc::call( group.process.ipc, request).id;
+
+                  // a 'nil' queue id indicate error...
+                  if( ! id)
+                     common::code::raise::error( queue::code::no_queue, "failed to lookup queue: ", lookup.name());
+
                   common::log::line( queue::event::log, "enqueue|", id);
 
                   return id;

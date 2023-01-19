@@ -9,6 +9,7 @@
 
 #include "queue/common/ipc/message.h"
 #include "common/strong/type.h"
+#include "common/string.h"
 
 #include <string>
 
@@ -24,7 +25,7 @@ namespace casual
       struct Lookup
       {
          using Semantic = ipc::message::lookup::request::context::Semantic;
-         explicit Lookup( std::string queue, Semantic semantic = Semantic::direct);
+         explicit Lookup( common::string::Argument queue, Semantic semantic = Semantic::direct);
 
          ipc::message::lookup::Reply operator () () const;
 
