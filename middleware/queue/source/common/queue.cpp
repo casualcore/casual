@@ -34,7 +34,7 @@ namespace casual
          } // <unnamed>
       } // local
 
-      Lookup::Lookup( std::string queue, Semantic semantic)
+      Lookup::Lookup( common::string::Argument queue, Semantic semantic)
          : m_name( std::move( queue)), m_correlation{ local::request( m_name, semantic)}
       {}
 

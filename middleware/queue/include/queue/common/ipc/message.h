@@ -482,6 +482,7 @@ namespace casual
             {
                using base_reply::base_reply;
 
+               //! A 'nil' id represent that the enqueue failed (for now, assume queue:no_queue)
                common::Uuid id;
 
                CASUAL_CONST_CORRECT_SERIALIZE(

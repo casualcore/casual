@@ -93,7 +93,7 @@ namespace casual
 
                   if( forward.reply)
                   {
-                     auto& reply = forward.reply.value();
+                     auto& reply = *forward.reply;
 
                      if( reply.queue == message.name)
                      {
@@ -102,7 +102,7 @@ namespace casual
                      }
                   }
 
-                  return forward.source && ( ! forward.reply || forward.reply.value());
+                  return forward.source && ( ! forward.reply || *forward.reply);
                }
 
                template< typename M>
@@ -154,7 +154,7 @@ namespace casual
                      state.pending.queue.lookups.push_back( detail::send::request( state, forward.id, forward.source.queue));
 
                      if( forward.reply)
-                        state.pending.queue.lookups.push_back( detail::send::request( state, forward.id, forward.reply.value().queue));
+                        state.pending.queue.lookups.push_back( detail::send::request( state, forward.id, forward.reply->queue));
                   }
 
 
@@ -198,7 +198,7 @@ namespace casual
                      Trace trace{ "queue::forward::send::dequeue::request"};
                      common::log::line( verbose::log, "forward: ", forward);
 
-                     auto send_request =[&]()
+                     auto send_request =[ &]()
                      {
                         ipc::message::group::dequeue::Request request{ common::process::handle()};
                         request.trid = common::transaction::id::create( common::process::handle());
@@ -723,7 +723,21 @@ namespace casual
 
                         auto pending = pending::consume( state.pending.enqueues, message.correlation);
 
-                        send::transaction::commit::request( state, std::move( pending));
+
+                        if( message.id)
+                        {
+                           send::transaction::commit::request( state, std::move( pending));
+                        }
+                        else
+                        {
+                           // 'nil' message-id indicate no_queue. We invalidates, and 
+                           // this will trigger lookup.
+                           state.forward_apply( pending.id, []( auto& forward)
+                           {
+                              forward.invalidate_queues();
+                           });
+                           send::transaction::rollback::request( state, std::move( pending));  
+                        }
                      };
                   }
                }
@@ -732,6 +746,25 @@ namespace casual
                {
                   namespace rollback
                   {
+                     namespace detail
+                     {
+                        // if the queues are _not invalidated_ we try to dequeue again.
+                        //! Otherwise we lookup the queues, unless we have pending lookups for
+                        //! the queues
+                        template< typename F>
+                        void next( State& state, F& forward)
+                        {
+                           if( forward.valid_queues())
+                           {
+                              send::dequeue::request( state, forward);
+                           }
+                           else if( ! algorithm::find( state.pending.queue.lookups, forward.id))
+                           {
+                              local::queue::lookup::detail::request( state, forward);
+                           }
+                        }
+                     } // detail
+
                      // Possible final state of the casual-forward "state-machine"
                      auto reply( State& state)
                      {
@@ -745,15 +778,13 @@ namespace casual
                            if( message.stage != decltype( message.stage)::rollback)
                               common::log::line( common::log::category::error, message.state, "failed to rollback - trid: ", message.trid);
 
-
                            state.forward_apply( pending.id, [&state]( auto& forward)
                            {
                               --forward;
                               ++forward.metric.rollback.count;
                               forward.metric.rollback.last = platform::time::clock::type::now();
 
-                              // we try to dequeue again... 
-                              send::dequeue::request( state, forward);
+                              detail::next( state, forward);
                            });
                         };
                      }
@@ -790,7 +821,7 @@ namespace casual
                            });
                         };
                      }
-                  } // rollback
+                  } // commit
                } // transaction
 
                namespace state
