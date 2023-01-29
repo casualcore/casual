@@ -270,6 +270,7 @@ namespace casual
                            });
 
                            state.multiplex.send( destination.ipc, reply);
+                           state::metric::message::count::send( reply);
                         });
                      };
                   }
@@ -429,6 +430,7 @@ namespace casual
                            log::line( verbose::log, "message: ", message);
 
                            state.multiplex.send( destination.ipc, message);
+                           state::metric::message::count::send( message);
                         });
                      });
                   }
@@ -449,6 +451,7 @@ namespace casual
                         log::line( verbose::log, "message: ", message);
 
                         state.multiplex.send( destination.ipc, message);
+                        state::metric::message::count::send( message);
                      });
                   }
                };
