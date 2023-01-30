@@ -77,24 +77,18 @@ namespace casual
 
       } // state
 
-      tcp::Connection* State::consume( const strong::correlation::id& correlation)
+      common::strong::file::descriptor::id State::consume( const strong::correlation::id& correlation)
       {
          if( auto found = algorithm::find( correlations, correlation))
-         {
-            auto descriptor = algorithm::container::extract( correlations, std::begin( found)).descriptor;
-            
-            if( auto connector = algorithm::find( external.connections(), descriptor))
-               return connector.data();
-         }
+            return algorithm::container::extract( correlations, std::begin( found)).descriptor;
 
-         return nullptr;
+         return {};
       }
 
       tcp::Connection* State::connection( const common::strong::correlation::id& correlation)
       {
          if( auto found = algorithm::find( correlations, correlation))
-            if( auto connector = algorithm::find( external.connections(), found->descriptor))
-               return connector.data();
+            return external.connection( found->descriptor);
 
          return nullptr;
       }

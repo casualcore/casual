@@ -33,20 +33,19 @@ namespace casual
             namespace tcp
             {
                template< typename M>
-               strong::file::descriptor::id send( State& state, M&& message)
+               strong::correlation::id send( State& state, strong::file::descriptor::id descriptor, M&& message)
                {
-                  if( auto connection = state.consume( message.correlation))
+                  if( auto connection = state.external.connection( descriptor))
                   {
                      try
                      {
-                        connection->send( state.directive, std::forward< M>( message));
-                        return connection->descriptor();
+                        return connection->send( state.directive, std::forward< M>( message));
                      }
                      catch( ...)
                      {
                         const auto error = exception::capture();
 
-                        auto lost = connection::lost( state, connection->descriptor());
+                        auto lost = connection::lost( state, descriptor);
 
                         if( error.code() != code::casual::communication_unavailable)
                            log::line( log::category::error, error, " send failed to remote: ", lost.remote, " - action: remove connection");
@@ -55,7 +54,23 @@ namespace casual
                         // later (and differently depending on if we're 'regular' or 'reversed')
                         communication::ipc::inbound::device().push( lost);
                      }
-                     return {};
+                  }
+                  else
+                  {
+                     log::line( log::category::error, code::casual::internal_correlation, " failed to correlate descriptor: ", descriptor);
+                     log::line( log::category::verbose::error, "state: ", state);
+                  }
+
+                  return {};
+               }
+
+               template< typename M>
+               strong::file::descriptor::id send( State& state, M&& message)
+               {
+                  if( auto descriptor = state.consume( message.correlation))
+                  {
+                     if( tcp::send( state, descriptor, std::forward< M>( message)))
+                        return descriptor;
                   }
                
                   log::line( log::category::error, code::casual::communication_unavailable, " connection absent when trying to send reply - ", message.type());
@@ -203,8 +218,7 @@ namespace casual
 
                         if( auto found = algorithm::find( state.conversations, message.correlation))
                         {
-                           if( auto connection = state.external.connection( found->descriptor))
-                              connection->send( state.directive, message);
+                           local::tcp::send( state, found->descriptor, message);
                            
                            // if the `send` has event that indicate that it will end the conversation - we remove our "route" state
                            // for the connection
@@ -306,13 +320,16 @@ namespace casual
                               Trace trace{ "gateway::group::inbound::handle::local::internal::domain::discovery::topology::implicit::update"};
                               common::log::line( verbose::log, "message: ", message);
 
-                              auto send_if_compatible = [ &state, &message]( auto& connection)
+                              auto send_if_compatible = [ &state, &message]( auto descriptor)
                               {
-                                 if( ! message::protocol::compatible( message, connection.protocol()))
+                                 auto connection = state.external.connection( descriptor);
+                                 CASUAL_ASSERT( connection);
+
+                                 if( ! message::protocol::compatible( message, connection->protocol()))
                                     return;
 
-                                 auto information = casual::assertion( state.external.information( connection.descriptor()), 
-                                    "failed to find information for descriptor: ", connection.descriptor());
+                                 auto information = casual::assertion( state.external.information( descriptor), 
+                                    "failed to find information for descriptor: ", descriptor);
 
                                  if( information->configuration.discovery != decltype( information->configuration.discovery)::forward)
                                     return;
@@ -320,11 +337,11 @@ namespace casual
                                  // check if domain has seen this message before...
                                  if( algorithm::find( message.domains, information->domain))
                                     return;
-                                 
-                                 connection.send( state.directive, message);
+
+                                 local::tcp::send( state, descriptor, message);
                               };
 
-                              algorithm::for_each( state.external.connections(), send_if_compatible);
+                              algorithm::for_each( state.external.descriptors(), send_if_compatible);
 
                            };
                         }
@@ -374,11 +391,9 @@ namespace casual
                         Trace trace{ "gateway::group::inbound::handle::local::external::disconnect::reply"};
                         common::log::line( verbose::log, "message: ", message);
 
-                        if( auto connection = state.consume( message.correlation))
+                        if( auto descriptor = state.consume( message.correlation))
                         {
-                           common::log::line( verbose::log, "connection: ", *connection);
-
-                           auto descriptor = connection->descriptor();
+                           common::log::line( verbose::log, "descriptor: ", descriptor);
 
                            if( algorithm::find( state.correlations, descriptor))
                            {
@@ -781,18 +796,8 @@ namespace casual
 
                if( message::protocol::compatible< message::domain::disconnect::Request>( connection->protocol()))
                {
-                  try 
-                  {
-                     state.correlations.emplace_back( 
-                        connection->send( state.directive, message::domain::disconnect::Request{}),
-                        descriptor
-                     );
-                  }
-                  catch( ...)
-                  {
-                     exception::sink();
-                     handle::connection::lost( state, descriptor);
-                  }
+                  if( auto correlation = local::tcp::send( state, descriptor, message::domain::disconnect::Request{}))
+                     state.correlations.emplace_back( correlation, descriptor);
                }
                else
                {
