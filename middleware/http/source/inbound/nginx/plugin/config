@@ -1,0 +1,9 @@
+ngx_module_name=ngx_http_casual_module
+ngx_module_type=HTTP
+ngx_module_srcs="$ngx_addon_dir/$ngx_module_name.c"
+ngx_module_incs="$ngx_addon_dir $CASUAL_MAKE_SOURCE_ROOT/middleware/http/include"
+ngx_module_libs="-L$CASUAL_MAKE_SOURCE_ROOT/middleware/http/bin -lcasual-http-inbound-common"
+
+. auto/module
+
+ngx_addon_name=$ngx_module_name

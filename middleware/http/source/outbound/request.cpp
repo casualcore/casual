@@ -58,7 +58,6 @@ namespace casual
 
             } global;
 
-
             namespace send
             {
                namespace callback

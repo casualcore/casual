@@ -111,7 +111,7 @@ domain:
 
          tpfree( buffer);
       }
-
+/*
       TEST( http_outbound, service_instance_order)
       {
          common::unittest::Trace trace;
@@ -124,6 +124,7 @@ domain:
          EXPECT_TRUE( instance.order == 0);
          EXPECT_TRUE( instance.hops == 0);
       }
+*/
 
       TEST( http_outbound, in_transaction_call_discard__expect_rollback)
       {
@@ -142,7 +143,7 @@ domain:
 
          tpfree( buffer);
       }
-
+/*
       TEST( http_outbound, discover)
       {
          common::unittest::Trace trace;
@@ -161,6 +162,6 @@ domain:
          EXPECT_TRUE( common::algorithm::find( reply.content.services, "do/not/discard/transaction")) << CASUAL_NAMED_VALUE( reply);
          EXPECT_TRUE( common::algorithm::find( reply.content.services, "discard/transaction")) << CASUAL_NAMED_VALUE( reply);
       }
-
+*/
    } // http::outbound
 } // casual

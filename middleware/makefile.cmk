@@ -28,7 +28,7 @@ make.Build( 'gateway/makefile.cmk')
 make.Build( 'tools/makefile.cli.cmk')
 make.Build( 'administration/makefile.cmk')
 
-make.Build( 'plugin/makefile.cmk')
+make.Build( 'http/source/inbound/nginx/plugin/makefile.cmk')
 
 
 

@@ -50,9 +50,9 @@ namespace casual
       enum struct Directive : short
       {
          //! transform information in the _Request_ and do a service call
-         service,
+         service = 0,
          //! forward the http request 'un-modified' to callee.
-         forward,
+         forward = 1
       };
       std::ostream& operator << ( std::ostream& out, Directive value);
 
@@ -66,7 +66,7 @@ namespace casual
 
          http::inbound::call::url url;
 
-         call::Payload payload;
+         Payload payload;
 
          CASUAL_LOG_SERIALIZE(
             CASUAL_SERIALIZE( service);
@@ -118,6 +118,7 @@ namespace casual
              
       private:
          common::strong::socket::id m_descriptor;
+         std::string m_protocol;
          common::unique_function< std::optional< Reply>()> m_implementation;
          
       };

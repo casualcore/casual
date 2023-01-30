@@ -6,6 +6,8 @@
 
 #include "common/unittest.h"
 
+#include "domain/unittest/manager.h"
+
 #include "http/inbound/call.h"
 
 
@@ -46,7 +48,7 @@ domain:
 
             auto domain()
             {
-               return casual::domain::unittest::Manager{ { configuration::base}};
+               return domain::unittest::manager( configuration::base);
             }
 
 
@@ -117,14 +119,15 @@ domain:
          unittest::Trace trace;
 
          auto domain = local::domain();
+         const auto service = "non-existent-service";
 
          constexpr std::string_view json = R"(
 {}
 )";
-         auto request = [&json]()
+         auto request = [&json, &service]()
          {
             call::Request result;
-            result.service = "non-existent-service";
+            result.service = service;
             result.payload.header = { call::header::Field{ "content-type:application/json"}};
             algorithm::copy( json, result.payload.body);
             return result; 
@@ -136,8 +139,8 @@ domain:
          auto& reply = result.value();
          EXPECT_TRUE( reply.code == http::code::not_found) << CASUAL_NAMED_VALUE( reply.code);
 
-         // TODO: we don't set the content-type on no_entry, is this a problem?
-         EXPECT_TRUE( local::header::value( reply.payload.header, "content-length") == "0");
+         auto size = common::string::compose( "failed to lookup service: ", service, ": TPENOENT").size();
+         EXPECT_TRUE( local::header::value( reply.payload.header, "content-length") == std::to_string( size));
       }
 
       TEST( http_inbound_call, call_rollback)

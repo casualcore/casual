@@ -39,12 +39,12 @@ print( subprocess.check_output(['./configure',
 '--with-debug',
 '--with-cc-opt=-Wno-deprecated',
 '--prefix=' + prefix,
-'--add-module=' + SOURCE_ROOT + '/middleware/plugin',
-'--without-http_rewrite_module']))
+'--add-module=' + SOURCE_ROOT + '/middleware/http/source/inbound/nginx/plugin',
+'--without-http_rewrite_module']).decode())
 print("Running make")
-print( subprocess.check_output(['make']))
+print( subprocess.check_output(['make']).decode())
 print("Running install")
-print( subprocess.check_output(['make', 'install']))
+print( subprocess.check_output(['make', 'install']).decode())
 print("Updating configuration")
 copyfile( SOURCE_ROOT + '/thirdparty/nginx/nginx.conf', prefix + '/conf/nginx.conf') 
 print("Done")

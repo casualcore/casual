@@ -53,6 +53,7 @@ common_outbound_archive = make.LinkArchive( 'bin/casual-http-outbound-common',
 
 common_inbound_library = make.LinkLibrary( 'bin/casual-http-inbound-common',
    [
+       make.Compile( 'source/inbound/c/api.cpp'),
        make.Compile( 'source/inbound/call.cpp')
    ],
    [

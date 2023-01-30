@@ -12,6 +12,7 @@
 #include "common/communication/ipc.h"
 #include "common/communication/instance.h"
 #include "common/code/category.h"
+#include "common/environment.h"
 
 
 namespace casual
@@ -24,6 +25,16 @@ namespace casual
       {
          namespace
          {
+            auto& configuration()
+            {
+               static struct Configuration
+               {
+                  const bool force_binary_base64 = environment::variable::get( "CASUAL_HTTP_FORCE_BINARY_BASE64", false);
+               } result;
+
+               return result;
+            }
+
             auto handle( const communication::ipc::inbound::Device& ipc)
             {
                return process::Handle{ process::id(), ipc.connector().handle().ipc()};
@@ -59,87 +70,20 @@ namespace casual
                };
             } // transform::reply
 
-            /*
-
-            auto send( service::Lookup lookup, Payload payload)
-            {
-               Trace trace{ "http::inbound::call::local::send"};
-
-               auto& destination = lookup();
-
-               message::service::call::callee::Request message{ process::handle()};
-               message.buffer.type = buffer::type( payload.header);
-               message.buffer.data = std::move( payload.body);
-               message.header.container() = std::move( payload.header);
-               message.pending = destination.pending;
-               message.service = destination.service;
-
-               http::buffer::transcode::from::wire( message.buffer);
-
-
-               return communication::device::blocking::send( destination.process.ipc, message);
-            }
-
-
-            std::optional< Reply> receive( strong::correlation::id& correlation)
-            {
-               Trace trace{ "http::inbound::call::local::receive"};
-
-               message::service::call::Reply message;
-
-               if( ! communication::device::non::blocking::receive( communication::ipc::inbound::device(), message, correlation))
-                  return {};
-
-               log::line( verbose::log, "reply: ", message);
-
-               // reset the correlation so we know that we've consumed the call.
-               correlation = {};
-               
-               http::buffer::transcode::to::wire( message.buffer);
-
-               Reply result;
-
-               result.payload.header.emplace_back( "content-length", std::to_string( message.buffer.data.size()));
-               result.payload.header.emplace_back( "content-type", http::protocol::convert::from::buffer( message.buffer.type));
-               result.payload.header.emplace_back( http::header::name::result::code, http::header::value::result::code( message.code.result));
-               result.payload.header.emplace_back( http::header::name::result::user::code, http::header::value::result::user::code( message.code.user));
-
-               result.payload.body = std::move( message.buffer.data);
-
-               auto transform_http_code = []( auto code)
-               {
-                  switch( code)
-                  {
-                     case common::code::xatmi::ok: return http::code::ok;
-                     case common::code::xatmi::timeout: return http::code::request_timeout;
-                     // TODO what to return? can't be a 200. 207?
-                     case common::code::xatmi::service_fail: return http::code::internal_server_error;
-
-                     default:
-                        return http::code::internal_server_error;
-                  }
-               };
-
-               result.code = transform_http_code( message.code.result);
-               
-               return result;
-            }
-            */
-
             namespace send
             {
                auto lookup( const communication::ipc::inbound::Device& ipc, const std::string& service)
                {
                   message::service::lookup::Request lookup{ local::handle( ipc)};
                   lookup.requested = service;
-                  lookup.context = decltype( lookup.context.semantic)::no_busy_intermediate;
+                  lookup.context.semantic = decltype( lookup.context.semantic)::no_busy_intermediate;
                   return communication::device::blocking::send( communication::instance::outbound::service::manager::device(), lookup);
                }
 
                auto request( const communication::ipc::inbound::Device& ipc, message::service::lookup::Reply lookup, message::service::call::callee::Request request)
                {
                   if( lookup.state == decltype( lookup.state)::absent)
-                     common::code::raise::error( http::code::not_found, "failed to lookup service: ", lookup.service.name);
+                     common::code::raise::error( common::code::xatmi::no_entry, "failed to lookup service: ", lookup.service.name);
 
                   request.process = local::handle( ipc);
                   request.service = lookup.service;
@@ -155,11 +99,7 @@ namespace casual
                   : correlation{ send::lookup( ipc, request.service)}, ipc{ std::move( ipc)}, request{ Policy::transform( std::move( request))}
                {}
 
-               ~basic_caller()
-               {
-                  
-
-               }
+               ~basic_caller() = default;
 
                basic_caller( basic_caller&&) noexcept = default;
                basic_caller& operator = ( basic_caller&&) noexcept = default;
@@ -203,15 +143,17 @@ namespace casual
                      result.buffer.data = std::move( request.payload.body);
                      result.header.container() = std::move( request.payload.header);
 
-                     http::buffer::transcode::from::wire( result.buffer);
+                     if( local::configuration().force_binary_base64)
+                        http::buffer::transcode::from::wire( result.buffer);
 
                      return result;
                   }
 
                   static Reply transform( message::service::call::Reply reply)
                   {
-                     http::buffer::transcode::to::wire( reply.buffer);
-
+                     if( local::configuration().force_binary_base64)
+                        http::buffer::transcode::to::wire( reply.buffer);
+  
                      Reply result;
                      result.payload.body = std::move( reply.buffer.data);
                      result.payload.header.emplace_back( "content-length", std::to_string( result.payload.body.size()));
@@ -283,18 +225,20 @@ namespace casual
 
          communication::ipc::inbound::Device ipc;
          m_descriptor = ipc.connector().descriptor();
+         m_protocol = local::buffer::type( request.payload.header);
          m_implementation = local::create::dispatch( std::move( ipc), directive, std::move( request));
       }
 
       Context::~Context() = default;
 
       Context::Context( Context&& other)
-         : m_descriptor{ std::exchange( other.m_descriptor, {})}, m_implementation{ std::exchange( other.m_implementation, {})}
+         : m_descriptor{ std::exchange( other.m_descriptor, {})}, m_protocol{ std::exchange( other.m_protocol, {})}, m_implementation{ std::exchange( other.m_implementation, {})}
       {}
 
       Context& Context::operator = ( Context&& other)
       {
          m_descriptor = std::exchange( other.m_descriptor, {});
+         m_protocol = std::exchange( other.m_protocol, {});
          m_implementation = std::exchange( other.m_implementation, {});
          return *this;
       }
@@ -318,7 +262,6 @@ namespace casual
             auto error = exception::capture();
 
             Reply result;
-            result.payload.header.emplace_back( "content-length:0");
 
             if( common::code::is::category< http::code>( error.code()))
                result.code = static_cast< http::code>( error.code().value());
@@ -330,6 +273,17 @@ namespace casual
                result.code = http::code::internal_server_error;
             }
 
+            common::buffer::Payload payload{ m_protocol};
+            payload.data.assign( error.what(), error.what() + std::strlen( error.what()));
+
+            if( local::configuration().force_binary_base64)
+                  http::buffer::transcode::to::wire( payload);
+            
+            result.payload.body = std::move( payload.data);
+            result.payload.header.emplace_back( "content-length", std::to_string( result.payload.body.size()));
+            result.payload.header.emplace_back( http::header::name::result::code, http::header::value::result::code( static_cast< common::code::xatmi>( error.code().value())));
+            result.payload.header.emplace_back( http::header::name::result::user::code, http::header::value::result::user::code( 0));
+ 
             return result;
          }
       }

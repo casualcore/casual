@@ -24,7 +24,7 @@ Example:
 >$ wget http://nginx.org/download/nginx-1.13.5.tar.gz
 >$ tar xvf nginx-1.13.5.tar.gz
 >$ cd nginx-1.13.5
->$ ./configure --with-cc-opt=-Wno-deprecated --without-http_rewrite_module --add-module=$CASUAL_BUILD_HOME/middleware/plugin
+>$ ./configure --with-cc-opt=-Wno-deprecated --without-http_rewrite_module --add-module=$CASUAL_BUILD_HOME/middleware/http/source/inbound/nginx/plugin
 >$ make
 >$ cp objs/nginx ${CASUAL_HOME}/nginx/sbin/nginx && cp ${CASUAL_BUILD_HOME}/thirdparty/nginx/nginx.conf ${CASUAL_HOME}/nginx/conf/nginx.conf
 ```
