@@ -24,7 +24,8 @@ namespace casual
 
       namespace connection
       {
-         //! tries to compensate for the lost connection
+         //! tries to compensate for the lost connection.
+         //! Removes all state associated with the connection.
          message::inbound::connection::Lost lost( State& state, common::strong::file::descriptor::id descriptor);
 
          //! will try to disconnect the socket, depending on the protocol version it's either 'smooth' or 'abrupt'

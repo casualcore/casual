@@ -182,8 +182,8 @@ namespace casual
          std::string note;
 
 
-         //! @return the correlated connection, and remove the correlation
-         tcp::Connection* consume( const common::strong::correlation::id& correlation);
+         //! @return the correlated descriptor, and remove the correlation
+         common::strong::file::descriptor::id consume( const common::strong::correlation::id& correlation);
 
          tcp::Connection* connection( const common::strong::correlation::id& correlation);
 

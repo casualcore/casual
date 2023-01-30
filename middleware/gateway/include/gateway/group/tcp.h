@@ -161,10 +161,9 @@ namespace casual
 
          auto& information() const noexcept { return m_information;}
          auto& connections() const noexcept { return m_connections;}
-         auto connections() noexcept { return common::range::make( m_connections);}
 
          auto& pending() const noexcept { return m_pending;}
-         auto& pending()  noexcept { return m_pending;}
+         auto& pending() noexcept { return m_pending;}
 
          void last( common::strong::file::descriptor::id value) { m_last = value;}
          auto last() const noexcept { return m_last;}

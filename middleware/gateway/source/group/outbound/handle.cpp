@@ -426,10 +426,8 @@ namespace casual
                            {
                               auto result = state.coordinate.discovery.empty_pendings();
 
-                              algorithm::for_each( state.external.connections(), [&state, &result, &message]( auto& connection)
+                              auto send_request = [ &state, &result, &message]( auto descriptor)
                               {
-                                 auto descriptor = connection.descriptor();
-
                                  if( algorithm::find( state.disconnecting, descriptor))
                                     return;
 
@@ -438,10 +436,11 @@ namespace casual
                                     if( found->domain.id == message.domain.id)
                                        return;
 
-                                 // TODO: optional-send
-                                 if( auto correlation = connection.send( state.directive, message))
+                                 if( auto correlation = local::tcp::send( state, descriptor, message))
                                     result.emplace_back( correlation, descriptor);
-                              });
+                              };
+
+                              algorithm::for_each( state.external.descriptors(), send_request);
 
                               log::line( verbose::log, "pending: ", result);
                               
