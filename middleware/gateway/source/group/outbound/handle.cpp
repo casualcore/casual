@@ -341,8 +341,6 @@ namespace casual
                      };
                   }
 
-
-
                } // conversation
 
                namespace domain
@@ -447,7 +445,7 @@ namespace casual
                               return result;
                            };
 
-                           auto callback = [&state, destination = message.process.ipc, correlation]( auto replies, auto outcome)
+                           auto callback = [ &state, destination = message.process.ipc, correlation]( auto replies, auto outcome)
                            {
                               Trace trace{ "gateway::group::outbound::handle::local::internal::domain::discover::request callback"};
 
@@ -464,38 +462,85 @@ namespace casual
                            
                            state.coordinate.discovery( 
                               send_requests( state, message),
-                              std::move( callback)
-                           );
+                              std::move( callback));
 
                         };
                      }
+
+                     namespace topology::direct
+                     {
+                        
+                        auto explore( State& state)
+                        {
+                           //! Sent from _discovery_ when:
+                           //! * we got a new connection
+                           //! * we sent casual::domain::message::discovery::topology::direct::Update to _discovery_
+                           //! * _discovery_ gather current known "external" services and sends this message to us.
+                           return [ &state]( casual::domain::message::discovery::topology::direct::Explore& message)
+                           {
+                              Trace trace{ "gateway::group::outbound::handle::local::internal::domain::discover::topology::direct::explore"};
+                              log::line( verbose::log, "message: ", message);
+
+                              if( state.runlevel > decltype( state.runlevel())::running)
+                                 return;
+
+                              auto send_request = []( State& state, auto& message)
+                              {
+                                 auto result = state.coordinate.discovery.empty_pendings();
+
+                                 casual::domain::message::discovery::Request request;
+                                 request.content = std::move( message.content);
+                                 request.domain = std::move( message.domain);
+
+                                 if( auto correlation = local::tcp::send( state, message.connection, request))
+                                    result.emplace_back( correlation, message.connection);
+
+                                 return result;
+                              };
+ 
+                              auto callback = [ &state]( auto replies, auto outcome)
+                              {
+                                 Trace trace{ "gateway::group::outbound::handle::local::internal::domain::discover::topology::direct::explore callback"};
+
+                                 // We don't need to reply. Only advertise the explored services, if any.
+                                 detail::advertise::replies( state, replies, outcome);
+                              };
+                              
+                              state.coordinate.discovery( 
+                                 send_request( state, message),
+                                 std::move( callback));
+                           };
+
+                        }
+                     } // topology::direct
 
                   } // discovery
 
                   auto connected( State& state)
                   {
-                     return [&state]( const gateway::message::domain::Connected& message)
+                     return [ &state]( const gateway::message::domain::Connected& message)
                      {
                         Trace trace{ "gateway::group::outbound::handle::local::internal::domain::connected"};
                         common::log::line( verbose::log, "message: ", message);
 
-                        casual::domain::message::discovery::topology::direct::Update update;
-
                         auto descriptor = state.external.connected( state.directive, message);
-                        const auto information = casual::assertion( algorithm::find( state.external.information(), descriptor), "failed to find information for descriptor: ", descriptor);
-                        
-                        // should we add content
-                        if( information->configuration)
+
+                        casual::domain::message::discovery::topology::direct::Update update{ process::handle()};
                         {
-                           auto& configuration = information->configuration;
-                           update.content.services = configuration.services;
-                           update.content.queues =  configuration.queues;
+                           update.connection = descriptor;
+
+                           const auto information = casual::assertion( algorithm::find( state.external.information(), descriptor), "failed to find information for descriptor: ", descriptor);
+                           
+                           // should we add content
+                           if( information->configuration)
+                           {
+                              update.configured.services = information->configuration.services;
+                              update.configured.queues = information->configuration.queues;
+                           }
                         }
 
                         // let the _discovery_ know that the topology has been updated
                         casual::domain::discovery::topology::direct::update( state.multiplex, update);
-
-                        log::line( verbose::log, "information: ", *information);
                      };
                   }
 
@@ -867,6 +912,7 @@ namespace casual
 
             // discover
             local::internal::domain::discovery::request( state),
+            local::internal::domain::discovery::topology::direct::explore( state),
          };
       }
 

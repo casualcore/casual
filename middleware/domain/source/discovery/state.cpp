@@ -51,7 +51,7 @@ namespace casual
 
          namespace accumulate::topology
          {
-            void Implicit::add( std::vector< common::domain::Identity> domains)
+            bool Implicit::add( std::vector< common::domain::Identity> domains)
             {
                // add this domain, since we by definition has seen this topology update (or others before)
                if( auto position = std::get< 1>( algorithm::sorted::lower_bound( m_domains, common::domain::identity())))
@@ -64,24 +64,14 @@ namespace casual
 
                ++m_count;
                algorithm::sorted::append_unique( algorithm::sort( domains), m_domains);
+
+               return limit();
             }
 
             std::vector< common::domain::Identity> Implicit::extract() noexcept
             {
                m_count = 0;
                return std::exchange( m_domains, {});
-            }
-
-            void Direct::add( message::discovery::request::Content content) noexcept
-            {
-               m_content += std::move( content);
-               ++m_count;
-            }
-
-            message::discovery::request::Content Direct::extract() noexcept
-            {
-               m_count = 0;
-               return std::exchange( m_content, {});
             }
 
          } // accumulate::topology
