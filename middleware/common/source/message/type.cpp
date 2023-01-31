@@ -181,6 +181,7 @@ namespace casual
             case Type::domain_discovery_internal_reply: return "domain_discovery_internal_reply";
             case Type::domain_discovery_topology_implicit_update: return "domain_discovery_topology_implicit_update";
             case Type::domain_discovery_topology_direct_update: return "domain_discovery_topology_direct_update";
+            case Type::domain_discovery_topology_direct_explore: return "domain_discovery_topology_direct_explore";
             case Type::configuration_request: return "configuration_request";
             case Type::configuration_reply: return "configuration_reply";
             case Type::configuration_supplier_registration: return "configuration_supplier_registration";

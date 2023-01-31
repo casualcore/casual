@@ -156,22 +156,32 @@ namespace casual
                      }
                   } // needs::then
 
-                  namespace known::then
+                  namespace known
                   {
-                     //! the `continuation` is invoked with all the discovery replies
-                     template< typename F>
-                     auto discover( State& state, F continuation, message::discovery::request::Content content)
+                     //! send request to all with the "known" ability, if any.
+                     auto requests( State& state)
                      {
-                        Trace trace{ "discovery::handle::local::detail::collect::known::then::discover"};
+                        Trace trace{ "discovery::handle::local::detail::collect::known::requests"};
 
-                        // send request to all with the discover ability, if any.
-                        auto pending = detail::send::requests( state, state.coordinate.known.empty_pendings(), 
-                           state.providers.filter( state::provider::Ability::known), message::discovery::known::Request{ common::process::handle()});
-
-                        // note: everything captured needs to by value (besides State if used)
-                        state.coordinate.known( std::move( pending), collect::helper::discover( state, std::move( continuation), std::move( content)));
+                        return detail::send::requests( state, 
+                           state.coordinate.known.empty_pendings(), 
+                           state.providers.filter( state::provider::Ability::known), 
+                           message::discovery::known::Request{ common::process::handle()});
                      }
-                  } // known::then
+
+                     namespace then
+                     {   
+                        //! the `continuation` is invoked with all the discovery replies
+                        template< typename F>
+                        auto discover( State& state, F continuation, message::discovery::request::Content content)
+                        {
+                           Trace trace{ "discovery::handle::local::detail::collect::known::then::discover"};
+
+                           // note: everything captured needs to by value (besides State if used)
+                           state.coordinate.known( known::requests( state), collect::helper::discover( state, std::move( continuation), std::move( content)));
+                        }
+                     } // then
+                  } // known
 
                } // collect
 
@@ -548,28 +558,6 @@ namespace casual
 
                namespace direct
                {
-                  void apply( State& state)
-                  {
-                     Trace trace{ "discovery::handle::local::topology::direct::apply"};
-
-                     // collect known from this domain and discover - then use our continuation and propagate the 
-                     // topology update _upstream_
-                     detail::collect::known::then::discover( state, [ &state]( auto&& replies, auto&& outcome)
-                     {
-                        Trace trace{ "discovery::handle::local::topology::apply coordinate continuation"};
-
-                        // we're not interested in the replies, we just propagate the topology::Update to 
-                        // all with that ability, if any.
-
-                        // we're not interested in the replies, we add and accumulate for upstream
-                        state.accumulate.upstream.add( { common::domain::identity()});
-                        
-                        if( state.accumulate.upstream.limit())
-                           topology::upstream::apply( state);
-
-                     }, state.accumulate.direct.extract());
-                  }
-
                   auto update( State& state)
                   {
                      //! Will be received only if this domain got a new connection
@@ -581,11 +569,31 @@ namespace casual
                         if( state.runlevel > decltype( state.runlevel())::running)
                            return;
 
-                        state.accumulate.direct.add( std::move( message.content));
+                        state.coordinate.known( detail::collect::known::requests( state), [ &state, update = std::move( message)]( auto&& replies, auto&& outcome) mutable
+                        {
+                           Trace trace{ "discovery::handle::local::topology::direct::update known done"};
+                           log::line( verbose::log, "replies: ", replies, ", outcome: ", outcome);
 
-                        // check if we've reach the "accumulate limit" and need to apply.
-                        if( state.accumulate.direct.limit())
-                           topology::direct::apply( state);
+                           message::discovery::topology::direct::Explore message{ process::handle()};
+                           message.domain = common::domain::identity();
+                           message.connection = update.connection;
+                           message.content = std::move( update.configured);
+
+                           for( auto& reply : replies)
+                              message.content += std::move( reply.content);
+
+                           if( message.content)
+                           {
+                              // send the explore to the sender of direct::Update (an outbound...)
+                              state.multiplex.send( update.process.ipc, message);
+                              state::metric::message::count::send( message);
+                           }
+
+                           // prepare the implicit topology update
+                           if( state.accumulate.upstream.add( { common::domain::identity()}))
+                              topology::upstream::apply( state);
+
+                        });
                      };
                   }
                } // direct
@@ -679,22 +687,16 @@ namespace casual
          if( state.runlevel > decltype( state.runlevel())::running)
             return;
 
-         if( state.accumulate.direct)
-            local::topology::direct::apply( state);
-
          if( state.accumulate.implicit)
             local::topology::implicit::apply( state);
 
          if( state.accumulate.upstream)
             local::topology::upstream::apply( state);
-
       }
 
       dispatch_type create( State& state)
       {
          Trace trace{ "discovery::handle::create"};
-
-
 
          return dispatch_type{
             common::message::dispatch::handle::defaults( state),

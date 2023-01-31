@@ -177,7 +177,8 @@ namespace casual
          {
             struct Implicit
             {
-               void add( std::vector< common::domain::Identity> domains);
+               //! @returns true if limit is reached
+               bool add( std::vector< common::domain::Identity> domains);
 
                inline explicit operator bool() const noexcept { return ! m_domains.empty();}
 
@@ -195,24 +196,6 @@ namespace casual
                std::vector< common::domain::Identity> m_domains;
             };
 
-            struct Direct
-            {
-               void add( message::discovery::request::Content content) noexcept;
-
-               inline explicit operator bool() const noexcept { return m_count > 0;}
-
-               message::discovery::request::Content extract() noexcept;
-
-               inline bool limit() const noexcept { return m_count > platform::batch::discovery::topology::updates;}
-
-               CASUAL_LOG_SERIALIZE(
-                  CASUAL_SERIALIZE_NAME( m_count, "count");
-               )
-            private:
-               platform::size::type m_count{};
-               message::discovery::request::Content m_content;
-            };
-
             using Upstream = topology::Implicit;
 
          } // accumulate::topology
@@ -220,12 +203,10 @@ namespace casual
          struct Accumulate
          {
             accumulate::topology::Implicit implicit;
-            accumulate::topology::Direct direct;
             accumulate::topology::Upstream upstream;
 
             CASUAL_LOG_SERIALIZE(
                CASUAL_SERIALIZE( implicit);
-               CASUAL_SERIALIZE( direct);
                CASUAL_SERIALIZE( upstream);
             )
          };

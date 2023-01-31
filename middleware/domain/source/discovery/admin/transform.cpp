@@ -89,7 +89,8 @@ namespace casual
                      message::discovery::known::Request{},
                      message::discovery::api::Reply{},
                      message::discovery::api::rediscovery::Reply{},
-                     message::discovery::topology::implicit::Update{}
+                     message::discovery::topology::implicit::Update{},
+                     message::discovery::topology::direct::Explore{}
                   );
 
                   return result;

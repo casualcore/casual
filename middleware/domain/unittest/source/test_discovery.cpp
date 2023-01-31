@@ -218,7 +218,7 @@ namespace casual
          }
       }
 
-      TEST( domain_discovery, direct_update__expect__known_request__discovery_request__topology_implicit_update)
+      TEST( domain_discovery, direct_update__expect__known_request__topology_direct_explore__topology_implicit_update)
       {
          common::unittest::Trace trace;
 
@@ -231,34 +231,33 @@ namespace casual
          discovery::provider::registration( { Ability::discover_external, Ability::topology, Ability::known});
 
          {
-            message::discovery::topology::direct::Update update;
-            update.content.services = { "x", "z"};
-            update.content.queues = { "q1", "q2"};
+            message::discovery::topology::direct::Update update{ process::handle()};
+            update.connection = common::strong::file::descriptor::id{ 42};
+            update.configured.services = { "x", "z"};
+            update.configured.queues = { "b1", "b2"};
             discovery::topology::direct::update( multiplex, update);
+
+            while( multiplex)
+               multiplex.send();
          }
 
-         while( multiplex)
-            multiplex.send();
-         
          // known
          {
             auto request = communication::ipc::receive< message::discovery::known::Request>();
             auto reply = common::message::reverse::type( request, process::handle());
-            reply.content.queues = { "a", "b"};
+            reply.content.services = { "a", "b"};
+            reply.content.queues = { "q1", "q2"};
             communication::device::blocking::send( request.process.ipc, reply);
          }
 
-         // discovery external
+         // topology direct explore
          {
-            auto request = communication::ipc::receive< message::discovery::Request>();
-            EXPECT_TRUE( algorithm::equal( request.content.queues, array::make( "a"sv, "b"sv, "q1"sv, "q2"sv)));
-            EXPECT_TRUE( algorithm::equal( request.content.services, array::make( "x"sv, "z"sv))) << CASUAL_NAMED_VALUE( request.content.services);
-            auto reply = common::message::reverse::type( request);
-            reply.content.queues = { { "a"}};
-            communication::device::blocking::send( request.process.ipc, reply);
+            auto explore = communication::ipc::receive< message::discovery::topology::direct::Explore >();
+            EXPECT_TRUE( algorithm::equal( explore.content.queues, array::make( "b1"sv, "b2"sv, "q1"sv, "q2"sv))) << CASUAL_NAMED_VALUE( explore.content.queues);
+            EXPECT_TRUE( algorithm::equal( explore.content.services, array::make( "a"sv, "b"sv, "x"sv, "z"sv))) << CASUAL_NAMED_VALUE( explore.content.services);
          };
 
-         // we get the topology update
+         // we get the implicit topology update
          {
             auto reply = communication::ipc::receive< message::discovery::topology::implicit::Update>();
             ASSERT_TRUE( reply.domains.size() == 1);

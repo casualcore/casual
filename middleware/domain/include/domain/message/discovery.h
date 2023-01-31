@@ -251,20 +251,50 @@ namespace casual
 
          namespace direct
          {
-            using base_update = common::message::basic_message< common::message::Type::domain_discovery_topology_direct_update>;
+            using base_update = common::message::basic_process< common::message::Type::domain_discovery_topology_direct_update>;
             struct Update : base_update
             {
                using base_update::base_update;
 
-               // filled with the configured "resources" (that outbound could have)
-               discovery::request::Content content;
+               //! correlation for the _new connection_
+               common::strong::file::descriptor::id connection;
+
+               //! What the _new connection_ is configured with, if any.
+               discovery::request::Content configured;
 
                CASUAL_CONST_CORRECT_SERIALIZE(
                   base_update::serialize( archive);
+                  CASUAL_SERIALIZE( connection);
+                  CASUAL_SERIALIZE( configured);
+               )
+            };
+
+            using base_request = common::message::basic_request< common::message::Type::domain_discovery_topology_direct_explore>;
+
+            //! sent from _discovery_ to discover/explore 'known' for the new connection.
+            struct Explore : base_request
+            {
+               using base_request::base_request;
+
+               //! correlation for the _new connection_
+               //! @note: The connection might not exists (any more), or "refer" to another
+               //!   actual connection, when "an outbound" receives this message.
+               //!   This is not an issue, and either the discovery will "fail", or we discover
+               //    once in "vain".
+               common::strong::file::descriptor::id connection;
+               common::domain::Identity domain;
+               discovery::request::Content content;
+               
+               CASUAL_CONST_CORRECT_SERIALIZE(
+                  base_request::serialize( archive);
+                  CASUAL_SERIALIZE( connection);
+                  CASUAL_SERIALIZE( domain);
                   CASUAL_SERIALIZE( content);
                )
             };
          } // direct
+
+
       
       } // topology
 
@@ -275,7 +305,7 @@ namespace casual
          using base_reply = common::message::basic_request< common::message::Type::domain_discovery_needs_reply>;
          using Content = discovery::request::Content;
 
-         //! contains ONLY _waiting lookups_. The needs not yet fullfilled. 
+         //! contains ONLY _waiting lookups_. The needs not yet fulfilled. 
          struct Reply : base_reply
          {
             using base_reply::base_reply;

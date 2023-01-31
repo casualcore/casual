@@ -297,6 +297,9 @@ namespace casual
          //! sent to _discovery_ when current domain gets a new outbound connection
          domain_discovery_topology_direct_update,
 
+         //! sent from _discovery_ to explore/discover 'known' for the new connection.
+         domain_discovery_topology_direct_explore,
+
          //! sent from the connector when the logical connected is established
          gateway_domain_connected,
 

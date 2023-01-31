@@ -12,6 +12,8 @@
 
 #include "domain/unittest/manager.h"
 #include "domain/manager/admin/cli.h"
+#include "domain/unittest/discover.h"
+
 #include "common/communication/instance.h"
 #include "common/environment/scoped.h"
 #include "common/sink.h"
@@ -1452,7 +1454,7 @@ domain:
          auto c = local::example::domain( "C", "7002");
          auto d = local::example::domain( "D", "7003");
 
-         constexpr auto A = R"(
+         auto a = local::domain( R"(
 domain: 
    name: A
   
@@ -1469,10 +1471,12 @@ domain:
                   -  address: 127.0.0.1:7003
                      services:
                         -  casual/example/domain/name
-)";
+)");
 
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected());
          
-         auto a = local::domain(  A);
+         // discover a service that we know exists in B, C and D
+         casual::domain::unittest::discover( { "casual/example/domain/name"}, {});
 
          auto ready_predicate = []( auto& state)
          {
@@ -1486,7 +1490,7 @@ domain:
 
          std::map< std::string, int> domains;
 
-         algorithm::for_n< 9>( [&domains]() mutable
+         algorithm::for_n< 9>( [ &domains]() mutable
          {
             auto buffer = local::call( "casual/example/domain/name");
             domains[ buffer.get()]++;
