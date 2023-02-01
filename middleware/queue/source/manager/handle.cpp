@@ -196,6 +196,15 @@ namespace casual
             {
                namespace detail::dispatch::lookup
                {
+                  void reply_absent_queue( State& state, queue::ipc::message::lookup::Request&& message)
+                  {
+                     Trace trace{ "queue::manager::handle::local::lookup::detail::dispatch::lookup::reply_absent_queue"};
+
+                     auto reply = common::message::reverse::type( message);
+                     reply.name = std::move( message.name);
+                     state.multiplex.send( message.process.ipc, reply);
+                  }
+
                   void absent_queue( State& state, queue::ipc::message::lookup::Request& message)
                   {
                      using Enum = decltype( message.context.semantic);
@@ -204,9 +213,7 @@ namespace casual
                      {
                         case Enum::direct:
                         {
-                           auto reply = common::message::reverse::type( message);
-                           reply.name = message.name;
-                           state.multiplex.send( message.process.ipc, reply);
+                           reply_absent_queue( state, std::move( message));
                            return;
                         }
                         case Enum::wait:
@@ -221,7 +228,7 @@ namespace casual
 
                   void discovery( State& state, queue::ipc::message::lookup::Request& message)
                   {                     
-                     Trace trace{ "queue::manager::handle::local::detail::dispatch::lookup::discovery"};
+                     Trace trace{ "queue::manager::handle::local::lookup::detail::dispatch::lookup::discovery"};
                      
                      casual::domain::discovery::request( {}, { message.name}, message.correlation);
                      state.pending.lookups.push_back( std::move( message));
@@ -263,10 +270,17 @@ namespace casual
 
                auto request( State& state)
                {
-                  return [&state]( queue::ipc::message::lookup::Request& message)
+                  return [ &state]( queue::ipc::message::lookup::Request& message)
                   {
                      Trace trace{ "queue::manager::local::handle::lookup::request"};
                      common::log::line( verbose::log, "message: ", message);
+
+                     if( state.runlevel > decltype( state.runlevel())::running)
+                     {
+                        common::log::line( log, "runlevel [", state.runlevel, "] - action: reply with absent queue");
+                        local::lookup::detail::dispatch::lookup::reply_absent_queue( state, std::move( message));
+                        return;
+                     }
 
                      using Enum = decltype( message.context.requester);
 
@@ -463,12 +477,7 @@ namespace casual
                         // we need to reply to the caller that instigated the discovery, if the 
                         // context is direct  (and the lookup did not find what the caller wants, via check::pending::lookups)
                         if( auto found = algorithm::find( state.pending.lookups, message.correlation); found && found->context.semantic == decltype( found->context.semantic)::direct)
-                        {
-                           auto pending = algorithm::container::extract( state.pending.lookups, std::begin( found));
-                           auto reply = common::message::reverse::type( pending);
-                           state.multiplex.send( pending.process.ipc, reply);
-                        }
-                        
+                           local::lookup::detail::dispatch::lookup::reply_absent_queue( state, algorithm::container::extract( state.pending.lookups, std::begin( found))); 
                      };
                   }
 
