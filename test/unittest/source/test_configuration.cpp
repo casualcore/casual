@@ -69,7 +69,7 @@ system:
 
                   auto domain = local::domain( std::forward< C>( configurations)...);
 
-                  auto origin = casual::configuration::unittest::load( std::forward< C>( configurations)...);
+                  auto origin = casual::configuration::unittest::load( configuration::system, std::forward< C>( configurations)...);
 
                   auto model = casual::configuration::model::transform( casual::domain::unittest::configuration::get());
 
