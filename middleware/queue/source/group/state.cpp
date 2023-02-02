@@ -94,12 +94,9 @@ namespace casual
       } // state
 
       bool State::done() const noexcept
-      {
-         // likely branch
-         if( runlevel == state::Runlevel::running)
-            return false;
-
-         return pending.empty() && involved.empty();
+      {  
+         return runlevel > state::Runlevel::running
+            && pending.empty() && involved.empty();
       }
 
    } // queue::group
