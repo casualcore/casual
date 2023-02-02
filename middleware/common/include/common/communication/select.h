@@ -199,9 +199,9 @@ namespace casual
                template< typename... Hs> 
                void dispatch( directive::Ready ready, Hs&... handlers)
                {
-                  // will short circuit when `ready` is _consumed_.
-                  ( read::dispatch( ready, handlers, traits::priority::tag< 1>{}) && ... ) 
-                     && ( write::dispatch( ready, handlers, traits::priority::tag< 1>{}) && ... );
+                  // Left-fold -  will short circuit when `ready` is _consumed_.
+                  (  ... && read::dispatch( ready, handlers, traits::priority::tag< 1>{}) ) 
+                     && ( ... && write::dispatch( ready, handlers, traits::priority::tag< 1>{}));
                }
 
             } // handle
