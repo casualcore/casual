@@ -430,6 +430,8 @@ namespace casual
             });
          };
 
+         result.system = state.configuration.model.system;
+
          result.domain.name = common::domain::identity().name;
          result.domain.environment = state.configuration.model.domain.environment;
          
@@ -478,8 +480,6 @@ namespace casual
 
             return result;
          });
-
-         
 
          return result;
       }
