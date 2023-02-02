@@ -126,13 +126,11 @@ namespace casual
 
       bool State::done() const noexcept
       {
-         auto consumed = [](){ ipc::device().flush(); return ipc::device().complete() == 0;};
          auto absent = []( auto& forward){ return forward.instances.absent();};
 
-         return runlevel == state::Runlevel::shutdown
+         return runlevel > state::Runlevel::running
             && algorithm::all_of( forward.services, absent)
-            && algorithm::all_of( forward.queues, absent)
-            && consumed();
+            && algorithm::all_of( forward.queues, absent);
       }
 
       void State::invalidate( const std::vector< state::forward::id>& ids) noexcept

@@ -356,6 +356,7 @@ namespace casual
          //! provided `callable` will be invoked and if the result is `true` the pump stops, 
          //! and control is return to caller.
          //! @attention `done` should not alter any state, just answer if the "pump" is done.
+         //! @attention `done` shall not consume any messages or otherwise communicate in any form.
          template< typename T>
          auto done( T callable) { return detail::tagged< detail::tag::done, T>{ std::move( callable)};}
 
