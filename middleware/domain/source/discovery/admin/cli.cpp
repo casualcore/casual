@@ -60,7 +60,7 @@ namespace casual
                         return;
                      }
 
-                     communication::ipc::receive< message::discovery::api::Reply>( correlation);
+                     communication::ipc::receive< message::discovery::api::rediscovery::Reply>( correlation);
                   };
 
                   return argument::Option{
