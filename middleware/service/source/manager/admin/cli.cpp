@@ -598,8 +598,8 @@ namespace casual
       the timeout for the service (in seconds)
    contract:
       what happens if a timeout occur. 
-   LI:
-      Local-Instances number of local instances
+   I:
+      Instances - number of local instances
    C:
       calls - number of calls to the service
    AT:
