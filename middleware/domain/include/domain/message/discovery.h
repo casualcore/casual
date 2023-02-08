@@ -239,11 +239,16 @@ namespace casual
             {
                using base_update::base_update;
 
+               //! Which domain (connection) sent us the update
+               //! only used internal, and is not serialized over the wire,
+               common::domain::Identity origin;
+
                //! domains that has seen/handled the message.
                std::vector< common::domain::Identity> domains;
 
                CASUAL_CONST_CORRECT_SERIALIZE(
                   base_update::serialize( archive);
+                  CASUAL_SERIALIZE( origin);
                   CASUAL_SERIALIZE( domains);
                )
             };
@@ -256,68 +261,39 @@ namespace casual
             {
                using base_update::base_update;
 
-               //! correlation for the _new connection_
-               common::strong::file::descriptor::id connection;
+               //! Which domain the _new connection_ is actually connect to
+               common::domain::Identity origin;
 
-               //! What the _new connection_ is configured with, if any.
+                //! What the _new connection_ is configured with, if any.
                discovery::request::Content configured;
 
                CASUAL_CONST_CORRECT_SERIALIZE(
                   base_update::serialize( archive);
-                  CASUAL_SERIALIZE( connection);
+                  CASUAL_SERIALIZE( origin);
                   CASUAL_SERIALIZE( configured);
                )
             };
 
-            using base_request = common::message::basic_request< common::message::Type::domain_discovery_topology_direct_explore>;
+            using base_request = common::message::basic_message< common::message::Type::domain_discovery_topology_direct_explore>;
 
-            //! sent from _discovery_ to discover/explore 'known' for the new connection.
+            //! sent from _discovery_ to discover/explore 'known' for "new connections".
             struct Explore : base_request
             {
                using base_request::base_request;
 
-               //! correlation for the _new connection_
-               //! @note: The connection might not exists (any more), or "refer" to another
-               //!   actual connection, when "an outbound" receives this message.
-               //!   This is not an issue, and either the discovery will "fail", or we discover
-               //    once in "vain".
-               common::strong::file::descriptor::id connection;
-               common::domain::Identity domain;
+               //! All actual domains that this domain has "new" connections to, via `direct::Update`
+               std::vector< common::domain::Identity> domains;
                discovery::request::Content content;
                
                CASUAL_CONST_CORRECT_SERIALIZE(
                   base_request::serialize( archive);
-                  CASUAL_SERIALIZE( connection);
-                  CASUAL_SERIALIZE( domain);
+                  CASUAL_SERIALIZE( domains);
                   CASUAL_SERIALIZE( content);
                )
             };
          } // direct
-
-
       
       } // topology
-
-      namespace needs
-      {
-         using Request = common::message::basic_request< common::message::Type::domain_discovery_needs_request>;
-
-         using base_reply = common::message::basic_request< common::message::Type::domain_discovery_needs_reply>;
-         using Content = discovery::request::Content;
-
-         //! contains ONLY _waiting lookups_. The needs not yet fulfilled. 
-         struct Reply : base_reply
-         {
-            using base_reply::base_reply;
-            Content content;
-
-            CASUAL_CONST_CORRECT_SERIALIZE(
-               base_reply::serialize( archive);
-               CASUAL_SERIALIZE( content);
-            )
-         };
-
-      } // needs
 
       namespace known
       {
@@ -348,9 +324,8 @@ namespace casual
             {
                discover_internal = 1,
                discover_external = 2,
-               needs = 4,
-               known = 8,
-               topology = 16,
+               known = 4,
+               topology = 8,
             };
 
             using Abilities = common::Flags< registration::Ability>;
@@ -361,7 +336,6 @@ namespace casual
                {
                   case Ability::discover_internal: return "discover_internal";
                   case Ability::discover_external: return "discover_external";
-                  case Ability::needs: return "needs";
                   case Ability::known: return "known";
                   case Ability::topology: return "topology";
                }
@@ -454,9 +428,6 @@ namespace casual
 
       template<>
       struct type_traits< casual::domain::message::discovery::internal::Request> : detail::type< casual::domain::message::discovery::internal::Reply> {};
-
-      template<>
-      struct type_traits< casual::domain::message::discovery::needs::Request> : detail::type< casual::domain::message::discovery::needs::Reply> {};
 
       template<>
       struct type_traits< casual::domain::message::discovery::known::Request> : detail::type< casual::domain::message::discovery::known::Reply> {};

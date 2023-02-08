@@ -12,6 +12,7 @@
 
 #include "common/message/dispatch/handle.h"
 #include "common/message/event.h"
+#include "common/message/signal.h"
 #include "common/event/listen.h"
 #include "common/algorithm.h"
 #include "common/algorithm/is.h"
@@ -20,6 +21,7 @@
 #include "common/algorithm/sorted.h"
 #include "common/server/handle/call.h"
 #include "common/communication/instance.h"
+#include "common/signal/timer.h"
 
 #include "casual/assert.h"
 
@@ -74,6 +76,13 @@ namespace casual
             {
                namespace send
                {
+                  template< typename M>
+                  auto multiplex( State& state, const strong::ipc::id& destination, const M& message)
+                  {
+                     state::metric::message::count::send( message);
+                     return state.multiplex.send( destination, message);
+                  }
+
                   template< typename Result, typename P, typename M>
                   auto requests( State& state, Result result, P&& providers, const M& message)
                   {
@@ -87,11 +96,8 @@ namespace casual
 
                      result = algorithm::accumulate( providers, std::move( result), [ &state, &message]( auto result, const auto& provider)
                      {
-                        if( auto correlation = state.multiplex.send( provider.process.ipc, message))
-                        {
-                           state::metric::message::count::send( message);
+                        if( auto correlation = send::multiplex( state, provider.process.ipc, message))
                            result.emplace_back( correlation, provider.process.pid);
-                        }
 
                         return result;
                      });
@@ -140,22 +146,6 @@ namespace casual
 
                   } // helper
 
-                  namespace needs::then
-                  {
-                     //! the `continuation` is invoked with all the discovery replies
-                     template< typename F>
-                     auto discover( State& state, F continuation)
-                     {
-                        Trace trace{ "discovery::handle::local::detail::collect::needs::then::discover"};
-
-                        // send request to all with the discover ability, if any.
-                        auto pending = detail::send::requests( state, state.coordinate.needs.empty_pendings(), 
-                           state.providers.filter( state::provider::Ability::needs), message::discovery::needs::Request{ common::process::handle()});
-
-                        state.coordinate.needs( std::move( pending), collect::helper::discover( state, std::move( continuation)));
-                     }
-                  } // needs::then
-
                   namespace known
                   {
                      //! send request to all with the "known" ability, if any.
@@ -173,7 +163,7 @@ namespace casual
                      {   
                         //! the `continuation` is invoked with all the discovery replies
                         template< typename F>
-                        auto discover( State& state, F continuation, message::discovery::request::Content content)
+                        auto discover( State& state, F continuation, message::discovery::request::Content content = {})
                         {
                            Trace trace{ "discovery::handle::local::detail::collect::known::then::discover"};
 
@@ -200,7 +190,7 @@ namespace casual
                         local::handler::entry( message);
 
                         // send reply and registrate
-                        if( state.multiplex.send( message.process.ipc, common::message::reverse::type( message)))
+                        if( detail::send::multiplex( state, message.process.ipc, common::message::reverse::type( message)))
                            state.providers.registration( message);
                      };
                   }
@@ -216,7 +206,7 @@ namespace casual
                      if( state.runlevel > decltype( state.runlevel())::running || ! message.content)
                      {
                         // we don't take any more request, or the request is empty
-                        state.multiplex.send( message.process.ipc, common::message::reverse::type( message));
+                        detail::send::multiplex( state, message.process.ipc, common::message::reverse::type( message));
                         return;
                      }
 
@@ -245,7 +235,7 @@ namespace casual
                            return result + std::move( reply.content);
                         });
 
-                        state.multiplex.send( destination.ipc, message);
+                        detail::send::multiplex( state, destination.ipc, message);
                      });
                   };
                }
@@ -263,7 +253,7 @@ namespace casual
                         auto destination = local::extract::destination( message);
 
                         // collect needs and discover then use our continuation
-                        detail::collect::needs::then::discover( state, [ &state, destination = std::move( destination)]( auto replies, auto outcome)
+                        detail::collect::known::then::discover( state, [ &state, destination = std::move( destination)]( auto replies, auto outcome)
                         {
                            Trace trace{ "discovery::handle::local::rediscovery::request continuation"};
                            log::line( verbose::log, "replies: ", replies, "outcome: ", outcome);
@@ -279,27 +269,12 @@ namespace casual
                                  transform_names( reply.content.queues)};
                            });
 
-                           state.multiplex.send( destination.ipc, reply);
-                           state::metric::message::count::send( reply);
+                           detail::send::multiplex( state, destination.ipc, reply);
                         });
                      };
                   }
                } // rediscovery
             } // api
-
-            namespace needs
-            {
-               auto reply( State& state)
-               {
-                  return [&state]( message::discovery::needs::Reply&& message)
-                  {
-                     Trace trace{ "discovery::handle::local::needs::reply"};
-                     local::handler::entry( message);
-
-                     state.coordinate.needs( std::move( message));
-                  };
-               }
-            } // needs
 
             namespace known
             {
@@ -376,7 +351,7 @@ namespace casual
                   if( state.runlevel > decltype( state.runlevel())::running)
                   {
                      // we don't take any more request.
-                     state.multiplex.send( message.process.ipc, common::message::reverse::type( message));
+                     detail::send::multiplex( state, message.process.ipc, common::message::reverse::type( message));
                      return;
                   }
 
@@ -413,7 +388,7 @@ namespace casual
                            log::line( verbose::log, "only internal discovery was needed");
                            auto reply = common::message::reverse::type( message);
                            reply.content = std::move( content);
-                           state.multiplex.send( message.process.ipc, reply);
+                           detail::send::multiplex( state, message.process.ipc, reply);
 
                            return;
                         }
@@ -438,9 +413,7 @@ namespace casual
                               message.content = detail::content::normalize::reply( std::move( message.content), routes);
 
                            log::line( verbose::log, "message: ", message);
-
-                           state.multiplex.send( destination.ipc, message);
-                           state::metric::message::count::send( message);
+                           detail::send::multiplex( state, destination.ipc, message);
                         });
                      });
                   }
@@ -460,8 +433,7 @@ namespace casual
 
                         log::line( verbose::log, "message: ", message);
 
-                        state.multiplex.send( destination.ipc, message);
-                        state::metric::message::count::send( message);
+                        detail::send::multiplex( state, destination.ipc, message);
                      });
                   }
                };
@@ -495,48 +467,48 @@ namespace casual
 
             namespace topology
             {
-               namespace upstream
+               void apply( State& state)
                {
-                  void apply( State& state)
+                  Trace trace{ "discovery::handle::local::topology::apply"};
+
+                  if( ! state.accumulate.topology)
+                     return;
+
+                  auto [ explore, implicit] = state.accumulate.topology.extract();
+               
+                  state.coordinate.known( detail::collect::known::requests( state), [ &state, explore = std::move( explore), implicit = std::move( implicit)]( auto&& replies, auto&& outcome) mutable
                   {
-                     Trace trace{ "discovery::handle::local::topology::upstream::apply"};
+                     Trace trace{ "discovery::handle::local::topology::direct::update known done"};
+                     log::line( verbose::log, "replies: ", replies, ", outcome: ", outcome);
 
-                     message::discovery::topology::implicit::Update message;
-                     message.domains = state.accumulate.upstream.extract();
-                     log::line( verbose::log, "message: ", message);
+                     for( auto& reply : replies)
+                        explore.content += std::move( reply.content);
 
+                     log::line( verbose::log, "explore: ", explore);
+                     log::line( verbose::log, "implicit: ", implicit);
+
+                     if( explore.content)
+                     {
+                        // send to all external providers, if any
+                        for( auto& provider : state.providers.filter( state::provider::Ability::discover_external))
+                           detail::send::multiplex( state, provider.process.ipc, explore);
+                     }
+
+                     // always send the implicit topology update
                      for( auto& provider : state.providers.filter( state::provider::Ability::topology))
-                        state.multiplex.send( provider.process.ipc, message);
-                  }
-               } // upstream
+                        detail::send::multiplex( state, provider.process.ipc, implicit);
+                  });
+               }
 
                namespace implicit
                {
-                  void apply( State& state)
-                  {
-                     Trace trace{ "discovery::handle::local::topology::implicit::apply"};
-
-                     // collect needs from this domain and discover - then use our continuation and propagate the 
-                     // topology update _upstream_
-                     detail::collect::needs::then::discover( state, [ &state, domains = state.accumulate.implicit.extract()]( auto&& replies, auto&& outcome)
-                     {
-                        Trace trace{ "discovery::handle::local::topology::implicit continuation"};
-
-                        // we're not interested in the replies, we add and accumulate for upstream
-                        state.accumulate.upstream.add( std::move( domains));
-                        
-                        if( state.accumulate.upstream.limit())
-                           topology::upstream::apply( state);
-                     });
-                  }
-
                   auto update( State& state)
                   {
                      //! Will be received only if a domain downstream got a new connection
                      //! (and the chain of inbounds are configured with _discovery forward_)
                      return [ &state]( message::discovery::topology::implicit::Update&& message)
                      {
-                        Trace trace{ "discovery::handle::local::topology::update"};
+                        Trace trace{ "discovery::handle::local::topology::implicit::update"};
                         local::handler::entry( message);
 
                         if( state.runlevel > decltype( state.runlevel())::running)
@@ -547,11 +519,7 @@ namespace casual
                            return;
 
                         // accumulate for later....
-                        state.accumulate.implicit.add( std::move( message.domains));
-
-                        // check if we've reach the "accumulate limit" and need to apply.
-                        if( state.accumulate.implicit.limit())
-                           topology::implicit::apply( state);
+                        state.accumulate.topology.add( std::move( message));
                      };
                   }
                } // implicit
@@ -569,36 +537,24 @@ namespace casual
                         if( state.runlevel > decltype( state.runlevel())::running)
                            return;
 
-                        state.coordinate.known( detail::collect::known::requests( state), [ &state, update = std::move( message)]( auto&& replies, auto&& outcome) mutable
-                        {
-                           Trace trace{ "discovery::handle::local::topology::direct::update known done"};
-                           log::line( verbose::log, "replies: ", replies, ", outcome: ", outcome);
-
-                           message::discovery::topology::direct::Explore message{ process::handle()};
-                           message.domain = common::domain::identity();
-                           message.connection = update.connection;
-                           message.content = std::move( update.configured);
-
-                           for( auto& reply : replies)
-                              message.content += std::move( reply.content);
-
-                           if( message.content)
-                           {
-                              // send the explore to the sender of direct::Update (an outbound...)
-                              state.multiplex.send( update.process.ipc, message);
-                              state::metric::message::count::send( message);
-                           }
-
-                           // prepare the implicit topology update
-                           if( state.accumulate.upstream.add( { common::domain::identity()}))
-                              topology::upstream::apply( state);
-
-                        });
+                        state.accumulate.topology.add( std::move( message));
                      };
                   }
                } // direct
 
             } // topology
+
+            auto timeout( State& state)
+            {
+               return [ &state]( const common::message::signal::Timeout& message)
+               {
+                  Trace trace{ "gateway::group::outbound::local::internal::handle::timeout"};
+                  log::line( verbose::log, "message: ", message);
+
+                  topology::apply( state);
+               };
+            }
+
 
             namespace event
             {
@@ -680,20 +636,6 @@ namespace casual
          } // <unnamed>
       } // local
 
-      void idle( State& state)
-      {
-         Trace trace{ "discovery::handle::idle"};
-
-         if( state.runlevel > decltype( state.runlevel())::running)
-            return;
-
-         if( state.accumulate.implicit)
-            local::topology::implicit::apply( state);
-
-         if( state.accumulate.upstream)
-            local::topology::upstream::apply( state);
-      }
-
       dispatch_type create( State& state)
       {
          Trace trace{ "discovery::handle::create"};
@@ -704,13 +646,13 @@ namespace casual
             local::api::provider::registration( state),
             local::api::request( state),
             local::api::rediscovery::request( state),
-            local::needs::reply( state),
             local::known::reply( state),
             local::request( state),
             local::internal::reply( state),
             local::reply( state),
             local::topology::direct::update( state),
             local::topology::implicit::update( state),
+            local::timeout( state),
             local::shutdown::request( state),
             local::service::manager::lookup::reply( state),
             local::server::Handle{ 

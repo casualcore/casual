@@ -506,9 +506,10 @@ domain:
 
             auto update = fetch_topology_until( []( auto& update)
             {
-               return update.domains.size() == 2;
+               return update.domains.size() >= 2;
             });
-
+            
+            EXPECT_TRUE( update.domains.size() == 2);
             EXPECT_TRUE( algorithm::find( update.domains, "B")) << CASUAL_NAMED_VALUE( update.domains);
             EXPECT_TRUE( algorithm::find( update.domains, "A")) << CASUAL_NAMED_VALUE( update.domains);
          }

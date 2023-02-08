@@ -71,7 +71,6 @@ namespace casual
 
                   result.message.count.receive = state::metric::message::count::received( create_count, 
                      message::discovery::api::rediscovery::Request{},
-                     message::discovery::needs::Reply{},
                      message::discovery::known::Reply{},
                      message::discovery::Request{},
                      message::discovery::Reply{},
@@ -85,7 +84,6 @@ namespace casual
                      message::discovery::Request{},
                      message::discovery::Reply{},
                      message::discovery::internal::Request{},
-                     message::discovery::needs::Request{},
                      message::discovery::known::Request{},
                      message::discovery::api::Reply{},
                      message::discovery::api::rediscovery::Reply{},

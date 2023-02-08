@@ -849,32 +849,6 @@ namespace casual
                   }
                } // api
 
-               namespace needs
-               {
-                  //! reply with all known external and what we're waiting for.
-                  auto request( State& state)
-                  {
-                     return [&state]( const casual::domain::message::discovery::needs::Request& message)
-                     {
-                        Trace trace{ "service::manager::handle::domain::discovery::needs::request"};
-                        log::line( verbose::log, "message: ", message);
-
-                        auto reply = common::message::reverse::type( message, common::process::handle());
-
-                        // only 'wait' pending
-                        for( auto& pending : state.pending.lookups)
-                           if( pending.request.context.semantic == decltype( pending.request.context.semantic)::wait)
-                              reply.content.services.push_back( pending.request.requested);
-
-                        // make sure we respect the invariants
-                        algorithm::container::sort::unique( reply.content.services);
-
-                        log::line( verbose::log, "reply: ", reply);
-                        communication::device::blocking::optional::send( message.process.ipc, reply);
-                     };
-                  }
-               } // needs
-
                namespace known
                {
                   //! reply with all "remote" service we know of.
@@ -1111,7 +1085,6 @@ namespace casual
             handle::local::Call{ admin::services( state), state},
             handle::local::domain::discovery::internal::request( state),
             handle::local::domain::discovery::api::reply( state),
-            handle::local::domain::discovery::needs::request( state),
             handle::local::domain::discovery::known::request( state),
             handle::local::configuration::update::request( state),
             handle::local::configuration::request( state),

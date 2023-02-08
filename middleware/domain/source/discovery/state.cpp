@@ -6,6 +6,8 @@
 
 #include "domain/discovery/state.h"
 
+#include "common/environment.h"
+
 namespace casual
 {
    using namespace common;
@@ -49,32 +51,78 @@ namespace casual
             common::algorithm::container::trim( m_providers, common::algorithm::remove( m_providers, pid));
          }
 
-         namespace accumulate::topology
+         namespace accumulate
          {
-            bool Implicit::add( std::vector< common::domain::Identity> domains)
+            namespace local
             {
-               // add this domain, since we by definition has seen this topology update (or others before)
-               if( auto position = std::get< 1>( algorithm::sorted::lower_bound( m_domains, common::domain::identity())))
+               namespace
                {
-                  if( *position != common::domain::identity())
-                     m_domains.insert( std::begin( position), common::domain::identity());
-               }
-               else
-                  m_domains.push_back( common::domain::identity());
+                  void set_timer( std::optional< common::signal::timer::Deadline>& timer)
+                  {
+                     if( timer)
+                        return;
 
-               ++m_count;
-               algorithm::sorted::append_unique( algorithm::sort( domains), m_domains);
+                     static const auto duration = []() -> platform::time::unit
+                     {
+                        // check if we're in unittest context or not.
+                        if( common::environment::variable::exists( common::environment::variable::name::unittest::context))
+                           return std::chrono::milliseconds{ 1};
+                        return platform::batch::discovery::accumulate::timeout;
+                     }();
 
-               return limit();
-            }
+                     timer.emplace( duration);
+                  }
+               } // <unnamed>
+            } // local
 
-            std::vector< common::domain::Identity> Implicit::extract() noexcept
+            void Topology::add( message::discovery::topology::direct::Update&& message)
             {
-               m_count = 0;
-               return std::exchange( m_domains, {});
+               Trace trace{ "domain::discovery::state::accumulate::Topology::add"};
+
+               algorithm::append_unique_value( std::move( message.origin), m_direct.domains);
+               m_direct.configured += std::move( message.configured);
+
+               local::set_timer( m_timer);
             }
 
-         } // accumulate::topology
+            void Topology::add( message::discovery::topology::implicit::Update&& message)
+            {
+               Trace trace{ "domain::discovery::state::accumulate::Topology::add"};
+
+               algorithm::append_unique( message.domains, m_implicit.domains);
+
+               // Something is updated at message.origin. We need to include 
+               // the origin (connection), in the set we're going to discover later.
+               algorithm::append_unique_value( std::move( message.origin), m_direct.domains);
+
+               local::set_timer( m_timer);
+            }
+
+            Topology::extract_result Topology::extract() noexcept
+            {
+               Trace trace{ "domain::discovery::state::accumulate::Topology::extract"};
+
+               // remove deadline regardless. 
+               m_timer = std::nullopt;
+
+               extract_result result;
+               {
+                  auto& [ direct, implicit] = result;
+
+                  direct.domains = std::exchange( m_direct.domains, {});
+                  direct.content = std::exchange( m_direct.configured, {});
+
+                  implicit.domains = std::exchange( m_implicit.domains, {});
+                  // add our self.
+                  algorithm::append_unique_value( common::domain::identity(), implicit.domains);
+               }
+
+               log::line( verbose::log, "result: ", result);
+               
+               return result;
+            }
+
+         } // accumulate
       } // state
 
       State::State()
@@ -85,12 +133,12 @@ namespace casual
       
       bool State::done() const noexcept
       {
-         if( runlevel == decltype( runlevel())::running)
-            return false;
+         if( runlevel > decltype( runlevel())::running)
+            return coordinate.empty();
 
-         return coordinate.empty();
+         return false;
       }
 
       
-   } // domain::discovery:
+   } // domain::discovery
 } // casual

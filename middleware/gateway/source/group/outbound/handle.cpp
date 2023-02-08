@@ -473,9 +473,9 @@ namespace casual
                         auto explore( State& state)
                         {
                            //! Sent from _discovery_ when:
-                           //! * we got a new connection
-                           //! * we sent casual::domain::message::discovery::topology::direct::Update to _discovery_
-                           //! * _discovery_ gather current known "external" services and sends this message to us.
+                           //! * there are new connections (either from our process, and/or some other "outbound")
+                           //! * AND/OR there are implicit topology updates (either from our process, and/or some other "outbound")
+                           //! * after some specific time, _discovery_ gathers "known", and send topology::direct::Explore to us (and other "outbounds")
                            return [ &state]( casual::domain::message::discovery::topology::direct::Explore& message)
                            {
                               Trace trace{ "gateway::group::outbound::handle::local::internal::domain::discover::topology::direct::explore"};
@@ -490,10 +490,14 @@ namespace casual
 
                                  casual::domain::message::discovery::Request request;
                                  request.content = std::move( message.content);
-                                 request.domain = std::move( message.domain);
+                                 request.domain = common::domain::identity();
 
-                                 if( auto correlation = local::tcp::send( state, message.connection, request))
-                                    result.emplace_back( correlation, message.connection);
+                                 for( auto& domain : message.domains)
+                                 {
+                                    if( auto information = state.external.information( domain.id))
+                                       if( auto correlation = local::tcp::send( state, information->descriptor, request))
+                                          result.emplace_back( correlation, information->descriptor);
+                                 }
 
                                  return result;
                               };
@@ -527,7 +531,7 @@ namespace casual
 
                         casual::domain::message::discovery::topology::direct::Update update{ process::handle()};
                         {
-                           update.connection = descriptor;
+                           update.origin = message.domain;
 
                            const auto information = casual::assertion( algorithm::find( state.external.information(), descriptor), "failed to find information for descriptor: ", descriptor);
                            
@@ -775,6 +779,7 @@ namespace casual
                               log::line( log::category::error, code::casual::internal_correlation, " failed to correlate [", message.correlation, "] reply with a destination - action: ignore");
                         }
                      } // detail
+
                      namespace prepare
                      {
                         auto reply( State& state)
@@ -795,8 +800,8 @@ namespace casual
                               detail::send( state, message);
                            };
                         }
-                        
                      } // prepare
+
                      namespace commit
                      {
                         auto reply( State& state)
@@ -815,8 +820,8 @@ namespace casual
                               detail::send( state, message);
                            };
                         }
-
                      } // commit
+
                      namespace rollback
                      {
                         auto reply( State& state)
@@ -871,6 +876,10 @@ namespace casual
                            // no need to send it if we've seen this message before
                            if( algorithm::find( message.domains, common::domain::identity()))
                               return;
+
+                           // make sure to set who actually is updated.
+                           if( auto information = state.external.information( state.external.last()))
+                              message.origin = information->domain;
 
                            casual::domain::discovery::topology::implicit::update( state.multiplex, message);
                         };

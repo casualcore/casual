@@ -321,7 +321,6 @@ namespace casual
 
             if( found->restart && runlevel == decltype( runlevel())::running)
                return result_type{ found, nullptr};
-
          }
 
          // Find and remove from executable
@@ -341,6 +340,7 @@ namespace casual
             grandchildren.erase( std::begin( found));
          }
 
+         log::line( log, "runlevel: ", runlevel);
          return result_type{};
       }
 

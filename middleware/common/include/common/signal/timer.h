@@ -59,10 +59,8 @@ namespace casual
 
       //! Sets a scoped timout.
       //! dtor will 'reset' previous timeout, if any. Hence enable nested timeouts.
-      class Scoped
+      struct Scoped
       {
-      public:
-
          Scoped( unit::type timeout);
          Scoped( unit::type timeout, platform::time::point::type now);
 
@@ -88,11 +86,10 @@ namespace casual
 
       //! Sets a scoped Deadline.
       //! dtor will 'unset' timeout regardless
-      class Deadline
+      struct Deadline
       {
-      public:
-
          Deadline( point::type deadline, platform::time::point::type now);
+         Deadline( platform::time::unit duration);
          ~Deadline();
 
          Deadline( Deadline&&) noexcept;

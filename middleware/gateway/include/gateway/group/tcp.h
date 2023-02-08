@@ -87,7 +87,8 @@ namespace casual
             platform::time::point::type created = platform::time::clock::type::now();
 
             inline friend bool operator == ( const Information& lhs, common::strong::file::descriptor::id rhs) { return lhs.descriptor == rhs;} 
-
+            inline friend bool operator == ( const Information& lhs, const common::strong::domain::id& rhs) { return lhs.domain == rhs;} 
+            
             CASUAL_LOG_SERIALIZE( 
                CASUAL_SERIALIZE( descriptor);
                CASUAL_SERIALIZE( domain);
@@ -132,6 +133,13 @@ namespace casual
          const Information* information( common::strong::file::descriptor::id descriptor) const noexcept
          {
             if( auto found = common::algorithm::find( m_information, descriptor))
+               return found.data();
+            return nullptr;
+         }
+
+         const Information* information( const common::strong::domain::id& domain) const noexcept
+         {
+            if( auto found = common::algorithm::find( m_information, domain))
                return found.data();
             return nullptr;
          }
