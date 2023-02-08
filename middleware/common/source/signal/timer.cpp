@@ -144,6 +144,11 @@ namespace casual
             timer::unset();
       }
 
+      Deadline::Deadline( platform::time::unit duration)
+      {
+         timer::set( duration);
+      }
+
       Deadline::~Deadline()
       {
          if( m_active)

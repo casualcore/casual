@@ -483,33 +483,6 @@ namespace casual
 
                } // api
 
-               namespace needs
-               { 
-                  auto request( State& state)
-                  {
-                     return [&state]( casual::domain::message::discovery::needs::Request& message)
-                     {
-                        Trace trace{ "queue::manager::handle::local::domain::discover::needs::request"};
-                        common::log::line( verbose::log, "message: ", message);
-
-                        auto reply = common::message::reverse::type( message);
-
-                        // add the pending _wait for ever_ requests
-                        for( auto& pending : state.pending.lookups)
-                           if( pending.context.semantic == decltype( pending.context.semantic)::wait)
-                              reply.content.queues.push_back( pending.name);
-
-                        // make sure we respect invariants
-                        algorithm::container::sort::unique( reply.content.queues);
-
-                        common::log::line( verbose::log, "reply: ", reply);
-
-                        state.multiplex.send( message.process.ipc, reply);
-                        
-                     };
-                  }
-               } // needs
-
                namespace known
                {
                   auto request( State& state)
@@ -670,7 +643,6 @@ namespace casual
             
             handle::local::domain::discover::internal::request( state),
             handle::local::domain::discover::api::reply( state),
-            handle::local::domain::discover::needs::request( state),
             handle::local::domain::discover::known::request( state),
 
             handle::local::shutdown::request( state),

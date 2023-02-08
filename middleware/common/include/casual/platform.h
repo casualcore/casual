@@ -164,10 +164,10 @@ namespace casual
                constexpr size::type next = batch::message::pump::next;
             } // message::pump
 
-            namespace topology
+            namespace accumulate
             {
-               constexpr size::type updates = 100;
-            } // topology
+               constexpr auto timeout = std::chrono::seconds{ 1};
+            } // accumulate
             
          } // discovery
 
@@ -243,8 +243,11 @@ namespace casual
 
          namespace connect::attempts
          {
-            //! threshhold when to start wating a longer time before next connect attempt
-            constexpr size::type threshhold = 100;
+            //! threshold when to start waiting a longer time before next connect attempt
+            constexpr size::type threshold = 100;
+
+            //! delay until attempt to connect again.
+            constexpr std::chrono::seconds delay = std::chrono::seconds{ 3};
 
          } // connect::attempts
 

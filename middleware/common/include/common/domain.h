@@ -39,6 +39,7 @@ namespace casual
          inline explicit operator bool() const noexcept { return predicate::boolean( id);}
 
          inline friend bool operator == ( const Identity& lhs, std::string_view rhs) { return lhs.name == rhs;}
+         inline friend bool operator == ( const Identity& lhs, const strong::domain::id& rhs) { return lhs.id == rhs;}
 
          inline auto tie() const noexcept { return std::tie( id);}
 

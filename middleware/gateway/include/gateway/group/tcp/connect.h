@@ -121,11 +121,15 @@ namespace casual
          {
             if( ! connect.prospects.empty())
             {
-               // check if we're in unittest context or not.
-               if( common::environment::variable::exists( common::environment::variable::name::unittest::context))
-                  common::signal::timer::set( std::chrono::milliseconds{ 10});
-               else
-                  common::signal::timer::set( std::chrono::seconds{ 3});
+               static const auto duration = []() -> platform::time::unit
+               {
+                  // check if we're in unittest context or not.
+                  if( common::environment::variable::exists( common::environment::variable::name::unittest::context))
+                     return std::chrono::milliseconds{ 10};
+                  return platform::tcp::connect::attempts::delay;
+               }();
+
+               common::signal::timer::set( duration);
             }
          }
       } // retry

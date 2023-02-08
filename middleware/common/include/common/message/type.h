@@ -81,9 +81,6 @@ namespace casual
          // domain_discovery_request,
          // domain_discovery_reply,
 
-         domain_discovery_needs_request,
-         domain_discovery_needs_reply,
-
          domain_discovery_known_request,
          domain_discovery_known_reply,
 

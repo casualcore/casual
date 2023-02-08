@@ -16,9 +16,6 @@ namespace casual
    namespace domain::discovery::handle
    {
       using dispatch_type = decltype( common::message::dispatch::handler( common::communication::ipc::inbound::device()));
-
-      void idle( State& state);
-
       dispatch_type create( State& state);
 
    } // domain::discovery::handle

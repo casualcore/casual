@@ -181,20 +181,20 @@ namespace casual
          }
       }
 
-      TEST( domain_discovery, register_discover_external_internal_and_needs___rediscover___expect_needs_and_discover_external_request__then_reply)
+      TEST( domain_discovery, register_discover_external_internal_and_knows___rediscover___expect_known_and_discover_external_request__then_reply)
       {
          common::unittest::Trace trace;
 
          auto domain = unittest::manager();
          using Ability = discovery::provider::Ability;
 
-         discovery::provider::registration( { Ability::discover_external, Ability::discover_internal, Ability::needs});
+         discovery::provider::registration( { Ability::discover_external, Ability::discover_internal, Ability::known});
 
          auto correlation = discovery::rediscovery::request();
          
          // needs
          {
-            auto request = communication::ipc::receive< message::discovery::needs::Request>();
+            auto request = communication::ipc::receive< message::discovery::known::Request>();
             auto reply = common::message::reverse::type( request, process::handle());
             reply.content.queues = { "a", "b"};
             communication::device::blocking::send( request.process.ipc, reply);
@@ -230,9 +230,11 @@ namespace casual
          using Ability = discovery::provider::Ability;         
          discovery::provider::registration( { Ability::discover_external, Ability::topology, Ability::known});
 
+         const auto origin = strong::domain::id{ uuid::make()};
+
          {
             message::discovery::topology::direct::Update update{ process::handle()};
-            update.connection = common::strong::file::descriptor::id{ 42};
+            update.origin = decltype( update.origin){ origin, "aaa"};
             update.configured.services = { "x", "z"};
             update.configured.queues = { "b1", "b2"};
             discovery::topology::direct::update( multiplex, update);
@@ -253,6 +255,8 @@ namespace casual
          // topology direct explore
          {
             auto explore = communication::ipc::receive< message::discovery::topology::direct::Explore >();
+            ASSERT_TRUE( explore.domains.size() == 1) << CASUAL_NAMED_VALUE( explore);
+            EXPECT_TRUE( explore.domains.at( 0) == origin);
             EXPECT_TRUE( algorithm::equal( explore.content.queues, array::make( "b1"sv, "b2"sv, "q1"sv, "q2"sv))) << CASUAL_NAMED_VALUE( explore.content.queues);
             EXPECT_TRUE( algorithm::equal( explore.content.services, array::make( "a"sv, "b"sv, "x"sv, "z"sv))) << CASUAL_NAMED_VALUE( explore.content.services);
          };
@@ -260,12 +264,12 @@ namespace casual
          // we get the implicit topology update
          {
             auto reply = communication::ipc::receive< message::discovery::topology::implicit::Update>();
-            ASSERT_TRUE( reply.domains.size() == 1);
-            EXPECT_TRUE( reply.domains.at( 0) == common::domain::identity());
+            ASSERT_TRUE( reply.domains.size() == 1) << CASUAL_NAMED_VALUE( reply);
+            EXPECT_TRUE( reply.domains.at( 0) == common::domain::identity()) << CASUAL_NAMED_VALUE( reply);
          }
       }
 
-      TEST( domain_discovery, implicit_update__expect__known_request__discovery_request__topology_implicit_update)
+      TEST( domain_discovery, implicit_update__expect__known_request__discovery_explore__topology_implicit_update)
       {
          common::unittest::Trace trace;
 
@@ -277,7 +281,7 @@ namespace casual
          auto inbound = communication::ipc::inbound::Device{};
 
          using Ability = discovery::provider::Ability;         
-         discovery::provider::registration( { Ability::discover_external, Ability::discover_internal, Ability::topology, Ability::needs, Ability::known});
+         discovery::provider::registration( { Ability::discover_external, Ability::discover_internal, Ability::topology, Ability::known});
 
          {
             message::discovery::topology::implicit::Update message;
@@ -289,21 +293,18 @@ namespace casual
          while( multiplex)
             multiplex.send();
          
-         // needs
+         // known request
          {
-            auto request = communication::ipc::receive< message::discovery::needs::Request>();
+            auto request = communication::ipc::receive< message::discovery::known::Request>();
             auto reply = common::message::reverse::type( request, process::handle());
             reply.content.services = { "a"};
             communication::device::blocking::send( request.process.ipc, reply);
          }
 
-         // discovery external
+         // discovery explore 
          {
-            auto request = communication::ipc::receive< message::discovery::Request>();
-            EXPECT_TRUE( algorithm::equal( request.content.services, array::make( "a"sv)));
-            auto reply = common::message::reverse::type( request);
-            reply.content.services = { { "a", "test", common::service::transaction::Type::automatic, common::service::visibility::Type::discoverable}};
-            communication::device::blocking::send( request.process.ipc, reply);
+            auto explore = communication::ipc::receive< message::discovery::topology::direct::Explore>();
+            EXPECT_TRUE( algorithm::equal( explore.content.services, array::make( "a"sv)));
          };
 
          // we get the topology update

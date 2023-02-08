@@ -14,6 +14,7 @@
 #include "common/message/coordinate.h"
 #include "common/communication/select.h"
 #include "common/communication/ipc/send.h"
+#include "common/signal/timer.h"
 
 #include <iosfwd>
 
@@ -23,95 +24,92 @@ namespace casual
    {
       namespace state
       {
-         namespace metric
+         namespace metric::message
          {
-            namespace message
+            namespace detail
             {
-               namespace detail
-               {
-                  namespace count
-                  {
-                     enum class Tag : short
-                     {
-                        received,
-                        sent
-                     };
-
-                     template< Tag tag, common::message::Type type>
-                     struct basic_count
-                     {
-                        static void increment() noexcept { ++m_count;}
-                        static auto value() noexcept { return m_count;}
-                     private:
-                        static platform::size::type m_count;
-                     };
-
-                     template< Tag tag, common::message::Type type>
-                     platform::size::type basic_count< tag, type>::m_count = {};
-
-
-                     template< common::message::Type type>
-                     using Receive = basic_count< count::Tag::received, type>;
-
-                     template< common::message::Type type>
-                     using Send = basic_count< count::Tag::sent, type>;
-
-                  } // count
-
-                  template< count::Tag tag, typename C, typename Message>
-                  constexpr auto create( C creator, const Message&)
-                  {
-                     constexpr auto type = common::message::type< common::traits::remove_cvref_t< Message>>();
-                     return creator( 
-                        type, 
-                        detail::count::basic_count< tag, type>::value());
-                  }
-
-                  template< count::Tag tag, typename C, typename... Messages>
-                  constexpr auto counts( C creator, Messages... messages) noexcept
-                  {
-                     using value_type = decltype( creator( common::message::Type{}, platform::size::type{}));
-
-                     std::vector< value_type> result;
-                     result.reserve( sizeof...( Messages));
-
-                     ( ... , result.push_back( detail::create< tag>( creator, messages)) );
-
-                     return result;
-                  }
-
-               } // detail
-
                namespace count
                {
-                  template< typename Message>
-                  constexpr void receive( Message&&)
+                  enum class Tag : short
                   {
-                     detail::count::Receive< common::message::type< common::traits::remove_cvref_t< Message>>()>::increment();
-                  }
+                     received,
+                     sent
+                  };
 
-                  template< typename C, typename... Messages>
-                  constexpr auto received( C creator, Messages... messages) noexcept
+                  template< Tag tag, common::message::Type type>
+                  struct basic_count
                   {
-                     return detail::counts< detail::count::Tag::received>( std::move( creator), std::forward< Messages>( messages)...);
-                  }
+                     static void increment() noexcept { ++m_count;}
+                     static auto value() noexcept { return m_count;}
+                  private:
+                     static platform::size::type m_count;
+                  };
 
-                  template< typename Message>
-                  constexpr void send( Message&&)
-                  {
-                     detail::count::Send< common::message::type< common::traits::remove_cvref_t< Message>>()>::increment();
-                  }
+                  template< Tag tag, common::message::Type type>
+                  platform::size::type basic_count< tag, type>::m_count = {};
 
-                  template< typename C, typename... Messages>
-                  constexpr auto sent( C creator, Messages... messages) noexcept
-                  {
-                     return detail::counts< detail::count::Tag::sent>( std::move( creator), std::forward< Messages>( messages)...);
-                  }
-                  
-               } // count 
+
+                  template< common::message::Type type>
+                  using Receive = basic_count< count::Tag::received, type>;
+
+                  template< common::message::Type type>
+                  using Send = basic_count< count::Tag::sent, type>;
+
+               } // count
+
+               template< count::Tag tag, typename C, typename Message>
+               constexpr auto create( C creator, const Message&)
+               {
+                  constexpr auto type = common::message::type< common::traits::remove_cvref_t< Message>>();
+                  return creator( 
+                     type, 
+                     detail::count::basic_count< tag, type>::value());
+               }
+
+               template< count::Tag tag, typename C, typename... Messages>
+               constexpr auto counts( C creator, Messages... messages) noexcept
+               {
+                  using value_type = decltype( creator( common::message::Type{}, platform::size::type{}));
+
+                  std::vector< value_type> result;
+                  result.reserve( sizeof...( Messages));
+
+                  ( ... , result.push_back( detail::create< tag>( creator, messages)) );
+
+                  return result;
+               }
+
+            } // detail
+
+            namespace count
+            {
+               template< typename Message>
+               constexpr void receive( Message&&)
+               {
+                  detail::count::Receive< common::message::type< common::traits::remove_cvref_t< Message>>()>::increment();
+               }
+
+               template< typename C, typename... Messages>
+               constexpr auto received( C creator, Messages... messages) noexcept
+               {
+                  return detail::counts< detail::count::Tag::received>( std::move( creator), std::forward< Messages>( messages)...);
+               }
+
+               template< typename Message>
+               constexpr void send( Message&&)
+               {
+                  detail::count::Send< common::message::type< common::traits::remove_cvref_t< Message>>()>::increment();
+               }
+
+               template< typename C, typename... Messages>
+               constexpr auto sent( C creator, Messages... messages) noexcept
+               {
+                  return detail::counts< detail::count::Tag::sent>( std::move( creator), std::forward< Messages>( messages)...);
+               }
                
-            } // message
-         } // metric
+            } // count 
+            
+         } // metric::message
 
 
          namespace runlevel
@@ -173,41 +171,64 @@ namespace casual
             std::vector< state::Provider> m_providers;
          };
 
-         namespace accumulate::topology
+         namespace accumulate
          {
-            struct Implicit
+            namespace topology::state
             {
-               //! @returns true if limit is reached
-               bool add( std::vector< common::domain::Identity> domains);
+               struct Direct
+               {
+                  std::vector< common::domain::Identity> domains;
+                  message::discovery::request::Content configured;
 
-               inline explicit operator bool() const noexcept { return ! m_domains.empty();}
+                  CASUAL_LOG_SERIALIZE(
+                     CASUAL_SERIALIZE( domains);
+                     CASUAL_SERIALIZE( configured);
+                  )
+               };
 
-               std::vector< common::domain::Identity> extract() noexcept;
+               struct Implicit
+               {
+                  std::vector< common::domain::Identity> domains;
 
-               inline bool limit() const noexcept { return m_count > platform::batch::discovery::topology::updates;}
+                  CASUAL_LOG_SERIALIZE(
+                     CASUAL_SERIALIZE( domains);
+                  )
+               };
+            } // topology::state
+
+            struct Topology
+            {
+               //! will set timer if it's not set. 
+               void add( message::discovery::topology::direct::Update&& message);
+               void add( message::discovery::topology::implicit::Update&& message);
+
+               using extract_result = std::tuple< message::discovery::topology::direct::Explore, message::discovery::topology::implicit::Update>;
+               extract_result extract() noexcept;
+
+               //! @returns true if something is aggregated, false otherwise
+               inline explicit operator bool() const noexcept { return ! m_direct.domains.empty() || ! m_implicit.domains.empty();}
 
                CASUAL_LOG_SERIALIZE(
-                  CASUAL_SERIALIZE_NAME( m_count, "count");
-                  CASUAL_SERIALIZE_NAME( m_domains, "domains");
+                  CASUAL_SERIALIZE_NAME( m_direct, "direct");
+                  CASUAL_SERIALIZE_NAME( m_implicit, "implicit");
                )
-
+               
             private:
-               platform::size::type m_count{};
-               std::vector< common::domain::Identity> m_domains;
+
+               topology::state::Direct m_direct;
+               topology::state::Implicit m_implicit;
+               //! keeps track of the lifetime of our timer.
+               std::optional< common::signal::timer::Deadline> m_timer;
             };
 
-            using Upstream = topology::Implicit;
-
-         } // accumulate::topology
+         } // accumulate
 
          struct Accumulate
          {
-            accumulate::topology::Implicit implicit;
-            accumulate::topology::Upstream upstream;
+            accumulate::Topology topology;
 
             CASUAL_LOG_SERIALIZE(
-               CASUAL_SERIALIZE( implicit);
-               CASUAL_SERIALIZE( upstream);
+               CASUAL_SERIALIZE( topology);
             )
          };
 
@@ -227,16 +248,14 @@ namespace casual
          {
             common::message::coordinate::fan::Out< message::discovery::Reply, common::strong::process::id> discovery;
             common::message::coordinate::fan::Out< message::discovery::internal::Reply, common::strong::process::id> internal;
-            common::message::coordinate::fan::Out< message::discovery::needs::Reply, common::strong::process::id> needs;
             common::message::coordinate::fan::Out< message::discovery::known::Reply, common::strong::process::id> known;
 
-            inline void failed( common::strong::process::id pid) { discovery.failed( pid); internal.failed( pid); needs.failed( pid); known.failed( pid);}
-            inline bool empty() const noexcept { return discovery.empty() && internal.empty() && needs.empty() && known.empty();}
+            inline void failed( common::strong::process::id pid) { discovery.failed( pid); internal.failed( pid); known.failed( pid);}
+            inline bool empty() const noexcept { return discovery.empty() && internal.empty() && known.empty();}
 
             CASUAL_LOG_SERIALIZE(
                CASUAL_SERIALIZE( discovery);
                CASUAL_SERIALIZE( internal);
-               CASUAL_SERIALIZE( needs);
                CASUAL_SERIALIZE( known);
             )
 

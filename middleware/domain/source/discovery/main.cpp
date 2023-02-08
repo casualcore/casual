@@ -14,6 +14,7 @@
 #include "common/exception/guard.h"
 #include "common/argument.h"
 #include "common/communication/instance.h"
+#include "common/message/signal.h"
 
 namespace casual
 {
@@ -38,11 +39,25 @@ namespace casual
                return State{};
             }
 
+            namespace signal::callback
+            {
+               auto timeout()
+               {
+                  return []()
+                  {
+                     Trace trace{ "domain::discovery::local::signal::callback::timeout"};
+
+                     // we push it to our own inbound ipc 'queue', and handle the timeout
+                     // in our regular message pump.
+                     communication::ipc::inbound::device().push( common::message::signal::Timeout{});                 
+                  };
+               }
+            } // signal::callback
+
             auto condition( State& state)
             {
                return common::message::dispatch::condition::compose(
-                  common::message::dispatch::condition::done( [&state]() { return state.done();}),
-                  common::message::dispatch::condition::idle( [&state]() { return handle::idle( state);})
+                  common::message::dispatch::condition::done( [&state]() { return state.done();})
                );
             }
 
@@ -50,6 +65,9 @@ namespace casual
             {
                Trace trace{ "domain::discovery::local::start"};
                log::line( verbose::log, "state: ", state);
+
+               // register the alarm callback.
+               common::signal::callback::registration< code::signal::alarm>( signal::callback::timeout());
 
                // start the message dispatch
                communication::select::dispatch::pump( 

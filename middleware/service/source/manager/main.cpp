@@ -112,7 +112,7 @@ namespace casual
 
                // register that we can answer discovery questions.
                using Ability = casual::domain::discovery::provider::Ability;
-               casual::domain::discovery::provider::registration( flags::compose( Ability::discover_internal, Ability::needs, Ability::known));
+               casual::domain::discovery::provider::registration( flags::compose( Ability::discover_internal, Ability::known));
 
                // Connect to domain
                communication::instance::whitelist::connect( communication::instance::identity::service::manager);
