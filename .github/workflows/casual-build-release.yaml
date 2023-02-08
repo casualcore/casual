@@ -107,7 +107,7 @@ jobs:
   
   build-centos:
     runs-on: self-hosted
-    if: success()
+    if: ${{ success() }}
     needs: [calculate-version,build-frontend]
     env:
       DISTRIBUTION: 'centos'
@@ -148,6 +148,9 @@ jobs:
 
           bash /git/casual/casual/pipeline/script/pre/cleanup
 
+          touch /git/casual/casual.log
+          chmod 777 /git/casual/casual.log
+
           bash /git/casual/casual/pipeline/script/backend/$DISTRIBUTION/build ${{ needs.calculate-version.outputs.build_version }}
           bash /git/casual/casual/pipeline/script/package ${{ needs.calculate-version.outputs.casual_version }} ${{ needs.calculate-version.outputs.casual_release }} $DISTRIBUTION
 
@@ -162,9 +165,14 @@ jobs:
         run: |
           docker run --rm -v ${{ github.workspace }}:/git/casual:Z -i ${{ env.centos_image}}:${{ needs.calculate-version.outputs.major_minor }}
 
+      - name: Logpublisher
+        if: ${{ failure() || cancelled() }}
+        run: |
+          ${{ github.workspace }}/casual/pipeline/script/post/logpublisher ${{ github.workspace }}/casual.log ${DISTRIBUTION}-${{ needs.calculate-version.outputs.build_version }}
+
       - name: Test Report
         uses: dorny/test-reporter@v1
-        if: success() || failure()    # run this step even if previous step failed
+        if: ${{ success() || failure() }}   # run this step even if previous step failed
         with:
           name: Google Tests - Centos # Name of the check run which will be created
           path: ./**/report.xml       # Path to test results
@@ -179,7 +187,7 @@ jobs:
 
   build-suse:
     runs-on: self-hosted
-    if: success()
+    if: ${{ success() }}
     needs: [calculate-version,build-frontend]
     env:
       DISTRIBUTION: 'suse'
@@ -220,6 +228,9 @@ jobs:
 
           bash /git/casual/casual/pipeline/script/pre/cleanup
 
+          touch /git/casual/casual.log
+          chmod 777 /git/casual/casual.log
+
           bash /git/casual/casual/pipeline/script/backend/$DISTRIBUTION/build ${{ needs.calculate-version.outputs.build_version }}
           bash /git/casual/casual/pipeline/script/package ${{ needs.calculate-version.outputs.casual_version }} ${{ needs.calculate-version.outputs.casual_release }} $DISTRIBUTION
 
@@ -234,9 +245,14 @@ jobs:
         run: |
           docker run --rm -v ${{ github.workspace }}:/git/casual:Z -i ${{ env.suse_image}}:${{ needs.calculate-version.outputs.major_minor }}
 
+      - name: Logpublisher
+        if: ${{ failure() || cancelled() }}
+        run: |
+          ${{ github.workspace }}/casual/pipeline/script/post/logpublisher ${{ github.workspace }}/casual.log ${DISTRIBUTION}-${{ needs.calculate-version.outputs.build_version }}
+
       - name: Test Report
         uses: dorny/test-reporter@v1
-        if: success() || failure()   # run this step even if previous step failed
+        if: ${{ success() || failure() }}  # run this step even if previous step failed
         with:
           name: Google Tests - Suse  # Name of the check run which will be created
           path: ./**/report.xml      # Path to test results
@@ -251,7 +267,7 @@ jobs:
 
   tag-repo:
     runs-on: ubuntu-latest
-    if: success()
+    if: ${{ success() }}
     needs: [calculate-version,build-centos,build-suse]
     steps:
       - uses: actions/checkout@v2
@@ -266,7 +282,7 @@ jobs:
   publish-version:
     runs-on: self-hosted
     needs: [build-centos,build-suse,tag-repo]
-    if: success()
+    if: ${{ success() }}
     steps:
       - name: Publish suse
         uses: actions/download-artifact@v3
@@ -286,7 +302,7 @@ jobs:
   notification-end:
     runs-on: ubuntu-latest
     needs: [build-centos,build-suse,tag-repo]
-    if: always()
+    if: ${{ always() }}
     steps: 
       - uses: martialonline/workflow-status@v2
         id: check

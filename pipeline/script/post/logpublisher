@@ -1,0 +1,28 @@
+#! /bin/bash
+
+if (( $# == 2 ))
+then
+    logfile=$1
+    suffix="-"$2
+elif (( $# == 1 ))
+then
+    logfile=$1
+    suffix=""
+else
+    exit 0
+fi
+
+TIMEPOINT=$( date +%Y-%m-%dT%H%M%S)
+CASUAL_BACKUP_PATH="/var/www/build/logs"
+
+if [[ -f ${logfile} ]]
+then
+    if [[ ! -d ${CASUAL_BACKUP_PATH} ]]
+    then
+        mkdir -p ${CASUAL_BACKUP_PATH}
+    fi
+
+    destination=${CASUAL_BACKUP_PATH}/$( basename ${logfile})${suffix}-${TIMEPOINT}
+
+    mv ${logfile} ${destination} 2> /dev/null
+fi
