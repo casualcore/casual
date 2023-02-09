@@ -337,6 +337,10 @@ namespace casual
          if( auto found = algorithm::find( grandchildren, pid))
          {
             log::line( log, "remove grandchild: ", *found);
+            
+            // Try to remove ipc-queue (no-op if it's removed already)
+            local::ipc::remove( found->handle.ipc);
+
             grandchildren.erase( std::begin( found));
          }
 
