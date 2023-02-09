@@ -767,24 +767,25 @@ namespace casual
 
                   namespace send
                   {
-                     auto reply = []( State& state, auto directive, const auto& message)
+                     using Directive = common::message::domain::process::connect::reply::Directive;
+
+                     void reply( State& state, Directive directive, const common::message::domain::process::connect::Request& message)
                      {
                         auto reply = common::message::reverse::type( message);
                         reply.directive = directive;
-                        state.multiplex.send( message.process, reply);
+                        state.multiplex.send( message.information.handle, reply);
                      };
                   } // send
 
-                  template< typename M>
-                  void connect( State& state, const M& message)
+                  void connect( State& state, const common::message::domain::process::connect::Request& message)
                   {
-                     if( auto server = state.server( message.process.pid))
+                     if( auto server = state.server( message.information.handle.pid))
                      {
-                        server->connect( message.process);
-                        log::line( log, "added process: ", message.process, " to ", *server);
+                        server->connect( message.information.handle);
+                        log::line( log, "added process: ", message.information.handle, " to ", *server);
                      }
                      else // we assume it's a grandchild
-                        state.grandchildren.emplace_back( message.process, std::move( message.information.alias), std::move( message.information.path));
+                        state.grandchildren.emplace_back( message.information.handle, std::move( message.information.alias), std::move( message.information.path));
 
                      algorithm::container::trim( state.pending.lookup, algorithm::remove_if( state.pending.lookup, process::detail::lookup::request( state)));
 
@@ -835,21 +836,21 @@ namespace casual
 
                            // Adjust configured instances to correspond to reality...
 
-                           if( auto server = state.server( message.process.pid))
+                           if( auto server = state.server( message.information.handle.pid))
                            {
-                              server->remove( message.process.pid);
+                              server->remove( message.information.handle.pid);
                               server->scale( 1);
                            }
-                           else if( auto executable = state.executable( message.process.pid))
+                           else if( auto executable = state.executable( message.information.handle.pid))
                            {
-                              executable->remove( message.process.pid);
+                              executable->remove( message.information.handle.pid);
                               executable->scale( 1);
                            }
                            
                            // deny startup
                            send::reply( state, Directive::denied, message);
 
-                           manager::task::event::dispatch( state, [&message]()
+                           manager::task::event::dispatch( state, [ &message]()
                            {
                               common::message::event::Error event;
                               event.code = common::code::casual::invalid_semantics;
@@ -861,18 +862,18 @@ namespace casual
                            return true;
                         }
 
-                        state.singletons[ message.singleton.identification] = message.process;
+                        state.singletons[ message.singleton.identification] = message.information.handle;
 
                         // possible set environment-state so new spawned processes can use it directly
                         if( ! message.singleton.environment.empty())
-                           environment::variable::process::set( message.singleton.environment, message.process);
+                           environment::variable::process::set( message.singleton.environment, message.information.handle);
 
                         if( message.whitelist)
-                           state.whitelisted.push_back( message.process.pid);
+                           state.whitelisted.push_back( message.information.handle.pid);
 
                         // if service-manager, we need to interact.
                         if( message.singleton.identification == communication::instance::identity::service::manager.id)
-                           singleton::service( state, message.process);
+                           singleton::service( state, message.information.handle);
 
                         process::detail::connect( state, message);
 
@@ -897,7 +898,7 @@ namespace casual
 
                      if( state.runlevel > decltype( state.runlevel())::running)
                      {
-                        log::line( log::category::information, "refuse connect for pid: ", message.process.pid, " - runlevel: ", state.runlevel);
+                        log::line( log::category::information, "refuse connect for pid: ", message.information.handle.pid, " - runlevel: ", state.runlevel);
                         detail::send::reply( state, Directive::denied, message);
                         return;
                      }
@@ -906,7 +907,7 @@ namespace casual
                         return; // singleton, and handled.
                  
                      if( message.whitelist)
-                        state.whitelisted.push_back( message.process.pid);
+                        state.whitelisted.push_back( message.information.handle.pid);
 
                      detail::connect( state, message);
                      

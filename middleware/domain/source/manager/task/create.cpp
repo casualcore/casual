@@ -175,7 +175,7 @@ namespace casual
                            auto& server = state.entity( id);
 
                            // we're only interested in instances of this server
-                           if( ! algorithm::find( server.instances, message.process.pid))
+                           if( ! algorithm::find( server.instances, message.information.handle.pid))
                               return;
 
                            // a server instance that we're interseted in has connected, remove the tagged ones (one)

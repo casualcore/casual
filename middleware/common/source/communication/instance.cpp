@@ -162,7 +162,10 @@ namespace casual
       void connect( const process::Handle& process)
       {
          Trace trace{ "communication::instance::connect process"};
-         local::connect( common::message::domain::process::connect::Request{ process});
+
+         common::message::domain::process::connect::Request request;
+         request.information.handle = process;
+         local::connect( request);
       }
 
       void connect()
@@ -174,10 +177,12 @@ namespace casual
       {
          void connect()
          {
-            common::message::domain::process::connect::Request request{ process::handle()};
+            common::message::domain::process::connect::Request request;
             request.whitelist = true;
+            request.information.handle = process::handle();
             request.information.alias = common::instance::alias();
             request.information.path = common::process::path();
+            
             local::connect( request);
 
          }
@@ -186,10 +191,11 @@ namespace casual
          {
             Trace trace{ "communication::instance::whitelist::connect identity"};
 
-            common::message::domain::process::connect::Request request{ process};
+            common::message::domain::process::connect::Request request;
             request.whitelist = true;
             request.singleton.identification = identity.id;
             request.singleton.environment = identity.environment;
+            request.information.handle = process;
             request.information.alias = common::instance::alias();
             request.information.path = common::process::path();
 
