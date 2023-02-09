@@ -57,7 +57,8 @@ namespace casual
                      message::service::concurrent::advertise::Service service;
                      service.category = "http";
                      service.name = l.first;
-                     service.transaction = service::transaction::Type::none;
+                     service.visibility = decltype( service.visibility)::undiscoverable;
+                     service.transaction = decltype( service.transaction)::none;
                      return service;
                   });
 
