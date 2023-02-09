@@ -30,9 +30,7 @@ namespace casual
                void remove( strong::ipc::id ipc)
                {
                   if( communication::ipc::exists( ipc))
-                  {
                      communication::ipc::remove( ipc);
-                  }
                }
             } // ipc
 

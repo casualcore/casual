@@ -86,7 +86,7 @@ namespace casual
 
             namespace connect
             {
-               using base_request = message::basic_request< Type::domain_process_connect_request>;
+               using base_request = message::basic_message< Type::domain_process_connect_request>;
                struct Request : base_request
                {
                   using base_request::base_request;
