@@ -379,7 +379,7 @@ namespace casual
          const auto message = unittest::Message{ platform::ipc::transport::size * 16};
          platform::size::type errors{};
 
-         algorithm::for_n< 10>( [&]()
+         algorithm::for_n< 31>( [&]()
          {
             for( auto& destination : destinations)
             {
