@@ -175,14 +175,13 @@ namespace casual
             case Type::gateway_domain_connected: return "gateway_domain_connected";
             case Type::domain_discovery_request: return "domain_discovery_request";
             case Type::domain_discovery_reply: return "domain_discovery_reply";
-            case Type::domain_discovery_internal_request: return "domain_discovery_internal_request";
-            case Type::domain_discovery_internal_reply: return "domain_discovery_internal_reply";
             case Type::domain_discovery_topology_implicit_update: return "domain_discovery_topology_implicit_update";
             case Type::domain_discovery_topology_direct_update: return "domain_discovery_topology_direct_update";
             case Type::domain_discovery_topology_direct_explore: return "domain_discovery_topology_direct_explore";
             case Type::configuration_request: return "configuration_request";
             case Type::configuration_reply: return "configuration_reply";
-            case Type::configuration_supplier_registration: return "configuration_supplier_registration";
+            case Type::configuration_stakeholder_registration_request: return "configuration_stakeholder_registration_request";
+            case Type::configuration_stakeholder_registration_reply: return "configuration_stakeholder_registration_reply";
             case Type::configuration_update_request: return "configuration_update_request";
             case Type::configuration_update_reply: return "configuration_update_reply";
             case Type::configuration_put_request: return "configuration_put_request";

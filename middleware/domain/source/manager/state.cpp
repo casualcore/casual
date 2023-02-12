@@ -288,10 +288,10 @@ namespace casual
          // We remove from event listeners if one of them has died
          event.remove( pid);
 
-         algorithm::container::trim( whitelisted, algorithm::remove( whitelisted, pid));
+         algorithm::container::erase( whitelisted, pid);
 
          // We remove from pending 
-         algorithm::container::trim( pending.lookup, algorithm::remove( pending.lookup, pid));
+         algorithm::container::erase( pending.lookup, pid);
 
          // Remove from singletons
          auto is_singleton = [ pid]( auto& pair){ return pair.second == pid;};
@@ -302,7 +302,7 @@ namespace casual
             singletons.erase( std::begin( found));
          }
 
-         algorithm::container::trim( configuration.suppliers, algorithm::remove( configuration.suppliers, pid));
+         algorithm::container::erase( configuration.stakeholders, pid);
 
          using result_type = std::tuple< state::Server*, state::Executable*>;
 

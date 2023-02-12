@@ -10,7 +10,7 @@
 #include "service/forward/instance.h"
 #include "service/common.h"
 
-#include "domain/configuration/fetch.h"
+#include "domain/configuration.h"
 #include "domain/discovery/api.h"
 
 #include "common/communication/select.h"
@@ -54,8 +54,10 @@ namespace casual
                // We ask the domain manager for configuration, and 'comply' to it...
                handle::comply::configuration( state, casual::domain::configuration::fetch());
 
-               // register so domain-manager can fetch configuration from us.
-               casual::domain::configuration::supplier::registration();
+               // register so domain-manager can fetch configuration from us, and indicate that we can handle
+               // runtime configuration updates.
+               using Ability = casual::domain::configuration::registration::Ability;
+               casual::domain::configuration::registration::apply( flags::compose( Ability::supply, Ability::runtime_update));
 
                return state;
             }

@@ -28,7 +28,6 @@
 #include "serviceframework/log.h"
 
 #include "domain/discovery/api.h"
-#include "domain/configuration/fetch.h"
 #include "domain/unittest/manager.h"
 #include "domain/unittest/configuration.h"
 

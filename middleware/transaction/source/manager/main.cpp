@@ -10,7 +10,7 @@
 #include "transaction/manager/action.h"
 #include "transaction/manager/transform.h"
 
-#include "domain/configuration/fetch.h"
+#include "domain/configuration.h"
 
 
 #include "common/argument.h"
@@ -100,7 +100,10 @@ namespace casual
                setup( state);
 
                // we can supply configuration
-               casual::domain::configuration::supplier::registration();
+               {
+                  using Ability = casual::domain::configuration::registration::Ability;
+                  casual::domain::configuration::registration::apply( Ability::supply);
+               }
 
                // Connect to domain
                communication::instance::whitelist::connect( communication::instance::identity::transaction::manager);

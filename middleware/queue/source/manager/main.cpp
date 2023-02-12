@@ -16,7 +16,7 @@
 #include "common/environment/normalize.h"
 #include "common/communication/select/ipc.h"
 
-#include "domain/configuration/fetch.h"
+#include "domain/configuration.h"
 #include "domain/discovery/api.h"
 
 namespace casual
@@ -71,11 +71,18 @@ namespace casual
                });
 
                // register that we can answer discovery questions.
-               using Ability = casual::domain::discovery::provider::Ability;
-               casual::domain::discovery::provider::registration( flags::compose( Ability::discover_internal, Ability::known));
+               {
+                  using Ability = casual::domain::discovery::provider::Ability;
+                  casual::domain::discovery::provider::registration( flags::compose( Ability::discover_internal, Ability::known));
+               }
 
                // we can supply configuration
-               casual::domain::configuration::supplier::registration();
+               {
+                  using Ability = casual::domain::configuration::registration::Ability;
+                  // TODO: we should be able to handle runtime configuration update? Ability::runtime_update
+                  casual::domain::configuration::registration::apply( Ability::supply);
+               }
+               
 
                common::log::line( common::log::category::information, "casual-queue-manager is on-line");
                common::log::line( verbose::log, "state: ", state);
