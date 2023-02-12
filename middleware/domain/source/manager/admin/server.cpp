@@ -186,7 +186,7 @@ namespace casual
 
                namespace configuration
                {
-                  auto get( const manager::State& state)
+                  auto get( manager::State& state)
                   {
                      return [&state]( common::service::invoke::Parameter&& parameter)
                      {

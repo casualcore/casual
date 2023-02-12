@@ -19,7 +19,7 @@ namespace casual
    {
       
       //! @returns the total state of all managers.
-      casual::configuration::Model get( const State& state);
+      casual::configuration::Model get( State& state);
 
       //! @pre state.configuration.model is set to the current aggregated configuration model.
       //! @return id's of tasks that tries to get to the wanted state

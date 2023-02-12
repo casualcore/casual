@@ -4,7 +4,7 @@
 //! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-#include "domain/configuration/fetch.h"
+#include "domain/configuration.h"
 #include "domain/common.h"
 
 #include "common/environment/normalize.h"
@@ -30,18 +30,20 @@ namespace casual
 
       }
 
-      namespace supplier
+      namespace registration
       {
-         void registration()
+         void apply( Contract contract)
          {
-            Trace trace{ "configuration::model::supplier::registration"};
+            Trace trace{ "configuration::model::registration::apply"};
 
-            communication::device::blocking::send( 
-               communication::instance::outbound::domain::manager::device(),
-               casual::configuration::message::supplier::Registration{ process::handle()});
+            casual::configuration::message::stakeholder::registration::Request request{ process::handle()};
+            request.contract = contract;
+
+            communication::ipc::call( 
+               communication::instance::outbound::domain::manager::optional::device(), request);
 
          }
-      } // supplier
+      } // registration
 
    } // domain::configuration
 } // casual

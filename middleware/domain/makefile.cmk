@@ -58,7 +58,7 @@ manager_archive = make.LinkArchive( 'bin/casual-domain-manager',
 # utility for other 'managers'
 utility_library = make.LinkLibrary( 'bin/casual-domain-utility',
     [
-        make.Compile( 'source/configuration/fetch.cpp'),
+        make.Compile( 'source/configuration.cpp'),
     ],
     [
         common_library,

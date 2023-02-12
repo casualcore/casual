@@ -961,7 +961,7 @@ namespace casual
             {
                auto request( State& state)
                {
-                  return [&state]( const casual::configuration::message::Request& message)
+                  return [ &state]( const casual::configuration::message::Request& message)
                   {
                      Trace trace{ "domain::manager::handle::configuration::request"};
                      common::log::line( verbose::log, "message: ", message);
@@ -973,11 +973,32 @@ namespace casual
                   };
                }
 
+               namespace stakeholder
+               {
+                  auto registration( State& state)
+                  {
+                     return [ &state]( const casual::configuration::message::stakeholder::registration::Request& message)
+                     {
+                        Trace trace{ "domain::manager::handle::configuration::stakeholder::registration"};
+                        common::log::line( verbose::log, "message: ", message);
+
+                        state::configuration::Stakeholder stakeholder;
+                        stakeholder.process = message.process;
+                        stakeholder.contract = message.contract;
+
+                        // make sure we can ask for configuration state later...
+                        algorithm::append_unique_value( stakeholder, state.configuration.stakeholders);
+
+                        state.multiplex.send( message.process, common::message::reverse::type( message));
+                     };
+                  }
+               } // stakeholder
+
                namespace update
                {
                   auto reply( State& state)
                   {
-                     return [&state]( const casual::configuration::message::update::Reply& message)
+                     return [ &state]( const casual::configuration::message::update::Reply& message)
                      {
                         Trace trace{ "domain::manager::handle::configuration::update::reply"};
                         common::log::line( verbose::log, "message: ", message);
@@ -986,22 +1007,6 @@ namespace casual
                      };
                   }
                } // update
-
-               namespace supplier
-               {
-                  auto registration( State& state)
-                  {
-                     return [&state]( const casual::configuration::message::supplier::Registration& message)
-                     {
-                        Trace trace{ "domain::manager::handle::configuration::supplier::registration"};
-                        common::log::line( verbose::log, "message: ", message);
-
-                        // make sure we can ask for configuration state later...
-                        // TODO semantics: might be implicit on handling casual::configuration::message::Request...
-                        algorithm::append_unique_value( message.process, state.configuration.suppliers);
-                     };
-                  }
-               } // supplier
 
             } // configuration
 
@@ -1062,7 +1067,7 @@ namespace casual
             handle::local::process::information::request( state),
             handle::local::configuration::request( state),
             handle::local::configuration::update::reply( state),
-            handle::local::configuration::supplier::registration( state),
+            handle::local::configuration::stakeholder::registration( state),
             handle::local::server::Handle{
                manager::admin::services( state),
                state}

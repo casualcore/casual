@@ -22,9 +22,6 @@
 #include "common/code/raise.h"
 #include "common/code/casual.h"
 
-#include "domain/configuration/fetch.h"
-
-
 
 #include <string>
 

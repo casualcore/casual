@@ -13,7 +13,7 @@
 #include "gateway/environment.h"
 #include "gateway/common.h"
 
-#include "domain/configuration/fetch.h"
+#include "domain/configuration.h"
 
 #include "common/argument.h"
 #include "common/environment.h"
@@ -78,7 +78,11 @@ namespace casual
                communication::instance::whitelist::connect( communication::instance::identity::gateway::manager);
 
                // we can supply configuration
-               casual::domain::configuration::supplier::registration();
+               {
+                  using Ability = casual::domain::configuration::registration::Ability;
+                  casual::domain::configuration::registration::apply( Ability::supply);
+               }
+               
 
                state.runlevel = manager::state::Runlevel::running;
 

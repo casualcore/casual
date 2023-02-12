@@ -7,6 +7,7 @@
 #pragma once
 
 #include "configuration/model.h"
+#include "configuration/message.h"
 
 namespace casual
 {
@@ -16,11 +17,13 @@ namespace casual
       //! and normalize the model regarding environment variables
       casual::configuration::Model fetch();
 
-      namespace supplier
+      namespace registration
       {
-         //! registrate that this _process_ can supply configuration
-         void registration();
-      } // supplier
+         using Ability = casual::configuration::message::stakeholder::registration::Ability;
+         using Contract = casual::configuration::message::stakeholder::registration::Contract;
+
+         void apply( Contract contract);
+      } // registration
 
    } // domain::configuration
 

@@ -219,12 +219,18 @@ namespace casual
 
                std::vector< manager::Task> result;
 
-               {
-                  if( auto handle = state.singleton( communication::instance::identity::service::manager.id))
-                     result.push_back( manager::task::create::configuration::managers::update( state, wanted, { handle}));
+               // handle the runtime configuration updates
+               { 
+                  auto stakeholders = algorithm::filter( state.configuration.stakeholders, state::configuration::stakeholder::runtime());
+                  log::line( verbose::log, "stakeholders: ", stakeholders);
+                     
+                  auto handles = algorithm::transform( stakeholders, []( auto& value){ return value.process;});
+
+                  if( ! handles.empty())
+                     result.push_back( manager::task::create::configuration::managers::update( state, wanted, std::move( handles)));
                }
 
-               // restarts
+               // restarts for "the rest"
                {
                   std::vector< state::dependency::Group> groups;
 
@@ -257,13 +263,13 @@ namespace casual
          } // <unnamed>
       } // local
 
-      casual::configuration::Model get( const State& state)
+      casual::configuration::Model get( State& state)
       {
          Trace trace{ "domain::manager::configuration::get"};
 
-         auto futures = algorithm::transform( state.configuration.suppliers, []( auto& process)
+         auto futures = algorithm::transform( algorithm::filter( state.configuration.stakeholders, state::configuration::stakeholder::supplier()), []( auto& value)
          {
-            return communication::device::async::call( process.ipc, casual::configuration::message::Request{ common::process::handle()});
+            return communication::device::async::call( value.process.ipc, casual::configuration::message::Request{ common::process::handle()});
          });
 
          return algorithm::accumulate( futures, casual::domain::manager::transform::model( state), []( auto model, auto& future)

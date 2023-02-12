@@ -23,6 +23,7 @@
 #include "common/event/dispatch.h"
 
 #include "configuration/model.h"
+#include "configuration/message.h"
 
 #include "common/serialize/macro.h"
 
@@ -283,6 +284,43 @@ namespace casual
             
          } // dependency
 
+         namespace configuration
+         {
+
+            namespace stakeholder
+            {
+               using Contract = casual::configuration::message::stakeholder::registration::Contract;
+
+               namespace detail
+               {
+                  constexpr auto predicate( Contract contract) noexcept
+                  {
+                     return [ contract]( auto& element){ return ( element.contract & contract) == contract;};
+                  }
+               } // detail
+
+               inline auto supplier() noexcept { return detail::predicate( Contract::enum_type::supply);}
+               inline auto runtime() noexcept { return detail::predicate( Contract::enum_type::runtime_update);}
+               
+            } // stakeholder
+
+            struct Stakeholder : common::compare::Equality< Stakeholder>
+            {
+               stakeholder::Contract contract;
+               common::process::Handle process;
+
+               inline friend bool operator == ( const Stakeholder& lhs, common::strong::process::id rhs) noexcept { return lhs.process == rhs;}
+
+               inline auto tie() const noexcept { return std::tie( process);}
+
+               CASUAL_LOG_SERIALIZE(
+                  CASUAL_SERIALIZE( contract);
+                  CASUAL_SERIALIZE( process);
+               )
+            };
+
+
+         } // configuration
 
          namespace is
          {
@@ -379,12 +417,12 @@ namespace casual
             //! this domain's original configuration model.
             casual::configuration::Model model;
 
-            //! The ones that has register to supply configuration.
-            std::vector< common::process::Handle> suppliers;
+            //! The ones that has register to have need/supply for configuration.
+            std::vector< state::configuration::Stakeholder> stakeholders;
 
             CASUAL_LOG_SERIALIZE(
                CASUAL_SERIALIZE( model);
-               CASUAL_SERIALIZE( suppliers);
+               CASUAL_SERIALIZE( stakeholders);
             )
 
          } configuration;
