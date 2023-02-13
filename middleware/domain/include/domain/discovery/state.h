@@ -232,6 +232,8 @@ namespace casual
             )
          };
 
+
+
       } // state
 
 
@@ -247,19 +249,32 @@ namespace casual
          struct  
          {
             common::message::coordinate::fan::Out< message::discovery::Reply, common::strong::process::id> discovery;
-            common::message::coordinate::fan::Out< message::discovery::internal::Reply, common::strong::process::id> internal;
-            common::message::coordinate::fan::Out< message::discovery::known::Reply, common::strong::process::id> known;
+            common::message::coordinate::fan::Out< message::discovery::lookup::Reply, common::strong::process::id> lookup;
+            common::message::coordinate::fan::Out< message::discovery::fetch::known::Reply, common::strong::process::id> known;
 
-            inline void failed( common::strong::process::id pid) { discovery.failed( pid); internal.failed( pid); known.failed( pid);}
-            inline bool empty() const noexcept { return discovery.empty() && internal.empty() && known.empty();}
+            inline void failed( common::strong::process::id pid) { discovery.failed( pid); lookup.failed( pid); known.failed( pid);}
+            inline bool empty() const noexcept { return discovery.empty() && lookup.empty() && known.empty();}
 
             CASUAL_LOG_SERIALIZE(
                CASUAL_SERIALIZE( discovery);
-               CASUAL_SERIALIZE( internal);
+               CASUAL_SERIALIZE( lookup);
                CASUAL_SERIALIZE( known);
             )
 
          } coordinate;
+
+         struct
+         {
+            std::unordered_map< std::string, std::vector< std::string>> to_routes;
+            std::unordered_map< std::string, std::string> to_origin;
+
+            CASUAL_LOG_SERIALIZE(
+               CASUAL_SERIALIZE( to_routes);
+               CASUAL_SERIALIZE( to_origin);
+            )
+         } service_name;
+
+         
 
          state::Accumulate accumulate;
          
@@ -271,6 +286,7 @@ namespace casual
             CASUAL_SERIALIZE( runlevel);
             CASUAL_SERIALIZE( coordinate);
             CASUAL_SERIALIZE( multiplex);
+            CASUAL_SERIALIZE( service_name);
             CASUAL_SERIALIZE( accumulate);
             CASUAL_SERIALIZE( providers);
          )

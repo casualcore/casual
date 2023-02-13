@@ -762,55 +762,45 @@ namespace casual
 
             namespace domain::discovery
             {
-               namespace internal
+               namespace lookup
                {
                   auto request( State& state)
                   {
-                     return [&state]( casual::domain::message::discovery::internal::Request& message)
+                     return [ &state]( casual::domain::message::discovery::lookup::Request& message)
                      {
-                        Trace trace{ "service::manager::handle::domain::discovery::internal::request"};
+                        Trace trace{ "service::manager::handle::domain::discovery::lookup::request"};
                         common::log::line( verbose::log, "message: ", message);
                         
                         // check the preconditions
                         CASUAL_ASSERT( algorithm::is::sorted( message.content.services) && algorithm::is::unique( message.content.services));
 
+                        auto predicate = [ scope = message.scope]( auto* service)
+                        {
+                           return service && service->is_discoverable() && 
+                              ( scope == decltype( scope)::internal ? service->is_sequential() : service->has_instances());
+                        };
+
                         auto reply = common::message::reverse::type( message);
 
-                        // accumulate our internal/local discoverable services intersected with the requested
-                        // we know that request is sorted unique -> the reply is sorted unique
+                        for( auto& name : message.content.services)
                         {
-                           auto service_accumulate = [ &state]( auto result, auto& name)
+                           if( auto service = state.service( name); predicate( service))
                            {
-                              // * We only answer with services that are _discoverable_
-                              if( auto service = state.service( name); service && service->is_discoverable())
-                              {
-                                 result.emplace_back(
-                                    name,
-                                    service->information.category,
-                                    service->information.transaction, 
-                                    service->information.visibility);
-                              }
-
-                              return result;
-                           };
-                           
-                           using Services = std::remove_reference_t< decltype( reply.content.services)>;
-                           reply.content.services = algorithm::accumulate( message.content.services, Services{}, service_accumulate);
-                        }
-
-                        // 'lookup' routes for services that the caller is interested in
-                        {
-                           const auto difference = std::get< 1>( algorithm::sorted::intersection( message.content.services, reply.content.services));
-
-                           for( auto& name : difference)
-                              if( auto found = algorithm::find( state.reverse_routes, name))
-                                 reply.routes.services.emplace_back( found->first, found->second);
+                              reply.content.services.emplace_back( std::move( name),
+                                 service->information.category,
+                                 service->information.transaction, 
+                                 service->information.visibility);
+                           }
+                           else
+                           {
+                              reply.absent.services.push_back( std::move( name));
+                           }
                         }
 
                         local::optional::send( state, message.process.ipc, reply);
                      };
                   }
-               } // internal
+               } // lookup
 
                namespace api
                {
@@ -849,14 +839,14 @@ namespace casual
                   }
                } // api
 
-               namespace known
+               namespace fetch::known
                {
                   //! reply with all "remote" service we know of.
                   auto request( State& state)
                   {
-                     return [&state]( const casual::domain::message::discovery::known::Request& message)
+                     return [ &state]( casual::domain::message::discovery::fetch::known::Request& message)
                      {
-                        Trace trace{ "service::manager::handle::domain::discovery::known::request"};
+                        Trace trace{ "service::manager::handle::domain::discovery::fetch::known::request"};
                         log::line( verbose::log, "message: ", message);
 
                         auto reply = common::message::reverse::type( message, common::process::handle());
@@ -883,7 +873,7 @@ namespace casual
                         state.multiplex.send( message.process.ipc, reply);
                      };
                   }
-               } // needs
+               } // fetch::known
 
             } // domain::discovery
 
@@ -1083,9 +1073,9 @@ namespace casual
             handle::local::event::subscription::begin( state),
             handle::local::event::subscription::end( state),
             handle::local::Call{ admin::services( state), state},
-            handle::local::domain::discovery::internal::request( state),
+            handle::local::domain::discovery::lookup::request( state),
             handle::local::domain::discovery::api::reply( state),
-            handle::local::domain::discovery::known::request( state),
+            handle::local::domain::discovery::fetch::known::request( state),
             handle::local::configuration::update::request( state),
             handle::local::configuration::request( state),
             handle::local::shutdown::request( state),

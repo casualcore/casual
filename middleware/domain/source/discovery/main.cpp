@@ -8,6 +8,7 @@
 #include "domain/discovery/instance.h"
 #include "domain/discovery/handle.h"
 #include "domain/discovery/common.h"
+#include "domain/configuration.h"
 
 #include "common/communication/select.h"
 #include "common/communication/select/ipc.h"
@@ -36,7 +37,17 @@ namespace casual
 
                communication::instance::whitelist::connect( discovery::instance::identity);
 
-               return State{};
+               State state;
+
+               // rig the configuration setup
+               {
+                  using Ability = casual::domain::configuration::registration::Ability;
+                  casual::domain::configuration::registration::apply( flags::compose( Ability::runtime_update));
+
+                  handle::configuration_update( state, casual::domain::configuration::fetch());
+               }
+
+               return state;
             }
 
             namespace signal::callback

@@ -8,6 +8,8 @@
 
 #include "domain/discovery/state.h"
 
+#include "configuration/model.h"
+
 #include "common/communication/ipc.h"
 #include "common/message/dispatch.h"
 
@@ -17,6 +19,8 @@ namespace casual
    {
       using dispatch_type = decltype( common::message::dispatch::handler( common::communication::ipc::inbound::device()));
       dispatch_type create( State& state);
+
+      void configuration_update( State& state, const casual::configuration::Model& model);
 
    } // domain::discovery::handle
 } // casual

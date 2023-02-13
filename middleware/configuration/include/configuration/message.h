@@ -73,14 +73,14 @@ namespace casual
       namespace update
       {
          using Request = basic_model< common::message::Type::configuration_update_request>;
-         using Reply = common::message::basic_request< common::message::Type::configuration_update_reply>;
+         using Reply = common::message::basic_reply< common::message::Type::configuration_update_reply>;
          
       } // update
 
       namespace put
       {
          using Request = basic_model< common::message::Type::configuration_put_request>;
-         using Reply = common::message::basic_request< common::message::Type::configuration_put_reply>;
+         using Reply = common::message::basic_reply< common::message::Type::configuration_put_reply>;
          
       } // put
 

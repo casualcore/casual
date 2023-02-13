@@ -81,8 +81,11 @@ namespace casual
          // domain_discovery_request,
          // domain_discovery_reply,
 
-         domain_discovery_known_request,
-         domain_discovery_known_reply,
+         domain_discovery_lookup_request,
+         domain_discovery_lookup_reply,
+
+         domain_discovery_fetch_known_request,
+         domain_discovery_fetch_known_reply,
 
          // Server
          SERVER_BASE = 2000,
@@ -287,9 +290,6 @@ namespace casual
          domain_discovery_request   = 7300,
          domain_discovery_reply     = 7301,
          domain_discovery_topology_implicit_update = 7302, // 1.2
-
-         domain_discovery_internal_request,
-         domain_discovery_internal_reply,
 
          //! sent to _discovery_ when current domain gets a new outbound connection
          domain_discovery_topology_direct_update,

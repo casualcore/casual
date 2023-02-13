@@ -896,7 +896,7 @@ namespace casual
 
       internal_handler internal( State& state)
       {
-         casual::domain::discovery::provider::registration( casual::domain::discovery::provider::Ability::discover_external);
+         casual::domain::discovery::provider::registration( casual::domain::discovery::provider::Ability::discover);
          
          return internal_handler{
 

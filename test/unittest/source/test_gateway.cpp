@@ -2305,7 +2305,7 @@ domain:
             ASSERT_TRUE( resource.instances.size() == 1);
             auto& instance = resource.instances[ 0];
             // distributed transactions, prepare and commit.
-            EXPECT_TRUE( instance.metrics.resource.count == transaction_count * 2 * 3) << CASUAL_NAMED_VALUE( instance.metrics.resource);
+            EXPECT_TRUE( instance.metrics.resource.count == transaction_count * 2 * 3) << CASUAL_NAMED_VALUE( state);
          }
 
 
