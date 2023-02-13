@@ -48,8 +48,10 @@ namespace casual
             case Type::domain_discovery_api_reply: return "domain_discovery_api_reply";
             case Type::domain_discovery_api_rediscovery_request: return "domain_discovery_api_rediscovery_request";
             case Type::domain_discovery_api_rediscovery_reply: return "domain_discovery_api_rediscovery_reply";
-            case Type::domain_discovery_known_request: return "domain_discovery_known_request";
-            case Type::domain_discovery_known_reply: return "domain_discovery_known_reply";
+            case Type::domain_discovery_lookup_request: return "domain_discovery_lookup_request";
+            case Type::domain_discovery_lookup_reply: return "domain_discovery_lookup_reply";
+            case Type::domain_discovery_fetch_known_request: return "domain_discovery_fetch_known_request";
+            case Type::domain_discovery_fetch_known_reply: return "domain_discovery_fetch_known_reply";
             case Type::server_connect_request: return "server_connect_request";
             case Type::server_connect_reply: return "server_connect_reply";
             case Type::server_disconnect: return "server_disconnect";

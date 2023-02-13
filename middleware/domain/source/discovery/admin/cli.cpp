@@ -200,9 +200,9 @@ Will try to find provided queues in other domains.
                   };
 
                   return std::vector< Row>{
-                     create_row( "external-discovery", common::message::Type::domain_discovery_request, common::message::Type::domain_discovery_reply),
-                     create_row( "internal-discovery", common::message::Type::domain_discovery_internal_request, common::message::Type::domain_discovery_internal_reply),
-                     create_row( "known-gather", common::message::Type::domain_discovery_known_request, common::message::Type::domain_discovery_known_reply),
+                     create_row( "discovery", common::message::Type::domain_discovery_request, common::message::Type::domain_discovery_reply),
+                     create_row( "lookup", common::message::Type::domain_discovery_lookup_request, common::message::Type::domain_discovery_lookup_reply),
+                     create_row( "fetch-known", common::message::Type::domain_discovery_fetch_known_request, common::message::Type::domain_discovery_fetch_known_reply),
                   };
                }
 

@@ -102,7 +102,7 @@ namespace casual
                         {
                            if( algorithm::find( state.lookup, name))
                            {
-                              auto& service = result.emplace_back( name, "http", common::service::transaction::Type::none, common::service::visibility::Type::discoverable);
+                              auto& service = result.emplace_back( name, "http", common::service::transaction::Type::none, common::service::visibility::Type::undiscoverable);
                               service.property.hops = 1;
                               service.property.type = decltype( service.property.type)::configured;
                            }

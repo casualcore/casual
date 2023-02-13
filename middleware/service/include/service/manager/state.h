@@ -355,6 +355,7 @@ namespace casual
 
             inline bool is_sequential() const noexcept { return ! instances.sequential.empty();}
             inline bool is_concurrent() const noexcept { return ! instances.concurrent.empty();}
+            inline bool has_instances() const noexcept { return is_sequential() || is_concurrent();}
 
             bool is_discoverable() const noexcept;
 

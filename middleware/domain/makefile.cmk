@@ -137,6 +137,7 @@ discovery_executable = make.LinkExecutable( 'bin/casual-domain-discovery',
     ],
     [
         discovery_archive,
+        utility_library,
         'casual-common',
         'casual-serviceframework',
     ]

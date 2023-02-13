@@ -71,10 +71,10 @@ namespace casual
 
                   result.message.count.receive = state::metric::message::count::received( create_count, 
                      message::discovery::api::rediscovery::Request{},
-                     message::discovery::known::Reply{},
+                     message::discovery::fetch::known::Reply{},
                      message::discovery::Request{},
                      message::discovery::Reply{},
-                     message::discovery::internal::Reply{},
+                     message::discovery::lookup::Reply{},
                      message::discovery::topology::implicit::Update{},
                      message::discovery::topology::direct::Update{},
                      common::message::shutdown::Request{}
@@ -83,8 +83,8 @@ namespace casual
                   result.message.count.send = state::metric::message::count::sent( create_count, 
                      message::discovery::Request{},
                      message::discovery::Reply{},
-                     message::discovery::internal::Request{},
-                     message::discovery::known::Request{},
+                     message::discovery::lookup::Request{},
+                     message::discovery::fetch::known::Request{},
                      message::discovery::api::Reply{},
                      message::discovery::api::rediscovery::Reply{},
                      message::discovery::topology::implicit::Update{},

@@ -431,37 +431,41 @@ namespace casual
 
             namespace domain::discover
             {
-               namespace internal
+               namespace lookup
                {
                   auto request( State& state)
                   {
-                     return [&state]( casual::domain::message::discovery::internal::Request&& message)
+                     return [ &state]( casual::domain::message::discovery::lookup::Request&& message)
                      {
                         Trace trace{ "queue::manager::handle::local::domain::discovery::internal::request"};
                         common::log::line( verbose::log, "message: ", message);
 
                         CASUAL_ASSERT( algorithm::is::sorted( message.content.queues) && algorithm::is::unique( message.content.queues));
 
+                        auto get_queue = [ &state, scope = message.scope]( auto& name)
+                        {
+                           if( scope == decltype( scope)::internal)
+                              return state.local_queue( name);
+                           else
+                              return state.queue( name);
+                        };
+
                         auto reply = common::message::reverse::type( message);
 
-                        auto is_local = [ &state]( auto& name)
+                        for( auto& name : message.content.queues)
                         {
-                           if( auto found = algorithm::find( state.queues, name))
-                              return algorithm::any_of( found->second, []( auto& instance){ return instance.local();});
-
-                           return false;
-                        };
-                        
-                        // we know that message.content.queues is sorted unique -> reply.content.queues the same...
-                        for( auto& queue : algorithm::filter( message.content.queues, is_local))
-                           reply.content.queues.push_back( std::move( queue));
+                           if( auto queue = get_queue( name))
+                              reply.content.queues.emplace_back( std::move( name), queue->order);
+                           else
+                              reply.absent.queues.push_back( std::move( name));
+                        }
                         
                         common::log::line( verbose::log, "reply: ", reply);
 
                         state.multiplex.send( message.process.ipc, reply);
                      };
                   }
-               } // internal
+               } // lookup
 
                namespace api
                {
@@ -483,13 +487,13 @@ namespace casual
 
                } // api
 
-               namespace known
+               namespace fetch::known
                {
                   auto request( State& state)
                   {
-                     return [&state]( casual::domain::message::discovery::known::Request& message)
+                     return [&state]( casual::domain::message::discovery::fetch::known::Request& message)
                      {
-                        Trace trace{ "queue::manager::handle::local::domain::discover::known::request"};
+                        Trace trace{ "queue::manager::handle::local::domain::discover::fetch::known::request"};
                         common::log::line( verbose::log, "message: ", message);
 
                         auto reply = common::message::reverse::type( message);
@@ -519,7 +523,7 @@ namespace casual
                      };
                   }
                   
-               } // known
+               } // fetch::known
 
             } // domain::discover
 
@@ -641,9 +645,9 @@ namespace casual
             
             handle::local::advertise( state),
             
-            handle::local::domain::discover::internal::request( state),
+            handle::local::domain::discover::lookup::request( state),
             handle::local::domain::discover::api::reply( state),
-            handle::local::domain::discover::known::request( state),
+            handle::local::domain::discover::fetch::known::request( state),
 
             handle::local::shutdown::request( state),
             common::event::listener( handle::local::event::process::exit( state)),

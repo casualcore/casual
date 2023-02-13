@@ -306,8 +306,10 @@ namespace casual
 
          bool Service::is_discoverable() const noexcept
          {
-            return is_sequential()
-               && ( information.visibility == decltype( information.visibility)::discoverable );
+            using Enum = decltype( information.visibility);
+            if( visibility)
+               return visibility == Enum::discoverable;
+            return information.visibility == Enum::discoverable;
          }
 
          bool Service::timeoutable() const noexcept

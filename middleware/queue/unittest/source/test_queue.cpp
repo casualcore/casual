@@ -222,7 +222,7 @@ domain:
 
          auto domain = local::domain();
 
-         domain::discovery::provider::registration( domain::discovery::provider::Ability::discover_external);
+         domain::discovery::provider::registration( domain::discovery::provider::Ability::discover);
 
          auto send_lookup_request = []()
          {
