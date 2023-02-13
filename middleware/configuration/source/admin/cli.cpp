@@ -84,6 +84,93 @@ The format is default yaml, but could be supplied via the --format option)"
                      R"(defines what format should be used)"
                   };
                }
+
+               namespace set_operations
+               {
+                  namespace local
+                  {
+                     namespace
+                     {
+                        template< typename F>
+                        void set_operation( std::vector< std::string> globs, State& state, F&& func)
+                        {
+                           casual::configuration::user::Model model;
+                           auto archive = serialize::create::reader::consumed::from( state.format, std::cin);
+                           archive >> model;
+
+                           auto a = model::transform( model);
+                           auto b = admin::local::load( std::move( globs));
+
+                           a = func( a, std::move( b));
+
+                           auto writer = serialize::create::writer::from( state.format);
+                           writer << model::transform( a);
+                           writer.consume( std::cout);
+                        }
+                     } // <unnamed>
+                  } // local
+
+                  auto set_union( State& state)
+                  {
+                     auto invoke = [ &state]( std::vector< std::string> globs)
+                     {
+                        local::set_operation( globs, state, []( auto lhs, auto rhs)
+                        {
+                           return set_union( lhs, std::move( rhs));
+                        });
+                     };
+
+                     return argument::Option{
+                        std::move( invoke),
+                        { "--union"},
+                        R"(union of configuration from stdin(lhs) and supplied glob pattern(rhs), outputs to stdout
+   rhs has precedence over lhs
+                        
+   The format is default yaml, but could be supplied via the --format option)"
+                     };
+                  }
+
+                  auto set_difference( State& state)
+                  {
+                     auto invoke = [ &state]( std::vector< std::string> globs)
+                     {
+                        local::set_operation( globs, state, []( auto lhs, auto rhs)
+                        {
+                           return set_difference( lhs, std::move( rhs));
+                        });
+                     };
+
+                     return argument::Option{
+                        std::move( invoke),
+                        { "--difference"},
+                        R"(difference of configuration from stdin(lhs) and supplied glob pattern(rhs), outputs to stdout
+   lhs has precedence over rhs
+                        
+   The format is default yaml, but could be supplied via the --format option)"
+                     };
+                  }
+
+                  auto set_intersection( State& state)
+                  {
+                     auto invoke = [ &state]( std::vector< std::string> globs)
+                     {
+                        local::set_operation( globs, state, []( auto lhs, auto rhs)
+                        {
+                           return set_intersection( lhs, std::move( rhs));
+                        });
+                     };
+
+                     return argument::Option{
+                        std::move( invoke),
+                        { "--intersection"},
+                        R"(intersection of configuration from stdin(lhs) and supplied glob pattern(rhs), outputs to stdout
+   lhs has precedence over rhs
+                        
+   The format is default yaml, but could be supplied via the --format option)"
+                     };
+                  }
+               } // set_operation
+               
             } // <unnamed>
          } // local
          struct CLI::Implementation
@@ -98,7 +185,10 @@ Used to check and normalize configuration
                return argument::Group{ [](){}, { "configuration"}, description,
                   local::normalize( state),
                   local::validate(),
-                  local::format( state),                  
+                  local::format( state),
+                  local::set_operations::set_union( state),
+                  local::set_operations::set_difference( state),
+                  local::set_operations::set_intersection( state)
                };
             }
 

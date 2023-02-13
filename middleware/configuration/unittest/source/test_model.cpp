@@ -16,7 +16,7 @@
 #include "configuration/model/load.h"
 #include "configuration/user.h"
 #include "configuration/example/model.h"
-
+#include "configuration/model.h"
 
 
 
@@ -452,6 +452,237 @@ domain:
          
          EXPECT_THROW( local::configuration( configuration), std::system_error);
 
+      }
+
+      TEST( configuration_model_remove, remove_servers_B_from_A)
+      {
+         common::unittest::Trace trace;
+
+         constexpr auto configuration = R"(
+domain:
+   name: model
+   servers:
+      - alias: a
+        path: a
+      - alias: b
+        path: b
+      - alias: c
+        path: c
+)";
+
+         constexpr auto remove = R"(
+domain:
+   name: model
+   servers:
+      - alias: b
+        path: b
+)";
+
+         constexpr auto expected = R"(
+domain:
+   name: model
+   servers:
+      - alias: a
+        path: a
+      - alias: c
+        path: c
+)";
+
+         auto A = local::configuration( configuration);
+         auto B = local::configuration( remove);
+         auto result = local::configuration( expected);
+
+         A = set_difference( A, std::move( B));
+
+         EXPECT_TRUE( A == result) << CASUAL_NAMED_VALUE( A) << "\n" << CASUAL_NAMED_VALUE( result);
+      }
+
+      TEST( configuration_model_remove, remove_transactions_B_from_A)
+      {
+         common::unittest::Trace trace;
+
+         constexpr auto configuration = R"(
+domain:
+  name: model
+  transaction:
+    resources: 
+      - name: r1
+      - name: r2
+)";
+
+         constexpr auto remove = R"(
+domain:
+  name: model
+  transaction:
+    resources: 
+       - name: r2
+)";
+
+         constexpr auto expected = R"(
+domain:
+  name: model
+  transaction:
+    resources: 
+       - name: r1
+)";
+
+         auto A = local::configuration( configuration);
+         auto B = local::configuration( remove);
+         auto result = local::configuration( expected);
+
+         A = set_difference( A, std::move( B));
+
+         EXPECT_TRUE( A == result) << CASUAL_NAMED_VALUE( A) << "\n" << CASUAL_NAMED_VALUE( result);
+      }
+
+      TEST( configuration_model_remove, remove_services_B_from_A)
+      {
+         common::unittest::Trace trace;
+
+         constexpr auto configuration = R"(
+domain:
+  name: model
+  services:
+    - name: a
+    - name: b
+)";
+
+         constexpr auto remove = R"(
+domain:
+  name: model
+  services:
+    - name: b
+)";
+
+         constexpr auto expected = R"(
+domain:
+  name: model
+  services:
+    - name: a
+)";
+
+         auto A = local::configuration( configuration);
+         auto B = local::configuration( remove);
+         auto result = local::configuration( expected);
+
+         A = set_difference( A, std::move( B));
+
+         EXPECT_TRUE( A == result) << CASUAL_NAMED_VALUE( A) << "\n" << CASUAL_NAMED_VALUE( result);
+      }
+
+      TEST( configuration_model_remove, remove_queues_B_from_A)
+      {
+         common::unittest::Trace trace;
+
+         constexpr auto configuration = R"(
+domain:
+  name: model
+  services:
+    - name: a
+    - name: b
+)";
+
+         constexpr auto remove = R"(
+domain:
+  name: model
+  services:
+    - name: b
+)";
+
+         constexpr auto expected = R"(
+domain:
+  name: model
+  services:
+    - name: a
+)";
+
+         auto A = local::configuration( configuration);
+         auto B = local::configuration( remove);
+         auto result = local::configuration( expected);
+
+         A = set_difference( A, std::move( B));
+
+         EXPECT_TRUE( A == result) << CASUAL_NAMED_VALUE( A) << "\n" << CASUAL_NAMED_VALUE( result);
+      }
+
+      TEST( configuration_model_set_operations, A_union_B)
+      {
+         common::unittest::Trace trace;
+
+         constexpr auto configuration = R"(
+domain:
+   name: A
+   servers:
+      - alias: a
+        path: a
+)";
+
+         constexpr auto add = R"(
+domain:
+   name: B
+   servers:
+      - alias: b
+        path: b
+)";
+
+         constexpr auto expected = R"(
+domain:
+   name: B
+   servers:
+      - alias: a
+        path: a
+      - alias: b
+        path: b
+)";
+
+         auto A = local::configuration( configuration);
+         auto B = local::configuration( add);
+         auto result = local::configuration( expected);
+
+         A = set_union( A, std::move( B));
+
+         EXPECT_TRUE( A == result) << CASUAL_NAMED_VALUE( A) << "\n" << CASUAL_NAMED_VALUE( result);
+      }
+
+      TEST( configuration_model_set_operations, intersection_A_and_B)
+      {
+         common::unittest::Trace trace;
+
+         constexpr auto configuration = R"(
+domain:
+   name: A
+   servers:
+      - alias: a
+        path: a
+      - alias: b
+        path: b
+)";
+
+         constexpr auto add = R"(
+domain:
+   name: B
+   servers:
+      - alias: b
+        path: b
+      - alias: c
+        path: c
+)";
+
+         constexpr auto expected = R"(
+domain:
+   name: A
+   servers:
+      - alias: b
+        path: b
+)";
+
+         auto A = local::configuration( configuration);
+         auto B = local::configuration( add);
+         auto result = local::configuration( expected);
+
+         A = set_intersection( A, std::move( B));
+
+         EXPECT_TRUE( A == result) << CASUAL_NAMED_VALUE( A) << "\n" << CASUAL_NAMED_VALUE( result);
       }
 
    } // configuration
