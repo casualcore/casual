@@ -268,7 +268,7 @@ namespace casual
 
          return algorithm::accumulate( futures, casual::domain::manager::transform::model( state), []( auto model, auto& future)
          {
-            return model += std::move( future.get( communication::ipc::inbound::device()).model);
+            return set_union( model, std::move( future.get( communication::ipc::inbound::device()).model));
          });
       }
 

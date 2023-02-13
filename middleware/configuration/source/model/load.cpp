@@ -38,9 +38,7 @@ namespace casual
                   archive >> user;
                   archive.validate();
 
-                  current += model::transform( normalize( std::move( user)));
-
-                  return current;
+                  return set_union( current, model::transform( normalize( std::move( user))));
                }
 
             } // <unnamed>

@@ -66,8 +66,10 @@ namespace casual::configuration
          struct Model : common::Compare< Model>
          {
             std::vector< system::Resource> resources;
-            
-            Model& operator += ( Model rhs);
+
+            Model set_union( Model lhs, Model rhs);
+            Model set_difference( Model lhs, Model rhs);
+            Model set_intersection( Model lhs, Model rhs);
 
             CASUAL_CONST_CORRECT_SERIALIZE(
                CASUAL_SERIALIZE( resources);
@@ -84,7 +86,9 @@ namespace casual::configuration
          {
             std::vector< common::environment::Variable> variables;
 
-            Environment& operator += ( Environment rhs);
+            Environment set_union( Environment lhs, Environment rhs);
+            Environment set_difference( Environment lhs, Environment rhs);
+            Environment set_intersection( Environment lhs, Environment rhs);
 
             CASUAL_CONST_CORRECT_SERIALIZE(
                CASUAL_SERIALIZE( variables);
@@ -170,7 +174,9 @@ namespace casual::configuration
             std::vector< domain::Server> servers;
             std::vector< domain::Executable> executables;
 
-            Model& operator += ( Model rhs);
+            Model set_union( Model lhs, Model rhs);
+            Model set_difference( Model lhs, Model rhs);
+            Model set_intersection( Model lhs, Model rhs);
             
             CASUAL_CONST_CORRECT_SERIALIZE(
                CASUAL_SERIALIZE( name);
@@ -215,7 +221,9 @@ namespace casual::configuration
          {
             std::vector< restriction::Server> servers;
 
-            Restriction& operator += ( Restriction rhs);
+            Restriction set_union( Restriction lhs, Restriction rhs);
+            Restriction set_difference( Restriction lhs, Restriction rhs);
+            Restriction set_intersection( Restriction lhs, Restriction rhs);
 
             CASUAL_CONST_CORRECT_SERIALIZE(
                CASUAL_SERIALIZE( servers);
@@ -231,7 +239,7 @@ namespace casual::configuration
             std::optional< platform::time::unit> duration;
             Contract contract = Contract::linger;
 
-            Timeout& operator += ( Timeout rhs);
+            Timeout set_union( Timeout lhs, Timeout rhs);
 
             inline explicit operator bool() const noexcept { return duration.has_value();}
 
@@ -269,7 +277,7 @@ namespace casual::configuration
             service::Timeout timeout;
             std::string note;
 
-            Global& operator += ( Global rhs);
+            Global set_union( Global lhs, Global rhs);
 
             CASUAL_CONST_CORRECT_SERIALIZE(
                CASUAL_SERIALIZE( timeout);
@@ -287,7 +295,9 @@ namespace casual::configuration
             std::vector< service::Service> services;
             Restriction restriction;
 
-            Model& operator += ( Model rhs);
+            Model set_union( Model lhs, Model rhs);
+            Model set_difference( Model lhs, Model rhs);
+            Model set_intersection( Model lhs, Model rhs);
 
             CASUAL_CONST_CORRECT_SERIALIZE(
                CASUAL_SERIALIZE( global);
@@ -345,7 +355,9 @@ namespace casual::configuration
             std::vector< transaction::Resource> resources;
             std::vector< Mapping> mappings;
 
-            Model& operator += ( Model rhs);
+            Model set_union( Model lhs, Model rhs);
+            Model set_difference( Model lhs, Model rhs);
+            Model set_intersection( Model lhs, Model rhs);
 
             CASUAL_CONST_CORRECT_SERIALIZE(
                CASUAL_SERIALIZE( log);
@@ -414,7 +426,7 @@ namespace casual::configuration
                connection::discovery::Directive discovery{};
                std::string note;
 
-               Connection& operator += ( Connection rhs);
+               Connection set_union( Connection lhs, Connection rhs);
 
                CASUAL_CONST_CORRECT_SERIALIZE(
                   CASUAL_SERIALIZE( address);
@@ -450,7 +462,9 @@ namespace casual::configuration
 
                inline bool empty() const { return connections.empty();}
 
-               Group& operator += ( Group rhs);
+               Group set_union( Group lhs, Group rhs);
+               Group set_difference( Group lhs, Group rhs);
+               Group set_intersection( Group lhs, Group rhs);
 
                CASUAL_CONST_CORRECT_SERIALIZE(
                   CASUAL_SERIALIZE( connect);
@@ -471,7 +485,9 @@ namespace casual::configuration
 
             inline bool empty() const { return groups.empty();}
 
-            Inbound& operator += ( Inbound rhs);
+            Inbound set_union( Inbound lhs, Inbound rhs);
+            Inbound set_difference( Inbound lhs, Inbound rhs);
+            Inbound set_intersection( Inbound lhs, Inbound rhs);
 
             CASUAL_CONST_CORRECT_SERIALIZE(
                CASUAL_SERIALIZE( groups);
@@ -489,7 +505,9 @@ namespace casual::configuration
                std::vector< std::string> queues;
                std::string note;
 
-               Connection& operator += ( Connection rhs);
+               Connection set_union( Connection lhs, Connection rhs);
+               Connection set_difference( Connection lhs, Connection rhs);
+               Connection set_intersection( Connection lhs, Connection rhs);
 
                CASUAL_CONST_CORRECT_SERIALIZE(
                   CASUAL_SERIALIZE( note);
@@ -510,7 +528,9 @@ namespace casual::configuration
                std::vector< outbound::Connection> connections;
                std::string note;
 
-               Group& operator += ( Group rhs);
+               Group set_union( Group lhs, Group rhs);
+               Group set_difference( Group lhs, Group rhs);
+               Group set_intersection( Group lhs, Group rhs);
 
                inline bool empty() const { return connections.empty();}
 
@@ -532,7 +552,9 @@ namespace casual::configuration
 
             inline bool empty() const { return groups.empty();}
 
-            Outbound& operator += ( Outbound rhs);
+            Outbound set_union( Outbound lhs, Outbound rhs);
+            Outbound set_difference( Outbound lhs, Outbound rhs);
+            Outbound set_intersection( Outbound lhs, Outbound rhs);
 
             CASUAL_CONST_CORRECT_SERIALIZE(
                CASUAL_SERIALIZE( groups);
@@ -546,7 +568,9 @@ namespace casual::configuration
             Inbound inbound;
             Outbound outbound;
 
-            Model& operator += ( Model rhs);
+            Model set_union( Model lhs, Model rhs);
+            Model set_difference( Model lhs, Model rhs);
+            Model set_intersection( Model lhs, Model rhs);
 
             CASUAL_CONST_CORRECT_SERIALIZE(
                CASUAL_SERIALIZE( inbound);
@@ -600,7 +624,9 @@ namespace casual::configuration
 
             inline friend bool operator == ( const Group& lhs, const std::string& alias) { return lhs.alias == alias;}
 
-            Group& operator += ( Group rhs);
+            Group set_union( Group lhs, Group rhs);
+            Group set_difference( Group lhs, Group rhs);
+            Group set_intersection( Group lhs, Group rhs);
 
             CASUAL_CONST_CORRECT_SERIALIZE(
                CASUAL_SERIALIZE( alias);
@@ -690,7 +716,9 @@ namespace casual::configuration
                std::vector< forward::Queue> queues;
                std::string note;
 
-               Group& operator += ( Group rhs);
+               Group set_union( Group lhs, Group rhs);
+               Group set_difference( Group lhs, Group rhs);
+               Group set_intersection( Group lhs, Group rhs);
 
                CASUAL_CONST_CORRECT_SERIALIZE(
                   CASUAL_SERIALIZE( alias);
@@ -707,7 +735,9 @@ namespace casual::configuration
          {
             std::vector< forward::Group> groups;
 
-            Forward& operator += ( Forward rhs);
+            Forward set_union( Forward lhs, Forward rhs);
+            Forward set_difference( Forward lhs, Forward rhs);
+            Forward set_intersection( Forward lhs, Forward rhs);
 
             CASUAL_CONST_CORRECT_SERIALIZE(
                CASUAL_SERIALIZE( groups);
@@ -722,7 +752,9 @@ namespace casual::configuration
             Forward forward;
             std::string note;
 
-            Model& operator += ( Model rhs);
+            Model set_union( Model lhs, Model rhs);
+            Model set_difference( Model lhs, Model rhs);
+            Model set_intersection( Model lhs, Model rhs);
 
             CASUAL_CONST_CORRECT_SERIALIZE(
                CASUAL_SERIALIZE( groups);
@@ -746,10 +778,12 @@ namespace casual::configuration
       model::queue::Model queue;
       model::gateway::Model gateway;
 
-      Model& operator += ( Model rhs);
-      inline friend Model operator + ( Model lhs, Model rhs) { lhs += rhs; return lhs;}
+      inline friend Model operator + ( Model lhs, Model rhs) { return set_union( lhs, rhs);}
 
       friend Model normalize( Model model);
+      friend Model set_union( Model lhs, Model rhs);
+      friend Model set_difference( Model lhs, Model rhs);
+      friend Model set_intersection( Model lhs, Model rhs);
 
       CASUAL_CONST_CORRECT_SERIALIZE(
          CASUAL_SERIALIZE( system);
