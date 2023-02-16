@@ -102,8 +102,12 @@ namespace casual
             const gateway::message::domain::Connected& message)
          {
             auto connector = m_pending.extract( message.connector);
+            
             // we 'know' the process has/going to exit by it self. We make sure we don't try to send signals
             connector.process.clear();
+            
+            // no need for children to inherit the file descriptor from this point onwards.
+            connector.socket.set( common::communication::socket::option::File::close_in_child);
             
             auto descriptor = connector.socket.descriptor();
 
