@@ -101,15 +101,12 @@ namespace casual
                         return false;
 #endif 
                   
-                     case std::errc::invalid_argument:
-                        code::raise::error( code::casual::invalid_argument, "ipc");
-
                      case std::errc::no_such_file_or_directory:
                         code::raise::error( code::casual::communication_unavailable, "ipc - errno: ", code);
 
                      default:
                         // will always throw
-                        code::raise::error( code::casual::internal_unexpected_value, "ipc - errno: ", code);
+                        code::raise::error( code::convert::to::casual( code), "ipc - errno: ", code);
                   }
                }
 
