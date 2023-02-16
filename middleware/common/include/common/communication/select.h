@@ -196,12 +196,18 @@ namespace casual
                   constexpr auto dispatch( directive::Ready& ready, H& handler, traits::priority::tag< 0>) noexcept { return true;};
                } // write
 
+               template< typename H> 
+               auto read_write( directive::Ready& ready, H& handler)
+               {
+                  return read::dispatch( ready, handler, traits::priority::tag< 1>{}) 
+                     && write::dispatch( ready, handler, traits::priority::tag< 1>{});
+               }
+
                template< typename... Hs> 
                void dispatch( directive::Ready ready, Hs&... handlers)
                {
                   // Left-fold -  will short circuit when `ready` is _consumed_.
-                  (  ... && read::dispatch( ready, handlers, traits::priority::tag< 1>{}) ) 
-                     && ( ... && write::dispatch( ready, handlers, traits::priority::tag< 1>{}));
+                  (  ... && read_write( ready, handlers) );
                }
 
             } // handle
