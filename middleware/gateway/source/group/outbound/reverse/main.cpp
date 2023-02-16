@@ -198,8 +198,8 @@ namespace casual
                communication::select::dispatch::pump( 
                   local::condition( state),
                   state.directive,
-                  tcp::pending::send::dispatch::create( state, &handle::connection::lost),
                   tcp::handle::dispatch::create< outbound::Policy>( state, outbound::handle::external( state), &handle::connection::lost),
+                  tcp::pending::send::dispatch::create( state, &handle::connection::lost),
                   communication::select::ipc::dispatch::create< outbound::Policy>( state, &internal::handler),
                   tcp::listen::dispatch::create( state, tcp::logical::connect::Bound::out),
                   state.multiplex
