@@ -13,10 +13,11 @@
 #include "common/strong/id.h"
 #include "common/communication/tcp.h"
 #include "common/communication/ipc.h"
+#include "common/signal/timer.h"
 
 namespace casual
 {
-   namespace gateway::group::tcp::locical::connect
+   namespace gateway::group::tcp::logical::connect
    {
       using namespace common;
 
@@ -46,13 +47,43 @@ namespace casual
                State( Settings settings)
                   : device{ create_socket( settings.descriptor)},
                      destination{ Uuid{ settings.ipc}}
-               {
-
-               }
+               {}
 
                communication::tcp::Duplex device;
                strong::ipc::id destination;
+
+               // Even if we block to send to destination, we won't be "signaled" if the destination
+               // is removed. We need to retry the blocking send, from time to tome.
+               // This could only happen if parent in/out-bound cores, or something similar
+               common::signal::timer::Deadline timer{ platform::tcp::connect::attempts::delay};
             };
+
+            namespace signal::timer
+            {
+               common::signal::timer::Deadline deadline{ platform::tcp::connect::attempts::delay};
+
+               auto callback()
+               {
+                  return []() 
+                  { 
+                     // just reset the signal.
+                     signal::timer::deadline = common::signal::timer::Deadline{ platform::tcp::connect::attempts::delay};
+                  };
+               }
+            } // signal::timer
+
+
+            auto initialize( Settings settings)
+            {
+               Trace trace{ "gateway::group::tcp::connector::local::initialize"};
+
+               State state{ std::move( settings)};
+
+               // register the timer callback.
+               common::signal::callback::registration< code::signal::alarm>( signal::timer::callback());
+
+               return state;
+            }
 
 
             namespace run
@@ -124,11 +155,10 @@ namespace casual
                   argument::Option{ std::tie( settings.bound), { "--bound"}, "[inbound|outbound] outbound instigate the connections phase, inbound the opposite"}( argument::cardinality::one{})
                }( argc, argv);
 
-
                if( settings.bound == "in")
-                  run::in( State{ std::move( settings)});
+                  run::in( initialize( std::move( settings)));
                else if( settings.bound == "out")
-                  run::out( State{ std::move( settings)});
+                  run::out( initialize( std::move( settings)));
                else 
                   code::raise::error( code::casual::invalid_argument, "--bound has to be [in|out]");
 
@@ -137,7 +167,7 @@ namespace casual
          } // <unnamed>
       } // local
       
-   } // gateway::group::tcp::locical::connect
+   } // gateway::group::tcp::logical::connect
    
 } // casual
 
@@ -145,6 +175,6 @@ int main( int argc, char** argv)
 {
    return casual::common::exception::main::log::guard( [=]()
    {
-      casual::gateway::group::tcp::locical::connect::local::main( argc, argv);
+      casual::gateway::group::tcp::logical::connect::local::main( argc, argv);
    });
 } // main
