@@ -155,7 +155,7 @@ namespace casual
          namespace color
          {
             Color no_color{ value::no_color};
-            Color grey{ value::grey};
+            Color black{ value::black};
             Color red{ value::red};
             Color green{ value::green};
             Color yellow{ value::yellow};

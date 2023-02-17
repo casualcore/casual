@@ -96,7 +96,7 @@ namespace casual
          namespace value
          {
             constexpr auto no_color = "\033[0m";
-            constexpr auto grey = "\033[0;30m";
+            constexpr auto black = "\033[0;30m";
             constexpr auto red = "\033[0;31m";
             constexpr auto green = "\033[0;32m";
             constexpr auto yellow = "\033[0;33m";
@@ -108,7 +108,7 @@ namespace casual
 
          extern Color no_color;
          extern Color red;
-         extern Color grey;
+         extern Color black;
          extern Color red;
          extern Color green;
          extern Color yellow;
