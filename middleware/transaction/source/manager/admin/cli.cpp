@@ -124,7 +124,13 @@ namespace casual
                      {
                         auto format_global = []( auto& value) { return value.global.id;};
                         auto format_number_of_branches = []( auto& value) { return value.branches.size();};
-                        auto format_owner = []( auto& value){ return value.owner.pid;};
+                        auto format_owner = []( auto& value) -> std::string
+                        {
+                           if( value.owner.pid)
+                              return string::compose( value.owner.pid);
+                           else
+                              return "-";
+                        };
 
                         auto format_stage = []( auto& value)
                         {
@@ -145,7 +151,7 @@ namespace casual
 
                         return common::terminal::format::formatter< admin::model::Transaction>::construct(
                            common::terminal::format::column( "global", format_global, common::terminal::color::yellow),
-                           common::terminal::format::column( "#branches", format_number_of_branches, common::terminal::color::grey),
+                           common::terminal::format::column( "#branches", format_number_of_branches, common::terminal::color::no_color),
                            common::terminal::format::column( "owner", format_owner, common::terminal::color::white, common::terminal::format::Align::right),
                            common::terminal::format::column( "stage", format_stage, common::terminal::color::green, common::terminal::format::Align::left),
                            common::terminal::format::column( "resources", format_resources, common::terminal::color::magenta, common::terminal::format::Align::left)
@@ -212,8 +218,8 @@ namespace casual
                         };
 
                         return common::terminal::format::formatter< local::external::Proxy>::construct(
-                           common::terminal::format::column( "id", std::mem_fn( &local::external::Proxy::id), common::terminal::color::magenta, terminal::format::Align::right),
-                           common::terminal::format::column( "alias", std::mem_fn( &local::external::Proxy::alias), common::terminal::color::no_color, terminal::format::Align::right),
+                           common::terminal::format::column( "id", std::mem_fn( &local::external::Proxy::id), common::terminal::color::magenta, terminal::format::Align::left),
+                           common::terminal::format::column( "alias", std::mem_fn( &local::external::Proxy::alias), common::terminal::color::no_color, terminal::format::Align::left),
                            common::terminal::format::column( "pid", format_pid, common::terminal::color::no_color, terminal::format::Align::right)
                         );
                      }

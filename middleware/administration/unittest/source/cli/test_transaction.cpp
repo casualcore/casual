@@ -6,6 +6,10 @@
 
 #include "common/unittest.h"
 
+#define CASUAL_NO_XATMI_UNDEFINE
+
+#include "common/transaction/context.h"
+
 #include "domain/unittest/manager.h"
 
 #include "administration/unittest/cli/command.h"
@@ -109,6 +113,79 @@ domain:
          constexpr auto expected = R"(outbound_B
 )";
          EXPECT_TRUE( output == expected) << "output:  " << output << "expected: " << expected;
+      }
+
+      TEST( cli_transaction, list_transactions)
+      {
+         common::unittest::Trace trace;
+
+         auto a = local::cli::domain( R"(
+system:
+   resources:
+      -  key: rm-mockup
+         server: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/transaction/bin/rm-proxy-casual-mockup
+         xa_struct_name: casual_mockup_xa_switch_static
+         libraries:
+            -  casual-mockup-rm
+
+domain: 
+   name: A
+
+   transaction:
+      resources:
+         -  key: rm-mockup
+            name: example-resource-server
+            instances: 1
+
+   servers:
+      -  path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-resource-server
+         memberships: [ user]
+)");
+         EXPECT_TRUE( administration::unittest::cli::command::execute( R"(casual transaction --list-transactions --porcelain true)").string().empty());
+
+         ASSERT_TRUE( tx_begin() == TX_OK);
+
+         // create some branches
+         local::cli::call( "casual/example/resource/branch/echo");
+         local::cli::call( "casual/example/resource/branch/echo");
+         local::cli::call( "casual/example/resource/branch/echo");
+
+         // gtrid
+         {
+            const auto output = administration::unittest::cli::command::execute( R"(casual transaction --list-transactions --porcelain true | awk -F'|' '{printf $1}')").string();
+            auto& trid = common::transaction::context().current().trid;
+            EXPECT_EQ( output, common::string::compose( common::transaction::id::range::global( trid))) << "output: " << output << "expected: " << trid;
+         }
+
+         // branches
+         {
+            const auto output = administration::unittest::cli::command::execute( R"(casual transaction --list-transactions --porcelain true | awk -F'|' '{printf $2}')").string();
+            constexpr auto expected = R"(3)";
+            EXPECT_EQ( output, expected) << "output: " << output << "expected: " << expected;
+         }
+
+         // owner
+         {
+            const auto output = administration::unittest::cli::command::execute( R"(casual transaction --list-transactions --porcelain true | awk -F'|' '{printf $3}')").string();
+            constexpr auto expected = R"(-)";
+            EXPECT_EQ( output, expected) << "output: " << output << "expected: " << expected;
+         }
+
+         // stage
+         {
+            const auto output = administration::unittest::cli::command::execute( R"(casual transaction --list-transactions --porcelain true | awk -F'|' '{printf $4}')").string();
+            constexpr auto expected = R"(involved)";
+            EXPECT_EQ( output, expected) << "output: " << output << "expected: " << expected;
+         }
+
+         // resources
+         {
+            const auto output = administration::unittest::cli::command::execute( R"(casual transaction --list-transactions --porcelain true | awk -F'|' '{printf $5}')").string();
+            constexpr auto expected = R"([L-1])";
+            EXPECT_EQ( output, expected) << "output: " << output << "expected: " << expected;
+         }
+
+         ASSERT_TRUE( tx_commit() == TX_OK);
       }
 
    } // administration
