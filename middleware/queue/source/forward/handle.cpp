@@ -179,13 +179,15 @@ namespace casual
             namespace pending
             {
                template< typename P>
-               auto consume( P& pending, const strong::correlation::id& correlation)
+               auto consume( P& pending, const strong::correlation::id& correlation) -> std::optional< common::traits::iterable::value_t< P>>
                {
-                  auto found = common::algorithm::find( pending, correlation);
-                  assert( found);
+                  if( auto found = common::algorithm::find( pending, correlation))
+                     return algorithm::container::extract( pending, std::begin( found));
 
-                  return algorithm::container::extract( pending, std::begin( found));
+                  common::log::line( verbose::log, "failed to extract correlation: ", correlation);
+                  return std::nullopt;
                }
+
             } // pending
 
             namespace send
@@ -419,10 +421,13 @@ namespace casual
                         auto pending = pending::consume( state.pending.queue.lookups, message.correlation);
                         log::line( verbose::log, "pending: ", pending);
 
+                        if( ! pending)
+                           return;
+
                         if( state.runlevel > decltype( state.runlevel())::running)
                            return;
 
-                        state.forward_apply( pending.id, [&]( auto& forward)
+                        state.forward_apply( pending->id, [&]( auto& forward)
                         {
                            // if the forward has it's queues we start the 'flow'
                            if( local::queue::lookup::assign( message, forward))
@@ -465,31 +470,34 @@ namespace casual
                         log::line( verbose::log, "message: ", message);
 
                         auto pending = pending::consume( state.pending.dequeues, message.correlation);
+
+                        if( ! pending)
+                           return;
                         
                         if( message.message.empty())
                         {
                            log::line( log::category::error, "empty dequeued message - action: rollback");
-                           send::transaction::rollback::request( state, std::move( pending));
+                           send::transaction::rollback::request( state, std::move( *pending));
                         }
                         else if( state.runlevel > decltype( state.runlevel())::running)
                         {
                            // if we're in _shutdown mode_ we don't want to start any "flows"
                            log::line( log::category::information, "message dequeued in shutdown mode - the message might end up on error queue - action: rollback");
-                           send::transaction::rollback::request( state, std::move( pending));
+                           send::transaction::rollback::request( state, std::move( *pending));
                         }
-                        else if( auto forward = state.forward_service( pending.id))
+                        else if( auto forward = state.forward_service( pending->id))
                         {
 
                            // request service
                            message::service::lookup::Request request{ process::handle()};
-                           request.correlation = pending.correlation;
+                           request.correlation = pending->correlation;
                            request.requested = forward->target.service;
                            // we'll wait 'forever'
                            request.context.semantic = decltype( request.context.semantic)::wait;
 
                            state.multiplex.send( ipc::service::manager(), request);
 
-                           forward::state::pending::service::Lookup lookup{ std::move( pending)};
+                           forward::state::pending::service::Lookup lookup{ std::move( *pending)};
                            lookup.buffer.type = std::move( message.message[ 0].payload.type);
                            lookup.buffer.data = std::move( message.message[ 0].payload.data);
 
@@ -497,11 +505,11 @@ namespace casual
 
                            log::line( verbose::log, "state.pending.service.lookups: ", state.pending.service.lookups);
                         }
-                        else if( auto forward = state.forward_queue( pending.id))
+                        else if( auto forward = state.forward_queue( pending->id))
                         {
                            ipc::message::group::enqueue::Request request{ process::handle()};
-                           request.correlation = pending.correlation;
-                           request.trid = pending.trid;
+                           request.correlation = pending->correlation;
+                           request.trid = pending->trid;
                            request.queue = forward->target.id;
                            request.name = forward->target.queue;
                            request.message = std::move( message.message.front());
@@ -516,7 +524,7 @@ namespace casual
                            log::line( verbose::log, "enqueue request: ", request);
 
                            state.multiplex.send( forward->target.process.ipc, request);
-                           state.pending.enqueues.emplace_back( std::move( pending));
+                           state.pending.enqueues.emplace_back( std::move( *pending));
 
                         }
                      };
@@ -577,7 +585,10 @@ namespace casual
                               // If a lookup was discarded, we should be find a matching pending
                               auto pending = pending::consume( state.pending.dequeues, message.correlation);
 
-                              state.forward_apply( pending.id, [ &state]( auto& forward)
+                              if( ! pending)
+                                 return;
+
+                              state.forward_apply( pending->id, [ &state]( auto& forward)
                               {
                                  --forward;
                                  common::log::line( verbose::log, "forward: ", forward);
@@ -611,27 +622,29 @@ namespace casual
                            if( message.state == decltype( message.state)::busy)
                               return;
 
-
                            auto pending = pending::consume( state.pending.service.lookups, message.correlation);
+
+                           if( ! pending)
+                              return;
 
                            if( message.state != decltype( message.state)::idle)
                            {
                               log::line( log::category::error, "service not callable: ", message.service.name);
-                              send::transaction::rollback::request( state, std::move( pending));
+                              send::transaction::rollback::request( state, std::move( *pending));
                               return;
                            }
 
                            // Generate a new execution id for each service call
                            common::execution::reset();
 
-                           message::service::call::caller::Request request{ pending.buffer};
+                           message::service::call::caller::Request request{ pending->buffer};
                            request.process = process::handle();
-                           request.correlation = pending.correlation;
-                           request.trid = pending.trid;
+                           request.correlation = pending->correlation;
+                           request.trid = pending->trid;
                            request.service = std::move( message.service);
 
                            state.multiplex.send( message.process.ipc, request);
-                           state.pending.service.calls.emplace_back( std::move( pending), message.process.pid);
+                           state.pending.service.calls.emplace_back( std::move( *pending), message.process.pid);
                         };
                      }
 
@@ -650,8 +663,11 @@ namespace casual
                               auto pending = pending::consume( state.pending.service.lookups, message.correlation);
                               log::line( verbose::log, "pending: ", pending);
 
+                              if( ! pending)
+                                 return;
+
                               // rollback the 'flow'
-                              send::transaction::rollback::request( state, std::move( pending));
+                              send::transaction::rollback::request( state, std::move( *pending));
                            };
                         }
 
@@ -669,22 +685,25 @@ namespace casual
 
                            auto call = pending::consume( state.pending.service.calls, message.correlation);
 
+                           if( ! call)
+                              return;
+
                            if( message.code.result != code::xatmi::ok)
                            {
-                              send::transaction::rollback::request( state, std::move( call));
+                              send::transaction::rollback::request( state, std::move( *call));
                               return;
                            }
 
                            // we know that this is a service forward
-                           auto forward = state.forward_service( call.id);
+                           auto forward = state.forward_service( call->id);
                            assert( forward);
 
                            if( forward->reply)
                            {
                               auto& reply = forward->reply.value();
                               ipc::message::group::enqueue::Request request{ process::handle()};
-                              request.correlation = call.correlation;
-                              request.trid = call.trid;
+                              request.correlation = call->correlation;
+                              request.trid = call->trid;
                               request.queue = reply.id;
                               request.name = reply.queue;
                               request.message.payload.type = std::move( message.buffer.type);
@@ -695,17 +714,16 @@ namespace casual
 
                               log::line( verbose::log, "enqueue reply: ", request);
                               
-                              state.pending.enqueues.emplace_back( std::move( call));
+                              state.pending.enqueues.emplace_back( std::move( *call));
                               state.multiplex.send( reply.process.ipc, request, [ &state]( auto& ipc, auto& complete)
                               {
                                  // remove the added pending.
-                                 auto pending = pending::consume( state.pending.enqueues, complete.correlation());
-                                 
-                                 send::transaction::rollback::request( state, std::move( pending));
+                                 if( auto pending = pending::consume( state.pending.enqueues, complete.correlation()))
+                                    send::transaction::rollback::request( state, std::move( *pending));
                               });
                            }
                            else
-                              send::transaction::commit::request( state, std::move( call));
+                              send::transaction::commit::request( state, std::move( *call));
 
                         };
                      }
@@ -723,20 +741,23 @@ namespace casual
 
                         auto pending = pending::consume( state.pending.enqueues, message.correlation);
 
+                        if( ! pending)
+                           return;
+
 
                         if( message.id)
                         {
-                           send::transaction::commit::request( state, std::move( pending));
+                           send::transaction::commit::request( state, std::move( *pending));
                         }
                         else
                         {
                            // 'nil' message-id indicate no_queue. We invalidates, and 
                            // this will trigger lookup.
-                           state.forward_apply( pending.id, []( auto& forward)
+                           state.forward_apply( pending->id, []( auto& forward)
                            {
                               forward.invalidate_queues();
                            });
-                           send::transaction::rollback::request( state, std::move( pending));  
+                           send::transaction::rollback::request( state, std::move( *pending));  
                         }
                      };
                   }
@@ -775,10 +796,13 @@ namespace casual
 
                            auto pending = pending::consume( state.pending.transaction.rollbacks, message.correlation);
 
+                           if( ! pending)
+                              return;
+
                            if( message.stage != decltype( message.stage)::rollback)
                               common::log::line( common::log::category::error, message.state, "failed to rollback - trid: ", message.trid);
 
-                           state.forward_apply( pending.id, [&state]( auto& forward)
+                           state.forward_apply( pending->id, [&state]( auto& forward)
                            {
                               --forward;
                               ++forward.metric.rollback.count;
@@ -806,10 +830,13 @@ namespace casual
 
                            auto pending = pending::consume( state.pending.transaction.commits, message.correlation);
 
+                           if( ! pending)
+                              return;
+
                            if( message.stage != decltype( message.stage)::commit)
                               common::log::line( common::log::category::error, message.state, "failed to commit - trid: ", message.trid);
 
-                           state.forward_apply( pending.id, [&state]( auto& forward)
+                           state.forward_apply( pending->id, [&state]( auto& forward)
                            {
                               --forward;
 
