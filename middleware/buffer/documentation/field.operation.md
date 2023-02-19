@@ -7,11 +7,11 @@ If the application is using a casual-field-repository, the environment-variable 
 ### example
 
 ```bash
->$ export CASUAL_FIELD_TABLE=path/to/repository/file.yaml
+$ export CASUAL_FIELD_TABLE=path/to/repository/file.yaml
 ```
 
 ```bash
->$ export CASUAL_FIELD_TABLE=path/to/file1.yaml|path/to/file2.json
+$ export CASUAL_FIELD_TABLE=path/to/file1.yaml|path/to/file2.json
 ```
 
 

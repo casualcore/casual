@@ -8,7 +8,7 @@ Release: %{casual_release}%{?dist}
 License: MIT
 Group: Applications/System
 Source: -
-URL: https://bitbucket.org/casualcore/casual
+URL: https://github.com/casualcore/casual
 Distribution: %{distribution}
 
 Prefix: /opt/casual

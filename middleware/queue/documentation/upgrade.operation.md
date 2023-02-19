@@ -21,6 +21,6 @@ absolute guarantees.
 
 Assuming all _queue-base-files_ is located under `$CASUAL_DOMAIN_HOME/queue`. 
 ```bash
->$ casual-queue-upgrade --files $CASUAL_DOMAIN_HOME/queue/*.qb
+$ casual-queue-upgrade --files $CASUAL_DOMAIN_HOME/queue/*.qb
 ```
 

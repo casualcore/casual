@@ -35,7 +35,7 @@ resources:
 We just use the key to _look up_ the configuration, and use this to compile and link the wanted `resource-proxy`
 
 ```bash
->$ casual-build-resource-proxy --resource-key db2
+$ casual-build-resource-proxy --resource-key db2
 ```
 
 Will produce a server (_resource-proxy_) with the name `rm-proxy-db2-static`. The `transaction-manager` will use the same configuration to know which _resource-proxy_ to spawn for a specific _key_ in _domain-configuration_.  
@@ -45,7 +45,7 @@ Will produce a server (_resource-proxy_) with the name `rm-proxy-db2-static`. Th
 There are a few tweaks you can use when building a `resource-proxy`. The most common is probably to provide _compiler-directives_ and _link-directives_ for your specific platform. 
 
 ```bash
->$ casual-build-resource-proxy --help
+$ casual-build-resource-proxy --help
 NAME
    casual-build-resource-proxy
 

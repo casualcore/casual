@@ -48,7 +48,7 @@ takes place the message will remain on the _error-queue_.
 
 To clear a queue, that is, remove and discard messages, use 
 ```bash
->$ casual queue --consume <some-queue> > /dev/null
+$ casual queue --consume <some-queue> > /dev/null
 ```
 
 ## configuration

@@ -55,7 +55,7 @@ _see [build-executable-example](../../../configuration/example/build/executable.
 * Pass the source file _main.cpp_ to `casual-build-executable` to be compiled at the same time as _building_ the server.
 
 ```bash
->$ casual-build-executable --output my-executable --definition my-executable.yaml --build-directives main.cpp 
+$ casual-build-executable --output my-executable --definition my-executable.yaml --build-directives main.cpp 
 ```
 
 ### custom
@@ -66,13 +66,13 @@ opt in **not** to use default include/library-paths and so on.
 **note:** you need to provide all paths, libraries and such 
 
 ```bash
->$ casual-build-executable --no-defaults --output my-executable --definition my-executable.yaml --build-directives main.cpp <all other stuff your compiler needs>
+$ casual-build-executable --no-defaults --output my-executable --definition my-executable.yaml --build-directives main.cpp <all other stuff your compiler needs>
 ```
 
 ## options
 
 ```bash
->$ casual-build-executable --help
+$ casual-build-executable --help
 NAME
    casual-build-executable
 

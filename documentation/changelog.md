@@ -3,6 +3,64 @@ This is the changelog for `casual` and all changes are listed in this document.
 
 ## [Unreleased]
 
+## [1.6.0] - 2023-03-06
+### Added
+- cli - add force service/queue discovery to cli (#110)
+- configuration - add set operations union, intersection, difference
+- discovery - add build configuration option to set a service visibility (#86)
+- discovery - add domain configuration option to set a service visibility (#86)
+- discovery - add state and metric information to discovery (#110)
+- discovery - add directive to limit service discovery from other domains
+- domain - add start time for domain in information (#132)
+- domain - log name of exiting process (#105)
+- event - add event-logging for significant stuff that is done
+- event - add service sequential/concurrent order to event-service-log (#115)
+- general -  all "managers" use multiplex send
+- http - outbound configuration to control caller fresh connect (#65)
+- http - make http payload base64 encoding optional
+- http - call::Context prepare for multiplexing and 'http-forward'
+- http - use multiplexing in nginx inbound
+- queue - add browse-peek to queue api
+- queue - recover queue message (#74)
+- transaction - list external resources from cli
+- xatmi - extend c-api with execution service name (#140)
+
+### Fixes
+- build - package resources.yaml in /etc/casual/
+- cli - fix gateway --list-connections to indicate inbound discovery forward
+- cli - fix domain --configuration-get not outputing 'system' (#108)
+- cli - generalized --state option and the serialization to stdout
+- cli - fix stderr printout on error from `casual call ...`
+- cli - add legend for gateway --list-connections
+- cli - fix transaction cli output
+- cli - corrected legend for --list-services option to match header
+- common - add error logging on assert (#88)
+- configuration - improve configuration update semantics
+- configuration - default to one instance everywhere
+- discovery - don't forward discovery if service/queue is known (#141)
+- domain - core servers must restart on unexpected exit
+- domain - keep service and queues sorted in discovery (#77)
+- event - fix event-service-log to also reopen 'casual.log' on SIGHUP
+- event - show trid in metric when trid is created by callee (#142)
+- event: make sure service-log listen to events before "connect" 
+- environment - don't create directories when constructing internal environment paths (#19)
+- forward - generate new execution id for each service call
+- forward - fix forwards dying when scaling aliases
+- gateway - reduce batch read/write in tcp handler
+- gateway - don't let children inherit tcp file descriptors
+- gateway - fix tcp-logical-connect to detect loss of destination ipc
+- http - correct http inbound to handle keepalive
+- http - upgrade nginx to latest stable 1.22.0
+- http - remove debug log level as default (#79)
+- log - add api to configure _log_ during runtime
+- service - fix pending "error" reply when server cores/exit
+- transaction - fix core when resources in distributed prepare (service) fails
+- queue - fix local lookup to also search external known queues
+- queue - log queuename when failing operation on queues (#106)
+- queue - fix cli to handle queue message with message attributes
+- queue - fix --list-remote
+- xatmi - tpsrvdone should never be called if tpsrvinit has not been called
+
 ## [1.5.14] - 2022-09-08
 ### Fixes
 - conversation - fix a bug where tprecv and tpsend failed to set the global tpurcode.

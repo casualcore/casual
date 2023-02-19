@@ -9,7 +9,7 @@ buffer from `stdin` and stream it to `stdout`
 ### example
 
 ```bash
->$ echo "poop" |  casual-buffer-generic-compose --type "X_OCTET/" | casual call --service casual/example/echo > /dev/null
+$ echo "poop" |  casual-buffer-generic-compose --type "X_OCTET/" | casual call --service casual/example/echo > /dev/null
 ```
 
 ## casual-buffer-generic-extract
@@ -19,7 +19,7 @@ A generic _buffer extractor_ that extracts the payload of a generic buffer from 
 ### example
 
 ```bash
->$ casual queue --dequeue foo | casual-buffer-generic-extract
+$ casual queue --dequeue foo | casual-buffer-generic-extract
 ```
 
 
@@ -31,7 +31,7 @@ which is the point of being _unix friendly_
 ### example
 
 ```bash
->$ cat some-important-file.yaml | casual-buffer-generic-compose | casual call --service casual/example/echo | casual-buffer-generic-extract | tee payload.log.txt | casual-buffer-generic-compose |  casual queue --enqueue foo 
+$ cat some-important-file.yaml | casual-buffer-generic-compose | casual call --service casual/example/echo | casual-buffer-generic-extract | tee payload.log.txt | casual-buffer-generic-compose |  casual queue --enqueue foo 
 ```
 
 ... and so on...

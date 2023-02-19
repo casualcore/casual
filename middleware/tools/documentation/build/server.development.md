@@ -35,7 +35,7 @@ The `echo` service will have `auto` transaction semantics, see below.
 
 
 ```bash
->$ casual-build-server --output simple-server --service echo --link-directives echo.cpp
+$ casual-build-server --output simple-server --service echo --link-directives echo.cpp
 ```
 
 ### advanced
@@ -80,13 +80,13 @@ _See *Missing link?* [build-server-example](../../../configuration/example/build
 * Pass the source file `echo.cpp` to `casual-build-server` to be compiled at the same time as _building_ the server.
 
 ```bash
->$ casual-build-server --output advanced-server --definition example.server.yaml --build-directives echo.cpp 
+$ casual-build-server --output advanced-server --definition example.server.yaml --build-directives echo.cpp 
 ```
 
 We can see that `advanced-server` has a dependency to the `XA-structure` for `rm-mockup`: __casual_mockup_xa_switch_static_
 
 ```bash
->$ nm advanced-server 
+$ nm advanced-server 
                  U _casual_mockup_xa_switch_static
                  U _casual_start_server
 0000000100000f30 T _echo
@@ -105,7 +105,7 @@ opt to **not** use the default include/library-paths and so on.
 **Note:** you need to provide all paths, libraries etc.
 
 ```bash
->$ casual-build-server --no-defaults --output advanced-server --definition example.server.yaml --build-directives echo.cpp <all other stuff your compiler needs>
+$ casual-build-server --no-defaults --output advanced-server --definition example.server.yaml --build-directives echo.cpp <all other stuff your compiler needs>
 ```
 
 ### casual-build-server-generate
@@ -113,7 +113,7 @@ opt to **not** use the default include/library-paths and so on.
 `casual-build-server-generate` only generate the _intermediate main file_, that has the 'magic' to bootstrap a `casual` server.
 
 ```bash
->$ casual-build-server-generate --output your-name-on-the-source-file.cpp --definition example.server.yaml
+$ casual-build-server-generate --output your-name-on-the-source-file.cpp --definition example.server.yaml
 ```
 
 This might be easier to use, depending och your build system.
@@ -121,7 +121,7 @@ This might be easier to use, depending och your build system.
 ## options
 
 ```bash
->$ casual-build-server --help
+$ casual-build-server --help
 NAME
    casual-build-server
 
