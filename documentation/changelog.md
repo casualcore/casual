@@ -1,7 +1,140 @@
 # Changelog
 This is the changelog for `casual` and all changes are listed in this document.
 
-## [Unreleased]
+## [Unreleased - 1.6.0]
+### Added
+- build - package resources.yaml in /etc/casual/
+- cli - add force service/queue discovery to cli (#110)
+- configuration - add `exclude.(services|queues)` to inbound connections
+- common - add set container abstraction with contiguous memory
+  **Q:** Did we remove this later?
+- discovery - add build configuration option to set a service visibility (#86)
+- discovery - add state and metric information to discovery (#110)
+- discovery - add directive to limit service discovery from other domains
+- domain - add start time for domain in information (#132)
+- event - add event-logging for significant stuff that is done
+- http - outbound configuration to control caller fresh connect (#65)
+- http - make http payload base64 encoding optional
+- http - call::Context prepare for multiplexing and 'http-forward'
+- http - use multiplexing in nginx inbound
+- queue - add browse-peek to queue api
+- queue - recover queue message (#74)
+- transaction - list external resources from cli
+- xatmi - extend c-api with excecution service name (#140)
+
+
+### Fixes
+- cli - fix domain --configuration-get not outputing 'system' (#108)
+- cli - fix domain --configuration-edit/get not to add extra 'domain'
+- cli - generalized --state option and the serialization to stdout
+- cli - fix stderr printout on error from `casual call ...`
+- common - make handlers be invoked 'left-fold' for select::pump::dispatch
+- common - add hash correlation lookup for coordinate::fan::Out (#141)
+- communication - make ipc::send::Coordinator "reconnect" on unavailable (#111)
+- configuration - improve configuration update semantics
+- configuration - default to one instance everywhere
+- discovery - don't forward discovery if service/queue is known (#141)
+- discovery - improve performance by aggregating updates within a duration (#141)
+- discovery - fix discovery --rediscover not returning
+- discovery - make sure we only discoverer 'known' to 'new connection'
+- discovery - fix on topology direct to include services with remote == 0 (#124)
+- discovery - simplify order unique service/queue message state
+- domain - core servers must restart on unexpected exit
+- domain - log name of exiting process (#105)
+- domain - keep service and queues sorted in discovery (#77)
+- event - add service sequential/concurrent order to event-service-log (#115)
+- event - fix event-service-log to also reopen 'casual.log' on SIGHUP
+- environment - dont create directories when constructing internal environment paths (#19)
+- forward - generate new execution id for each service call
+- forward - fix forwards dying when scaling aliases
+- gateway - reduce batch read/write in tcp handler
+- gateway - don't let children inherit tcp file descriptors
+- gateway - fix tcp-logical-connect to detect loss of destination ipc
+- gateway - improve when tcp connection is lost (#102)
+- gateway - immediately send error reply on failed resource request (#98)
+- http - correct http inbound to handle keepalive
+- http - upgrade nginx to latest stable 1.22.0
+- http - remove debug log level as default (#79)
+- ipc - make sure we handle interrupts during ipc send/receive
+- service - simplify code that caused a "may be used uninitialized" warning.
+- service - fix metrics to use route name (#78)
+- service - fix pending "error" reply when server cores/exit
+- tcp - fix partial header offset to be a multiple of char, not header type
+- transaction - fix core when resources in distributed prepare (service) fails
+- transaction - associate involved externals on ipc instead of pid
+- queue - fix local lookup to also search external known queues
+- queue - manage removed pending messages due to process exits
+- queue - fix queue-forward to not fetch from ipc device in done condition
+- queue - manager lookup reply with absent queue if runlevel > _running_
+- queue - handle enqueue errors correctly
+- queue - use blocking semantic for 'transaction involve send'
+- queue - log queuename when failing operation on queues (#106)
+- queue - fix cli to handle queue message with message attribues
+- queue - fix --list-remote
+- queue - fix queue-forward process exit clean up
+
+
+### Internal
+**Q**: Shall this part even be in _changelog_?
+- algorithm - move container specific algorithms to algorithm::container
+- buffer - refactor internal buffer implementation
+- build - fix compile errors in 1.6 stream that occurs with g++-11
+- build - fix build environment sourcing compatibility with zsh and bash
+- build - fix missed library path to service/bin
+- build - handle missing files correct
+- build - publish logfile on error (#139)
+- build - refactor pipeline and make it more logic
+- build - remove depricated github action functions
+- build - use github actions
+- common - add casual specific assert -> precondition validation
+- common - add error logging on assert (#88)
+- common - add general task abstraction to help with boot/shutdown order  
+- common - change type of size (#81)
+- common - environment minor cleanup
+- common - fix failing test_ipc
+- common - fix logging bug
+- common - fix some error in logging
+- common - improve log::stream - update logging api
+- common - improve "pimpl", rm-mockup, administration::command
+- common - minor refactoring - mutated and added a few things.
+- common - refactor message::dispatch::handle to improve `defaults`
+- common - remove process::pattern::Sleep
+- communication - get rid of unnecessary `process` member on most replies
+- communication - never wait on instance lookup if domain is in shutdown
+- communication - only consume 1 message on select dispatch.
+- communication - respect order of handlers in select::pump
+- domain - eliminate domain-pending-message
+- domain - make domain::process::connect::Request more precise
+- domain - new handler for supplying information about a process
+- domain - remove grandchildren ipc-device when they die
+- domain - use multiplex send
+- environment - fix environment::set for std::filesystem::path
+- event - fix event unsubscribe for subscribed events
+- gateway - make gateway inbound respect excluded services and queues
+- gateway - make unittest discovery using utility from other managers
+- http - use CASUAL_MAKE_SOURCE_ROOT when building nginx
+- ipc - add abstraction for pending (generic) messages
+- log - add api to configure _log_ during runtime
+- pending - remove all old deprecated pending stuff
+- queue - added unittest for external queue discovery
+- queue - fix shutdown problem for forward/queue groups
+- queue - fix queue::code is part of the _queue api_, link wise.
+- queue - normalize from Payload::memory to Payload::data
+- queue - use common::code::raise::error instead of local implmentation
+- queue - use multiplex send
+- refactoring - use std::filesystem::path for all _paths_
+- scan-build - correction after code scanning
+- select - improve and simplify multiplex select & Co
+- serialize - fix ability to (de)serialize all fix integral types   
+- service - fix multiplex send for events
+- service - fix ODR violation for common::log::Stream
+- service - unittest to validate error reply on pending call when core
+- setup - made middleware/example/env/casual.env idempotent
+- transaction - get rid of "pending" message - only multiplex send
+- transaction - use multiplex send
+- unittest - fix boot order dependencies in some unittests
+- unittest - test stability issues
+- xatmi - tpsrvdone should never be called if tpsrvinit has not been called
 
 ## [1.5.14] - 2022-09-08
 ### Fixes

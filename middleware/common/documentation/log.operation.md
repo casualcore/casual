@@ -26,22 +26,22 @@ This is all based on just the category model, before the insight with regular ex
 
 All categories to log:
 ```bash
->$ export CASUAL_LOG=".*"
+$ export CASUAL_LOG=".*"
 ```
 
 All casual internal to log:
 ```bash
->$ export CASUAL_LOG="^casual.*"
+$ export CASUAL_LOG="^casual.*"
 ```
 
 Only gateway to log:
 ```bash
->$ export CASUAL_LOG="^casual[.]gateway$"
+$ export CASUAL_LOG="^casual[.]gateway$"
 ```
 
 Gateway and transaction:
 ```bash
->$ export CASUAL_LOG="^casual[.](gateway|transaction)$"
+$ export CASUAL_LOG="^casual[.](gateway|transaction)$"
 ```
 
 

@@ -19,7 +19,7 @@ provide an option to print an easy to parse list of all available option.
 ### example:
 
 ```bash
->$ casual casual-bash-completion
+$ casual casual-bash-completion
 domain 1 18446744073709551615
 service 1 18446744073709551615
 queue 1 18446744073709551615

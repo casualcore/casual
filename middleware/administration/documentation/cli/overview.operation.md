@@ -8,7 +8,7 @@
 In general the semantics of the `casual` `CLI` is:
 
 ```bash
->$ casual <category group> <group specific options>...
+$ casual <category group> <group specific options>...
 ```
 
 ## help
@@ -16,25 +16,25 @@ In general the semantics of the `casual` `CLI` is:
 To get an overview help for what options is possible use:
 
 ```bash
->$ casual --help
+$ casual --help
 ```
 
 To get detailed help for a specific category/option, use:
 
 ```bash
->$ casual --help service
+$ casual --help service
 ```
 
 It's possible to get detailed help for several categories/options at once: 
 
 ``` shell
->$ casual --help service domain gateway
+$ casual --help service domain gateway
 ```
 
 To see all possible _help options_ use:
 
 ``` shell
->$ casual --help --help
+$ casual --help --help
 ```
 
 ### help output
@@ -101,7 +101,7 @@ If `casual` detects that `stdout` is tied to a _terminal_ `casual` will try to m
 #### example
 
 ```bash
->$ echo "some payload" | casual buffer --compose "X_OCTET/" | casual buffer --duplicate 2 | casual buffer --extract
+$ echo "some payload" | casual buffer --compose "X_OCTET/" | casual buffer --duplicate 2 | casual buffer --extract
 ```
 * Creates an `X_OCTET/`  buffer with the payload 'some payload' and send it downstream
 * Duplicates this buffer twice and send it downstream

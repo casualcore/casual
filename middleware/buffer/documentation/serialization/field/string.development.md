@@ -67,7 +67,7 @@ _as always, use option `--help` to get additional information on what's possible
 
 **Example:**
 ```bash
->$ $CASUAL_HOME/bin/casual-buffer-field-serialize --files some-mapping-file.yaml --output some-implementation.cpp
+$ $CASUAL_HOME/bin/casual-buffer-field-serialize --files some-mapping-file.yaml --output some-implementation.cpp
 ```
 
 ### compile and link
@@ -76,7 +76,7 @@ Compile and link the implementation.
 
 **Example:**
 ```bash
->$ g++ -o some-implementation.o some-implementation.cpp –I$CASUAL_HOME/include -pthread -c -O3 -fpic -std=c++14
+$ g++ -o some-implementation.o some-implementation.cpp –I$CASUAL_HOME/include -pthread -c -O3 -fpic -std=c++14
 ```
 
 Link the object file to the lib/executable to the lib/executable that uses the _serialization_. 

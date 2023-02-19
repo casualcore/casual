@@ -17,8 +17,8 @@ and is based on [`${CASUAL_BUILD_HOME}/middleware/example/domain/multiple/minima
 ## Start
 
 ```bash
->$ cd ${CASUAL_BUILD_HOME}/docker
->$ docker-compose up
+$ cd ${CASUAL_BUILD_HOME}/docker
+$ docker-compose up
 ```
 
 ## Test
@@ -27,7 +27,7 @@ First you need to know the IP addresses for the `domainA` and `domainB` containe
 Example:
 
 ```bash
->$ docker inspect -f '{{ .NetworkSettings.Networks.docker_isolated_nw.IPAddress }}' \
+$ docker inspect -f '{{ .NetworkSettings.Networks.docker_isolated_nw.IPAddress }}' \
     $(docker ps | awk '/docker_domain[A-B]/ {print $1}')
 172.22.0.3
 172.22.0.2
@@ -36,14 +36,14 @@ Example:
 Call `casual/example/echo` on either container (the actual service is running on `domainA`):
 
 ```bash
->$ curl -d "Hello world" http://172.22.0.2:8080/casual?service=casual/example/echo
->$ curl -d "Hello world" http://172.22.0.3:8080/casual?service=casual/example/echo
+$ curl -d "Hello world" http://172.22.0.2:8080/casual?service=casual/example/echo
+$ curl -d "Hello world" http://172.22.0.3:8080/casual?service=casual/example/echo
 ```
 
 Attach to one of the domains, and play around with `casual`. Example:
 
 ```bash
->$ docker exec -it docker_domainA_1 bash
+$ docker exec -it docker_domainA_1 bash
 [casual@domainA casual]$ casual gateway --list-connections
 name     id                                bound  pid  queue   type  runlevel  address
 -------  --------------------------------  -----  ---  ------  ----  --------  -----------------------------------------
@@ -64,5 +64,5 @@ casual/example/uppercase     example   join   0.0000   1   0  0.0000  0  0.0000 
 When done with the demo, clean up afterwards with:
 
 ```
-docker-compose down
+$ docker-compose down
 ```

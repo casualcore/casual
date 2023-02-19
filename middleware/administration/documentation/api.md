@@ -5,7 +5,7 @@
 To describe a casual-sf-service just use the following command:
 
 ```bash
->$ casual-service-describe --services <services>
+$ casual-service-describe --services <services>
 ```
 
 ## modules

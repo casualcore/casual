@@ -66,7 +66,7 @@ casual
           </div>
           <ul>
             <li><a href="mailto:casual@laz.se">mail</a></li>
-            <li><a href="https://casual-middleware.slack.com">slack</a></li>
+            <li><a href="https://discord.com/channels/960208635458363425">Discord</a></li>
           </ul>
         </td>
 

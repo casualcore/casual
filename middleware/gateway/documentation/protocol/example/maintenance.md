@@ -8,7 +8,7 @@ It is possible to produce the markdown on the fly via `casual-gateway-markdown-p
 Example: 
 
 ```bash 
->$ $CASUAL_HOME/example/bin/casual-gateway-markdown-protocol > protocol.md
+$ $CASUAL_HOME/example/bin/casual-gateway-markdown-protocol > protocol.md
 ```
 
 ## binary examples
@@ -16,7 +16,7 @@ Example:
 Use the binary dump example generator.
 
 ```bash
->$ example/bin/casual-gateway-binary-protocol --help
+$ example/bin/casual-gateway-binary-protocol --help
 NAME
    casual-gateway-binary-protocol
 
@@ -34,7 +34,7 @@ OPTIONS     c  value                                  vc  description
 Example: 
 
 ```bash
->$ $CASUAL_HOME/example/bin/casual-gateway-binary-protocol --base 'path/to/destination' --format json
+$ $CASUAL_HOME/example/bin/casual-gateway-binary-protocol --base 'path/to/destination' --format json
 ```
 
 ### naming convention

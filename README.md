@@ -2,8 +2,7 @@
 
 ## products
 
-casual has a few 'products' that could be split into separate repos in the future, but for now
-we keep them all in this repository.
+casual has a few 'products' in separate repositories under the _casualcore_-organisation.
 
 ### middleware
 The main purpose of casual is [casual-middelware](middleware/readme.md), which is an XATMI implementation
