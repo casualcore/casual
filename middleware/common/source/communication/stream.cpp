@@ -27,7 +27,7 @@ namespace casual
                   Trace trace{ "common::communication::stream::policy::local::receive"};
 
                   message::Complete complete;
-                  auto current = reinterpret_cast< char*>( &complete.header());
+                  auto current = complete.header_data();
 
                   // First we read the header
                   if( ! in.read( current, message::header::size))
@@ -52,9 +52,7 @@ namespace casual
 
                   // First we write the header
                   {
-                     auto& header = complete.header();
-
-                     auto data = reinterpret_cast< const char*>( &header);
+                     auto data = complete.header_data();
                      if( ! out.write( data, message::header::size))
                         code::raise::error( code::casual::communication_unavailable, "stream is unavailable");
 

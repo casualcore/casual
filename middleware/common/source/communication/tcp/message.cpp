@@ -36,9 +36,12 @@ namespace casual
 
       std::ostream& operator << ( std::ostream& out, const Header& value)
       {
+         auto binary = range::make( reinterpret_cast< const char*>( &value), sizeof( Header));
+
          return stream::write( out, "{ type: ", local::host::header::type( value),
             ", correlation: ", transcode::hex::stream::wrapper( value.correlation),
-            ", size: ", local::host::header::size( value), '}');
+            ", size: ", local::host::header::size( value), 
+            ", hex: ", transcode::hex::stream::wrapper( binary), '}');
 
       }
 
@@ -59,7 +62,7 @@ namespace casual
       std::ostream& operator << ( std::ostream& out, const Complete& value)
       {
          return out << "{ header: " << value.m_header 
-            << ", size: "<< value.payload.size() 
+            << ", size: " << value.payload.size() 
             << ", offset: " << value.offset 
             << ", total: " << value.payload.size() + message::header::size
             << std::boolalpha << ", complete: " << value.complete() << '}';

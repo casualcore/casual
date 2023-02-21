@@ -128,16 +128,16 @@ namespace casual
 
          struct Blocking
          {
-            cache_range_type receive( const Connector& tcp, cache_type& cache);
-            strong::correlation::id send( const Connector& tcp, complete_type&& complete);
+            cache_range_type receive( Connector& tcp, cache_type& cache);
+            strong::correlation::id send( Connector& tcp, complete_type&& complete);
          };
 
          namespace non
          {
             struct Blocking
             {
-               cache_range_type receive( const Connector& tcp, cache_type& cache);
-               strong::correlation::id send( const Connector& tcp, complete_type& complete);
+               cache_range_type receive( Connector& tcp, cache_type& cache);
+               strong::correlation::id send( Connector& tcp, complete_type& complete);
             };
 
          } // non

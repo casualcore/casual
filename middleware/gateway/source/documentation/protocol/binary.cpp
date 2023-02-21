@@ -54,8 +54,7 @@ namespace casual
 
                   auto complete = serialize::native::complete< complete_type>( message);
 
-                  auto header = complete.header();
-                  file.write( reinterpret_cast< const char*>( &header), communication::tcp::message::header::size);
+                  file.write( complete.header_data(), communication::tcp::message::header::size);
                   file.write( complete.payload.data(), complete.payload.size());
                };
 

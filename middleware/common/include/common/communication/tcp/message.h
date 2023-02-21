@@ -100,8 +100,9 @@ namespace casual
          inline auto correlation() const noexcept { return header::detail::correlation( m_header);}
          //! @}
 
-         inline const message::Header& header() const noexcept { return m_header;}
-         inline message::Header& header() noexcept { return m_header;}
+
+         inline const char* header_data() const noexcept { return reinterpret_cast< const char*>( &m_header);}
+         inline char* header_data() noexcept { return reinterpret_cast< char*>( &m_header);}
 
          inline auto empty() const noexcept { return offset == 0;}
          

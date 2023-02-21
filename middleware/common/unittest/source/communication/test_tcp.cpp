@@ -350,7 +350,7 @@ namespace casual
          }
       }
 
-      TEST( common_communication_tcp, echo_server_port__tcp_device_send_receive__1M_paylad)
+      TEST( common_communication_tcp, echo_server_port__tcp_device_send_receive__1M_payload)
       {
          common::unittest::Trace trace;
 
