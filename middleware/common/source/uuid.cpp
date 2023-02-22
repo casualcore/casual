@@ -81,32 +81,6 @@ namespace casual
          return ! empty();
       }
 
-
-      bool operator < ( const Uuid& lhs, const Uuid& rhs)
-      {
-         return uuid_compare( lhs.m_uuid, rhs.m_uuid) < 0;
-      }
-
-      bool operator == ( const Uuid& lhs, const Uuid& rhs)
-      {
-         return uuid_compare( lhs.m_uuid, rhs.m_uuid) == 0;
-      }
-
-      bool operator != ( const Uuid& lhs, const Uuid& rhs)
-      {
-         return ! ( lhs == rhs);
-      }
-
-      bool operator == ( const Uuid& lhs, const Uuid::uuid_type& rhs)
-      {
-         return uuid_compare( lhs.get(), rhs) == 0;
-      }
-
-      bool operator == ( const Uuid::uuid_type& lhs, const Uuid& rhs)
-      {
-         return uuid_compare( lhs, rhs.get()) == 0;
-      }
-
       std::ostream& operator << ( std::ostream& out, const Uuid& uuid)
       {
          if( uuid.empty())

@@ -13,6 +13,7 @@
 #include "casual/platform.h"
 #include "common/view/binary.h"
 #include "common/range.h"
+#include "common/algorithm.h"
 
 #include "common/serialize/macro.h"
 
@@ -47,11 +48,12 @@ namespace casual
          // forward serialization
          CASUAL_FORWARD_SERIALIZE( m_uuid)
 
-         friend bool operator < ( const Uuid& lhs, const Uuid& rhs);
-         friend bool operator == ( const Uuid& lhs, const Uuid& rhs);
-         friend bool operator != ( const Uuid& lhs, const Uuid& rhs);
-         friend bool operator == ( const Uuid& lhs, const Uuid::uuid_type& rhs);
-         friend bool operator == ( const Uuid::uuid_type& rhs, const Uuid& lhs);
+         friend inline bool operator < ( const Uuid& lhs, const Uuid& rhs) noexcept { return algorithm::lexicographical::compare( lhs.m_uuid, rhs.m_uuid);}
+         friend inline bool operator == ( const Uuid& lhs, const Uuid::uuid_type& rhs) noexcept { return algorithm::equal( lhs.m_uuid, rhs);}
+         friend inline bool operator == ( const Uuid::uuid_type& lhs, const Uuid& rhs) noexcept { return algorithm::equal( lhs, rhs.m_uuid);}
+         friend inline bool operator == ( const Uuid& lhs, const Uuid& rhs) noexcept { return algorithm::equal( lhs.m_uuid, rhs.m_uuid);}
+         friend inline bool operator != ( const Uuid& lhs, const Uuid& rhs) noexcept { return ! ( lhs == rhs);}
+
 
          friend std::ostream& operator << ( std::ostream& out, const Uuid& uuid);
          friend std::istream& operator >> ( std::istream& in, Uuid& uuid);
@@ -76,6 +78,25 @@ namespace casual
    } // common
 
 } // casual
+
+
+namespace std 
+{
+   template<>
+   struct hash< casual::common::Uuid>
+   {
+     auto operator()( const casual::common::Uuid& value) const 
+     {
+         static_assert( sizeof( value.get()) == 2 * sizeof( std::uint64_t));
+
+         // not sure if this is good enough hash... It should be since the uuid 
+         // in it self have real good entropy.
+
+         auto data_64 = reinterpret_cast< const std::uint64_t*>( &value.get());
+         return data_64[ 0] ^ data_64[ 1];
+     }
+   };
+}
 
 casual::common::Uuid operator"" _uuid ( const char* data);
 

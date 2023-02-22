@@ -11,11 +11,14 @@
 #include "common/uuid.h"
 #include "common/log.h"
 #include "common/algorithm.h"
+#include "common/algorithm/sorted.h"
 #include "common/algorithm/container.h"
 #include "common/serialize/macro.h"
 
+#include "casual/assert.h"
+
 #include <vector>
-#include <deque>
+#include <unordered_map>
 
 namespace casual
 {
@@ -40,7 +43,7 @@ namespace casual
                   failed,
                };
 
-               inline constexpr std::string_view description( State state) noexcept
+               inline friend constexpr std::string_view description( State state) noexcept
                {
                   switch( state)
                   {
@@ -79,10 +82,11 @@ namespace casual
                inline Entry( std::vector< Pending> pending, callback_t callback)
                   : m_pending{ std::move( pending)}, m_callback{ std::move( callback)} {}
 
-               inline bool coordinate( message_type message)
+               inline auto coordinate( message_type message)
                {  
                   auto found = algorithm::find( m_pending, message.correlation);
-                  assert( found);
+                  CASUAL_ASSERT( found);
+
                   found->state = decltype( found->state)::received;
                   
                   m_received.push_back( std::move( message));
@@ -91,7 +95,7 @@ namespace casual
                }
 
                template< typename I>
-               auto failed( I&& id) -> decltype( Pending{}.id == id)
+               auto failed( I&& id)
                {
                   for( auto& pending: m_pending)
                      if( pending.id == id && pending.state == Pending::State::pending)
@@ -105,21 +109,17 @@ namespace casual
                   return predicate::boolean( algorithm::find( lhs.m_pending, rhs));
                }
 
-               CASUAL_LOG_SERIALIZE(
-                  CASUAL_SERIALIZE_NAME( m_pending, "pending");
-                  CASUAL_SERIALIZE_NAME( m_received, "received");
-               )
-
-
-               bool done()
+               auto done() -> std::optional< std::vector< strong::correlation::id>>
                {
                   if( algorithm::any_of( m_pending, predicate::value::equal( Pending::State::pending)))
-                     return false;
+                     return {};
 
-                  log::line( verbose::log, "entry: ", *this);
-
+                  // we need to extract all the correlations to help with clean up.
+                  auto result = algorithm::transform( m_pending, []( auto& pending){ return pending.correlation;});
+                  
                   m_callback( std::move( m_received), std::move( m_pending));
-                  return true;
+                  
+                  return result;
                }
 
                inline auto& pending() const noexcept { return m_pending;}
@@ -127,60 +127,93 @@ namespace casual
 
                constexpr auto type() const noexcept { return message_type::type();}
 
+               CASUAL_LOG_SERIALIZE(
+                  CASUAL_SERIALIZE_NAME( m_pending, "pending");
+                  CASUAL_SERIALIZE_NAME( m_received, "received");
+               )
+
             private:
                std::vector< Pending> m_pending;
                std::vector< message_type> m_received;
                callback_t m_callback;
-               
             };
+
 
             //! register pending 'fan outs' and a callback which is invoked when all pending
             //! has been 'received'.
             template< typename C>
             void operator () ( std::vector< Pending> pending, C&& callback)
             {
-               auto& entry = m_entries.emplace_back( std::move( pending), std::forward< C>( callback));
-
+               auto entry = std::make_shared< Entry>( std::move( pending), std::forward< C>( callback));
+               
                // to make it symmetrical and 'impossible' to add 'dead letters'.
-               if( entry.done())
-                  m_entries.pop_back();
+               if( entry->done())
+                  return;
+
+               for( auto& pending : entry->pending())
+                  m_lookup.emplace( pending.correlation, entry);
+               
+               m_entries.push_back( std::move( entry));
             }
 
             //! 'pipe' the `message` to the 'fan-out-coordination'. Will invoke callback if `message` is
             //! the last pending message for an entry.
             inline void operator () ( message_type message)
             {
-               if( auto found = algorithm::find( m_entries, message.correlation))
-                  if( found->coordinate( std::move( message)))
-                     m_entries.erase( std::begin( found));
+               if( auto found = algorithm::find( m_lookup, message.correlation))
+               {
+                  if( auto correlations = found->second->coordinate( std::move( message)))
+                  {
+                     // remove all lookups for the entry, and the entry it self
+                     for( auto& correlation : *correlations)
+                         m_lookup.erase( correlation);
+                     algorithm::container::erase( m_entries, found->second);
+                  }
+               }
             }
 
             template< typename I>
             inline auto failed( I&& id) -> decltype( void( std::declval< const id_type&>() == id))
             {
-               algorithm::container::trim( m_entries, algorithm::remove_if( m_entries, [id]( auto& entry)
+               // this will potentially be slow...
+               algorithm::container::erase_if( m_entries, [ &]( auto& entry)
                {
-                  return entry.failed( id);
-               }));
+                  if( auto correlations = entry->failed( id))
+                  {
+                     // remove all lookups for the entry, and return true to erase the entry it self
+                     for( auto& correlation : *correlations)
+                         m_lookup.erase( correlation);
+
+                     return true;
+                  }
+                  return false;
+               });
             }
 
-            inline auto empty() const noexcept { return m_entries.empty();}
-
-            inline auto& entries() const noexcept { return m_entries;}
+            inline auto empty() const noexcept { return m_entries.empty() && m_lookup.empty();}
 
             using pending_type = std::vector< Pending>;
             
             //! @returns an empty 'pending_type' vector
-            //! convince function to get 'the right type' 
+            //! convenience function to get 'the right type' 
             inline auto empty_pendings() const noexcept { return pending_type{};}
 
-            CASUAL_LOG_SERIALIZE(
-               CASUAL_SERIALIZE_NAME( m_entries, "entries");
-            )
+            friend std::ostream& operator << ( std::ostream& out, const Out& value)
+            {
+               stream::write( out, "{ lookup: ", value.m_lookup, ", entries: [");
+               // some manually print stuff to get the content of the shared_ptr to log...
+               algorithm::for_each_interleave( 
+                  value.m_entries,
+                  [ &out]( auto& value){ stream::write( out, "{ address: ", value, ", content: ", *value, '}');},
+                  [ &out](){ out << ", ";}
+               );
+               return out << "]}";
+            }
 
          private:
 
-            std::deque< Entry> m_entries;
+            std::unordered_map< strong::correlation::id, std::shared_ptr< Entry>> m_lookup;
+            std::vector< std::shared_ptr< Entry>> m_entries;
          };            
       } // fan
 
