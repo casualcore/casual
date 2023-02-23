@@ -45,6 +45,7 @@ namespace casual
                unknown,
                out,
                in,
+               in_forward,
             };
 
             constexpr std::string_view description( Bound value) noexcept
@@ -53,6 +54,7 @@ namespace casual
                {
                   case Bound::out: return "out";
                   case Bound::in: return "in";
+                  case Bound::in_forward: return "in*";
                   case Bound::unknown: return "unknown";
                }
                return "<unknown>";
