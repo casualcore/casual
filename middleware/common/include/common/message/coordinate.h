@@ -88,39 +88,33 @@ namespace casual
                   CASUAL_ASSERT( found);
 
                   found->state = decltype( found->state)::received;
-                  
                   m_received.push_back( std::move( message));
 
                   return done();
                }
 
                template< typename I>
-               auto failed( I&& id)
+               auto failed( I&& id) -> std::vector< strong::correlation::id>
                {
-                  for( auto& pending: m_pending)
-                     if( pending.id == id && pending.state == Pending::State::pending)
-                        pending.state = Pending::State::failed;
-                     
-                  return done();
+                  auto has_id_and_pending = [ &id]( auto& pending){ return pending.id == id && pending.state == Pending::State::pending;};
+                  auto update_failed_and_transform_correlation =  []( auto& pending)
+                  {
+                     pending.state = Pending::State::failed; 
+                     return pending.correlation;
+                  };
+
+                  return algorithm::transform_if( m_pending, update_failed_and_transform_correlation, has_id_and_pending);
                }
 
-               inline friend bool operator == ( const Entry & lhs, const strong::correlation::id& rhs) 
-               { 
-                  return predicate::boolean( algorithm::find( lhs.m_pending, rhs));
-               }
-
-               auto done() -> std::optional< std::vector< strong::correlation::id>>
+               bool done()
                {
                   if( algorithm::any_of( m_pending, predicate::value::equal( Pending::State::pending)))
-                     return {};
-
-                  // we need to extract all the correlations to help with clean up.
-                  auto result = algorithm::transform( m_pending, []( auto& pending){ return pending.correlation;});
+                     return false;
                   
                   m_callback( std::move( m_received), std::move( m_pending));
-                  
-                  return result;
+                  return true;
                }
+
 
                inline auto& pending() const noexcept { return m_pending;}
                inline auto& received() const noexcept { return m_received;}
@@ -162,13 +156,12 @@ namespace casual
             {
                if( auto found = algorithm::find( m_lookup, message.correlation))
                {
-                  if( auto correlations = found->second->coordinate( std::move( message)))
-                  {
-                     // remove all lookups for the entry, and the entry it self
-                     for( auto& correlation : *correlations)
-                         m_lookup.erase( correlation);
+                  // remove the entry if it's done.
+                  if( found->second->coordinate( std::move( message)))
                      algorithm::container::erase( m_entries, found->second);
-                  }
+
+                  // always remove from lookup to keep the state as small as possible
+                  m_lookup.erase( std::begin( found));
                }
             }
 
@@ -178,13 +171,13 @@ namespace casual
                // this will potentially be slow...
                algorithm::container::erase_if( m_entries, [ &]( auto& entry)
                {
-                  if( auto correlations = entry->failed( id))
+                  if( auto correlations = entry->failed( id); ! correlations.empty())
                   {
                      // remove all lookups for the entry, and return true to erase the entry it self
-                     for( auto& correlation : *correlations)
+                     for( auto& correlation : correlations)
                          m_lookup.erase( correlation);
 
-                     return true;
+                     return entry->done();
                   }
                   return false;
                });
