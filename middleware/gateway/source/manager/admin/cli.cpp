@@ -91,12 +91,12 @@ namespace casual
                   return "-";
                };
 
-               auto group = []( auto& value) -> decltype( value.group)
+               auto group = []( auto& value)
                {
                   return value.group;
                };
 
-               auto alias = []( auto& value) -> decltype( value.alias)
+               auto alias = []( auto& value)
                {
                   return value.alias;
                };
@@ -120,6 +120,7 @@ namespace casual
                      {
                         using Enum = decltype( value.bound);
                         case Enum::in: return "in";
+                        case Enum::in_forward: return "in*";
                         case Enum::out: return "out";
                         case Enum::unknown: return "unknown";
                      }

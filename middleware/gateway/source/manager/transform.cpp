@@ -58,11 +58,11 @@ namespace casual
 
          // connections
          {
-            auto transform = [&result]( auto connect, auto bound)
+            auto transform = [&result]( auto connect, auto deduce_bound)
             {
-               return [&result, connect, bound]( auto& reply)
+               return [&result, connect, deduce_bound]( auto& reply)
                {
-                  algorithm::transform( reply.state.connections, result.connections, [&reply, connect, bound]( auto& connection)
+                  algorithm::transform( reply.state.connections, result.connections, [ &reply, connect, deduce_bound]( auto& connection)
                   {
                      auto runlevel = []( auto runlevel)
                      {
@@ -77,10 +77,11 @@ namespace casual
                         return manager::admin::model::connection::Runlevel::failed;
                      };
 
+
                      manager::admin::model::Connection result;
                      result.group = reply.state.alias;
                      result.connect = connect;
-                     result.bound = bound;
+                     result.bound = deduce_bound( connection);
                      result.runlevel = runlevel( connection.runlevel);
                      result.descriptor = connection.descriptor;
                      result.address.local = connection.address.local;
@@ -104,10 +105,20 @@ namespace casual
             using Bound = manager::admin::model::connection::Bound;
             using Phase = manager::admin::model::connection::Phase;
 
-            algorithm::for_each( std::get< 0>( inbounds), transform( Phase::regular, Bound::in));
-            algorithm::for_each( std::get< 1>( inbounds), transform( Phase::reversed, Bound::in));
-            algorithm::for_each( std::get< 0>( outbounds), transform( Phase::regular, Bound::out));
-            algorithm::for_each( std::get< 1>( outbounds), transform( Phase::reversed, Bound::out));
+            
+
+            auto deduce_out = []( auto&){ return Bound::out;};
+            auto deduce_in = []( auto& connection)
+            {
+               if( connection.configuration.discovery == decltype( connection.configuration.discovery)::forward)
+                  return Bound::in_forward;
+               return Bound::in;
+            };
+
+            algorithm::for_each( std::get< 0>( inbounds), transform( Phase::regular, deduce_in));
+            algorithm::for_each( std::get< 1>( inbounds), transform( Phase::reversed, deduce_in));
+            algorithm::for_each( std::get< 0>( outbounds), transform( Phase::regular, deduce_out));
+            algorithm::for_each( std::get< 1>( outbounds), transform( Phase::reversed, deduce_out));
 
             algorithm::sort( result.connections);
 
