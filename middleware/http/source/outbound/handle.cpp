@@ -126,7 +126,9 @@ namespace casual
             return message::dispatch::handler( device,
                message::dispatch::handle::defaults( state),
                local::service::call::request( state),
-               local::discovery::request( state));
+               local::discovery::request( state),
+               // discard direct topology explore, since we've got nothing to explore
+               common::message::dispatch::handle::discard< casual::domain::message::discovery::topology::direct::Explore>());
          }
       } // internal
 
