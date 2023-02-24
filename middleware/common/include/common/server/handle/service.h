@@ -25,6 +25,8 @@
 #include "common/message/service.h"
 #include "common/message/conversation.h"
 
+#include "common/transaction/context.h"
+
 namespace casual
 {
    namespace common::server::handle::service
@@ -58,6 +60,8 @@ namespace casual
 
          auto start = platform::time::clock::type::now();
 
+         // Prepare current_trid for later;
+         decltype( common::transaction::Context::instance().current().trid) current_trid;
 
          // Prepare reply
          auto reply = transform::reply( message);
@@ -73,20 +77,18 @@ namespace casual
             ack.metric.service = message.service.logical_name();
             ack.metric.parent = message.parent;
             ack.metric.process = common::process::handle();
-            ack.metric.trid = reply.transaction.trid;
+            ack.metric.trid = current_trid;
 
             ack.metric.start = start;
             ack.metric.end = platform::time::clock::type::now();
 
             // make sure service-manager "gets back" the pending metric
             ack.metric.pending = message.pending;
-            
             ack.metric.code = reply.code.result;
 
             policy.ack( ack);
             server::context().finalize();
          });
-
 
          auto execute_reply = execute::scope( [&]()
          {
@@ -145,6 +147,11 @@ namespace casual
          // - notify TM about potentially resources involved.
          // - set 'global' deadline/timeout
          policy.transaction( message.trid, service, message.service.timeout.duration, start);
+
+         // Need to grab current transactionID before it is committed and gone when
+         // execute_finalize executes
+         // This is only for metric purposes
+         current_trid = common::transaction::Context::instance().current().trid;
 
          auto parameter = transform::parameter( message);
          

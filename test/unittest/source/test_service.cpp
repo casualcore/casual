@@ -48,7 +48,6 @@ domain:
          memberships: [ base]
       -  path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/gateway/bin/casual-gateway-manager"
          memberships: [ gateway]
-   
 )";
             } // configuration
 
@@ -290,6 +289,47 @@ domain:
             ASSERT_TRUE( metric.service == "b") << "received: " << metric.service;
          }
       }
+
+      TEST( test_service, service_call_to_atomic_service__expect_trid)
+      {
+         common::unittest::Trace trace;
+
+         auto domain = casual::domain::unittest::manager( local::configuration::base, R"(
+domain:
+   servers:
+      -  path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-server
+         memberships: [ user]
+         restrictions:
+            - casual/example/atomic/echo
+)");
+
+         // Subscribe to the metric event
+         common::message::event::service::Calls event;
+         common::event::subscribe( common::process::handle(), { event.type()});
+
+         // Call service to generate metric
+         {
+            auto buffer = tpalloc( X_OCTET, nullptr, 128);
+            auto len = tptypes( buffer, nullptr, nullptr);
+            tpcall( "casual/example/atomic/echo", buffer, len, &buffer, &len, 0);
+            EXPECT_TRUE( tperrno == 0) << "tperrno: " << tperrnostring( tperrno);
+         }
+
+         // Wait for event to be delivered
+         {
+            common::communication::device::blocking::receive(
+               common::communication::ipc::inbound::device(),
+               event);
+
+            ASSERT_TRUE( event.metrics.size() == 1);
+            auto& metric = event.metrics.at( 0);
+            ASSERT_TRUE( metric.service == "casual/example/atomic/echo") << "received: " << metric.service;
+            ASSERT_TRUE( metric.trid);
+         }
+      }
+
+
+
 
    } // test::domain::service
 
