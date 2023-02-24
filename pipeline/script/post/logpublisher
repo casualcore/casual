@@ -25,4 +25,6 @@ then
     destination=${CASUAL_BACKUP_PATH}/$( basename ${logfile})${suffix}-${TIMEPOINT}
 
     mv ${logfile} ${destination} 2> /dev/null
+    chmod 644 ${destination} 2> /dev/null
+    gzip ${destination} 2> /dev/null
 fi
