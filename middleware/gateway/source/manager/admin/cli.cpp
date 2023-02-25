@@ -415,18 +415,49 @@ namespace casual
             {
                namespace list
                {
-                  auto connections()
+                  namespace connections
                   {
-                     auto invoke = []()
+                     auto create()
                      {
-                        format::connections().print( std::cout, call::state().connections);
-                     };
+                        auto invoke = []()
+                        {
+                           format::connections().print( std::cout, call::state().connections);
+                        };
 
-                     return argument::Option{ 
-                        std::move( invoke), 
-                        { "-c", "--list-connections"}, 
-                        "list all connections"};
-                  }
+                        return argument::Option{ 
+                           std::move( invoke),
+                           argument::option::keys( { "-lc", "--list-connections"}, { "-c"}),
+                           "list all connections"};
+                     }
+
+                     constexpr std::string_view legend = R"(
+name:
+   Name of the connected domain
+id
+   ID of the connected domain
+group
+   Alias of the group that hosts the connection
+bound
+   Direction of the connection.
+     - out: from this domain to remote
+     - in: from remote to this domain
+     - in*: same as in, and discoveries are forwarded   
+runlevel
+   The runlevel the connection is in:
+     - connecting
+     - pending
+     - connected
+     - failed
+local
+   The local address for the connection
+peer
+   The peer address for the connection
+created
+   When the connection was established
+)";
+
+                  } // connections
+
 
                   auto listeners()
                   {
@@ -437,7 +468,7 @@ namespace casual
 
                      return argument::Option{ 
                         std::move( invoke), 
-                        { "-l", "--list-listeners"}, 
+                        argument::option::keys( { "-ll", "--list-listeners"}, { "-l"}), 
                         "list all listeners"};
                   }
 
@@ -555,6 +586,41 @@ namespace casual
                      "moved to casual discover --rediscover"};
                }
 
+               namespace legend
+               {
+                  const std::map< std::string_view, std::string_view> legends{
+                     { "list-connections", option::list::connections::legend}
+                  };
+
+                  auto create()
+                  {
+                     auto invoke = []( const std::string& option)
+                     {
+                        if( auto found = algorithm::find( legend::legends, option))
+                           std::cout << found->second;
+                        else
+                           code::raise::error( code::casual::invalid_argument, "not a valid argument to --legend: ", option);
+                     };
+
+                     auto complete = []( auto values, auto help)
+                     {
+                        return algorithm::transform( legends, []( auto& pair){ return std::string{ pair.first};});
+                     };
+
+                     return argument::Option{ 
+                        std::move( invoke),
+                        complete,
+                        { "--legend"}, 
+                        R"(show legend for the output of the supplied option
+
+Documentation and description for abbreviations and acronyms used as columns in output
+
+note: not all options has legend, use 'auto complete' to find out which legends are supported.                        
+)"};
+                  }
+
+               } // legend
+
             } // option
          } // <unnamed>
       } // local
@@ -566,12 +632,13 @@ namespace casual
          common::argument::Group options()
          {
             return { [](){}, { "gateway"}, "gateway related administration",
-               local::option::list::connections(),
+               local::option::list::connections::create(),
                local::option::list::listeners(),
                local::option::list::resource::services(),
                local::option::list::resource::queues(),
                local::option::list::groups::inbound(),
                local::option::list::groups::outbound(),
+               local::option::legend::create(),
                casual::cli::state::option( &local::call::state),
 
                local::option::rediscover() // removed... TODO: remove in 2.0
