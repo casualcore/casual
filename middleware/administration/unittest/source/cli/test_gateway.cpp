@@ -52,6 +52,15 @@ domain:
 
       } // local
 
+      TEST( cli_gateway, list_connections_legend)
+      {
+         common::unittest::Trace trace;
+         
+         auto output = administration::unittest::cli::command::execute( "casual gateway --legend list-connections" ).string();
+
+         EXPECT_TRUE( output.size() > 30) << "output: " << output;
+      }
+
       TEST( cli_gateway, inbound_discovery_forward__expect_state_with_connection_bound__in_star)
       {
          common::unittest::Trace trace;
