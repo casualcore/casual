@@ -18,10 +18,13 @@ host# casual --help transaction
       -li, --list-instances [0..1]
             list resource instances
 
+      --list-external-resources [0..1]
+            list external resources
+
       --begin [0..1]
             creates a 'single' transaction directive
             
-            * associates all upstream transaction aware messages with the 'single' transaction, if they don't are associated already.
+            * associates all upstream transaction aware messages with the 'single' transaction, if they aren't associated already.
             * all directives from upstream will be 'terminated', that is, notify the upstream 'owner' and not forward the directive
             * sends the directive downstream, so other casual-pipe components can associate 'new stuff' with the 'single' transaction
             
@@ -30,7 +33,7 @@ host# casual --help transaction
       --compound [0..1]
             creates a compound transaction directive 
             
-            * associates all upstream transaction aware messages with a new transaction, if they don't are associated already.
+            * associates all upstream transaction aware messages with a new transaction, if they aren't associated already.
             * all directives from upstream will be 'terminated', that is, notify the upstream 'owner' and not forward the directive
             * sends the directive downstream, so other casual-pipe components can associate 'new stuff' with a new transaction
             
@@ -64,7 +67,7 @@ host# casual --help transaction
       --information [0..1]
             collect aggregated information about transactions in this domain
 
-      --state [0..1]  (json, yaml, xml, ini) [0..1]
-            view current state in optional format
+      --state [0..1]  (json, yaml, xml, ini, line) [0..1]
+            prints state in the provided format to stdout
 
 ```

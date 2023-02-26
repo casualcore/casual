@@ -99,8 +99,8 @@ host# casual --help domain
       --information [0..1]
             collect aggregated general information about this domain
 
-      --state [0..1]  (json, yaml, xml, ini) [0..1]
-            domain state (as provided format)
+      --state [0..1]  (json, yaml, xml, ini, line) [0..1]
+            prints state in the provided format to stdout
 
       --log-reopen [0..1]
             reopen casual.log by sending SIGHUP to all servers, and outputs all running executables

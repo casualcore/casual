@@ -27,6 +27,7 @@ call           ?                                          generic service call
 describe       ?  <service> [json, yaml, xml, ini]  1..2  service describer                                                                       
 buffer         ?                                          buffer related 'tools'                                                                  
 configuration  ?                                          configuration utility - does NOT actively configure anything                            
+pipe           ?                                          pipe related options                                                                    
 --color        ?  [true, false, auto]                  1  set/unset color - if auto, colors are used if tty is bound to stdout (default: false)   
 --header       ?  [true, false, auto]                  1  set/unset header - if auto, headers are used if tty is bound to stdout (default: true)  
 --precision    ?  <value>                              1  set number of decimal points used for output (default: 3)                               

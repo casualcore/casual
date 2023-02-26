@@ -78,6 +78,22 @@ host# casual --help queue
             
             @note: part of casual-pipe
 
+      --attributes [0..1]  (<attribute-name>, <value>) [2..* {2}]
+            INCUBATION - adds or mutates queue message attributes on piped messages
+            
+            @attention INCUBATION - might change during. or in between minor version.
+            
+            Valid attributes:
+            * properties  | user defined string
+            * reply       | queue name
+            * available   | absolute time since epoch ([+]?<value>[h|min|s|ms|us|ns])+
+            
+            Example:
+            `$ casual queue --dequeue a | casual queue --attributes reply a.reply properties foo | casual queue --enqueue a`
+            
+            @note: Can be used to add queue attributes to a service reply_
+            @note: part of casual-pipe
+
       --clear [0..1]  (<queue>) [1..*]
             clears all messages from provided queues
             
@@ -86,6 +102,12 @@ host# casual --help queue
 
       --remove-messages [0..1]  (<queue>, <id>) [2..*]
             removes specific messages from a given queue
+
+      --recover-transactions-commit [0..1]  (<gtrid>) [1..*]
+            recover specific messages from a given queue with commit
+
+      --recover-transactions-rollback [0..1]  (<gtrid>) [1..*]
+            recover specific messages from a given queue with rollback
 
       --forward-scale-aliases [0..1]  (<alias>, <# instances>) [2..* {2}]
             scales forward aliases to the requested number of instances
@@ -111,7 +133,7 @@ host# casual --help queue
       --information [0..1]
             collect aggregated information about queues in this domain
 
-      --state [0..1]  (json, yaml, xml, ini) [0..1]
-            queue state
+      --state [0..1]  (json, yaml, xml, ini, line) [0..1]
+            prints state in the provided format to stdout
 
 ```

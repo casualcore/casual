@@ -9,11 +9,15 @@ host# casual --help gateway
         gateway related administration
 
     SUB OPTIONS
-      -c, --list-connections [0..1]
+      -lc, --list-connections [0..1]
             list all connections
 
-      -l, --list-listeners [0..1]
+            deprecated: [-c]
+
+      -ll, --list-listeners [0..1]
             list all listeners
+
+            deprecated: [-l]
 
       -ls, --list-services [0..1]
             list all services and connections
@@ -27,8 +31,15 @@ host# casual --help gateway
       --list-outbound-groups [0..1]
             list all outbound groups
 
-      --state [0..1]  (json, yaml, xml, ini) [0..1]
-            gateway state
+      --legend [0..1]  (list-connections) [1]
+            show legend for the output of the supplied option
+            
+            Documentation and description for abbreviations and acronyms used as columns in output
+            
+            note: not all options has legend, use 'auto complete' to find out which legends are supported.                        
+
+      --state [0..1]  (json, yaml, xml, ini, line) [0..1]
+            prints state in the provided format to stdout
 
       [deprecated] --rediscover [0..1]
             moved to casual discover --rediscover
