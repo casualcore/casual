@@ -9,8 +9,8 @@
 
 #include "serviceframework/service/protocol/call.h"
 
-
 #include "common/communication/ipc.h"
+#include "common/unittest.h"
 
 namespace casual
 {
@@ -19,6 +19,7 @@ namespace casual
    {
       manager::admin::model::State state()
       {
+         common::unittest::service::wait::until::advertised( manager::admin::service::name::state);
          serviceframework::service::protocol::binary::Call call;
          auto reply = call( manager::admin::service::name::state);
          return reply.extract< manager::admin::model::State>();

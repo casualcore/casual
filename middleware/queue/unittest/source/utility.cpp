@@ -10,12 +10,15 @@
 
 #include "serviceframework/service/protocol/call.h"
 
+#include "common/unittest.h"
+
 namespace casual
 {
    namespace queue::unittest
    {
       manager::admin::model::State state()
       {
+         common::unittest::service::wait::until::advertised( queue::manager::admin::service::name::state);
          return serviceframework::service::protocol::binary::Call{}( queue::manager::admin::service::name::state).extract< manager::admin::model::State>();
       }
 

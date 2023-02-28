@@ -370,7 +370,7 @@ domain:
                   -  address: 127.0.0.1:7010
 )");
 
-         // we exposes service a, in domain B
+         // we expose service b, in domain B
          casual::service::unittest::advertise( { "b"});
 
          auto a = local::domain( R"(
@@ -393,21 +393,14 @@ domain:
          auto loop_device = communication::ipc::inbound::Device{};
 
          trace.line( "receive the call and send call to outbound to simulate a _gateway loop_");
+         auto request = communication::ipc::receive< common::message::service::call::callee::Request>( correlation);
+         EXPECT_TRUE( request.buffer.data == origin);
+
+         trace.line( "emulate loop - later we should receive an error reply");
          {
-            auto request = communication::ipc::receive< common::message::service::call::callee::Request>( correlation);
-            EXPECT_TRUE( request.buffer.data == origin);
-
-            {
-               trace.line( "emulate loop - later we should receive an error reply");
-               auto loop_request = request;
-               loop_request.process = common::process::Handle{ common::process::id(), loop_device.connector().handle().ipc()};
-               communication::device::blocking::send( outbound.ipc, loop_request);
-            }
-
-            trace.line( "reply to the request");
-            auto reply = common::message::reverse::type( request);
-            reply.buffer = std::move( request.buffer);
-            communication::device::blocking::send( request.process.ipc, reply);
+            auto loop_request = request;
+            loop_request.process = common::process::Handle{ common::process::id(), loop_device.connector().handle().ipc()};
+            communication::device::blocking::send( outbound.ipc, loop_request);
          }
          
          trace.line( "make sure outbound did not _terminate_");
@@ -420,6 +413,13 @@ domain:
          {
             auto reply = unittest::service::receive< common::message::service::call::Reply>( loop_device, correlation);
             EXPECT_TRUE( reply.code.result == decltype( reply.code.result)::system) << CASUAL_NAMED_VALUE( reply.code);
+         }
+
+         trace.line( "reply to the request");
+         {
+            auto reply = common::message::reverse::type( request);
+            reply.buffer = std::move( request.buffer);
+            communication::device::blocking::send( request.process.ipc, reply);
          }
 
          trace.line( "receive the real reply");

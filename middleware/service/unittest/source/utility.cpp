@@ -9,6 +9,7 @@
 
 #include "common/communication/instance.h"
 #include "common/instance.h"
+#include "common/unittest.h"
 
 #include "serviceframework/service/protocol/call.h"
 
@@ -73,6 +74,8 @@ namespace casual
 
       manager::admin::model::State state()
       {
+         common::unittest::service::wait::until::advertised( manager::admin::service::name::state);
+
          serviceframework::service::protocol::binary::Call call;
 
          auto reply = call( manager::admin::service::name::state);
