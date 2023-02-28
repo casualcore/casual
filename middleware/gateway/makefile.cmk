@@ -173,12 +173,6 @@ protocol_objects = [
     make.Compile( 'source/documentation/protocol/example.cpp')
 ]
 
-unittest_archive = make.LinkArchive( 'bin/casual-gateway-unittest',
-    [
-        make.Compile( 'unittest/source/utility.cpp'),
-    ]
-)
-
 # Unittest
 
 unittest_archive = make.LinkArchive( 'bin/casual-gateway-unittest', 

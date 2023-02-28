@@ -240,7 +240,7 @@ namespace casual
                               return [ &state, trid = message.trid]( auto& destination)
                               {
                                  auto pending = state.service.consume( destination.correlation);
-                                 detail::send::error::reply( state, destination, std::move( pending), trid, code::xatmi::system);;
+                                 detail::send::error::reply( state, destination, std::move( pending), trid, code::xatmi::system);
                               };
                            };
 

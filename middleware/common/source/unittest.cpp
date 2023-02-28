@@ -66,6 +66,24 @@ namespace casual
             return communication::device::blocking::send( lookup.process.ipc, message);
          }
 
+         namespace wait::until
+         {
+            void advertised( std::string_view service)
+            {
+               common::message::service::lookup::Request lookup_request{ process::handle()};
+               lookup_request.requested = service;
+               lookup_request.context.semantic = decltype( lookup_request.context.semantic)::wait;
+               auto correlation = communication::device::blocking::send( communication::instance::outbound::service::manager::device(), lookup_request);
+               communication::ipc::receive< common::message::service::lookup::Reply>( correlation);
+
+               common::message::service::lookup::discard::Request discard_request{ process::handle()};
+               discard_request.correlation = correlation;
+               discard_request.requested = service;
+               discard_request.reply = false;
+               communication::device::blocking::send( communication::instance::outbound::service::manager::device(), discard_request);
+            }
+         } // wait::until
+
       } // service
 
 

@@ -75,6 +75,13 @@ namespace casual
          
          // not implemented yet.
          // platform::binary::type receive( const strong::correlation::id& correlation);
+
+         namespace wait::until
+         {
+            //! blocks until `service` has been advertised
+            void advertised( std::string_view service);
+         } // wait::until
+
       } // service
 
 
