@@ -7,6 +7,7 @@
 
 #include "queue/api/queue.h"
 #include "queue/common/ipc/message.h"
+#include "queue/unittest/utility.h"
 
 #include "domain/unittest/manager.h"
 
@@ -217,7 +218,6 @@ domain:
                   -  address: 127.0.0.1:7010
 )");
 
-
          gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected());
 
          const auto origin = local::message();
@@ -228,6 +228,9 @@ domain:
          
          // shutdown b
          unittest::sink( std::move( b));
+
+         // wait until we've lost the connection
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected( 0));
 
          {
             // to local forward. The forward will fail, since b1 is not online
@@ -246,7 +249,10 @@ domain:
          // boot b again...
          b = boot_domain_b();
          a.activate();
-         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected());
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected( 1));
+
+         // we block until 'b1' is known
+         queue::unittest::wait::until::advertised( "b1");
 
          // the forward should "self heal" and work.
          algorithm::for_n< 5>( [ &origin]()
