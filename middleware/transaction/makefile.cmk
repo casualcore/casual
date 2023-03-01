@@ -109,6 +109,7 @@ unittest_library = make.LinkLibrary( 'bin/casual-transaction-unittest',
         make.Compile( 'unittest/source/utility.cpp')
     ],
     [
+        'casual-unittest',
         'casual-common',
         'casual-serviceframework', 
     ]

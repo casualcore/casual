@@ -139,6 +139,7 @@ service_unittest = make.LinkLibrary( 'bin/casual-service-unittest',
     ],
     [
         common_library, 
+        'casual-unittest',
         'casual-common',
         'casual-serviceframework',
     ])
