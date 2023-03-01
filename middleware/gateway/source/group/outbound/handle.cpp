@@ -576,7 +576,7 @@ namespace casual
                            // loop between gateways.
                            if( ! lookup.connection || state.route.contains( message.correlation))
                            {
-                              log::line( log::category::error, code::casual::invalid_semantics, " failed to look up queue '", message.name);
+                              log::line( log::category::error, code::casual::invalid_semantics, " failed to look up queue '", message.name, "'");
                               route.error();
                               return;
                            }
