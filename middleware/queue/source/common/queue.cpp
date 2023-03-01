@@ -40,9 +40,7 @@ namespace casual
 
       ipc::message::lookup::Reply Lookup::operator () () const
       {
-         ipc::message::lookup::Reply reply;
-         common::communication::device::blocking::receive( communication::ipc::inbound::device(), reply, m_correlation);
-         return reply;
+         return common::communication::ipc::receive< ipc::message::lookup::Reply>( m_correlation);
       }
 
       const std::string& Lookup::name() const

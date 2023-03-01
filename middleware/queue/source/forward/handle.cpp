@@ -957,15 +957,10 @@ namespace casual
                            {
                               ipc::device().push( std::move( message));
                            });
-
-                           algorithm::container::erase( pendings, invalid);
                         };
 
                         emulate_error_reply( state.pending.dequeues, ids, &detail::transform::dequeue);
                         emulate_error_reply( state.pending.enqueues, ids, &detail::transform::enqueue);
- 
-                        
-                        state.invalidate( ids);
                      };                     
                   }
 
