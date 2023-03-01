@@ -33,6 +33,12 @@ namespace casual
          } // all::forward
 
       } // scale
+
+      namespace wait::until
+      {
+         //! blocks until queue `name` is advertised and known by current domain
+         void advertised( std::string_view name);
+      } // wait::until
                
    } // queue::unittest
 } // casual

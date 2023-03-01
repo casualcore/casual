@@ -6,6 +6,8 @@
 
 #include "queue/unittest/utility.h"
 
+#include "queue/common/log.h"
+#include "queue/common/queue.h"
 #include "queue/manager/admin/services.h"
 
 #include "serviceframework/service/protocol/call.h"
@@ -57,7 +59,18 @@ namespace casual
 
       } // scale
 
+      namespace wait::until
+      {
+         void advertised( std::string_view name)
+         {
+            Trace trace{ "domain::unittest::wait::until::advertised"};
+            common::log::line( verbose::log, "name: ", name);
 
+            // wait until it's known...
+            auto reply = queue::Lookup{ name, queue::Lookup::Semantic::wait}();
+            common::log::line( verbose::log, "reply: ", reply);
+         }
+      } // wait::until
 
    } // domain::unittest
 } // casual
