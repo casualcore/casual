@@ -108,7 +108,7 @@ namespace casual
                      []( auto& instance){ return common::process::id( instance.handle);},
                      []( auto& instance){ return instance.state != decltype( instance.state)::error;});
 
-                     communication::ipc::inbound::device().push( message);
+                     communication::ipc::inbound::device().push( std::move( message));
                   }
 
                   log::line( verbose::log, "entity: ", entity);

@@ -52,7 +52,7 @@ namespace casual
 
                      template< typename S>
                      common::server::Arguments arguments(
-                           S&& services,
+                           S services,
                            std::vector< argument::transaction::Resource> resources)
                      {
                         common::server::Arguments result;
@@ -65,7 +65,7 @@ namespace casual
                   } // transform
 
                   template< typename S>
-                  void start( S&& services, std::vector< argument::transaction::Resource> resources, common::function<void()const> initialize)
+                  void start( S services, std::vector< argument::transaction::Resource> resources, common::function<void()const> initialize)
                   {
                      Trace trace{ "common::server::start"};
                      log::line( verbose::log, "services: ", services);

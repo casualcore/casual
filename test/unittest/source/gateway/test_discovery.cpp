@@ -12,6 +12,7 @@
 #include "domain/discovery/api.h"
 
 #include "common/communication/instance.h"
+#include "common/sink.h"
 
 #include "queue/api/queue.h"
 #include "queue/code.h"
@@ -575,7 +576,7 @@ domain:
 
          // reboot B, expect discovery of known services in our case casual/example/domain/echo/B
          {
-            unittest::sink( std::move( b));
+            common::sink( std::move( b));
             b = create_b();
 
             gw.activate();

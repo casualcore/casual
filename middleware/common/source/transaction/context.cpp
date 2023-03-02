@@ -155,7 +155,7 @@ namespace casual
 
             auto configuration = local::resource::configuration( algorithm::transform( named, transform_name));
 
-            auto transform_resource = [ &configuration]( auto&& predicate)
+            auto transform_resource = [ &configuration]( auto predicate)
             {
                return [ &configuration, predicate = std::move( predicate)]( auto& resource)
                {  

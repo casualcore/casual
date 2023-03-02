@@ -206,7 +206,8 @@ namespace casual
                         namespace resource
                         {
                            template< typename M>
-                           auto request( State& state, M&& request)
+                           auto request( State& state, M&& request) 
+                              -> std::enable_if_t< std::is_rvalue_reference_v< decltype( request)>, common::strong::correlation::id>
                            {
                               casual::assertion( request.resource, "invalid resource id: ", request.resource);
 
@@ -221,7 +222,8 @@ namespace casual
                                  }
 
                                  common::log::line( log, "could not send to resource: ", request.resource, " - action: try later");
-                                 return state.pending.requests.add( request.resource, std::move( request));
+                                 // (we know message is an rvalue, so it's going to be a move)
+                                 return state.pending.requests.add( request.resource, std::forward< M>( request));
                               }
 
                               auto& resource = state.get_external( request.resource);
@@ -248,7 +250,7 @@ namespace casual
                                     request.resource = resource.id;
                                     request.flags = flags;
 
-                                    result.emplace_back( send::resource::request( state, request), resource.id);
+                                    result.emplace_back( send::resource::request( state, std::move( request)), resource.id);
                                  }
 
                                  return result;
@@ -265,7 +267,7 @@ namespace casual
                                  request.resource = reply.resource;
                                  request.flags = flags;
 
-                                 result.emplace_back( send::resource::request( state, request), reply.resource);
+                                 result.emplace_back( send::resource::request( state, std::move( request)), reply.resource);
 
                                  return result;
                               });

@@ -56,7 +56,7 @@ namespace casual
 
             template< typename P>
             Protocol( P&& protocol)
-               : Protocol{ std::make_unique< model< P>>( std::move( protocol))}
+               : Protocol{ std::make_unique< model< P>>( std::forward< P>( protocol))}
             {}
 
             ~Protocol();

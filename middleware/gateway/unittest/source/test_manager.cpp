@@ -24,6 +24,7 @@
 #include "common/message/domain.h"
 #include "common/algorithm/is.h"
 #include "common/result.h"
+#include "common/sink.h"
 
 #include "serviceframework/service/protocol/call.h"
 
@@ -1331,7 +1332,7 @@ domain:
 
          // b shuts down
          {
-            unittest::sink( b);
+            common::sink( std::move( b));
             unittest::fetch::until( unittest::fetch::predicate::outbound::connected( 0));
          }
 

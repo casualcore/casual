@@ -83,6 +83,7 @@ namespace casual
 
          transaction::ID moved{ std::move( id)};
 
+         // this will trigger use-after-move
          EXPECT_TRUE( id.null()); // NOLINT
          EXPECT_TRUE( ! moved.null());
       }

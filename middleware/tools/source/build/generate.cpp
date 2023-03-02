@@ -120,10 +120,9 @@ namespace casual
                      };
                   }
 
-                  template< typename T>
-                  auto text( T&& text)
+                  auto text( std::string_view text)
                   {
-                     return [text = std::move( text)]( std::ostream& out)
+                     return [ text]( std::ostream& out)
                      {
                         out << text;
                      };

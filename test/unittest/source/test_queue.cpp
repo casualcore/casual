@@ -16,6 +16,7 @@
 #include "common/communication/instance.h"
 #include "common/transaction/context.h"
 #include "common/execute.h"
+#include "common/sink.h"
 
 namespace casual
 {
@@ -227,7 +228,7 @@ domain:
          EXPECT_TRUE( ! queue::dequeue( "b1").empty());
          
          // shutdown b
-         unittest::sink( std::move( b));
+         common::sink( std::move( b));
 
          // wait until we've lost the connection
          gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected( 0));

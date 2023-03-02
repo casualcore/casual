@@ -23,7 +23,7 @@ namespace casual
             template< typename C, typename T, typename... Ts> 
             C& back( C& container, T&& t, Ts&&... ts)
             {
-               container.push_back( std::move( t)); 
+               container.push_back( std::forward< T>( t)); 
                return back( container, std::forward< Ts>( ts)...);
             }
          } // detail
