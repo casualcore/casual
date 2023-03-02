@@ -450,7 +450,7 @@ namespace casual
             template< typename C>
             auto column( std::string name, C&& column)
             {
-               return name_column< C>( std::move( name), std::move( column));
+               return name_column< C>( std::move( name), std::forward< C>( column));
             }
          } // custom
 

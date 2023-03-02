@@ -123,7 +123,6 @@ extern "C" void TPCALL(struct TPSVCDEF_REC_s *TPSVCDEF_REC,
    char *idata_rec;
    char *odata_rec;
    long olen;
-   int rv;
    long flags;
 
    /* Copy COBOL string to C string and null terminate C string */
@@ -164,12 +163,12 @@ extern "C" void TPCALL(struct TPSVCDEF_REC_s *TPSVCDEF_REC,
    if (TPSVCDEF_REC->TPSIGRSTRT_FLAG)
       flags = flags | TPSIGRSTRT;
 
-   if ((rv = tpcall(service_name,
+   if ( tpcall(service_name,
                     idata_rec,
                     ITPTYPE_REC->LEN,
                     &odata_rec,
                     &olen,
-                    flags)) == -1) {
+                    flags) == -1) {
       TPSTATUS_REC->TP_STATUS = (int32_t)tperrno;
       /* printf("error TPCALL --> tpcall: %d\n", tperrno); */
       tpfree(odata_rec);
@@ -203,9 +202,7 @@ extern "C" void TPCALL(struct TPSVCDEF_REC_s *TPSVCDEF_REC,
 extern "C" void TPCANCEL(struct TPSVCDEF_REC_s *TPSVCDEF_REC,
                          struct TPSTATUS_REC_s *TPSTATUS_REC) {
 
-   int rv;
-
-   if ((rv = tpcancel(TPSVCDEF_REC->COMM_HANDLE)) == -1) {
+   if ( tpcancel(TPSVCDEF_REC->COMM_HANDLE) == -1) {
       TPSTATUS_REC->TP_STATUS = (int32_t)tperrno;
       /* printf("error TPCANCEL --> tpcancel: %d\n", tperrno); */
    } else {
@@ -289,9 +286,7 @@ extern "C" void TPCONNECT(struct TPSVCDEF_REC_s *TPSVCDEF_REC,
 extern "C" void TPDISCON(struct TPSVCDEF_REC_s *TPSVCDEF_REC,
                          struct TPSTATUS_REC_s *TPSTATUS_REC) {
 
-   int rv;
-
-   if ((rv = tpdiscon(TPSVCDEF_REC->COMM_HANDLE)) == -1) {
+   if ( tpdiscon(TPSVCDEF_REC->COMM_HANDLE) == -1) {
       TPSTATUS_REC->TP_STATUS = (int32_t)tperrno;
       /* printf("error TPDISCON --> tpdiscon: %d\n", tperrno); */
    } else {
@@ -313,7 +308,6 @@ extern "C" void TPGETRPLY(struct TPSVCDEF_REC_s *TPSVCDEF_REC,
    char rec_type[REC_TYPE_LEN + 1];
    char sub_type[SUB_TYPE_LEN + 1];
    char *data_rec;
-   int rv;
    long flags;
    long len;
 
@@ -344,10 +338,10 @@ extern "C" void TPGETRPLY(struct TPSVCDEF_REC_s *TPSVCDEF_REC,
    if (TPSVCDEF_REC->TPSIGRSTRT_FLAG)
       flags = flags | TPSIGRSTRT;
 
-   if ((rv = tpgetrply(&TPSVCDEF_REC->COMM_HANDLE,
+   if ( tpgetrply(&TPSVCDEF_REC->COMM_HANDLE,
                        &data_rec,
                        &len,
-                       flags)) == -1) {
+                       flags) == -1) {
       TPSTATUS_REC->TP_STATUS = (int32_t)tperrno;
       /* printf("error TPGETRPLY --> tpgetrply: %d\n", tperrno); */
    } else {
@@ -679,13 +673,12 @@ long flags=0;
    long data_length = TPTYPE_REC->LEN;
    memcpy(data_rec, DATA_REC, data_length);
 
-   int rv;
-   long revent;
-   if ((rv = tpsend(TPSVCDEF_REC->COMM_HANDLE,
+   long revent{};
+   if ( tpsend(TPSVCDEF_REC->COMM_HANDLE,
                   data_rec,
                   data_length,
                   flags,
-                  &revent)) == -1) {
+                  &revent) == -1) {
          TPSTATUS_REC->TP_STATUS = (int32_t)tperrno;
          /* printf("error TPSEND --> tpsend: %d\n", tperrno); */
    } else {

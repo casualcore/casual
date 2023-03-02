@@ -387,7 +387,7 @@ namespace casual
 
                      // we need to forward the discovery and try to find the absent..
 
-                     auto send_requests = [ &state]( auto&& absent)
+                     auto send_requests = [ &state]( auto absent)
                      {
                         message::discovery::Request request{ process::handle()};
                         request.domain = common::domain::identity();

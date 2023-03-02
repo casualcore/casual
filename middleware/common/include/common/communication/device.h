@@ -274,7 +274,7 @@ namespace casual
 
          //! push a message (or complete) to the cache
          template< typename M>
-         correlation_type push( M&& message)
+         auto push( M&& message) -> std::enable_if_t< std::is_rvalue_reference_v< decltype( message)>, correlation_type>
          {
             // Make sure we consume up to one messages from the real device first.
             // So progress can be made.
@@ -283,7 +283,7 @@ namespace casual
             if constexpr( std::is_same_v< std::decay_t< M>, complete_type>)
             {
                static_assert( std::is_rvalue_reference_v< M>, "complete_type needs to be a rvalue");
-               m_cache.push_back( std::move( message));
+               m_cache.push_back( std::forward< M>( message));
             }
             else
                m_cache.push_back( serialize::native::complete< complete_type>( std::forward< M>( message)));

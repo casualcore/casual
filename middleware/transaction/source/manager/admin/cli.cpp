@@ -769,9 +769,9 @@ namespace casual
                      } // handle
 
                      template< typename A>
-                     auto invoke( A&& associate)
+                     auto invoke( A associate)
                      {
-                        return [associate = std::move( associate)]() mutable
+                        return [ associate = std::move( associate)]() mutable
                         {
                            Trace trace{ "transaction::manager::admin::local::begin::invoke"};
 

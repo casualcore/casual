@@ -87,7 +87,7 @@ namespace casual
             {
 
                template< typename F> 
-               void pump( state::Log& log, F&& filter)
+               void pump( state::Log& log, F filter)
                {
                   bool done = false;
 

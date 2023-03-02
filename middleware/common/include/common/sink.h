@@ -6,14 +6,16 @@
 
 #pragma once
 
+#include <type_traits>
+
 namespace casual
 {
    namespace common
    {
       template< typename T>
-      void sink( T&& value)
+      auto sink( T&& value) -> std::enable_if_t< std::is_rvalue_reference_v< decltype( value)>>
       {
-         [[maybe_unused]] auto sinked = std::move( value);
+         [[maybe_unused]] auto sinked = std::forward< T>( value);
       }
    } // common
 } // casual

@@ -19,7 +19,7 @@ namespace casual
             const int value = 42;
             auto named = CASUAL_NAMED_VALUE( value);
 
-            EXPECT_TRUE(( std::is_same< decltype( named), named::Value< const int, named::reference::lvalue>>::value ));
+            EXPECT_TRUE(( std::is_same< decltype( named), named::Value< const int, named::reference::lvalue>>::value )) << CASUAL_NAMED_VALUE( named);
          }
 
          TEST( serialize_named_value, lvalue)
@@ -27,7 +27,7 @@ namespace casual
             int value = 42;
             auto named = CASUAL_NAMED_VALUE( value);
 
-            EXPECT_TRUE(( std::is_same< decltype( named), named::Value< int, named::reference::lvalue>>::value ));
+            EXPECT_TRUE(( std::is_same< decltype( named), named::Value< int, named::reference::lvalue>>::value )) << CASUAL_NAMED_VALUE( named);
          }
 
          TEST( serialize_named_value, rvalue)
@@ -35,7 +35,7 @@ namespace casual
             int value = 42;
             auto named = CASUAL_NAMED_VALUE( std::move( value));
 
-            EXPECT_TRUE(( std::is_same< decltype( named), named::Value< int, named::reference::rvalue>>::value ));
+            EXPECT_TRUE(( std::is_same< decltype( named), named::Value< int, named::reference::rvalue>>::value )) << CASUAL_NAMED_VALUE( named);
          }
 
          TEST( serialize_named_value, instantiation)

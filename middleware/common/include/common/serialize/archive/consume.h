@@ -27,9 +27,9 @@ namespace casual
                   {
                      template< typename S, typename D>
                      auto value( S&& source, D& destination, common::traits::priority::tag< 2>)
-                        -> decltype( destination = std::move( source), void())
+                        -> decltype( destination = std::forward< S>( source), void())
                      {
-                        destination = std::move( source);
+                        destination = std::forward< S>( source);
                      }
 
                      template< typename S, typename D>

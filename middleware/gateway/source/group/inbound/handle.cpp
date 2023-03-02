@@ -52,7 +52,7 @@ namespace casual
 
                         // we 'lost' the connection in some way - we put a connection::Lost on our own ipc-device, and handle it
                         // later (and differently depending on if we're 'regular' or 'reversed')
-                        communication::ipc::inbound::device().push( lost);
+                        communication::ipc::inbound::device().push( std::move( lost));
                      }
                   }
                   else
@@ -422,6 +422,7 @@ namespace casual
                   {
                      template< typename M>
                      auto lookup( State& state, strong::file::descriptor::id descriptor, M&& message, common::message::service::lookup::request::context::Semantic semantic)
+                        -> std::enable_if_t< std::is_rvalue_reference_v< decltype( message)>>
                      {
                         Trace trace{ "gateway::group::inbound::handle::local::external::service::detail::lookup"};
                         common::log::line( verbose::log, "message: ", message);
@@ -442,8 +443,8 @@ namespace casual
                               decltype( request.context.requester)::external_discovery : decltype( request.context.requester)::external;
                         }
 
-                        // Add message to pending
-                        state.pending.requests.add( std::move( message));
+                        // Add message to pending (we know message is an rvalue, so it's going to be a move)
+                        state.pending.requests.add( std::forward< M>( message));
 
                         // Send lookup
                         state.multiplex.send( ipc::manager::service(), request); 
@@ -462,9 +463,8 @@ namespace casual
                            auto descriptor = external::correlate( state, message);
 
                            using namespace common::message::service::lookup::request;
-                           
-                           detail::lookup( state, descriptor, message, message.flags.exist( decltype( message.flags.type())::no_reply) ? 
-                              context::Semantic::forward : context::Semantic::no_busy_intermediate);
+                           auto semantics =  message.flags.exist( decltype( message.flags.type())::no_reply) ? context::Semantic::forward : context::Semantic::no_busy_intermediate;
+                           detail::lookup( state, descriptor, std::move( message), semantics);
                         };
                      }
                   } // call
@@ -482,8 +482,7 @@ namespace casual
                            log::line( verbose::log, "message: ", message);
                            
                            auto descriptor = external::correlate( state, message);
-
-                           service::detail::lookup( state, descriptor, message, common::message::service::lookup::request::context::Semantic::no_busy_intermediate);
+                           service::detail::lookup( state, descriptor, std::move( message), common::message::service::lookup::request::context::Semantic::no_busy_intermediate);
                         };
                      }
                      

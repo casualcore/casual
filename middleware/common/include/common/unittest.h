@@ -25,13 +25,6 @@ namespace casual
 {
    namespace common::unittest
    {
-
-      template< typename T>
-      void sink( T&& value)
-      {
-         auto sinked = std::move( value);
-      }
-
       using base_message = common::message::basic_message< common::message::Type::unittest_message>;
       struct Message : base_message, Compare< Message>
       {

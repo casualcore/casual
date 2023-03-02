@@ -51,7 +51,7 @@ namespace casual
 
                         // we 'lost' the connection in some way - we put a connection::Lost on our own ipc-device, and handle it
                         // later (and differently depending on if we're 'regular' or 'reversed')
-                        communication::ipc::inbound::device().push( lost);
+                        communication::ipc::inbound::device().push( std::move( lost));
                      }
                   }
                   else
@@ -179,7 +179,7 @@ namespace casual
                         auto ipc( const V& value) -> decltype( ( value.ipc)) { return value.ipc;}
 
                         template< typename M, typename P>
-                        void reply( State& state, M&& destination, P&& pending, const common::transaction::ID& trid, code::xatmi code)
+                        void reply( State& state, M&& destination, P pending, const common::transaction::ID& trid, code::xatmi code)
                         {
                            common::message::service::call::Reply reply;
                            reply.correlation = destination.correlation;

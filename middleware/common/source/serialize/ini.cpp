@@ -149,14 +149,12 @@ namespace casual
                                  std::string name;
                                  while( std::getline( stream, name, '.'))
                                  {
-                                    auto candidate = trim( std::move( name) );
+                                    auto candidate = trim( std::exchange( name, {}));
 
                                     if( candidate.empty())
                                        code::raise::error( code::casual::invalid_document, "invalid name");
                                     else
-                                    {
                                        result.push_back( std::move( candidate));
-                                    }
                                  }
 
                                  if( result.empty())

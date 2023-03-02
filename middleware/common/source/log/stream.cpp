@@ -271,7 +271,7 @@ namespace casual
                auto deactivate() noexcept { return []( auto& stream) noexcept { stream.deactivate();};}
                
                template< typename P>
-               auto toggle( P&& predicate) noexcept
+               auto toggle( P predicate) noexcept
                {
                   return [ predicate = std::move( predicate)]( auto& stream) noexcept { stream.toggle( predicate);};
                }
