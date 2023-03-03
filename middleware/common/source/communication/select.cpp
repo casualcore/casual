@@ -13,6 +13,8 @@
 #include "common/code/raise.h"
 #include "common/code/casual.h"
 
+#include "casual/assert.h"
+
 namespace casual
 {
    using namespace common;
@@ -24,7 +26,7 @@ namespace casual
       {
          void Set::add( strong::file::descriptor::id descriptor) noexcept
          {
-            assert( descriptor.value() >= 0 && descriptor.value() < FD_SETSIZE);
+            CASUAL_ASSERT( descriptor.value() >= 0 && descriptor.value() < FD_SETSIZE);
 
             if( ! algorithm::find( m_descriptors, descriptor))
             {
