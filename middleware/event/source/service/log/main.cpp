@@ -102,6 +102,11 @@ namespace casual
 
 
                   auto conditions = common::event::condition::compose(
+                     common::event::condition::prelude( []()
+                     {
+                        // connect to domain
+                        common::communication::instance::whitelist::connect( 0xc9d132c7249241c8b4085cc399b19714_uuid);
+                     }),
                      common::event::condition::error( [&done]( auto& error) 
                      {
                         common::log::line( event::verbose::log, "event listen - condition error: ", error);
@@ -266,9 +271,6 @@ namespace casual
                      option::filter::exclusive( settings),
                   }( argc, argv);
                }
-
-               // connect to domain
-               common::communication::instance::whitelist::connect( 0xc9d132c7249241c8b4085cc399b19714_uuid);
 
                pump( std::move( settings));
             }        
