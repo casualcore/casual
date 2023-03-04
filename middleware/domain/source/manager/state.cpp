@@ -487,6 +487,14 @@ namespace casual
             return found->second;
          return {};
       }
+      common::process::Handle State::singleton( common::strong::process::id pid) const noexcept
+      {
+         auto is_singleton = [ pid]( auto& pair){ return pair.second == pid;};
+         if( auto found = algorithm::find_if( singletons, is_singleton))
+            return found->second;
+         return {};
+      }
+
 
       std::tuple< std::vector< state::Server::id_type>, std::vector< state::Executable::id_type>> State::untouchables() const noexcept
       {

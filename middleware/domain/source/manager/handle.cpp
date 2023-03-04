@@ -190,6 +190,7 @@ namespace casual
                   manager.scale( 1);
                   manager.memberships.push_back( state.group_id.master);
                   manager.note = "service lookup and management";
+                  manager.restart = true;
 
                   state.servers.push_back( std::move( manager));
                }
@@ -201,6 +202,7 @@ namespace casual
                   tm.scale( 1);
                   tm.memberships.push_back( state.group_id.transaction);
                   tm.note = "manage transaction in this domain";
+                  tm.restart = true;
 
                   state.servers.push_back( std::move( tm));
                }
@@ -212,6 +214,7 @@ namespace casual
                   queue.scale( 1);
                   queue.memberships.push_back( state.group_id.queue);
                   queue.note = "manage queues in this domain";
+                  queue.restart = true;
 
                   state.servers.push_back( std::move( queue));
                }
@@ -223,6 +226,7 @@ namespace casual
                   gateway.scale( 1);
                   gateway.memberships.push_back( state.group_id.gateway);
                   gateway.note = "manage connections to and from other domains";
+                  gateway.restart = true;
 
                   state.servers.push_back( std::move( gateway));
                }
@@ -582,12 +586,20 @@ namespace casual
                               return "<unknown>";
                            };
 
+                           auto alias =  get_alias( message.state.pid);
+
                            if( message.state.reason == decltype( message.state.reason)::core)
-                              log::line( log::category::error, "process cored, alias: ", get_alias( message.state.pid), ", details: ", message.state);
-                           else
-                              log::line( log::category::information, "process exited, alias: ", get_alias( message.state.pid), ", details: ", message.state);
+                              log::line( log::category::error, "process cored, alias: ", alias, ", details: ", message.state);
+
+                           auto singleton = state.singleton( message.state.pid);
 
                            auto [ server, executable] = state.remove( message.state.pid);
+
+                           // only log on error if process is a singleton and is spawnable (i.e. not scaled down)
+                           if( singleton && (( server && server->spawnable()) || ( executable && executable->spawnable())))
+                              log::line( log::category::error, "process exited, alias: ", alias, ", details: ", message.state);
+                           else
+                              log::line( log::category::information, "process exited, alias: ", alias, ", details: ", message.state);
 
                            if( server)
                               handle::scale::instances( state, *server);
