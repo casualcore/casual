@@ -474,6 +474,7 @@ namespace casual
          const state::Grandchild* grandchild( common::strong::process::id pid) const noexcept;
 
          common::process::Handle singleton( const common::Uuid& id) const noexcept;
+         common::process::Handle singleton( common::strong::process::id pid) const noexcept;
 
          //! @return all 'running' id:s of 'aliases' that are untouchable, ie. internal casual stuff.
          std::tuple< std::vector< state::Server::id_type>, std::vector< state::Executable::id_type>> untouchables() const noexcept;
