@@ -39,6 +39,20 @@ extern void casual_execution_id_set( const uuid_t* id);
 extern const uuid_t* casual_execution_id_get();
 
 /**
+ * @returns the name of current execution service name
+ *
+ * @attention could be empty if called in wrong context
+ */
+extern const char* casual_execution_service_name();
+
+/**
+ * @returns the name of current execution parents service name
+ *
+ * @attention could be empty if called in wrong context
+ */
+extern const char* casual_execution_parent_service_name();
+
+/**
  * @returns the alias of the instance.
  * 
  * @attention could be NULL if the instance is *not* spawn by
