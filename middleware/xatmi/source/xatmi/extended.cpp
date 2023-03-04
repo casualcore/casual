@@ -123,6 +123,16 @@ long casual_instance_index()
    return -1;
 }
 
+const char* casual_execution_service_name()
+{
+   return casual::common::execution::service::name().c_str();
+}
+
+const char* casual_execution_parent_service_name()
+{
+   return casual::common::execution::service::parent::name().c_str();
+}
+
 
 void casual_execution_id_set( const uuid_t* id)
 {
