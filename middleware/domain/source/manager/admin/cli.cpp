@@ -730,6 +730,7 @@ note: not all options has legend, use 'auto complete' to find out which legends 
                         { "domain.identity.name", state.identity.name},
                         { "domain.identity.id", string::compose( state.identity.id)},
                         { "domain.manager.runlevel", string::compose( state.runlevel)},
+                        { "domain.manager.created", string::compose( state.servers.at(0).instances.at(0).spawnpoint)}, // always casual-domain-manager
                         { "domain.manager.group.count", string::compose( state.groups.size())},
                         { "domain.manager.server.count", string::compose( state.servers.size())},
                         { "domain.manager.server.instances.configured", string::compose( instances_count( state.servers, all))},

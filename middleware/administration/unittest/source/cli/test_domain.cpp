@@ -214,6 +214,24 @@ domain:
          EXPECT_TRUE( output == expected) << "output:  " << output << "expected: " << expected;
       }
 
+      TEST( cli_domain, information__created_exists_and_contains_current_date)
+      {
+         common::unittest::Trace trace;
+
+         auto domain = local::domain( R"(
+domain:
+   servers:
+      - alias: echo-server
+        path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-server"
+        memberships: [ user]
+        instances: 1
+)");
+
+         auto output = administration::unittest::cli::command::execute( "casual domain --information --porcelain true | grep domain.manager.created | cut -d '|' -f 2 | grep $(date +%Y-%m-%d)").string();
+
+         EXPECT_TRUE( ! output.empty()) << "output:  " << output;
+      }
+
      
 
    } // administration
