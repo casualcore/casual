@@ -78,14 +78,16 @@ def generate_new_version( current_release_version, base_version, version_type, v
       return next_release_version
 
    if version_type == beta():
-      version_finder = re.compile("^.*-beta\.([0-9]+)$")
+      version_finder = re.compile("^" + next_release_version + "-beta\.([0-9]+)$")
       latest = retrieve_latest( version_finder, versions)
-      found = version_to_change_finder.match( latest)
-
-      if found:
-         return next_release_version + "-beta." + str( int( found.group(2)) + 1)
+      if latest:
+         found = version_to_change_finder.match( latest)
+         if found:
+            return next_release_version + "-beta." + str( int( found.group(2)) + 1)
+         else:
+            raise SystemError("Could not generate new number")
       else:
-         raise SystemError("Could not generate new number")
+         return next_release_version + "-beta." + str( int( 0))
 
    if version_type == alpha():
       return next_release_version + "-alpha."
