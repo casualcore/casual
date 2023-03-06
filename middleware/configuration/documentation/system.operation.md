@@ -121,7 +121,7 @@ library=${CASUAL_HOME}/lib
    </libraries>
    <paths>
     <library>
-     <element${DB2DIR}/lib64</element>
+     <element>${DB2DIR}/lib64</element>
     </library>
    </paths>
   </element>
@@ -134,7 +134,7 @@ library=${CASUAL_HOME}/lib
    </libraries>
    <paths>
     <library>
-     <element${CASUAL_HOME}/lib</element>
+     <element>${CASUAL_HOME}/lib</element>
     </library>
    </paths>
   </element>

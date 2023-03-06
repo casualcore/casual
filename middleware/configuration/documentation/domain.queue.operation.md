@@ -360,7 +360,7 @@ name=c2
      <delay>20s</delay>
     </retry>
    </queue>
-   <directory${CASUAL_DOMAIN_HOME}/queue/groups</directory>
+   <directory>${CASUAL_DOMAIN_HOME}/queue/groups</directory>
   </default>
   <groups>
    <element>
