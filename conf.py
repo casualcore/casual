@@ -21,17 +21,8 @@ import sphinx_rtd_theme
 # -- Project information -----------------------------------------------------
 
 project = u'casual'
-copyright = u'2020, casual'
+copyright = u'2021, casual'
 author = u'casualcore'
-
-# The short X.Y version
-version = os.getenv("CASUAL_VERSION")
-# The full version, including alpha/beta/rc tags
-release = os.getenv("CASUAL_RELEASE")
-
-if not version or not release:
-   raise SystemError("CASUAL_VERSION AND/OR CASUAL_RELEASE not set")
-
 
 # -- General configuration ---------------------------------------------------
 
@@ -43,18 +34,17 @@ if not version or not release:
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
-    "recommonmark",
-    "sphinx_markdown_tables"
+    "sphinx_multiversion",
+    "myst_parser"
 ]
 
 # Add any paths that contain templates here, relative to this directory.
-templates_path = ['_templates']
+templates_path = ['documentation/templates']
 
 # The suffix(es) of source filenames.
 # You can specify multiple suffix as a list of string:
 #
 source_suffix = ['.rst', '.md']
-#source_suffix = '.rst'
 
 # The master toctree document.
 master_doc = 'index'
@@ -64,7 +54,7 @@ master_doc = 'index'
 #
 # This is also used if you do content translation via gettext catalogs.
 # Usually you set "language" from the command line for these cases.
-language = None
+language = 'en'
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
@@ -74,8 +64,9 @@ exclude_patterns = ['**google**']
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style = "sphinx"
 
-
-
+smv_tag_whitelist = None
+smv_branch_whitelist = r'^(release/[0-9]\.[0-9]+|patch/1\.6/main|patch/1\.6/main)$'
+smv_remote_whitelist = None 
 # -- Options for HTML output -------------------------------------------------
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
@@ -83,6 +74,21 @@ pygments_style = "sphinx"
 #
 html_theme = 'sphinx_rtd_theme'
 html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
+html_theme_options = {
+    'analytics_anonymize_ip': False,
+    'logo_only': False,
+    'display_version': True,
+    'prev_next_buttons_location': 'bottom',
+    'style_external_links': False,
+    'vcs_pageview_mode': '',
+    # 'style_nav_header_background': 'white',
+    # Toc options
+    'collapse_navigation': True,
+    'sticky_navigation': True,
+    'navigation_depth': 4,
+    'includehidden': True,
+    'titles_only': False    
+}
 
 html_logo = "resources/casual.png"
 
@@ -108,7 +114,6 @@ html_use_index = True
 # default: ``['localtoc.html', 'relations.html', 'sourcelink.html',
 # 'searchbox.html']``.
 #
-# html_sidebars = {}
 
 
 # -- Options for HTMLHelp output ---------------------------------------------
@@ -142,7 +147,7 @@ latex_elements = {
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
     (master_doc, 'casual.tex', u'casual documentation',
-     u'Flurig', 'manual'),
+     u'casual', 'manual'),
 ]
 
 

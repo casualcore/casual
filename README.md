@@ -8,7 +8,7 @@ casual has a few 'products' in separate repositories under the _casualcore_-orga
 The main purpose of casual is [casual-middelware](middleware/readme.md), which is an XATMI implementation
 
 ### make
-[casual-make](make/readme.md) is the 'build system' that is used to build casual
+[casual-make](https://github.com/casualcore/casual-make/blob/master/documentation/readme.md) is the 'build system' that is used to build casual
 
 ## Getting started
 
@@ -18,7 +18,7 @@ Follow the [build instructions](build.md)
 
 ### Use casual-middleware
 
-See [examples](middleware/example/domain/readme.md)
+See [examples](middleware/documentation/examples)
 
 [how to build resource proxies](middleware/tools/documentation/build/resource/proxy.md)
 
@@ -50,10 +50,14 @@ We've done some field tests
 
 ### Contact ###
 
-* casual@laz.se
+* [casual@laz.se](mailto:casual@laz.se)
+* [discord](https://discord.com/channels/960208635458363425)
 
 ### Release notes
 [Changelog](documentation/changelog.md)
+
+### Downloads
+[Official site](http://casual.laz.se/release/)
 
 ### License
 Our intention is that everything in this repository is licensed under the [MIT licence](https://opensource.org/licenses/MIT),
@@ -61,7 +65,5 @@ with the exception of stuff under [thirdparty](thirdparty/readme.md), which have
 
 We show this by the file [licence.md](license.md). 
 
-### Downloads
-http://casual.laz.se/release/
 
 

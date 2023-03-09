@@ -43,7 +43,7 @@ Responsibilities:
 * Start configured `outbound` connections
 * Start `inbound` connections, when other domains connect with their `outbound`
 
-#### gateway-outbound 
+### gateway-outbound 
 
 * Forward messages to the other end (strict defined protocol)
 * Act as a `resource` to `transaction-manager` _(if invocations are in transaction)_
@@ -56,7 +56,7 @@ Responsibilities:
 * Start all configured `queue-groups`
 * Queue lookup
 
-#### queue-group 
+### queue-group 
 
 * Provide configured queues
 * Guaranteed transactional persistent messages _(if configured)_

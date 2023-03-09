@@ -1,10 +1,15 @@
-# field development
+=================
+field development
+=================
 
-## sample
 
-- [client](./../sample/client/source/field.cpp)
+sample
+-------
 
-## remarks
+.. literalinclude:: ./../sample/client/source/field.cpp
+
+remarks
+-------
 
 - No encoding of strings occurs
 
@@ -14,9 +19,11 @@
 
 - A field-repository might be needed for certain functionality
 
-## tools
+tools
+-----
 
-### casual\_field\_make\_header
+casual\_field\_make\_header
+---------------------------
 
 The tool is to provide something like mkfldhdr
 
@@ -28,5 +35,28 @@ usage: casual\_field\_make\_header [repository]
 
 If the repository-file is not provided, the environment-variable CASUAL\_FIELD\_TABLE is used
 
-Layout of the repository should conform to a structure described in this [json-schema](field.json) as in this [json-sample](./../sample/field.json) or this [xml-schema](field.xml) as in this [xml-sample](./../sample/field.xml) or even as in this [yaml-sample](./../sample/field.yaml) or this [ini-sample](./../sample/field.ini) 
+Layout of the repository should conform to a structure described in this: 
 
+json-schema 
+-----------
+.. literalinclude:: field.json
+
+json-sample
+-----------
+.. literalinclude:: ./../sample/field.json
+
+xml-schema
+----------
+.. literalinclude:: field.xml 
+
+xml-sample
+----------
+.. literalinclude:: ./../sample/field.xml
+
+yaml-sample
+-----------
+.. literalinclude:: ./../sample/field.yaml
+
+ini-sample
+----------
+.. literalinclude:: ./../sample/field.ini

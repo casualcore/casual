@@ -1,4 +1,6 @@
 
+# casual-transaction-manager
+
 ## .casual.transaction.state
 
 Gets the current state of the transaction manager in a given domain

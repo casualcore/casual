@@ -35,7 +35,7 @@ casual
           </div>
           <ul>
           <li><a href="build.html">build</a></li>
-          <li><a href="middleware/example/domain/readme.html">use - examples</a></li>
+          <li><a href="documentation/example/domain/example.html">use - examples</a></li>
          </ul>
         </td>
         <td>
@@ -44,7 +44,7 @@ casual
           </div>
           <ul>
             <li><a href="middleware/documentation/development.html">mainpage</a></li>
-            <li><a href="https://bitbucket.org/casualcore/casual/src/develop">bitbucket</a></li>
+            <li><a href="https://github.com/casualcore/casual">github</a></li>
           </ul>
         </td>
       </tr>
@@ -57,6 +57,14 @@ casual
             <li><a href="middleware/documentation/operation.html">mainpage</a></li>
           </ul>
         </td>
+        <td>
+          <div style="display:inline-block;">
+            <h2>downloads</h2>
+          </div>
+          <ul>
+            <li><a href="http://casual.laz.se/release/">releases</a></li>
+          </ul>
+        </td>       
       </tr>
       <tr>
 
@@ -66,7 +74,7 @@ casual
           </div>
           <ul>
             <li><a href="mailto:casual@laz.se">mail</a></li>
-            <li><a href="https://discord.com/channels/960208635458363425">Discord</a></li>
+            <li><a href="https://discord.com/channels/960208635458363425">discord</a></li>
           </ul>
         </td>
 
