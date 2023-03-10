@@ -68,6 +68,7 @@ namespace casual
 
             strong::file::descriptor::id descriptor() const noexcept { return m_destination.socket().descriptor();}
 
+            //! @return true if all messages are sent.
             bool send( select::Directive& directive) noexcept;
 
             inline Remote& push( Message&& message)

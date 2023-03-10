@@ -25,6 +25,17 @@ namespace casual
 {
    namespace common::unittest
    {
+
+      template< typename F, typename... Ts>
+      auto count_while( F&& functor, Ts&&... ts)
+      {
+         platform::size::type count = 0;
+         while( functor( ts...))
+            ++count;
+
+         return count;
+      }
+
       using base_message = common::message::basic_message< common::message::Type::unittest_message>;
       struct Message : base_message, Compare< Message>
       {

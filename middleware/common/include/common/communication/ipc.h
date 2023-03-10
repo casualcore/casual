@@ -35,6 +35,7 @@ namespace casual
 
          inline const Socket& socket() const { return m_socket;}
          inline strong::ipc::id ipc() const { return m_ipc;}
+         
 
          inline explicit operator bool () const { return ! m_socket.empty();}
 
@@ -47,6 +48,8 @@ namespace casual
          Socket m_socket;
          strong::ipc::id m_ipc;
       };
+
+
 
       static_assert( sizeof( Handle) == sizeof( Socket) + sizeof( strong::ipc::id), "padding problem");
 
@@ -65,6 +68,9 @@ namespace casual
       private:
          ::sockaddr_un m_native = {};
       };
+
+      //! @return the path to the "ipc device"
+      std::filesystem::path path( const strong::ipc::id& id);
 
       namespace native
       {
@@ -180,6 +186,9 @@ namespace casual
             Connector( Connector&&) noexcept = default;
             Connector& operator = ( Connector&&) noexcept = default;
 
+            //! tries to block writes to the ipc.
+            void block_writes();
+
             inline const Handle& handle() const { return m_handle;}
             inline Handle& handle() { return m_handle;}
             inline auto descriptor() const { return m_handle.socket().descriptor();}
@@ -247,6 +256,9 @@ namespace casual
             inline auto& ipc() const noexcept { return m_ipc;}
             inline auto& socket() const noexcept { return m_socket;}
             inline auto& address() const noexcept { return m_address;}
+
+            //! @return true if the destination is active: socket file exists and rw permission for user.
+            bool active() const noexcept;
             
             CASUAL_LOG_SERIALIZE(
                CASUAL_SERIALIZE_NAME( m_ipc, "ipc");

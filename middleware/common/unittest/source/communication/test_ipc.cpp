@@ -110,7 +110,6 @@ namespace casual
          ipc::inbound::Device device;
       }
 
-
       TEST( common_communication_ipc, non_blocking_receive__expect_no_messages)
       {
          common::unittest::Trace trace;
@@ -121,6 +120,80 @@ namespace casual
          EXPECT_FALSE( ( device.receive( message, ipc::policy::non::Blocking{})));
 
       }
+
+
+      TEST( common_communication_ipc, block_writes__expect_error_on_send___ok_on_read)
+      {
+         common::unittest::Trace trace;
+
+         ipc::inbound::Device device;
+         auto ipc = device.connector().handle().ipc();
+
+         auto count = unittest::count_while( [ &]() 
+         {
+            return device::non::blocking::send( ipc, unittest::Message{});
+         });
+
+         ASSERT_TRUE( count > 0);
+
+         device.connector().block_writes();
+
+         // we can't write any more
+         EXPECT_THROW({
+            device::non::blocking::send( ipc, unittest::Message{});
+         }, std::system_error);
+
+
+         // we still can read
+         algorithm::for_n( count, [ &device]()
+         {
+            unittest::Message message;
+            EXPECT_TRUE( device::non::blocking::receive( device, message));
+         });
+      }
+
+      TEST( common_communication_ipc, block_writes__expect_error_on_multiplex_send)
+      {
+         common::unittest::Trace trace;
+
+         ipc::inbound::Device device;
+         auto ipc = device.connector().handle().ipc();
+
+         communication::select::Directive directive;
+         ipc::send::Coordinator multiplex{ directive};
+
+         auto error_count = platform::size::type{};
+         auto error_callback = [ &error_count]( auto& ipc, auto& complete)
+         {
+            ++error_count;
+         };
+
+         // send until we start to "cache" the messages
+         auto count = unittest::count_while( [ &]() 
+         {
+            multiplex.send( ipc, unittest::Message{}, error_callback);
+            return multiplex.empty();
+         });
+
+         ASSERT_TRUE( count > 0);
+         ASSERT_TRUE( error_count == 0);
+
+         device.connector().block_writes();
+
+         // we can't write any more and the error callback will be invoked
+         multiplex.send();
+
+         EXPECT_TRUE( error_count > 0);
+
+
+         // we still can read
+         algorithm::for_n( count, [ &device]()
+         {
+            unittest::Message message;
+            EXPECT_TRUE( device::non::blocking::receive( device, message));
+         });
+      }
+
 
       TEST( common_communication_ipc, send_receive__small_message)
       {

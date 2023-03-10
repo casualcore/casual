@@ -30,7 +30,8 @@ namespace casual
                void remove( strong::ipc::id ipc)
                {
                   if( communication::ipc::exists( ipc))
-                     communication::ipc::remove( ipc);
+                     if( ! communication::ipc::remove( ipc))
+                        log::line( log::category::error, "failed to remove ipc: ", communication::ipc::Address{ ipc});
                }
             } // ipc
 

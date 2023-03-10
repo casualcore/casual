@@ -57,7 +57,7 @@ namespace casual
 
       Address::Address( strong::ipc::id ipc)
       {
-         const auto path = ( environment::directory::ipc() / uuid::string( ipc.value())).string();
+         const auto path = ipc::path( ipc).string();
 
          if( path.size() > ( sizeof( m_native.sun_path) - 1))
             code::raise::error( code::casual::invalid_path, "transient directory path too long");
@@ -72,6 +72,11 @@ namespace casual
       std::ostream& operator << ( std::ostream& out, const Address& rhs)
       {
          return out << "{ path: " << rhs.m_native.sun_path << '}';
+      }
+
+      std::filesystem::path path( const strong::ipc::id& id)
+      {
+         return environment::directory::ipc() / uuid::string( id.value());
       }
 
       namespace native
@@ -113,9 +118,11 @@ namespace casual
                bool check_error()
                {
                   return check_error( code::system::last::error());
-               } 
+               }
+
             } // <unnamed>
          } // local
+
          namespace detail
          {
             namespace create
@@ -426,14 +433,25 @@ namespace casual
                      return Handle{ std::move( socket), ipc};
                   }
                } // create 
+
+
+               void block_writes( const std::filesystem::path& path)
+               {
+                  std::error_code error;
+                  using perms = std::filesystem::perms;
+                  std::filesystem::permissions( path, perms::group_write | perms::owner_write | perms::others_write, std::filesystem::perm_options::remove, error);
+
+                  if( error && error != std::errc::no_such_file_or_directory)
+                     log::line( verbose::log, error, " failed to block write on: ", path);
+
+               }
+
             } // <unnamed>
          } // local
 
          Connector::Connector() 
             : m_handle{ local::create::handle()}
-
-         {
-         }
+         {}
 
          Connector::~Connector()
          {
@@ -441,11 +459,16 @@ namespace casual
             {
                exception::guard( [&]()
                {
+                  block_writes();
                   ipc::remove( m_handle.ipc());
                });
             }
          }
 
+         void Connector::block_writes()
+         {
+            local::block_writes( ipc::path( m_handle.ipc()));
+         }
 
          Device& device()
          {
@@ -466,6 +489,21 @@ namespace casual
 
       namespace partial
       {
+         
+         bool Destination::active() const noexcept
+         {
+            std::error_code code;
+            auto status = std::filesystem::status( m_address.native().sun_path, code);
+
+            log::line( verbose::log, "code: ", code);
+
+            if( code)
+               return false;
+
+            using permission = std::filesystem::perms;
+            return has::flag< permission::owner_write>( status.permissions());
+         }
+
          bool send( const Destination& destination, message::complete::Send& complete)
          {
             Trace trace{ "common::communication::ipc::outbound::partial::send"};
@@ -477,6 +515,9 @@ namespace casual
             {
                transport.assign( front.range, front.offset);
                log::line( verbose::log, "transport: ", transport);
+
+               if( ! destination.active())
+                  code::raise::error( code::casual::communication_unavailable, "destination inactive: ", destination.ipc());
 
                if( ! native::non::blocking::send( destination.socket(), destination.address(), transport))
                   return false;
@@ -490,15 +531,15 @@ namespace casual
 
       bool exists( strong::ipc::id id)
       {
-         const Address address{ id};
-         return ::access( address.native().sun_path, F_OK) != -1; 
+         auto path = ipc::path( id);
+         return ::access( path.c_str(), F_OK) != -1; 
       }
-
 
       bool remove( strong::ipc::id id)
       {
-         Address address{ id};
-         return ::unlink( address.native().sun_path) != -1;
+         auto path = ipc::path( id);
+         inbound::local::block_writes( path);
+         return ::unlink( path.c_str()) != -1;
       }
 
       bool remove( const process::Handle& owner)
