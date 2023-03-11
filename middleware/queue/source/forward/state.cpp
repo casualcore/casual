@@ -14,26 +14,8 @@ namespace casual
    using namespace common;
    namespace queue::forward
    {
-      namespace local
-      {
-         namespace
-         {
-            namespace extract
-            {
-               template< typename P>
-               auto pending( P& pending, state::forward::id id)
-               {
-                  return algorithm::container::extract( pending, 
-                     std::get< 1>( algorithm::partition( pending, predicate::negate( predicate::value::equal( id)))));
-               }
-            } // extract
-            
-         } // <unnamed>
-      } // local
-
       namespace state
       {
-
          std::string_view description( Runlevel value)
          {
             switch( value)
