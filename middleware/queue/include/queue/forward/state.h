@@ -286,7 +286,7 @@ namespace casual
                struct Lookup : transaction_base
                {
                   Lookup() = default;
-                  Lookup( transaction_base&& other) : transaction_base{ std::move( other)} {}
+                  Lookup( const transaction_base& other) : transaction_base{ other} {}
 
                   common::buffer::Payload buffer;
 
@@ -299,8 +299,8 @@ namespace casual
                struct Call : transaction_base
                {
                   Call() = default;
-                  Call( transaction_base&& other, common::strong::process::id pid)
-                     : transaction_base{ std::move( other)}, pid{ pid} {}
+                  Call( const transaction_base& other, common::strong::process::id pid)
+                     : transaction_base{ other}, pid{ pid} {}
 
                   common::strong::process::id pid{};
 
@@ -319,21 +319,20 @@ namespace casual
                struct Rollback : transaction_base
                {
                   Rollback() = default;
-                  Rollback( transaction_base&& other) : transaction_base{ std::move( other)} {} 
+                  Rollback( const transaction_base& other) : transaction_base{ other} {} 
                };
 
                struct Commit : transaction_base
                {
                   Commit() = default;
-                  Commit( transaction_base&& other) : transaction_base{ std::move( other)} {}
+                  Commit( const transaction_base& other) : transaction_base{ other} {}
                };
             } // transaction
 
             struct Enqueue : transaction_base
             {
                Enqueue() = default;
-               Enqueue( transaction_base&& other) : transaction_base{ std::move( other)} {}
-               
+               Enqueue( const transaction_base& other) : transaction_base{ other} {}
             };
 
          } // pending
