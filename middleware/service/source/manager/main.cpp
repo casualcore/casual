@@ -19,7 +19,9 @@
 #include "common/environment.h"
 #include "common/communication/instance.h"
 #include "common/communication/select/ipc.h"
+#include "common/communication/ipc/reply/guard.h"
 #include "common/message/dispatch.h"
+
 
 #include <iostream>
 
@@ -91,7 +93,6 @@ namespace casual
                }
             }
 
-
             auto condition( State& state)
             {
                return message::dispatch::condition::compose(
@@ -111,6 +112,9 @@ namespace casual
                Trace trace( "service::manager:local::start");
 
                setup( state);
+
+               // make sure we reply with "error" during "shutdown".
+               auto reply_guard = communication::ipc::reply::guard( handle::reply_guard());
 
                // register that we can answer discovery questions.
                using Ability = casual::domain::discovery::provider::Ability;

@@ -57,6 +57,9 @@ namespace casual
 
       //! @returns all the handlers for service manager
       dispatch_type create( State& state);
+      
+      //! @returns the reply guard handlers, to reply with "error" replies.
+      dispatch_type reply_guard();
 
    } // service::manager::handle
 } // casual

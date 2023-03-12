@@ -25,6 +25,7 @@
 #include "common/event/send.h"
 
 #include "common/communication/instance.h"
+#include "common/communication/ipc/reply/guard.h"
 
 #include "configuration/message.h"
 #include "configuration/model/change.h"
@@ -1080,6 +1081,18 @@ namespace casual
             handle::local::configuration::request( state),
             handle::local::shutdown::request( state),
          };
+      }
+
+      dispatch_type reply_guard()
+      {
+         return communication::ipc::reply::reverse::handler(
+            common::message::service::lookup::Request{},
+            casual::domain::message::discovery::lookup::Request{},
+            casual::domain::message::discovery::fetch::known::Request{},
+            casual::configuration::message::update::Request{},
+            casual::configuration::message::Request{},
+            message::service::call::callee::Request{}
+         );
       }
 
    } // service::manager::handle
