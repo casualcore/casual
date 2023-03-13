@@ -3,6 +3,12 @@ This is the changelog for `casual` and all changes are listed in this document.
 
 ## [Unreleased]
 
+## [1.6.1] - 2023-03-13
+### Fixes
+- queue - fix pending data structure slicing (memory leak)
+- documentation - fix sphinx-config
+- build - fix version.py to handle new minor
+
 ## [1.6.0] - 2023-03-06
 ### Added
 - cli - add force service/queue discovery to cli (#110)
