@@ -621,6 +621,7 @@ namespace casual::configuration
             std::string queuebase;
             std::string note;
             std::vector< Queue> queues;
+            std::string directory;
 
             inline friend bool operator == ( const Group& lhs, const std::string& alias) { return lhs.alias == alias;}
 
@@ -633,6 +634,7 @@ namespace casual::configuration
                CASUAL_SERIALIZE( queuebase);
                CASUAL_SERIALIZE( note);
                CASUAL_SERIALIZE( queues);
+               CASUAL_SERIALIZE( directory);
             )
 
             inline auto tie() const { return std::tie( alias, queuebase, note, queues);}

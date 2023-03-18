@@ -4,13 +4,13 @@
 
 Defines user configuration when building a casual executable.
 
-## resources
+### resources
 
 Defines which `xa` resources to link and use runtime. A name **has** to be provided for each 
 resource, startup configuration phase will ask for resource configuration for that 
 given name.
 
-## entrypoint
+### entrypoint
 
 Defines the name of the user provided _entry point_. The signature has to be the same as a
 normal main function `int <entrypoint-name>( int argc, char** argv)`.

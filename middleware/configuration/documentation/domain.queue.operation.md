@@ -55,7 +55,7 @@ domain:
       directory: "${CASUAL_DOMAIN_HOME}/queue/groups"
     groups:
       - alias: "A"
-        note: "will get default queuebase: ${CASUAL_DOMAIN_HOME}/queue/groupA.gb"
+        note: "will get default queuebase: ${CASUAL_DOMAIN_HOME}/queue/groups/A.qb"
         queues:
           - name: "a1"
           - name: "a2"
@@ -129,7 +129,7 @@ domain:
             "groups": [
                 {
                     "alias": "A",
-                    "note": "will get default queuebase: ${CASUAL_DOMAIN_HOME}/queue/groupA.gb",
+                    "note": "will get default queuebase: ${CASUAL_DOMAIN_HOME}/queue/groups/A.qb",
                     "queues": [
                         {
                             "name": "a1"
@@ -301,7 +301,7 @@ service=casual/example/echo
 
 [domain.queue.groups]
 alias=A
-note=will get default queuebase: ${CASUAL_DOMAIN_HOME}/queue/groupA.gb
+note=will get default queuebase: ${CASUAL_DOMAIN_HOME}/queue/groups/A.qb
 
 [domain.queue.groups.queues]
 name=a1
@@ -365,7 +365,7 @@ name=c2
   <groups>
    <element>
     <alias>A</alias>
-    <note>will get default queuebase: ${CASUAL_DOMAIN_HOME}/queue/groupA.gb</note>
+    <note>will get default queuebase: ${CASUAL_DOMAIN_HOME}/queue/groups/A.qb</note>
     <queues>
      <element>
       <name>a1</name>

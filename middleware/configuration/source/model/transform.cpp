@@ -398,13 +398,21 @@ namespace casual
 
                   if( source.groups)
                   {
-                     result.groups = common::algorithm::transform( source.groups.value(), []( auto& group)
+                     auto default_directory = [ &source]() -> std::string
+                     {
+                        if( source.defaults && source.defaults->directory)
+                           return *source.defaults->directory;
+                        return {};
+                     }();
+
+                     result.groups = common::algorithm::transform( source.groups.value(), [ &default_directory]( auto& group)
                      {
                         queue::Group result;
 
                         result.alias = group.alias.value_or( "");
                         result.note = group.note.value_or( "");
                         result.queuebase = group.queuebase.value_or( "");
+                        result.directory = default_directory;
 
                         common::algorithm::transform( group.queues, result.queues, []( auto& queue)
                         {

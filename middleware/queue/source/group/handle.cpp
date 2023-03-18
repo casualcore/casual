@@ -587,6 +587,9 @@ namespace casual
                      {
                         if( ! message.model.queuebase.empty())
                            return group::Queuebase{ message.model.queuebase};
+
+                        if( ! message.model.directory.empty())
+                           return group::Queuebase{ message.model.directory + "/" + message.model.alias + ".qb"};
                         
                         auto name = message.model.alias + ".qb";
                         auto file = common::environment::directory::queue() / name;
