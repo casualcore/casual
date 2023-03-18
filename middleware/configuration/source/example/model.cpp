@@ -231,7 +231,7 @@ domain:
 
       groups:
          -  alias: A
-            note: "will get default queuebase: ${CASUAL_DOMAIN_HOME}/queue/groupA.gb"
+            note: "will get default queuebase: ${CASUAL_DOMAIN_HOME}/queue/groups/A.qb"
             queues:
                -  name: a1
                -  name: a2
