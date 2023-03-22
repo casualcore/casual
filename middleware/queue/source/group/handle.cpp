@@ -229,6 +229,7 @@ namespace casual
                         catch( ...)
                         {
                            log::line( log::category::error, exception::capture(), " failed with enqueue request to queue: ", message.name);
+                           state.multiplex.send( message.process.ipc, common::message::reverse::type( message));
                         }
                      };
                   }
