@@ -3,6 +3,12 @@ This is the changelog for `casual` and all changes are listed in this document.
 
 ## [Unreleased]
 
+## [1.6.2] - 2023-03-25
+### Fixes
+- queue - extend c-api for get reply and get available
+- configuration - fix queue configuration default directory
+- queue - send error reply on failed enqueue
+
 ## [1.6.1] - 2023-03-13
 ### Fixes
 - queue - fix pending data structure slicing (memory leak)
