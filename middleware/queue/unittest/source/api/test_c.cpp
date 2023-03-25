@@ -109,6 +109,51 @@ domain:
          EXPECT_TRUE( casual_queue_message_delete( descriptor) != -1);
       }
 
+      TEST( casual_queue_c_api, message_get_set_attributes)
+      {
+         common::unittest::Trace trace;
+         using namespace std::string_view_literals;
+
+         auto descriptor  = casual_queue_message_create( { nullptr, 0l});
+
+         ASSERT_TRUE( descriptor >= 0);
+         casual_queue_message_attribute_set_properties( descriptor, "a");
+         casual_queue_message_attribute_set_reply( descriptor, "b");
+         casual_queue_message_attribute_set_available( descriptor, 42);
+
+         EXPECT_TRUE( casual_queue_message_attribute_get_properties( descriptor) == "a"sv);
+         EXPECT_TRUE( casual_queue_message_attribute_get_reply( descriptor) == "b"sv);
+         long ms_since_epoch{};
+         EXPECT_TRUE( casual_queue_message_attribute_get_available( descriptor, &ms_since_epoch) == 0);
+         EXPECT_TRUE( ms_since_epoch == 42);
+
+         EXPECT_TRUE( casual_queue_message_delete( descriptor) != -1);
+      }
+
+      TEST( casual_queue_c_api, message_get_set_attributes__invalid_descriptor)
+      {
+         common::unittest::Trace trace;
+         using namespace std::string_view_literals;
+
+         auto descriptor  = casual_queue_message_create( { nullptr, 0l});
+         EXPECT_TRUE( casual_queue_message_delete( descriptor) != -1);
+
+         ASSERT_TRUE( descriptor >= 0);
+         EXPECT_TRUE( casual_queue_message_attribute_set_properties( descriptor, "a") == -1);
+         EXPECT_TRUE( casual_qerrno == CASUAL_QE_INVALID_ARGUMENTS);
+         EXPECT_TRUE( casual_queue_message_attribute_set_reply( descriptor, "b") == -1);
+         EXPECT_TRUE( casual_qerrno == CASUAL_QE_INVALID_ARGUMENTS);
+         EXPECT_TRUE( casual_queue_message_attribute_set_available( descriptor, 42) == -1);
+         EXPECT_TRUE( casual_qerrno == CASUAL_QE_INVALID_ARGUMENTS);
+
+         EXPECT_TRUE( casual_queue_message_attribute_get_properties( descriptor) == nullptr);
+         EXPECT_TRUE( casual_qerrno == CASUAL_QE_INVALID_ARGUMENTS);
+         EXPECT_TRUE( casual_queue_message_attribute_get_reply( descriptor) == nullptr);
+         EXPECT_TRUE( casual_qerrno == CASUAL_QE_INVALID_ARGUMENTS);
+         EXPECT_TRUE( casual_queue_message_attribute_get_available( descriptor, nullptr) == -1);
+         EXPECT_TRUE( casual_qerrno == CASUAL_QE_INVALID_ARGUMENTS);
+      }
+
       TEST( casual_queue_c_api, invalid_message_descriptor)
       {
          common::unittest::Trace trace;

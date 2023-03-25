@@ -166,6 +166,11 @@ namespace casual
                         global::cache.get( descriptor).value.attributes.reply = queue;
                         return 0;
                      }
+
+                     auto get( descriptor::id descriptor)
+                     {
+                        return global::cache.get( descriptor).value.attributes.reply.c_str();
+                     }
                      
                   } // reply
 
@@ -174,6 +179,15 @@ namespace casual
                      auto set( descriptor::id descriptor, std::chrono::milliseconds time)
                      {
                         global::cache.get( descriptor).value.attributes.available = platform::time::point::type{ time};
+                        return 0;
+                     }
+
+                     auto get( descriptor::id descriptor, long* ms_since_epoch)
+                     {
+                        if( ! ms_since_epoch)
+                           common::code::raise::error( queue::code::argument);
+
+                        *ms_since_epoch = std::chrono::duration_cast< std::chrono::milliseconds>( global::cache.get( descriptor).value.attributes.available.time_since_epoch()).count();
                         return 0;
                      }
                   } // available
@@ -201,12 +215,18 @@ namespace casual
                {
                   auto set( descriptor::id descriptor, const uuid_t* id)
                   {
+                     if( ! id)
+                        common::code::raise::error( queue::code::argument);
+
                      global::cache.get( descriptor).value.id = common::Uuid{ *id};
                      return 0;
                   }
                   
                   auto get( descriptor::id descriptor, uuid_t* id)
                   {
+                     if( ! id)
+                        common::code::raise::error( queue::code::argument);
+                        
                      global::cache.get( descriptor).value.id.copy( *id);
                      return 0;
                   }
@@ -404,9 +424,19 @@ namespace casual
             return local::wrap( local::message::attribute::reply::set, -1, local::message::descriptor::id{ message}, queue);
          }
 
+         const char* casual_queue_message_attribute_get_reply( casual_message_descriptor_t message)
+         {
+            return local::wrap( local::message::attribute::reply::get, nullptr, local::message::descriptor::id{ message});
+         }
+
          int casual_queue_message_attribute_set_available( casual_message_descriptor_t message, long ms_since_epoch)
          {
             return local::wrap( local::message::attribute::available::set, -1, local::message::descriptor::id{ message}, std::chrono::milliseconds{ ms_since_epoch});
+         }
+
+         int casual_queue_message_attribute_get_available( casual_message_descriptor_t message, long* ms_since_epoch)
+         {
+            return local::wrap( local::message::attribute::available::get, -1, local::message::descriptor::id{ message}, ms_since_epoch);
          }
 
          int casual_queue_message_set_buffer( casual_message_descriptor_t message, casual_buffer_t buffer)

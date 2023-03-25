@@ -69,11 +69,13 @@ extern const char* casual_queue_message_attribute_get_properties( casual_message
    @returns 0 on success -1 on error and casual_qerrno is set 
 */
 extern int casual_queue_message_attribute_set_reply( casual_message_descriptor_t message, const char* queue);
+extern const char* casual_queue_message_attribute_get_reply( casual_message_descriptor_t message);
 
 /* when the message should be available for dequeue, ms since epoch, hence absolute time 
    @returns 0 on success -1 on error and casual_qerrno is set 
 */
 extern int casual_queue_message_attribute_set_available( casual_message_descriptor_t message, long ms_since_epoch);
+extern int casual_queue_message_attribute_get_available( casual_message_descriptor_t message, long* ms_since_epoch);
 
 /* (re)sets the associated buffer to the message 
   @returns 0 on success -1 on error and casual_qerrno is set
