@@ -17,266 +17,296 @@
 
 namespace casual
 {
-   namespace common
+   namespace common::transcode
    {
-      namespace transcode
+      namespace base64
       {
-         namespace base64
+         namespace detail
          {
-            namespace detail
+            struct Data 
             {
-               struct Data 
+               void* memory;
+               platform::size::type bytes;
+            };
+
+            template< typename C> 
+            auto data( C& container)
+            {
+               return Data{ (void*)( container.data()), static_cast< platform::size::type>( container.size())};
+            }
+
+            platform::size::type encode( const Data source, Data target);
+
+            platform::size::type decode( const char* first, const char* last, char* dest_first, char* dest_last);
+         } // detail
+
+         namespace capacity
+         {
+            constexpr platform::size::type encoded( platform::size::type bytes) 
+            {
+               return ( ( bytes + 2) / 3) * 4;
+            }
+         } // capacity
+
+
+
+         template< typename C1, typename C2>
+         auto encode( C1&& source, C2& target) -> std::enable_if_t< traits::has::resize_v< decltype( target)>>
+         {
+            static_assert( sizeof( traits::iterable::value_t< C1>) == sizeof( traits::iterable::value_t< C2>), "not the same value type size");
+
+            target.resize( capacity::encoded( source.size()));
+
+            target.resize( detail::encode( detail::data( source), detail::data( target)));
+         }
+
+         //! @return Base64-encoded binary data of @p container
+         //!
+         //! @throw exception::Casual on failure
+         template< typename C>
+         std::string encode( C&& container)
+         {
+            std::string result;
+            encode( container, result);
+            return result;
+         }
+
+         //! @return Base64-encoded binary data of [first, last)
+         //!
+         //! @pre @p Iter has to be a random access iterator
+         //!
+         //! @throw exception::Casual on failure
+         template< typename Iter>
+         auto encode( Iter first, Iter last) -> 
+            std::enable_if_t< traits::is::iterator_v< Iter>, std::string>
+         {
+            return encode( range::make( first, last));
+         }
+
+         //! @return Base64-decoded binary data
+         //!
+         //! @throw exception::Casual on failure
+         platform::binary::type decode( const std::string& value);
+
+         // TODO performance: make it possible to decode to fixed memory
+         //  `b64_pton` seems to need additional space during decode, hence it's
+         //  not symmetric. Roll our own?
+
+
+         //!
+         //! decode Base64 to a binary representation
+         //! @attention [first, last) needs to be bigger than the [first, result) (by some bytes...)
+         //!
+         template< typename Source, typename Iter>
+         std::enable_if_t<
+            traits::is::string::like_v< Source>
+            && traits::is::binary::iterator_v< Iter>,
+            Iter >
+         decode( Source&& source, Iter first, Iter last)
+         {
+            auto cast_source = []( auto&& i){ return reinterpret_cast< const char*>( &(*i));};
+            auto cast_target = []( auto&& i){ return reinterpret_cast< char*>( &(*i));};
+            auto size = detail::decode(
+               cast_source( std::begin( source)), cast_source( std::end( source)),
+               cast_target( first), cast_target( last));
+
+            return first + size;
+         }
+
+      } // base64
+
+      namespace utf8
+      {
+         //! @param value String encoded in local default codeset
+         //!
+         //! @return UTF-8-encoded string
+         //!
+         //! @throw exception::limit::Memory on resource failures
+         //! @throw exception::system::invalid::Argument for bad input
+         //! @throw exception::Casual on other failures
+         std::string encode( const std::string& value);
+
+         //! @param value The UTF-8 encoded string
+         //!
+         //! @return String encoded in local default codeset
+         //!
+         //! @throw exception::limit::Memory on resource failures
+         //! @throw exception::system::invalid::Argument for bad input
+         //! @throw exception::Casual on other failures
+         std::string decode( const std::string& value);
+
+         //! @param codeset String-encoding
+         //!
+         //! @return Whether the provided codeset exist in the system
+         //!
+         //! @throw exception::limit::Memory on resource failures
+         //! @throw exception::Casual on other failures
+         bool exist( std::string_view codeset);
+
+         //! @param value String encoded in provided codeset
+         //! @param codeset String-encoding
+         //!
+         //! @return UTF-8-encoded string
+         //!
+         //! @throw exception::limit::Memory on resource failures
+         //! @throw exception::system::invalid::Argument for bad input
+         //! @throw exception::Casual on other failures
+         std::string encode( const std::string& value, std::string_view codeset);
+
+         //! @param value The UTF-8 encoded string
+         //! @param codeset Encoding for result
+         //!
+         //! @return String encoded in provided codeset
+         //!
+         //! @throw exception::limit::Memory on resource failures
+         //! @throw exception::system::invalid::Argument for bad input
+         //! @throw exception::Casual on other failures
+         std::string decode( const std::string& value, std::string_view codeset);
+
+      } // utf8
+
+      namespace hex
+      {
+         namespace detail
+         {
+            template< typename Input, typename Out>
+            void encode( Input first, Input last, Out out)
+            {
+               auto hex = []( auto value)
                {
-                  void* memory;
-                  platform::size::type bytes;
+                  if( value < 10)
+                     return value + 48;
+                  return value + 87;
                };
 
-               template< typename C> 
-               auto data( C& container)
+               for( ; first != last; ++first)
                {
-                  return Data{ (void*)( container.data()), static_cast< platform::size::type>( container.size())};
+                  *out++ = hex( ( 0xf0 & *first) >> 4);
+                  *out++ = hex( 0x0f & *first);
                }
+            }
 
-               platform::size::type encode( const Data source, Data target);
-
-               platform::size::type decode( const char* first, const char* last, char* dest_first, char* dest_last);
-            } // detail
-
-            namespace capacity
+            template< typename Input, typename Out>
+            void decode( Input first, Input last, Out out)
             {
-               constexpr platform::size::type encoded( platform::size::type bytes) 
+               assert( ( last - first) % 2 == 0);
+
+               auto hex = []( auto value)
                {
-                  return ( ( bytes + 2) / 3) * 4;
+                  if( value >= 87)
+                     return value - 87;
+                  return value - 48;
+               };
+
+               for( ; first != last; ++out)
+               {
+                  *out = ( 0x0f & hex( *first++)) << 4;
+                  *out += 0x0f & hex( *first++);
                }
-            } // capacity
-
-
-
-            template< typename C1, typename C2>
-            auto encode( C1&& source, C2& target) -> std::enable_if_t< traits::has::resize_v< decltype( target)>>
-            {
-               static_assert( sizeof( traits::iterable::value_t< C1>) == sizeof( traits::iterable::value_t< C2>), "not the same value type size");
-
-               target.resize( capacity::encoded( source.size()));
-
-               target.resize( detail::encode( detail::data( source), detail::data( target)));
             }
 
-            //! @return Base64-encoded binary data of @p container
-            //!
-            //! @throw exception::Casual on failure
-            template< typename C>
-            std::string encode( C&& container)
-            {
-               std::string result;
-               encode( container, result);
-               return result;
-            }
-
-            //! @return Base64-encoded binary data of [first, last)
-            //!
-            //! @pre @p Iter has to be a random access iterator
-            //!
-            //! @throw exception::Casual on failure
-            template< typename Iter>
-            auto encode( Iter first, Iter last) -> 
-               std::enable_if_t< traits::is::iterator_v< Iter>, std::string>
-            {
-               return encode( range::make( first, last));
-            }
-
-            //! @return Base64-decoded binary data
-            //!
-            //! @throw exception::Casual on failure
-            platform::binary::type decode( const std::string& value);
-
-            // TODO performance: make it possible to decode to fixed memory
-            //  `b64_pton` seems to need additional space during decode, hence it's
-            //  not symmetric. Roll our own?
+         } // detail
 
 
-            //!
-            //! decode Base64 to a binary representation
-            //! @attention [first, last) needs to be bigger than the [first, result) (by some bytes...)
-            //!
-            template< typename Source, typename Iter>
-            std::enable_if_t<
-               traits::is::string::like_v< Source>
-               && traits::is::binary::iterator_v< Iter>,
-               Iter >
-            decode( Source&& source, Iter first, Iter last)
-            {
-               auto cast_source = []( auto&& i){ return reinterpret_cast< const char*>( &(*i));};
-               auto cast_target = []( auto&& i){ return reinterpret_cast< char*>( &(*i));};
-               auto size = detail::decode(
-                  cast_source( std::begin( source)), cast_source( std::end( source)),
-                  cast_target( first), cast_target( last));
-
-               return first + size;
-            }
-
-         } // base64
-
-         namespace utf8
+         //! encode binary sequence [first, last) to hex-representation
+         //!
+         //! @param first start of binary
+         //! @param last end of binary (exclusive)
+         //! @return hex-encoded string of [first, last)
+         template< typename Iter>
+         std::enable_if_t< traits::is::binary::iterator_v< Iter>, std::string>
+         encode( Iter first, Iter last)
          {
-            //! @param value String encoded in local default codeset
-            //!
-            //! @return UTF-8-encoded string
-            //!
-            //! @throw exception::limit::Memory on resource failures
-            //! @throw exception::system::invalid::Argument for bad input
-            //! @throw exception::Casual on other failures
-            std::string encode( const std::string& value);
+            std::string result( std::distance( first, last) * 2, 0);
+            detail::encode( first, last, std::begin( result));
+            return result;
+         }
 
-            //! @param value The UTF-8 encoded string
-            //!
-            //! @return String encoded in local default codeset
-            //!
-            //! @throw exception::limit::Memory on resource failures
-            //! @throw exception::system::invalid::Argument for bad input
-            //! @throw exception::Casual on other failures
-            std::string decode( const std::string& value);
+         template< typename Iter>
+         std::enable_if_t< traits::is::binary::iterator_v< Iter>, std::ostream&>
+         encode( std::ostream& out, Iter first, Iter last)
+         {
+            detail::encode( first, last, std::ostream_iterator< char>( out));
+            return out;
+         }
 
-            //! @param codeset String-encoding
-            //!
-            //! @return Whether the provided codeset exist in the system
-            //!
-            //! @throw exception::limit::Memory on resource failures
-            //! @throw exception::Casual on other failures
-            bool exist( std::string_view codeset);
+         template< typename R>
+         auto encode( std::ostream& out, R&& range) -> 
+            std::enable_if_t< traits::is::binary::like_v< R>, std::ostream&>
+         {
+            return encode( out, std::begin( range), std::end( range));
+         }
 
-            //! @param value String encoded in provided codeset
-            //! @param codeset String-encoding
-            //!
-            //! @return UTF-8-encoded string
-            //!
-            //! @throw exception::limit::Memory on resource failures
-            //! @throw exception::system::invalid::Argument for bad input
-            //! @throw exception::Casual on other failures
-            std::string encode( const std::string& value, std::string_view codeset);
+         //! encode binary @p container to hex-representation
+         //!
+         //! @param container binary representation
+         //! @return hex-encoded string of @p container
+         template< typename C>
+         std::string encode( C&& container)
+         {
+            return encode( std::begin( container), std::end( container));
+         }
 
-            //! @param value The UTF-8 encoded string
-            //! @param codeset Encoding for result
-            //!
-            //! @return String encoded in provided codeset
-            //!
-            //! @throw exception::limit::Memory on resource failures
-            //! @throw exception::system::invalid::Argument for bad input
-            //! @throw exception::Casual on other failures
-            std::string decode( const std::string& value, std::string_view codeset);
+         //! decode hex-string to a binary representation
+         //!
+         //! @param value hex-string
+         //! @return binary representation of @p value
+         inline platform::binary::type decode( std::string_view value)
+         {
+            platform::binary::type result( value.size() / 2);
+            detail::decode( std::begin( value), std::end( value), std::begin( result));
+            return result;
+         }
 
-         } // utf8
+         template< typename Source, typename Iter>
+         std::enable_if_t< 
+            traits::is::string::like_v< Source>
+            && traits::is::binary::iterator_v< Iter>
+         >
+         decode( Source&& source, Iter first, Iter last)
+         {
+            assert( range::size( source) <= ( std::distance( first, last)  * 2) + 1);
+            detail::decode( std::begin( source), std::end( source),  first);
+         }
 
-         namespace hex
+         //! decode hex-string to a binary representation
+         //!
+         //! @return binary representation of @p value
+         template< typename Source, typename Target>
+         std::enable_if_t< 
+            traits::is::string::like_v< Source>
+            && traits::is::binary::like_v< Target>
+         >
+         decode( Source&& source, Target&& target)
+         {
+            decode( std::forward< Source>( source), std::begin( target), std::end( target));
+         }
+
+         namespace stream
          {
             namespace detail
             {
-               std::string encode( const char* first, const char* last);
-               void encode( std::ostream& out, const char* first, const char* last);
-               void decode( const char* first, const char* last, char* data);
+               template< typename T>
+               struct Proxy
+               {
+                  friend std::ostream& operator << ( std::ostream& out, const Proxy& proxy)
+                  {
+                     return hex::encode( out, *proxy.value);
+                  }
+
+                  const T* value;
+               };
             } // detail
 
-
-            //! encode binary sequence [first, last) to hex-representation
-            //!
-            //! @param first start of binary
-            //! @param last end of binary (exclusive)
-            //! @return hex-encoded string of [first, last)
-            template< typename Iter>
-            std::enable_if_t< traits::is::binary::iterator_v< Iter>, std::string>
-            encode( Iter first, Iter last)
+            template< typename T>
+            auto wrapper( const T& value)
             {
-               auto cast = []( auto&& i){ return reinterpret_cast< const char*>( &(*i));}; 
-               return detail::encode( cast( first), cast( last));
+               return detail::Proxy< T>{ &value};
             }
+         } // stream
 
-            template< typename Iter>
-            std::enable_if_t< traits::is::binary::iterator_v< Iter>, std::ostream&>
-            encode( std::ostream& out, Iter first, Iter last)
-            {
-               auto cast = []( auto&& i){ return reinterpret_cast< const char*>( &(*i));}; 
-               detail::encode( out, cast( first), cast( last));
-               return out;
-            }
-
-            template< typename R>
-            auto encode( std::ostream& out, R&& range) -> 
-               std::enable_if_t< traits::is::binary::like_v< R>, std::ostream&>
-            {
-               return encode( out, std::begin( range), std::end( range));
-            }
-
-            //! encode binary @p container to hex-representation
-            //!
-            //! @param container binary representation
-            //! @return hex-encoded string of @p container
-            template< typename C>
-            std::string encode( C&& container)
-            {
-               return encode( std::begin( container), std::end( container));
-            }
-
-            //! decode hex-string to a binary representation
-            //!
-            //! @param value hex-string
-            //! @return binary representation of @p value
-            platform::binary::type decode( const std::string& value);
-
-            template< typename Source, typename Iter>
-            std::enable_if_t< 
-               traits::is::string::like_v< Source>
-               && traits::is::binary::iterator_v< Iter>
-            >
-            decode( Source&& source, Iter first, Iter last)
-            {
-               auto size = last - first;
-               assert( range::size( source) <= ( size * 2) + 1);
-
-               auto cast_source = []( auto&& i){ return reinterpret_cast< const char*>( &(*i));};
-               auto cast_target = []( auto&& i){ return reinterpret_cast< char*>( &(*i));};
-               detail::decode( cast_source( std::begin( source)), cast_source( std::end( source)), cast_target( first));
-            }
-
-            //! decode hex-string to a binary representation
-            //!
-            //! @return binary representation of @p value
-            template< typename Source, typename Target>
-            std::enable_if_t< 
-               traits::is::string::like_v< Source>
-               && traits::is::binary::like_v< Target>
-            >
-            decode( Source&& source, Target&& target)
-            {
-               decode( std::forward< Source>( source), std::begin( target), std::end( target));
-            }
-
-            namespace stream
-            {
-               namespace detail
-               {
-                  template< typename T>
-                  struct Proxy
-                  {
-                     friend std::ostream& operator << ( std::ostream& out, const Proxy& proxy)
-                     {
-                        return hex::encode( out, *proxy.value);
-                     }
-
-                     const T* value;
-                  };
-               } // detail
-
-               template< typename T>
-               auto wrapper( const T& value)
-               {
-                  return detail::Proxy< T>{ &value};
-               }
-            } // stream
-
-
-         } // hex
-      } // transcode
-   } // common
+      } // hex
+   } // common::transcode
 } // casual
 
 
