@@ -188,11 +188,8 @@ namespace casual
 
          local::check_version( m_connection);
 
-         // Make sure we got FK
-         m_connection.statement( "PRAGMA foreign_keys = ON;");
-
-         // Make sure we set WAL-mode.
-         m_connection.statement( "PRAGMA journal_mode=WAL;");
+         // log the actual pragma settings
+         m_connection.pragma_information( queue::log);
 
          log::line( verbose::log, "pre_statements_path: ", m_connection.pre_statements_path());
          m_connection.pre_statements( log::category::information);
