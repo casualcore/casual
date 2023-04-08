@@ -81,6 +81,14 @@ namespace sql
          }
       } // code
 
+      namespace version
+      {
+         inline auto library()
+         {
+            return sqlite3_libversion_number();
+         }
+      } // version
+
    } // database
 } // sql
 
@@ -536,8 +544,12 @@ namespace sql
       {
          Connection() = default;
 
-         inline Connection( std::filesystem::path file) : m_handle( open( file)), m_file( std::move( file))
+         inline Connection( std::filesystem::path file) 
+            : m_handle( open( file)), m_file( std::move( file))
          {
+            statement( "PRAGMA foreign_keys=ON;");
+            statement( "PRAGMA journal_mode=WAL;");
+            statement( "PRAGMA synchronous=NORMAL;");
          }
 
          inline explicit operator bool() const noexcept { return m_handle && true;}
@@ -574,7 +586,7 @@ namespace sql
          }
 
          //! executes the provided statement and streams the human readable output to `out`
-         inline void statement( const std::string& sql, std::ostream& out)
+         inline void statement( std::string_view sql, std::ostream& out)
          {
             auto callback = []( void* argument, int count, char** values, char** columns) -> int
             {
@@ -589,7 +601,7 @@ namespace sql
                return 0;
             };
 
-            if( auto code = code::make( sqlite3_exec( m_handle.get(), sql.c_str(), callback, &out, nullptr)))
+            if( auto code = code::make( sqlite3_exec( m_handle.get(), sql.data(), callback, &out, nullptr)))
                code::raise( code, m_handle);
          }
 
@@ -628,6 +640,35 @@ namespace sql
          inline void commit() const { sqlite3_exec( m_handle.get(), "COMMIT", 0, 0, 0); }
 
          inline friend std::ostream& operator << ( std::ostream& out, const Connection& value) { return out << "{ file: " << value.m_file << '}';}
+
+         inline void pragma_information( std::ostream& out)
+         {
+            if( ! out)
+               return;
+            
+            auto version =  version::library();
+
+            out << "sqlite version|" << version << "|\n";
+
+            if( version >= 3016000 )
+            {
+               constexpr std::string_view sql = R"(
+SELECT 'pragma_foreign_keys', * FROM "pragma_foreign_keys";
+SELECT 'pragma_journal_mode', * FROM "pragma_journal_mode";
+SELECT 'pragma_synchronous', * FROM "pragma_synchronous";
+)";
+               statement( sql, out);
+            }
+            else
+            {
+               constexpr std::string_view sql = R"(
+PRAGMA foreign_keys;
+PRAGMA pragma_journal; 
+PRAGMA synchronous;
+)";
+               statement( sql, out);
+            }
+         }
 
       private:
 
@@ -766,7 +807,6 @@ namespace sql
             }
 
             connection.execute( "INSERT INTO db_version VALUES( ?, ?);", version.major, version.minor);
-
          }
 
       } // version
