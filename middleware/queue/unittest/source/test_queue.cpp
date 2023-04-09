@@ -6,6 +6,7 @@
 
 
 #include "common/unittest.h"
+#include "common/unittest/file.h"
 
 #include "queue/unittest/utility.h"
 #include "queue/common/queue.h"
@@ -26,6 +27,7 @@
 #include "common/signal.h"
 #include "common/communication/instance.h"
 #include "common/serialize/macro.h"
+#include "common/environment/scoped.h"
 
 #include "domain/discovery/api.h"
 #include "domain/unittest/manager.h"
@@ -1220,6 +1222,42 @@ domain:
 
             EXPECT_TRUE( count == number_of_messages) << CASUAL_NAMED_VALUE( count);
          }
+      }
+
+      TEST( casual_queue, enqueue_queuebase_out_of_memory__expect_error)
+      {
+         common::unittest::Trace trace;
+
+         auto directory = common::unittest::directory::temporary::Scoped{};
+
+         // some space is needed for queue-group initialization
+         auto content = common::unittest::file::content( directory.path() / "a.pre.statements", R"(
+PRAGMA max_page_count = 25;
+PRAGMA page_size = 512;
+)");
+
+         auto scope = common::environment::variable::scoped::set( "CASUAL_UNITTEST_QUEUEBASE", directory.path() / "a.qb");
+
+         constexpr auto config = R"(
+domain: 
+   queue:
+      groups:
+         -  alias: "A"
+            queuebase: ${CASUAL_UNITTEST_QUEUEBASE}
+            queues:
+               - name: a1
+)";
+
+         auto domain = local::domain( config);
+
+         queue::Message message;
+         message.payload.type = common::buffer::type::binary;
+         message.payload.data = common::unittest::random::binary( 512);
+
+         EXPECT_THROW( common::algorithm::for_n( 2000, [ &message]()
+         {
+            queue::enqueue( "a1", message);
+         }), std::system_error);
       }
 
    } // queue

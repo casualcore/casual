@@ -41,7 +41,6 @@ $ casual-build-server --output simple-server --service echo --link-directives ec
 ### advanced
 
 We use a _server-definition-file_ to define the server in it's services. We name this `example.server.yaml`, 
-See *Missing link?* [casual/middleware/configuration/example](../../../configuration/example/readme.md) for more information.
 
 ```yaml
 server:
@@ -71,9 +70,6 @@ server:
       # - branch : do not use unless you know what you're doing...
       transaction: join
 ```
-
-_See *Missing link?* [build-server-example](../../../configuration/example/build/server.yaml) for further details._
-
 
 * We want the server to be named `advanced-server`
 * Use the _definition-file_ to define the server (which adds a dependency to a resource with the name `resource-1` and the key `rm-mockup` )

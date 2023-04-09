@@ -21,7 +21,6 @@
 #include "common/communication/ipc.h"
 #include "common/communication/instance.h"
 #include "common/exception/guard.h"
-#include "common/execution.h"
 
 namespace casual
 {
@@ -494,6 +493,8 @@ namespace casual
                            request.requested = forward->target.service;
                            // we'll wait 'forever'
                            request.context.semantic = decltype( request.context.semantic)::wait;
+                           // make sure we get a unique execution id for this 'context', will be present in the actual call later on.
+                           request.execution = decltype( request.execution)::generate();
 
                            state.multiplex.send( ipc::service::manager(), request);
 
@@ -633,9 +634,6 @@ namespace casual
                               send::transaction::rollback::request( state, std::move( *pending));
                               return;
                            }
-
-                           // Generate a new execution id for each service call
-                           common::execution::reset();
 
                            message::service::call::caller::Request request{ pending->buffer};
                            request.process = process::handle();

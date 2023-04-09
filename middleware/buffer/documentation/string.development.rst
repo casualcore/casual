@@ -1,13 +1,14 @@
-# string development
+string development
+==================
 
-## sample
+sample
+------
 
-- [client](./../sample/client/source/string.cpp)
+.. literalinclude:: ./../sample/client/source/string.cpp
 
-## remarks
+remarks
+-------
 
 - No encoding of strings occurs
 
 - You may write to the buffer in other ways (such as `strcpy()` but the size in `tpalloc()` and `tprealloc()` will then be relevant
-
-## tools

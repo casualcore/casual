@@ -1,4 +1,4 @@
-# casual.gateway
+# casual-gateway-manager
 
 
 ## .casual/gateway/state

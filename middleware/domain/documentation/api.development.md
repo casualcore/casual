@@ -1,4 +1,4 @@
-# casual.domain
+# casual-domain-manager
 
 ## .casual.domain.state
 

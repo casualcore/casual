@@ -1,7 +1,22 @@
 # Changelog
 This is the changelog for `casual` and all changes are listed in this document.
 
-## [Unreleased]
+## [1.6.3] - 2023-04-09
+### Fixes
+- sql: make sure sqlite uses synchronous=NORMAL (#177)
+- queue: fix memory leak by not (implicitly) using setenv repeatedly (#175)
+
+## [1.6.2] - 2023-03-25
+### Fixes
+- queue - extend c-api for get reply and get available
+- configuration - fix queue configuration default directory
+- queue - send error reply on failed enqueue
+
+## [1.6.1] - 2023-03-13
+### Fixes
+- queue - fix pending data structure slicing (memory leak)
+- documentation - fix sphinx-config
+- build - fix version.py to handle new minor
 
 ## [1.6.0] - 2023-03-06
 ### Added

@@ -5,7 +5,7 @@ import casual.middleware.make.api as dsl
 # Install
 
 # domain examples
-make.Install( [ 'domain/readme.md'], dsl.paths().install + '/documentation/example/domain')
+make.Install( [ 'domain/example.md'], dsl.paths().install + '/documentation/example/domain')
 
 # single domain example
 make.Install( [ 'domain/single/readme.md', 'domain/single/domain.env'], dsl.paths().install + '/documentation/example/domain/single')

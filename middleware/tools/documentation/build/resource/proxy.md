@@ -11,9 +11,7 @@ _XA specification uses the term resource proxy, hence `casual` uses the same ter
 
 `casual` is installed and `CASUAL_HOME` is set to the install path.
 
-The wanted resources have to be configured in `$CASUAL_HOME/configuration/resources.(yaml|json|xml...)`. See *Missing link?* [casual/middleware/configuration/example](../../../../configuration/example/readme.md) for more information.
-
-
+The wanted resources have to be configured in `$CASUAL_HOME/configuration/resources.(yaml|json|xml...)`.
 
 
 ## example
