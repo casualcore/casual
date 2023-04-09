@@ -1,7 +1,10 @@
 # Changelog
 This is the changelog for `casual` and all changes are listed in this document.
 
-## [Unreleased]
+## [1.6.3] - 2023-04-09
+### Fixes
+- sql: make sure sqlite uses synchronous=NORMAL (#177)
+- queue: fix memory leak by not (implicitly) using setenv repeatedly (#175)
 
 ## [1.6.2] - 2023-03-25
 ### Fixes
