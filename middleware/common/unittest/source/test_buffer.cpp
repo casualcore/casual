@@ -50,11 +50,11 @@ namespace casual
          {
             common::unittest::Trace trace;
 
-            auto buffer = pool::Holder::instance().allocate( buffer::type::binary, 1024);
+            auto buffer = pool::holder().allocate( buffer::type::binary, 1024);
 
             ASSERT_TRUE( buffer);
 
-            pool::Holder::instance().deallocate( buffer);
+            pool::holder().deallocate( buffer);
 
          }
 
@@ -62,39 +62,39 @@ namespace casual
          {
             common::unittest::Trace trace;
 
-            auto buffer = pool::Holder::instance().adopt( Payload{ buffer::type::binary, 1024});
+            auto buffer = pool::holder().adopt( Payload{ buffer::type::binary, 1024});
 
             ASSERT_TRUE( buffer);
 
-            pool::Holder::instance().clear();
+            pool::holder().clear();
          }
 
          TEST( common_buffer, pool_adopt__deallocate__expect__inbound_still_valid)
          {
             common::unittest::Trace trace;
 
-            auto inbound = pool::Holder::instance().adopt( Payload{ buffer::type::binary, 1024});
+            auto inbound = pool::holder().adopt( Payload{ buffer::type::binary, 1024});
 
-            pool::Holder::instance().deallocate( inbound);
+            pool::holder().deallocate( inbound);
 
             EXPECT_NO_THROW({
-               auto send = pool::Holder::instance().get( inbound);
+               auto send = pool::holder().get( inbound);
                EXPECT_TRUE( send.reserved() == 1024);
             });
 
-            pool::Holder::instance().clear();
+            pool::holder().clear();
          }
 
          TEST( common_buffer, pool_adopt__clear__expect__inbound_deallocated)
          {
             common::unittest::Trace trace;
 
-            auto inbound = pool::Holder::instance().adopt( Payload{ buffer::type::binary, 1024});
+            auto inbound = pool::holder().adopt( Payload{ buffer::type::binary, 1024});
 
-            pool::Holder::instance().clear();
+            pool::holder().clear();
 
             EXPECT_CODE({
-               pool::Holder::instance().get( inbound);
+               pool::holder().get( inbound);
             }, code::xatmi::argument);
 
          }
@@ -104,7 +104,7 @@ namespace casual
             common::unittest::Trace trace;
 
             EXPECT_CODE({
-               pool::Holder::instance().allocate( "non-existing", "non-existing", 1024);
+               pool::holder().allocate( "non-existing", "non-existing", 1024);
             }, code::xatmi::buffer_input);
          }
 
@@ -113,15 +113,15 @@ namespace casual
          {
             common::unittest::Trace trace;
 
-            auto small = pool::Holder::instance().allocate( buffer::type::binary, 64);
+            auto small = pool::holder().allocate( buffer::type::binary, 64);
 
-            auto big = pool::Holder::instance().reallocate( small, 2048);
+            auto big = pool::holder().reallocate( small, 2048);
 
             EXPECT_TRUE( small);
             EXPECT_TRUE( big);
             EXPECT_TRUE( small != big);
 
-            pool::Holder::instance().deallocate( big);
+            pool::holder().deallocate( big);
 
          }
 
@@ -129,13 +129,13 @@ namespace casual
          {
             common::unittest::Trace trace;
 
-            auto small = pool::Holder::instance().allocate( buffer::type::binary, 64);
-            auto big = pool::Holder::instance().reallocate( small, 2048);
+            auto small = pool::holder().allocate( buffer::type::binary, 64);
+            auto big = pool::holder().reallocate( small, 2048);
 
-            pool::Holder::instance().deallocate( big);
+            pool::holder().deallocate( big);
 
             EXPECT_CODE({
-               pool::Holder::instance().reallocate( small, 2048);
+               pool::holder().reallocate( small, 2048);
             }, code::xatmi::argument);
 
          }
@@ -145,14 +145,14 @@ namespace casual
             common::unittest::Trace trace;
 
             const auto type = buffer::type::binary;
-            auto buffer = pool::Holder::instance().allocate( type, 64);
+            auto buffer = pool::holder().allocate( type, 64);
 
-            auto&& result = pool::Holder::instance().type( buffer);
+            auto&& result = pool::holder().type( buffer);
 
             EXPECT_TRUE( type == result);
 
             // will log warning
-            pool::Holder::instance().clear();
+            pool::holder().clear();
 
          }
 
@@ -163,16 +163,16 @@ namespace casual
             const auto type = buffer::type::binary;
             const std::string info( "test string");
 
-            auto handle = pool::Holder::instance().allocate( type, 128);
+            auto handle = pool::holder().allocate( type, 128);
             algorithm::copy( info, handle.underlying());
 
-            auto holder = buffer::pool::Holder::instance().get( handle, 100);
+            auto holder = buffer::pool::holder().get( handle, 100);
 
             EXPECT_TRUE( holder.transport() == 100);
             EXPECT_TRUE( holder.payload().data.size() == 128) << "holder.payload.memory.size(): " << holder.payload().data.size();
             EXPECT_TRUE( holder.payload().data.data() == info);
 
-            buffer::pool::Holder::instance().deallocate( handle);
+            buffer::pool::holder().deallocate( handle);
          }
 
          TEST( common_buffer, message_call)
@@ -186,10 +186,10 @@ namespace casual
 
             // marshal
             {
-               auto handle = pool::Holder::instance().allocate( type, 128);
+               auto handle = pool::holder().allocate( type, 128);
                algorithm::copy( info, handle.underlying());
 
-               message::service::call::caller::Request message( buffer::pool::Holder::instance().get( handle, 100));
+               message::service::call::caller::Request message( buffer::pool::holder().get( handle, 100));
 
                EXPECT_TRUE( message.buffer.transport() == 100);
                EXPECT_TRUE( message.buffer.payload().data.size() == 128) << "message.buffer.payload.memory.size(): " << message.buffer.payload().data.size();
@@ -199,7 +199,7 @@ namespace casual
                output << message;
                marshal_buffer = output.consume();
                
-               buffer::pool::Holder::instance().deallocate( handle);
+               buffer::pool::holder().deallocate( handle);
             }
 
             // unmarshal

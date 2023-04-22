@@ -399,7 +399,7 @@ namespace casual
 
                const queue::Lookup lookup{ queue};
 
-               auto send = common::buffer::pool::Holder::instance().get( common::buffer::handle::type{ message.payload.buffer}, message.payload.size);
+               auto send = common::buffer::pool::holder().get( common::buffer::handle::type{ message.payload.buffer}, message.payload.size);
 
                // We have to send only the real size of the buffer [buffer.begin, buffer.begin + transport_size)
                //
@@ -432,7 +432,7 @@ namespace casual
                      payload.type = std::move( message.payload.type);
                      payload.data = std::move( message.payload.data);
 
-                     auto buffer = common::buffer::pool::Holder::instance().insert( std::move( payload));
+                     auto buffer = common::buffer::pool::holder().insert( std::move( payload));
                      result.payload.buffer = std::get< 0>( buffer).underlying();
                      result.payload.size = std::get< 1>( buffer);                           
                   }
