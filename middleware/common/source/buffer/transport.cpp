@@ -64,7 +64,7 @@ namespace casual
             const std::string& service,
             Lifecycle lifecycle)
       {
-         dispatch( buffer, size, service, lifecycle, buffer::pool::Holder::instance().type( buffer::handle::type{ buffer}));
+         dispatch( buffer, size, service, lifecycle, buffer::pool::holder().type( buffer::handle::type{ buffer}));
       }
 
       Context::Callback::Callback( size_type order, std::vector< Lifecycle> lifecycles, std::vector< std::string> types, dispatch_type callback)

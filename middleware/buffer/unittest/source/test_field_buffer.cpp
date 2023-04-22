@@ -63,15 +63,15 @@ namespace casual
          common::unittest::Trace trace;
 
          auto type = common::buffer::type::combine( CASUAL_FIELD);
-         auto handle = buffer::pool::Holder::instance().allocate( type, 666);
+         auto handle = buffer::pool::holder().allocate( type, 666);
 
-         auto buffer = buffer::pool::Holder::instance().get( handle, 0);
+         auto buffer = buffer::pool::holder().get( handle, 0);
 
          EXPECT_TRUE( buffer.transport() == 0) << "transport: " <<  buffer.transport();
          EXPECT_TRUE( buffer.reserved() == 666) << "reserved: " <<  buffer.reserved();
          EXPECT_TRUE( buffer.payload().type == type) << "buffer.type: " << buffer.payload().type;
 
-         buffer::pool::Holder::instance().deallocate( handle);
+         buffer::pool::holder().deallocate( handle);
       }
 
 
