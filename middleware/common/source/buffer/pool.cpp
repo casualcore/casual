@@ -89,35 +89,33 @@ namespace casual
 
       buffer::handle::mutate::type Holder::adopt( Payload&& payload)
       {
-         Trace trace{ "buffer::pool::adopt"};
+         Trace trace{ "buffer::pool::Holder::adopt"};
+
+         if( payload.null())
+            return {};
 
          // This is the only place where a buffer is consumed by the pool, hence can only happen
          // during service-invocation.
          //
          // Keep track of the inbound buffer given to the user. This is a
          // 'special' buffer according to the XATMI-spec.
-         //m_inbound = std::get< 0>( insert( std::move( payload)));
-         auto buffer = std::get< 0>( insert( std::move( payload)));
-         m_inbound = buffer::handle::type{ buffer};
-
-         return buffer;
+         auto& pool = get_pool( payload.type);
+         auto result = pool.adopt( std::move( payload), &m_inbound);
+         m_inbound = result;
+         return result;
       }
 
       std::tuple< buffer::handle::mutate::type, platform::buffer::raw::size::type> Holder::insert( Payload&& payload)
       {
-         Trace trace{ "buffer::pool::insert"};
+         Trace trace{ "buffer::pool::Holder::insert"};
          log::line( log::category::buffer, "insert payload: ", payload);
 
          if( payload.null())
-         {
             return { {}, {}};
-         }
-         else 
-         {
-            auto size = payload.data.size();
-            auto& holder = get_pool( payload.type);
-            return { holder.insert( std::move( payload)), size};
-         }
+
+         auto size = payload.data.size();
+         auto& pool = get_pool( payload.type);
+         return { pool.insert( std::move( payload)), size};
       }
 
       payload::Send Holder::get( buffer::handle::type handle, platform::binary::size::type user_size)
@@ -174,8 +172,7 @@ namespace casual
          {
             exception::guard( [&]()
             {
-               get_pool( m_inbound).deallocate( m_inbound);
-               m_inbound = {};
+               get_pool( m_inbound).deallocate( std::exchange( m_inbound, {}));
             });
          }
          algorithm::for_each( m_pools, std::mem_fn( &Holder::concept::clear));
