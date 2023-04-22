@@ -100,17 +100,43 @@ namespace casual
                      common::code::raise::error( common::code::xatmi::argument, "buffer is comprised");
                }
 
+               // invoked when a service is invoked with the "buffer from the wire".
+               // Since this type of buffer auto expands the memory during add and such, we need
+               // to let the 'buffer::pool::Holder' keep track of the handle to this buffer.
+               // This is done through 'm_inbound', which need to be updated everywhere we change 
+               // the address of the buffer (allocate,shrink, and so on).
+               Buffer( common::buffer::Payload payload, common::buffer::handle::type* inbound)
+                  : Buffer{ std::move( payload)}
+               {
+                  m_inbound = inbound;
+               }
+
+               template< typename Iter>
+               auto append( Iter first, Iter end)
+               {                  
+                  payload.data.insert( payload.data.end(), first, end);
+                  if( m_inbound)
+                     *m_inbound = handle();
+               }
+
                Buffer( Buffer&&) noexcept = default;
                Buffer& operator = ( Buffer&&) noexcept = default;
 
-               void shrink() { return payload.data.shrink_to_fit();}
+               void shrink() 
+               { 
+                  payload.data.shrink_to_fit();
+                  if( m_inbound)
+                     *m_inbound = handle();
+               }
                size_type capacity() const noexcept { return payload.data.capacity();}
-               void capacity( platform::size::type value){ payload.data.reserve( value); }
+               void capacity( platform::size::type value)
+               { 
+                  payload.data.reserve( value);
+                  if( m_inbound)
+                     *m_inbound = handle();
+               }
                size_type utilized() const noexcept { return payload.data.size();}
                void utilized( platform::size::type value) { payload.data.resize( value);}
-
-               auto handle() const noexcept { return common::buffer::handle::type{ payload.data.data()};}
-               auto handle() noexcept { return common::buffer::handle::mutate::type{ payload.data.data()};}
 
                //! Implement Buffer::transport
                size_type transport( platform::size::type user_size) const
@@ -128,6 +154,8 @@ namespace casual
                   CASUAL_SERIALIZE( index);
                )
 
+               common::buffer::handle::type* m_inbound = nullptr;
+
             };
 
             // Might be named Pool as well
@@ -139,11 +167,17 @@ namespace casual
                   return common::array::make( buffer::key);
                };
 
+               // called on service invocation
+               common::buffer::handle::mutate::type adopt( common::buffer::Payload&& payload, common::buffer::handle::type* inbound)
+               {
+                  Trace trace{ "buffer::field::Allocator::adopt"};
+                  auto& buffer = allocator_base::emplace_back( std::move( payload), inbound);
+                  return buffer.handle();
+               }
+
                common::buffer::handle::mutate::type allocate( std::string_view type, platform::binary::size::type size)
                {
                   auto& buffer = allocator_base::emplace_back( type, 0);
-
-                  common::log::line( common::verbose::log, "TODO remove: field:: allocate this: ", static_cast< const void*>( this));
 
                   // If size() is ​0​, data() may or may not return a null pointer
                   buffer.capacity( size ? size : 1);
@@ -175,14 +209,11 @@ namespace casual
 
                Buffer& get( common::buffer::handle::type handle)
                {
-                  common::log::line( common::verbose::log, "TODO remove: field:: get handle: ", handle);
-
-                  common::log::line( common::verbose::log, "TODO remove: field:: get this: ", static_cast< const void*>( this));
-
                   return allocator_base::get( handle);
-
                }
             };
+
+            static_assert( common::buffer::pool::traits::is::adoptable_v< Allocator>, "not adoptable"); 
 
          } // <unnamed>
       } // local
@@ -231,7 +262,7 @@ namespace casual
             template<typename B>
             void append( B& buffer, const_data_type data, platform::size::type size)
             {
-               buffer.payload.data.insert( buffer.payload.data.end(), data, data + size);
+               buffer.append( data, data + size);
             }
 
 

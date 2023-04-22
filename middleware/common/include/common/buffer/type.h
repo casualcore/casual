@@ -57,6 +57,11 @@ namespace casual
             using base_type::base_type;
             //! implicit conversion from _mutable handle type_
             type( mutate::type other) : base_type{ other.underlying()} {}
+
+            inline friend bool operator == ( type lhs, mutate::type rhs) { return lhs.underlying() == rhs.underlying();}
+            inline friend bool operator == ( mutate::type lhs, type rhs) { return lhs.underlying() == rhs.underlying();}
+            inline friend bool operator != ( type lhs, mutate::type rhs) { return ! ( lhs == rhs);}
+            inline friend bool operator != ( mutate::type lhs, type rhs) { return ! ( lhs == rhs);}
          };
          
          
@@ -163,6 +168,7 @@ namespace casual
          platform::binary::size::type reserved() const;
 
          inline buffer::handle::type handle() const noexcept { return payload.handle();}
+         inline buffer::handle::mutate::type handle() noexcept { return payload.handle();}
 
          //inline friend bool operator == ( const Buffer& lhs, buffer::handle::type rhs) { return lhs.handle() == rhs;}
 
