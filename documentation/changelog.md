@@ -1,7 +1,9 @@
 # Changelog
 This is the changelog for `casual` and all changes are listed in this document.
 
-## [Unreleased]
+## [1.5.15] - 2023-04-25
+### Fixes
+- queue - prevent forward causing service-manager coredump (#182)
 
 ## [1.5.14] - 2022-09-08
 ### Fixes
