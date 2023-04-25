@@ -1,6 +1,11 @@
 # Changelog
 This is the changelog for `casual` and all changes are listed in this document.
 
+## [1.6.4] - 2023-04-25
+### Fixes
+- buffer: fix field doesn't track 'service buffer' during auto realloc (#179)
+- queue - prevent forward causing service-manager coredump (#182) (ported from 1.5.15)
+
 ## [1.6.3] - 2023-04-09
 ### Fixes
 - sql: make sure sqlite uses synchronous=NORMAL (#177)
