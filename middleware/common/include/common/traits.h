@@ -379,7 +379,7 @@ namespace casual
             using iterable = std::tuple< decltype( std::begin( std::declval< T&>())), decltype( std::end( std::declval< T&>()))>;
 
             template< typename T> 
-            using iterator = typename std::iterator_traits< std::remove_reference_t< T>>::iterator_category;
+            using iterator = typename std::iterator_traits< traits::remove_cvref_t< T>>::iterator_category;
 
             template< typename T>
             using begin_dereferenced = decltype( *std::begin( std::declval< T&>()));

@@ -99,6 +99,7 @@ namespace casual
 
          friend bool operator == ( const Transaction& lhs, const ID& rhs) noexcept;
          friend bool operator == ( const Transaction& lhs, const XID& rhs) noexcept;
+         inline friend bool operator == ( const Transaction& lhs, const Transaction& rhs) noexcept { return lhs.trid == rhs.trid;}
 
          CASUAL_LOG_SERIALIZE({
             CASUAL_SERIALIZE( trid);

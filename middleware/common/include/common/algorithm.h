@@ -45,16 +45,17 @@ namespace casual
       namespace detail
       {
          template< typename P>
-         auto pivot( P&& pivot, traits::priority::tag< 1>) -> decltype( std::begin( pivot))
+         auto pivot( P pivot, traits::priority::tag< 1>) -> decltype( std::begin( pivot))
          { return std::begin( pivot);}
 
          template< typename P>
-         auto pivot( P pivot, traits::priority::tag< 0>) -> std::enable_if_t< traits::is::iterator_v< P>, P>
+         //auto pivot( P pivot, traits::priority::tag< 0>) -> std::enable_if_t< traits::is::iterator_v< P>, P>
+         auto pivot( P pivot, traits::priority::tag< 0>) -> decltype( void( *pivot++), P{})
          { return pivot;}
 
 
          template< typename P>
-         auto pivot( P&& pivot) -> decltype( detail::pivot( pivot, traits::priority::tag< 1>{}))
+         auto pivot( P pivot) -> decltype( detail::pivot( pivot, traits::priority::tag< 1>{}))
          { return detail::pivot( pivot, traits::priority::tag< 1>{});}
 
       } // detail

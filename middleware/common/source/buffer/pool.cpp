@@ -19,7 +19,7 @@ namespace casual
    namespace common::buffer::pool
    {
 
-      Holder::concept* Holder::find_pool( std::string_view type)
+      Holder::Concept* Holder::find_pool( std::string_view type)
       {
          if( auto found = algorithm::find_if( m_pools, manage_key( type)))
             return found->get();
@@ -27,7 +27,7 @@ namespace casual
          return nullptr;
       }
 
-      Holder::concept& Holder::get_pool( std::string_view type)
+      Holder::Concept& Holder::get_pool( std::string_view type)
       {
          if( auto found = Holder::find_pool( type))
             return *found;
@@ -35,7 +35,7 @@ namespace casual
          code::raise::error( code::xatmi::buffer_input, "invalid buffer type: ", type);
       }
 
-      Holder::concept& Holder::get_pool( buffer::handle::type handle)
+      Holder::Concept& Holder::get_pool( buffer::handle::type handle)
       {
          if( auto found = algorithm::find_if( m_pools, manage_buffer( handle)))
             return **found;
@@ -178,7 +178,7 @@ namespace casual
                m_inbound = {};
             });
          }
-         algorithm::for_each( m_pools, std::mem_fn( &Holder::concept::clear));
+         algorithm::for_each( m_pools, std::mem_fn( &Holder::Concept::clear));
       }
 
    } // casual.laz.se:80880/documentation/

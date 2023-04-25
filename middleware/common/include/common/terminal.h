@@ -273,9 +273,9 @@ namespace casual
             }
 
 
-            struct concept
+            struct Concept
             {
-               virtual ~concept() = default;
+               virtual ~Concept() = default;
                virtual std::string name() const = 0;
                virtual std::size_t width( const value_type& value, const std::ostream& out) const = 0;
                virtual void print( std::ostream& out, const value_type& value, std::size_t size) const = 0;
@@ -284,7 +284,7 @@ namespace casual
 
             struct column_holder
             {
-               column_holder( std::unique_ptr< concept> column)
+               column_holder( std::unique_ptr< Concept> column)
                   : m_column( std::move( column)), m_width( m_column->name().size()) {}
 
                template< typename Range>
@@ -312,13 +312,13 @@ namespace casual
                   return m_width;
                }
 
-               std::unique_ptr< concept> m_column;
+               std::unique_ptr< Concept> m_column;
                std::size_t m_width;
             };
 
 
             template< typename I>
-            struct basic_column : concept
+            struct basic_column : Concept
             {
                using implementation_type = I;
                basic_column( implementation_type implementation) : m_implementation( std::move( implementation)) {}

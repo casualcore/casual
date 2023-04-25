@@ -138,9 +138,9 @@ namespace casual
 
          private:
 
-            struct concept
+            struct Concept
             {
-               virtual ~concept() = default;
+               virtual ~Concept() = default;
                virtual protocol::io::Input& input() = 0;
                virtual protocol::io::Output& output() = 0;
                virtual bool call() = 0;
@@ -151,10 +151,10 @@ namespace casual
             };
 
             template< typename P>
-            Protocol( std::unique_ptr< P>&& concept) : m_concept( std::move( concept)) {}
+            Protocol( std::unique_ptr< P>&& model) : m_concept( std::move( model)) {}
 
             template< typename Protocol>
-            struct model : concept
+            struct model : Concept
             {
                template< typename... Args>
                model( Args&&... args) : m_protocol{ std::forward< Args>( args)...} {}
@@ -180,7 +180,7 @@ namespace casual
                   *archive << value;
             }
 
-            std::unique_ptr< concept> m_concept;
+            std::unique_ptr< Concept> m_concept;
          };
 
          namespace protocol

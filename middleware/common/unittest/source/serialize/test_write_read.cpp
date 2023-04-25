@@ -355,6 +355,7 @@ namespace casual
       }
 
       // TODO: gives warning from clang and gives failure on OSX with locale "UTF-8"
+      /*
       TYPED_TEST( common_serialize_write_read, DISABLED_type_extended_string)
       {
          unittest::Trace trace;
@@ -362,6 +363,7 @@ namespace casual
          std::string value = u8"Bängen Trålar";
          EXPECT_TRUE( TestFixture::write_read( value) == u8"Bängen Trålar");
       }
+      */
 
       TYPED_TEST( common_serialize_write_read, type_double)
       {

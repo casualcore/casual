@@ -731,7 +731,7 @@ namespace casual
          //! @todo: Remove usage of string::utf8 when using C++20
          static auto write( A& archive, const std::filesystem::path& path, const char* name)
          {
-            const auto data = path.u8string();
+            const auto data = path.string();
             const string::immutable::utf8 wrapper{ data};
             value::write( archive, wrapper, name);
          }
@@ -739,11 +739,11 @@ namespace casual
          //! @todo: Remove usage of string::utf8 when using C++20
          static auto read( A& archive, std::filesystem::path& path, const char* name)
          {
-            auto data = path.u8string();
+            auto data = path.string();
             string::utf8 wrapper{ data};
             if( value::read( archive, wrapper, name))
             {
-               path = std::filesystem::u8path( std::move( data));
+               path = std::filesystem::path( std::move( data));
                return true;
             }
             return false;

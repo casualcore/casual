@@ -71,9 +71,9 @@ namespace casual
          }
 
       private:
-         struct concept
+         struct Concept
          {
-            virtual ~concept() = default;
+            virtual ~Concept() = default;
 
             virtual std::tuple< platform::size::type, bool> container_start( platform::size::type size, const char* name) = 0;
             virtual void container_end( const char* name) = 0;
@@ -99,7 +99,7 @@ namespace casual
          };
 
          template< typename P>
-         struct model : concept
+         struct model : Concept
          {
             using protocol_type = P;
 
@@ -146,7 +146,7 @@ namespace casual
          Reader( std::unique_ptr< model< Protocol>>&& model)
             : m_protocol( std::move( model)), m_type{ traits::archive::dynamic::convert_v< Protocol>} {}
          
-         std::unique_ptr< concept> m_protocol;
+         std::unique_ptr< Concept> m_protocol;
          archive::dynamic::Type m_type;
       };
 
@@ -223,9 +223,9 @@ namespace casual
          //! @todo: Change to std::span with C++20
          inline void save( view::immutable::Binary value, const char* name) { m_protocol->write( value, name);}
 
-         struct concept
+         struct Concept
          {
-            virtual ~concept() = default;
+            virtual ~Concept() = default;
 
             virtual void container_start( platform::size::type size, const char* name) = 0;
             virtual void container_end( const char* name) = 0;
@@ -251,7 +251,7 @@ namespace casual
          };
 
          template< typename protocol_type>
-         struct model : concept
+         struct model : Concept
          {
             template< typename... Ts>
             model( Ts&&... ts) : m_protocol( std::forward< Ts>( ts)...) {}
@@ -286,7 +286,7 @@ namespace casual
          Writer( std::unique_ptr< model< Protocol>>&& model) 
             : m_protocol( std::move( model)), m_type{ traits::archive::dynamic::convert_v< Protocol>} {}
 
-         std::unique_ptr< concept> m_protocol;
+         std::unique_ptr< Concept> m_protocol;
          archive::dynamic::Type m_type;
       };
 

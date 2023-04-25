@@ -48,15 +48,15 @@ namespace casual
                      : m_implementation{ std::make_shared< model< C>>( std::forward< C>( creator))} {}
 
                      
-                  struct concept 
+                  struct Concept 
                   {
-                     virtual ~concept() = default;
+                     virtual ~Concept() = default;
                      virtual serialize::Reader create( std::istream& stream) const  = 0;
                      virtual serialize::Reader create( const platform::binary::type& data) const = 0;
                   };
 
                   template< typename create_type> 
-                  struct model : concept
+                  struct model : Concept
                   {
                      model( create_type&& creator) : m_creator( std::move( creator)) {}
 
@@ -67,7 +67,7 @@ namespace casual
                      create_type m_creator;
                   };
 
-                  std::shared_ptr< const concept> m_implementation;
+                  std::shared_ptr< const Concept> m_implementation;
                };
 
                static_assert( std::is_copy_constructible< Creator>::value, "");

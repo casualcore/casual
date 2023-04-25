@@ -79,9 +79,9 @@ namespace casual
 
          Holder() = default;
 
-         struct concept
+         struct Concept
          {
-            virtual ~concept() = default;
+            virtual ~Concept() = default;
 
             virtual buffer::handle::mutate::type allocate( std::string_view type, platform::binary::size::type size) = 0;
             virtual buffer::handle::mutate::type reallocate( buffer::handle::type handle, platform::binary::size::type size) = 0;
@@ -104,7 +104,7 @@ namespace casual
          };
 
          template< typename P>
-         struct model : concept
+         struct model : Concept
          {
             using pool_type = P;
 
@@ -170,12 +170,12 @@ namespace casual
 
          constexpr static auto manage_key( std::string_view key) 
          {
-            return [ key]( const auto& concept){ return concept->manage( key);};
+            return [ key]( const auto& Concept){ return Concept->manage( key);};
          };
 
          constexpr static auto manage_buffer( buffer::handle::type handle) 
          {
-            return [ handle]( const auto& concept){ return concept->manage( handle);};
+            return [ handle]( const auto& Concept){ return Concept->manage( handle);};
          };
 
          template< typename P>
@@ -194,14 +194,14 @@ namespace casual
             return address;
          }
          
-         concept& get_pool( std::string_view type);
-         concept& get_pool( buffer::handle::type handle);
-         concept* find_pool( std::string_view type);
+         Concept& get_pool( std::string_view type);
+         Concept& get_pool( buffer::handle::type handle);
+         Concept* find_pool( std::string_view type);
 
          const Payload& null_payload() const;
 
          buffer::handle::type m_inbound;
-         std::vector< std::unique_ptr< concept>> m_pools;
+         std::vector< std::unique_ptr< Concept>> m_pools;
 
       };
 

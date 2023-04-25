@@ -129,18 +129,18 @@ namespace casual
                Cardinality cardinality() const { return m_callable->cardinality();}
 
             private:
-               struct concept 
+               struct Concept 
                {
-                  virtual ~concept() = default;
+                  virtual ~Concept() = default;
                   virtual void assign( const std::string& key, range_type values) = 0;
                   virtual void invoke() = 0;
                   virtual std::vector< std::string> complete( range_type values, bool help) const = 0;
                   virtual Cardinality cardinality() const = 0;
-                  virtual std::unique_ptr< concept> copy() const = 0;
+                  virtual std::unique_ptr< Concept> copy() const = 0;
                };
 
                template< typename C>
-               struct model : concept
+               struct model : Concept
                {
                   model( C callable) : m_callable( std::move( callable)) {}
 
@@ -150,11 +150,11 @@ namespace casual
 
                   Cardinality cardinality() const override { return m_callable.cardinality();}
 
-                  std::unique_ptr< concept> copy() const override { return std::make_unique< model>( *this); }
+                  std::unique_ptr< Concept> copy() const override { return std::make_unique< model>( *this); }
                private:
                   C m_callable;
                };
-               std::unique_ptr< concept> m_callable;
+               std::unique_ptr< Concept> m_callable;
             };
 
             //! A representation of an "option" and possible it's nested structure
@@ -233,9 +233,9 @@ namespace casual
 
 
             private:
-               struct concept 
+               struct Concept 
                {
-                  virtual ~concept() = default;
+                  virtual ~Concept() = default;
                   virtual bool has( const std::string& key) const = 0;
                   virtual bool next( const std::string& key) const = 0;
                   virtual void assign( const std::string& key, range_type values) = 0;
@@ -249,11 +249,11 @@ namespace casual
 
                   virtual void validate() const = 0;
 
-                  virtual std::unique_ptr< concept> copy() const = 0;
+                  virtual std::unique_ptr< Concept> copy() const = 0;
                };
 
                template< typename H>
-               struct model : concept
+               struct model : Concept
                {
                   model( H handler) : m_handler( std::move( handler)) {}
 
@@ -271,7 +271,7 @@ namespace casual
                   
                   inline void validate() const override { return selective_validate( m_handler);}
 
-                  std::unique_ptr< concept> copy() const override { return std::make_unique< model>( *this); }
+                  std::unique_ptr< Concept> copy() const override { return std::make_unique< model>( *this); }
                private:
                   template< typename T>
                   using has_validate = decltype( std::declval< T&>().validate());
@@ -289,7 +289,7 @@ namespace casual
 
                   H m_handler;
                };
-               std::unique_ptr< concept> m_handler;
+               std::unique_ptr< Concept> m_handler;
             };
 
             namespace invoke

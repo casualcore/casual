@@ -100,7 +100,7 @@ namespace casual
          if( transcode::utf8::exist( "ISO-8859-15"))
          {
             const std::string source = { static_cast<std::string::value_type>(0xA4)};
-            const std::string expect( u8"€");
+            const std::string expect( "€");
             const std::string result = transcode::utf8::encode( source, "ISO-8859-15");
             EXPECT_TRUE( result == expect);
          }
@@ -116,7 +116,7 @@ namespace casual
 
          if( transcode::utf8::exist( "ISO-8859-15"))
          {
-            const std::string source( u8"\u20AC");
+            const std::string source( "\u20AC");
             const std::string expect = { static_cast<std::string::value_type>(0xA4)};
             const std::string result = transcode::utf8::decode( source, "ISO-8859-15");
             EXPECT_TRUE( result == expect);
@@ -143,7 +143,7 @@ namespace casual
          if( transcode::utf8::exist( "ISO-8859-1"))
          {
             const std::string source{ static_cast<std::string::value_type>(0xE5), static_cast<std::string::value_type>(0xE4), static_cast<std::string::value_type>(0xF6)};
-            const std::string expect{ u8"åäö"};
+            const std::string expect{ "åäö"};
             const std::string result = transcode::utf8::encode( source, "ISO-8859-1");
             EXPECT_TRUE( result == expect);
          }

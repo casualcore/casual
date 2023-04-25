@@ -69,10 +69,6 @@ namespace casual
 
       struct State
       {
-
-         State( State&&) = default;
-         State& operator = ( State&&) = default;
-
          common::state::Machine< state::Runlevel> runlevel;
 
          common::communication::select::Directive directive;
