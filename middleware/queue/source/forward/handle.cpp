@@ -320,12 +320,14 @@ namespace casual
                         
                         // we assume service-manager are always 'online'...
                         ipc::flush::send( ipc::service::manager(), request);
+
+                        state.pending.service.lookup_discards.emplace_back( std::move( pending));
                      };
 
-                     auto& pending = state.pending.service.lookups;
+                     // we consume all pending service lookups
+                     auto pending = std::exchange( state.pending.service.lookups, {});
                      algorithm::for_each( pending, send_service_lookup_discard_request);
                   }
-
 
                   // start the "flows" for configured forwards
                   auto lookup_request = []( auto& state, auto& forwards)
@@ -565,6 +567,18 @@ namespace casual
                {
                   namespace lookup
                   {
+                     namespace detail::consume
+                     {
+                        void lookup_discard( State& state, const strong::correlation::id& correlation)
+                        {
+                           auto pending = pending::consume( state.pending.service.lookup_discards, correlation);
+                           log::line( verbose::log, "pending lookup_discard: ", pending);
+
+                           // rollback the 'flow'
+                           send::transaction::rollback::request( state, std::move( pending));
+                        }
+                     } // detail::consume
+
                      auto reply( State& state)
                      {
                         return [&state]( message::service::lookup::Reply& message)
@@ -575,8 +589,15 @@ namespace casual
                            if( message.state == decltype( message.state)::busy)
                               return;
 
+                           // if we cant find a pending lookup we expect to find a pending lookup_discard
+                           auto found = common::algorithm::find( state.pending.service.lookups, message.correlation);
+                           if( ! found)
+                           {
+                              detail::consume::lookup_discard( state, message.correlation);
+                              return;
+                           }
 
-                           auto pending = pending::consume( state.pending.service.lookups, message.correlation);
+                           auto pending = algorithm::container::extract( state.pending.service.lookups, std::begin( found));
 
                            if( message.state != decltype( message.state)::idle)
                            {
@@ -606,13 +627,9 @@ namespace casual
                               log::line( verbose::log, "message: ", message);
 
                               if( message.state == decltype( message.state)::replied)
-                                 return; // we've got the lookup reply already, let the 'flow' do it's thing...
+                                 return; // we've got the lookup reply already, we have to handle it there instead
 
-                              auto pending = pending::consume( state.pending.service.lookups, message.correlation);
-                              log::line( verbose::log, "pending: ", pending);
-
-                              // rollback the 'flow'
-                              send::transaction::rollback::request( state, std::move( pending));                                       
+                              detail::consume::lookup_discard( state, message.correlation);
                            };
                         }
 
