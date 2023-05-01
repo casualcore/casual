@@ -315,7 +315,7 @@ namespace casual
             platform::time::point::type deadline;
 
             inline friend bool operator == ( const Transaction& lhs, const common::transaction::global::ID& rhs) { return lhs.global == rhs;}
-            inline friend bool operator == ( const Transaction& lhs, common::transaction::id::range::range_type rhs) { return lhs.global() == rhs;}
+            inline friend bool operator == ( const Transaction& lhs, common::transaction::id::range::range_type rhs) { return common::algorithm::equal( lhs.global(), rhs);}
             
             inline friend bool operator == ( const Transaction& lhs, const common::transaction::ID& rhs) { return lhs.global == rhs;}
 

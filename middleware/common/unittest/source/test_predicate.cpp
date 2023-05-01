@@ -156,7 +156,7 @@ namespace casual
          auto filtered = std::get< 0>( algorithm::partition( values, pred));
 
          auto expected = std::vector< local::State>{ { 1, 2}, { 1, 2}, { 1, 2}};
-         EXPECT_TRUE( filtered == expected) << trace.compose( "filtered: ", filtered);
+         EXPECT_TRUE( algorithm::equal( filtered, expected)) << trace.compose( "filtered: ", filtered);
       }
 
       TEST( casual_common_predicate_conjunction, lvalue_lambdas__a__b)
@@ -173,7 +173,7 @@ namespace casual
          auto filtered = std::get< 0>( algorithm::partition( values, pred));
 
          auto expected = std::vector< local::State>{ { 1, 2}, { 1, 2}, { 1, 2}};
-         EXPECT_TRUE( filtered == expected) << trace.compose( "filtered: ", filtered);
+         EXPECT_TRUE( algorithm::equal( filtered, expected)) << trace.compose( "filtered: ", filtered);
       }
 
       TEST( casual_common_predicate, a__b)
@@ -186,7 +186,7 @@ namespace casual
          filtered = std::get< 0>( algorithm::partition( filtered, local::filter::b( 2)));
 
          auto expected = std::vector< local::State>{ { 1, 2}, { 1, 2}, { 1, 2}};
-         EXPECT_TRUE( filtered == expected) << trace.compose( "filtered: ", filtered);
+         EXPECT_TRUE( algorithm::equal( filtered, expected)) << trace.compose( "filtered: ", filtered);
       }
 
       TEST( casual_common_predicate_conjunction, rvalue_functors__a__b)
@@ -203,7 +203,7 @@ namespace casual
          auto filtered = std::get< 0>( algorithm::partition( values, pred));
 
          auto expected = std::vector< local::State>{ { 1, 2}, { 1, 2}, { 1, 2}};
-         EXPECT_TRUE( filtered == expected) << trace.compose( "filtered: ", filtered);
+         EXPECT_TRUE( algorithm::equal( filtered, expected)) << trace.compose( "filtered: ", filtered);
       }
 
       TEST( casual_common_predicate_conjunction, lvalue_functors__a__b)
@@ -220,7 +220,7 @@ namespace casual
          auto filtered = std::get< 0>( algorithm::partition( values, pred));
 
          auto expected = std::vector< local::State>{ { 1, 2}, { 1, 2}, { 1, 2}};
-         EXPECT_TRUE( filtered == expected) << trace.compose( "filtered: ", filtered);
+         EXPECT_TRUE( algorithm::equal( filtered, expected)) << trace.compose( "filtered: ", filtered);
       }
 
       
@@ -232,7 +232,7 @@ namespace casual
 
          auto filtered = algorithm::sort( algorithm::filter( values, predicate::composition( local::filter::even(), []( auto& state){ return state.a;})));
 
-         EXPECT_TRUE( filtered == array::make( local::State{ 2, 2}, local::State{ 4, 7})) << CASUAL_NAMED_VALUE( filtered);
+         EXPECT_TRUE( algorithm::equal( filtered, array::make( local::State{ 2, 2}, local::State{ 4, 7}))) << CASUAL_NAMED_VALUE( filtered);
       }
    
    } // common

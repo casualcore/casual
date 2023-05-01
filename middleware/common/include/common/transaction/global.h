@@ -26,8 +26,8 @@ namespace casual::common
 
          inline auto operator () () const noexcept { return common::view::binary::make( std::begin( m_gtrid), m_size);}
 
-         inline friend bool operator == ( const ID& lhs, const ID& rhs) { return lhs() == rhs();}
-         inline friend bool operator == ( const ID& lhs, const common::transaction::ID& rhs) { return lhs() == common::transaction::id::range::global( rhs);}
+         inline friend bool operator == ( const ID& lhs, const ID& rhs) { return algorithm::equal( lhs(), rhs());}
+         inline friend bool operator == ( const ID& lhs, const common::transaction::ID& rhs) { return algorithm::equal( lhs(), common::transaction::id::range::global( rhs));}
          inline friend bool operator == ( const common::transaction::ID& lhs, const ID& rhs) { return rhs == lhs;}
 
          CASUAL_CONST_CORRECT_SERIALIZE(

@@ -93,94 +93,6 @@ namespace casual
          EXPECT_TRUE( algorithm::equal( range, container));
       }
 
-      TEST( common_algorithm_position, overlap)
-      {
-         common::unittest::Trace trace;
-
-         std::vector< int> container( 100);
-
-         EXPECT_TRUE( range::position::overlap( container, container));
-         EXPECT_TRUE( range::position::overlap( range::make( std::begin( container), 60), container));
-         EXPECT_TRUE( range::position::overlap( container, range::make( std::begin( container) + 40, 60)));
-         EXPECT_TRUE( range::position::overlap( range::make( std::begin( container), 60), range::make( std::begin( container) + 40, 60)));
-
-         EXPECT_FALSE( range::position::overlap( range::make( std::begin( container), 40), range::make( std::begin( container) + 60, 30)));
-      }
-
-      TEST( common_algorithm_position, subtract_two_equal_ranges__expect_empty_result)
-      {
-         common::unittest::Trace trace;
-
-         std::vector< int> container( 100);
-
-         auto result = range::position::subtract( container, container);
-
-         EXPECT_TRUE( std::get< 0>( result).empty());
-         EXPECT_TRUE( std::get< 1>( result).empty());
-      }
-
-      TEST( common_algorithm_position, subtract_bigger_from_smaller__expect_empty_result)
-      {
-         common::unittest::Trace trace;
-
-         std::vector< int> container( 100);
-
-         auto result = range::position::subtract( range::make( std::begin( container) + 10, 40), container);
-
-         EXPECT_TRUE( std::get< 0>( result).empty());
-         EXPECT_TRUE( std::get< 1>( result).empty());
-      }
-
-      TEST( common_algorithm_position, subtract_right_overlapping__expect_first)
-      {
-         common::unittest::Trace trace;
-
-         std::vector< int> container( 100);
-
-         auto result = range::position::subtract( container, range::make( std::begin( container) + 40, std::end( container)));
-
-         ASSERT_TRUE( ! std::get< 0>( result).empty());
-         ASSERT_TRUE( std::get< 0>( result).size() == 40);
-         ASSERT_TRUE( std::get< 0>( result).end() == std::begin( container) + 40);
-         EXPECT_TRUE( std::get< 1>( result).empty());
-      }
-
-      TEST( common_algorithm_position, subtract_left_overlapping__expect_first)
-      {
-         common::unittest::Trace trace;
-
-         std::vector< int> container( 100);
-
-         auto result = range::position::subtract( container, range::make( std::begin( container), 40));
-
-         ASSERT_TRUE( ! std::get< 0>( result).empty());
-         ASSERT_TRUE( std::get< 0>( result).size() == 60) << "std::get< 0>( result).size(): " << std::get< 0>( result).size();
-         ASSERT_TRUE( std::get< 0>( result).begin() == std::begin( container) + 40);
-         EXPECT_TRUE( std::get< 1>( result).empty());
-      }
-
-      TEST( common_algorithm_position, subtract_smaller_from_larger_overlapping__expect_splitted_into_two_ranges)
-      {
-         common::unittest::Trace trace;
-
-         std::vector< int> container( 100);
-
-         auto result = range::position::subtract( container, range::make( std::begin( container) + 20, 40));
-
-         ASSERT_TRUE( ! std::get< 0>( result).empty());
-         EXPECT_TRUE( std::get< 0>( result).size() == 20);
-         EXPECT_TRUE( std::get< 0>( result).begin() == std::begin( container));
-         EXPECT_TRUE( std::get< 0>( result).end() == std::begin( container) + 20);
-
-         ASSERT_TRUE( ! std::get< 1>( result).empty());
-         EXPECT_TRUE( std::get< 1>( result).size() == 40) << "std::get< 1>( result).size(): " << std::get< 1>( result).size();
-         EXPECT_TRUE( std::get< 1>( result).begin() == std::begin( container) + 60) << "std::distance( std::get< 1>( result).first, std::begin( container) + 60): " << std::distance( std::get< 1>( result).begin(), std::begin( container) + 60);
-         EXPECT_TRUE( std::get< 1>( result).end() == std::end( container)) << "std::distance( std::get< 1>( result).last, std::end( container)): " << std::distance( std::get< 1>( result).end(), std::end( container));
-      }
-
-
-
-
       TEST( common_algorithm, sort)
       {
          common::unittest::Trace trace;
@@ -251,8 +163,8 @@ namespace casual
 
          auto result = algorithm::rotate( container, std::begin( container) + 1);
 
-         EXPECT_TRUE(( std::get< 0>( result) == std::vector< int>{ 2, 3, 4, 5, 6, 7, 8})) << trace.compose( std::get< 0>( result));
-         EXPECT_TRUE(( std::get< 1>( result) == std::vector< int>{ 1})) << trace.compose( std::get< 1>( result));
+         EXPECT_TRUE(( algorithm::equal( std::get< 0>( result), std::vector< int>{ 2, 3, 4, 5, 6, 7, 8}))) << trace.compose( std::get< 0>( result));
+         EXPECT_TRUE(( algorithm::equal( std::get< 1>( result), std::vector< int>{ 1}))) << trace.compose( std::get< 1>( result));
       }
 
       TEST( common_algorithm, partition)
@@ -670,7 +582,7 @@ namespace casual
 
          std::vector< int> container{ 1, 2, 3, 4};
 
-         EXPECT_TRUE( algorithm::remove( range::make( container), range::make( std::begin( container), 0)) == container);
+         EXPECT_TRUE( algorithm::equal( algorithm::remove( range::make( container), range::make( std::begin( container), 0)), container));
       }
 
       TEST( common_algorithm_remove, source_4__unwanted_first__expect_3)
@@ -679,7 +591,7 @@ namespace casual
 
          std::vector< int> container{ 1, 2, 3, 4};
 
-         EXPECT_TRUE(( algorithm::remove( range::make( container), range::make( std::begin( container), 1)) == std::vector< int>{ 2, 3, 4}));
+         EXPECT_TRUE(( algorithm::equal( algorithm::remove( range::make( container), range::make( std::begin( container), 1)), std::vector< int>{ 2, 3, 4})));
       }
 
 
@@ -689,7 +601,7 @@ namespace casual
 
          std::vector< int> container{ 1, 2, 3, 4};
 
-         EXPECT_TRUE(( algorithm::remove( range::make( container), range::make( std::end( container) - 1, 1)) == std::vector< int>{ 1, 2, 3}));
+         EXPECT_TRUE(( algorithm::equal( algorithm::remove( range::make( container), range::make( std::end( container) - 1, 1)), std::vector< int>{ 1, 2, 3})));
       }
 
       TEST( common_algorithm_remove, source_4__unwanted_middle_2__expect_2)
@@ -698,7 +610,7 @@ namespace casual
 
          std::vector< int> container{ 1, 2, 3, 4};
 
-         EXPECT_TRUE(( algorithm::remove( range::make( container), range::make( std::begin( container) + 1, 2)) == std::vector< int>{ 1, 4}));
+         EXPECT_TRUE(( algorithm::equal( algorithm::remove( range::make( container), range::make( std::begin( container) + 1, 2)), std::vector< int>{ 1, 4})));
       }
 
       TEST( common_algorithm_append_unique, empty__expect_empty)
@@ -797,8 +709,8 @@ namespace casual
          
          auto [ intersection, difference] = algorithm::sorted::intersection( range_1, range_2);
 
-         EXPECT_TRUE( intersection == array::make( 1, 3, 4, 42));
-         EXPECT_TRUE( difference == array::make( 2, 43)) << CASUAL_NAMED_VALUE( difference);
+         EXPECT_TRUE( algorithm::equal( intersection, array::make( 1, 3, 4, 42)));
+         EXPECT_TRUE( algorithm::equal( difference, array::make( 2, 43))) << CASUAL_NAMED_VALUE( difference);
       }
 
       TEST( common_algorithm_sorted, intersection_value_multiple_same_value)
@@ -808,8 +720,8 @@ namespace casual
          
          auto [ intersection, difference] = algorithm::sorted::intersection( range_1, range_2);
 
-         EXPECT_TRUE( intersection == array::make( 1, 4, 42));
-         EXPECT_TRUE( difference == array::make( 2, 2, 2, 43)) << CASUAL_NAMED_VALUE( difference);
+         EXPECT_TRUE( algorithm::equal( intersection, array::make( 1, 4, 42)));
+         EXPECT_TRUE( algorithm::equal( difference, array::make( 2, 2, 2, 43))) << CASUAL_NAMED_VALUE( difference);
       }
 
       TEST( common_algorithm_sorted, intersection_value_empty_source)
@@ -831,7 +743,7 @@ namespace casual
          auto [ intersection, difference] = algorithm::sorted::intersection( range_1, range_2);
 
          EXPECT_TRUE( intersection.empty());
-         EXPECT_TRUE( difference == array::make( 1, 2, 2, 2, 4, 42, 43)) << CASUAL_NAMED_VALUE( difference);
+         EXPECT_TRUE( algorithm::equal( difference, array::make( 1, 2, 2, 2, 4, 42, 43))) << CASUAL_NAMED_VALUE( difference);
       }
 
       TEST( common_algorithm_sorted, intersection_same_one_in_source_and_lookup)
@@ -841,7 +753,7 @@ namespace casual
          
          auto [ intersection, difference] = algorithm::sorted::intersection( range_1, range_2);
 
-         EXPECT_TRUE( intersection == array::make( 42));
+         EXPECT_TRUE( algorithm::equal( intersection, array::make( 42)));
          EXPECT_TRUE( difference.empty()) << CASUAL_NAMED_VALUE( difference);
       }
 
@@ -852,7 +764,7 @@ namespace casual
 
          algorithm::sorted::append_unique( source, target);
 
-         EXPECT_TRUE( range::make( target) == array::make( 42)) << CASUAL_NAMED_VALUE( target);
+         EXPECT_TRUE( algorithm::equal( target, array::make( 42))) << CASUAL_NAMED_VALUE( target);
       }
 
       TEST( common_algorithm_sorted, append_unique__large_difference__expect_sorted_unique)
@@ -862,7 +774,7 @@ namespace casual
 
          algorithm::sorted::append_unique( b, a);
          // only 10 is in the 
-         EXPECT_TRUE( range::make( a) == array::make( 1, 2, 3, 10, 11, 12, 13, 21, 22, 23)) << CASUAL_NAMED_VALUE( a);
+         EXPECT_TRUE( algorithm::equal( a, array::make( 1, 2, 3, 10, 11, 12, 13, 21, 22, 23))) << CASUAL_NAMED_VALUE( a);
       }
    } // common
 

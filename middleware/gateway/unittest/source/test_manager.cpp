@@ -1251,7 +1251,7 @@ domain:
          {
             auto request = common::communication::ipc::receive< common::message::transaction::resource::commit::Request>();
             EXPECT_TRUE( request.resource == rm);
-            EXPECT_TRUE( transaction::id::range::global( request.trid) == transaction::id::range::global( transaction::context().current().trid)) << CASUAL_NAMED_VALUE( request);
+            EXPECT_TRUE( algorithm::equal( transaction::id::range::global( request.trid), transaction::id::range::global( transaction::context().current().trid))) << CASUAL_NAMED_VALUE( request);
          }
 
          // destroy inbound in B, and we should get an error reply

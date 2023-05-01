@@ -124,7 +124,7 @@ namespace casual
          const auto branched = result.trid;
          EXPECT_TRUE( branched != trid) << CASUAL_NAMED_VALUE( branched);
          // expect same global part of trid
-         EXPECT_TRUE( transaction::id::range::global( branched) == transaction::id::range::global( trid));
+         EXPECT_TRUE( algorithm::equal( transaction::id::range::global( branched), transaction::id::range::global( trid)));
 
          // 'consume' two
          {

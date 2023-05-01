@@ -22,17 +22,7 @@
 namespace casual 
 {
    namespace common 
-   {
-      namespace range::detail
-      {
-         template< typename L, typename R> 
-         constexpr auto equal( L&& lhs, R&& rhs) -> decltype( std::equal( std::begin( lhs), std::end( lhs), std::begin( rhs), std::end( rhs)))
-         { 
-            return std::equal( std::begin( lhs), std::end( lhs), std::begin( rhs), std::end( rhs));
-         }
-      } // range::detail
-
-      
+   {      
       template< typename Iter>
       struct Range
       {
@@ -110,19 +100,6 @@ namespace casual
 
          friend constexpr Range operator + ( Range range, difference_type value) { return Range( range.m_first + value, range.m_last);}
 
-         friend constexpr auto operator == ( const Range& lhs, const Range& rhs)
-         {
-            return range::detail::equal( lhs, rhs);
-         };
-         friend constexpr bool operator != ( const Range& lhs, const Range& rhs) { return ! ( lhs == rhs);}
-
-         template< typename C>
-         friend constexpr auto operator == ( const Range& lhs, const C& rhs) 
-            -> std::enable_if_t< ! std::is_same_v< Range, C>, decltype( range::detail::equal( lhs, rhs))> 
-         {
-            return range::detail::equal( lhs, rhs);
-         }
-
       private:
 
          constexpr static pointer data( iterator first, iterator last) noexcept
@@ -152,44 +129,6 @@ namespace casual
       //! what a real range-library could offer. It's a work in progress
       namespace range
       {
-         namespace category
-         {
-            struct fixed {};
-            struct output_iterator {};
-            struct associative {};
-            struct container {};
-
-            template< typename T, class Enable = void>
-            struct tag {};
-
-            template< typename T>
-            struct tag< T, std::enable_if_t< traits::is::container::sequence::like_v< T>>>
-            {
-               using type = category::container;
-            };
-
-            template< typename T>
-            struct tag< T, std::enable_if_t< traits::is::container::associative::like_v< T>>>
-            {
-               using type = category::associative;
-            };
-
-            template< typename T>
-            struct tag< T, std::enable_if_t< traits::is::output::iterator_v< T>>>
-            {
-               using type = category::output_iterator;
-            };
-
-            template< typename T>
-            struct tag< T, std::enable_if_t< traits::is::container::array::like_v< T>>>
-            {
-               using type = category::fixed;
-            };            
-
-            template< typename T>
-            using tag_t = typename tag< T>::type; 
-
-         } // category
 
          template< typename Iter, std::enable_if_t< common::traits::is::iterator_v< Iter>, int> = 0>
          auto make( Iter first, Iter last)
@@ -210,7 +149,6 @@ namespace casual
          {
             return make( std::begin( container), std::end( container));
          }
-
 
          template< typename Iter>
          constexpr Range< Iter> make( Range< Iter> range)
@@ -261,91 +199,12 @@ namespace casual
          template< typename C>
          using const_type_t = typename type_traits< const C>::type;
 
-         template< typename R, std::enable_if_t< std::is_array< std::remove_reference_t< R>>::value, int> = 0>
-         constexpr platform::size::type size( R&& range) { return sizeof( R) / sizeof( *range);}
+         template< typename C>
+         constexpr platform::size::type size( const C& container) noexcept { return std::ssize( container);}
 
-         template< typename R, std::enable_if_t< common::traits::has::size_v< R>, int> = 0>
-         constexpr platform::size::type size( R&& range) { return range.size();}
+         template< typename C>
+         constexpr auto empty( C&& container) noexcept { return std::empty( std::forward< C>( container));}
 
-         template< typename R, std::enable_if_t< std::is_array_v< std::remove_reference_t< R>>, int> = 0>
-         constexpr bool empty( R&& range) { return false;}
-
-         template< typename R, std::enable_if_t< common::traits::has::empty_v< R>, int> = 0>
-         constexpr bool empty( R&& range) { return range.empty();}
-
-         namespace position
-         {
-            //! @return returns true if @lhs overlaps @rhs in some way.
-            template< typename R1, typename R2>
-            bool overlap( R1&& lhs, R2&& rhs)
-            {
-               return std::end( lhs) >= std::begin( rhs) && std::begin( lhs) <= std::end( rhs);
-            }
-
-            //! @return true if @lhs is adjacent to @rhs or @rhs is adjacent to @lhs
-            template< typename R1, typename R2>
-            bool adjacent( R1&& lhs, R2&& rhs)
-            {
-               return std::end( lhs) + 1 == std::begin( rhs) || std::end( lhs) + 1 == std::begin( rhs);
-            }
-
-            //! @return true if @rhs is a sub-range to @lhs
-            template< typename R1, typename R2>
-            bool includes( R1&& lhs, R2&& rhs)
-            {
-               return std::begin( lhs) <= std::begin( rhs) && std::end( lhs) >= std::end( rhs);
-            }
-
-            template< typename R>
-            auto intersection( R&& lhs, R&& rhs) -> decltype( range::make( std::forward< R>( lhs)))
-            {
-               if( overlap( lhs, rhs))
-               {
-                  auto result = range::make( lhs);
-
-                  if( std::begin( lhs) < std::begin( rhs)) result.first = std::begin( rhs);
-                  if( std::end( lhs) > std::end( rhs)) result.last = std::end( rhs);
-
-                  return result;
-               }
-               return {};
-            }
-
-            template< typename R1, typename R2>
-            auto subtract( R1&& lhs, R2&& rhs)
-            {
-               using range_type = range::type_t< R1>;
-
-               if( overlap( lhs, rhs))
-               {
-                  if( std::begin( lhs) < std::begin( rhs) && std::end( lhs) > std::end( rhs))
-                  {
-                     return std::make_tuple(
-                           range::make( std::begin( lhs), std::begin( rhs)),
-                           range::make( std::end( rhs), std::end( lhs)));
-                  }
-                  else if( std::begin( lhs) < std::begin( rhs))
-                  {
-                     return std::make_tuple(
-                           range::make( std::begin( lhs), std::begin( rhs)),
-                           range_type{});
-                  }
-                  else if( std::end( lhs) > std::end( rhs))
-                  {
-                     return std::make_tuple(
-                           range::make( std::end( rhs), std::end( lhs)),
-                           range_type{});
-                  }
-
-                  return std::make_tuple(
-                        range_type{},
-                        range_type{});
-
-               }
-               return std::make_tuple( range::make( lhs), range_type{});
-            }
-
-         } // position
 
          //! Returns the first value in the range
          //! @param range

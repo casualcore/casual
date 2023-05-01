@@ -49,8 +49,8 @@ namespace casual
          { return std::begin( pivot);}
 
          template< typename P>
-         //auto pivot( P pivot, traits::priority::tag< 0>) -> std::enable_if_t< traits::is::iterator_v< P>, P>
-         auto pivot( P pivot, traits::priority::tag< 0>) -> decltype( void( *pivot++), P{})
+         auto pivot( P pivot, traits::priority::tag< 0>) -> std::enable_if_t< traits::is::iterator_v< P>, P>
+         //auto pivot( P pivot, traits::priority::tag< 0>) -> decltype( void( *pivot++), P{})
          { return pivot;}
 
 
@@ -245,7 +245,8 @@ namespace casual
       namespace detail
       {
          template< typename R, typename C, typename T>
-         auto transform( R&& range, C& container, T transform, range::category::container)
+            requires traits::is::container::sequence::like_v< C>
+         auto transform( R&& range, C& container, T transform)
          {
             container.reserve( range::size( range) + container.size());
             std::transform( std::begin( range), std::end( range), std::back_inserter( container), transform);
@@ -253,7 +254,8 @@ namespace casual
          }
 
          template< typename R, typename C, typename T>
-         auto transform( R&& range, C&& container, T transform, range::category::associative)
+            requires traits::is::container::associative::like_v< C>
+         decltype( auto) transform( R&& range, C&& container, T transform)
          {
             container.reserve( range::size( range) + container.size());
             for( auto& value: range)
@@ -263,18 +265,19 @@ namespace casual
          }
 
          template< typename R, typename O, typename T>
-         decltype( auto) transform( R&& range, O&& output, T transform, range::category::fixed)
+            requires traits::is::container::array::like_v< O>
+         decltype( auto) transform( R&& range, O&& output, T transform)
          {
             assert( range::size( output) >= range::size( range));
             std::transform( std::begin( range), std::end( range), std::begin( output), transform);
             return std::forward< O>( output);
          }
 
-         template< typename R, typename O, typename T>
-         auto transform( R&& range, O&& output, T transform, range::category::output_iterator)
+         template< typename R, std::input_or_output_iterator O, typename T>
+         O transform( R&& range, O output, T transform)
          {
             std::transform( std::begin( range), std::end( range), output, transform);
-            return std::forward< O>( output);
+            return output;
          }
       } // detail
 
@@ -287,7 +290,7 @@ namespace casual
       template< typename R, typename O, typename T>
       decltype( auto) transform( R&& range, O&& output, T&& transform)
       {
-         return detail::transform( std::forward< R>( range), std::forward< O>( output), std::forward< T>( transform), range::category::tag_t< O>{} );
+         return detail::transform( std::forward< R>( range), std::forward< O>( output), std::forward< T>( transform));
       }
 
       //! Transform @p range, using @p transform

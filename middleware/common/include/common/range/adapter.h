@@ -34,12 +34,27 @@ namespace casual
                iterator() = default;
                iterator( next_type next, R range) 
                   : m_next{ std::move( next)}, m_ranges{ iterator::next( *m_next, std::move( range))} {}
+               
+               iterator( iterator&&) = default;
+               iterator& operator = ( iterator&&) = default;
 
-               constexpr reference operator * () noexcept { return std::get< 0>( m_ranges);}
+               iterator( const iterator&) = default;
+               iterator& operator = ( const iterator&) = default;
+
+               value_type& operator * () noexcept { return std::get< 0>( m_ranges);}
+               const value_type& operator * () const noexcept { return std::get< 0>( m_ranges);}
+
                constexpr iterator& operator ++ () noexcept
                {
                   m_ranges = iterator::next( *m_next, std::get< 1>( m_ranges));
                   return *this;
+               }
+
+               constexpr iterator operator ++ ( int) noexcept
+               {
+                  auto result = *this;
+                  ++(*this);
+                  return result;
                }
 
                friend bool operator == ( const iterator& lhs, const iterator& rhs)
@@ -65,7 +80,11 @@ namespace casual
 
                std::optional< next_type> m_next;
                tuple_type m_ranges{};
+
+               //static_assert( std::movable< iterator>);
             };
+
+            
 
             //!
             //! constructs a _range adapter_ that provide a _range interface_ for

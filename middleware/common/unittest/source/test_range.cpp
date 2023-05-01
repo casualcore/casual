@@ -65,11 +65,11 @@ namespace casual
          auto forward = range::make( owner);
          auto reverse = range::reverse( forward);
 
-         EXPECT_TRUE(( reverse == std::vector< int>{ 6, 5, 4, 3, 2, 1}));
+         EXPECT_TRUE(( algorithm::equal( reverse, std::vector< int>{ 6, 5, 4, 3, 2, 1})));
 
-         EXPECT_TRUE( range::reverse( forward) == reverse);
-         EXPECT_TRUE( range::reverse( reverse) == forward);
-         EXPECT_TRUE( range::reverse( range::reverse( forward)) == forward);
+         EXPECT_TRUE( algorithm::equal( range::reverse( forward), reverse));
+         EXPECT_TRUE( algorithm::equal( range::reverse( reverse), forward));
+         EXPECT_TRUE( algorithm::equal( range::reverse( range::reverse( forward)), forward));
 
          static_assert( std::is_same< decltype( forward), decltype( range::reverse( range::reverse( forward)))>::value, ""); 
       }

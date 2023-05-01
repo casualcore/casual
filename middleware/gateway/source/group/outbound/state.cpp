@@ -35,7 +35,7 @@ namespace casual
                {
                   return [&trid]( auto& mapping)
                   { 
-                     return transaction::id::range::global( trid) == transaction::id::range::global( mapping.internal);
+                     return algorithm::equal( transaction::id::range::global( trid), transaction::id::range::global( mapping.internal));
                   };
                }
 
@@ -308,7 +308,7 @@ namespace casual
 
             auto remove_external = [&external]( auto& transaction)
             {
-               if( transaction::id::range::global( transaction.internal) != transaction::id::range::global( external))
+               if( ! algorithm::equal( transaction::id::range::global( transaction.internal), transaction::id::range::global( external)))
                   return false;
 
                if( auto found = algorithm::find( transaction.externals, external))
