@@ -63,7 +63,7 @@ namespace casual
 
          } // state
 
-         bool State::done() const
+         bool State::done() const noexcept
          {
             using Runlevel = decltype( runlevel());
 
