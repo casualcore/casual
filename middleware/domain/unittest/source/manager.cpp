@@ -85,6 +85,7 @@ namespace casual
 
                   // reset service instance, if any.
                   exception::guard( [](){ communication::instance::outbound::service::manager::device().connector().clear();});
+                  exception::guard( [](){ communication::instance::outbound::transaction::manager::device().connector().clear();});
                }
 
             } // instance::devices
