@@ -153,6 +153,10 @@ namespace casual
          {
             if( auto caller = entry.service->consume( entry.correlation))
             {
+               // keep track of instance until we get an ACK, or the server dies
+               // We need to notify TM if this call was in transaction.
+               state.timeout_instances.push_back( entry.target);
+
                local::error::reply( state, caller, common::code::xatmi::timeout);
 
                // send event, at least domain-manager want's to know...
@@ -240,6 +244,12 @@ namespace casual
 
                         state.pending.shutdown.failed( event.state.pid);
                         state.remove( event.state.pid);
+
+                        // It might be an assassinated instance.
+                        // TODO: this is a glitch - the dead instance could have been involved with
+                        // a resource after the timeout (reply to caller -> rollback) and before it's
+                        // death.
+                        algorithm::container::erase( state.timeout_instances, event.state.pid);
 
                         // The dead process might be the last instance that supplied a given set of services. 
                         // We need to check pending lookups... We just "invalidate and re-lookup"
@@ -877,6 +887,30 @@ namespace casual
 
             } // domain::discovery
 
+            namespace detail
+            {
+               void check_timeout_and_notify_TM( State& state, const common::message::service::call::ACK& ack)
+               {
+                  log::line( verbose::log, "state.timeout_instances: ", state.timeout_instances);
+
+                  if( ! ack.metric.trid)
+                     return;
+                  
+                  if( auto found = algorithm::find( state.timeout_instances, ack.metric.process.pid))
+                  {
+                     state.timeout_instances.erase( std::begin( found));
+
+                     // Rollback the transaction (again). If TM got instances involved a rollback will be executed, 
+                     // otherwise it will be a "no-op".
+                     // TODO: we might want to have a dedicated message for this. SM should not order a rollback?
+                     message::transaction::rollback::Request message{ common::process::handle()};
+                     message.trid = ack.metric.trid;
+                     optional::send( state, communication::instance::outbound::transaction::manager::device(), message);
+                  }
+               }
+               
+            } // detail
+
 
             //! Handles ACK from services.
             //!
@@ -884,14 +918,18 @@ namespace casual
             //! send response directly
             auto ack( State& state)
             {
-               return [&state]( const common::message::service::call::ACK& message)
+               return [ &state]( const common::message::service::call::ACK& message)
                {
                   Trace trace{ "service::manager::handle::local::ack"};
                   log::line( verbose::log, "message: ", message);
 
+
                   // we remove possible deadline first.
                   if( auto deadline = state.pending.deadline.remove( message.correlation))
                      signal::timer::set( deadline.value());
+
+                  
+                  detail::check_timeout_and_notify_TM( state, message);
 
                   // add metric event regardless
                   if( state.events.active< common::message::event::service::Calls>())
@@ -942,6 +980,25 @@ namespace casual
                   }
                };
             }
+
+            namespace timeout::rollback
+            {
+               auto reply( State& state)
+               {
+                  return []( const message::transaction::rollback::Reply& message)
+                  {
+                     Trace trace{ "service::manager::handle::local::timeout::rollback::reply"};
+                     log::line( verbose::log, "message: ", message);
+                  
+                     if( message.state != decltype( message.state)::ok)
+                     {
+                        log::line( log::category::error, message.state, " timeout rollback failed for trid: ", message.trid);
+                        log::line( log::category::verbose::error, "message: ", message);
+                     }
+                  };
+               }
+               
+            } // timeout::rollback 
 
 
             namespace configuration
@@ -1070,6 +1127,7 @@ namespace casual
             handle::local::service::concurrent::advertise( state),
             handle::local::service::concurrent::metric( state),
             handle::local::ack( state),
+            handle::local::timeout::rollback::reply( state),
             handle::local::event::subscription::begin( state),
             handle::local::event::subscription::end( state),
             handle::local::Call{ admin::services( state), state},

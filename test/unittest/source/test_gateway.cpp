@@ -17,6 +17,7 @@
 #include "common/communication/instance.h"
 #include "common/environment/scoped.h"
 #include "common/sink.h"
+#include "common/message/transaction.h"
 
 #include "serviceframework/service/protocol/call.h"
 
@@ -3106,6 +3107,98 @@ domain:
          }
 
          local::call( "casual/example/sleep", code::xatmi::no_entry);
+
+      }
+
+      TEST( test_gateway, interdomain_call_in_transaction__timeout_1ms__expect_TPETIME__resource_involved_after_timeout__expect_rollback)
+      {
+         common::unittest::Trace trace;
+
+         constexpr auto A = R"(
+domain: 
+   name: A
+   services:
+      -  name: a
+         execution:
+            timeout:
+               duration: 2ms
+   gateway:
+      inbound:
+         groups:
+            -  connections:
+                  -  address: 127.0.0.1:7000
+
+)";
+
+         constexpr auto B = R"(
+domain: 
+   name: B
+
+   gateway:
+      outbound:
+         groups:
+            -  connections:
+                  -  address: 127.0.0.1:7000
+   
+)";
+
+         auto a = local::domain( A);
+
+         casual::service::unittest::advertise( { "a"});
+
+         auto b = local::domain( B);
+
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected());
+
+         ASSERT_TRUE( tx_begin() == TX_OK);
+         
+         {
+            auto buffer = tpalloc( X_OCTET, nullptr, 128);
+            auto len = tptypes( buffer, nullptr, nullptr);
+
+            // lets call ourself.
+            EXPECT_TRUE( tpcall( "a", buffer, len, &buffer, &len, 0) == -1);
+            EXPECT_TRUE( tperrno == TPETIME) << "tperrno: " << tperrnostring( tperrno);
+
+            tpfree( buffer);
+         }
+
+         ASSERT_TRUE( tx_rollback() == TX_OK);
+
+         
+         EXPECT_TRUE( casual::transaction::unittest::state().transactions.empty());
+
+         a.activate();
+
+         // we haven't reply from 'a' yet. Let's involve our self as a resource.
+         {
+            auto request = common::unittest::service::receive< common::message::service::call::callee::Request>( communication::ipc::inbound::device());
+ 
+            auto involved = message::transaction::resource::external::involved::create( request);
+            communication::device::blocking::send( communication::instance::outbound::transaction::manager::device(), involved);
+
+            auto state = casual::transaction::unittest::state();
+            EXPECT_TRUE( state.transactions.size() == 1) << CASUAL_NAMED_VALUE( state) ;
+
+            // send ACK to SM.
+            casual::service::unittest::send::ack( request);
+         }
+
+         casual::transaction::unittest::fetch::until( casual::transaction::unittest::fetch::predicate::transactions( 1));
+
+         // reply to TM resource rollback, as we just involved our self as a resource (external)
+         {
+            auto request = common::unittest::service::receive< common::message::transaction::resource::rollback::Request>( communication::ipc::inbound::device());
+            auto reply = common::message::reverse::type( request);
+            reply.trid = request.trid;
+            reply.resource = request.resource;
+            reply.state = decltype( reply.state)::ok;
+
+            communication::device::blocking::send( communication::instance::outbound::transaction::manager::device(), reply);
+         }
+
+         casual::transaction::unittest::fetch::until( casual::transaction::unittest::fetch::predicate::transactions( 0));
+         
       }
 
       //! put in this TU to enable all helpers to check state
