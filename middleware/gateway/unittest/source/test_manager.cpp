@@ -548,6 +548,96 @@ domain:
          }
       }
 
+      TEST( gateway_manager,  enqueue_dequeue___restart_queuemanager_expect_message)
+      {
+         common::unittest::Trace trace;
+
+         constexpr auto queue_manager = R"(
+domain:
+   servers:
+      - path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/queue/bin/casual-queue-manager
+        memberships: [ base]
+        restart: true
+)";
+         constexpr auto queue_configuration = R"(
+domain:
+   queue:
+      groups:
+         -  name: A
+            queuebase: ":memory:"
+            queues:
+               - name: a
+)";
+
+         auto b = local::domain( local::configuration::inbound, queue_manager, queue_configuration);
+         auto a = local::domain( local::configuration::outbound, queue_manager);
+
+         auto qm = common::communication::instance::fetch::handle( common::communication::instance::identity::queue::manager.id);
+
+         unittest::fetch::until( unittest::fetch::predicate::outbound::connected());
+
+         const auto payload = unittest::random::binary( 1000);
+
+         // enqueue
+         {
+            EXPECT_NO_THROW({
+               queue::enqueue( "a", { { "json", payload}});
+            });
+         }
+
+         // dequeue
+         {
+            auto message = queue::dequeue( "a");
+
+            ASSERT_TRUE( message.size() == 1);
+
+            EXPECT_TRUE( message.front().payload.data == payload);
+            EXPECT_TRUE( message.front().payload.type == "json");
+         }
+
+         // send signal, queue-manager terminates, wait for queue-manager to spawn again (via event::Spawn)
+        {
+            bool done = false;
+            event::listen(
+               event::condition::compose(
+                  event::condition::prelude( [pid = qm.pid]()
+                  {
+                     EXPECT_TRUE( signal::send( pid, code::signal::terminate));
+                  }),
+                  event::condition::done( [&done]()
+                  {
+                     return done;
+                  })
+               ),
+               [&done]( const common::message::event::process::Spawn& event)
+               {
+                  log::line( log::debug, "event: ", event);
+                  done = event.alias == "casual-queue-manager";
+               });
+         }
+
+         // because of some unknown factor, the queue-manager needs some time to get ready
+         // to handle calls. Strange but is a separate issue.
+         process::sleep( std::chrono::milliseconds{ 10});
+
+         // enqueue
+         {
+            EXPECT_NO_THROW({
+               queue::enqueue( "a", { { "json", payload}});
+            });
+         }
+
+         // dequeue
+         {
+            auto message = queue::dequeue( "a");
+
+            ASSERT_TRUE( message.size() == 1);
+
+            EXPECT_TRUE( message.front().payload.data == payload);
+            EXPECT_TRUE( message.front().payload.type == "json");
+         }
+      }
+
       TEST( gateway_manager, kill_outbound__expect_restart)
       {
          common::unittest::Trace trace;

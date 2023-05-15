@@ -111,14 +111,6 @@ namespace casual
                   {
                      auto& connections = resources[ add.name];
 
-                     // find the current lowest _hops_ for the service|queue, if any.
-                     auto lowest_hops = [&connections]()
-                     {
-                        if( connections.empty())
-                           return std::numeric_limits< platform::size::type>::max();
-                        return connections.front().hops;
-                     }();
-
                      if( auto found = algorithm::find( connections, descriptor))
                      {
                         if( add.hops != found->hops)
@@ -132,10 +124,8 @@ namespace casual
                      auto hops_less = []( auto& l, auto& r){ return l.hops < r.hops;};
                      algorithm::stable_sort( connections, hops_less);
 
-                     // If the _hops_ has changed, we add service for (re-)advertise, so service-manager
-                     // gets to know the new hops.
-                     if( connections.front().hops != lowest_hops)
-                        result.push_back( std::move( add.name));
+                     // always report resource name
+                     result.push_back( std::move( add.name));
                      
                      return result;
                   });
