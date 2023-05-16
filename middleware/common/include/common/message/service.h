@@ -115,7 +115,7 @@ namespace casual
                inline auto logical_name() const noexcept { return requested.value_or( name); }
 
                CASUAL_CONST_CORRECT_SERIALIZE(
-                  service::Base::serialize( archive);
+                  message::Service::serialize( archive);
                   CASUAL_SERIALIZE( requested);
                )
             };
