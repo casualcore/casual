@@ -386,6 +386,7 @@ namespace casual
 
                         auto reply = common::message::reverse::type( message);
                         reply.service = service.information;
+                        reply.service.timeout.duration = service.timeout.duration.value_or( platform::time::unit::zero());
                         reply.state = decltype( reply.state)::idle;
                         reply.process = destination;
                         reply.pending = pending;
@@ -396,8 +397,6 @@ namespace casual
                         if( service.timeoutable())
                         {
                            auto now = platform::time::clock::type::now();
-
-                           reply.service.timeout.duration = service.timeout.duration.value();
 
                            auto next = state.pending.deadline.add( {
                               now + reply.service.timeout.duration,
