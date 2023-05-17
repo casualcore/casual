@@ -18,6 +18,7 @@
 #include "common/memory.h"
 #include "common/flag.h"
 
+#include <filesystem>
 
 #include <sys/un.h>
 
@@ -49,6 +50,9 @@ namespace casual
       };
 
       static_assert( sizeof( Handle) == sizeof( Socket) + sizeof( strong::ipc::id), "padding problem");
+
+      //! @returns the path to the ipc "device"
+      std::filesystem::path path( const strong::ipc::id& id);
 
       struct Address
       {
