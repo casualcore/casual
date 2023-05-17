@@ -66,11 +66,15 @@ namespace casual
 
             void Sequential::unreserve( const common::message::event::service::Metric& metric)
             {
-               assert( state() == State::busy);
-
-               m_service->metric.update( metric);
-               m_service = nullptr;
                m_caller = {};
+
+               if( m_service)
+               {
+                  m_service->metric.update( metric);
+                  m_service = nullptr;
+               }
+               else
+                  log::line( log::category::error, code::casual::invalid_semantics, " unexpected unreserve for service: ", metric.service, ", instance: ", process.pid);
             }
 
             void Sequential::discard()
