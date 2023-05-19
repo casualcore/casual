@@ -1,6 +1,14 @@
 # Changelog
 This is the changelog for `casual` and all changes are listed in this document.
 
+## [1.6.5] - 2023-05-19
+### Fixes
+- ipc - improve detection of removed ipc devices (files) (#194)
+- service - always send timeout duration in lookup reply
+- service - service timeout could render zombie transactions (#191)
+- gateway - always advertise discovered resources (#188) (#190)
+- gateway - shutdown doesn't wait for inbounds before outbounds (#186)
+
 ## [1.6.4] - 2023-04-25
 ### Fixes
 - buffer: fix field doesn't track 'service buffer' during auto realloc (#179)
