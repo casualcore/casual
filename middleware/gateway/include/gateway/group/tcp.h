@@ -159,7 +159,7 @@ namespace casual
             common::algorithm::container::trim( m_connections, common::algorithm::remove( m_connections, descriptor));
             
             auto found = common::algorithm::find( m_information, descriptor);
-            casual::assertion( descriptor, "fail to find information for descriptor: ", descriptor);
+            casual::assertion( found, "fail to find information for descriptor: ", descriptor);
                
             return common::algorithm::container::extract( m_information, std::begin( found));
          }
@@ -259,7 +259,19 @@ namespace casual
 
                // we 'lost' the connection in some way - we put a connection::Lost on our own ipc-device, and handle it
                // later (and differently depending on if we're 'regular' or 'reversed')
-               common::communication::ipc::inbound::device().push( lost( state, descriptor));
+               //
+               // NOTE: lost functor might throw, and we have noexcept. If we fail to execute lost and handle the lost connection
+               // properly there's no point in going on, we have a broken state in some way. We still catch and log the
+               // error to help find potential future errors in lost (it should not throw).
+               // TODO: Make sure lost is noexcept (compile time) and force the responsibility to "where it belongs"?
+               try
+               {
+                  common::communication::ipc::inbound::device().push( lost( state, descriptor));
+               }
+               catch( ...)
+               {
+                  casual::terminate( "failed to handle lost connection for descriptor: ", descriptor, " - error: ", exception::capture());
+               }
             }
          }
       } // detail::handle::communication
