@@ -618,7 +618,7 @@ domain:
 
          // because of some unknown factor, the queue-manager needs some time to get ready
          // to handle calls. Strange but is a separate issue.
-         process::sleep( std::chrono::milliseconds{ 10});
+         process::sleep( std::chrono::milliseconds{ 500});
 
          // enqueue
          {

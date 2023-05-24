@@ -93,24 +93,23 @@ namespace casual
                   return done();
                }
 
-               template< typename I>
-               auto failed( I&& id) -> std::vector< strong::correlation::id>
+               template< typename I, typename Predicate>
+               auto failed( I&& id, Predicate predicate) -> std::vector< strong::correlation::id>
                {
-                  auto has_id_and_pending = [ &id]( auto& pending){ return pending.id == id && pending.state == Pending::State::pending;};
-                  auto update_failed_and_transform_correlation =  []( auto& pending)
-                  {
-                     pending.state = Pending::State::failed; 
-                     return pending.correlation;
-                  };
-
-                  return algorithm::transform_if( m_pending, update_failed_and_transform_correlation, has_id_and_pending);
+                  return algorithm::transform_if( m_pending, []( auto& pending)
+                     {
+                        pending.state = Pending::State::failed;
+                        return pending.correlation;
+                     },
+                     predicate( id)
+                  );
                }
 
                bool done()
                {
                   if( algorithm::any_of( m_pending, predicate::value::equal( Pending::State::pending)))
                      return false;
-                  
+
                   m_callback( std::move( m_received), std::move( m_pending));
                   return true;
                }
@@ -165,17 +164,17 @@ namespace casual
                }
             }
 
-            template< typename I>
-            inline auto failed( I&& id) -> decltype( void( std::declval< const id_type&>() == id))
+            template< typename I, typename Predicate>
+            inline auto remove( I&& id, Predicate predicate) -> decltype( void( std::declval< const id_type&>() == id))
             {
                // this will potentially be slow...
                algorithm::container::erase_if( m_entries, [ &]( auto& entry)
                {
-                  if( auto correlations = entry->failed( id); ! correlations.empty())
+                  if( auto correlations = entry->failed( id, predicate); ! correlations.empty())
                   {
                      // remove all lookups for the entry, and return true to erase the entry it self
                      for( auto& correlation : correlations)
-                         m_lookup.erase( correlation);
+                        m_lookup.erase( correlation);
 
                      return entry->done();
                   }
@@ -183,10 +182,36 @@ namespace casual
                });
             }
 
+            // soft remove - only pendings will be set as failed
+            template< typename I>
+            inline auto failed( I&& id) -> decltype( void( std::declval< const id_type&>() == id))
+            {
+               return remove( id, []( auto& id)
+               {
+                  return [ &id]( auto& pending)
+                  {
+                     return pending.id == id && pending.state == Pending::State::pending;
+                  };
+               });
+            }
+
+            // hard remove
+            template< typename I>
+            inline auto purge( I&& id) -> decltype( void( std::declval< const id_type&>() == id))
+            {
+               return remove( id, []( auto& id)
+               {
+                  return [ &id]( auto& pending)
+                  {
+                     return pending.id == id;
+                  };
+               });
+            }
+
             inline auto empty() const noexcept { return m_entries.empty() && m_lookup.empty();}
 
             using pending_type = std::vector< Pending>;
-            
+
             //! @returns an empty 'pending_type' vector
             //! convenience function to get 'the right type' 
             inline auto empty_pendings() const noexcept { return pending_type{};}
