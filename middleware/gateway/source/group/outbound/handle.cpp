@@ -969,7 +969,13 @@ namespace casual
          {
             casual::queue::ipc::message::Advertise request{ common::process::handle()};
             request.queues.remove = std::move( resources.queues);
-            state.multiplex.send( ipc::manager::optional::queue(), request);
+            // this throws if queue-manager is absent.
+            // TODO send on instance::optional::Device should not throw?
+            common::exception::guard( [ &]()
+            {
+               state.multiplex.send( ipc::manager::optional::queue(), request);
+            });
+            
          }
       }
 
