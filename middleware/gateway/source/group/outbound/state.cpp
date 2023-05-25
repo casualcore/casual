@@ -8,6 +8,7 @@
 
 #include "common/predicate.h"
 #include "common/algorithm/sorted.h"
+#include "common/algorithm/random.h"
 
 namespace casual
 {
@@ -118,7 +119,7 @@ namespace casual
                      }
                      else
                      {
-                        connections.push_back( state::lookup::resource::Connection{ descriptor, add.hops});
+                        algorithm::random::insert( connections, state::lookup::resource::Connection{ descriptor, add.hops});
                      }
 
                      auto hops_less = []( auto& l, auto& r){ return l.hops < r.hops;};
