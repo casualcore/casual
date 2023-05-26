@@ -239,6 +239,23 @@ domain:
             namespace lookup::domain
             {
 
+               auto alias_name( std::string_view service_alias, std::string_view domain_name)
+               {
+                  return local::call( service_alias).get() == domain_name;
+               }
+
+               auto alias_name( std::string_view service_alias, std::string_view domain_name, platform::size::type count)
+               {
+                  while( count-- > 0)
+                  {
+                     if( alias_name( service_alias, domain_name))
+                        return true;
+                     else
+                        process::sleep( std::chrono::milliseconds{ 1});
+                  }
+                  return false;
+               }
+
                auto name( std::string_view name)
                {
                   return local::call( "casual/example/domain/name").get() == name;
@@ -246,15 +263,11 @@ domain:
 
                auto name( std::string_view name, platform::size::type count)
                {
-                  while( count-- > 0)
-                  {
-                     if( domain::name( name))
-                        return true;
-                     else
-                        process::sleep( std::chrono::milliseconds{ 1});
-                  }
-                  return false;
+                  return alias_name( "casual/example/domain/name", name, count);
                }
+
+
+
             } // lookup::domain
 
             auto tx_info()
@@ -1330,16 +1343,10 @@ domain:
          groups:
             -  connections:
                   -  address: 127.0.0.1:7001
-                     services:
-                        -  casual/example/domain/name
             -  connections:
                   -  address: 127.0.0.1:7002
-                     services:
-                        -  casual/example/domain/name
             -  connections:
                   -  address: 127.0.0.1:7003
-                     services:
-                        -  casual/example/domain/name
 )";
 
 
@@ -1394,12 +1401,8 @@ domain:
          groups:
             -  connections:
                   -  address: 127.0.0.1:7001
-                     services:
-                        -  casual/example/domain/name
             -  connections:
                   -  address: 127.0.0.1:7002
-                     services:
-                        -  casual/example/domain/name
 )";
 
 
@@ -1441,6 +1444,74 @@ domain:
          algorithm::for_n< 10>( []()
          {
             EXPECT_TRUE( local::lookup::domain::name( "B"));
+         });
+      }
+
+      TEST( test_gateway, service_routes__domain_A_to__B_C__outbound_separated_groups___expect_prio_B__shutdown_B__expect_C__boot_B__expect_B)
+      {
+         common::unittest::Trace trace;
+
+         // sink child signals 
+         signal::callback::registration< code::signal::child>( [](){});
+
+         auto b = local::example::domain( "B", "7001");
+         auto c = local::example::domain( "C", "7002");
+
+         auto a = local::domain( R"(
+domain: 
+   name: A
+
+   services:
+      -  name: casual/example/domain/name
+         routes: [ domain-name]
+  
+   gateway:
+      outbound:
+         groups:
+            -  connections:
+                  -  address: 127.0.0.1:7001
+            -  connections:
+                  -  address: 127.0.0.1:7002
+)");
+
+
+
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected());
+
+         // we might get to C until all services are advertised.
+         EXPECT_TRUE( local::lookup::domain::alias_name( "domain-name", "B", 1000));
+
+         // after both ar up, we expect to always get to B
+         algorithm::for_n< 10>( []()
+         {
+            EXPECT_TRUE( local::lookup::domain::alias_name( "domain-name", "B"));
+         });
+
+         // shutdown B
+         common::sink( std::move( b));
+
+         // we expect to always get to C
+         algorithm::for_n< 10>( []()
+         {
+            EXPECT_TRUE( local::lookup::domain::alias_name( "domain-name", "C"));
+         });
+
+         // boot B
+         b = local::example::domain( "B", "7001");
+
+         // we need to activate a, otherwise b has 'the control'
+         a.activate();
+
+         // we need to wait for all to be connected...
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected());
+         
+         // we expect to get to B agin
+         EXPECT_TRUE( local::lookup::domain::alias_name( "domain-name", "B", 1000));
+
+         // we expect to always get to B, again
+         algorithm::for_n< 10>( []()
+         {
+            EXPECT_TRUE( local::lookup::domain::alias_name( "domain-name", "B"));
          });
       }
 
