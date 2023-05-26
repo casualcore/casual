@@ -139,6 +139,40 @@ namespace casual
          return false;
       }
 
-      
+      void State::Prospects::insert( const Content& content, common::strong::correlation::id correlation)
+      {
+         for( auto service : content.services)
+         {
+            services[ service].emplace_back( correlation);
+         }
+         for( auto queue : content.queues)
+         {
+            queues[ queue].emplace_back( correlation);
+         }
+      }
+
+      void State::Prospects::remove( common::strong::correlation::id correlation)
+      {
+         algorithm::container::erase_if( services, [ &correlation]( auto& pair) 
+         {
+            return algorithm::container::erase( pair.second, correlation).empty();
+         });
+
+         algorithm::container::erase_if( queues, [ &correlation]( auto& pair) 
+         {
+            return algorithm::container::erase( pair.second, correlation).empty();
+         });
+      }
+
+      State::Prospects::Content State::Prospects::content() const
+      {
+         State::Prospects::Content content;
+         algorithm::transform( services, content.services, []( auto& pair) { return pair.first;});
+         algorithm::transform( queues, content.queues, []( auto& pair) { return pair.first;});
+         algorithm::container::sort::unique( content.services);
+         algorithm::container::sort::unique( content.queues);
+
+         return content;
+      }
    } // domain::discovery
 } // casual
