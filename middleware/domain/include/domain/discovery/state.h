@@ -236,7 +236,6 @@ namespace casual
 
       } // state
 
-
       struct State
       {
          State();
@@ -274,7 +273,23 @@ namespace casual
             )
          } service_name;
 
-         
+         struct Prospects
+         {
+            using Content = message::discovery::request::Content;
+            std::map< std::string, std::vector< common::strong::correlation::id>> services;
+            std::map< std::string, std::vector< common::strong::correlation::id>> queues;
+
+            void insert( const Content& content, common::strong::correlation::id correlation);
+            // remove all entrys in prospect list added by correlation
+            void remove( common::strong::correlation::id correlation);
+
+            Content content() const;
+
+            CASUAL_LOG_SERIALIZE(
+               CASUAL_SERIALIZE( services);
+               CASUAL_SERIALIZE( queues);
+            )
+         } prospects;
 
          state::Accumulate accumulate;
          
@@ -287,6 +302,7 @@ namespace casual
             CASUAL_SERIALIZE( coordinate);
             CASUAL_SERIALIZE( multiplex);
             CASUAL_SERIALIZE( service_name);
+            CASUAL_SERIALIZE( prospects);
             CASUAL_SERIALIZE( accumulate);
             CASUAL_SERIALIZE( providers);
          )

@@ -79,6 +79,69 @@ namespace casual
          }
       }
 
+      TEST( domain_discovery, register_as_discover_provider__send_api_request___send_rediscover__expect_prospects__then_reply__then_send_rediscover_expect_no_prospects)
+      {
+         common::unittest::Trace trace;
+
+         auto domain = unittest::manager();
+
+         // we register our self
+         discovery::provider::registration( discovery::provider::Ability::discover);
+
+         auto discovery_request_correlation = discovery::request( { "a"}, {});
+
+         // wait for the request
+         auto first_discovery_request = communication::ipc::receive< message::discovery::Request>();
+
+         // hold the reply and send it later
+         auto first_discovery_reply = common::message::reverse::type( first_discovery_request);
+
+         EXPECT_TRUE( algorithm::equal( first_discovery_request.content.services, array::make( "a"sv))) << CASUAL_NAMED_VALUE( first_discovery_request.content.services);
+
+         auto rediscover_correlation = discovery::rediscovery::request();
+
+         {
+            // receive the discovery request folloing the rediscover request
+            auto request = communication::ipc::receive< message::discovery::Request>();
+            // check that the in-flight prospect 'a' is in the request.
+            EXPECT_TRUE( algorithm::equal( request.content.services, array::make( "a"sv))) << CASUAL_NAMED_VALUE( request.content.services);
+            auto reply = common::message::reverse::type( request);
+            // send empty reply
+            communication::device::blocking::send( request.process.ipc, reply);
+         }
+
+         // send empty reply on first request
+         communication::device::blocking::send( first_discovery_request.process.ipc, first_discovery_reply);
+
+         // wait for the reply for first discovery request
+         {
+            auto reply = communication::ipc::receive< message::discovery::api::Reply>();
+            EXPECT_TRUE( reply.correlation == discovery_request_correlation);
+            EXPECT_TRUE( reply.content.services.empty()) << CASUAL_NAMED_VALUE( reply.content.services);
+         }
+
+         // wait for the reply on rediscovery request
+         {
+            auto reply = communication::ipc::receive< message::discovery::api::rediscovery::Reply>();
+            EXPECT_TRUE( reply.correlation == rediscover_correlation);
+         }
+
+         {
+            // make one more rediscover and now there should not be any prospects in-flight
+            auto rediscover_correlation = discovery::rediscovery::request();
+            {
+               auto request = communication::ipc::receive< message::discovery::Request>();
+               EXPECT_TRUE( request.content.services.empty()) << CASUAL_NAMED_VALUE( request.content.services);
+               auto reply = common::message::reverse::type( request);
+               communication::device::blocking::send( request.process.ipc, reply);
+            }
+            {
+               auto reply = communication::ipc::receive< message::discovery::api::rediscovery::Reply>();
+               EXPECT_TRUE( reply.correlation == rediscover_correlation);
+            }
+         }
+      }
+
       TEST( domain_discovery, register_as_means_provider__send_discovery_request___expect_request__then_reply)
       {
          common::unittest::Trace trace;
@@ -118,7 +181,7 @@ namespace casual
 
          // we register our self
          discovery::provider::registration( discovery::provider::Ability::discover);
-         
+
          // we fake our next registration...
          discovery::provider::registration( process::Handle{ strong::process::id{ process::id().value() + 1}, process::handle().ipc}, discovery::provider::Ability::discover);
 
@@ -159,7 +222,7 @@ namespace casual
             request.content.queues = { "a", "b"};
             return request;
          }());
-         
+
          {
             // expect lookup
             auto request = communication::ipc::receive< message::discovery::lookup::Request>();
@@ -199,7 +262,7 @@ namespace casual
          discovery::provider::registration( { Ability::discover, Ability::lookup, Ability::fetch_known});
 
          auto correlation = discovery::rediscovery::request();
-         
+
          // needs
          {
             auto request = communication::ipc::receive< message::discovery::fetch::known::Request>();
@@ -288,7 +351,7 @@ namespace casual
 
          auto inbound = communication::ipc::inbound::Device{};
 
-         using Ability = discovery::provider::Ability;         
+         using Ability = discovery::provider::Ability;
          discovery::provider::registration( { Ability::discover, Ability::lookup, Ability::topology, Ability::fetch_known});
 
          {
@@ -297,10 +360,10 @@ namespace casual
 
             discovery::topology::implicit::update( multiplex, message);
          }
-         
+
          while( multiplex)
             multiplex.send();
-         
+
          // known request
          {
             auto request = communication::ipc::receive< message::discovery::fetch::known::Request>();
@@ -389,7 +452,7 @@ namespace casual
             return request;
          }());
 
-                  
+
          {
             // expect lookup, we reply that we can provide the wanted service.
             auto request = communication::ipc::receive< message::discovery::lookup::Request>();
@@ -409,8 +472,8 @@ namespace casual
             // we wouldn't get the discovery::Reply if discovery was waiting on our reply.
 
          }
-      }   
+      }
 
    } // domain::discovery
-   
+
 } // casual

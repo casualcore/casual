@@ -469,7 +469,7 @@ namespace casual
 
                      namespace topology::direct
                      {
-                        
+
                         auto explore( State& state)
                         {
                            //! Sent from _discovery_ when:
@@ -509,7 +509,7 @@ namespace casual
                                  // We don't need to reply. Only advertise the explored services, if any.
                                  detail::advertise::replies( state, replies, outcome);
                               };
-                              
+
                               state.coordinate.discovery( 
                                  send_request( state, message),
                                  std::move( callback));

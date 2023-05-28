@@ -136,6 +136,7 @@ namespace casual
 
                      // make sure we keep the invariants
                      algorithm::container::sort::unique( content.services);
+                     algorithm::container::sort::unique( content.queues);
 
                      return content;
                   }
@@ -217,6 +218,9 @@ namespace casual
                         return;
                      }
 
+                     // register to prospect list
+                     state.prospects.insert( message.content, message.correlation);
+
                      // mutate the message and extract 'reply destination'
                      auto destination = local::extract::destination( message);
 
@@ -243,6 +247,7 @@ namespace casual
                         });
 
                         detail::send::multiplex( state, destination.ipc, message);
+                        state.prospects.remove( destination.correlation);
                      });
                   };
                }
@@ -268,6 +273,8 @@ namespace casual
 
                            for( auto& reply : replies)
                               request.content += std::move( reply.content);
+
+                           request.content += state.prospects.content();
 
                            request.content = detail::content::normalize::request( state, std::move( request.content));
 
@@ -299,7 +306,7 @@ namespace casual
                               message.content.services = algorithm::transform( content.services, transform_name);
 
                               message.content = detail::content::normalize::reply( state, std::move( message.content));
-                                 
+
                               detail::send::multiplex( state, destination.ipc, message);
 
                            });
@@ -338,6 +345,7 @@ namespace casual
 
                      log::line( verbose::log, "message: ", message);
 
+                     state.prospects.remove( destination.correlation);
                      detail::send::multiplex( state, destination.ipc, message);
                   });
                }
@@ -382,15 +390,17 @@ namespace casual
 
                         detail::send::multiplex( state, destination.ipc, message);
 
+                        state.prospects.remove( destination.correlation);
+
                         return;
                      }
 
                      // we need to forward the discovery and try to find the absent..
-
                      auto send_requests = [ &state]( auto absent)
                      {
                         message::discovery::Request request{ process::handle()};
                         request.domain = common::domain::identity();
+
                         request.content = detail::content::normalize::request( state, std::move( absent));
 
                         return detail::send::requests( state, 
@@ -408,17 +418,18 @@ namespace casual
                         message.correlation = destination.correlation;
                         message.domain = common::domain::identity();
                         message.content = std::move( content);
-                        
+
                         for( auto& reply : replies)
                            message.content += std::move( reply.content);
-                        
+
                         message.content = detail::content::normalize::reply( state, std::move( message.content));
+
+                        state.prospects.remove( destination.correlation);
 
                         log::line( verbose::log, "message: ", message);
                         detail::send::multiplex( state, destination.ipc, message);
                      });
                   });
-
                }
 
             } // detail
@@ -451,11 +462,13 @@ namespace casual
                      return;
                   }
 
+                  // register to prospect list
+                  state.prospects.insert( message.content, message.correlation);
+
                   if( message.directive == decltype( message.directive)::local)
                      detail::handle_internal_lookup( state, std::move( message));
                   else
                      detail::handle_extended_lookup( state, std::move( message));
-
                };
             }
 
@@ -517,6 +530,9 @@ namespace casual
 
                      for( auto& reply : replies)
                         explore.content += std::move( reply.content);
+
+                     explore.content += state.prospects.content();
+                     explore.content = detail::content::normalize::request( state, std::move( explore.content));
 
                      log::line( verbose::log, "explore: ", explore);
                      log::line( verbose::log, "implicit: ", implicit);
