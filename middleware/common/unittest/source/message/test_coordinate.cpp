@@ -209,5 +209,112 @@ namespace casual
          EXPECT_TRUE( coordinate.empty()) << trace.compose( "coordinate: ", coordinate);
       }
 
+      TEST( common_message_coordinate, add_10_pending__add_9__received_message_1_failed_perform_purge___expect_invoke)
+      {
+         common::unittest::Trace trace;
+
+         bool invoked = false;
+
+         // fill the messages
+         auto origin = algorithm::generate_n< 8>( []()
+         {
+            local::Reply message{ process::handle()};
+            message.correlation = strong::correlation::id::emplace( uuid::make());
+            return message;
+         });
+
+         // 'other' process information
+         constexpr auto other_pid = 19700101;
+         const std::vector< decltype( uuid::make()) > other_corrid{ uuid::make(), uuid::make()};
+         const Process::Handle other_process{ static_cast< strong::process::id>( other_pid)};
+
+         {
+            // add 'other' process
+            local::Reply message{ other_process};
+            message.correlation = strong::correlation::id::emplace( other_corrid.at( 0));
+            origin.push_back( message);
+         }
+
+         {
+            // and again
+            local::Reply message{ other_process};
+            message.correlation = strong::correlation::id::emplace( other_corrid.at( 1));
+            origin.push_back( message);
+         }
+
+         local::Coordinate coordinate;
+
+         // fill with fan out entries.
+         coordinate(
+            algorithm::transform( origin, []( auto& message)
+            {
+               return local::Coordinate::Pending{ message.correlation, message.process.pid};
+            }),
+            [&invoked, &other_process]( auto received, auto failed)
+            {
+               {
+                  // all current process pendings is marked as failed
+                  decltype( failed) pendings;
+                  algorithm::copy_if( failed, std::back_inserter( pendings), [ pid = process::id()]( auto pending)
+                  {
+                     return pid == pending.id;
+                  });
+                  ASSERT_TRUE( ! pendings.empty());
+                  EXPECT_TRUE(
+                     algorithm::all_of( pendings, []( auto pending){
+                        return pending.state == local::Coordinate::Pending::State::failed;
+                     })
+                  );
+               }
+               {
+                  // all 'other' process pendings is still marked as received
+                  decltype( failed) pendings;
+                  algorithm::copy_if( failed, std::back_inserter( pendings), [ &other_process]( auto pending)
+                  {
+                     return other_process.pid == pending.id;
+                  });
+                  ASSERT_TRUE( ! pendings.empty());
+                  EXPECT_TRUE(
+                     algorithm::all_of( pendings, []( auto pending){
+                        return pending.state == local::Coordinate::Pending::State::received;
+                     })
+                  );
+               }
+               invoked = true;
+            });
+
+
+         // accumulate first 7 messages with current pid
+         algorithm::for_each( range::make( std::begin( origin), 7), std::ref( coordinate));
+
+         {
+            // first reply from 'other' process
+            local::Reply message{ other_process};
+            message.correlation = strong::correlation::id::emplace( other_corrid.at( 0));
+            coordinate( message);
+         }
+
+         EXPECT_TRUE( ! invoked);
+         EXPECT_TRUE( ! coordinate.empty()) << trace.compose( "coordinate: ", coordinate);
+
+         // purge all from coordinate with current pid
+         coordinate.purge( process::id());
+
+         // still one message from 'other' process to be received
+         EXPECT_TRUE( ! invoked);
+         EXPECT_TRUE( ! coordinate.empty()) << trace.compose( "coordinate: ", coordinate);
+
+         {
+            // last message from 'other' process beeing coordinated
+            local::Reply message{ other_process};
+            message.correlation = strong::correlation::id::emplace( other_corrid.at( 1));
+            coordinate( message);
+         }
+
+         // everything handled
+         EXPECT_TRUE( invoked);
+         EXPECT_TRUE( coordinate.empty()) << trace.compose( "coordinate: ", coordinate);
+      }
+
    } // common::message
 } // casual

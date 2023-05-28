@@ -990,7 +990,7 @@ namespace casual
             handle::unadvertise( state, state.lookup.remove( descriptor));
 
             // take care of aggregated replies, if any.
-            state.coordinate.discovery.failed( descriptor);
+            state.coordinate.discovery.purge( descriptor);
 
             auto error_reply = []( auto& point){ point.error();};
 
