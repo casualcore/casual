@@ -1,6 +1,14 @@
 # Changelog
 This is the changelog for `casual` and all changes are listed in this document.
 
+## [1.6.6] - 2023-05-29
+### Fixes
+- discovery - handle prospect services (#198)
+- domain - try to remove ipc device from exited 'singletons'
+- gateway - handle routing problems (#197)
+- gateway - outbound order of connection for a service gets too "orderly"
+- gateway - outbound might core if connection lost during QM "restart"
+
 ## [1.6.5] - 2023-05-19
 ### Fixes
 - ipc - improve detection of removed ipc devices (files) (#194)
