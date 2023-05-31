@@ -8,19 +8,23 @@
 
 #include <common/unittest.h>
 
-
-
+#include "common/signal.h"
+#include "common/process.h"
 
 #include "common/message/service.h"
 #include "common/message/server.h"
 #include "common/message/dispatch.h"
 #include "common/message/transaction.h"
 #include "common/communication/ipc.h"
+#include "common/code/signal.h"
+#include "common/exception/compose.h"
 
 #include "common/serialize/native/complete.h"
 
 
 #include <functional>
+#include <system_error>
+#include <optional>
 
 
 
@@ -71,6 +75,23 @@ namespace casual
 
          message::dispatch::condition::detail::invoke< message::dispatch::condition::detail::tag::idle>( condition);
          EXPECT_TRUE( idle);
+      }
+
+      TEST( common_message_dispatch, handle_error)
+      {
+         signal::send( process::id(), code::signal::terminate);
+
+         try
+         {
+            throw exception::compose( code::casual::interrupted);
+         }
+         catch( ...)
+         {
+            std::optional< std::system_error> error;
+            EXPECT_NO_THROW( error = message::dispatch::condition::detail::handle::error());
+
+            EXPECT_TRUE( error && error->code() == code::signal::terminate);
+         }
       }
 
 

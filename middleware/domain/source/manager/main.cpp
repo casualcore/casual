@@ -137,7 +137,7 @@ namespace casual
                   {
                      return [&state]( auto& error)
                      {
-                        if( error.code() == code::casual::shutdown)
+                        if( error.code() == code::casual::shutdown || error.code() == code::signal::terminate)
                         {
                            state.runlevel = state::Runlevel::shutdown;
                            handle::shutdown( state);

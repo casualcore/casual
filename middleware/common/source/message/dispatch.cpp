@@ -15,14 +15,22 @@ namespace casual
          std::optional< std::system_error> error()
          {
             Trace trace{ "common::message::dispatch::condition::detail::handle::error"};
-                  
+
             auto error = exception::capture();
 
             if( error.code() != code::casual::interrupted)
                return error;
 
             log::line( verbose::log, "pump interrupted");
-            signal::dispatch();
+
+            try
+            {
+               signal::dispatch();
+            }
+            catch( ...)
+            {
+               return exception::capture();
+            }
 
             return {};
          }
