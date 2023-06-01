@@ -1,6 +1,11 @@
 # Changelog
 This is the changelog for `casual` and all changes are listed in this document.
 
+## [1.6.7] - 2023-06-01
+### Fixes
+- discovery - aggregate external discovery requests for performance
+- domain - handle shutdown signals (#207)
+
 ## [1.6.6] - 2023-05-29
 ### Fixes
 - discovery - handle prospect services (#198)
