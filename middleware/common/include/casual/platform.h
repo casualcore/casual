@@ -166,7 +166,8 @@ namespace casual
 
             namespace accumulate
             {
-               constexpr auto timeout = std::chrono::seconds{ 1};
+               constexpr size::type requests = 20;
+               constexpr auto timeout = std::chrono::milliseconds{ 4};
             } // accumulate
             
          } // discovery
