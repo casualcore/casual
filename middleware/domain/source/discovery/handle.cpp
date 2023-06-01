@@ -183,6 +183,86 @@ namespace casual
 
                } // content::normalize
 
+               auto send_external_discovery_request( State& state, message::discovery::request::Content content, std::vector< state::accumulate::request::Reply> reply_destinations)
+               {
+                  Trace trace{ "discovery::handle::local:detail::send_external_discovery_request"};
+                  
+                  // we need to have something we can correlate prospects with
+                  const auto prospect_correlation = strong::correlation::id::generate(); 
+
+                  // register to prospect list
+                  state.prospects.insert( content, prospect_correlation);
+
+                  message::discovery::Request request{ common::process::handle()};
+                  request.domain = common::domain::identity();
+                  request.content = detail::content::normalize::request( state, std::move( content));
+
+                  log::line( verbose::log, "state.providers: ", state.providers);
+
+                  // send request to all with the discover ability, if any.
+                  auto pending = detail::send::requests( state, state.coordinate.discovery.empty_pendings(), 
+                     state.providers.filter( state::provider::Ability::discover), request);
+
+                  // note: everything captured needs to by value (besides State if used)
+                  state.coordinate.discovery( std::move( pending), [ &state, prospect_correlation, reply_destinations = std::move( reply_destinations)]( auto replies, auto outcome) mutable
+                  {
+                     Trace trace{ "discovery::handle::local:detail::send_external_discovery_request coordinate.discovery"};
+                     log::line( verbose::log, "reply_destinations: ", reply_destinations);
+
+                     state.prospects.remove( prospect_correlation);
+                     
+                     auto content = algorithm::accumulate( replies, message::discovery::reply::Content{}, []( auto result, auto& reply)
+                     {
+                        return result + std::move( reply.content);
+                     });
+
+                     content = content::normalize::reply( state, std::move( content));
+
+                     auto [ discoveries, api ] = algorithm::partition( reply_destinations, predicate::value::equal( state::accumulate::request::reply::Type::discovery));
+
+                     // handle the different replies
+
+                     if( discoveries)
+                     {
+                        message::discovery::Reply reply;
+                        reply.domain = common::domain::identity();
+                        reply.content = std::move( content);
+
+                        for( auto& destination : discoveries)
+                        {
+                           reply.correlation = destination.correlation;
+                           detail::send::multiplex( state, destination.ipc, reply);
+                        };
+
+                        // move it back for the api replies, if any.
+                        content = std::move( reply.content);
+                     }
+                     
+                     if( api)
+                     {
+                        message::discovery::api::Reply reply;
+                        reply.content = std::move( content);
+
+                        for( auto& destination : api)
+                        {
+                           reply.correlation = destination.correlation;
+                           detail::send::multiplex( state, destination.ipc, reply);
+                        };
+                     }                     
+                  });
+               }
+
+               // Just helpers to help use the function above
+               auto send_external_discovery_request( State& state, message::discovery::Request request)
+               {
+                  send_external_discovery_request( state, std::move( request.content), { { state::accumulate::request::reply::Type::discovery, request.correlation, request.process.ipc}});
+               }
+
+               auto send_external_discovery_request( State& state, message::discovery::api::Request request)
+               {
+                  send_external_discovery_request( state, std::move( request.content), { { state::accumulate::request::reply::Type::api, request.correlation, request.process.ipc}});
+               }
+
             } // detail
 
 
@@ -218,37 +298,13 @@ namespace casual
                         return;
                      }
 
-                     // register to prospect list
-                     state.prospects.insert( message.content, message.correlation);
+                     // Should we accumulate the request for later?
+                     if( state.accumulate.bypass())
+                        detail::send_external_discovery_request( state, std::move( message));
+                     else
+                        state.accumulate.add( std::move( message));
 
-                     // mutate the message and extract 'reply destination'
-                     auto destination = local::extract::destination( message);
-
-                     message::discovery::Request request{ common::process::handle()};
-                     request.content = std::move( message.content);
-                     request.domain = common::domain::identity();
-
-                     log::line( verbose::log, "state.providers: ", state.providers);
-
-                     // send request to all with the discover ability, if any.
-                     auto pending = detail::send::requests( state, state.coordinate.discovery.empty_pendings(), 
-                        state.providers.filter( state::provider::Ability::discover), request);
-
-                     // note: everything captured needs to by value (besides State if used)
-                     state.coordinate.discovery( std::move( pending), [ &state, destination]( auto replies, auto outcome)
-                     {
-                        Trace trace{ "discovery::handle::local::api::request coordinate"};
-
-                        message::discovery::api::Reply message;
-                        message.correlation = destination.correlation;
-                        message.content = algorithm::accumulate( replies, message.content, []( auto result, auto& reply)
-                        {
-                           return result + std::move( reply.content);
-                        });
-
-                        detail::send::multiplex( state, destination.ipc, message);
-                        state.prospects.remove( destination.correlation);
-                     });
+                     
                   };
                }
 
@@ -395,40 +451,18 @@ namespace casual
                         return;
                      }
 
-                     // we need to forward the discovery and try to find the absent..
-                     auto send_requests = [ &state]( auto absent)
-                     {
-                        message::discovery::Request request{ process::handle()};
-                        request.domain = common::domain::identity();
+                     // "reconstruct" the request to either send directly, or accumulate for later.
+                     message::discovery::Request request;
+                     request.domain = common::domain::identity();
+                     request.directive = decltype( request.directive)::forward;
+                     request.correlation = destination.correlation;
+                     request.process.ipc = destination.ipc;
+                     request.content = std::move( absent);
 
-                        request.content = detail::content::normalize::request( state, std::move( absent));
-
-                        return detail::send::requests( state, 
-                           state.coordinate.discovery.empty_pendings(), 
-                           state.providers.filter( state::provider::Ability::discover), 
-                           request);
-                     };
-
-                     state.coordinate.discovery( send_requests( std::move( absent)), [ &state, content = std::move( content), destination]( auto replies, auto outcome)
-                     { 
-                        Trace trace{ "discovery::handle::local::request coordinate external"};
-                        log::line( verbose::log, "replies: ", replies);
-
-                        message::discovery::Reply message;
-                        message.correlation = destination.correlation;
-                        message.domain = common::domain::identity();
-                        message.content = std::move( content);
-
-                        for( auto& reply : replies)
-                           message.content += std::move( reply.content);
-
-                        message.content = detail::content::normalize::reply( state, std::move( message.content));
-
-                        state.prospects.remove( destination.correlation);
-
-                        log::line( verbose::log, "message: ", message);
-                        detail::send::multiplex( state, destination.ipc, message);
-                     });
+                     if( state.accumulate.bypass())
+                        detail::send_external_discovery_request( state, std::move( request));
+                     else
+                        state.accumulate.add( std::move( request));
                   });
                }
 
@@ -436,7 +470,8 @@ namespace casual
 
             auto request( State& state)
             {
-               return [&state]( message::discovery::Request&& message)
+               //! this is a request that comes from other domains, i.e. from our inbounds.
+               return [ &state]( message::discovery::Request&& message)
                {
                   Trace trace{ "discovery::handle::local::request"};
                   local::handler::entry( message);
@@ -462,13 +497,12 @@ namespace casual
                      return;
                   }
 
-                  // register to prospect list
-                  state.prospects.insert( message.content, message.correlation);
-
+                  // If there is only a local lookup, we do a "lot" less.
                   if( message.directive == decltype( message.directive)::local)
                      detail::handle_internal_lookup( state, std::move( message));
                   else
                      detail::handle_extended_lookup( state, std::move( message));
+
                };
             }
 
@@ -512,44 +546,87 @@ namespace casual
                }
             } // fetch::known
 
+            namespace accumulate
+            {
+               namespace topology
+               { 
+                  void send_direct_explore( State& state, message::discovery::topology::direct::Explore direct, std::vector< common::domain::Identity> implicit_domains)
+                  {
+                     Trace trace{ "discovery::handle::local::accumulate::topology::extraction"};
+                     log::line( verbose::log, "direct: ", direct, ", implicit_domains: ", implicit_domains);
+
+                     state.coordinate.known( detail::collect::known::requests( state), [ &state, direct = std::move( direct), implicit_domains = std::move( implicit_domains)]( auto&& replies, auto&& outcome) mutable
+                     {
+                        Trace trace{ "discovery::handle::local::topology::direct::update known done"};
+                        log::line( verbose::log, "replies: ", replies, ", outcome: ", outcome);
+
+                        for( auto& reply : replies)
+                           direct.content += std::move( reply.content);
+
+                        direct.content += state.prospects.content();
+                        direct.content = detail::content::normalize::request( state, std::move( direct.content));
+
+                        log::line( verbose::log, "direct: ", direct);
+
+                        if( direct.content)
+                        {
+                           // send to all external providers, if any
+                           for( auto& provider : state.providers.filter( state::provider::Ability::discover))
+                              detail::send::multiplex( state, provider.process.ipc, direct);
+                        }
+
+                        // always send the implicit topology update
+                        message::discovery::topology::implicit::Update implicit;
+                        implicit.domains = std::move( implicit_domains);
+                        algorithm::append_unique_value( common::domain::identity(), implicit.domains);
+
+                        for( auto& provider : state.providers.filter( state::provider::Ability::topology))
+                           detail::send::multiplex( state, provider.process.ipc, implicit);
+                     });
+
+                  }
+
+                  void extraction( State& state, state::accumulate::topology::extract::Result result)
+                  {
+                     Trace trace{ "discovery::handle::local::accumulate::topology::extraction"};
+
+                     topology::send_direct_explore( state, std::move( result.direct), std::move( result.implicit_domains));
+                  }
+
+                } // topology
+
+                namespace request
+                {
+                  void extraction( State& state, state::accumulate::request::extract::Result result)
+                  {
+                     Trace trace{ "discovery::handle::local::accumulate::request::extraction"};
+
+                     detail::send_external_discovery_request( state, std::move( result.content), std::move( result.replies));
+                  }
+                   
+                } // request
+
+
+
+               void timeout( State& state)
+               {
+                  Trace trace{ "discovery::handle::local::accumulate::timeout"};
+
+                  auto result = state.accumulate.extract();
+                  log::line( verbose::log, "result: ", result);
+
+                  if( result.topology)
+                     accumulate::topology::extraction( state, std::move( *result.topology));
+
+                  if( result.request)
+                     accumulate::request::extraction( state, std::move( *result.request));
+
+               }
+               
+            } // accumulate
+
             namespace topology
             {
-               void apply( State& state)
-               {
-                  Trace trace{ "discovery::handle::local::topology::apply"};
-
-                  if( ! state.accumulate.topology)
-                     return;
-
-                  auto [ explore, implicit] = state.accumulate.topology.extract();
-               
-                  state.coordinate.known( detail::collect::known::requests( state), [ &state, explore = std::move( explore), implicit = std::move( implicit)]( auto&& replies, auto&& outcome) mutable
-                  {
-                     Trace trace{ "discovery::handle::local::topology::direct::update known done"};
-                     log::line( verbose::log, "replies: ", replies, ", outcome: ", outcome);
-
-                     for( auto& reply : replies)
-                        explore.content += std::move( reply.content);
-
-                     explore.content += state.prospects.content();
-                     explore.content = detail::content::normalize::request( state, std::move( explore.content));
-
-                     log::line( verbose::log, "explore: ", explore);
-                     log::line( verbose::log, "implicit: ", implicit);
-
-                     if( explore.content)
-                     {
-                        // send to all external providers, if any
-                        for( auto& provider : state.providers.filter( state::provider::Ability::discover))
-                           detail::send::multiplex( state, provider.process.ipc, explore);
-                     }
-
-                     // always send the implicit topology update
-                     for( auto& provider : state.providers.filter( state::provider::Ability::topology))
-                        detail::send::multiplex( state, provider.process.ipc, implicit);
-                  });
-               }
-
                namespace implicit
                {
                   auto update( State& state)
@@ -568,8 +645,19 @@ namespace casual
                         if( algorithm::find( message.domains, common::domain::identity()))
                            return;
 
-                        // accumulate for later....
-                        state.accumulate.topology.add( std::move( message));
+                        if( ! state.accumulate.bypass())
+                        {
+                           // accumulate for later....
+                           state.accumulate.add( std::move( message));
+                           return;
+                        }
+
+                        // we need to send it directly
+                        message::discovery::topology::direct::Explore direct;
+                        direct.domains.push_back( message.origin);
+
+                        accumulate::topology::send_direct_explore( state, std::move( direct), std::move( message.domains));
+
                      };
                   }
                } // implicit
@@ -587,12 +675,27 @@ namespace casual
                         if( state.runlevel > decltype( state.runlevel())::running)
                            return;
 
-                        state.accumulate.topology.add( std::move( message));
+                        if( ! state.accumulate.bypass())
+                        {
+                           // accumulate for later....
+                           state.accumulate.add( std::move( message));
+                           return;
+                        }
+
+                        // we need to send it directly
+                        message::discovery::topology::direct::Explore direct;
+                        direct.domains.push_back( message.origin);
+                        direct.content = std::move( message.configured);
+
+                        // send_direct_explore will add our self to implicit domains for upstream domains,
+                        // there are no other domains involved yet, since we're the one that got the _direct connection_
+                        accumulate::topology::send_direct_explore( state, std::move( direct), {});
                      };
                   }
                } // direct
 
             } // topology
+
 
             auto timeout( State& state)
             {
@@ -601,7 +704,7 @@ namespace casual
                   Trace trace{ "gateway::group::outbound::local::internal::handle::timeout"};
                   log::line( verbose::log, "message: ", message);
 
-                  topology::apply( state);
+                  accumulate::timeout( state);
                };
             }
 
