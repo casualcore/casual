@@ -292,6 +292,48 @@ domain:
          }
       }
 
+      TEST( test_service, nested_service_call__expect_metric_to_contain_parent)
+      {
+         common::unittest::Trace trace;
+
+         auto domain = casual::domain::unittest::manager( local::configuration::base, R"(
+domain:
+   servers:
+      -  path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-server
+         memberships: [ user]
+
+   services:
+      -  name: casual/example/echo
+)");
+
+         // Set the name of the current service
+         const std::string calling_service{ "caller"};
+         execution::service::name( calling_service);
+
+         // Subscribe to the metric event
+         common::message::event::service::Calls event;
+         common::event::subscribe( common::process::handle(), { event.type()});
+
+         // Call service to generate metric
+         {
+            auto buffer = tpalloc( X_OCTET, nullptr, 128);
+            auto len = tptypes( buffer, nullptr, nullptr);
+            tpcall( "casual/example/echo", buffer, len, &buffer, &len, 0);
+            EXPECT_TRUE( tperrno == 0) << "tperrno: " << tperrnostring( tperrno);
+         }
+
+         // Wait for event to be delivered
+         {
+            common::communication::device::blocking::receive(
+               common::communication::ipc::inbound::device(),
+               event);
+
+            ASSERT_TRUE( event.metrics.size() == 1);
+            auto& metric = event.metrics.at( 0);
+            ASSERT_TRUE( metric.parent == calling_service) << "received: " << metric.parent;
+         }
+      }
+
       TEST( test_service, service_call_to_atomic_service__expect_trid)
       {
          common::unittest::Trace trace;
