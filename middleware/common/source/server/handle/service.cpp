@@ -33,7 +33,7 @@ namespace casual
                {
                   common::service::invoke::Parameter result{ std::move( message.buffer)};
                   result.service.name = message.service.name;
-                  result.parent = std::move( message.parent);
+                  result.parent = message.parent;
 
                   if( transaction::context().current())
                      result.flags = Flag::in_transaction;
@@ -61,7 +61,7 @@ namespace casual
             result.correlation = message.correlation;
             result.buffer = buffer::Payload{ nullptr};
             result.code.result = code::xatmi::service_error;
-            
+
             return result;
          }
 
