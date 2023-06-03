@@ -492,6 +492,8 @@ namespace casual
       {
          common::unittest::Trace trace;
 
+
+
          auto domain = unittest::manager( R"(
 domain:
    name: A
@@ -512,11 +514,12 @@ domain:
          // we register our self
          discovery::provider::registration( { discovery::provider::Ability::discover, discovery::provider::Ability::lookup});
 
-         auto lookup_reply_services_as_absent = []()
+         auto lookup_reply_resources_as_absent = []()
          {
             auto request = communication::ipc::receive< message::discovery::lookup::Request>();
             auto reply = common::message::reverse::type( request);
             reply.absent.services = std::move( request.content.services);
+            reply.absent.queues = std::move( request.content.queues);
             communication::device::blocking::send( request.process.ipc, reply);
          };
 
@@ -530,6 +533,25 @@ domain:
             };
          }; 
 
+         
+         auto create_queue = []( auto name)
+         {
+            return message::discovery::reply::Queue{ name};
+         };
+
+         auto create_expected_resources = []( auto prefix, auto count)
+         {
+            std::vector< std::string> result;
+            algorithm::for_n( count, [ &result, prefix]( auto index)
+            {
+               result.push_back( string::compose( prefix, index));
+            });
+            return result;
+         };
+
+         // Ok, lets start sending stuff.
+
+         // send 10 request for 'a'
          message::discovery::Request request{ caller.process};
          request.directive = decltype( request.directive)::forward;
          request.content.services = { "a"};
@@ -537,15 +559,29 @@ domain:
          algorithm::for_n( 10, [ &]()
          {
             communication::device::blocking::send( local::device(), request);
-            lookup_reply_services_as_absent();
+            lookup_reply_resources_as_absent();
          });
 
-         // now we've got 10 in-flight. Send another 10, these will be accumulated to one (at least less than 10, since we've got 10ms)
-         algorithm::for_n( 10, [ &]( auto index)
+         auto expected_services = create_expected_resources( "s", 10);
+         auto expected_queues = create_expected_resources( "q", 10);
+
+
+         // now we've got 10 in-flight. Send another 10 each for services and queues, these will be accumulated 
+         // to one (at least less than 10, since we've got 10ms)
+         algorithm::for_each( expected_services, [&]( auto& service)
          {
-            request.content.services.at( 0) = std::to_string( index);
+            request.content = {};
+            request.content.services.push_back( service);
             communication::device::blocking::send( local::device(), request);
-            lookup_reply_services_as_absent();
+            lookup_reply_resources_as_absent();
+         });
+
+         algorithm::for_each( expected_queues, [&]( auto& queue)
+         {
+            request.content = {};
+            request.content.queues.push_back( queue);
+            communication::device::blocking::send( local::device(), request);
+            lookup_reply_resources_as_absent();
          });
 
          // reply to the first 10 as the provider (default inbound)
@@ -554,26 +590,31 @@ domain:
             auto request = communication::ipc::receive< message::discovery::Request>();
             auto reply = common::message::reverse::type( request);
             reply.content.services = algorithm::transform( request.content.services, create_service);
+            reply.content.queues = algorithm::transform( request.content.queues, create_queue);
             
             communication::device::blocking::send( request.process.ipc, reply);
          });
 
-         // there should be less then 10 request.
+         // there should be less then 10x2 (10 services, 10 queues) request.
          {
             platform::size::type count = 0;
             std::vector< std::string> services;
+            std::vector< std::string> queues;
 
-            while( ! algorithm::equal( algorithm::sort( services), array::make( "0", "1", "2", "3", "4", "5", "6", "7", "8", "9")))
+            while( ! algorithm::equal( algorithm::sort( services), expected_services) && ! algorithm::equal( algorithm::sort( queues), expected_queues))
             {
                auto request = communication::ipc::receive< message::discovery::Request>();
 
                algorithm::append( request.content.services, services);
+               algorithm::append( request.content.queues, queues);
 
-               // we exclude service "3" to the reply
-               algorithm::container::erase( request.content.services, "3");
+               // we exclude "s3" and/or "g3" to the reply
+               algorithm::container::erase( request.content.services, "s3");
+               algorithm::container::erase( request.content.queues, "q3");
 
                auto reply = common::message::reverse::type( request);
                reply.content.services = algorithm::transform( request.content.services, create_service);
+               reply.content.queues = algorithm::transform( request.content.queues, create_queue);
                
                communication::device::blocking::send( request.process.ipc, reply);
                ++count;
@@ -582,25 +623,32 @@ domain:
             EXPECT_TRUE( count < 10) << "count: " << count;
          }
 
-         // Ok, now we should get our 20 replies as caller. We start with the first 10
+         // Ok, now we should get our 30 (10 'a' services, 10 expected services, 10 expected queues) replies as caller. We start with the first 10 'a'
          algorithm::for_n( 10, [ &]()
          {
             auto reply = communication::device::receive< message::discovery::Reply>( caller.device);
             ASSERT_TRUE( reply.content.services.size() == 1) << CASUAL_NAMED_VALUE( reply.content.services);
             EXPECT_TRUE( reply.content.services.at( 0).name == "a");
+            EXPECT_TRUE( reply.content.queues.empty());
          });
 
          {
             std::vector< std::string> services;
-            algorithm::for_n( 10, [ &]()
+            std::vector< std::string> queues;
+            algorithm::for_n( 20, [ &]()
             {
                auto reply = communication::device::receive< message::discovery::Reply>( caller.device);
                algorithm::transform( reply.content.services, std::back_inserter( services), []( auto& service){ return service.name;});
-               algorithm::container::sort::unique( services);
+               algorithm::transform( reply.content.queues, std::back_inserter( queues), []( auto& queue){ return queue.name;});
             });
+
+            algorithm::sort( services);
+            algorithm::sort( queues);
             
-            // expect all "number services" 0 through 9, without the "non existent" service "3"
-            EXPECT_TRUE( algorithm::equal( services, array::make( "0", "1", "2", "4", "5", "6", "7", "8", "9"))) << CASUAL_NAMED_VALUE( services);
+            // expect services without the "non existent" service "s3"
+            EXPECT_TRUE( algorithm::equal( services, algorithm::remove( expected_services, "s3"))) << CASUAL_NAMED_VALUE( services);
+            // expect queues without the "non existent" queue "q3"
+            EXPECT_TRUE( algorithm::equal( queues, algorithm::remove( expected_queues, "q3"))) << CASUAL_NAMED_VALUE( queues);
          }
       }
 

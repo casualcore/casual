@@ -187,12 +187,6 @@ namespace casual
                {
                   Trace trace{ "discovery::handle::local:detail::send_external_discovery_request"};
                   
-                  // we need to have something we can correlate prospects with
-                  const auto prospect_correlation = strong::correlation::id::generate(); 
-
-                  // register to prospect list
-                  state.prospects.insert( content, prospect_correlation);
-
                   message::discovery::Request request{ common::process::handle()};
                   request.domain = common::domain::identity();
                   request.content = detail::content::normalize::request( state, std::move( content));
@@ -204,20 +198,18 @@ namespace casual
                      state.providers.filter( state::provider::Ability::discover), request);
 
                   // note: everything captured needs to by value (besides State if used)
-                  state.coordinate.discovery( std::move( pending), [ &state, prospect_correlation, reply_destinations = std::move( reply_destinations)]( auto replies, auto outcome) mutable
+                  state.coordinate.discovery( std::move( pending), [ &state, reply_destinations = std::move( reply_destinations)]( auto replies, auto outcome) mutable
                   {
                      Trace trace{ "discovery::handle::local:detail::send_external_discovery_request coordinate.discovery"};
                      log::line( verbose::log, "reply_destinations: ", reply_destinations);
-
-                     state.prospects.remove( prospect_correlation);
                      
                      auto content = algorithm::accumulate( replies, message::discovery::reply::Content{}, []( auto result, auto& reply)
                      {
                         return result + std::move( reply.content);
                      });
 
+                     // Normalize to take routes into account
                      content = content::normalize::reply( state, std::move( content));
-
                      auto [ discoveries, api ] = algorithm::partition( reply_destinations, predicate::value::equal( state::accumulate::request::reply::Type::discovery));
 
                      // handle the different replies
@@ -226,25 +218,24 @@ namespace casual
                      {
                         message::discovery::Reply reply;
                         reply.domain = common::domain::identity();
-                        reply.content = std::move( content);
 
                         for( auto& destination : discoveries)
                         {
+                           // filter based on the requested resources.
+                           reply.content = state.in_flight_cache.filter_reply( destination.correlation, content);
                            reply.correlation = destination.correlation;
                            detail::send::multiplex( state, destination.ipc, reply);
                         };
-
-                        // move it back for the api replies, if any.
-                        content = std::move( reply.content);
                      }
                      
                      if( api)
                      {
                         message::discovery::api::Reply reply;
-                        reply.content = std::move( content);
 
                         for( auto& destination : api)
                         {
+                           // filter based on the requested resources.
+                           reply.content = state.in_flight_cache.filter_reply( destination.correlation, content);
                            reply.correlation = destination.correlation;
                            detail::send::multiplex( state, destination.ipc, reply);
                         };
@@ -298,6 +289,8 @@ namespace casual
                         return;
                      }
 
+                     state.in_flight_cache.add( message);
+
                      // Should we accumulate the request for later?
                      if( state.accumulate.bypass())
                         detail::send_external_discovery_request( state, std::move( message));
@@ -330,9 +323,8 @@ namespace casual
                            for( auto& reply : replies)
                               request.content += std::move( reply.content);
 
-                           request.content += state.prospects.content();
-
-                           request.content = detail::content::normalize::request( state, std::move( request.content));
+                           // complement the request with potential in-flight request resources, and normalize to respect routes.
+                           request.content = detail::content::normalize::request( state, state.in_flight_cache.complement( std::move( request.content)));
 
                            auto send_discoveries = [ &state]( auto& request)
                            {
@@ -401,7 +393,6 @@ namespace casual
 
                      log::line( verbose::log, "message: ", message);
 
-                     state.prospects.remove( destination.correlation);
                      detail::send::multiplex( state, destination.ipc, message);
                   });
                }
@@ -445,9 +436,6 @@ namespace casual
                         log::line( verbose::log, "message: ", message);
 
                         detail::send::multiplex( state, destination.ipc, message);
-
-                        state.prospects.remove( destination.correlation);
-
                         return;
                      }
 
@@ -496,6 +484,8 @@ namespace casual
                      detail::send::multiplex( state, message.process.ipc, common::message::reverse::type( message));
                      return;
                   }
+
+                  state.in_flight_cache.add( message);
 
                   // If there is only a local lookup, we do a "lot" less.
                   if( message.directive == decltype( message.directive)::local)
@@ -563,8 +553,8 @@ namespace casual
                         for( auto& reply : replies)
                            direct.content += std::move( reply.content);
 
-                        direct.content += state.prospects.content();
-                        direct.content = detail::content::normalize::request( state, std::move( direct.content));
+                        // add the possible in-flight requests, that we've not got replies for yet. And normalize to respect routes.
+                        direct.content = detail::content::normalize::request( state, state.in_flight_cache.complement( std::move( direct.content)));
 
                         log::line( verbose::log, "direct: ", direct);
 
