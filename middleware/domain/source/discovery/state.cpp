@@ -296,6 +296,11 @@ namespace casual
                   m_queues.add( correlation, content.queues);
                }
 
+               void Cache::add_known( const common::strong::correlation::id& correlation, reply_content&& content)
+               {
+                  m_known_content.emplace( correlation, std::move( content));
+               }
+
                Cache::request_content Cache::complement( request_content&& content)
                {
                   m_services.complement( content.services);
@@ -315,6 +320,11 @@ namespace casual
 
                   reply_content result;
 
+                  //! check if we know stuff locally, if so we add this.
+                  if( auto found = algorithm::find( m_known_content, correlation))
+                     result = algorithm::container::extract( m_known_content, std::begin( found)).second;
+
+
                   auto resource_name_less = []( auto& resource, auto& name){ return resource.name < name;};
 
                   for( auto& service : m_services.extract( correlation))
@@ -330,6 +340,11 @@ namespace casual
                         if( found->name == queue)
                            result.queues.push_back( *found);
                   }
+
+                  // make sure we keep the invariants, the 'resources' needs to be sorted.
+                  // TODO: The sorted stuff might be to much hassle, and we don't really know the performance impact...
+                  algorithm::sort( result.services);
+                  algorithm::sort( result.queues);
 
                   return result;  
                }

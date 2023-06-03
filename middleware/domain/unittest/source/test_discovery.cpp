@@ -523,7 +523,7 @@ domain:
             communication::device::blocking::send( request.process.ipc, reply);
          };
 
-         auto create_service = []( auto name)
+         constexpr static auto create_service = []( auto name)
          {
             return common::message::service::concurrent::advertise::Service{
                name,
@@ -533,8 +533,7 @@ domain:
             };
          }; 
 
-         
-         auto create_queue = []( auto name)
+         constexpr static auto create_queue = []( auto name)
          {
             return message::discovery::reply::Queue{ name};
          };
@@ -608,7 +607,7 @@ domain:
                algorithm::append( request.content.services, services);
                algorithm::append( request.content.queues, queues);
 
-               // we exclude "s3" and/or "g3" to the reply
+               // we exclude "s3" and/or "g3" to the reply to simulate 
                algorithm::container::erase( request.content.services, "s3");
                algorithm::container::erase( request.content.queues, "q3");
 
@@ -650,6 +649,103 @@ domain:
             // expect queues without the "non existent" queue "q3"
             EXPECT_TRUE( algorithm::equal( queues, algorithm::remove( expected_queues, "q3"))) << CASUAL_NAMED_VALUE( queues);
          }
+      }
+
+
+      TEST( domain_discovery, act_as_SM_GW__discover_q1_s2_q1_q2__s1_q1_is_known___extended_discovery_for_s2_q2__all_is_found___expect_s1_s2_q1_q2__in_reply)
+      {
+         common::unittest::Trace trace;
+
+
+
+         auto domain = unittest::manager( R"(
+domain:
+   name: A
+   environment:
+      variables:
+         - { key: CASUAL_DISCOVERY_ACCUMULATE_REQUESTS, value: 10}
+         - { key: CASUAL_DISCOVERY_ACCUMULATE_TIMEOUT, value: 10ms}
+)");
+
+         // crate a separate inbound for the "caller"
+         struct
+         {
+            communication::ipc::inbound::Device device;
+            process::Handle process{ process::id(), device.connector().handle().ipc()};
+
+         } caller;
+
+         // we register our self
+         discovery::provider::registration( { discovery::provider::Ability::discover, discovery::provider::Ability::lookup});
+
+
+         constexpr static auto create_service = []( auto name)
+         {
+            return common::message::service::concurrent::advertise::Service{
+               name,
+               "",
+               common::service::transaction::Type::none,
+               common::service::visibility::Type::discoverable,
+            };
+         }; 
+
+         constexpr static auto create_queue = []( auto name)
+         {
+            return message::discovery::reply::Queue{ name};
+         };
+
+         // will reply with absent s2, q2, known s1, q1
+         constexpr static auto lookup_reply_resources = []()
+         {
+            auto request = communication::ipc::receive< message::discovery::lookup::Request>();
+            auto reply = common::message::reverse::type( request);
+
+            EXPECT_TRUE( algorithm::equal( request.content.services, array::make( "s1", "s2")));
+            EXPECT_TRUE( algorithm::equal( request.content.queues, array::make( "q1", "q2"))) << CASUAL_NAMED_VALUE( request.content.queues);
+
+            reply.content.services.push_back( create_service( "s1"));
+            reply.absent.services.emplace_back( "s2");
+
+            reply.content.queues.push_back( create_queue( "q1"));
+            reply.absent.queues.emplace_back( "q2");
+            
+            communication::device::blocking::send( request.process.ipc, reply);
+         };
+
+         // Ok, lets start sending stuff.
+
+         // send request with s1, s2, q1, q2
+         {
+            message::discovery::Request request{ caller.process};
+            request.directive = decltype( request.directive)::forward;
+            request.content.services = { "s1", "s2"};
+            request.content.queues = { "q1", "q2"};
+            
+            communication::device::blocking::send( local::device(), request);
+
+            // reply as "service/queue manager"
+            lookup_reply_resources();
+         };
+
+         // reply as "gateway manager"
+         {
+            auto request = communication::ipc::receive< message::discovery::Request>();
+            auto reply = common::message::reverse::type( request);
+            reply.content.services = algorithm::transform( request.content.services, create_service);
+            reply.content.queues = algorithm::transform( request.content.queues, create_queue);
+            
+            communication::device::blocking::send( request.process.ipc, reply);
+         };
+
+         // get the reply
+         {
+            auto equal_name = []( auto& lhs, auto& rhs){ return lhs.name == rhs;};
+
+            auto reply = communication::device::receive< message::discovery::Reply>( caller.device);
+            EXPECT_TRUE( algorithm::equal( reply.content.services, array::make( "s1", "s2"), equal_name));
+            EXPECT_TRUE( algorithm::equal( reply.content.queues, array::make( "q1", "q2"), equal_name));
+         }
+
       }
 
    } // domain::discovery
