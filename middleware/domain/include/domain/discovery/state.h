@@ -393,17 +393,19 @@ namespace casual
                   //! adds the content and associate with the correlation.
                   void add( const common::strong::correlation::id& correlation, const request_content& content);
 
+                  //! adds partial "local" known 'content', that will be used in `filter_reply`
+                  void add_known( const common::strong::correlation::id& correlation, reply_content&& content);
+
                   template< typename M>
                   void add( const M& message) { add( message.correlation, message.content);}
 
                   //! adds all cached resources to services and queues
                   request_content complement( request_content&& content);
 
-                  //! @returns the "cached" requested resources associated withe the correlation intersected with the 
-                  //! supplied content. Also cleans the associated state. 
-                  //! @attention this function is not idempotent.
+                  //! @returns the "cached" requested resources associated with the correlation intersected with the 
+                  //! supplied content. Also adds partial known "local" content, if any. 
+                  //! @attention Cleans the associated state -> this function is not idempotent.
                   reply_content filter_reply( const common::strong::correlation::id& correlation, const reply_content& content);
-
 
                   CASUAL_LOG_SERIALIZE(
                      CASUAL_SERIALIZE( m_services);
@@ -413,6 +415,7 @@ namespace casual
                private:
                   cache::Mapping m_services;
                   cache::Mapping m_queues;
+                  std::unordered_map< common::strong::correlation::id, reply_content> m_known_content;
                };
                
             } // content

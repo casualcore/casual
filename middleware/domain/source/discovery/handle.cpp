@@ -268,7 +268,7 @@ namespace casual
                         Trace trace{ "discovery::handle::local::provider::registration"};
                         local::handler::entry( message);
 
-                        // send reply and registrate
+                        // send reply and register
                         if( detail::send::multiplex( state, message.process.ipc, common::message::reverse::type( message)))
                            state.providers.registration( message);
                      };
@@ -415,12 +415,12 @@ namespace casual
                      Trace trace{ "discovery::handle::local::detail::handle_extended_lookup coordinate lookup"};
                      log::line( verbose::log, "replies: ", replies);
 
-                     message::discovery::reply::Content content;
+                     message::discovery::reply::Content known;
                      message::discovery::request::Content absent;
 
                      for( auto& reply : replies)
                      {
-                        content += std::move( reply.content);
+                        known += std::move( reply.content);
                         absent += std::move( reply.absent);
                      }
 
@@ -431,7 +431,7 @@ namespace casual
                         message::discovery::Reply message;
                         message.correlation = destination.correlation;
                         message.domain = common::domain::identity();
-                        message.content = std::move( content);
+                        message.content = std::move( known);
 
                         log::line( verbose::log, "message: ", message);
 
@@ -439,13 +439,22 @@ namespace casual
                         return;
                      }
 
+                     // we need to ask potential other domains for resources. If we've got
+                     // "local" known stuff, we need to cache this to union with the upcoming 
+                     // reply.
+                     if( known)
+                        state.in_flight_cache.add_known( destination.correlation, std::move( known));
+
+
                      // "reconstruct" the request to either send directly, or accumulate for later.
                      message::discovery::Request request;
                      request.domain = common::domain::identity();
                      request.directive = decltype( request.directive)::forward;
                      request.correlation = destination.correlation;
-                     request.process.ipc = destination.ipc;
+                     request.process.ipc = destination.ipc;            
                      request.content = std::move( absent);
+
+                     state.in_flight_cache.add( request);
 
                      if( state.accumulate.bypass())
                         detail::send_external_discovery_request( state, std::move( request));
@@ -484,8 +493,6 @@ namespace casual
                      detail::send::multiplex( state, message.process.ipc, common::message::reverse::type( message));
                      return;
                   }
-
-                  state.in_flight_cache.add( message);
 
                   // If there is only a local lookup, we do a "lot" less.
                   if( message.directive == decltype( message.directive)::local)
