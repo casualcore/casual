@@ -356,6 +356,68 @@ namespace casual
             accumulate::Request m_request;
          };
 
+         namespace in::flight
+         {
+            namespace content
+            {
+               namespace cache
+               {
+                  struct Mapping
+                  {
+                     //! adds the resources and associate with the correlation.
+                     void add( const common::strong::correlation::id& correlation, const std::vector< std::string>& resources);
+
+                     //! @returns all resources associated with the correlation, and make sure the state is cleaned
+                     std::vector< std::string> extract( const common::strong::correlation::id& correlation);
+
+                     //! adds all cached resources to `resources`.
+                     void complement( std::vector< std::string>& resources);
+
+                     CASUAL_LOG_SERIALIZE(
+                        CASUAL_SERIALIZE( m_correlation_to_resource);
+                        CASUAL_SERIALIZE( m_resource_count);
+                     )
+
+                  private:
+                     std::unordered_multimap< common::strong::correlation::id, std::string> m_correlation_to_resource;
+                     std::unordered_map< std::string, platform::size::type> m_resource_count;
+                  };
+
+               } // cache
+
+               struct Cache
+               {
+                  using request_content = message::discovery::request::Content;
+                  using reply_content = message::discovery::reply::Content;
+
+                  //! adds the content and associate with the correlation.
+                  void add( const common::strong::correlation::id& correlation, const request_content& content);
+
+                  template< typename M>
+                  void add( const M& message) { add( message.correlation, message.content);}
+
+                  //! adds all cached resources to services and queues
+                  request_content complement( request_content&& content);
+
+                  //! @returns the "cached" requested resources associated withe the correlation intersected with the 
+                  //! supplied content. Also cleans the associated state. 
+                  //! @attention this function is not idempotent.
+                  reply_content filter_reply( const common::strong::correlation::id& correlation, const reply_content& content);
+
+
+                  CASUAL_LOG_SERIALIZE(
+                     CASUAL_SERIALIZE( m_services);
+                     CASUAL_SERIALIZE( m_queues);
+                  )
+
+               private:
+                  cache::Mapping m_services;
+                  cache::Mapping m_queues;
+               };
+               
+            } // content
+            
+         } // in::flight
 
 
       } // state
@@ -397,23 +459,7 @@ namespace casual
             )
          } service_name;
 
-         struct Prospects
-         {
-            using Content = message::discovery::request::Content;
-            std::map< std::string, std::vector< common::strong::correlation::id>> services;
-            std::map< std::string, std::vector< common::strong::correlation::id>> queues;
-
-            void insert( const Content& content, common::strong::correlation::id correlation);
-            // remove all entrys in prospect list added by correlation
-            void remove( common::strong::correlation::id correlation);
-
-            Content content() const;
-
-            CASUAL_LOG_SERIALIZE(
-               CASUAL_SERIALIZE( services);
-               CASUAL_SERIALIZE( queues);
-            )
-         } prospects;
+         state::in::flight::content::Cache in_flight_cache;
 
          state::Accumulate accumulate;
          
@@ -426,7 +472,7 @@ namespace casual
             CASUAL_SERIALIZE( coordinate);
             CASUAL_SERIALIZE( multiplex);
             CASUAL_SERIALIZE( service_name);
-            CASUAL_SERIALIZE( prospects);
+            CASUAL_SERIALIZE( in_flight_cache);
             CASUAL_SERIALIZE( accumulate);
             CASUAL_SERIALIZE( providers);
          )

@@ -70,6 +70,7 @@ namespace casual
                   };
 
                   result.message.count.receive = state::metric::message::count::received( create_count, 
+                     message::discovery::api::Request{},
                      message::discovery::api::rediscovery::Request{},
                      message::discovery::fetch::known::Reply{},
                      message::discovery::Request{},

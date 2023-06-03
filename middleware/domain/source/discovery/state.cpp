@@ -228,19 +228,115 @@ namespace casual
 
          bool Accumulate::bypass() const noexcept
          {
-            Trace trace{ "domain::discovery::state::Accumulate::bypass"};
-
-
             // if we have an ongoing deadline we keep accumulation until the deadline kicks in.
             if( m_heuristic.deadline)
                return false;
-
-            log::line( verbose::log, "bypass-heuristic: ", m_heuristic);
 
             // bypass if in-flight is within the "window", the lowest/first load level
             return m_heuristic.in_flight() <= m_heuristic.in_flight_window;
          }
 
+         namespace in::flight
+         {
+            namespace content
+            {
+               namespace cache
+               {
+                  void Mapping::add( const common::strong::correlation::id& correlation, const std::vector< std::string>& resources)
+                  {
+                     for( auto& resource : resources)
+                     {
+                        m_correlation_to_resource.emplace( correlation, resource);
+                        ++m_resource_count[ resource];
+                     }
+                  }
+
+                  std::vector< std::string> Mapping::extract( const common::strong::correlation::id& correlation)
+                  {
+                     std::vector< std::string> result;
+
+                     auto make_range = []( auto pair) { return range::make( pair.first, pair.second);};
+
+                     auto resources = make_range( m_correlation_to_resource.equal_range( correlation));
+
+                     result.reserve( resources.size());
+
+                     for( auto& pair : resources)
+                     {
+                        // clean upp total "cached" services
+                        if( auto found = algorithm::find( m_resource_count, pair.second); --found->second == 0)
+                           m_resource_count.erase( std::begin( found));
+
+                        result.push_back( std::move( pair.second));
+                     };
+
+                     // clean upp the resources associated with the correlation
+                     m_correlation_to_resource.erase( std::begin( resources), std::end( resources));
+
+                     // make sure we're sorted, since the "hash-mapping" is not.
+                     algorithm::sort( result);
+
+                     return result;
+                  }
+
+                  void Mapping::complement( std::vector< std::string>& resources)
+                  {
+                     // just a premature optimization if we have a lot of services cached...
+                     resources.reserve( m_resource_count.size());
+
+                     algorithm::transform( m_resource_count, std::back_inserter( resources), predicate::adapter::first());
+                     algorithm::container::sort::unique( resources);
+                  }
+
+               } // cache
+
+               void Cache::add( const common::strong::correlation::id& correlation, const request_content& content)
+               {
+                  m_services.add( correlation, content.services);
+                  m_queues.add( correlation, content.queues);
+               }
+
+               Cache::request_content Cache::complement( request_content&& content)
+               {
+                  m_services.complement( content.services);
+                  m_queues.complement( content.queues);
+                  return std::move( content);
+               }
+               
+
+               Cache::reply_content Cache::filter_reply( const common::strong::correlation::id& correlation, const reply_content& content)
+               {
+                  Trace trace{ "domain::discovery::state::in::flight::content::Cache::filter_reply"};
+                  log::line( verbose::log, "correlation: ", correlation);
+                  log::line( verbose::log, "content: ", content);
+
+                  // trim the content with the intersection of the replied end the associated (requested).
+                  // also `extract` removes the associated state from the state.
+
+                  reply_content result;
+
+                  auto resource_name_less = []( auto& resource, auto& name){ return resource.name < name;};
+
+                  for( auto& service : m_services.extract( correlation))
+                  {
+                     if( auto found = std::get< 1>( algorithm::sorted::lower_bound( content.services, service, resource_name_less)))
+                        if( found->name == service)
+                           result.services.push_back( *found);
+                  }
+
+                  for( auto& queue : m_queues.extract( correlation))
+                  {
+                     if( auto found = std::get< 1>( algorithm::sorted::lower_bound( content.queues, queue, resource_name_less)))
+                        if( found->name == queue)
+                           result.queues.push_back( *found);
+                  }
+
+                  return result;  
+               }
+
+            } // content
+            
+         } // in::flight
       } // state
 
       State::State()
@@ -257,40 +353,5 @@ namespace casual
          return false;
       }
 
-      void State::Prospects::insert( const Content& content, common::strong::correlation::id correlation)
-      {
-         for( auto service : content.services)
-         {
-            services[ service].emplace_back( correlation);
-         }
-         for( auto queue : content.queues)
-         {
-            queues[ queue].emplace_back( correlation);
-         }
-      }
-
-      void State::Prospects::remove( common::strong::correlation::id correlation)
-      {
-         algorithm::container::erase_if( services, [ &correlation]( auto& pair) 
-         {
-            return algorithm::container::erase( pair.second, correlation).empty();
-         });
-
-         algorithm::container::erase_if( queues, [ &correlation]( auto& pair) 
-         {
-            return algorithm::container::erase( pair.second, correlation).empty();
-         });
-      }
-
-      State::Prospects::Content State::Prospects::content() const
-      {
-         State::Prospects::Content content;
-         algorithm::transform( services, content.services, []( auto& pair) { return pair.first;});
-         algorithm::transform( queues, content.queues, []( auto& pair) { return pair.first;});
-         algorithm::container::sort::unique( content.services);
-         algorithm::container::sort::unique( content.queues);
-
-         return content;
-      }
    } // domain::discovery
 } // casual
