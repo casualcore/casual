@@ -1,6 +1,13 @@
 # Changelog
 This is the changelog for `casual` and all changes are listed in this document.
 
+## [1.6.8] - 2023-06-01
+### Fixes
+- discovery - "local" known services/queues are not added to discovery reply
+- discovery - replies should only contain a subset of the requested
+- service - include parent in service metrics
+
+
 ## [1.6.7] - 2023-06-01
 ### Fixes
 - discovery - aggregate external discovery requests for performance
