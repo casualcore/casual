@@ -128,7 +128,6 @@ namespace casual
                   create_handler( tasks), 
                   communication::ipc::inbound::device());
 
-               process::wait( manager.pid);
             }
 
 
@@ -143,15 +142,17 @@ namespace casual
                {
                   exception::guard( [&]()
                   {
-                     if( m_handle)
+                     if( m_perform_shutdown)
                      {
-                        local::shutdown( m_handle);
+                        if( m_handle)
+                           local::shutdown( m_handle);
+                        else if( m_handle.pid)
+                           process::terminate( m_handle.pid);
                      }
-                     else if( m_handle.pid)
-                     {
-                        process::terminate( m_handle.pid);
+
+                     if( m_handle.pid)
                         process::wait( m_handle.pid);
-                     }
+
                   });
                }
 
@@ -160,6 +161,17 @@ namespace casual
                { 
                   std::swap( m_handle, other.m_handle);
                   return *this;
+               }
+
+               void async_shutdown()
+               {
+                  log::Trace trace{ "domain::unittest::Manager::local::Manager::async_shutdown", verbose::log};
+
+                  //! if the m_perform_shutdown is false already, we do nothing.
+                  if( ! std::exchange( m_perform_shutdown, false))
+                     return;
+
+                  communication::device::blocking::send( m_handle.ipc, common::message::shutdown::Request{ process::handle()});
                }
 
                void handle( const common::process::Handle& handle) noexcept
@@ -175,6 +187,7 @@ namespace casual
                )
 
             private:
+               bool m_perform_shutdown = true;
                common::process::Handle m_handle;
             };
 
@@ -312,6 +325,11 @@ domain:
          ~Implementation()
          {}
 
+         void async_shutdown()
+         {
+            manager.async_shutdown();
+         }
+
          void activate()
          {
             log::Trace trace{ "domain::unittest::Manager::Implementation::activate", verbose::log};
@@ -351,6 +369,11 @@ domain:
       const common::process::Handle& Manager::handle() const noexcept
       {
          return m_implementation->manager.handle();
+      }
+
+      void Manager::async_shutdown()
+      {
+         m_implementation->async_shutdown();
       }
 
       void Manager::activate()
