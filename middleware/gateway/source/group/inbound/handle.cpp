@@ -356,17 +356,42 @@ namespace casual
                {
                   namespace resource
                   {
+                     template< typename Message>
+                     auto basic_clean( State& state)
+                     {
+                        return [&state]( Message& message)
+                        {
+                           Trace trace{ "gateway::group::inbound::handle::local::internal::transaction::resource::detail::basic_clean"};
+                           common::log::line( verbose::log, "message: ", message);
+
+                           if( auto descriptor = state.consume( message.correlation))
+                           {
+                              state.in_flight_cache.remove( descriptor, message.trid);
+
+                              if( tcp::send( state, descriptor, message))
+                                 return;
+
+                              log::line( log::category::error, code::casual::communication_unavailable, " transaction - failed to send ", message.type(), " to descriptor: ", descriptor);
+                              return;
+                           }
+
+                           log::line( log::category::error, code::casual::communication_unavailable, " transaction - failed to correlate ", message.type());
+                        };
+                     }
+                     
                      namespace prepare
                      {
                         auto reply = basic_forward< common::message::transaction::resource::prepare::Reply>;
                      } // prepare
                      namespace commit
                      {
-                        auto reply = basic_forward< common::message::transaction::resource::commit::Reply>;
+                        //! when we get this reply, we know the transaction is 'done', at least in this domain (and downstream)
+                        auto reply = resource::basic_clean< common::message::transaction::resource::commit::Reply>;
                      } // commit
                      namespace rollback
                      {
-                        auto reply = basic_forward< common::message::transaction::resource::rollback::Reply>;
+                        //! when we get this reply, we know the transaction is 'done', at least in this domain (and downstream)
+                        auto reply = resource::basic_clean< common::message::transaction::resource::rollback::Reply>;
                      } // commit
                   } // resource
                } // transaction
@@ -375,9 +400,20 @@ namespace casual
 
             namespace external
             {
+               namespace detail
+               {
+                  template< typename T>
+                  using has_trid = decltype( std::declval< T&>().trid);   
+               } // detail
+
                template< typename M>
                auto correlate( State& state, const M& message)
                {
+                  if constexpr( common::traits::detect::is_detected_v< detail::has_trid, M>)
+                  {
+                     state.in_flight_cache.add( state.external.last(), message.trid);
+                  }
+
                   state.correlations.emplace_back( message.correlation, state.external.last());
                   return state.external.last();
                }
@@ -817,12 +853,10 @@ namespace casual
          {
             auto connection_done = [&state]( auto descriptor)
             {
-               return algorithm::find( state.correlations, descriptor).empty();
+               return state.disconnectable( descriptor);
             };
 
-            auto& pending = state.pending.disconnects;
-
-            auto done = algorithm::container::extract( pending, algorithm::filter( pending, connection_done));
+            auto done = algorithm::container::extract( state.pending.disconnects, algorithm::filter( state.pending.disconnects, connection_done));
 
             for( auto descriptor : done)
                handle::connection::lost( state, descriptor);

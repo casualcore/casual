@@ -1185,6 +1185,75 @@ domain:
          local::call( "sleepy", code::xatmi::no_entry);
       }
 
+      TEST( test_gateway, domain_A_to_B___tx_begin_tpacall_sleep___async_shutdown_B___expect_reply__expect___tx_commit__call_sleep_again__expect__TPENOENT)
+      {
+         // sink child signals 
+         signal::callback::registration< code::signal::child>( [](){});
+
+         common::unittest::Trace trace;
+
+         auto b = local::domain( R"(
+domain: 
+   name: B
+
+   servers:
+      -  path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-server"
+         memberships: [ user]
+         arguments: [ --sleep, 100ms]
+         instances: 5
+   gateway:
+      inbound:
+         groups:
+            -  connections: 
+               -  address: 127.0.0.1:7001
+)");
+
+         auto a = local::domain( R"(
+domain: 
+   name: A
+
+   services:
+      -  name: casual/example/sleep
+         routes: [ sleepy]
+
+   gateway:
+      outbound:
+         groups:
+            -  connections:
+                  -  address: 127.0.0.1:7001
+)");
+
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected());
+
+         const auto binary = common::unittest::random::binary( 2048);
+
+         EXPECT_TRUE( tx_begin() == TX_OK);
+
+         auto descriptors = algorithm::generate_n< 7>( [&binary]()
+         {
+            return local::acall( "sleepy", binary);
+         });
+
+         // we'll wait until the outbound has 7 (or more) pending messages
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::pending( 7));
+
+         // ask B to shutdown.
+         b.async_shutdown();
+         
+         // receive the 7 calls
+         for( auto descriptor : descriptors)
+         {
+            auto result = local::receive( descriptor);
+            EXPECT_TRUE( result == binary);
+         }
+
+         EXPECT_TRUE( tx_commit() == TX_OK);
+
+
+         // expect new calls to get TPENOENT
+         local::call( "sleepy", code::xatmi::no_entry);
+      }
+
 
       TEST( test_gateway, domain_A_to_B___tpacall__sleep___scale_B_down__expect__TPENOENT)
       {
