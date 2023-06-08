@@ -1,6 +1,10 @@
 # Changelog
 This is the changelog for `casual` and all changes are listed in this document.
 
+## [1.6.9] - 2023-06-08
+### Fixes
+- gateway - inbound must wait for in-flight transactions during shutdown
+
 ## [1.6.8] - 2023-06-01
 ### Fixes
 - discovery - "local" known services/queues are not added to discovery reply
