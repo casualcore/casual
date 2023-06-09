@@ -56,7 +56,7 @@ namespace casual
                   }
                   else
                   {
-                     log::line( log::category::error, code::casual::internal_correlation, " failed to correlate descriptor: ", descriptor);
+                     log::line( log::category::error, code::casual::internal_correlation, " tcp::send - failed to correlate descriptor: ", descriptor, " for message type: ", message.type());
                      log::line( log::category::verbose::error, "state: ", state);
                   }
 
@@ -997,11 +997,20 @@ namespace casual
             // consume routs associated with the 'connection', and try to send 'error-replies'
             algorithm::for_each( state.route.consume( descriptor), error_reply);
 
-            // connection might have been in 'disconnecting phase'
-            algorithm::container::trim( state.disconnecting, algorithm::remove( state.disconnecting, descriptor));
-
             // remove the information about the 'connection'.
             auto information = state.external.remove( state.directive, descriptor);
+            log::line( verbose::log, "information: ", information);
+
+            // connection should have been in 'disconnecting phase'.
+            // Otherwise we treat it as an error.
+            if( auto found = algorithm::find( state.disconnecting, descriptor))
+               state.disconnecting.erase( std::begin( found));
+            else
+               log::line( log::category::error, code::casual::communication_unavailable, " lost connection - address: ", information.configuration.address, ", domain: ", information.domain);
+
+            // clean up lookup transaction state. 
+            state.lookup.remove_transactions( descriptor);
+
             return { std::move( information.configuration), std::move( information.domain)};
          }
 

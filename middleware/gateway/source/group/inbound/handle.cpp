@@ -802,31 +802,28 @@ namespace casual
             Trace trace{ "gateway::group::inbound::handle::connection::lost"};
             log::line( verbose::log, "descriptor: ", descriptor);
 
-            auto information = state.external.remove( state.directive, descriptor);
+            auto extracted = state.extract( descriptor);
 
-            // find possible pending 'lookup' requests
-            auto lost = algorithm::container::extract( state.correlations, algorithm::filter( state.correlations, predicate::value::equal( descriptor)));
-            log::line( verbose::log, "lost: ", lost);
-
-            auto pending = state.pending.requests.consume( algorithm::transform( lost, []( auto& lost){ return lost.correlation;}));
-            
-            // discard service lookup
-            algorithm::for_each( pending.services, [ &state]( auto& call)
+            if( ! extracted.empty())
             {
-               common::message::service::lookup::discard::Request request{ process::handle()};
-               request.correlation = call.correlation;
-               request.requested = call.service.name;
-               // we don't need the reply
-               request.reply = false;
+               log::line( log::category::error, code::casual::communication_unavailable, " lost connection - address: ", extracted.information.configuration.address, ", domain: ", extracted.information.domain);
+               log::line( log::category::verbose::error, "extracted: ", extracted);
 
-               state.multiplex.send( ipc::manager::service(), request);
-            });
+               // discard service lookup
+               // There is no other pending we need to discard at the moment.
+               algorithm::for_each( extracted.pending.services, [ &state]( auto& call)
+               {
+                  common::message::service::lookup::discard::Request request{ process::handle()};
+                  request.correlation = call.correlation;
+                  request.requested = call.service.name;
+                  // we don't need the reply
+                  request.reply = false;
 
-            algorithm::container::trim( state.pending.disconnects, algorithm::remove( state.pending.disconnects, descriptor));
+                  state.multiplex.send( ipc::manager::service(), request);
+               });            
+            }
 
-            // There is no other pending we need to discard at the moment.
-
-            return { std::move( information.configuration), std::move( information.domain)};
+            return { std::move( extracted.information.configuration), std::move( extracted.information.domain)};
          }
 
          void disconnect( State& state, common::strong::file::descriptor::id descriptor)
