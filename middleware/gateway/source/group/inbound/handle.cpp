@@ -57,7 +57,7 @@ namespace casual
                   }
                   else
                   {
-                     log::line( log::category::error, code::casual::internal_correlation, " failed to correlate descriptor: ", descriptor);
+                     log::line( log::category::error, code::casual::internal_correlation, " tcp::send -  failed to correlate descriptor: ", descriptor, " for message type: ", message.type());
                      log::line( log::category::verbose::error, "state: ", state);
                   }
 
@@ -366,7 +366,16 @@ namespace casual
 
                            if( auto descriptor = state.consume( message.correlation))
                            {
-                              state.in_flight_cache.remove( descriptor, message.trid);
+                              
+                              if constexpr( std::is_same_v< Message, common::message::transaction::resource::prepare::Reply>)
+                              {
+                                 // prepare can be optimize with read-only, or detect some error. We know that if 
+                                 // it is not "ok", we will not get commit/rollback and need to clean state. 
+                                 if( message.state != decltype( message.state)::ok)
+                                    state.in_flight_cache.remove( descriptor, message.trid);
+                              }
+                              else
+                                 state.in_flight_cache.remove( descriptor, message.trid);
 
                               if( tcp::send( state, descriptor, message))
                                  return;
@@ -381,7 +390,7 @@ namespace casual
                      
                      namespace prepare
                      {
-                        auto reply = basic_forward< common::message::transaction::resource::prepare::Reply>;
+                        auto reply = resource::basic_clean< common::message::transaction::resource::prepare::Reply>;
                      } // prepare
                      namespace commit
                      {
