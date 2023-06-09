@@ -146,7 +146,6 @@ namespace casual
             //! @returns all lookup resources
             lookup::Resources resources() const;
 
-
             lookup::Resources add( common::strong::file::descriptor::id descriptor, std::vector< lookup::Resource> services, std::vector< lookup::Resource> queues);
 
             //! removes the connection and @return the resources that should be un-advertised 

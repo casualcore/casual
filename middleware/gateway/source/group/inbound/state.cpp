@@ -107,6 +107,13 @@ namespace casual
                }
             }
 
+            void Cache::remove( common::strong::file::descriptor::id descriptor)
+            {
+               if( auto found = algorithm::find( m_transactions, descriptor))
+                  m_transactions.erase( std::begin( found));
+            }
+
+
             bool Cache::empty( common::strong::file::descriptor::id descriptor) const noexcept
             {
                 if( auto found = algorithm::find( m_transactions, descriptor))
@@ -154,6 +161,23 @@ namespace casual
       bool State::done() const noexcept
       {
          return runlevel > state::Runlevel::running && external.empty();
+      }
+
+      state::extract::Result State::extract( common::strong::file::descriptor::id descriptor)
+      {
+         // find possible pending 'lookup' requests
+         auto lost = algorithm::container::extract( correlations, algorithm::filter( correlations, predicate::value::equal( descriptor)));
+         log::line( verbose::log, "lost: ", lost);
+
+         // remove disconnects, if any
+         if( auto found = algorithm::find( pending.disconnects, descriptor))
+            pending.disconnects.erase( std::begin( found));
+
+         return state::extract::Result{ 
+            external.remove( directive, descriptor),
+            pending.requests.consume( algorithm::transform( lost, []( auto& lost){ return lost.correlation;})),
+            in_flight_cache.extract( descriptor)
+         };
       }
 
    } // gateway::group::inbound

@@ -90,6 +90,11 @@ namespace casual
                {
                   std::vector< common::message::service::call::callee::Request> services;
                   std::vector< complete_type> complete;
+
+                  CASUAL_LOG_SERIALIZE( 
+                     CASUAL_SERIALIZE( services);
+                     CASUAL_SERIALIZE( complete);
+                  )
                };
 
                Result consume( const std::vector< common::strong::correlation::id>& correlations);
@@ -158,7 +163,12 @@ namespace casual
                void add( common::strong::file::descriptor::id descriptor, const common::transaction::ID& trid);
                void remove( common::strong::file::descriptor::id descriptor, const common::transaction::ID& trid);
 
+               //! remove all associated transactions to the `descriptor`
+               void remove( common::strong::file::descriptor::id descriptor);
+
                bool empty( common::strong::file::descriptor::id descriptor) const noexcept;
+
+               
                
                //! @returns and extract/remove the associated transactions tor the `descriptor`. 
                std::vector< common::transaction::ID> extract( common::strong::file::descriptor::id descriptor);
@@ -172,6 +182,24 @@ namespace casual
             };
          } // in::flight
 
+         namespace extract
+         {
+            struct Result
+            {
+               group::tcp::External< configuration::model::gateway::inbound::Connection>::Information information;
+               state::pending::Requests::Result pending;
+               std::vector< common::transaction::ID> transactions;
+
+               inline bool empty() const noexcept { return pending.complete.empty() && pending.services.empty() && transactions.empty();}
+
+               CASUAL_LOG_SERIALIZE( 
+                  CASUAL_SERIALIZE( information);
+                  CASUAL_SERIALIZE( pending);
+                  CASUAL_SERIALIZE( transactions);
+               )
+
+            };
+         } // extract
 
       } // state
 
@@ -214,6 +242,8 @@ namespace casual
          
          //! @return true if the state is ready to 'terminate'
          bool done() const noexcept;
+
+         state::extract::Result extract( common::strong::file::descriptor::id connection);
 
          //! @returns a reply message to state `request` that is filled with what's possible
          template< typename M>
