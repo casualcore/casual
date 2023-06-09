@@ -281,16 +281,22 @@ namespace casual
                local::remove::connection( descriptor, Lookup::m_queues, queues)
             };
          }
-
-         lookup::Resources Lookup::clear()
+         std::vector< common::transaction::ID> Lookup::extract_transactions( common::strong::file::descriptor::id descriptor)
          {
-            auto result = resources();
+            std::vector< common::transaction::ID> result;
+            algorithm::container::erase_if( m_transactions, [ &result, descriptor]( auto& mapping)
+            {
+               if( auto remove = algorithm::filter( mapping.externals, predicate::value::equal( descriptor)))
+               {
+                  result.push_back( mapping.internal);
+                  algorithm::container::erase( mapping.externals, remove);
+               }
 
-            m_services.clear();
-            m_queues.clear();
+               return mapping.externals.empty();
+            });
 
             return result;
-         }  
+         } 
 
          void Lookup::remove( const common::transaction::ID& external)
          {
@@ -324,12 +330,26 @@ namespace casual
 
       } // state
 
+      state::extract::Result State::extract( common::strong::file::descriptor::id descriptor)
+      {
+         Trace trace{ "gateway::group::outbound::State::extract"};
+
+         // clean the disconnecting state.
+         algorithm::container::erase( disconnecting, descriptor);
+
+         return {
+            external.remove( directive, descriptor),
+            route.consume( descriptor),
+            lookup.extract_transactions( descriptor)
+         };
+      }
+
       bool State::done() const
       {
          if( runlevel <= state::Runlevel::running)
             return false;
 
-         return route.empty();
+         return route.empty() && lookup.empty();
       }
 
    } // gateway::group::outbound

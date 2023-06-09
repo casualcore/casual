@@ -98,10 +98,7 @@ namespace casual
                               Trace trace{ "gateway::group::outbound::handle::local::internal::transaction::resource::basic::request"};
                               log::line( verbose::log, "message: ", message);
 
-                              auto descriptor = state.lookup.connection( message.trid);
-
-                              // add the route and the error callback
-                              state.route.add( std::move( message), descriptor, [ &state, rm = message.resource, trid = message.trid]( auto& destination)
+                              auto error_callback = [ &state, rm = message.resource, trid = message.trid]( auto&& destination)
                               {
                                  common::message::reverse::type_t< Message> reply;
                                  reply.correlation = destination.correlation;
@@ -112,11 +109,19 @@ namespace casual
 
                                  log::line( verbose::log, "reply: ", reply);
                                  state.multiplex.send( destination.ipc, reply);
-                              });
+                              };
 
-                              // if we fail to send we want to invoke the error callback immediately
-                              if( ! tcp::send( state, descriptor, message).valid())
-                                 state.route.consume( message.correlation).error();
+                              if( auto descriptor = state.lookup.connection( message.trid))
+                              {
+                                 // add the route and the error callback
+                                 state.route.add( std::move( message), descriptor, std::move( error_callback));
+
+                                 // if we fail to send we want to invoke the error callback immediately
+                                 if( ! tcp::send( state, descriptor, message).valid())
+                                    state.route.consume( message.correlation).error();
+                              }
+                              else
+                                 error_callback( state::route::Destination{ message.correlation, message.process.ipc, message.execution});
                            };
                         }
                      } // basic
@@ -992,26 +997,22 @@ namespace casual
             // take care of aggregated replies, if any.
             state.coordinate.discovery.purge( descriptor);
 
-            auto error_reply = []( auto& point){ point.error();};
+            // extract all state associated with the descriptor
+            auto extracted = state.extract( descriptor);
+            log::line( verbose::log, "extracted: ", extracted);
 
-            // consume routs associated with the 'connection', and try to send 'error-replies'
-            algorithm::for_each( state.route.consume( descriptor), error_reply);
+            if( ! extracted.empty())
+            {
+               log::line( log::category::error, code::casual::communication_unavailable, " lost connection - address: ", extracted.information.configuration.address, ", domain: ", extracted.information.domain);
+               log::line( log::category::verbose::error, "extracted: ", extracted);
 
-            // remove the information about the 'connection'.
-            auto information = state.external.remove( state.directive, descriptor);
-            log::line( verbose::log, "information: ", information);
+               auto error_reply = []( auto& point){ point.error();};
 
-            // connection should have been in 'disconnecting phase'.
-            // Otherwise we treat it as an error.
-            if( auto found = algorithm::find( state.disconnecting, descriptor))
-               state.disconnecting.erase( std::begin( found));
-            else
-               log::line( log::category::error, code::casual::communication_unavailable, " lost connection - address: ", information.configuration.address, ", domain: ", information.domain);
+               // try to send 'error-replies' to all 'routes', if any.
+               algorithm::for_each( extracted.routes, error_reply);
+            }
 
-            // clean up lookup transaction state. 
-            state.lookup.remove_transactions( descriptor);
-
-            return { std::move( information.configuration), std::move( information.domain)};
+            return { std::move( extracted.information.configuration), std::move( extracted.information.domain)};
          }
 
          void disconnect( State& state, common::strong::file::descriptor::id descriptor)

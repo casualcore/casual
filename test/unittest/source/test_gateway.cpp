@@ -336,7 +336,6 @@ domain:
       
          // startup the domain that will try to do stuff
          auto b = local::domain( B);
-         EXPECT_TRUE( communication::instance::ping( b.handle().ipc) == b.handle());
 
          auto payload = common::unittest::random::binary( 1024);
          {
@@ -348,10 +347,10 @@ domain:
 
          // startup the domain that has the service
          auto a = local::domain( A);
-         EXPECT_TRUE( communication::instance::ping( a.handle().ipc) == a.handle());
 
          // activate the b domain, so we can try to dequeue
          b.activate();
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected( 1));
 
          {
             auto message = queue::blocking::dequeue( "a2");
@@ -1105,11 +1104,16 @@ domain:
             // the outbound in C might not have been able to connect to A yet, wait for it.
             gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected());
 
+            // Note: THis might be pushing it... How can C magically call something from within the
+            // the same transaction?
             auto buffer = local::call( "casual/example/domain/echo/D", binary);
             auto size = local::size( buffer);
 
             EXPECT_EQ( size, range::size( binary));
          }
+
+         // "go back" to A to do the actual commit.
+         a.activate();
 
          ASSERT_TRUE( tx_commit() == TX_OK);
       }

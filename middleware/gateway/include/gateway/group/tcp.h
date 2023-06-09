@@ -147,7 +147,7 @@ namespace casual
                return found.data();
             return nullptr;
          }
-
+         // TODO should be named extract.
          Information remove( 
             common::communication::select::Directive& directive, 
             common::strong::file::descriptor::id descriptor)
