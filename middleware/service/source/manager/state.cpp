@@ -636,10 +636,15 @@ namespace casual
          // remove
          local::remove_services( *this, instance, message.services.remove);
 
-         // find all potentially pending.
+         // find all potentially pending that might be enabled by the new concurrent service(s)
          auto [ keep, remove] = algorithm::stable::partition( pending.lookups, [&]( auto& pending)
          {
-            if( auto found = algorithm::find( services, pending.request.requested))
+            auto is_requested_concurrent_service = [ &]( const auto& service)
+            {
+               return service.second.is_concurrent() && ! service.second.is_sequential() && service.first == pending.request.requested;
+            };
+
+            if( auto found = algorithm::find_if( services, std::move( is_requested_concurrent_service)))
                return found->second.instances.empty(); // false/remove if not empty, hence what we 'want' to return
 
             return true; // keep

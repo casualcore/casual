@@ -626,7 +626,7 @@ namespace casual
                            // context::wait is not relevant for pending time.
                            if( pending.request.context.semantic == decltype( pending.request.context.semantic)::wait)
                               service::detail::lookup( state, pending.request, {});
-                           else                              
+                           else
                               service::detail::lookup( state, pending.request, platform::time::clock::type::now() - pending.when);
                         };
                         
