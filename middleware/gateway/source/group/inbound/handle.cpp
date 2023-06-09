@@ -440,8 +440,10 @@ namespace casual
                         {
                            common::log::line( verbose::log, "descriptor: ", descriptor);
 
-                           if( algorithm::find( state.correlations, descriptor))
+                           if( algorithm::find( state.correlations, descriptor) || ! state.in_flight_cache.empty( descriptor))
                            {
+                              common::log::line( verbose::log, "state.correlations: ", state.correlations, ", state.in_flight_cache: ", state.in_flight_cache);
+
                               // connection still got pending stuff to do, we keep track until its 'idle'.
                               state.pending.disconnects.push_back( descriptor);
                            }

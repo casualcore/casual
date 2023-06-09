@@ -154,12 +154,17 @@ namespace casual
             //! remove the connection for the provided services and queues, @returns all that needs to be un-advertised.
             lookup::Resources remove( common::strong::file::descriptor::id descriptor, std::vector< std::string> services, std::vector< std::string> queues);
 
-            //! clears all 'resources' but keep the transaction mapping (if there are messages in flight).
-            //! @returns all resources that should be unadvertised
-            lookup::Resources clear();
+            //! extracts all (internal) transactions associated with `descriptor`
+            std::vector< common::transaction::ID> extract_transactions( common::strong::file::descriptor::id descriptor);
             
             //! removes the "mapping", based on the external (branched) trid.
             void remove( const common::transaction::ID& external);
+
+            inline auto& services() const noexcept { return m_services;}
+            inline auto& transactions() const noexcept { return m_transactions;}
+            inline auto& queues() const noexcept { return m_queues;}
+
+            inline bool empty() const noexcept { return m_services.empty() && m_transactions.empty() && m_queues.empty();}
 
             CASUAL_LOG_SERIALIZE( 
                CASUAL_SERIALIZE_NAME( m_services, "services");
@@ -167,12 +172,7 @@ namespace casual
                CASUAL_SERIALIZE_NAME( m_queues, "queues");
             )
 
-            inline auto& services() const noexcept { return m_services;}
-            inline auto& transactions() const noexcept { return m_transactions;}
-            inline auto& queues() const noexcept { return m_queues;}
-
          private:
-
             std::unordered_map< std::string, std::vector< lookup::resource::Connection>> m_services;
             std::vector< lookup::Mapping> m_transactions;
             std::unordered_map< std::string, std::vector< lookup::resource::Connection>> m_queues;
@@ -253,6 +253,24 @@ namespace casual
             
          } // service
 
+         namespace extract
+         {
+            struct Result
+            {
+               group::tcp::External< configuration::model::gateway::outbound::Connection>::Information information;
+               std::vector< route::Point> routes;
+               std::vector< common::transaction::ID> transactions;
+
+               inline bool empty() const noexcept { return routes.empty() && transactions.empty();}
+
+               CASUAL_LOG_SERIALIZE( 
+                 CASUAL_SERIALIZE( information);
+                 CASUAL_SERIALIZE( routes);
+                 CASUAL_SERIALIZE( transactions);
+               )
+            };
+         } // extract
+
       } // state
 
       struct State
@@ -282,6 +300,9 @@ namespace casual
 
          std::string alias;
          platform::size::type order{};
+
+         //! extract all state associated with the `descriptor`
+         state::extract::Result extract( common::strong::file::descriptor::id descriptor); 
 
          bool done() const;
 

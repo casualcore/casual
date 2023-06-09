@@ -1420,11 +1420,8 @@ domain:
 
          }
 
-         // b shuts down
-         {
-            common::sink( std::move( b));
-            unittest::fetch::until( unittest::fetch::predicate::outbound::connected( 0));
-         }
+         // We shutdown b "hard"
+         signal::send( inbound.pid, code::signal::terminate);
 
          // we try to commit our transaction
          {
