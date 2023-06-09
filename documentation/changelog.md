@@ -1,6 +1,13 @@
 # Changelog
 This is the changelog for `casual` and all changes are listed in this document.
 
+## [1.6.10] - 2023-06-09
+### Fixes
+- gateway - outbound does not wait for in-flight transactions
+- gateway - error-log if connection is lost unexpectedly (#216)
+- gateway - inbound does not handle prepare::Reply with read_only correct
+- service - avoid double busy lookup (#217)
+
 ## [1.6.9] - 2023-06-08
 ### Fixes
 - gateway - inbound must wait for in-flight transactions during shutdown
