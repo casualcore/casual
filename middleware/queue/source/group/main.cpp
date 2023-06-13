@@ -17,6 +17,7 @@
 #include "common/communication/instance.h"
 #include "common/communication/select/ipc.h"
 #include "common/message/signal.h"
+#include "common/environment.h"
 
 namespace casual
 {
@@ -27,6 +28,35 @@ namespace casual
          {
             namespace
             { 
+               namespace select
+               {
+                  //! Policy for the ipc multiplex select message pump
+                  struct Policy
+                  {
+                     struct next
+                     {
+                        inline static platform::size::type ipc() noexcept 
+                        {
+                           auto initialize_value = []()
+                           {
+                              //! "expose" configuration to be able to tweak and gain knowledge to find a reasonable fixed one.
+                              constexpr std::string_view environment = "CASUAL_QUEUE_PERSISTENCE_WINDOW";
+
+                              if( environment::variable::exists( environment))
+                                 return string::from< platform::size::type>( environment::variable::get( environment));
+                              return platform::size::type{ 20};
+                           };
+
+                           static const platform::size::type value = initialize_value();
+                           return value;
+                        }
+
+
+                     };
+                  };
+
+               } // select
+
                struct Settings
                {
                   CASUAL_LOG_SERIALIZE()
@@ -44,7 +74,7 @@ namespace casual
                      ipc::device().push( common::message::signal::Timeout{});
                   });
 
-                  // connect to queue-manager - it will send configuration::update::Reqest that we'll handle
+                  // connect to queue-manager - it will send configuration::update::Request that we'll handle
                   // in the main message pump
                   communication::device::blocking::send( 
                      communication::instance::outbound::queue::manager::device(),
@@ -81,7 +111,7 @@ namespace casual
                      local::condition( state),
                      state.directive,
                      state.multiplex,
-                     communication::select::ipc::dispatch::create( state, &group::handlers));
+                     communication::select::ipc::dispatch::create< local::select::Policy>( state, &group::handlers));
 
                   abort_guard.release();
                }

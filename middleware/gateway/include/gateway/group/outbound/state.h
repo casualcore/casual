@@ -34,9 +34,9 @@ namespace casual
          struct next
          {
             //! max count of consumed messages 
-            static constexpr platform::size::type ipc = 1;
+            static constexpr platform::size::type ipc() { return 1;}
             //! max count of consumed messages
-            static constexpr platform::size::type tcp = 1;
+            static constexpr platform::size::type tcp() { return 1;}
          };
       };
 

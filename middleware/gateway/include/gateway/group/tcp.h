@@ -289,7 +289,7 @@ namespace casual
                   {
                      state.external.last( descriptor);
 
-                     auto count = Policy::next::tcp;
+                     auto count = Policy::next::tcp();
                      while( count-- > 0 && handler( connection->next()))
                         ; // no-op
                   }
