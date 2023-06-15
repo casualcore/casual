@@ -3,9 +3,7 @@
 //!
 //! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
-
 #include "common/unittest.h"
-//#include "common/unittest/file.h"
 
 #include "queue/unittest/utility.h"
 #include "queue/common/queue.h"
@@ -16,6 +14,7 @@
 #include "common/message/domain.h"
 #include "common/message/service.h"
 #include "common/signal/timer.h"
+#include "common/environment/scoped.h"
 
 #include "common/transaction/context.h"
 #include "common/transaction/resource.h"
@@ -656,7 +655,93 @@ domain:
             // groups a and b
             EXPECT_TRUE( state.externals.size() == 2) << CASUAL_NAMED_VALUE( state);
          }
-   
+      }
+
+      TEST( casual_queue_forward, advertise_s1__queue_q1__forward_q1_to_s1__limit_queuebase__enqueue_until_error__expect_forward_of_all_enqueued)
+      {
+         common::unittest::Trace trace;
+
+         auto directory = common::unittest::directory::temporary::Scoped{};
+
+         // some space is needed for queue-group initialization
+         auto content = common::unittest::file::content( directory.path() / "q.pre.statements", R"(
+PRAGMA max_page_count = 50;
+PRAGMA page_size = 512;
+)");
+
+         auto scope = common::environment::variable::scoped::set( "CASUAL_UNITTEST_QUEUEBASE", directory.path() / "q.qb");
+
+         auto domain = local::domain( R"(
+domain:
+   name: A
+   queue:
+      groups:
+         -  alias: "Q"
+            queuebase: ${CASUAL_UNITTEST_QUEUEBASE}
+            queues:
+               - name: q1
+      forward:
+         groups:
+            -  alias: FW
+               services:
+                  -  source: q1
+                     instances: 10
+                     target: 
+                        service: s1
+      
+)");  
+         
+         constexpr static auto reply_request = []( auto&& request)
+         {
+            auto reply = common::message::reverse::type( request);
+            reply.buffer = std::move( request.buffer);
+            reply.transaction.trid = request.trid;
+
+            communication::device::blocking::send( request.process.ipc, reply);
+         };
+
+         // give the forward something to call. Make it a 'concurrent'
+         casual::service::unittest::concurrent::advertise( { "s1"});
+
+         // enqueue all messages that we can until disk limit kicks in.
+         {
+            queue::Message message;
+            message.payload.type = common::buffer::type::binary;
+            message.payload.data = common::unittest::random::binary( 64);
+
+            EXPECT_THROW( common::algorithm::for_n( 2000, [ &message]()
+            {
+               queue::enqueue( "q1", message);
+            }), std::system_error);
+         }
+
+         // receive the 10 requests from the forwards
+         auto requests = algorithm::generate_n< 10>( [](){ return communication::ipc::receive< common::message::service::call::callee::Request>();});
+
+         // clear all committed messages, 10 should be in dequeued state 
+         // since we got 10 requests
+         queue::clear::queue( { "q1"});
+
+         // we enqueue 5 more 
+         {
+            queue::Message message;
+            message.payload.type = common::buffer::type::binary;
+            message.payload.data = common::unittest::random::binary( 64);
+
+            EXPECT_NO_THROW( common::algorithm::for_n( 5, [ &message]()
+            {
+               queue::enqueue( "q1", message);
+            }));
+         }
+
+         // reply to the 10 received.
+         algorithm::for_each( requests, reply_request);
+
+         // we should get the last 5.
+         algorithm::for_n( 5, []()
+         {
+            reply_request( communication::ipc::receive< common::message::service::call::callee::Request>());
+         });
       }
 
    } // queue

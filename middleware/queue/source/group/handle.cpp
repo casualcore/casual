@@ -855,13 +855,13 @@ namespace casual
          {
             Trace trace{ "queue::handle::persist"};
 
-            if( state.pending.replies.empty())
-               return; // nothing to do.
-
-            // persist the queuebase
-            state.queuebase.persist();
-            
-            state.pending.replies.send( state.multiplex);
+            if( ! state.pending.replies.empty())
+            {
+               // persist the queuebase
+               state.queuebase.persist();
+               
+               state.pending.replies.send( state.multiplex);
+            }
 
             // handle pending dequeues, if any.
             local::detail::pending::dequeues( state);
