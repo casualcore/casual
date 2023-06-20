@@ -357,7 +357,7 @@ namespace casual
                         namespace advertise
                         {
                            template< typename R, typename O>
-                           auto replies( State& state, R& replies, const O& outcome)
+                           auto replies( State& state, R& replies, O&& outcome)
                            {
                               Trace trace{ "gateway::group::outbound::handle::local::internal::domain::discover::detail::advertise::replies"};
 
@@ -398,8 +398,10 @@ namespace casual
                                  }
                               };
 
+                              auto succeeded = algorithm::filter( outcome, []( auto& value){ return value.state == decltype( value.state)::received;});
+
                               for( auto& reply : replies)
-                                 if( auto found = algorithm::find( outcome, reply.correlation))
+                                 if( auto found = algorithm::find( succeeded, reply.correlation))
                                     advertise_connection( reply, found->id);
 
                            };
