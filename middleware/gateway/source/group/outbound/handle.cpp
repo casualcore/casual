@@ -997,7 +997,7 @@ namespace casual
             handle::unadvertise( state, state.lookup.remove( descriptor));
 
             // take care of aggregated replies, if any.
-            state.coordinate.discovery.purge( descriptor);
+            state.coordinate.discovery.failed( descriptor);
 
             // extract all state associated with the descriptor
             auto extracted = state.extract( descriptor);

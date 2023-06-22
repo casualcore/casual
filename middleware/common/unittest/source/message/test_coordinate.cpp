@@ -298,7 +298,7 @@ namespace casual
          EXPECT_TRUE( ! coordinate.empty()) << trace.compose( "coordinate: ", coordinate);
 
          // purge all from coordinate with current pid
-         coordinate.purge( process::id());
+         coordinate.failed( process::id());
 
          // still one message from 'other' process to be received
          EXPECT_TRUE( ! invoked);

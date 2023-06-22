@@ -93,16 +93,18 @@ namespace casual
                   return done();
                }
 
-               template< typename I, typename Predicate>
-               auto failed( I&& id, Predicate predicate) -> std::vector< strong::correlation::id>
+               //! Sets the pending state to failed regardless of previous state
+               template< typename I>
+               auto failed( I&& id) -> std::vector< strong::correlation::id>
                {
+                  auto has_id = [ &id]( auto& pending){ return pending.id == id;};
+
                   return algorithm::transform_if( m_pending, []( auto& pending)
-                     {
-                        pending.state = Pending::State::failed;
-                        return pending.correlation;
-                     },
-                     predicate( id)
-                  );
+                  {
+                     pending.state = Pending::State::failed; 
+                     return pending.correlation;
+
+                  }, has_id);
                }
 
                bool done()
@@ -132,8 +134,11 @@ namespace casual
             };
 
 
-            //! register pending 'fan outs' and a callback which is invoked when all pending
+            //! Register pending 'fan outs' and a callback which is invoked when all pending
             //! has been 'received'.
+            //! @attention The callback will be invoked with all received messages and the total set of 
+            //! requested/pending outcomes. `outcome` includes _received_ and _failed_, and its upp
+            //! to the callback to decided what to do with it... 
             template< typename C>
             void operator () ( std::vector< Pending> pending, C&& callback)
             {
@@ -164,47 +169,24 @@ namespace casual
                }
             }
 
-            template< typename I, typename Predicate>
-            inline auto remove( I&& id, Predicate predicate) -> decltype( void( std::declval< const id_type&>() == id))
+            //! Mark any pending as failed that are associated with `id`
+            //! remove lookup correlation for the failed -> possible later "correlated" replies will be ignored
+            //! This could trigger `done` and invocation of the callback -> cleanup of the entry.
+            template< typename I>
+            inline auto failed( I&& id) -> decltype( void( std::declval< const id_type&>() == id))
             {
                // this will potentially be slow...
                algorithm::container::erase_if( m_entries, [ &]( auto& entry)
                {
-                  if( auto correlations = entry->failed( id, predicate); ! correlations.empty())
+                  if( auto correlations = entry->failed( id); ! correlations.empty())
                   {
                      // remove all lookups for the entry, and return true to erase the entry it self
                      for( auto& correlation : correlations)
-                        m_lookup.erase( correlation);
+                         m_lookup.erase( correlation);
 
                      return entry->done();
                   }
                   return false;
-               });
-            }
-
-            // soft remove - only pendings will be set as failed
-            template< typename I>
-            inline auto failed( I&& id) -> decltype( void( std::declval< const id_type&>() == id))
-            {
-               return remove( id, []( auto& id)
-               {
-                  return [ &id]( auto& pending)
-                  {
-                     return pending.id == id && pending.state == Pending::State::pending;
-                  };
-               });
-            }
-
-            // hard remove
-            template< typename I>
-            inline auto purge( I&& id) -> decltype( void( std::declval< const id_type&>() == id))
-            {
-               return remove( id, []( auto& id)
-               {
-                  return [ &id]( auto& pending)
-                  {
-                     return pending.id == id;
-                  };
                });
             }
 
