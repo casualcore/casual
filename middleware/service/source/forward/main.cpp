@@ -63,8 +63,6 @@ namespace casual
                Trace trace{ "service::forward::start"};
                log::line( verbose::log, "state: ", state);
 
-               auto handler = handle::create( state);
-
                communication::select::dispatch::pump(
                   local::condition( state),
                   state.directive,

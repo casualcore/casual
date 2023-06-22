@@ -530,7 +530,7 @@ namespace casual
                                  dispatch::lookup::no_entry( state, message);
                               break;
                            case Enum::internal:
-                                 if( ! dispatch::lookup::external_internal( state, *service, message, pending))
+                              if( ! dispatch::lookup::external_internal( state, *service, message, pending))
                                  discover( state, std::move( message), service->information.name);
                               break;
                         }
