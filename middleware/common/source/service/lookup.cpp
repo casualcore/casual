@@ -35,7 +35,8 @@ namespace casual
 
          Lookup::~Lookup()
          {
-            if( m_correlation)
+            // we have to discard if we're still pending with the service manager
+            if( ! m_reply || m_reply->busy())
                lookup::discard( m_correlation);
          }
 
@@ -69,25 +70,14 @@ namespace casual
             swap( lhs.m_correlation, rhs.m_correlation);
          }
 
-
          void Lookup::update( Reply&& reply)
          {
             log::line( verbose::log, "reply: ", reply);
 
-            switch( reply.state)
-            {
-               case State::idle:
-                  m_correlation = {};
-                  m_reply = std::move( reply);
-                  break;
-               case State::absent:
-                  m_correlation = {};
-                  code::raise::error( code::xatmi::no_entry, "lookup: ", *this);
-                  break;
-               case State::busy:
-                  m_reply = std::move( reply);
-                  break;
-            }
+            m_reply = std::move( reply);
+
+            if( m_reply->state == State::absent)
+               code::raise::error( code::xatmi::no_entry, "lookup: ", *this);
          }
       } // detail
 
@@ -122,11 +112,18 @@ namespace casual
       {
          Trace trace{ "common::service::Lookup::operator()"};
 
-         if( ! m_reply || m_correlation)
+         if( ! m_reply)
          {
-            Reply result;
-            communication::device::blocking::receive( communication::ipc::inbound::device(), result, m_correlation);
-            update( std::move( result));
+            update( communication::ipc::receive< Reply>());
+         }
+         else
+         {
+            // wait until service is idle
+            // the second lookup::Reply should always be idle, but the service manager
+            // is currently not completely reliable in that regard
+            // TODO: rework this after fixing service manager
+            while( m_reply->busy())
+               update( communication::ipc::receive< Reply>());
          }
 
          return m_reply.value();
@@ -138,7 +135,7 @@ namespace casual
          {
             Lookup::operator bool ()
             {
-               if( ! m_reply || m_correlation)
+               if( ! m_reply || m_reply->busy())
                {
                   detail::Lookup::Reply result;
                   if( communication::device::non::blocking::receive( communication::ipc::inbound::device(), result, m_correlation))
