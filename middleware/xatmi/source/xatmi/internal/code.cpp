@@ -28,6 +28,7 @@ namespace casual
                if( code == common::code::casual::invalid_argument)
                   return common::code::xatmi::argument;
 
+               common::log::line( common::log::category::error, common::code::xatmi::system, " unexpected error-code: ", code);
                return common::code::xatmi::system;
             }
 
