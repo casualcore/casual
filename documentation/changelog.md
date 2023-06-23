@@ -6,6 +6,8 @@ This is the changelog for `casual` and all changes are listed in this document.
 - xatmi: error log unexpected error codes (#226)
 - service: handle multiple busy lookups (#217)
 - common: reduce complexity for the fan::Out abstraction
+- queue: forward stability during sqlite error (#222)
+- queue: group to handle > 1 message between persistent writes
 
 ## [1.6.10] - 2023-06-09
 ### Fixes
