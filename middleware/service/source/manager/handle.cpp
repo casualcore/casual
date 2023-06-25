@@ -798,7 +798,8 @@ namespace casual
                               reply.content.services.emplace_back( std::move( name),
                                  service->information.category,
                                  service->information.transaction, 
-                                 service->information.visibility);
+                                 service->information.visibility, 
+                                 service->property());
                            }
                            else
                            {

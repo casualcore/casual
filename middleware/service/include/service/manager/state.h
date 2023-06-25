@@ -362,6 +362,9 @@ namespace casual
 
             bool timeoutable() const noexcept;
 
+            //! @returns the concurrent property of the service, "empty" property if not applicable.
+            service::instance::Concurrent::Property property() const noexcept;
+
             //! @returns and consumes associated caller to the correlation. 'empty' caller if not found.
             inline auto consume( const common::strong::correlation::id& correlation) { return instances.consume( correlation);}
 
