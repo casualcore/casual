@@ -69,6 +69,12 @@ namespace casual
 
          common::strong::correlation::id request();   
       } // rediscovery
+
+      namespace instance::device
+      {
+         //! for unittest only. Clears the 'address' to the _discovery_
+         void clear();
+      } // instance::device
       
 
    } // domain::discovery  
