@@ -853,9 +853,8 @@ namespace casual
       {
          auto result = divide( std::forward< R>( range), value);
          if( ! std::get< 1>( result).empty())
-         {
             ++std::get< 1>( result);
-         }
+            
          return result;
       }
 

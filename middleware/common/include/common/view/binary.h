@@ -17,10 +17,10 @@ namespace casual
    {
       namespace view
       {
-         template< typename Iter, std::enable_if_t< traits::is::binary::iterator_v< Iter>, int> = 0>
-         struct basic_binary : common::Range< Iter> 
+         template< typename T>
+         struct basic_binary : common::Range< T> 
          {
-            using common::Range< Iter>::Range;
+            using common::Range< T>::Range;
 
             friend std::ostream& operator << ( std::ostream& out, const basic_binary& value)
             {
@@ -46,9 +46,9 @@ namespace casual
                auto make( Iter first, Iter last)
                {
                   auto convert = []( auto p){ return detail::convert( raw( p));};
-                  using pointer_type = decltype( convert( first));
+                  using value_type = std::remove_reference_t< decltype( convert( first))>;
 
-                  return basic_binary< pointer_type>{ convert( first), convert( last)};
+                  return basic_binary< value_type>{ convert( first), convert( last)};
                }
 
             } // detail

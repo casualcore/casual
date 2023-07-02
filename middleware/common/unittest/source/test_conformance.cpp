@@ -101,6 +101,18 @@ namespace casual
          EXPECT_TRUE( detail::cast_and_compare< int>( long{ 42}));
       }
 
+      template< typename V, std::predicate< const V> P>
+      bool test_predicate( const V& value, P predicate)
+      {
+         return predicate( value);
+      }
+
+      TEST( common_conformance, concepts)
+      {
+         EXPECT_TRUE( test_predicate( 21, []( auto value){ return value == 21;}));
+
+      }
+
 
       TEST( common_conformance, fallthrough)
       {
@@ -373,6 +385,8 @@ namespace casual
          }
 
       }
+
+
 
 
       /*

@@ -12,18 +12,14 @@
 #include "common/traits.h"
 
 #include <iterator>
-#include <functional>
-#include <vector>
-#include <sstream>
-#include <array>
-
 #include <cassert>
 
 namespace casual 
 {
    namespace common 
-   {      
-      template< typename Iter>
+   {
+   
+      template< std::input_or_output_iterator Iter>
       struct Range
       {
          using iterator = Iter;
@@ -124,34 +120,33 @@ namespace casual
 
 
 
+
       //! This is not intended to be a serious attempt at a range-library
       //! Rather an abstraction that helps our use-cases and to get a feel for
       //! what a real range-library could offer. It's a work in progress
       namespace range
       {
 
-         template< typename Iter, std::enable_if_t< common::traits::is::iterator_v< Iter>, int> = 0>
-         auto make( Iter first, Iter last)
+         template< std::input_or_output_iterator Iter>
+         constexpr auto make( Iter first, Iter last) noexcept
          {
             return Range< Iter>( first, last);
          }
 
-         template< typename Iter, typename Count, std::enable_if_t< 
-            common::traits::is::iterator_v< Iter> 
-            && std::is_integral_v< Count>, int> = 0>
-         auto make( Iter first, Count count)
+         template< std::input_or_output_iterator Iter>
+         constexpr auto make( Iter first, platform::size::type size) noexcept -> decltype( range::make( first, first + size))
          {
-            return Range< Iter>( first, first + count);
+            return range::make( first, first + size);
          }
 
-         template< typename C, std::enable_if_t< std::is_lvalue_reference_v< C> && common::traits::is::iterable_v< C>, int> = 0>
-         auto make( C&& container)
+         template< typename C>
+         auto make( C& container) -> decltype( range::make( std::begin( container), std::end( container)))
          {
-            return make( std::begin( container), std::end( container));
+            return range::make( std::begin( container), std::end( container));
          }
 
-         template< typename Iter>
-         constexpr Range< Iter> make( Range< Iter> range)
+         template< typename T>
+         constexpr Range< T> make( Range< T> range)
          {
             return range;
          }

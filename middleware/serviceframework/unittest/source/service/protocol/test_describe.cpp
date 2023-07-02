@@ -140,7 +140,7 @@ namespace casual
 
          ASSERT_TRUE( model.arguments.input.size() == 1);
          EXPECT_TRUE( model.arguments.input.at( 0).role == "some_composite");
-         EXPECT_TRUE( model.arguments.input.at( 0).category == service::model::type::Category::composite) << model.arguments.input.at( 0).category;
+         EXPECT_TRUE( model.arguments.input.at( 0).category == service::model::type::Category::composite) << CASUAL_NAMED_VALUE( model.arguments.input.at( 0).category);
 
          local::composite::validate( model.arguments.input.at( 0));
       }

@@ -16,6 +16,7 @@
 #include <string>
 #include <vector>
 
+
 namespace casual
 {
    namespace serviceframework
@@ -44,22 +45,22 @@ namespace casual
                   binary,
                   fixed_binary,
                };
-               inline std::ostream& operator << ( std::ostream& out, Category value)
+               inline std::string_view description( Category value) noexcept
                {
                   switch( value)
                   {
-                     case Category::unknown: return out << "unknown";
-                     case Category::container: return out << "container";
-                     case Category::composite: return out << "composite";
-                     case Category::integer: return out << "integer";
-                     case Category::floatingpoint: return out << "floatingpoint";
-                     case Category::character: return out << "character";
-                     case Category::boolean: return out << "boolean";
-                     case Category::string: return out << "string";
-                     case Category::binary: return out << "binary";
-                     case Category::fixed_binary: return out << "fixed_binary";
+                     case Category::unknown: return "unknown";
+                     case Category::container: return "container";
+                     case Category::composite: return "composite";
+                     case Category::integer: return "integer";
+                     case Category::floatingpoint: return "floatingpoint";
+                     case Category::character: return "character";
+                     case Category::boolean: return "boolean";
+                     case Category::string: return "string";
+                     case Category::binary: return "binary";
+                     case Category::fixed_binary: return "fixed_binary";
                   }
-                  return out << "<unknown>";
+                  return "<unknown>";
                }
 
 
