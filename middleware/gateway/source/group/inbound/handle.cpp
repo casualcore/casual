@@ -57,7 +57,7 @@ namespace casual
                   }
                   else
                   {
-                     log::line( log::category::error, code::casual::internal_correlation, " failed to correlate descriptor: ", descriptor);
+                     log::line( log::category::error, code::casual::internal_correlation, " tcp::send -  failed to correlate descriptor: ", descriptor, " for message type: ", message.type());
                      log::line( log::category::verbose::error, "state: ", state);
                   }
 
@@ -356,17 +356,51 @@ namespace casual
                {
                   namespace resource
                   {
+                     template< typename Message>
+                     auto basic_clean( State& state)
+                     {
+                        return [&state]( Message& message)
+                        {
+                           Trace trace{ "gateway::group::inbound::handle::local::internal::transaction::resource::detail::basic_clean"};
+                           common::log::line( verbose::log, "message: ", message);
+
+                           if( auto descriptor = state.consume( message.correlation))
+                           {
+                              
+                              if constexpr( std::is_same_v< Message, common::message::transaction::resource::prepare::Reply>)
+                              {
+                                 // prepare can be optimize with read-only, or detect some error. We know that if 
+                                 // it is not "ok", we will not get commit/rollback and need to clean state. 
+                                 if( message.state != decltype( message.state)::ok)
+                                    state.in_flight_cache.remove( descriptor, message.trid);
+                              }
+                              else
+                                 state.in_flight_cache.remove( descriptor, message.trid);
+
+                              if( tcp::send( state, descriptor, message))
+                                 return;
+
+                              log::line( log::category::error, code::casual::communication_unavailable, " transaction - failed to send ", message.type(), " to descriptor: ", descriptor);
+                              return;
+                           }
+
+                           log::line( log::category::error, code::casual::communication_unavailable, " transaction - failed to correlate ", message.type());
+                        };
+                     }
+                     
                      namespace prepare
                      {
-                        auto reply = basic_forward< common::message::transaction::resource::prepare::Reply>;
+                        auto reply = resource::basic_clean< common::message::transaction::resource::prepare::Reply>;
                      } // prepare
                      namespace commit
                      {
-                        auto reply = basic_forward< common::message::transaction::resource::commit::Reply>;
+                        //! when we get this reply, we know the transaction is 'done', at least in this domain (and downstream)
+                        auto reply = resource::basic_clean< common::message::transaction::resource::commit::Reply>;
                      } // commit
                      namespace rollback
                      {
-                        auto reply = basic_forward< common::message::transaction::resource::rollback::Reply>;
+                        //! when we get this reply, we know the transaction is 'done', at least in this domain (and downstream)
+                        auto reply = resource::basic_clean< common::message::transaction::resource::rollback::Reply>;
                      } // commit
                   } // resource
                } // transaction
@@ -375,9 +409,20 @@ namespace casual
 
             namespace external
             {
+               namespace detail
+               {
+                  template< typename T>
+                  using has_trid = decltype( std::declval< T&>().trid);   
+               } // detail
+
                template< typename M>
                auto correlate( State& state, const M& message)
                {
+                  if constexpr( common::traits::detect::is_detected_v< detail::has_trid, M>)
+                  {
+                     state.in_flight_cache.add( state.external.last(), message.trid);
+                  }
+
                   state.correlations.emplace_back( message.correlation, state.external.last());
                   return state.external.last();
                }
@@ -395,8 +440,10 @@ namespace casual
                         {
                            common::log::line( verbose::log, "descriptor: ", descriptor);
 
-                           if( algorithm::find( state.correlations, descriptor))
+                           if( algorithm::find( state.correlations, descriptor) || ! state.in_flight_cache.empty( descriptor))
                            {
+                              common::log::line( verbose::log, "state.correlations: ", state.correlations, ", state.in_flight_cache: ", state.in_flight_cache);
+
                               // connection still got pending stuff to do, we keep track until its 'idle'.
                               state.pending.disconnects.push_back( descriptor);
                            }
@@ -757,31 +804,28 @@ namespace casual
             Trace trace{ "gateway::group::inbound::handle::connection::lost"};
             log::line( verbose::log, "descriptor: ", descriptor);
 
-            auto information = state.external.remove( state.directive, descriptor);
+            auto extracted = state.extract( descriptor);
 
-            // find possible pending 'lookup' requests
-            auto lost = algorithm::container::extract( state.correlations, algorithm::filter( state.correlations, predicate::value::equal( descriptor)));
-            log::line( verbose::log, "lost: ", lost);
-
-            auto pending = state.pending.requests.consume( algorithm::transform( lost, []( auto& lost){ return lost.correlation;}));
-            
-            // discard service lookup
-            algorithm::for_each( pending.services, [ &state]( auto& call)
+            if( ! extracted.empty())
             {
-               common::message::service::lookup::discard::Request request{ process::handle()};
-               request.correlation = call.correlation;
-               request.requested = call.service.name;
-               // we don't need the reply
-               request.reply = false;
+               log::line( log::category::error, code::casual::communication_unavailable, " lost connection - address: ", extracted.information.configuration.address, ", domain: ", extracted.information.domain);
+               log::line( log::category::verbose::error, "extracted: ", extracted);
 
-               state.multiplex.send( ipc::manager::service(), request);
-            });
+               // discard service lookup
+               // There is no other pending we need to discard at the moment.
+               algorithm::for_each( extracted.pending.services, [ &state]( auto& call)
+               {
+                  common::message::service::lookup::discard::Request request{ process::handle()};
+                  request.correlation = call.correlation;
+                  request.requested = call.service.name;
+                  // we don't need the reply
+                  request.reply = false;
 
-            algorithm::container::trim( state.pending.disconnects, algorithm::remove( state.pending.disconnects, descriptor));
+                  state.multiplex.send( ipc::manager::service(), request);
+               });            
+            }
 
-            // There is no other pending we need to discard at the moment.
-
-            return { std::move( information.configuration), std::move( information.domain)};
+            return { std::move( extracted.information.configuration), std::move( extracted.information.domain)};
          }
 
          void disconnect( State& state, common::strong::file::descriptor::id descriptor)
@@ -817,12 +861,10 @@ namespace casual
          {
             auto connection_done = [&state]( auto descriptor)
             {
-               return algorithm::find( state.correlations, descriptor).empty();
+               return state.disconnectable( descriptor);
             };
 
-            auto& pending = state.pending.disconnects;
-
-            auto done = algorithm::container::extract( pending, algorithm::filter( pending, connection_done));
+            auto done = algorithm::container::extract( state.pending.disconnects, algorithm::filter( state.pending.disconnects, connection_done));
 
             for( auto descriptor : done)
                handle::connection::lost( state, descriptor);

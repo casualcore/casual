@@ -17,6 +17,7 @@
 #include "common/communication/instance.h"
 #include "common/environment/scoped.h"
 #include "common/sink.h"
+#include "common/message/transaction.h"
 
 #include "serviceframework/service/protocol/call.h"
 
@@ -238,6 +239,23 @@ domain:
             namespace lookup::domain
             {
 
+               auto alias_name( std::string_view service_alias, std::string_view domain_name)
+               {
+                  return local::call( service_alias).get() == domain_name;
+               }
+
+               auto alias_name( std::string_view service_alias, std::string_view domain_name, platform::size::type count)
+               {
+                  while( count-- > 0)
+                  {
+                     if( alias_name( service_alias, domain_name))
+                        return true;
+                     else
+                        process::sleep( std::chrono::milliseconds{ 1});
+                  }
+                  return false;
+               }
+
                auto name( std::string_view name)
                {
                   return local::call( "casual/example/domain/name").get() == name;
@@ -245,15 +263,11 @@ domain:
 
                auto name( std::string_view name, platform::size::type count)
                {
-                  while( count-- > 0)
-                  {
-                     if( domain::name( name))
-                        return true;
-                     else
-                        process::sleep( std::chrono::milliseconds{ 1});
-                  }
-                  return false;
+                  return alias_name( "casual/example/domain/name", name, count);
                }
+
+
+
             } // lookup::domain
 
             auto tx_info()
@@ -322,7 +336,6 @@ domain:
       
          // startup the domain that will try to do stuff
          auto b = local::domain( B);
-         EXPECT_TRUE( communication::instance::ping( b.handle().ipc) == b.handle());
 
          auto payload = common::unittest::random::binary( 1024);
          {
@@ -334,10 +347,10 @@ domain:
 
          // startup the domain that has the service
          auto a = local::domain( A);
-         EXPECT_TRUE( communication::instance::ping( a.handle().ipc) == a.handle());
 
          // activate the b domain, so we can try to dequeue
          b.activate();
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected( 1));
 
          {
             auto message = queue::blocking::dequeue( "a2");
@@ -1091,11 +1104,16 @@ domain:
             // the outbound in C might not have been able to connect to A yet, wait for it.
             gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected());
 
+            // Note: THis might be pushing it... How can C magically call something from within the
+            // the same transaction?
             auto buffer = local::call( "casual/example/domain/echo/D", binary);
             auto size = local::size( buffer);
 
             EXPECT_EQ( size, range::size( binary));
          }
+
+         // "go back" to A to do the actual commit.
+         a.activate();
 
          ASSERT_TRUE( tx_commit() == TX_OK);
       }
@@ -1166,6 +1184,75 @@ domain:
             auto result = local::receive( descriptor);
             EXPECT_TRUE( result == binary);
          }
+
+         // expect new calls to get TPENOENT
+         local::call( "sleepy", code::xatmi::no_entry);
+      }
+
+      TEST( test_gateway, domain_A_to_B___tx_begin_tpacall_sleep___async_shutdown_B___expect_reply__expect___tx_commit__call_sleep_again__expect__TPENOENT)
+      {
+         // sink child signals 
+         signal::callback::registration< code::signal::child>( [](){});
+
+         common::unittest::Trace trace;
+
+         auto b = local::domain( R"(
+domain: 
+   name: B
+
+   servers:
+      -  path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-server"
+         memberships: [ user]
+         arguments: [ --sleep, 100ms]
+         instances: 5
+   gateway:
+      inbound:
+         groups:
+            -  connections: 
+               -  address: 127.0.0.1:7001
+)");
+
+         auto a = local::domain( R"(
+domain: 
+   name: A
+
+   services:
+      -  name: casual/example/sleep
+         routes: [ sleepy]
+
+   gateway:
+      outbound:
+         groups:
+            -  connections:
+                  -  address: 127.0.0.1:7001
+)");
+
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected());
+
+         const auto binary = common::unittest::random::binary( 2048);
+
+         EXPECT_TRUE( tx_begin() == TX_OK);
+
+         auto descriptors = algorithm::generate_n< 7>( [&binary]()
+         {
+            return local::acall( "sleepy", binary);
+         });
+
+         // we'll wait until the outbound has 7 (or more) pending messages
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::pending( 7));
+
+         // ask B to shutdown.
+         b.async_shutdown();
+         
+         // receive the 7 calls
+         for( auto descriptor : descriptors)
+         {
+            auto result = local::receive( descriptor);
+            EXPECT_TRUE( result == binary);
+         }
+
+         EXPECT_TRUE( tx_commit() == TX_OK);
+
 
          // expect new calls to get TPENOENT
          local::call( "sleepy", code::xatmi::no_entry);
@@ -1329,16 +1416,10 @@ domain:
          groups:
             -  connections:
                   -  address: 127.0.0.1:7001
-                     services:
-                        -  casual/example/domain/name
             -  connections:
                   -  address: 127.0.0.1:7002
-                     services:
-                        -  casual/example/domain/name
             -  connections:
                   -  address: 127.0.0.1:7003
-                     services:
-                        -  casual/example/domain/name
 )";
 
 
@@ -1393,12 +1474,8 @@ domain:
          groups:
             -  connections:
                   -  address: 127.0.0.1:7001
-                     services:
-                        -  casual/example/domain/name
             -  connections:
                   -  address: 127.0.0.1:7002
-                     services:
-                        -  casual/example/domain/name
 )";
 
 
@@ -1440,6 +1517,74 @@ domain:
          algorithm::for_n< 10>( []()
          {
             EXPECT_TRUE( local::lookup::domain::name( "B"));
+         });
+      }
+
+      TEST( test_gateway, service_routes__domain_A_to__B_C__outbound_separated_groups___expect_prio_B__shutdown_B__expect_C__boot_B__expect_B)
+      {
+         common::unittest::Trace trace;
+
+         // sink child signals 
+         signal::callback::registration< code::signal::child>( [](){});
+
+         auto b = local::example::domain( "B", "7001");
+         auto c = local::example::domain( "C", "7002");
+
+         auto a = local::domain( R"(
+domain: 
+   name: A
+
+   services:
+      -  name: casual/example/domain/name
+         routes: [ domain-name]
+  
+   gateway:
+      outbound:
+         groups:
+            -  connections:
+                  -  address: 127.0.0.1:7001
+            -  connections:
+                  -  address: 127.0.0.1:7002
+)");
+
+
+
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected());
+
+         // we might get to C until all services are advertised.
+         EXPECT_TRUE( local::lookup::domain::alias_name( "domain-name", "B", 1000));
+
+         // after both ar up, we expect to always get to B
+         algorithm::for_n< 10>( []()
+         {
+            EXPECT_TRUE( local::lookup::domain::alias_name( "domain-name", "B"));
+         });
+
+         // shutdown B
+         common::sink( std::move( b));
+
+         // we expect to always get to C
+         algorithm::for_n< 10>( []()
+         {
+            EXPECT_TRUE( local::lookup::domain::alias_name( "domain-name", "C"));
+         });
+
+         // boot B
+         b = local::example::domain( "B", "7001");
+
+         // we need to activate a, otherwise b has 'the control'
+         a.activate();
+
+         // we need to wait for all to be connected...
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected());
+         
+         // we expect to get to B agin
+         EXPECT_TRUE( local::lookup::domain::alias_name( "domain-name", "B", 1000));
+
+         // we expect to always get to B, again
+         algorithm::for_n< 10>( []()
+         {
+            EXPECT_TRUE( local::lookup::domain::alias_name( "domain-name", "B"));
          });
       }
 
@@ -3106,6 +3251,98 @@ domain:
          }
 
          local::call( "casual/example/sleep", code::xatmi::no_entry);
+
+      }
+
+      TEST( test_gateway, interdomain_call_in_transaction__timeout_1ms__expect_TPETIME__resource_involved_after_timeout__expect_rollback)
+      {
+         common::unittest::Trace trace;
+
+         constexpr auto A = R"(
+domain: 
+   name: A
+   services:
+      -  name: a
+         execution:
+            timeout:
+               duration: 2ms
+   gateway:
+      inbound:
+         groups:
+            -  connections:
+                  -  address: 127.0.0.1:7000
+
+)";
+
+         constexpr auto B = R"(
+domain: 
+   name: B
+
+   gateway:
+      outbound:
+         groups:
+            -  connections:
+                  -  address: 127.0.0.1:7000
+   
+)";
+
+         auto a = local::domain( A);
+
+         casual::service::unittest::advertise( { "a"});
+
+         auto b = local::domain( B);
+
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected());
+
+         ASSERT_TRUE( tx_begin() == TX_OK);
+         
+         {
+            auto buffer = tpalloc( X_OCTET, nullptr, 128);
+            auto len = tptypes( buffer, nullptr, nullptr);
+
+            // lets call ourself.
+            EXPECT_TRUE( tpcall( "a", buffer, len, &buffer, &len, 0) == -1);
+            EXPECT_TRUE( tperrno == TPETIME) << "tperrno: " << tperrnostring( tperrno);
+
+            tpfree( buffer);
+         }
+
+         ASSERT_TRUE( tx_rollback() == TX_OK);
+
+         
+         EXPECT_TRUE( casual::transaction::unittest::state().transactions.empty());
+
+         a.activate();
+
+         // we haven't reply from 'a' yet. Let's involve our self as a resource.
+         {
+            auto request = common::unittest::service::receive< common::message::service::call::callee::Request>( communication::ipc::inbound::device());
+ 
+            auto involved = message::transaction::resource::external::involved::create( request);
+            communication::device::blocking::send( communication::instance::outbound::transaction::manager::device(), involved);
+
+            auto state = casual::transaction::unittest::state();
+            EXPECT_TRUE( state.transactions.size() == 1) << CASUAL_NAMED_VALUE( state) ;
+
+            // send ACK to SM.
+            casual::service::unittest::send::ack( request);
+         }
+
+         casual::transaction::unittest::fetch::until( casual::transaction::unittest::fetch::predicate::transactions( 1));
+
+         // reply to TM resource rollback, as we just involved our self as a resource (external)
+         {
+            auto request = common::unittest::service::receive< common::message::transaction::resource::rollback::Request>( communication::ipc::inbound::device());
+            auto reply = common::message::reverse::type( request);
+            reply.trid = request.trid;
+            reply.resource = request.resource;
+            reply.state = decltype( reply.state)::ok;
+
+            communication::device::blocking::send( communication::instance::outbound::transaction::manager::device(), reply);
+         }
+
+         casual::transaction::unittest::fetch::until( casual::transaction::unittest::fetch::predicate::transactions( 0));
+         
       }
 
       //! put in this TU to enable all helpers to check state

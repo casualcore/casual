@@ -91,6 +91,7 @@ namespace casual
             message.correlation = request.correlation;
             message.metric.pending = request.pending;
             message.metric.service = request.service.name;
+            message.metric.trid = request.trid;
             message.metric.type = ( request.service.type == decltype( request.service.type)::concurrent) ?
                decltype( message.metric.type)::concurrent : decltype( message.metric.type)::sequential;
 

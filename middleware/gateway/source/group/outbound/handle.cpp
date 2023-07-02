@@ -56,7 +56,7 @@ namespace casual
                   }
                   else
                   {
-                     log::line( log::category::error, code::casual::internal_correlation, " failed to correlate descriptor: ", descriptor);
+                     log::line( log::category::error, code::casual::internal_correlation, " tcp::send - failed to correlate descriptor: ", descriptor, " for message type: ", message.type());
                      log::line( log::category::verbose::error, "state: ", state);
                   }
 
@@ -98,10 +98,7 @@ namespace casual
                               Trace trace{ "gateway::group::outbound::handle::local::internal::transaction::resource::basic::request"};
                               log::line( verbose::log, "message: ", message);
 
-                              auto descriptor = state.lookup.connection( message.trid);
-
-                              // add the route and the error callback
-                              state.route.add( std::move( message), descriptor, [ &state, rm = message.resource, trid = message.trid]( auto& destination)
+                              auto error_callback = [ &state, rm = message.resource, trid = message.trid]( auto&& destination)
                               {
                                  common::message::reverse::type_t< Message> reply;
                                  reply.correlation = destination.correlation;
@@ -112,11 +109,19 @@ namespace casual
 
                                  log::line( verbose::log, "reply: ", reply);
                                  state.multiplex.send( destination.ipc, reply);
-                              });
+                              };
 
-                              // if we fail to send we want to invoke the error callback immediately
-                              if( ! tcp::send( state, descriptor, message).valid())
-                                 state.route.consume( message.correlation).error();
+                              if( auto descriptor = state.lookup.connection( message.trid))
+                              {
+                                 // add the route and the error callback
+                                 state.route.add( std::move( message), descriptor, std::move( error_callback));
+
+                                 // if we fail to send we want to invoke the error callback immediately
+                                 if( ! tcp::send( state, descriptor, message).valid())
+                                    state.route.consume( message.correlation).error();
+                              }
+                              else
+                                 error_callback( state::route::Destination{ message.correlation, message.process.ipc, message.execution});
                            };
                         }
                      } // basic
@@ -352,7 +357,7 @@ namespace casual
                         namespace advertise
                         {
                            template< typename R, typename O>
-                           auto replies( State& state, R& replies, const O& outcome)
+                           auto replies( State& state, R& replies, O&& outcome)
                            {
                               Trace trace{ "gateway::group::outbound::handle::local::internal::domain::discover::detail::advertise::replies"};
 
@@ -393,8 +398,10 @@ namespace casual
                                  }
                               };
 
+                              auto succeeded = algorithm::filter( outcome, []( auto& value){ return value.state == decltype( value.state)::received;});
+
                               for( auto& reply : replies)
-                                 if( auto found = algorithm::find( outcome, reply.correlation))
+                                 if( auto found = algorithm::find( succeeded, reply.correlation))
                                     advertise_connection( reply, found->id);
 
                            };
@@ -469,7 +476,7 @@ namespace casual
 
                      namespace topology::direct
                      {
-                        
+
                         auto explore( State& state)
                         {
                            //! Sent from _discovery_ when:
@@ -509,7 +516,7 @@ namespace casual
                                  // We don't need to reply. Only advertise the explored services, if any.
                                  detail::advertise::replies( state, replies, outcome);
                               };
-                              
+
                               state.coordinate.discovery( 
                                  send_request( state, message),
                                  std::move( callback));
@@ -969,7 +976,13 @@ namespace casual
          {
             casual::queue::ipc::message::Advertise request{ common::process::handle()};
             request.queues.remove = std::move( resources.queues);
-            state.multiplex.send( ipc::manager::optional::queue(), request);
+            // this throws if queue-manager is absent.
+            // TODO send on instance::optional::Device should not throw?
+            common::exception::guard( [ &]()
+            {
+               state.multiplex.send( ipc::manager::optional::queue(), request);
+            });
+            
          }
       }
 
@@ -986,17 +999,22 @@ namespace casual
             // take care of aggregated replies, if any.
             state.coordinate.discovery.failed( descriptor);
 
-            auto error_reply = []( auto& point){ point.error();};
+            // extract all state associated with the descriptor
+            auto extracted = state.extract( descriptor);
+            log::line( verbose::log, "extracted: ", extracted);
 
-            // consume routs associated with the 'connection', and try to send 'error-replies'
-            algorithm::for_each( state.route.consume( descriptor), error_reply);
+            if( ! extracted.empty())
+            {
+               log::line( log::category::error, code::casual::communication_unavailable, " lost connection - address: ", extracted.information.configuration.address, ", domain: ", extracted.information.domain);
+               log::line( log::category::verbose::error, "extracted: ", extracted);
 
-            // connection might have been in 'disconnecting phase'
-            algorithm::container::trim( state.disconnecting, algorithm::remove( state.disconnecting, descriptor));
+               auto error_reply = []( auto& point){ point.error();};
 
-            // remove the information about the 'connection'.
-            auto information = state.external.remove( state.directive, descriptor);
-            return { std::move( information.configuration), std::move( information.domain)};
+               // try to send 'error-replies' to all 'routes', if any.
+               algorithm::for_each( extracted.routes, error_reply);
+            }
+
+            return { std::move( extracted.information.configuration), std::move( extracted.information.domain)};
          }
 
          void disconnect( State& state, common::strong::file::descriptor::id descriptor)

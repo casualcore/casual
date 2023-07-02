@@ -5,6 +5,8 @@
 //!
 
 #include "gateway/group/inbound/state.h"
+#include "gateway/common.h"
+
 
 #include <utility>
 
@@ -73,6 +75,64 @@ namespace casual
             }     
          } // pending
 
+         namespace in::flight
+         {
+            void Cache::add( common::strong::file::descriptor::id descriptor, const common::transaction::ID& trid)
+            {
+               if( ! trid)
+                  return;
+
+               if( auto connection = algorithm::find( m_transactions, descriptor))
+               {
+                  if( ! algorithm::find( connection->second, trid))
+                     connection->second.push_back( trid);
+               }
+               else
+               {
+                  m_transactions[ descriptor].push_back( trid);
+               }
+            }
+
+            void Cache::remove( common::strong::file::descriptor::id descriptor, const common::transaction::ID& trid)
+            {
+               if( auto connection = algorithm::find( m_transactions, descriptor))
+               {
+                  if( auto found = algorithm::find( connection->second, trid))
+                  {
+                     connection->second.erase( std::begin( found));
+
+                     if( connection->second.empty())
+                        m_transactions.erase( std::begin( connection));
+                  }
+               }
+            }
+
+            void Cache::remove( common::strong::file::descriptor::id descriptor)
+            {
+               if( auto found = algorithm::find( m_transactions, descriptor))
+                  m_transactions.erase( std::begin( found));
+            }
+
+
+            bool Cache::empty( common::strong::file::descriptor::id descriptor) const noexcept
+            {
+                if( auto found = algorithm::find( m_transactions, descriptor))
+                  return found->second.empty();
+
+               return true;
+            }
+            
+            std::vector< common::transaction::ID> Cache::extract( common::strong::file::descriptor::id descriptor)
+            {
+               Trace trace{ "gateway::group::inbound::state::in::flight::Cache::extract"};
+
+               if( auto found = algorithm::find( m_transactions, descriptor))
+                  return algorithm::container::extract( m_transactions, std::begin( found)).second;
+
+               return {};
+            }
+
+         } // in::flight
 
 
       } // state
@@ -93,9 +153,31 @@ namespace casual
          return nullptr;
       }
 
+      bool State::disconnectable( common::strong::file::descriptor::id descriptor) const noexcept
+      {
+         return in_flight_cache.empty( descriptor) && algorithm::find( correlations, descriptor).empty();         
+      }
+
       bool State::done() const noexcept
       {
          return runlevel > state::Runlevel::running && external.empty();
+      }
+
+      state::extract::Result State::extract( common::strong::file::descriptor::id descriptor)
+      {
+         // find possible pending 'lookup' requests
+         auto lost = algorithm::container::extract( correlations, algorithm::filter( correlations, predicate::value::equal( descriptor)));
+         log::line( verbose::log, "lost: ", lost);
+
+         // remove disconnects, if any
+         if( auto found = algorithm::find( pending.disconnects, descriptor))
+            pending.disconnects.erase( std::begin( found));
+
+         return state::extract::Result{ 
+            external.remove( directive, descriptor),
+            pending.requests.consume( algorithm::transform( lost, []( auto& lost){ return lost.correlation;})),
+            in_flight_cache.extract( descriptor)
+         };
       }
 
    } // gateway::group::inbound

@@ -481,6 +481,41 @@ namespace casual
          );
       }
 
+      TEST( common_communication_ipc, send_multiplex__remove_inbound__expect_detection)
+      {
+         common::unittest::Trace trace;
+
+         communication::ipc::inbound::Device inbound;
+         const auto ipc = inbound.connector().handle().ipc();
+
+         communication::select::Directive directive;
+         communication::ipc::send::Coordinator coordinator{ directive};
+
+         const unittest::Message message{ 64};
+
+         bool error_detected = false;
+
+         // "fill" the inbound
+         while( coordinator.empty())
+            coordinator.send( ipc, message, [ &error_detected]( auto& id, auto& complete){ error_detected = true;});
+
+         EXPECT_TRUE( ! error_detected);
+
+         // The coordinator now have a socket "bound" to the inbound.
+         // Lets destroy the inbound.
+         common::sink( std::move( inbound));
+
+         EXPECT_TRUE( ! communication::ipc::exists( ipc));
+
+         // coordinator tries to send the pending message to the 
+         // "bound" socket, this should be detected, and error callback should
+         // be invoked.
+         EXPECT_TRUE( coordinator.send());
+
+         EXPECT_TRUE( error_detected);
+
+      }
+
       namespace local
       {
          namespace

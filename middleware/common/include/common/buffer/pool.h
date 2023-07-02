@@ -34,10 +34,16 @@ namespace casual
          {
             template< typename T> 
             using loggable = decltype( common::stream::write( std::declval< std::ostream&>(), std::declval< const T&>()));
+
+            template< typename T> 
+            using adoptable = decltype( std::declval< T&>().adopt( Payload{}, std::add_pointer_t< buffer::handle::type>{}));
          } // detail
 
          template< typename T>
          constexpr bool loggable_v = common::traits::detect::is_detected_v< detail::loggable, T>;
+
+         template< typename T>
+         constexpr bool adoptable_v = common::traits::detect::is_detected_v< detail::adoptable, T>;
          
       } // traits::is
 
@@ -72,6 +78,8 @@ namespace casual
 
          void clear();
 
+         buffer::handle::type inbound() const noexcept { return m_inbound;}
+
          CASUAL_FORWARD_SERIALIZE( m_pools);
 
 
@@ -86,11 +94,14 @@ namespace casual
             virtual buffer::handle::mutate::type allocate( std::string_view type, platform::binary::size::type size) = 0;
             virtual buffer::handle::mutate::type reallocate( buffer::handle::type handle, platform::binary::size::type size) = 0;
 
+
+
             virtual bool manage( buffer::handle::type handle) const noexcept = 0;
             virtual bool manage( std::string_view type) const noexcept = 0;
 
             virtual void deallocate( buffer::handle::type handle) = 0;
             virtual buffer::handle::mutate::type insert( Payload payload) = 0;
+            virtual buffer::handle::mutate::type adopt( Payload payload, buffer::handle::type* inbound) = 0;
 
             virtual payload::Send get( buffer::handle::type handle) = 0;
             virtual payload::Send get( buffer::handle::type handle, platform::binary::size::type user_size) = 0;
@@ -126,6 +137,15 @@ namespace casual
             bool manage( std::string_view type) const noexcept override { return predicate::boolean( algorithm::find( pool_type::types(), type));}
             void deallocate( buffer::handle::type handle) override { m_pool.deallocate( handle);}
             buffer::handle::mutate::type insert( Payload payload) override { return m_pool.insert( std::move( payload));}
+            
+            buffer::handle::mutate::type adopt( Payload payload, [[maybe_unused]] buffer::handle::type* inbound) override 
+            {
+               if constexpr( traits::is::adoptable_v< pool_type>)
+                  return m_pool.adopt( std::move( payload), inbound);
+               else
+                  return m_pool.insert( std::move( payload));
+            }
+
             payload::Send get( buffer::handle::type handle) override
             {
                auto& buffer = m_pool.get( handle);

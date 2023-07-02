@@ -6,6 +6,7 @@
 
 
 #include "transaction/manager/admin/transform.h"
+#include "transaction/common.h"
 
 #include "common/algorithm.h"
 #include "common/transcode.h"
@@ -208,6 +209,9 @@ namespace casual
 
       admin::model::State state( const manager::State& state)
       {
+         Trace trace{ "transaction::manager::admin::transform::state"};
+         common::log::line( verbose::log, "state: ", state);
+
          admin::model::State result;
 
          common::algorithm::transform( state.resources, result.resources, &transform::resource::proxy);

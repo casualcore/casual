@@ -8,6 +8,7 @@
 
 #include "common/predicate.h"
 #include "common/algorithm/sorted.h"
+#include "common/algorithm/random.h"
 
 namespace casual
 {
@@ -111,14 +112,6 @@ namespace casual
                   {
                      auto& connections = resources[ add.name];
 
-                     // find the current lowest _hops_ for the service|queue, if any.
-                     auto lowest_hops = [&connections]()
-                     {
-                        if( connections.empty())
-                           return std::numeric_limits< platform::size::type>::max();
-                        return connections.front().hops;
-                     }();
-
                      if( auto found = algorithm::find( connections, descriptor))
                      {
                         if( add.hops != found->hops)
@@ -126,16 +119,14 @@ namespace casual
                      }
                      else
                      {
-                        connections.push_back( state::lookup::resource::Connection{ descriptor, add.hops});
+                        algorithm::random::insert( connections, state::lookup::resource::Connection{ descriptor, add.hops});
                      }
 
                      auto hops_less = []( auto& l, auto& r){ return l.hops < r.hops;};
                      algorithm::stable_sort( connections, hops_less);
 
-                     // If the _hops_ has changed, we add service for (re-)advertise, so service-manager
-                     // gets to know the new hops.
-                     if( connections.front().hops != lowest_hops)
-                        result.push_back( std::move( add.name));
+                     // always report resource name
+                     result.push_back( std::move( add.name));
                      
                      return result;
                   });
@@ -290,16 +281,22 @@ namespace casual
                local::remove::connection( descriptor, Lookup::m_queues, queues)
             };
          }
-
-         lookup::Resources Lookup::clear()
+         std::vector< common::transaction::ID> Lookup::extract_transactions( common::strong::file::descriptor::id descriptor)
          {
-            auto result = resources();
+            std::vector< common::transaction::ID> result;
+            algorithm::container::erase_if( m_transactions, [ &result, descriptor]( auto& mapping)
+            {
+               if( auto remove = algorithm::filter( mapping.externals, predicate::value::equal( descriptor)))
+               {
+                  result.push_back( mapping.internal);
+                  algorithm::container::erase( mapping.externals, remove);
+               }
 
-            m_services.clear();
-            m_queues.clear();
+               return mapping.externals.empty();
+            });
 
             return result;
-         }  
+         } 
 
          void Lookup::remove( const common::transaction::ID& external)
          {
@@ -333,12 +330,26 @@ namespace casual
 
       } // state
 
+      state::extract::Result State::extract( common::strong::file::descriptor::id descriptor)
+      {
+         Trace trace{ "gateway::group::outbound::State::extract"};
+
+         // clean the disconnecting state.
+         algorithm::container::erase( disconnecting, descriptor);
+
+         return {
+            external.remove( directive, descriptor),
+            route.consume( descriptor),
+            lookup.extract_transactions( descriptor)
+         };
+      }
+
       bool State::done() const
       {
          if( runlevel <= state::Runlevel::running)
             return false;
 
-         return route.empty();
+         return route.empty() && lookup.empty();
       }
 
    } // gateway::group::outbound

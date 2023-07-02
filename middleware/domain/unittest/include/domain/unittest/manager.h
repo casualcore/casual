@@ -28,6 +28,12 @@ namespace casual
 
          const common::process::Handle& handle() const noexcept;
          
+         //! Perform an asynchronous shutdown -> does not block until the domain is down.
+         //! dtor will clean up the remaining stuff.
+         //! Only useful if one wants to interact with a domain in the shutdown phase, should
+         // not be used otherwise.
+         void async_shutdown();
+         
          //! tries to "activate" the domain, i.e. resets environment variables and such
          //! only useful if more than one instance is used
          void activate();

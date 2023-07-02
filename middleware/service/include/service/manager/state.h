@@ -175,6 +175,7 @@ namespace casual
                   {   
                      platform::time::point::type when;
                      common::strong::correlation::id correlation;
+                     //! The actual instance that the timeout refers to.
                      common::strong::process::id target;
                      state::Service* service = nullptr;
 
@@ -448,12 +449,16 @@ namespace casual
 
          common::Process forward;
 
+         // TODO merge this to a timeout { duration, instances} 
          casual::configuration::model::service::Timeout timeout;
+         std::vector< common::strong::process::id> timeout_instances;
 
          //! holds all the routes, for services that has routes
          std::map< std::string, std::vector< std::string>> routes;
          //! the same as above from the route to actual service.
          std::map< std::string, std::string> reverse_routes;
+
+
 
          //! holds all alias restrictions.
          casual::configuration::model::service::Restriction restriction;

@@ -29,8 +29,7 @@ namespace casual
             {
                void remove( strong::ipc::id ipc)
                {
-                  if( communication::ipc::exists( ipc))
-                     communication::ipc::remove( ipc);
+                  communication::ipc::remove( ipc);
                }
             } // ipc
 
@@ -299,6 +298,10 @@ namespace casual
          if( auto found = algorithm::find_if( singletons, is_singleton))
          {
             log::line( log, "remove singleton: ", found->second);
+
+            // Try to remove ipc-queue (no-op if it's removed already)
+            local::ipc::remove( found->second.ipc);
+
             singletons.erase( std::begin( found));
          }
 

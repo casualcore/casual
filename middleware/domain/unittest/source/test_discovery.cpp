@@ -8,9 +8,11 @@
 
 #include "domain/discovery/api.h"
 #include "domain/unittest/manager.h"
+#include "domain/discovery/instance.h"
 
 #include "common/communication/device.h"
 #include "common/communication/ipc.h"
+#include "common/communication/instance.h"
 #include "common/array.h"
 
 namespace casual
@@ -20,6 +22,18 @@ namespace casual
 
    namespace domain::discovery
    {
+
+      namespace local
+      {
+         namespace
+         {
+            auto& device()
+            {
+               static communication::instance::outbound::detail::optional::Device device{ discovery::instance::identity};
+               return device;
+            }
+         } // <unnamed>
+      } // local
 
       TEST( domain_discovery, no_discoverable__outbound_request___expect_empty_message)
       {
@@ -79,6 +93,69 @@ namespace casual
          }
       }
 
+      TEST( domain_discovery, register_as_discover_provider__send_api_request___send_rediscover__expect_prospects__then_reply__then_send_rediscover_expect_no_prospects)
+      {
+         common::unittest::Trace trace;
+
+         auto domain = unittest::manager();
+
+         // we register our self
+         discovery::provider::registration( discovery::provider::Ability::discover);
+
+         auto discovery_request_correlation = discovery::request( { "a"}, {});
+
+         // wait for the request
+         auto first_discovery_request = communication::ipc::receive< message::discovery::Request>();
+
+         // hold the reply and send it later
+         auto first_discovery_reply = common::message::reverse::type( first_discovery_request);
+
+         EXPECT_TRUE( algorithm::equal( first_discovery_request.content.services, array::make( "a"sv))) << CASUAL_NAMED_VALUE( first_discovery_request.content.services);
+
+         auto rediscover_correlation = discovery::rediscovery::request();
+
+         {
+            // receive the discovery request folloing the rediscover request
+            auto request = communication::ipc::receive< message::discovery::Request>();
+            // check that the in-flight prospect 'a' is in the request.
+            EXPECT_TRUE( algorithm::equal( request.content.services, array::make( "a"sv))) << CASUAL_NAMED_VALUE( request.content.services);
+            auto reply = common::message::reverse::type( request);
+            // send empty reply
+            communication::device::blocking::send( request.process.ipc, reply);
+         }
+
+         // send empty reply on first request
+         communication::device::blocking::send( first_discovery_request.process.ipc, first_discovery_reply);
+
+         // wait for the reply for first discovery request
+         {
+            auto reply = communication::ipc::receive< message::discovery::api::Reply>();
+            EXPECT_TRUE( reply.correlation == discovery_request_correlation);
+            EXPECT_TRUE( reply.content.services.empty()) << CASUAL_NAMED_VALUE( reply.content.services);
+         }
+
+         // wait for the reply on rediscovery request
+         {
+            auto reply = communication::ipc::receive< message::discovery::api::rediscovery::Reply>();
+            EXPECT_TRUE( reply.correlation == rediscover_correlation);
+         }
+
+         {
+            // make one more rediscover and now there should not be any prospects in-flight
+            auto rediscover_correlation = discovery::rediscovery::request();
+            {
+               auto request = communication::ipc::receive< message::discovery::Request>();
+               EXPECT_TRUE( request.content.services.empty()) << CASUAL_NAMED_VALUE( request.content.services);
+               auto reply = common::message::reverse::type( request);
+               communication::device::blocking::send( request.process.ipc, reply);
+            }
+            {
+               auto reply = communication::ipc::receive< message::discovery::api::rediscovery::Reply>();
+               EXPECT_TRUE( reply.correlation == rediscover_correlation);
+            }
+         }
+      }
+
       TEST( domain_discovery, register_as_means_provider__send_discovery_request___expect_request__then_reply)
       {
          common::unittest::Trace trace;
@@ -118,7 +195,7 @@ namespace casual
 
          // we register our self
          discovery::provider::registration( discovery::provider::Ability::discover);
-         
+
          // we fake our next registration...
          discovery::provider::registration( process::Handle{ strong::process::id{ process::id().value() + 1}, process::handle().ipc}, discovery::provider::Ability::discover);
 
@@ -159,7 +236,7 @@ namespace casual
             request.content.queues = { "a", "b"};
             return request;
          }());
-         
+
          {
             // expect lookup
             auto request = communication::ipc::receive< message::discovery::lookup::Request>();
@@ -199,7 +276,7 @@ namespace casual
          discovery::provider::registration( { Ability::discover, Ability::lookup, Ability::fetch_known});
 
          auto correlation = discovery::rediscovery::request();
-         
+
          // needs
          {
             auto request = communication::ipc::receive< message::discovery::fetch::known::Request>();
@@ -288,7 +365,7 @@ namespace casual
 
          auto inbound = communication::ipc::inbound::Device{};
 
-         using Ability = discovery::provider::Ability;         
+         using Ability = discovery::provider::Ability;
          discovery::provider::registration( { Ability::discover, Ability::lookup, Ability::topology, Ability::fetch_known});
 
          {
@@ -297,10 +374,10 @@ namespace casual
 
             discovery::topology::implicit::update( multiplex, message);
          }
-         
+
          while( multiplex)
             multiplex.send();
-         
+
          // known request
          {
             auto request = communication::ipc::receive< message::discovery::fetch::known::Request>();
@@ -389,7 +466,7 @@ namespace casual
             return request;
          }());
 
-                  
+
          {
             // expect lookup, we reply that we can provide the wanted service.
             auto request = communication::ipc::receive< message::discovery::lookup::Request>();
@@ -409,8 +486,261 @@ namespace casual
             // we wouldn't get the discovery::Reply if discovery was waiting on our reply.
 
          }
-      }   
+      }
+
+      TEST( domain_discovery, register_as_discover_provider__send_10_discover_request__congest__send_another_10___expect_accumulated_provider_request_total_less_then_20)
+      {
+         common::unittest::Trace trace;
+
+
+
+         auto domain = unittest::manager( R"(
+domain:
+   name: A
+   environment:
+      variables:
+         - { key: CASUAL_DISCOVERY_ACCUMULATE_REQUESTS, value: 10}
+         - { key: CASUAL_DISCOVERY_ACCUMULATE_TIMEOUT, value: 10ms}
+)");
+
+
+         // we register our self
+         discovery::provider::registration( { discovery::provider::Ability::discover, discovery::provider::Ability::lookup});
+
+         auto lookup_reply_resources_as_absent = []()
+         {
+            auto request = communication::ipc::receive< message::discovery::lookup::Request>();
+            auto reply = common::message::reverse::type( request);
+            reply.absent.services = std::move( request.content.services);
+            reply.absent.queues = std::move( request.content.queues);
+            communication::device::blocking::send( request.process.ipc, reply);
+         };
+
+         constexpr static auto create_service = []( auto name)
+         {
+            return common::message::service::concurrent::advertise::Service{
+               name,
+               "",
+               common::service::transaction::Type::none,
+               common::service::visibility::Type::discoverable,
+            };
+         }; 
+
+         constexpr static auto create_queue = []( auto name)
+         {
+            return message::discovery::reply::Queue{ name};
+         };
+
+         auto create_expected_resources = []( auto prefix, auto count)
+         {
+            std::vector< std::string> result;
+            algorithm::for_n( count, [ &result, prefix]( auto index)
+            {
+               result.push_back( string::compose( prefix, index));
+            });
+            return result;
+         };
+
+         // Ok, lets start sending stuff.
+
+         // send 10 request for 'a'
+         message::discovery::Request request{ process::handle()};
+         request.directive = decltype( request.directive)::forward;
+         request.content.services = { "a"};
+
+         algorithm::for_n( 10, [ &]()
+         {
+            communication::device::blocking::send( local::device(), request);
+            lookup_reply_resources_as_absent();
+         });
+
+         auto expected_services = create_expected_resources( "s", 10);
+         auto expected_queues = create_expected_resources( "q", 10);
+
+
+         // now we've got 10 in-flight. Send another 10 each for services and queues, these will be accumulated 
+         // to one (at least less than 10, since we've got 10ms)
+         algorithm::for_each( expected_services, [&]( auto& service)
+         {
+            request.content = {};
+            request.content.services.push_back( service);
+            communication::device::blocking::send( local::device(), request);
+            lookup_reply_resources_as_absent();
+         });
+
+         algorithm::for_each( expected_queues, [&]( auto& queue)
+         {
+            request.content = {};
+            request.content.queues.push_back( queue);
+            communication::device::blocking::send( local::device(), request);
+            lookup_reply_resources_as_absent();
+         });
+
+         // reply to the first 10 as the provider
+         algorithm::for_n( 10, [ &]()
+         {
+            auto request = communication::ipc::receive< message::discovery::Request>();
+            auto reply = common::message::reverse::type( request);
+            reply.content.services = algorithm::transform( request.content.services, create_service);
+            reply.content.queues = algorithm::transform( request.content.queues, create_queue);
+            
+            communication::device::blocking::send( request.process.ipc, reply);
+         });
+
+         // there should be less then 10x2 (10 services, 10 queues) request.
+         {
+            platform::size::type count = 0;
+            std::vector< std::string> services;
+            std::vector< std::string> queues;
+
+            while( ! algorithm::equal( algorithm::sort( services), expected_services) || ! algorithm::equal( algorithm::sort( queues), expected_queues))
+            {
+               auto request = communication::ipc::receive< message::discovery::Request>();
+
+               algorithm::append( request.content.services, services);
+               algorithm::append( request.content.queues, queues);
+
+               // we exclude "s3" and/or "g3" to the reply to simulate 
+               algorithm::container::erase( request.content.services, "s3");
+               algorithm::container::erase( request.content.queues, "q3");
+
+               auto reply = common::message::reverse::type( request);
+               reply.content.services = algorithm::transform( request.content.services, create_service);
+               reply.content.queues = algorithm::transform( request.content.queues, create_queue);
+               
+               communication::device::blocking::send( request.process.ipc, reply);
+               ++count;
+            }
+
+            EXPECT_TRUE( count < 20) << "count: " << count;
+         }
+
+         // Ok, now we should get our 30 (10 'a' services, 10 expected services, 10 expected queues) replies as caller. We start with the first 10 'a'
+         algorithm::for_n( 10, [ &]()
+         {
+            auto reply = communication::ipc::receive< message::discovery::Reply>();
+            ASSERT_TRUE( reply.content.services.size() == 1) << CASUAL_NAMED_VALUE( reply.content.services);
+            EXPECT_TRUE( reply.content.services.at( 0).name == "a");
+            EXPECT_TRUE( reply.content.queues.empty());
+         });
+
+         {
+            std::vector< std::string> services;
+            std::vector< std::string> queues;
+            algorithm::for_n( 20, [ &]()
+            {
+               auto reply = communication::ipc::receive< message::discovery::Reply>();
+               algorithm::transform( reply.content.services, std::back_inserter( services), []( auto& service){ return service.name;});
+               algorithm::transform( reply.content.queues, std::back_inserter( queues), []( auto& queue){ return queue.name;});
+            });
+
+            algorithm::sort( services);
+            algorithm::sort( queues);
+            
+            // expect services without the "non existent" service "s3"
+            EXPECT_TRUE( algorithm::equal( services, algorithm::remove( expected_services, "s3"))) << CASUAL_NAMED_VALUE( services);
+            // expect queues without the "non existent" queue "q3"
+            EXPECT_TRUE( algorithm::equal( queues, algorithm::remove( expected_queues, "q3"))) << CASUAL_NAMED_VALUE( queues);
+         }
+      }
+
+
+      TEST( domain_discovery, act_as_SM_GW__discover_q1_s2_q1_q2__s1_q1_is_known___extended_discovery_for_s2_q2__all_is_found___expect_s1_s2_q1_q2__in_reply)
+      {
+         common::unittest::Trace trace;
+
+
+
+         auto domain = unittest::manager( R"(
+domain:
+   name: A
+   environment:
+      variables:
+         - { key: CASUAL_DISCOVERY_ACCUMULATE_REQUESTS, value: 10}
+         - { key: CASUAL_DISCOVERY_ACCUMULATE_TIMEOUT, value: 10ms}
+)");
+
+         // crate a separate inbound for the "caller"
+         struct
+         {
+            communication::ipc::inbound::Device device;
+            process::Handle process{ process::id(), device.connector().handle().ipc()};
+
+         } caller;
+
+         // we register our self
+         discovery::provider::registration( { discovery::provider::Ability::discover, discovery::provider::Ability::lookup});
+
+
+         constexpr static auto create_service = []( auto name)
+         {
+            return common::message::service::concurrent::advertise::Service{
+               name,
+               "",
+               common::service::transaction::Type::none,
+               common::service::visibility::Type::discoverable,
+            };
+         }; 
+
+         constexpr static auto create_queue = []( auto name)
+         {
+            return message::discovery::reply::Queue{ name};
+         };
+
+         // will reply with absent s2, q2, known s1, q1
+         constexpr static auto lookup_reply_resources = []()
+         {
+            auto request = communication::ipc::receive< message::discovery::lookup::Request>();
+            auto reply = common::message::reverse::type( request);
+
+            EXPECT_TRUE( algorithm::equal( request.content.services, array::make( "s1", "s2")));
+            EXPECT_TRUE( algorithm::equal( request.content.queues, array::make( "q1", "q2"))) << CASUAL_NAMED_VALUE( request.content.queues);
+
+            reply.content.services.push_back( create_service( "s1"));
+            reply.absent.services.emplace_back( "s2");
+
+            reply.content.queues.push_back( create_queue( "q1"));
+            reply.absent.queues.emplace_back( "q2");
+            
+            communication::device::blocking::send( request.process.ipc, reply);
+         };
+
+         // Ok, lets start sending stuff.
+
+         // send request with s1, s2, q1, q2
+         {
+            message::discovery::Request request{ caller.process};
+            request.directive = decltype( request.directive)::forward;
+            request.content.services = { "s1", "s2"};
+            request.content.queues = { "q1", "q2"};
+            
+            communication::device::blocking::send( local::device(), request);
+
+            // reply as "service/queue manager"
+            lookup_reply_resources();
+         };
+
+         // reply as "gateway manager"
+         {
+            auto request = communication::ipc::receive< message::discovery::Request>();
+            auto reply = common::message::reverse::type( request);
+            reply.content.services = algorithm::transform( request.content.services, create_service);
+            reply.content.queues = algorithm::transform( request.content.queues, create_queue);
+            
+            communication::device::blocking::send( request.process.ipc, reply);
+         };
+
+         // get the reply
+         {
+            auto equal_name = []( auto& lhs, auto& rhs){ return lhs.name == rhs;};
+
+            auto reply = communication::device::receive< message::discovery::Reply>( caller.device);
+            EXPECT_TRUE( algorithm::equal( reply.content.services, array::make( "s1", "s2"), equal_name));
+            EXPECT_TRUE( algorithm::equal( reply.content.queues, array::make( "q1", "q2"), equal_name));
+         }
+
+      }
 
    } // domain::discovery
-   
+
 } // casual

@@ -26,7 +26,7 @@ namespace casual
 
       namespace has
       {
-         template< std::uint64_t flags, typename T>
+         template< auto flags, typename T>
          constexpr inline bool flag( T value)
          {
             return ( value & flags) == flags;

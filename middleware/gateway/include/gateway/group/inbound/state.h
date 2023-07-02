@@ -32,9 +32,9 @@ namespace casual
          struct next
          {
             //! max count of consumed messages 
-            static constexpr platform::size::type ipc = 1;
+            static constexpr platform::size::type ipc() { return 1;}
             //! max count of consumed messages
-            static constexpr platform::size::type tcp = 1;
+            static constexpr platform::size::type tcp() { return 1;}
          };
       };
 
@@ -90,6 +90,11 @@ namespace casual
                {
                   std::vector< common::message::service::call::callee::Request> services;
                   std::vector< complete_type> complete;
+
+                  CASUAL_LOG_SERIALIZE( 
+                     CASUAL_SERIALIZE( services);
+                     CASUAL_SERIALIZE( complete);
+                  )
                };
 
                Result consume( const std::vector< common::strong::correlation::id>& correlations);
@@ -151,6 +156,50 @@ namespace casual
             )
          };
 
+         namespace in::flight
+         {
+            struct Cache
+            {
+               void add( common::strong::file::descriptor::id descriptor, const common::transaction::ID& trid);
+               void remove( common::strong::file::descriptor::id descriptor, const common::transaction::ID& trid);
+
+               //! remove all associated transactions to the `descriptor`
+               void remove( common::strong::file::descriptor::id descriptor);
+
+               bool empty( common::strong::file::descriptor::id descriptor) const noexcept;
+
+               
+               
+               //! @returns and extract/remove the associated transactions tor the `descriptor`. 
+               std::vector< common::transaction::ID> extract( common::strong::file::descriptor::id descriptor);
+
+               CASUAL_LOG_SERIALIZE( 
+                  CASUAL_SERIALIZE( m_transactions);
+               )
+
+            private:
+               std::unordered_map< common::strong::file::descriptor::id, std::vector< common::transaction::ID>> m_transactions;
+            };
+         } // in::flight
+
+         namespace extract
+         {
+            struct Result
+            {
+               group::tcp::External< configuration::model::gateway::inbound::Connection>::Information information;
+               state::pending::Requests::Result pending;
+               std::vector< common::transaction::ID> transactions;
+
+               inline bool empty() const noexcept { return pending.complete.empty() && pending.services.empty() && transactions.empty();}
+
+               CASUAL_LOG_SERIALIZE( 
+                  CASUAL_SERIALIZE( information);
+                  CASUAL_SERIALIZE( pending);
+                  CASUAL_SERIALIZE( transactions);
+               )
+
+            };
+         } // extract
 
       } // state
 
@@ -174,9 +223,10 @@ namespace casual
 
          common::communication::ipc::send::Coordinator multiplex{ directive};
          
-
          std::vector< state::Correlation> correlations;
          std::vector< state::Conversation> conversations;
+
+         state::in::flight::Cache in_flight_cache;
 
          std::string alias;
          std::string note;
@@ -187,8 +237,13 @@ namespace casual
 
          tcp::Connection* connection( const common::strong::correlation::id& correlation);
 
+         //! @returns true if `descriptor` is ready to be disconnected.
+         bool disconnectable( common::strong::file::descriptor::id descriptor) const noexcept;
+         
          //! @return true if the state is ready to 'terminate'
          bool done() const noexcept;
+
+         state::extract::Result extract( common::strong::file::descriptor::id connection);
 
          //! @returns a reply message to state `request` that is filled with what's possible
          template< typename M>
@@ -209,6 +264,8 @@ namespace casual
             CASUAL_SERIALIZE( external);
             CASUAL_SERIALIZE( pending);
             CASUAL_SERIALIZE( correlations);
+            CASUAL_SERIALIZE( conversations);
+            CASUAL_SERIALIZE( in_flight_cache);
             CASUAL_SERIALIZE( alias);
             CASUAL_SERIALIZE( note);
          )

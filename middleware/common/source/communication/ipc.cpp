@@ -54,17 +54,26 @@ namespace casual
 
       Handle::~Handle() = default;
 
+      std::filesystem::path path( const strong::ipc::id& id)
+      {
+         constexpr auto max_size = sizeof( ::sockaddr_un::sun_path) -1;
+
+         auto result = environment::directory::ipc() / uuid::string( id.value());
+
+         if( result.native().size() > max_size)
+            code::raise::error( code::casual::invalid_path, "transient directory path too long");
+
+         return result;
+      }
+
 
       Address::Address( strong::ipc::id ipc)
       {
-         const auto path = ( environment::directory::ipc() / uuid::string( ipc.value())).string();
-
-         if( path.size() > ( sizeof( m_native.sun_path) - 1))
-            code::raise::error( code::casual::invalid_path, "transient directory path too long");
+         const auto path = ipc::path( ipc);
 
          auto target = std::begin( m_native.sun_path);
 
-         algorithm::copy( path, target);
+         algorithm::copy( path.native(), target);
 
          m_native.sun_family = AF_UNIX;
       }
@@ -488,17 +497,35 @@ namespace casual
          
       } // partial
 
+      namespace local
+      {
+         namespace
+         {
+            bool exists( const std::filesystem::path& path) noexcept
+            {
+               log::line( verbose::log, "path: ", path);
+               return std::filesystem::exists( path);
+            }
+            
+         } // <unnamed>
+      } // local
+
       bool exists( strong::ipc::id id)
       {
-         const Address address{ id};
-         return ::access( address.native().sun_path, F_OK) != -1; 
+         Trace trace{ "common::communication::ipc::exists"};
+         return local::exists( ipc::path( id));
       }
-
 
       bool remove( strong::ipc::id id)
       {
-         Address address{ id};
-         return ::unlink( address.native().sun_path) != -1;
+         Trace trace{ "common::communication::ipc::remove"};
+
+         auto path = ipc::path( id);
+
+         if( ! local::exists( path))
+            return false;
+
+         return std::filesystem::remove( path);
       }
 
       bool remove( const process::Handle& owner)

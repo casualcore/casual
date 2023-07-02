@@ -93,24 +93,25 @@ namespace casual
                   return done();
                }
 
+               //! Sets the pending state to failed regardless of previous state
                template< typename I>
                auto failed( I&& id) -> std::vector< strong::correlation::id>
                {
-                  auto has_id_and_pending = [ &id]( auto& pending){ return pending.id == id && pending.state == Pending::State::pending;};
-                  auto update_failed_and_transform_correlation =  []( auto& pending)
+                  auto has_id = [ &id]( auto& pending){ return pending.id == id;};
+
+                  return algorithm::transform_if( m_pending, []( auto& pending)
                   {
                      pending.state = Pending::State::failed; 
                      return pending.correlation;
-                  };
 
-                  return algorithm::transform_if( m_pending, update_failed_and_transform_correlation, has_id_and_pending);
+                  }, has_id);
                }
 
                bool done()
                {
                   if( algorithm::any_of( m_pending, predicate::value::equal( Pending::State::pending)))
                      return false;
-                  
+
                   m_callback( std::move( m_received), std::move( m_pending));
                   return true;
                }
@@ -133,8 +134,11 @@ namespace casual
             };
 
 
-            //! register pending 'fan outs' and a callback which is invoked when all pending
+            //! Register pending 'fan outs' and a callback which is invoked when all pending
             //! has been 'received'.
+            //! @attention The callback will be invoked with all received messages and the total set of 
+            //! requested/pending outcomes. `outcome` includes _received_ and _failed_, and its upp
+            //! to the callback to decided what to do with it... 
             template< typename C>
             void operator () ( std::vector< Pending> pending, C&& callback)
             {
@@ -165,6 +169,9 @@ namespace casual
                }
             }
 
+            //! Mark any pending as failed that are associated with `id`
+            //! remove lookup correlation for the failed -> possible later "correlated" replies will be ignored
+            //! This could trigger `done` and invocation of the callback -> cleanup of the entry.
             template< typename I>
             inline auto failed( I&& id) -> decltype( void( std::declval< const id_type&>() == id))
             {
@@ -186,7 +193,7 @@ namespace casual
             inline auto empty() const noexcept { return m_entries.empty() && m_lookup.empty();}
 
             using pending_type = std::vector< Pending>;
-            
+
             //! @returns an empty 'pending_type' vector
             //! convenience function to get 'the right type' 
             inline auto empty_pendings() const noexcept { return pending_type{};}

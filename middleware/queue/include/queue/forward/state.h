@@ -296,6 +296,15 @@ namespace casual
                   )
                };
 
+               namespace lookup
+               {
+                  struct Discard : transaction_base
+                  {
+                     Discard() = default;
+                     Discard( transaction_base&& other) : transaction_base{ std::move( other)} {}
+                  };
+               }
+
                struct Call : transaction_base
                {
                   Call() = default;
@@ -311,7 +320,7 @@ namespace casual
                      CASUAL_SERIALIZE( pid);
                   )
                };
-               
+
             } // service
 
             namespace transaction
@@ -367,10 +376,12 @@ namespace casual
             struct
             {
                std::vector< state::pending::service::Lookup> lookups;
+               std::vector< state::pending::service::lookup::Discard> lookup_discards;
                std::vector< state::pending::service::Call> calls;
 
                CASUAL_LOG_SERIALIZE(
                   CASUAL_SERIALIZE( lookups);
+                  CASUAL_SERIALIZE( lookup_discards);
                   CASUAL_SERIALIZE( calls);
                )
 

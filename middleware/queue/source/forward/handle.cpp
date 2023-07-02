@@ -323,7 +323,8 @@ namespace casual
                         if( surplus == 0)
                            return;
 
-                        // Pendings for a given forward
+                        // Pendings for a given forward and "state-machine set", should only return 0..1, since a 
+                        // given forward is only in one state at one given time.
                         auto get_pendings = [ &forward]( auto& pendings)
                         {
                            return algorithm::filter( pendings, [ &forward]( const auto& pending){ return pending.id == forward.id;});
@@ -331,19 +332,32 @@ namespace casual
 
                         auto send_discard_request = [ &state, &forward, &surplus]( const auto& pending)
                         {
+                           // guard to be able to use this predicate in filter algorithm
+                           if( surplus == 0)
+                              return false;
+
                            detail::send::discard::request( state, forward, pending);
-                           return --surplus > 0;
+                           --surplus;
+                           
+                           return true;
                         };
 
                         algorithm::for_each_while( get_pendings( state.pending.dequeues), send_discard_request);
 
                         if constexpr( std::is_same_v< traits::remove_cvref_t< decltype( forward)>, state::forward::Service>)
-                           algorithm::for_each_while( get_pendings( state.pending.service.lookups), send_discard_request);
+                        {
+                           // extract and discard all (0..1) pending lookups for the forward, and put'em in lookup-lookup discard 
+                           auto pending = algorithm::filter( get_pendings( state.pending.service.lookups), send_discard_request);
+                           auto discarded = algorithm::container::extract( state.pending.service.lookups, pending);
+                           for( auto& pending : discarded)
+                              state.pending.service.lookup_discards.emplace_back( std::move( pending));
+
+                        }
                      };
 
                      algorithm::for_each( state.forward.queues, cancel_surplus_instances);
                      algorithm::for_each( state.forward.services, cancel_surplus_instances);
-                  }
+                  } 
 
                   // start the "flows" for configured forwards
                   auto lookup_request = []( auto& state, auto& forwards)
@@ -624,9 +638,15 @@ namespace casual
                               return;
 
                            auto pending = pending::consume( state.pending.service.lookups, message.correlation);
-
+                           
                            if( ! pending)
+                           {
+                              // if we cant find a pending lookup we assume the lookup is discarded and handle it later
+                              if( ! algorithm::find( state.pending.service.lookup_discards, message.correlation))
+                                 log::line( log::category::error, code::casual::invalid_semantics, " expected pending service-lookup-discard for correlation: ", message.correlation);
+
                               return;
+                           }
 
                            if( message.state != decltype( message.state)::idle)
                            {
@@ -655,11 +675,8 @@ namespace casual
                               Trace trace{ "queue::forward::service::local::handle::service::lookup::discard::reply"};
                               log::line( verbose::log, "message: ", message);
 
-                              if( message.state == decltype( message.state)::replied)
-                                 return; // we've got the lookup reply already, let the 'flow' do it's thing...
-
-                              auto pending = pending::consume( state.pending.service.lookups, message.correlation);
-                              log::line( verbose::log, "pending: ", pending);
+                              auto pending = pending::consume( state.pending.service.lookup_discards, message.correlation);
+                              log::line( verbose::log, "pending lookup_discard: ", pending);
 
                               if( ! pending)
                                  return;

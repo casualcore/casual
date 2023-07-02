@@ -15,6 +15,8 @@
 #include "common/communication/instance.h"
 #include "common/message/event.h"
 #include "common/event/listen.h"
+#include "common/service/lookup.h"
+#include "common/communication/ipc/send.h"
 
 #include "casual/xatmi.h"
 
@@ -290,6 +292,48 @@ domain:
          }
       }
 
+      TEST( test_service, nested_service_call__expect_metric_to_contain_parent)
+      {
+         common::unittest::Trace trace;
+
+         auto domain = casual::domain::unittest::manager( local::configuration::base, R"(
+domain:
+   servers:
+      -  path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-server
+         memberships: [ user]
+
+   services:
+      -  name: casual/example/echo
+)");
+
+         // Set the name of the current service
+         const std::string calling_service{ "caller"};
+         execution::service::name( calling_service);
+
+         // Subscribe to the metric event
+         common::message::event::service::Calls event;
+         common::event::subscribe( common::process::handle(), { event.type()});
+
+         // Call service to generate metric
+         {
+            auto buffer = tpalloc( X_OCTET, nullptr, 128);
+            auto len = tptypes( buffer, nullptr, nullptr);
+            tpcall( "casual/example/echo", buffer, len, &buffer, &len, 0);
+            EXPECT_TRUE( tperrno == 0) << "tperrno: " << tperrnostring( tperrno);
+         }
+
+         // Wait for event to be delivered
+         {
+            common::communication::device::blocking::receive(
+               common::communication::ipc::inbound::device(),
+               event);
+
+            ASSERT_TRUE( event.metrics.size() == 1);
+            auto& metric = event.metrics.at( 0);
+            ASSERT_TRUE( metric.parent == calling_service) << "received: " << metric.parent;
+         }
+      }
+
       TEST( test_service, service_call_to_atomic_service__expect_trid)
       {
          common::unittest::Trace trace;
@@ -328,7 +372,88 @@ domain:
          }
       }
 
+      TEST( test_service, multiplex_call_to_service__kill_server__expect_multiplex_detect_ipc_device_is_gone)
+      {
+         common::unittest::Trace trace;
 
+         auto domain = casual::domain::unittest::manager( local::configuration::base, R"(
+domain:
+   servers:
+      -  path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-server
+         memberships: [ user]
+         instances: 1
+         restrictions:
+            - casual/example/echo
+)");
+
+         // lookup / reserve the instance
+         auto lookup = common::service::Lookup{ "casual/example/echo"}();
+         ASSERT_TRUE( ! lookup.busy());
+
+         communication::ipc::inbound::Device inbound;
+
+
+         communication::select::Directive directive;
+         communication::ipc::send::Coordinator coordinator{ directive};
+
+         long error_count = 0;
+
+
+         // we send as many request we can until the send::coordinator fails to send, due to 
+         // example server can't send the replies (our inbound gets "full").
+         // we want the send::Coordinator to create a socket to the example server ipc device
+         {
+            auto handle = process::Handle{ process::handle().pid, inbound.connector().handle().ipc()};
+
+            message::service::call::callee::Request request{ handle};
+            request.buffer.type = buffer::type::binary;
+            request.buffer.data = unittest::random::binary( 64);
+            request.service = lookup.service;
+
+            auto error_callback = [ &error_count]( auto& ipc, auto& complete){ ++error_count;};
+
+            // this will render unexpected unreserves for casual/example/echo to SM -> error logs
+            // We'll just ignore this, to keep the unittest less complex.
+            while( coordinator.empty())
+               coordinator.send( lookup.process.ipc, request, error_callback);
+
+            // add a few extra...
+            algorithm::for_n( 20, [ &]()
+            {
+                coordinator.send( lookup.process.ipc, request, error_callback);
+            });
+
+            EXPECT_TRUE( ! coordinator.empty());
+         }
+
+         // Ok, now we've got send::Coordinator to be "bound"  to example-server inbound
+         // ipc device.
+         // If we kill example-server, send::Coordinator should detect that the ipc-device is
+         // logically removed (even if the socket keeps it alive due to fd reference counting and such)
+         {
+            common::message::event::process::Exit event;
+            auto guard = common::event::scope::subscribe( common::process::handle(), { event.type()});
+
+            signal::send( lookup.process.pid, code::signal::kill);
+
+            // wait until DM knows about it, and has removed the ipc device
+            while( event.state.pid != lookup.process.pid)
+            {
+               common::communication::device::blocking::receive(
+                  common::communication::ipc::inbound::device(),
+                  event);
+            }
+
+            // try to send all "cached" messages -> invoke error-callback
+            while( ! coordinator.empty())
+               coordinator.send();
+
+            EXPECT_TRUE( error_count > 0);
+         }
+
+
+
+      }
 
 
    } // test::domain::service

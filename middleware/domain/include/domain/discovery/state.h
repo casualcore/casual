@@ -173,7 +173,7 @@ namespace casual
 
          namespace accumulate
          {
-            namespace topology::state
+            namespace topology
             {
                struct Direct
                {
@@ -186,15 +186,21 @@ namespace casual
                   )
                };
 
-               struct Implicit
+               namespace extract
                {
-                  std::vector< common::domain::Identity> domains;
+                  struct Result
+                  {
+                     message::discovery::topology::direct::Explore direct;
+                     std::vector< common::domain::Identity> implicit_domains;
 
-                  CASUAL_LOG_SERIALIZE(
-                     CASUAL_SERIALIZE( domains);
-                  )
-               };
-            } // topology::state
+                     CASUAL_LOG_SERIALIZE(
+                        CASUAL_SERIALIZE( direct);
+                        CASUAL_SERIALIZE( implicit_domains);
+                     )
+                  };
+               } // extract
+
+            } // topology
 
             struct Topology
             {
@@ -202,40 +208,222 @@ namespace casual
                void add( message::discovery::topology::direct::Update&& message);
                void add( message::discovery::topology::implicit::Update&& message);
 
-               using extract_result = std::tuple< message::discovery::topology::direct::Explore, message::discovery::topology::implicit::Update>;
-               extract_result extract() noexcept;
+               std::optional< topology::extract::Result> extract() noexcept;
 
                //! @returns true if something is aggregated, false otherwise
-               inline explicit operator bool() const noexcept { return ! m_direct.domains.empty() || ! m_implicit.domains.empty();}
+               inline bool empty() const noexcept { return m_direct.domains.empty() && m_implicit_domains.empty();}
 
                CASUAL_LOG_SERIALIZE(
                   CASUAL_SERIALIZE_NAME( m_direct, "direct");
-                  CASUAL_SERIALIZE_NAME( m_implicit, "implicit");
+                  CASUAL_SERIALIZE_NAME( m_implicit_domains, "implicit");
                )
                
             private:
-
-               topology::state::Direct m_direct;
-               topology::state::Implicit m_implicit;
-               //! keeps track of the lifetime of our timer.
-               std::optional< common::signal::timer::Deadline> m_timer;
+               topology::Direct m_direct;
+               std::vector< common::domain::Identity> m_implicit_domains;
             };
+
+            namespace request
+            {
+               namespace reply
+               {
+                  enum struct Type : short
+                  {
+                     api,
+                     discovery,
+                  };
+                  constexpr std::string_view description( Type value) noexcept
+                  {
+                     switch( value)
+                     {
+                        case Type::api: return "api";
+                        case Type::discovery: return "discovery";
+                     }
+                     return "<unknown>";
+                  }
+               } // reply
+
+               struct Reply
+               {
+                  reply::Type type;
+                  common::strong::correlation::id correlation;
+                  common::strong::ipc::id ipc;
+
+                  inline friend bool operator == ( const Reply& lhs, reply::Type rhs) noexcept { return lhs.type == rhs;}
+
+                  CASUAL_LOG_SERIALIZE(
+                     CASUAL_SERIALIZE( type);
+                     CASUAL_SERIALIZE( correlation);
+                     CASUAL_SERIALIZE( ipc);
+                  )
+               };
+
+               namespace extract
+               {
+                  struct Result
+                  {
+                     message::discovery::request::Content content;
+                     std::vector< request::Reply> replies;
+
+                     CASUAL_LOG_SERIALIZE(
+                        CASUAL_SERIALIZE( content);
+                        CASUAL_SERIALIZE( replies);
+                     )
+                  };
+                  
+               } // extract
+               
+            } // request
+
+            struct Request
+            {
+               void add( message::discovery::Request message);
+               void add( message::discovery::api::Request message);
+
+               std::optional< request::extract::Result> extract() noexcept;
+
+               inline auto pending() const noexcept { return m_result.replies.size();}
+
+               CASUAL_LOG_SERIALIZE(
+                  CASUAL_SERIALIZE_NAME( m_result, "result");
+               )
+            
+            private:
+               request::extract::Result m_result;
+            };
+
+            namespace extract
+            {
+               struct Result
+               {
+                  std::optional< topology::extract::Result> topology;
+                  std::optional<request::extract::Result> request;
+
+                  CASUAL_LOG_SERIALIZE(
+                     CASUAL_SERIALIZE( topology);
+                     CASUAL_SERIALIZE( request);
+                  )
+               };
+               
+            } // extract
+
+
+            struct Heuristic
+            {
+               std::optional< common::signal::timer::Deadline> deadline;
+
+               static platform::size::type in_flight() noexcept;
+
+               static const platform::size::type in_flight_window;
+               static const platform::time::unit duration;
+
+
+
+               CASUAL_LOG_SERIALIZE(
+                  CASUAL_SERIALIZE_NAME( in_flight(), "in_flight");
+                  CASUAL_SERIALIZE( in_flight_window);
+                  CASUAL_SERIALIZE( duration);
+               )
+            };
+
 
          } // accumulate
 
          struct Accumulate
          {
-            accumulate::Topology topology;
+            Accumulate();
+
+            void add( message::discovery::Request message);
+            void add( message::discovery::api::Request message);
+            void add( message::discovery::topology::direct::Update message);
+            void add( message::discovery::topology::implicit::Update message);
+
+            //! this should only be called when a timeout occur
+            accumulate::extract::Result extract();
+
+            //! @returns true if the accumulate should be bypassed, hence no accumulation based on load.
+            bool bypass() const noexcept;
 
             CASUAL_LOG_SERIALIZE(
-               CASUAL_SERIALIZE( topology);
+               CASUAL_SERIALIZE( m_heuristic);
+               CASUAL_SERIALIZE( m_topology);
+               CASUAL_SERIALIZE( m_request);
             )
+
+         private:
+            accumulate::Heuristic m_heuristic;
+            accumulate::Topology m_topology;
+            accumulate::Request m_request;
          };
 
+         namespace in::flight
+         {
+            namespace content
+            {
+               namespace cache
+               {
+                  struct Mapping
+                  {
+                     //! adds the resources and associate with the correlation.
+                     void add( const common::strong::correlation::id& correlation, const std::vector< std::string>& resources);
+
+                     //! @returns all resources associated with the correlation, and make sure the state is cleaned
+                     std::vector< std::string> extract( const common::strong::correlation::id& correlation);
+
+                     //! adds all cached resources to `resources`.
+                     void complement( std::vector< std::string>& resources);
+
+                     CASUAL_LOG_SERIALIZE(
+                        CASUAL_SERIALIZE( m_correlation_to_resource);
+                        CASUAL_SERIALIZE( m_resource_count);
+                     )
+
+                  private:
+                     std::unordered_multimap< common::strong::correlation::id, std::string> m_correlation_to_resource;
+                     std::unordered_map< std::string, platform::size::type> m_resource_count;
+                  };
+
+               } // cache
+
+               struct Cache
+               {
+                  using request_content = message::discovery::request::Content;
+                  using reply_content = message::discovery::reply::Content;
+
+                  //! adds the content and associate with the correlation.
+                  void add( const common::strong::correlation::id& correlation, const request_content& content);
+
+                  //! adds partial "local" known 'content', that will be used in `filter_reply`
+                  void add_known( const common::strong::correlation::id& correlation, reply_content&& content);
+
+                  template< typename M>
+                  void add( const M& message) { add( message.correlation, message.content);}
+
+                  //! adds all cached resources to services and queues
+                  request_content complement( request_content&& content);
+
+                  //! @returns the "cached" requested resources associated with the correlation intersected with the 
+                  //! supplied content. Also adds partial known "local" content, if any. 
+                  //! @attention Cleans the associated state -> this function is not idempotent.
+                  reply_content filter_reply( const common::strong::correlation::id& correlation, const reply_content& content);
+
+                  CASUAL_LOG_SERIALIZE(
+                     CASUAL_SERIALIZE( m_services);
+                     CASUAL_SERIALIZE( m_queues);
+                  )
+
+               private:
+                  cache::Mapping m_services;
+                  cache::Mapping m_queues;
+                  std::unordered_map< common::strong::correlation::id, reply_content> m_known_content;
+               };
+               
+            } // content
+            
+         } // in::flight
 
 
       } // state
-
 
       struct State
       {
@@ -274,7 +462,7 @@ namespace casual
             )
          } service_name;
 
-         
+         state::in::flight::content::Cache in_flight_cache;
 
          state::Accumulate accumulate;
          
@@ -287,6 +475,7 @@ namespace casual
             CASUAL_SERIALIZE( coordinate);
             CASUAL_SERIALIZE( multiplex);
             CASUAL_SERIALIZE( service_name);
+            CASUAL_SERIALIZE( in_flight_cache);
             CASUAL_SERIALIZE( accumulate);
             CASUAL_SERIALIZE( providers);
          )

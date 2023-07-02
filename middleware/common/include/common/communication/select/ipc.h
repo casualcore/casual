@@ -31,7 +31,7 @@ namespace casual
                   if( communication::ipc::inbound::device().descriptor() != descriptor)
                      return false;
 
-                  auto count = Policy::next::ipc;
+                  auto count = Policy::next::ipc();
                   while( count-- > 0 && m_handler( device::non::blocking::next( communication::ipc::inbound::device())))
                      ; // no-op
 
@@ -48,7 +48,7 @@ namespace casual
                {
                   struct next
                   {
-                     static constexpr platform::size::type ipc = platform::batch::message::pump::next;
+                     static constexpr platform::size::type ipc() noexcept { return platform::batch::message::pump::next;};
                   };
                };
             } // policy

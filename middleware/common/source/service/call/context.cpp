@@ -168,6 +168,9 @@ namespace casual
             target = service();
          }
 
+         if( target.state != decltype( target.state)::idle)
+            code::raise::error( code::casual::invalid_semantics, "unable to reserve instance of service '", target.service, "'");
+
          // Call the service
          {
             prepared.message.service = target.service;

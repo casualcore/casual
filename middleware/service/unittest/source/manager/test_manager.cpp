@@ -1047,5 +1047,100 @@ domain:
          EXPECT_TRUE( reply.state == decltype( reply.state)::replied) << trace.compose( "reply.state: ", reply.state);
       }
 
+      TEST( service_manager, lookup_reserved_service__SM_receives_concurrent_service_advertisement__expect_idle_when_reservation_finished)
+      {
+         common::unittest::Trace trace;
+
+         auto domain = local::domain();
+
+         service::unittest::advertise( { "local-service"});
+
+         // we reserve ourselves
+         {
+            auto service = common::service::Lookup{ "local-service"}();
+            EXPECT_TRUE( service.service.name == "local-service");
+            EXPECT_TRUE( service.state == decltype( service.state)::idle);
+         }
+
+         // lookup 'local-service' again
+         common::service::Lookup lookup{ "local-service"};
+
+         // some unrelated concurrent services are advertised while our second lookup is pending
+         service::unittest::concurrent::advertise( { "some-remote-service", "some-other-remote-service"});
+
+         // we have ourselves reserved - expect to be busy
+         {
+            auto service = lookup();
+            EXPECT_TRUE( service.service.name == "local-service");
+            EXPECT_TRUE( service.state == decltype( service.state)::busy);
+         }
+
+         {
+            // send ack for our initial "call"
+            {
+               common::message::service::call::ACK message;
+               message.metric.process = common::process::handle();
+
+               common::communication::device::blocking::send( 
+                  common::communication::instance::outbound::service::manager::device(),
+                  message);
+            }
+
+            // we should be idle again
+            auto service = lookup();
+            EXPECT_TRUE( service.state == decltype( service.state)::idle);
+         }
+      }
+
+      TEST( service_manager, lookup_reserved_service__SM_receives_process_exit_event__expect_idle_when_reservation_finished)
+      {
+         common::unittest::Trace trace;
+
+         auto domain = local::domain();
+
+         service::unittest::advertise( { "local-service"});
+
+         // we reserve ourselves
+         {
+            auto service = common::service::Lookup{ "local-service"}();
+            EXPECT_TRUE( service.service.name == "local-service");
+            EXPECT_TRUE( service.state == decltype( service.state)::idle);
+         }
+
+         // lookup 'local-service' again
+         common::service::Lookup lookup{ "local-service"};
+
+         // meanwhile, some process dies
+         {
+            common::message::event::process::Exit event;
+            event.state.pid = common::strong::process::id{ 42};
+            event.state.reason = decltype( event.state.reason)::exited;
+            common::communication::device::blocking::send( common::communication::instance::outbound::service::manager::device(), event);
+         }
+
+         // we have ourselves reserved - expect to be busy
+         {
+            auto service = lookup();
+            EXPECT_TRUE( service.service.name == "local-service");
+            EXPECT_TRUE( service.state == decltype( service.state)::busy);
+         }
+
+         {
+            // send ack for our initial "call"
+            {
+               common::message::service::call::ACK message;
+               message.metric.process = common::process::handle();
+
+               common::communication::device::blocking::send( 
+                  common::communication::instance::outbound::service::manager::device(),
+                  message);
+            }
+
+            // we should be idle again
+            auto service = lookup();
+            EXPECT_TRUE( service.state == decltype( service.state)::idle);
+         }
+      }
+
    } // service
 } // casual

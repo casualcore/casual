@@ -19,6 +19,8 @@
 
 #include "configuration/model.h"
 
+#include "casual/task.h"
+
 
 namespace casual
 {
@@ -80,9 +82,7 @@ namespace casual
 
          struct State
          {
-
-            //! @return true if we're done, and ready to exit
-            bool done() const;
+            common::state::Machine< state::Runlevel, state::Runlevel::startup> runlevel;
 
             struct
             {
@@ -97,15 +97,20 @@ namespace casual
                
                CASUAL_LOG_SERIALIZE( CASUAL_SERIALIZE( groups);)
             } outbound;
+
+            //! coordinated tasks, only(?) for shutdown 
+            //! inbound before outbound
+            casual::task::Coordinator tasks;
+
             
-
-            common::state::Machine< state::Runlevel, state::Runlevel::startup> runlevel;
-
-
+            //! @return true if we're done, and ready to exit
+            bool done() const noexcept;
+            
             CASUAL_LOG_SERIALIZE(
+               CASUAL_SERIALIZE( runlevel);
                CASUAL_SERIALIZE( inbound);
                CASUAL_SERIALIZE( outbound);
-               CASUAL_SERIALIZE( runlevel);
+               CASUAL_SERIALIZE( tasks);
             )
 
          };

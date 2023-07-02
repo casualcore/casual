@@ -63,15 +63,15 @@ namespace casual
          common::unittest::Trace trace;
 
          auto type = common::buffer::type::combine( CASUAL_FIELD);
-         auto handle = buffer::pool::Holder::instance().allocate( type, 666);
+         auto handle = buffer::pool::holder().allocate( type, 666);
 
-         auto buffer = buffer::pool::Holder::instance().get( handle, 0);
+         auto buffer = buffer::pool::holder().get( handle, 0);
 
          EXPECT_TRUE( buffer.transport() == 0) << "transport: " <<  buffer.transport();
          EXPECT_TRUE( buffer.reserved() == 666) << "reserved: " <<  buffer.reserved();
          EXPECT_TRUE( buffer.payload().type == type) << "buffer.type: " << buffer.payload().type;
 
-         buffer::pool::Holder::instance().deallocate( handle);
+         buffer::pool::holder().deallocate( handle);
       }
 
 
@@ -1385,6 +1385,53 @@ namespace casual
          EXPECT_TRUE( casual_field_type_of_id( 67110000, &type) == CASUAL_FIELD_SUCCESS);
          EXPECT_TRUE( type == CASUAL_FIELD_LONG);
 
+      }
+
+      TEST( buffer_field, payload_adopt__add_automatic_expand__expect_inbound_service_buffer__to_be_mirrored)
+      {
+         common::unittest::Trace trace;
+
+         // this is done when a service is invoked, and only then.
+
+         auto handle = common::buffer::pool::holder().adopt( { CASUAL_FIELD "/", 0l});
+
+         // holder().inbound() keeps track of the _special_ buffer.
+         EXPECT_TRUE( common::buffer::pool::holder().inbound() == handle);
+
+         auto buffer = handle.underlying();
+
+         
+         ASSERT_TRUE( buffer != nullptr);
+
+         
+         EXPECT_TRUE( casual_field_add_short( &buffer, FLD_SHORT1, 123) == CASUAL_FIELD_SUCCESS);
+         EXPECT_TRUE( casual_field_add_string( &buffer, FLD_STRING1, "Hello!") == CASUAL_FIELD_SUCCESS);
+
+         EXPECT_TRUE( casual_field_add_short( &buffer, FLD_SHORT1, 321) == CASUAL_FIELD_SUCCESS);
+         EXPECT_TRUE( casual_field_add_string( &buffer, FLD_STRING1, "!olleH") == CASUAL_FIELD_SUCCESS);
+
+         
+         // the above should have expanded the buffer.
+         EXPECT_TRUE( buffer != handle.underlying());
+         EXPECT_TRUE( common::buffer::pool::holder().inbound() != handle);
+
+         // inbound "tracker" should correlate to the auto expanded buffer
+         EXPECT_TRUE( common::buffer::pool::holder().inbound().underlying() == buffer);
+
+         buffer = ::tprealloc( buffer, 512);
+         EXPECT_TRUE( common::buffer::pool::holder().inbound().underlying() == buffer);
+         
+         // this should be a 'no-op' according to the spec...
+         tpfree( buffer);
+
+         EXPECT_TRUE( common::buffer::pool::holder().inbound().underlying() == buffer);
+
+         {
+            short value{};
+            EXPECT_TRUE( casual_field_get_short( buffer, FLD_SHORT1, 0, &value) == CASUAL_FIELD_SUCCESS);
+            EXPECT_TRUE( value == 123) << value;
+         }
+         
       }
 
    } // common

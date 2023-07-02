@@ -68,7 +68,41 @@ namespace casual
                            log::line( log, "terminate group: ", group);
                            signal::send( group.process.pid, code::signal::terminate);
                         }
+
+                        return group.process.pid;
                      };
+                  }
+
+                  template< typename R>
+                  auto task( const R& groups)
+                  {
+                     // shared "local" state between the 'action' that initiate the shutdown
+                     // and the _handler/predicate_ that decides if the task is done or not. 
+                     auto pids = std::make_shared< std::vector< strong::process::id>>();
+
+                     // initiate the shutdown
+                     auto action = [ pids, &groups]( task::unit::id id)
+                     {
+                        Trace trace{ "gateway::manager::handle::local::shutdown::task::action"};
+
+                        algorithm::transform( groups, *pids, shutdown::group()); 
+
+                        log::line( log, "task: ", id, ", pids: ", *pids);
+
+                        // if we've got nothing, we need to "abort" the task
+                        return pids->empty() ? task::unit::action::Outcome::abort : task::unit::action::Outcome::success;    
+                     };
+
+                     return task::create::unit( std::move( action), [ pids]( task::unit::id id, const common::message::event::process::Exit& message)
+                     {
+                        Trace trace{ "gateway::manager::handle::local::shutdown::task::unit"};
+
+                        algorithm::container::erase( *pids, message.state.pid);
+
+                        log::line( log, "task: ", id, ", pids: ", *pids);
+
+                        return pids->empty() ? task::unit::Dispatch::done : task::unit::Dispatch::pending;
+                     });
                   }
 
                } // shutdown
@@ -124,11 +158,14 @@ namespace casual
             Trace trace{ "gateway::manager::handle::shutdown"};
 
             state.runlevel = state::Runlevel::shutdown;
+            
+            // start with the inbound, when shutdown, continue
+            // with the outbound
+            state.tasks.then(
+               local::shutdown::task( state.inbound.groups))
+               .then( local::shutdown::task( state.outbound.groups));
 
             log::line( verbose::log, "state: ", state);
-
-            algorithm::for_each( state.inbound.groups, local::shutdown::group());
-            algorithm::for_each( state.outbound.groups, local::shutdown::group());
          }
 
          void boot( State& state)
@@ -189,12 +226,15 @@ namespace casual
                {
                   auto exit( State& state)
                   {  
-                     return [&state]( const common::message::event::process::Exit& message)
+                     return [ &state]( const common::message::event::process::Exit& message)
                      {
                         Trace trace{ "gateway::manager::handle::local::process::exit"};
 
                         if( ! message.state.deceased())
                            return;
+
+                        // dispatch to potential tasks.
+                        state.tasks( message);
 
                         const auto pid = message.state.pid;
 
