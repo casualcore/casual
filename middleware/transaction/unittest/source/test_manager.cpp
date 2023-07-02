@@ -1615,7 +1615,7 @@ domain:
             auto resource_proxy_invoked = []( auto& state, auto id) -> decltype( state.resources.at( 0))
             {
                if( auto found = common::algorithm::find( state.resources, id))
-                  return found.front();
+                  return *found;
 
                common::code::raise::error( common::code::casual::invalid_argument, "failed to find ", id);
             };

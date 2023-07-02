@@ -38,7 +38,7 @@ namespace casual
                   if( std::get< 0>( result).empty() && ! std::get< 1>( result).empty())
                   {
                      auto second = std::get< 1>( result);
-                     auto found = algorithm::search( second + 2, delimiter);
+                     auto found = algorithm::search( range::next( second, 2), delimiter);
 
                      return std::make_tuple( range::make( std::begin( second), std::begin( found)), found);
                   }
@@ -88,7 +88,7 @@ namespace casual
                   get_variable( out, variable);
 
                   // handle the rest, which might be _noting_
-                  out << string::view::make( std::begin( found + 1), std::end( range));
+                  out << string::view::make( std::begin( range::next( found)), std::end( range));
                };
 
                algorithm::for_each( 

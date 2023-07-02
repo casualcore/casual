@@ -829,7 +829,7 @@ namespace casual
                            auto earliest_future = algorithm::min( std::get< 1>( split), []( auto& l, auto& r){ return l.when < r.when;});
 
                            if( earliest_future)
-                              common::signal::timer::set( earliest_future.front().when - now);
+                              common::signal::timer::set( earliest_future->when - now);
                            else 
                               common::signal::timer::unset();
                         }

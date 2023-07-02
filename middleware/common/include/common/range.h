@@ -12,6 +12,7 @@
 #include "common/traits.h"
 
 #include <iterator>
+#include <concepts>
 #include <cassert>
 
 namespace casual 
@@ -31,23 +32,16 @@ namespace casual
 
          constexpr Range() = default;
 
-         template< typename convertible_iterator, std::enable_if_t< std::is_convertible< convertible_iterator, iterator>::value>* dummy = nullptr>
-         explicit constexpr Range( convertible_iterator first, convertible_iterator last) :  m_first( first), m_last( last) {}
-
-
-         template< typename convertible_iterator, typename Size, std::enable_if_t< 
-            std::is_convertible< convertible_iterator, iterator>::value
-            && std::is_integral< Size>::value >* dummy = nullptr>
-         explicit constexpr Range( convertible_iterator first, Size size) : m_first( first), m_last( first + size) {}
+         template< std::convertible_to< iterator> convertible_iterator>
+         explicit constexpr Range( convertible_iterator first, convertible_iterator last) : m_first( first), m_last( last) {}
 
          //! conversion from Range with convertible iterators
-         template< typename convertible_iterator, std::enable_if_t< std::is_convertible< convertible_iterator, iterator>::value>* dummy = nullptr>
-         constexpr Range( Range< convertible_iterator> range) :  m_first( std::begin( range)), m_last( std::end( range)) {}
+         template< std::convertible_to< iterator> convertible_iterator>
+         constexpr Range( Range< convertible_iterator> range) : m_first( std::begin( range)), m_last( std::end( range)) {}
          
          //! conversion from a range with reverse-iterator
-         template< typename ReverseIter>
-         constexpr auto operator = ( Range< ReverseIter> range) 
-            -> std::enable_if_t< std::is_same< ReverseIter, reverse_iterator>::value, Range&>
+         template< std::same_as< reverse_iterator> RI>
+         constexpr Range& operator = ( Range< RI> range) 
          {
             m_first = range.end().base();
             m_last = range.begin().base();
@@ -55,7 +49,7 @@ namespace casual
          }
 
 
-         constexpr platform::size::type size() const { return std::distance( m_first, m_last);}
+         constexpr platform::size::type size() const noexcept { return std::distance( m_first, m_last);}
 
          constexpr bool empty() const noexcept { return m_first == m_last;}
          constexpr explicit operator bool () const noexcept { return ! empty();}
@@ -80,21 +74,12 @@ namespace casual
          constexpr iterator begin() const noexcept { return m_first;}
          constexpr iterator end() const noexcept { return m_last;}
 
-
          constexpr Range& advance( difference_type value) { std::advance( m_first, value); return *this;}
 
          constexpr pointer data() const noexcept { return data( m_first, m_last);}
 
-         constexpr reference front() { return *m_first;}
-         constexpr const reference front() const { return *m_first;}
-
-         constexpr reference back() { return *( std::prev( m_last));}
-         constexpr const reference back() const { return *( std::prev( m_last));}
-
          constexpr reference at( const difference_type index) { return at( m_first, m_last, index);}
          constexpr const reference at( const difference_type index) const { return at( m_first, m_last, index);}
-
-         friend constexpr Range operator + ( Range range, difference_type value) { return Range( range.m_first + value, range.m_last);}
 
       private:
 
@@ -151,6 +136,12 @@ namespace casual
             return range;
          }
 
+         template< typename T>
+         constexpr Range< T> next( Range< T> range, platform::size::type n = 1)
+         {
+            return range::make( std::next( std::begin( range), n), std::end( range));
+         }
+
          namespace detail
          {
             // make sure we go back to base, if the iterator is reverse_iterator already.
@@ -180,6 +171,7 @@ namespace casual
          {
             return make( std::move_iterator{ std::begin( range)}, std::move_iterator{ std::end( range)});
          }
+         
 
          template< typename C>
          struct type_traits
@@ -206,19 +198,17 @@ namespace casual
          //! @return first value
          //! @throws std::out_of_range if range is empty
          template< typename R>
-         auto front( R&& range) -> decltype( range.front())
+         auto front( R&& range) -> decltype( *std::begin( range))
          {
             assert( ! empty( range));
-
-            return range.front();
+            return *std::begin( range);
          }
 
          template< typename R>
-         auto back( R&& range) -> decltype( range.back())
+         auto back( R&& range) -> decltype( *std::prev( std::end( range)))
          {
             assert( ! empty( range));
-            
-            return range.back();
+            return *std::prev( std::end( range));
          }
 
          //! If @p range has size > 1, shorten range to size 1.

@@ -302,7 +302,7 @@ namespace casual
                      while( invoked)
                      {
 
-                        if( auto found = algorithm::find( options, invoked.front().key))
+                        if( auto found = algorithm::find( options, range::front( invoked).key))
                         {
                            log::line( verbose::log, "found: ", *found);
                            log::line( verbose::log, "invoked: ", *invoked);
@@ -311,7 +311,7 @@ namespace casual
                            ++mapper.invoked;
 
                            // this invoked is consumed, we rotate it to the end.
-                           invoked = std::get< 0>( algorithm::rotate( invoked, invoked + 1));
+                           invoked = std::get< 0>( algorithm::rotate( invoked, range::next( invoked)));
                            
                            if( ! found->nested.empty())
                            {
