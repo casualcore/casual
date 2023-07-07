@@ -106,7 +106,7 @@ namespace casual
       {
          //! all "pods" that can be serialized directly
          template< typename T>
-         inline constexpr bool pod_v = ( std::is_pod_v< T> && ! std::is_class_v< T> && ! std::is_enum_v< T>) // normal pods
+         inline constexpr bool pod_v = ( std::is_standard_layout_v< T> && ! std::is_class_v< T> && ! std::is_enum_v< T>) // normal pods
             || common::traits::is::any_v< T, std::string, platform::binary::type>;
 
          namespace archive
