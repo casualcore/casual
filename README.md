@@ -56,6 +56,13 @@ We've done some field tests
 ### Release notes
 [Changelog](documentation/changelog.md)
 
+### Build status
+|Branch |Status|
+|:-------|:------|
+|release/1.6|![release/1.6](https://github.com/casualcore/casual/actions/workflows/casual-build-release.yaml/badge.svg?branch=release/1.6)|
+|feature/1.7/main|![feature/1.7/main](https://github.com/casualcore/casual/actions/workflows/casual-build-beta.yaml/badge.svg?branch=feature/1.7/main)|
+|release/1.7|![release/1.7](https://github.com/casualcore/casual/actions/workflows/casual-build-release.yaml/badge.svg?branch=release/1.7)|
+
 ### Downloads
 [Official site](http://casual.laz.se/release/)
 
