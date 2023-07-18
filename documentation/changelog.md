@@ -1,6 +1,10 @@
 # Changelog
 This is the changelog for `casual` and all changes are listed in this document.
 
+## [1.6.12] - 2023-07-18
+### Fixes
+- discovery: hops are not correctly propagated if services are known
+
 ## [1.6.11] - 2023-06-22
 ### Fixes
 - xatmi: error log unexpected error codes (#226)
