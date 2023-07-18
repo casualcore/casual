@@ -5,8 +5,8 @@
 //!
 
 #include "domain/unittest/manager.h"
-#include "domain/manager/task.h"
 #include "domain/manager/admin/server.h"
+#include "domain/manager/task/message.h"
 
 #include "common/environment.h"
 #include "common/communication/ipc.h"
@@ -55,7 +55,7 @@ namespace casual
                      "--event-id", common::string::compose( id),
                      "--configuration-files"
                   };
-                  algorithm::append( 
+                  algorithm::container::append( 
                      algorithm::transform( 
                         files, 
                         []( const auto& file) 
@@ -103,7 +103,10 @@ namespace casual
                      {
                         log::line( verbose::log, "event: ", event);
                         if( event.done())
-                           algorithm::container::trim( tasks, algorithm::remove( tasks, event.correlation));
+                           if( algorithm::find( tasks, event.correlation))
+                              tasks.clear();
+                        
+                        log::line( log::debug, "TODO shutdown tasks: ", tasks);
                      },
                      []( const message::event::Error& event)
                      {
@@ -288,7 +291,11 @@ namespace casual
                      log::line( log::debug, "event: ", event);
 
                      if( event.done())
-                        algorithm::container::trim( tasks, algorithm::remove( tasks, event.correlation));
+                        if( algorithm::find( tasks, event.correlation))
+                           tasks.clear();
+
+                     log::line( log::debug, "tasks: ", tasks);
+
                   },
                   []( const message::event::Error& event)
                   {
@@ -299,7 +306,7 @@ namespace casual
                   });
             };
 
-            auto tasks = std::vector< strong::correlation::id>{ strong::correlation::id::emplace( uuid::make())};
+            auto tasks = std::vector< strong::correlation::id>{ strong::correlation::id::generate()};
 
             // spawn the domain-manager
             manager = local::Manager{ 

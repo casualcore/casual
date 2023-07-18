@@ -31,8 +31,8 @@ namespace casual
       void modify( const casual::configuration::model::domain::Executable& source, manager::state::Executable& target, const std::vector< manager::state::Group>& groups);
       void modify( const casual::configuration::model::domain::Server& source, manager::state::Server& target, const std::vector< manager::state::Group>& groups);
 
-      std::vector< manager::state::Executable> alias( detail::range::Executables values, const std::vector< manager::state::Group>& groups);
-      std::vector< manager::state::Server> alias( detail::range::Servers values, const std::vector< manager::state::Group>& groups);
+      std::vector< manager::state::Executable> alias( const std::vector< casual::configuration::model::domain::Executable>& values, const std::vector< manager::state::Group>& groups);
+      std::vector< manager::state::Server> alias( const std::vector< casual::configuration::model::domain::Server>& values, const std::vector< manager::state::Group>& groups);
 
    } // domain::manager::transform
 } // casual

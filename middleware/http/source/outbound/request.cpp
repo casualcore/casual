@@ -132,7 +132,7 @@ namespace casual
                      
                      auto source = range::make( buffer, size);
 
-                     algorithm::append( source, state.payload.data);
+                     algorithm::container::append( source, state.payload.data);
 
                      common::log::line( verbose::log, "wrote ", size, " bytes");
 

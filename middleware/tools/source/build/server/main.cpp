@@ -87,7 +87,7 @@ namespace casual
                         {
                            auto splittet = string::split( value, ',');
                            
-                           algorithm::append( 
+                           algorithm::container::append( 
                               algorithm::transform( splittet, []( auto& value){ return string::trim( std::move( value));}),
                               names);
                         };

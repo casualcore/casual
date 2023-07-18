@@ -984,7 +984,7 @@ namespace casual
 
                message::transaction::rollback::Request request{ process::handle()};
                request.trid = transaction.trid;
-               algorithm::append( transaction.involved(), request.involved);
+               algorithm::container::append( transaction.involved(), request.involved);
 
                auto reply = communication::ipc::call( communication::instance::outbound::transaction::manager::device(), request);
 

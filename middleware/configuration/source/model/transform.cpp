@@ -150,7 +150,7 @@ namespace casual
                         {
                            if( auto found = algorithm::find( domain.groups.value(), membership))
                               if( found->resources)
-                                 algorithm::append( found->resources.value(), result);
+                                 algorithm::container::append( found->resources.value(), result);
                            
                            return result;
                         });

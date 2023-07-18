@@ -4,18 +4,14 @@
 //! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-
 #pragma once
 
-
 #include "domain/manager/state.h"
-#include "domain/manager/task.h"
 #include "domain/manager/admin/model.h"
 
 #include "common/message/type.h"
 #include "common/message/domain.h"
 #include "common/message/dispatch.h"
-
 
 namespace casual
 {
@@ -52,6 +48,7 @@ namespace casual
       namespace scale
       {
          void shutdown( State& state, std::vector< common::process::Handle> processes);
+         void shutdown( State& state, const common::process::Handle& process);
 
          void instances( State& state, state::Server& server);
          void instances( State& state, state::Executable& executable);

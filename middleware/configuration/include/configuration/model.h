@@ -140,6 +140,8 @@ namespace casual::configuration
 
                Lifetime lifetime;
                std::string note;
+
+               inline friend bool operator == ( const Entity& lhs, const std::string& rhs) noexcept { return lhs.alias == rhs;}
                
                CASUAL_CONST_CORRECT_SERIALIZE(
                   CASUAL_SERIALIZE( alias);

@@ -163,7 +163,7 @@ namespace casual
                      }
 
                      if( auto found = algorithm::find( state.routes, configuration.name))
-                        algorithm::append( add, found->second);
+                        algorithm::container::append( add, found->second);
                      else 
                         state.routes.emplace( configuration.name, algorithm::container::vector::create( add));
                   }

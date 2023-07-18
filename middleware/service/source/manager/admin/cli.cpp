@@ -21,6 +21,7 @@
 #include "common/algorithm/compare.h"
 #include "common/serialize/macro.h"
 #include "common/serialize/create.h"
+#include "common/algorithm/container.h"
 
 #include "serviceframework/service/protocol/call.h"
 
@@ -100,8 +101,8 @@ namespace casual
                   {
                      std::vector< Instance> result;
 
-                     algorithm::append( state.instances.sequential, result);
-                     algorithm::append( state.instances.concurrent, result);
+                     algorithm::container::append( state.instances.sequential, result);
+                     algorithm::container::append( state.instances.concurrent, result);
 
                      return result;
                   }

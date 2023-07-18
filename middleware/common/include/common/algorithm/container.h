@@ -7,6 +7,7 @@
 #pragma once
 
 #include "common/traits.h"
+#include "common/concepts.h"
 #include "common/algorithm.h"
 
 namespace casual
@@ -110,11 +111,18 @@ namespace casual
          return container;
       }
 
+      template< typename C, typename Iter>
+      C& erase( C& container, Iter where) requires std::same_as< traits::iterator_t< C>, Iter>
+      {
+         container.erase( where);
+         return container;
+      }
+
       //! erases every element in the `container` that are 'equal' to `value`,
       //! which could be none.
       //! @return `container`
       template< typename C, typename T>
-      C& erase( C& container, const T& value)
+      auto erase( C& container, const T& value) -> decltype( void( range::front( container) == value), container)
       {
          while( auto found = algorithm::find( container, value))
             container.erase( std::begin( found));
@@ -139,6 +147,32 @@ namespace casual
          }
          return container;
       }
+
+      //! appends `range` to `output`.
+      //! @return output
+      template< concepts::range R, concepts::container::insert Out>
+      decltype( auto) append( R&& range, Out&& output)
+      {
+         output.insert( std::end( output), std::begin( range), std::end( range)); 
+         return std::forward< Out>( output);
+      }
+
+      namespace move
+      {
+         //! appends `range` to `output`, by moving all values
+         //! @return output
+         template< concepts::range R, concepts::range Out>
+         decltype( auto) append( R range, Out&& output)
+         {
+            auto movable_range = range::move( range);
+            output.reserve( output.size() + movable_range.size());
+            algorithm::copy( movable_range, std::back_inserter( output));
+            return std::forward< Out>( output);
+         }
+
+      } // move
+
+
 
       //! @returns a container of type `Container` with the copied content of `range`
       template< typename Container, typename Range>
@@ -168,6 +202,45 @@ namespace casual
          } // reference
          
       } // vector
+
+      namespace detail
+      {  
+         template< typename T, std::same_as< T> U>
+         void compose( std::vector< T>& result, U value)
+         {
+            result.push_back( std::move( value));
+         }
+
+         template< typename T, common::concepts::range R>
+         void compose( std::vector< T>& result, R value)
+         {
+            container::move::append( std::move( value), result);
+         }
+
+         template< typename T>
+         auto compose_init( std::vector< T> value) { return value;}
+            
+         template< typename T>
+         auto compose_init( T value) //-> decltype( std::vector{ std::move( value)})
+         {
+            std::vector< T> result;
+            result.push_back( std::move( value));
+            return result;
+         }
+      } // detail
+      
+
+      //! 'composes' multiple (rvalue) containers into one.
+      //! TODO how to construct a suitable concept/requires for this? 
+      template< typename T, typename... Ts> 
+      auto compose( T t, Ts... ts) -> decltype( detail::compose_init( std::move( t)))
+      {
+         auto result = detail::compose_init( std::move( t));
+         ( ... ,  detail::compose( result, std::move( ts)) );
+
+         return result;
+      }
+
 
      namespace sort
      {

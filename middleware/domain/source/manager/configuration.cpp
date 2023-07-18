@@ -35,9 +35,8 @@ namespace casual
             {
                struct Change
                {
-
                   template< typename T>
-                  using Entity = casual::configuration::model::change::Result< range::type_t< std::vector< T>>>;
+                  using Entity = casual::configuration::model::change::Result< std::vector< T>>;
                   
                   Entity< casual::configuration::model::domain::Group> groups;
                   Entity< casual::configuration::model::domain::Server> servers;
@@ -54,9 +53,9 @@ namespace casual
                {
                   Change result;
 
-                  result.groups = casual::configuration::model::change::calculate( current.groups, wanted.groups, []( auto& l, auto& r){ return l.name == r.name;});
-                  result.servers = casual::configuration::model::change::calculate( current.servers, wanted.servers, []( auto& l, auto& r){ return l.alias == r.alias;});
-                  result.executables = casual::configuration::model::change::calculate( current.executables, wanted.executables, []( auto& l, auto& r){ return l.alias == r.alias;});
+                  result.groups = casual::configuration::model::change::concrete::calculate( current.groups, wanted.groups, []( auto& l, auto& r){ return l.name == r.name;});
+                  result.servers = casual::configuration::model::change::concrete::calculate( current.servers, wanted.servers, []( auto& l, auto& r){ return l.alias == r.alias;});
+                  result.executables = casual::configuration::model::change::concrete::calculate( current.executables, wanted.executables, []( auto& l, auto& r){ return l.alias == r.alias;});
 
                   return result;
                }
@@ -125,67 +124,131 @@ namespace casual
 
                namespace entity
                {
-                  manager::Task add( State& state, const Change& change)
+                  casual::task::Group add( State& state, std::shared_ptr< const Change> change)
                   {
-                     auto servers = transform::alias( change.servers.added, state.groups);
-                     auto executables = transform::alias( change.executables.added, state.groups);
+                     Trace trace{ "domain::manager::configuration::local::detail::entity::remove"};
 
-                     auto get_id = []( auto& entity){ return entity.id;};
-                     state::dependency::Group group;
-                     group.servers = algorithm::transform( servers, get_id);
-                     group.executables = algorithm::transform( executables, get_id);
+                     auto action = [ change]( State& state)
+                     {
+                        Trace trace{ "domain::manager::configuration::local::detail::entity::add action"};
+                        log::line( verbose::log, "change->servers.added: ", change->servers.added);
+                        log::line( verbose::log, "change->executables.added: ", change->executables.added);
 
-                     algorithm::move( servers, std::back_inserter( state.servers));
-                     algorithm::move( executables, std::back_inserter( state.executables));
+                        auto servers = transform::alias( change->servers.added, state.groups);
+                        auto executables = transform::alias( change->executables.added, state.groups);
 
-                     return manager::task::create::scale::aliases( { std::move( group)});
-                  }
+                        auto get_id = []( auto& entity){ return entity.id;};
+                        state::dependency::Group group;
+                        group.description = "add entities";
+                        group.servers = algorithm::transform( servers, get_id);
+                        group.executables = algorithm::transform( executables, get_id);
 
-                  manager::Task remove( State& state, const Change& change)
-                  {
-                     auto scale_and_get_id = []( auto& entities, auto& removed)
-                     { 
-                        return algorithm::transform( removed, [&]( auto& removed)
-                        {
-                           auto found = algorithm::find( entities, removed.alias);
-                           assert( found);
+                        algorithm::move( servers, std::back_inserter( state.servers));
+                        algorithm::move( executables, std::back_inserter( state.executables));
 
-                           found->scale( 0);
-                           return found->id;
-                        });
+                        return group;
                      };
-                     
-                     state::dependency::Group group;
-                     group.servers = scale_and_get_id( state.servers, change.servers.removed);
-                     group.executables = scale_and_get_id( state.executables, change.executables.removed);
 
-                     return manager::task::create::remove::aliases( { std::move( group)});
+                     return manager::task::create::scale::group( state, std::move( action));
                   }
 
-                  manager::Task modify( State& state, const Change& change)
+                  std::vector< casual::task::Group> remove( State& state, std::shared_ptr< const Change> change)
+                  {
+                      Trace trace{ "domain::manager::configuration::local::detail::entity::remove"};
+
+                     // The main task that start the scale down
+                     auto action = [ change]( State& state)
+                     {
+                        Trace trace{ "domain::manager::configuration::local::detail::entity::remove action"};
+
+                        log::line( verbose::log, "change->servers.removed: ", change->servers.removed);
+                        log::line( verbose::log, "change->executables.removed: ", change->executables.removed);
+
+                        auto scale_in = []( auto& entities, auto& removed)
+                        {
+                           using id_type = decltype( range::front( entities).id); 
+                           return algorithm::accumulate( removed, std::vector< id_type>{}, [&]( auto result, auto& removed)
+                           {
+                              if( auto found = algorithm::find( entities, removed.alias))
+                              {
+                                 found->scale( 0);
+                                 result.push_back( found->id);
+                              }
+                              return result;
+                           });
+                        };
+                     
+                        state::dependency::Group group;
+                        group.description = "scale down and remove";
+                        group.servers = scale_in( state.servers, change->servers.removed);
+                        group.executables = scale_in( state.executables, change->executables.removed);
+
+                        log::line( verbose::log, "change: ", *change);
+                        log::line( verbose::log, "group: ", group);
+
+                        return group;
+                     };
+
+                     std::vector< casual::task::Group> result;
+
+                     result.push_back( manager::task::create::scale::group( state, action));
+
+                     // Make sure we actually removes the services/executables. We add another task that will
+                     // be executed after the main task above.
+                     result.push_back( task::create::event::sub( state, "scale down and remove", [ change]( State& state)
+                     {
+                        Trace trace{ "domain::manager::configuration::local::detail::entity::remove done-event"};
+
+                        auto has_id = []( auto& aliases)
+                        {
+                           return [ &aliases]( auto& entity)
+                           {
+                              return entity.instances.empty() && algorithm::find( aliases, entity.alias);
+                           };
+                        };
+
+                        algorithm::container::erase_if( state.servers, has_id( change->servers.removed));
+                        algorithm::container::erase_if( state.executables, has_id( change->executables.removed));  
+                     }));
+
+                     return result;
+                  }
+
+                  casual::task::Group modify( State& state, std::shared_ptr< const Change> change)
                   {
                      Trace trace{ "domain::manager::configuration::local::detail::entity::modify"};
 
-                     auto modify_and_get_id = [&state]( auto& entities, auto& modified)
-                     { 
-                        using id_type = decltype( entities.front().id);
+                     auto action = [ change]( State& state)
+                     {
+                        Trace trace{ "domain::manager::configuration::local::detail::entity::modify action"};
 
-                        return algorithm::accumulate( modified, std::vector< id_type>{}, [&]( auto result, auto& configuration)
-                        {
-                           if( auto found = algorithm::find( entities, configuration.alias))
+                        log::line( verbose::log, "change->servers.modified: ", change->servers.modified);
+                        log::line( verbose::log, "change->executables.modified: ", change->executables.modified);
+
+                        auto modify_and_get_id = [ &state]( auto& entities, auto& modified)
+                        { 
+                           using id_type = decltype( entities.front().id);
+
+                           return algorithm::accumulate( modified, std::vector< id_type>{}, [&]( auto result, auto& configuration)
                            {
-                              transform::modify( configuration, *found, state.groups);
-                              result.push_back( found->id);
-                           }
-                           return result;
-                        });
-                     };
-                     
-                     state::dependency::Group group;
-                     group.servers = modify_and_get_id( state.servers, change.servers.modified);
-                     group.executables = modify_and_get_id( state.executables, change.executables.modified);
+                              if( auto found = algorithm::find( entities, configuration.alias))
+                              {
+                                 transform::modify( configuration, *found, state.groups);
+                                 result.push_back( found->id);
+                              }
+                              return result;
+                           });
+                        };
+                        
+                        state::dependency::Group group;
+                        group.description = "modify entities";
+                        group.servers = modify_and_get_id( state.servers, change->servers.modified);
+                        group.executables = modify_and_get_id( state.executables, change->executables.modified);
 
-                     return manager::task::create::scale::aliases( { std::move( group)});
+                        return group;
+                     };
+
+                     return manager::task::create::scale::group( state, std::move( action));
                   }
 
                   
@@ -193,7 +256,7 @@ namespace casual
 
             } // detail
 
-            std::vector< manager::Task> domain( State& state, casual::configuration::model::domain::Model& wanted)
+            std::vector< casual::task::Group> domain( State& state, casual::configuration::model::domain::Model& wanted)
             {
                Trace trace{ "domain::manager::configuration::local::domain"};
 
@@ -207,17 +270,20 @@ namespace casual
                   algorithm::for_each( change.groups.modified, detail::group::modify( state));
                }
 
-               return algorithm::container::emplace::initialize< std::vector< manager::Task>>( 
-                  detail::entity::add( state, change),
-                  detail::entity::remove( state, change),
-                  detail::entity::modify( state, change));
+               auto shared = std::make_shared< const local::detail::Change>( std::move( change));
+               log::line( verbose::log, "shared: ", *shared);
+
+               return algorithm::container::compose( 
+                  detail::entity::add( state, shared),
+                  detail::entity::remove( state, shared),
+                  detail::entity::modify( state, shared));
             }
 
-            auto managers( State& state, const casual::configuration::Model& wanted)
+            std::vector< casual::task::Group> managers( State& state, const casual::configuration::Model& wanted)
             {
                Trace trace{ "domain::manager::configuration::local::managers"};
 
-               std::vector< manager::Task> result;
+               std::vector< casual::task::Group> result;
 
                // handle the runtime configuration updates
                { 
@@ -227,7 +293,7 @@ namespace casual
                   auto handles = algorithm::transform( stakeholders, []( auto& value){ return value.process;});
 
                   if( ! handles.empty())
-                     result.push_back( manager::task::create::configuration::managers::update( state, wanted, std::move( handles)));
+                     algorithm::container::move::append( manager::task::create::configuration::managers::update( state, wanted, std::move( handles)), result);
                }
 
                // restarts for "the rest"
@@ -254,7 +320,7 @@ namespace casual
                   if( state.configuration.model.gateway != wanted.gateway)
                      add_singleton( communication::instance::identity::gateway::manager.id, "casual-gateway-manager");
 
-                  result.push_back( manager::task::create::restart::aliases( std::move( groups)));
+                  algorithm::container::move::append( manager::task::create::restart::groups( state, std::move( groups)), result);
                }
 
                return result;
@@ -295,15 +361,20 @@ namespace casual
             return {};
          }
 
+         auto done_event = task::create::event::parent( state, "configuration post");
+
          auto tasks = local::managers( state, wanted);
          algorithm::move( local::domain( state, wanted.domain), std::back_inserter( tasks));
 
-         log::line( verbose::log, "tasks: ", tasks);
-         
          // we use the wanted as our new configuration when 'managers' ask for it.
          state.configuration.model = std::move( wanted);
+
+         auto result = casual::task::ids( tasks, done_event);
+         state.tasks.then( std::move( tasks)).then( std::move( done_event));
+
+         log::line( verbose::log, "state.tasks: ", state.tasks);
          
-         return state.tasks.add( std::move( tasks));
+         return result;
       }
 
    } // domain::manager::configuration

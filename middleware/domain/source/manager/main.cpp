@@ -162,7 +162,7 @@ namespace casual
                {
                   namespace condition = message::dispatch::condition;
                   return condition::compose(
-                     condition::idle( [&state]() { state.tasks.idle( state);}),
+                     //condition::idle( [&state]() { state.tasks.idle( state);}),
                      condition::done( [&state]() { return ! state.execute();}),
                      condition::error( detail::error( state))
                   );

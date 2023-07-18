@@ -380,7 +380,7 @@ namespace casual
 
                                     return algorithm::accumulate( resources, instances_t{}, []( auto instances, auto& resource)
                                     {
-                                       return algorithm::append( resource.instances, std::move( instances));
+                                       return algorithm::container::append( resource.instances, std::move( instances));
                                     });
                                  };
 
@@ -593,7 +593,7 @@ namespace casual
                               m_machine = Machine::done;
                         }
 
-                        void add( const std::vector< common::transaction::ID>& pending) { algorithm::append( pending, m_pending);}
+                        void add( const std::vector< common::transaction::ID>& pending) { algorithm::container::append( pending, m_pending);}
                         void add( const common::transaction::ID& pending) { m_pending.push_back( pending);}
 
                         CASUAL_LOG_SERIALIZE(

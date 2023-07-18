@@ -7,7 +7,6 @@
 
 #include "tools/common.h"
 
-#include "common/algorithm.h"
 #include "common/environment/expand.h"
 #include "common/process.h"
 
@@ -76,7 +75,7 @@ namespace casual
                });
             }
 
-            algorithm::append( directive.directives, arguments);
+            algorithm::container::append( directive.directives, arguments);
 
             if( directive.use_defaults) 
             {  

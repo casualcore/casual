@@ -248,7 +248,7 @@ namespace casual
                   });
    
                   if (found)
-                     algorithm::append( transformed_connections, found->connections);
+                     algorithm::container::append( transformed_connections, found->connections);
                   else
                   {
                      typename decltype( result.services)::value_type value;
@@ -286,7 +286,7 @@ namespace casual
                   });
 
                   if (found)
-                     algorithm::append( transformed_connections, found->connections);
+                     algorithm::container::append( transformed_connections, found->connections);
                   else
                   {
                      typename decltype( result.queues)::value_type value;

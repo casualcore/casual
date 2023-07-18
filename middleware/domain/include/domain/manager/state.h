@@ -7,11 +7,11 @@
 
 #pragma once
 
-
-#include "domain/manager/task.h"
 #include "domain/strong/id.h"
+#include "domain/manager/task/message.h"
 
 #include "casual/platform.h"
+#include "casual/task.h"
 
 #include "common/message/domain.h"
 #include "common/uuid.h"
@@ -319,8 +319,30 @@ namespace casual
                )
             };
 
+            struct Instances
+            {
+               std::string alias;
+               platform::size::type instances{};
+
+               CASUAL_LOG_SERIALIZE(
+                  CASUAL_SERIALIZE( alias);
+                  CASUAL_SERIALIZE( instances);
+               )
+            };
+
 
          } // configuration
+
+         struct Scalables
+         {
+            std::vector< std::reference_wrapper< state::Server>> servers;
+            std::vector< std::reference_wrapper< state::Executable>> executables;
+
+            CASUAL_LOG_SERIALIZE({
+               CASUAL_SERIALIZE( servers);
+               CASUAL_SERIALIZE( executables);
+            })
+         };
 
          namespace is
          {
@@ -362,7 +384,9 @@ namespace casual
 
          //! check if task are done, and if so, start the next task
          bool execute();
-         task::Queue tasks;
+
+         casual::task::Coordinator tasks;
+         //task::Queue tasks;
 
          //! Processes that register but is not direct children of
          //! this process.
@@ -452,29 +476,29 @@ namespace casual
          state::Executable* executable( common::strong::process::id pid) noexcept;
          const state::Executable* executable( common::strong::process::id pid) const noexcept;
 
+         state::Server* server( const std::string& alias) noexcept;
+         state::Executable* executable( const std::string& alias) noexcept;
+
 
          state::Server& entity( strong::server::id id);
          const state::Server& entity( strong::server::id id) const;
          state::Executable& entity( strong::executable::id id);
          const state::Executable& entity( strong::executable::id id) const;
 
-         struct Runnables
-         {
-            std::vector< std::reference_wrapper< state::Server>> servers;
-            std::vector< std::reference_wrapper< state::Executable>> executables;
-            CASUAL_LOG_SERIALIZE({
-               CASUAL_SERIALIZE( servers);
-               CASUAL_SERIALIZE( executables);
-            })
-         };
+         state::Server* find_entity( strong::server::id id);
+         state::Executable* find_entity( strong::executable::id id);
 
-         Runnables runnables( std::vector< std::string> aliases);
+         state::Scalables scalables( std::vector< std::string> aliases);
 
          state::Grandchild* grandchild( common::strong::process::id pid) noexcept;
          const state::Grandchild* grandchild( common::strong::process::id pid) const noexcept;
 
          common::process::Handle singleton( const common::Uuid& id) const noexcept;
          common::process::Handle singleton( common::strong::process::id pid) const noexcept;
+
+         bool untouchable( common::strong::process::id id) const noexcept;
+         bool untouchable( strong::server::id id) const noexcept;
+         bool untouchable( strong::executable::id id) const noexcept;
 
          //! @return all 'running' id:s of 'aliases' that are untouchable, ie. internal casual stuff.
          std::tuple< std::vector< state::Server::id_type>, std::vector< state::Executable::id_type>> untouchables() const noexcept;

@@ -43,5 +43,27 @@ namespace casual
 
          return result;
       }
+
+      namespace concrete
+      {
+         //! calculates the changes between `current` and `wanted`
+         //! @returns `Result` with added, modified, removed. Range type is a concrete vector with copied values
+         template< typename Range, typename Predicate>
+         auto calculate( Range&& current, Range&& wanted, Predicate key)
+         {
+            using range_type = std::vector< common::traits::iterable::value_t< Range>>;
+            Result< range_type> result;
+
+            auto calculated = change::calculate( std::forward< Range>( current), std::forward< Range>( wanted), std::move( key));
+
+            return Result< range_type>{
+               { std::begin( calculated.added), std::end( calculated.added)},
+               { std::begin( calculated.modified), std::end( calculated.modified)},
+               { std::begin( calculated.removed), std::end( calculated.removed)},
+            };
+         }
+      } // concrete
+
+
    } // configuration::model::change
 } // casual

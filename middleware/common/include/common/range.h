@@ -9,6 +9,7 @@
 
 
 #include "casual/platform.h"
+#include "common/concepts.h"
 #include "common/traits.h"
 
 #include <iterator>
@@ -136,8 +137,8 @@ namespace casual
             return range;
          }
 
-         template< typename T>
-         constexpr Range< T> next( Range< T> range, platform::size::type n = 1)
+         template< concepts::range R>
+         constexpr auto next( R&& range, platform::size::type n = 1)
          {
             return range::make( std::next( std::begin( range), n), std::end( range));
          }

@@ -7,7 +7,7 @@
 
 #include "common/service/header.h"
 
-#include "common/algorithm.h"
+#include "common/algorithm/container.h"
 #include "common/log.h"
 #include "common/serialize/line.h"
 
@@ -121,7 +121,7 @@ namespace casual
 
          Fields& operator += ( Fields& lhs, const Fields& rhs)
          {
-            algorithm::append( rhs, lhs);
+            algorithm::container::append( rhs, lhs);
             return lhs;
          }
 

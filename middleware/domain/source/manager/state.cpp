@@ -393,6 +393,20 @@ namespace casual
          return local::executable( executables, pid);
       }
 
+      state::Server* State::server( const std::string& alias) noexcept
+      {
+         if( auto found = algorithm::find( servers, alias))
+            return found.data();
+         return nullptr;
+      }
+
+      state::Executable* State::executable( const std::string& alias) noexcept
+      {
+         if( auto found = algorithm::find( executables, alias))
+            return found.data();
+         return nullptr;
+      }
+
       state::Group& State::group( state::Group::id_type id)
       {
          return range::front( algorithm::find_if( groups, [=]( const auto& g){
@@ -412,11 +426,20 @@ namespace casual
          namespace
          {
             template< typename I, typename ID>
-            decltype( auto) executable( I& instances, ID id)
+            auto entities( I& instances, ID id)
             {
-               return range::front( algorithm::find_if( instances, [id]( auto& i){
+               return algorithm::find_if( instances, [id]( auto& i)
+               {
                   return i.id == id;
-               }));
+               });
+            }
+
+            template< typename I, typename ID>
+            decltype( auto) assert_entities( I& instances, ID id)
+            {
+               auto found = local::entities( instances, id);
+               assert( found);
+               return range::front( found);
             }
 
             template< typename G>
@@ -430,48 +453,50 @@ namespace casual
 
       state::Server& State::entity( state::Server::id_type id)
       {
-         return local::executable( servers, id);
+
+         return local::assert_entities( servers, id);
       }
       const state::Server& State::entity( state::Server::id_type id) const
       {
-         return local::executable( servers, id);
+         return local::assert_entities( servers, id);
       }
 
       state::Executable& State::entity( state::Executable::id_type id)
       {
-         return local::executable( executables, id);
+         return local::assert_entities( executables, id);
       }
       const state::Executable& State::entity( state::Executable::id_type id) const
       {
-         return local::executable( executables, id);
+         return local::assert_entities( executables, id);
       }
 
-
-      State::Runnables State::runnables( std::vector< std::string> aliases)
+      state::Server* State::find_entity( strong::server::id id)
       {
-         auto range = algorithm::unique( algorithm::sort( aliases));
+         if( auto found = local::entities( servers, id))
+            return found.data();
+         return nullptr;
+      }
 
-         auto wanted_alias = [ &range]( auto& entity)
+      state::Executable* State::find_entity( strong::executable::id id)
+      {
+         if( auto found = local::entities( executables, id))
+            return found.data();
+         return nullptr;         
+      }
+
+      state::Scalables State::scalables( std::vector< std::string> aliases)
+      {
+         state::Scalables result;
+
+         for( auto& alias : algorithm::unique( algorithm::sort( aliases)))
          {
-            // partition all (0..1) instances to the end
-            auto split = algorithm::partition( range, [&entity]( auto& alias)
-            {
-               return alias == entity.alias;
-            });
+            if( auto found = State::server( alias); found && ! State::untouchable( found->id))
+               result.servers.push_back( *found);
+            else if( auto found = State::executable( alias); found && ! State::untouchable( found->id))
+               result.executables.push_back( *found);
+         }     
 
-            // we keep the non-matched.
-            range = std::get< 1>( split);
-            // if the 'removed' is not empty, we have a match.
-            return ! std::get< 0>( split).empty();
-         };
-
-         Runnables runnables;
-
-         // convert to reference wrappers
-         algorithm::copy_if( servers, std::back_inserter( runnables.servers), wanted_alias);
-         algorithm::copy_if( executables, std::back_inserter( runnables.executables), wanted_alias);
-         
-         return runnables;
+         return result;
       }
 
       state::Grandchild* State::grandchild( common::strong::process::id pid) noexcept
@@ -497,6 +522,22 @@ namespace casual
             return found->second;
          return {};
       }
+
+      bool State::untouchable( common::strong::process::id id) const noexcept
+      {
+         return predicate::boolean( algorithm::find( whitelisted, id));
+      }
+
+      bool State::untouchable( strong::server::id id) const noexcept
+      {
+         return predicate::boolean( algorithm::find( whitelisted, entity( id)));
+      }
+
+      bool State::untouchable( strong::executable::id id) const noexcept
+      {
+         return predicate::boolean( algorithm::find( whitelisted, entity( id)));
+      }
+
 
 
       std::tuple< std::vector< state::Server::id_type>, std::vector< state::Executable::id_type>> State::untouchables() const noexcept
@@ -528,7 +569,7 @@ namespace casual
       std::vector< common::environment::Variable> State::variables( const std::vector< common::environment::Variable>& variables)
       {
          auto result = configuration.model.domain.environment.variables;
-         algorithm::append( variables, result);
+         algorithm::container::append( variables, result);
          return result;
       }
 

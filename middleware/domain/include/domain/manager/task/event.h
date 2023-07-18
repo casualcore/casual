@@ -7,6 +7,7 @@
 #pragma once
 
 #include "domain/manager/state.h"
+#include "domain/common.h"
 
 namespace casual
 {

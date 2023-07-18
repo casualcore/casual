@@ -176,11 +176,11 @@ namespace casual
                      for ( const auto& parameter : parameters)
                      {
                         buffer.push_back('"');
-                        common::algorithm::append( parameter.first, buffer);
+                        common::algorithm::container::append( parameter.first, buffer);
                         buffer.push_back('"');
                         buffer.push_back(':');
                         buffer.push_back('"');
-                        common::algorithm::append( parameter.second, buffer);
+                        common::algorithm::container::append( parameter.second, buffer);
                         buffer.push_back('"');
                         buffer.push_back(',');
                      }
@@ -202,12 +202,12 @@ namespace casual
                      for ( const auto& parameter : parameters)
                      {
                         buffer.push_back('<');
-                        common::algorithm::append( parameter.first, buffer);
+                        common::algorithm::container::append( parameter.first, buffer);
                         buffer.push_back('>');
-                        common::algorithm::append( parameter.second, buffer);
+                        common::algorithm::container::append( parameter.second, buffer);
                         buffer.push_back('<');
                         buffer.push_back('/');
-                        common::algorithm::append( parameter.first, buffer);
+                        common::algorithm::container::append( parameter.first, buffer);
                         buffer.push_back('>');
                      }
                      buffer.push_back('<');

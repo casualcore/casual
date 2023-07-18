@@ -13,7 +13,7 @@
 
 #include "casual/platform.h"
 
-#include "common/algorithm.h"
+#include "common/algorithm/container.h"
 #include "common/serialize/create.h"
 #include "common/file.h"
 #include "common/environment/normalize.h"
@@ -57,14 +57,14 @@ namespace casual
             Default operator + ( Default lhs, Default rhs)
             {
                lhs.service.discard_transaction = rhs.service.discard_transaction;
-               common::algorithm::append( rhs.service.headers, lhs.service.headers);
+               common::algorithm::container::append( rhs.service.headers, lhs.service.headers);
                return lhs;
             }
 
             Model operator + ( Model lhs, Model rhs)
             {
                lhs.casual_default = lhs.casual_default + rhs.casual_default;
-               common::algorithm::append( rhs.services, lhs.services);
+               common::algorithm::container::append( rhs.services, lhs.services);
                return lhs;
             }
 

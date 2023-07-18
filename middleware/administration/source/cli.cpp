@@ -70,7 +70,7 @@ namespace casual
                      {
                         return [&cli]( auto& information)
                         {
-                           algorithm::append( cli.information(), information);
+                           algorithm::container::append( cli.information(), information);
                         };
                      };
 

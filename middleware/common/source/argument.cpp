@@ -10,6 +10,7 @@
 #include "common/log.h"
 #include "common/terminal.h"
 #include "common/string/compose.h"
+#include "common/algorithm/container.h"
 
 #include "common/code/raise.h"
 
@@ -316,7 +317,7 @@ namespace casual
                            if( ! found->nested.empty())
                            {
                               auto sub = map_invoked( invoked, range::make( found->nested));
-                              algorithm::append( std::get< 1>( sub), result);
+                              algorithm::container::append( std::get< 1>( sub), result);
                               invoked = std::get< 0>( sub);
                            }
 
@@ -331,7 +332,7 @@ namespace casual
                         }
                      }
 
-                     algorithm::append( options, result);
+                     algorithm::container::append( options, result);
                      return std::tuple< invoked_range, std::vector< Mapper>>{ range::make( std::begin( unused), std::end( invoked)), std::move( result)};
                   }
 

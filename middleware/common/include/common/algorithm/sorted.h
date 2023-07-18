@@ -7,7 +7,7 @@
 #pragma once
 
 #include "common/range.h"
-#include "common/algorithm.h"
+#include "common/algorithm/container.h"
 
 #include <algorithm>
 
@@ -153,7 +153,7 @@ namespace casual
       auto append_unique( S&& source, T&& target) -> decltype( algorithm::sort( std::forward< T>( target)))
       {
          auto difference = algorithm::unique( std::get< 1>( sorted::intersection( source, target)));  
-         algorithm::append( difference, target);
+         algorithm::container::append( difference, target);
          return algorithm::sort( std::forward< T>( target));
       }
 

@@ -653,7 +653,7 @@ namespace casual
                         auto services = algorithm::accumulate( std::move( origin_services), std::vector< std::string>{}, [&state]( auto result, auto& name)
                         {
                            if( auto found = algorithm::find( state.routes, name))
-                              algorithm::append( found->second, result);
+                              algorithm::container::append( found->second, result);
                            else
                               result.push_back( std::move( name));
 

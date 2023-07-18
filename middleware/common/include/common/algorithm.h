@@ -665,27 +665,6 @@ namespace casual
          return std::forward< R>( range);
       }
 
-      //! appends `range` to `output`.
-      //! @return output
-      template< typename R, typename Out>
-      decltype( auto) append( R&& range, Out&& output)
-      {
-         static_assert( common::traits::is::iterable_v< R>);
-
-         if constexpr( detail::has_resize_copy_v< Out>)
-         {
-            auto size = std::distance( std::begin( range), std::end( range));
-            output.resize( output.size() + size);
-            std::copy( std::begin( range), std::end( range), std::end( output) - size);
-         }
-         else if constexpr( traits::has::push_back_v< Out>)
-            std::copy( std::begin( range), std::end( range), std::back_inserter( output));
-         else
-            static_assert( traits::dependent_false< Out>::value, "output needs to be resizable or have push_back");
-
-         return std::forward< Out>( output);
-      }
-
 
       namespace detail
       {

@@ -367,7 +367,7 @@ domain:
          local::fetch::until( casual::domain::unittest::fetch::predicate::alias::has::instances( "sleep", 5));
 
          auto tasks = local::call::scale( "sleep", 10);
-         ASSERT_TRUE( tasks.size() == 1);
+         ASSERT_TRUE( ! tasks.empty());
 
          local::fetch::until( casual::domain::unittest::fetch::predicate::alias::has::instances( "sleep", 10));
       }
@@ -381,7 +381,7 @@ domain:
          local::fetch::until( casual::domain::unittest::fetch::predicate::alias::has::instances( "sleep", 5));
 
          auto tasks = local::call::scale( "sleep", 0);
-         ASSERT_TRUE( tasks.size() == 1);
+         ASSERT_TRUE( ! tasks.empty());
          
          local::fetch::until( casual::domain::unittest::fetch::predicate::alias::has::instances( "sleep", 0));
 
@@ -942,9 +942,30 @@ domain:
       {
          namespace
          {
+            template< typename C>
+            auto event_listen_call( C caller)
+            {
+               std::vector< strong::correlation::id> result;
+
+               auto condition = event::condition::compose( 
+                  event::condition::prelude( [&result, &caller](){ result = caller();}), 
+                  event::condition::done( [&result](){ return result.empty();})
+               );
+
+               // start and listen for events
+               event::listen( condition, 
+                  [ &result]( const message::event::Task& task)
+                  {
+                     if( task.done())
+                        if( algorithm::find( result, task.correlation))
+                           result.clear();
+                  });
+            }
+      
+
             namespace predicate
             {
-               auto spawnpont = []( auto& timepoint)
+               auto spawnpoint = []( auto& timepoint)
                {
                   return [&timepoint]( auto& instance)
                   {
@@ -975,22 +996,7 @@ domain:
 
          auto now = platform::time::clock::type::now();
 
-         decltype( local::call::restart::aliases( { ""})) result;
-
-         auto condition = event::condition::compose( 
-            event::condition::prelude( [&result](){ result = local::call::restart::aliases( { "sleep"});}), 
-            event::condition::done( [&result](){ return result.empty();})
-         );
-
-         // start and listen for events
-         event::listen( condition, 
-            [ &result]( const message::event::Task& task)
-            {
-               // remove correlated task
-               if( task.done())
-                  algorithm::container::trim( result, algorithm::remove( result, task.correlation));
-            }
-         );
+         local::event_listen_call( [](){ return local::call::restart::aliases( { "sleep"});});
 
          auto state = local::call::state();
 
@@ -998,7 +1004,7 @@ domain:
 
          ASSERT_TRUE( found.size() == 1) << CASUAL_NAMED_VALUE( found);
          // all instances should have a spawnpoint later than before the restart
-         EXPECT_TRUE( algorithm::all_of( found->instances, local::predicate::spawnpont( now))) << CASUAL_NAMED_VALUE( found) << "\n" << CASUAL_NAMED_VALUE( now);
+         EXPECT_TRUE( algorithm::all_of( found->instances, local::predicate::spawnpoint( now))) << CASUAL_NAMED_VALUE( found) << "\n" << CASUAL_NAMED_VALUE( now);
       }
 
 
@@ -1020,22 +1026,7 @@ domain:
 
          auto now = platform::time::clock::type::now();
 
-         decltype( local::call::restart::aliases( { ""})) result;
-
-         auto condition = event::condition::compose( 
-            event::condition::prelude( [&result](){ result = local::call::restart::aliases( { "foo"});}), 
-            event::condition::done( [&result](){ return result.empty();})
-         );
-
-         // start and listen for events
-         common::event::listen( condition, 
-            [ &result]( const message::event::Task& task)
-            {
-               // remove correlated task
-               if( task.done())
-                  algorithm::container::trim( result, algorithm::remove( result, task.correlation));
-            }
-         );
+         local::event_listen_call( [](){ return local::call::restart::aliases( { "foo"});});
 
          auto state = local::call::state();
 
@@ -1043,11 +1034,11 @@ domain:
 
          ASSERT_TRUE( found);
          // all instances should have a spawnpoint later than before the restart
-         EXPECT_TRUE( algorithm::all_of( found->instances, local::predicate::spawnpont( now))) << CASUAL_NAMED_VALUE( found) << "\n" << CASUAL_NAMED_VALUE( now);
+         EXPECT_TRUE( algorithm::all_of( found->instances, local::predicate::spawnpoint( now))) << CASUAL_NAMED_VALUE( found) << "\n" << CASUAL_NAMED_VALUE( now);
       }
 
 
-      TEST( domain_manager, restart_group_A__expect_restartded_others_untouched)
+      TEST( domain_manager, restart_group_A__expect_restarted_others_untouched)
       {
          common::unittest::Trace trace;
 
@@ -1081,22 +1072,7 @@ domain:
 
          auto now = platform::time::clock::type::now();
 
-         decltype( local::call::restart::groups( { ""})) result;
-
-         auto condition = event::condition::compose( 
-            event::condition::prelude( [&result](){ result = local::call::restart::groups( { "A"});}), 
-            event::condition::done( [&result](){ return result.empty();})
-         );
-
-         // start and listen for events
-         common::event::listen( condition, 
-            [ &result]( const message::event::Task& task)
-            {
-               // remove correlated task
-               if( task.done())
-                  algorithm::container::trim( result, algorithm::remove( result, task.correlation));
-            }
-         );
+         local::event_listen_call( [](){ return local::call::restart::groups( { "A"});});
 
          auto state = local::call::state();
 
@@ -1104,17 +1080,17 @@ domain:
 
          ASSERT_TRUE( found) << CASUAL_NAMED_VALUE( state);
          // all instances should have a spawnpoint later than before the restart
-         EXPECT_TRUE( algorithm::all_of( found->instances, local::predicate::spawnpont( now))) << CASUAL_NAMED_VALUE( found) << "\n" << CASUAL_NAMED_VALUE( now);
+         EXPECT_TRUE( algorithm::all_of( found->instances, local::predicate::spawnpoint( now))) << CASUAL_NAMED_VALUE( found) << "\n" << CASUAL_NAMED_VALUE( now);
 
          // other instances should be untouched
          {
             auto found = local::find::alias( state.executables, "sleep");
             ASSERT_TRUE( found);
-            EXPECT_TRUE( algorithm::none_of( found->instances, local::predicate::spawnpont( now)));
+            EXPECT_TRUE( algorithm::none_of( found->instances, local::predicate::spawnpoint( now)));
          }
       }
 
-      TEST( domain_manager, restart_group_B__expect_restartded_others_untouched)
+      TEST( domain_manager, restart_group_B__expect_restarted_others_untouched)
       {
          common::unittest::Trace trace;
 
@@ -1148,22 +1124,7 @@ domain:
 
          auto now = platform::time::clock::type::now();
 
-         decltype( local::call::restart::groups( { ""})) result;
-
-         auto condition = event::condition::compose( 
-            event::condition::prelude( [&result](){ result = local::call::restart::groups( { "B"});}), 
-            event::condition::done( [&result](){ return result.empty();})
-         );
-
-         // start and listen for events
-         common::event::listen( condition, 
-            [ &result]( const message::event::Task& task)
-            {
-               // remove correlated task
-               if( task.done())
-                  algorithm::container::trim( result, algorithm::remove( result, task.correlation));
-            }
-         );
+         local::event_listen_call( [](){ return local::call::restart::groups( { "B"});});
 
          auto state = local::call::state();
 
@@ -1171,19 +1132,19 @@ domain:
          {
             auto found = local::find::alias( state.executables, "sleep");
             ASSERT_TRUE( found);
-            EXPECT_TRUE( algorithm::all_of( found->instances, local::predicate::spawnpont( now)));
+            EXPECT_TRUE( algorithm::all_of( found->instances, local::predicate::spawnpoint( now)));
          }
 
          // other instances should be untouched
          {
             auto found = local::find::alias( state.servers, "simple-server");
             ASSERT_TRUE( found);
-            EXPECT_TRUE( algorithm::none_of( found->instances, local::predicate::spawnpont( now)));
+            EXPECT_TRUE( algorithm::none_of( found->instances, local::predicate::spawnpoint( now)));
          }
       }
 
 
-      TEST( domain_manager, restart_group_A_B___expect_all_restartded)
+      TEST( domain_manager, restart_group_A_B___expect_all_restarted)
       {
          common::unittest::Trace trace;
 
@@ -1216,22 +1177,7 @@ domain:
 
          auto now = platform::time::clock::type::now();
 
-         decltype( local::call::restart::groups( { ""})) result;
-
-         auto condition = event::condition::compose( 
-            event::condition::prelude( [&result](){ result = local::call::restart::groups( { "A", "B"});}), 
-            event::condition::done( [&result](){ return result.empty();})
-         );
-
-         // start and listen for events
-         common::event::listen( condition, 
-            [ &result]( const message::event::Task& task)
-            {
-               // remove correlated task
-               if( task.done())
-                  algorithm::container::trim( result, algorithm::remove( result, task.correlation));
-            }
-         );
+         local::event_listen_call( [](){ return local::call::restart::groups( { "A", "B"});});
 
          auto state = local::call::state();
 
@@ -1239,16 +1185,16 @@ domain:
          {
             auto found = local::find::alias( state.executables, "sleep");
             ASSERT_TRUE( found);
-            EXPECT_TRUE( algorithm::all_of( found->instances, local::predicate::spawnpont( now)));
+            EXPECT_TRUE( algorithm::all_of( found->instances, local::predicate::spawnpoint( now)));
          }
          {
             auto found = local::find::alias( state.servers, "simple-server");
             ASSERT_TRUE( found);
-            EXPECT_TRUE( algorithm::all_of( found->instances, local::predicate::spawnpont( now)));
+            EXPECT_TRUE( algorithm::all_of( found->instances, local::predicate::spawnpoint( now)));
          }
       }
 
-      TEST( domain_manager, restart_no_group___expect_all_restartded)
+      TEST( domain_manager, restart_no_group___expect_all_restarted)
       {
          common::unittest::Trace trace;
 
@@ -1282,22 +1228,7 @@ domain:
 
          auto now = platform::time::clock::type::now();
 
-         decltype( local::call::restart::groups( { ""})) result;
-
-         auto condition = event::condition::compose( 
-            event::condition::prelude( [&result](){ result = local::call::restart::groups( {});}), 
-            event::condition::done( [&result](){ return result.empty();})
-         );
-
-         // start and listen for events
-         common::event::listen( condition, 
-            [ &result]( const message::event::Task& task)
-            {
-               // remove correlated task
-               if( task.done())
-                  algorithm::container::trim( result, algorithm::remove( result, task.correlation));
-            }
-         );
+         local::event_listen_call( [](){ return local::call::restart::groups( {});});
 
          auto state = local::call::state();
 
@@ -1305,12 +1236,12 @@ domain:
          {
             auto found = local::find::alias( state.executables, "sleep");
             ASSERT_TRUE( found);
-            EXPECT_TRUE( algorithm::all_of( found->instances, local::predicate::spawnpont( now)));
+            EXPECT_TRUE( algorithm::all_of( found->instances, local::predicate::spawnpoint( now)));
          }
          {
             auto found = local::find::alias( state.servers, "simple-server");
             ASSERT_TRUE( found);
-            EXPECT_TRUE( algorithm::all_of( found->instances, local::predicate::spawnpont( now)));
+            EXPECT_TRUE( algorithm::all_of( found->instances, local::predicate::spawnpoint( now)));
          }
       }
 
@@ -1361,32 +1292,11 @@ domain:
             namespace call
             {
                // post helper - post the wanted, we need to listen to events to know when it's done.
-               // @returns the new configuration model tranformed to internal model
+               // @returns the new configuration model transformed to internal model
                template< typename T>
                auto post( T&& wanted)
                {
-                  std::vector< common::strong::correlation::id> tasks;
-
-                  auto condition = common::event::condition::compose(
-                     common::event::condition::prelude( [&]()
-                     {
-                        tasks = unittest::internal::call< std::vector< common::strong::correlation::id>>( admin::service::name::configuration::post, wanted);
-                     }),
-                     common::event::condition::done( [&tasks](){ return tasks.empty();})
-                  );
-
-                  // listen for events
-                  common::event::listen( 
-                     condition,
-                     message::dispatch::handler( communication::ipc::inbound::device(),
-                        [&tasks]( message::event::Task& event)
-                        {
-                           log::line( verbose::log, "event: ", event);
-
-                           if( event.done())
-                              algorithm::container::trim( tasks, algorithm::remove( tasks, event.correlation));
-                        })
-                     );
+                  local::event_listen_call( [ &wanted](){ return unittest::internal::call< std::vector< common::strong::correlation::id>>( admin::service::name::configuration::post, wanted);});
 
                   // return the new configuration model
                   return casual::configuration::model::transform( unittest::internal::call< casual::configuration::user::Model>( admin::service::name::configuration::get));

@@ -518,6 +518,9 @@ namespace casual
          
       } // is
 
+      template< class T>
+      using iterator_t = decltype( std::ranges::begin( std::declval< T&>()));
+
       namespace iterable
       {
          namespace detail

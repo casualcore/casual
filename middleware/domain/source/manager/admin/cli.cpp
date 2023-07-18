@@ -58,7 +58,8 @@ namespace casual
                      {
                         message::event::terminal::print( std::cout, event);
                         if( event.done())
-                           algorithm::container::trim( tasks, algorithm::remove( tasks, event.correlation));
+                           if( algorithm::find( tasks, event.correlation))
+                              tasks.clear();
                      },
                      []( const message::event::sub::Task& event)
                      {
@@ -156,7 +157,7 @@ namespace casual
                      if( ! pattern.empty())
                      {                           
                         arguments.emplace_back( "--configuration");
-                        algorithm::append( pattern, arguments);
+                        algorithm::container::append( pattern, arguments);
                      }
 
                      arguments.emplace_back( "--event-pid");

@@ -171,7 +171,7 @@ namespace casual
                      // we need to translate back from the actual name to possible routes
                      for( auto& name : content.services)
                         if( auto found = algorithm::find( state.service_name.to_routes, name))
-                           algorithm::append( found->second, result.services);
+                           algorithm::container::append( found->second, result.services);
                         else
                            result.services.push_back( std::move( name));
 

@@ -597,8 +597,8 @@ domain:
             {
                auto request = communication::ipc::receive< message::discovery::Request>();
 
-               algorithm::append( request.content.services, services);
-               algorithm::append( request.content.queues, queues);
+               algorithm::container::append( request.content.services, services);
+               algorithm::container::append( request.content.queues, queues);
 
                // we exclude "s3" and/or "g3" to the reply to simulate 
                algorithm::container::erase( request.content.services, "s3");

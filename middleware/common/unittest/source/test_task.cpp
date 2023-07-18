@@ -58,6 +58,31 @@ namespace casual
       EXPECT_TRUE( invokes == 2);
    }
 
+
+   TEST( common_task_unit, action_description)
+   {
+      common::unittest::Trace trace;
+      
+      std::vector< std::string_view> descriptions;
+
+      auto action = task::create::action( "A", [ &descriptions]( task::unit::id id, std::string_view description){ descriptions.push_back( description); return task::unit::action::Outcome::success;});
+
+      auto unit = task::create::unit( 
+         std::move( action),
+         [ &descriptions]( task::unit::id id, const local::message::A&, const std::string& description){ descriptions.push_back( description); return task::unit::Dispatch::pending;},
+         [ &descriptions]( task::unit::id id, const local::message::B&, std::string_view description){ descriptions.push_back( description); return task::unit::Dispatch::pending;}
+      );
+
+      // invoke the unit, and trigger the action part
+      unit();
+      
+      EXPECT_TRUE( unit( local::message::A{}) == task::unit::Dispatch::pending);
+      EXPECT_TRUE( unit( local::message::B{}) == task::unit::Dispatch::pending);
+      
+      EXPECT_TRUE( descriptions.size() == 3) << CASUAL_NAMED_VALUE( descriptions);
+   }
+
+
    TEST( common_task_unit, dispatch__not_done)
    {
       common::unittest::Trace trace;
@@ -98,7 +123,7 @@ namespace casual
       EXPECT_TRUE( unit( local::message::B{}) == task::unit::Dispatch::done);
    }
 
-   TEST( common_task_group, dispatch__done)
+      TEST( common_task_group, dispatch__done)
    {
       common::unittest::Trace trace;
 
@@ -115,6 +140,41 @@ namespace casual
 
       dispatch = task::unit::Dispatch::done;
       EXPECT_TRUE( group( local::message::B{}) == task::unit::Dispatch::done);
+   }
+
+   TEST( common_task_group, cancel)
+   {
+      common::unittest::Trace trace;
+
+      auto action = 0;
+
+      auto tasks = task::Coordinator{};
+
+      tasks.then( task::create::unit(
+         [ &action]( task::unit::id){ ++action; return task::unit::action::Outcome::success;},
+         []( task::unit::id id, const local::message::A&){ return task::unit::Dispatch::pending;},
+         []( task::unit::id id, const local::message::B&){ return task::unit::Dispatch::done;}
+      )).then( task::create::unit(
+         [ &action]( task::unit::id){ ++action; return task::unit::action::Outcome::success;},
+         []( task::unit::id id, const local::message::C&){ return task::unit::Dispatch::pending;},
+         []( task::unit::id id, const local::message::D&){ return task::unit::Dispatch::done;}
+      ));
+
+      EXPECT_TRUE( tasks.continuations().size() == 2);
+      
+      // cancel the non started.
+      tasks.cancel();
+
+      EXPECT_TRUE( tasks.continuations().size() == 1);
+
+      // dispatch the two messages -> will trigger done 
+      // for the first group, and the second is canceled -> done
+      tasks( local::message::A{});
+      tasks( local::message::B{});
+      EXPECT_TRUE( action == 1);
+
+      EXPECT_TRUE( tasks.empty());
+
    }
 
    TEST( common_task_group, then_dispatch__done)
@@ -153,6 +213,7 @@ namespace casual
 
       auto tasks = task::Coordinator{};
 
+      // will invoke and discard the first group, due to Outcome::abort
       tasks.then( task::create::unit(
          local::action( task::unit::action::Outcome::abort),
          [ &invocations]( task::unit::id id, const local::message::A&){ invocations.push_back( id); return task::unit::Dispatch::pending;},
@@ -166,8 +227,9 @@ namespace casual
          [ &invocations]( task::unit::id id, const local::message::E&){ invocations.push_back( id); return task::unit::Dispatch::done;})
       );
 
-      // will invoke and discard the first group
-      tasks();
+      // the first unint is done and gone, we only expect the last two
+      const auto ids = tasks.ids();
+      ASSERT_TRUE( ids.size() == 2);
 
       // the following two messages has no task::unit active that handles 
       // these messages (any more), hence no invocations
@@ -178,21 +240,17 @@ namespace casual
       tasks( local::message::C{});
       EXPECT_TRUE( invocations.size() == 1);
 
-      auto base_id = invocations.at( 0).underlying();
-
       tasks( local::message::C{});
       tasks( local::message::C{});
-      tasks( local::message::D{}); // will trigger done for the group
+      tasks( local::message::D{}); // will trigger done for the second group
 
-      tasks( local::message::E{}); // will trigger done for the group
+      tasks( local::message::E{}); // will trigger done for the third group
 
       auto expected = array::make( 
-         task::unit::id{ base_id}, task::unit::id{ base_id}, task::unit::id{ base_id}, task::unit::id{ base_id},
-         task::unit::id{ base_id + 1});
+         ids[ 0], ids[ 0], ids[ 0], ids[ 0],
+         ids[ 1]);
 
       EXPECT_TRUE( algorithm::equal( invocations, expected)) << CASUAL_NAMED_VALUE( invocations);
-
-      
 
       EXPECT_TRUE( tasks.empty());
    }   

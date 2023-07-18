@@ -977,7 +977,7 @@ domain:
                auto event = common::communication::ipc::receive< common::message::event::service::Calls>();
 
                // filter out only metrics for service 'a' (could come metrics for .casual/gateway/state)
-               algorithm::append( algorithm::filter( event.metrics, filter_metric), metrics);
+               algorithm::container::append( algorithm::filter( event.metrics, filter_metric), metrics);
             }
 
             auto order_pending = []( auto& lhs, auto& rhs){ return lhs.pending < rhs.pending;};

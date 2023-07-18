@@ -7,7 +7,7 @@
 #include "tools/build/transform.h"
 #include "tools/common.h"
 
-#include "common/algorithm.h"
+#include "common/algorithm/container.h"
 #include "common/string.h"
 
 #include "common/code/raise.h"
@@ -91,7 +91,7 @@ namespace casual
 
                auto result = common::algorithm::transform( resources, transform_resource);
 
-               common::algorithm::append( common::algorithm::transform( keys, transform_key), result);
+               common::algorithm::container::append( common::algorithm::transform( keys, transform_key), result);
 
                return result;
             }

@@ -238,9 +238,8 @@ namespace casual
       void boot( State& state, common::strong::correlation::id correlation)
       {
          Trace trace{ "domain::manager::handle::boot"};
-                                          
-         // send domain-information if _event-listeners_ wants it.
-         manager::task::event::dispatch( state, [&correlation]()
+
+         manager::task::event::dispatch( state, [ &correlation]()
          {
             task::message::domain::Information event{ common::process::handle()};
             event.correlation = correlation;
@@ -248,7 +247,36 @@ namespace casual
             return event;
          });
 
-         state.tasks.add( manager::task::create::scale::boot( state::order::boot( state), correlation));
+         // we need to send task event with the supplied correlation -> caller able to correlate
+         manager::task::event::dispatch( state, [ &correlation]()
+         {
+               common::message::event::Task event{ common::process::handle()};
+               event.correlation = correlation;
+               event.description = "boot domain";
+               event.state = decltype( event.state)::started;
+               return event;
+         });
+
+         // make sure we sett runlevel when we're done.
+         auto done_callback = [ &state, correlation]( casual::task::unit::id)
+         {
+            state.runlevel = decltype( state.runlevel())::running;
+
+            // we ignore the actual id of the task unit and use the supplied correlation -> caller able to correlate
+            manager::task::event::dispatch( state, [ &correlation]()
+            {
+                  common::message::event::Task event{ common::process::handle()};
+                  event.correlation = correlation;
+                  event.description = "boot domain";
+                  event.state = decltype( event.state)::done;
+                  return event;
+            });
+            
+            return casual::task::unit::action::Outcome::abort;
+         };
+
+         state.tasks.then( manager::task::create::scale::groups( state, state::order::boot( state)))
+            .then( casual::task::create::action( std::move( done_callback)));
       }
 
       std::vector< common::strong::correlation::id> shutdown( State& state)
@@ -258,7 +286,10 @@ namespace casual
          state.runlevel = decltype( state.runlevel())::shutdown;
 
          // abort all abortable running or pending task
-         state.tasks.abort( state);
+         state.tasks.cancel();
+
+
+         auto done_event = task::create::event::parent( state, string::compose( "shutdown domain: ", common::domain::identity()));
 
          // prepare scaling to 0
          auto prepare_shutdown = []( auto& entity)
@@ -270,12 +301,57 @@ namespace casual
          // Make sure we exclude our self so we don't try to shutdown
          algorithm::for_each_if( state.servers, prepare_shutdown, [&state]( auto& entity){ return entity.id != state.manager_id;});
 
-         return { state.tasks.add( manager::task::create::scale::shutdown( state::order::shutdown( state)))};
+         auto groups = manager::task::create::scale::groups( state, state::order::shutdown( state));
+         auto result = casual::task::ids( groups, done_event);
+         state.tasks.then( std::move( groups)).then( std::move( done_event));
+
+         return result;
       }
 
 
       namespace scale
       {
+
+         std::vector< common::strong::correlation::id> aliases( State& state, std::vector< admin::model::scale::Alias> aliases)
+         {
+            Trace trace{ "domain::manager::handle::scale::aliases"};
+            log::line( verbose::log, "aliases: ", aliases);
+
+            auto done_event = task::create::event::parent( state, "scale aliases");
+
+            auto scalables = state.scalables( algorithm::transform( aliases, []( auto& a){ return a.name;}));
+
+            // prepare the scaling
+            {                  
+               auto scale_runnable = [&aliases]( auto& runnable)
+               {
+                  auto is_alias = [&runnable]( auto& alias){ return alias.name == runnable.get().alias;};
+
+                  if( auto found = algorithm::find_if( aliases, is_alias))
+                     runnable.get().scale( found->instances);
+               };
+
+               algorithm::for_each( scalables.servers, scale_runnable);
+               algorithm::for_each( scalables.executables, scale_runnable);
+            }
+
+            auto transform_id = []( auto& entity){ return entity.get().id;};
+
+            state::dependency::Group group;
+            {
+               group.description = "scale aliases";
+               algorithm::transform( scalables.servers, group.servers, transform_id);
+               algorithm::transform( scalables.executables, group.executables, transform_id);
+            }
+
+            auto groups = manager::task::create::scale::groups( state, { std::move( group)}); 
+
+            auto result = casual::task::ids( groups, done_event);
+            state.tasks.then( std::move( groups)).then( std::move( done_event));
+
+            return result;
+         }
+
          void shutdown( State& state, std::vector< common::process::Handle> processes)
          {
             Trace trace{ "domain::manager::handle::scale::shutdown"};
@@ -302,6 +378,11 @@ namespace casual
             log::line( log, "failed to reach service-manager - action: emulate reply: ", reply);
             communication::ipc::inbound::device().push( std::move( reply));
          }
+
+         void shutdown( State& state, const common::process::Handle& process)
+         {
+            shutdown( state, std::vector< common::process::Handle>{ process});
+         }
          
          void instances( State& state, state::Server& server)
          {
@@ -315,97 +396,37 @@ namespace casual
             local::scale::out( state, executable);
          }
 
-         std::vector< common::strong::correlation::id> aliases( State& state, std::vector< admin::model::scale::Alias> aliases)
-         {
-            Trace trace{ "domain::manager::handle::scale::aliases"};
-            log::line( verbose::log, "aliases: ", aliases);
-
-            auto runnables = state.runnables( algorithm::transform( aliases, []( auto& a){ return a.name;}));
-
-            auto unrestartable_server = []( auto server)
-            {
-               // for now, only the domain-manager is unrestartable
-               return server.get().instances.size() == 1 && common::process::id( server.get().instances[ 0].handle) == common::process::id();
-            };
-
-            algorithm::container::trim( runnables.servers, algorithm::remove_if( runnables.servers, unrestartable_server));
-
-            // prepare the scaling
-            {                  
-               auto scale_runnable = [&aliases]( auto& runnable)
-               {
-                  auto is_alias = [&runnable]( auto& alias){ return alias.name == runnable.get().alias;};
-
-                  if( auto found = algorithm::find_if( aliases, is_alias))
-                     runnable.get().scale( found->instances);
-               };
-
-               algorithm::for_each( runnables.servers, scale_runnable);
-               algorithm::for_each( runnables.executables, scale_runnable);
-            }
-
-            auto transform_id = []( auto& entity){ return entity.get().id;};
-
-            state::dependency::Group group;
-            algorithm::transform( runnables.servers, group.servers, transform_id);
-            algorithm::transform( runnables.executables, group.executables, transform_id);
-
-            return { state.tasks.add( manager::task::create::scale::aliases( { std::move( group)}))};
-         }
-
-
       } // scale
 
       namespace restart
       {
-         namespace local
-         {
-            namespace
-            {
-                  // for now, only the domain-manager is unrestartable
-               auto filter_unrestartable( State& state)
-               {
-                  return [untouchables = state.untouchables()]( state::dependency::Group& group)
-                  {
-                     auto filter = []( auto& ids, auto& untouchables)
-                     {
-                        algorithm::container::trim( ids, algorithm::remove_if( ids, [&untouchables]( auto& id)
-                        { 
-                           return ! algorithm::find( untouchables, id).empty();
-                        }));
-                     };
-
-                     filter( group.servers, std::get< 0>( untouchables));
-                     filter( group.executables, std::get< 1>( untouchables));
-                  };
-               }
-               
-            } // <unnamed>
-         } // local
          std::vector< common::strong::correlation::id> aliases( State& state, std::vector< std::string> aliases)
          {
             Trace trace{ "domain::manager::handle::restart::aliases"};
             log::line( verbose::log, "aliases: ", aliases);
 
-            auto runnables = state.runnables( std::move( aliases));
+            auto done_event = task::create::event::parent( state, "restart aliases");
+
+            auto scalables = state.scalables( std::move( aliases));
 
             auto transform_id = []( auto& entity){ return entity.get().id;};
 
             state::dependency::Group group;
-            algorithm::transform( runnables.servers, group.servers, transform_id);
-            algorithm::transform( runnables.executables, group.executables, transform_id);
+            algorithm::transform( scalables.servers, group.servers, transform_id);
+            algorithm::transform( scalables.executables, group.executables, transform_id);
 
-            local::filter_unrestartable( state)( group);
+            auto groups = manager::task::create::restart::groups( state, { std::move( group)});
 
-            return { state.tasks.add( manager::task::create::restart::aliases( { std::move( group)}))};
+            auto result = casual::task::ids( groups, done_event);
+            state.tasks.then( std::move( groups)).then( std::move( done_event));
+
+            return result;
          }
 
          std::vector< common::strong::correlation::id> groups( State& state, std::vector< std::string> names)
          {
             Trace trace{ "domain::manager::handle::restart::groups"};
             log::line( verbose::log, "names: ", names);
-
-            auto groups = state::order::shutdown( state);
 
             auto filter_groups = []( auto groups, const std::vector< std::string>& names)
             {
@@ -417,13 +438,34 @@ namespace casual
                return std::get< 0>( algorithm::intersection( groups, names, has_name));
             };
 
+            auto filter_untouchables = []( State& state, auto& groups)
+            {
+               algorithm::container::erase_if( groups, [ &state]( auto group)
+               {
+                  auto filter = [ &state]( auto id) { return state.untouchable( id);};
+
+                  return range::empty( algorithm::container::erase_if( group.servers, filter))
+                     && range::empty( algorithm::container::erase_if( group.executables, filter));
+               });
+
+            };
+
+            auto done_event = task::create::event::parent( state, "restart groups");
+
+            auto groups = state::order::shutdown( state);
+
             algorithm::container::trim( groups, filter_groups( range::make( groups), names));
 
             // filter
-            algorithm::for_each( groups, local::filter_unrestartable( state));
+            filter_untouchables( state, groups);
             log::line( verbose::log, "groups: ", groups);
 
-            return { state.tasks.add( manager::task::create::restart::aliases( std::move( groups)))};
+            auto tasks = manager::task::create::restart::groups( state, std::move( groups));
+
+            auto result = casual::task::ids( tasks, done_event);
+            state.tasks.then( std::move( tasks)).then( std::move( done_event));
+
+            return result;
          }
       } // restart
 
@@ -558,7 +600,7 @@ namespace casual
                         });
                         
                         // Dispatch to tasks
-                        state.tasks.event( state, message);
+                        state.tasks( message);
                      };
                   }
 
@@ -607,7 +649,7 @@ namespace casual
                               handle::scale::instances( state, *executable);
 
                            // dispatch to tasks
-                           state.tasks.event( state, message);
+                           state.tasks( message);
 
                            // Are there any listeners to this event?
                            manager::task::event::dispatch( state, [ &message]() -> decltype( message)
@@ -802,7 +844,7 @@ namespace casual
                      algorithm::container::trim( state.pending.lookup, algorithm::remove_if( state.pending.lookup, process::detail::lookup::request( state)));
 
                      // tasks might be interested in server-connect
-                     state.tasks.event( state, message);
+                     state.tasks( message);
                   }
 
 
@@ -1015,7 +1057,7 @@ namespace casual
                         Trace trace{ "domain::manager::handle::configuration::update::reply"};
                         common::log::line( verbose::log, "message: ", message);
 
-                        state.tasks.event( state, message);
+                        state.tasks( message);
                      };
                   }
                } // update

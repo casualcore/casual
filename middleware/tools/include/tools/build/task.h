@@ -8,7 +8,7 @@
 
 #include "tools/build/model.h"
 
-#include "common/algorithm.h"
+#include "common/algorithm/container.h"
 #include "common/string.h"
 #include "common/serialize/macro.h"
 
@@ -62,7 +62,7 @@ namespace casual
                {
                   auto split_append = [&target]( auto& value)
                   {
-                     common::algorithm::append( common::string::adjacent::split( value, ' '), target);
+                     common::algorithm::container::append( common::string::adjacent::split( value, ' '), target);
                   };
                   split_append( value);
                   common::algorithm::for_each( values, split_append);

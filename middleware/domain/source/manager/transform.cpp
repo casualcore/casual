@@ -6,7 +6,6 @@
 
 
 #include "domain/manager/transform.h"
-#include "domain/manager/task.h"
 
 #include "common/domain.h"
 #include "common/environment/expand.h"
@@ -234,20 +233,23 @@ namespace casual
                }
 
             
-               auto tasks( const manager::task::Queue& tasks)
+               auto tasks( const casual::task::Coordinator& tasks)
                {
                   manager::admin::model::State::Tasks result;
 
                   auto transform_task = []( auto& task)
                   {
                      manager::admin::model::Task result;
-                     result.id = task.context().id.value();
-                     result.description = task.context().description;
+                     
+                     result.id = task.id();
+                     result.description = task.action().description();
                      return result;
                   };
+                  for( auto& group : tasks.active())
+                     algorithm::transform( group.tasks(), result.running, transform_task);
 
-                  result.running = algorithm::transform( tasks.running(), transform_task);
-                  result.pending = algorithm::transform( tasks.pending(), transform_task);
+                  for( auto& group : tasks.pending())
+                     algorithm::transform( group.tasks(), result.pending, transform_task);
                   
                   return result;
                }
@@ -391,8 +393,8 @@ namespace casual
                result.servers.push_back( std::move( manager));
             }
 
-            algorithm::append( algorithm::transform( domain.servers, local::transform::executable( result.groups)), result.servers);
-            algorithm::append( algorithm::transform( domain.executables, local::transform::executable( result.groups)), result.executables);
+            algorithm::container::append( algorithm::transform( domain.servers, local::transform::executable( result.groups)), result.servers);
+            algorithm::container::append( algorithm::transform( domain.executables, local::transform::executable( result.groups)), result.executables);
          }
 
          return result;
@@ -400,7 +402,7 @@ namespace casual
 
 
       std::vector< manager::state::Executable> alias( 
-         detail::range::Executables values, 
+         const std::vector< casual::configuration::model::domain::Executable>& values, 
          const std::vector< manager::state::Group>& groups)
       {
          Trace trace{ "domain::transform::alias"};
@@ -409,7 +411,7 @@ namespace casual
       }
 
       std::vector< manager::state::Server> alias( 
-         detail::range::Servers values, 
+         const std::vector< casual::configuration::model::domain::Server>& values, 
          const std::vector< manager::state::Group>& groups)
       {
          Trace trace{ "domain::transform::alias"};

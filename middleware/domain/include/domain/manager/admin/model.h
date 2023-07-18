@@ -157,10 +157,9 @@ namespace casual
             )
          };
 
-
          struct Task
          {
-            common::Uuid id;
+            common::strong::correlation::id id;
             std::string description;
 
             CASUAL_CONST_CORRECT_SERIALIZE(

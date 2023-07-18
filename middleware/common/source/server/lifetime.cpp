@@ -36,7 +36,7 @@ namespace casual
 
                   auto terminated = process::lifetime::wait( requested, timeout);
 
-                  algorithm::append( std::get< 0>( algorithm::intersection( terminated, requested)), result);
+                  algorithm::container::append( std::get< 0>( algorithm::intersection( terminated, requested)), result);
 
                   log::line( log::debug, "soft off-line: ", result);
                   
@@ -65,7 +65,7 @@ namespace casual
 
                   log::line( log::debug, "still on-line: ", running);
 
-                  algorithm::append( process::lifetime::terminate( algorithm::container::vector::create( running), timeout), result);
+                  algorithm::container::append( process::lifetime::terminate( algorithm::container::vector::create( running), timeout), result);
 
                   log::line( log::debug, "hard off-line: ", std::get< 0>( algorithm::intersection( running, result)));
 

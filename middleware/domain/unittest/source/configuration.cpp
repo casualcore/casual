@@ -49,12 +49,13 @@ namespace casual
          common::event::listen( 
             condition,
             message::dispatch::handler( communication::ipc::inbound::device(),
-               [&tasks]( message::event::Task& event)
+               [ &tasks]( message::event::Task& event)
                {
                   log::line( verbose::log, "event: ", event);
 
                   if( event.done())
-                     algorithm::container::trim( tasks, algorithm::remove( tasks, event.correlation));
+                     if( algorithm::find( tasks, event.correlation))
+                        tasks.clear();
                })
             );
 

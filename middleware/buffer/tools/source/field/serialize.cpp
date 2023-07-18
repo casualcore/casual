@@ -12,7 +12,7 @@
 #include "common/serialize/create.h"
 #include "common/file.h"
 #include "common/argument.h"
-
+#include "common/algorithm/container.h"
 
 #include <string>
 #include <vector>
@@ -84,7 +84,7 @@ namespace casual
                   std::vector< Mapping> types;
                   common::algorithm::for_each( files, [&types]( auto& file)
                   { 
-                     common::algorithm::append( get( file), types);
+                     common::algorithm::container::append( get( file), types);
                   });
                   return types;
                }

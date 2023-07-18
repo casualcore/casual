@@ -14,6 +14,7 @@
 #include "common/string.h"
 #include "common/process.h"
 #include "common/serialize/log.h"
+#include "common/algorithm/container.h"
 
 #include "common/exception/guard.h"
 #include "common/code/raise.h"
@@ -142,8 +143,8 @@ int main( int argc, char** argv)
                         // Compile and link
                         std::vector< std::string> arguments{ file, "-o", settings.output};
 
-                        common::algorithm::append( common::string::adjacent::split( settings.directives.compile), arguments);
-                        common::algorithm::append( common::string::adjacent::split( settings.directives.link), arguments);
+                        common::algorithm::container::append( common::string::adjacent::split( settings.directives.compile), arguments);
+                        common::algorithm::container::append( common::string::adjacent::split( settings.directives.link), arguments);
 
 
                         for( auto& include_path : resource.paths.include)
