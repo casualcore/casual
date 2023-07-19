@@ -158,11 +158,14 @@ namespace casual
 
                      struct iterator
                      {
+                        using difference_type = platform::size::type;
+
                         iterator() = default;
                         iterator( const addrinfo* data) : data{ data} {}
 
-                        auto& operator * () const { return *data;}
-                        auto operator -> () const { return data;}
+                        //auto& operator * () const { return *data;}
+                        inline auto& operator * () const { return *data;}
+                        inline auto operator -> () const { return data;}
 
                         iterator& operator ++ () { data = data->ai_next; return *this;}
                         iterator operator ++ ( int) { iterator result{ data}; data = data->ai_next; return result;}
@@ -172,8 +175,6 @@ namespace casual
                         const addrinfo* data = nullptr;
                      };
 
-                     auto begin() { return iterator{ m_information.value};}
-                     auto end() { return iterator{};}
                      auto begin() const { return iterator{ m_information.value};}
                      auto end() const { return iterator{};}
 
@@ -183,6 +184,10 @@ namespace casual
 
                      common::move::Pointer< addrinfo> m_information;
                   };
+
+                  static_assert( std::input_or_output_iterator < Native::iterator>); 
+
+                  static_assert( concepts::range< Native>);
 
                } // address
 

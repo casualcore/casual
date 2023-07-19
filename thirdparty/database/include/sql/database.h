@@ -197,7 +197,7 @@ namespace sql
       inline std::enable_if_t< std::is_enum< T>::value, std::error_code>
       parameter_bind( sqlite3_stmt* statement, int column, T value)
       {
-         return parameter_bind( statement, column, static_cast< casual::common::traits::underlying_type_t< T>>( value));
+         return parameter_bind( statement, column, static_cast< std::underlying_type_t< T>>( value));
       }
 
 
@@ -298,7 +298,7 @@ namespace sql
       inline std::enable_if_t< std::is_enum< T>::value, bool>
       column_get( sqlite3_stmt* statement, int column, T& value)
       {
-         casual::common::traits::underlying_type_t< T> underlying;
+         std::underlying_type_t< T> underlying;
          if( ! column_get( statement, column, underlying))
             return false;
          

@@ -223,7 +223,7 @@ namespace casual
                            return;
                         }
                      }
-                     casual::terminate( "unknown value for message.context.semantic: ", cast::underlying( message.context.semantic));
+                     casual::terminate( "unknown value for message.context.semantic: ", std::to_underlying( message.context.semantic));
                   }
 
                   void discovery( State& state, queue::ipc::message::lookup::Request& message)
@@ -299,7 +299,7 @@ namespace casual
                               detail::dispatch::lookup::absent_queue( state, message);
                            return;
                      }
-                     casual::terminate( "unknown value for message.context.requester: ", cast::underlying( message.context.requester));
+                     casual::terminate( "unknown value for message.context.requester: ", std::to_underlying( message.context.requester));
                   };
                }
 

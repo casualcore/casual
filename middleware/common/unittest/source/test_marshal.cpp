@@ -122,7 +122,7 @@ namespace casual
 
             serverConnect.process.ipc = ipc;
 
-            traits::iterable::value_t< decltype( serverConnect.services)> service;
+            std::ranges::range_value_t< decltype( serverConnect.services)> service;
 
             //message::Service service;
 
@@ -162,7 +162,7 @@ namespace casual
             serverConnect.process.ipc = ipc;
 
 
-            traits::iterable::value_t< decltype( serverConnect.services)> service;
+            std::ranges::range_value_t< decltype( serverConnect.services)> service;
 
             service.name = "service1";
             serverConnect.services.resize( 10000, service);

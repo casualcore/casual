@@ -23,7 +23,7 @@ namespace local
          if( casual::common::code::is::category< casual::common::code::ax>( error.code()))
                return error.code().value();
 
-         return casual::common::cast::underlying( casual::common::code::ax::error);
+         return std::to_underlying( casual::common::code::ax::error);
       }
    } // <unnamed>
 } // local
@@ -35,7 +35,7 @@ extern "C"
    {
       try
       {
-         return casual::common::cast::underlying( 
+         return std::to_underlying( 
             casual::common::transaction::context().resource_registration( casual::common::strong::resource::id{ rmid}, xid));
       }
       catch( ...)
@@ -48,7 +48,7 @@ extern "C"
    {
       try
       {
-         return casual::common::cast::underlying( 
+         return std::to_underlying( 
             casual::common::transaction::context().resource_unregistration( casual::common::strong::resource::id{ rmid}));
       }
       catch( ...)

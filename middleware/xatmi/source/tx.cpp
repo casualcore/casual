@@ -4,15 +4,12 @@
 //! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-
-
 #include "tx.h"
 
 #include "common/transaction/context.h"
 #include "common/code/tx.h"
 #include "common/code/category.h"
 #include "common/exception/capture.h"
-#include "common/cast.h"
 #include "common/algorithm/compare.h"
 #include "common/log/trace.h"
 
@@ -28,7 +25,7 @@ namespace local
 
       auto convert( casual::common::code::tx value)
       {
-         return casual::common::cast::underlying( value);
+         return std::to_underlying( value);
       }
 
       auto code()
@@ -177,7 +174,7 @@ int tx_resume( const XID* xid)
 COMMIT_RETURN tx_get_commit_return()
 {
    local::Trace trace{ "tx_get_commit_return"};
-   return casual::common::cast::underlying( casual::common::transaction::Context::instance().get_commit_return());
+   return std::to_underlying( casual::common::transaction::Context::instance().get_commit_return());
 }
 
 

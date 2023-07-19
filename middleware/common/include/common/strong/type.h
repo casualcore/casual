@@ -17,69 +17,61 @@ namespace casual
 {
    namespace common::strong
    {
-      namespace detail::traits
+      namespace detail
       {
          //! some helper traits to enable/disable behavior
          //! @{
-         namespace check
-         {
-            template< typename T> 
-            using bool_operator = decltype( &T::operator bool);
-
-            template< typename P>
-            using extended_equality = typename P::extended_equality;
-
-            template< typename P>
-            using initialize = decltype( P::initialize());
-
-            template< typename P>
-            using generate = decltype( P::generate());
-
-            template< typename P, typename T>
-            using static_valid = decltype( P::valid( std::declval< const T&>()));
-
-            template< typename T>
-            using valid = decltype( std::declval< const T&>().valid());
-
-            template< typename T, typename V>
-            using comparable_types = decltype( std::declval< const T&>() == std::declval< const V&>());
-            
-         } // check
-
          namespace has
          {
             template< typename T>
-            inline constexpr bool bool_operator_v = common::traits::detect::is_detected_v< check::bool_operator, T>;
-
-            template< typename P>
-            inline constexpr bool extended_equality_v = common::traits::detect::is_detected_v< check::extended_equality, P>;
-
-            template< typename P>
-            inline constexpr bool initialize_v = common::traits::detect::is_detected_v< check::initialize, P>;
-
-            template< typename P>
-            inline constexpr bool generate_v = common::traits::detect::is_detected_v< check::generate, P>;
-
-            template< typename P, typename T>
-            inline constexpr bool static_valid_v = common::traits::detect::is_detected_v< check::static_valid, P, T>;
+            concept bool_operator = requires( T a)
+            {
+               static_cast< bool>( a);
+            };
 
             template< typename T>
-            inline constexpr bool valid_v = common::traits::detect::is_detected_v< check::valid, T>;
+            concept initialize = requires
+            {
+               T::initialize();
+            };
+
+            template< typename T>
+            concept generate = requires
+            {
+               T::generate();
+            };
+
+            template< typename P, typename T>
+            concept static_valid = requires( T a)
+            {
+               { P::valid( a) } -> std::convertible_to< bool>;
+            };
+
+            template< typename T>
+            concept valid = requires( T a)
+            {
+               { a.valid()} -> std::convertible_to< bool>;
+            };
+
+            template< typename T>
+            concept value_hash = requires( const T& a)
+            {
+               a.value();
+               { std::hash< std::remove_cvref_t< decltype( a.value())>>{}( a.value())}; 
+            };
+
+            template< typename T, typename P, typename U>
+            concept extended_equality = ! std::same_as< T, U> && requires( const T& a, const U& b) 
+            {
+               { a == b} -> std::convertible_to< bool>;
+               typename P::extended_equality;
+            };
 
          } // has
 
-         namespace enable
-         {
-            template< typename T, typename Policy, typename V>
-            inline constexpr bool extended_equality_v = ! std::is_same_v< T, V> 
-               && common::traits::detect::is_detected_v< check::comparable_types, T, V>
-               && has::extended_equality_v< Policy>;
-
-         } // enable
-
          //! @}
               
-      } // detail::traits
+      } // detail
 
 
       //! "id" abstraction to help make "id-handling" more explicit, typesafe and
@@ -111,35 +103,30 @@ namespace casual
          }
 
          //! @returns true if the underlying value is valid
-         template< typename S = T, typename P = Policy, 
-            std::enable_if_t< 
-               detail::traits::has::bool_operator_v< S> || detail::traits::has::static_valid_v< P, S>>* = nullptr> 
          constexpr explicit operator bool() const noexcept
+            requires detail::has::bool_operator< value_type> || detail::has::static_valid< policy_type, value_type>
          {
-            if constexpr( detail::traits::has::static_valid_v< P, S>)
-               return P::valid( m_value);
+            if constexpr( detail::has::static_valid< policy_type, value_type>)
+               return policy_type::valid( m_value);
 
             return static_cast< bool>( m_value);
          }
 
          //! @returns true if the underlying value is valid
-         template< typename S = T, typename P = Policy, 
-            std::enable_if_t< 
-               detail::traits::has::bool_operator_v< S> || detail::traits::has::static_valid_v< P, S>>* = nullptr> 
-         constexpr bool valid() const noexcept
+         constexpr bool valid() const noexcept 
+            requires detail::has::bool_operator< value_type> || detail::has::static_valid< policy_type, value_type>
          {
-            if constexpr( detail::traits::has::static_valid_v< P, S>)
-               return P::valid( m_value);
+            if constexpr( detail::has::static_valid< policy_type, value_type>)
+               return policy_type::valid( m_value);
 
             return static_cast< bool>( m_value);
          }
 
          //! enabled if the policy_type has a `generate()` static function defined.
          //! @returns `Type` that has a value generated by policy_type::generate()
-         template< typename P = Policy, std::enable_if_t< detail::traits::has::generate_v< P>>* = nullptr> 
-         static Type generate() noexcept
+         static Type generate() noexcept requires detail::has::generate< policy_type>
          {
-            return Type{ P::generate()};
+            return Type{ policy_type::generate()};
          }
          
          // forward serialization
@@ -159,7 +146,7 @@ namespace casual
       
          constexpr static value_type initialize() noexcept
          {
-            if constexpr( detail::traits::has::initialize_v< policy_type>)
+            if constexpr( detail::has::initialize< policy_type>)
                return policy_type::initialize();
             return value_type{};
          }
@@ -172,29 +159,25 @@ namespace casual
       //! these if the policy type has defined extended_equality
       //! @{
       template< typename T, typename Policy, typename V>
-      inline auto operator == ( const Type< T, Policy>& lhs, const V& rhs) 
-         -> std::enable_if_t< detail::traits::enable::extended_equality_v< T, Policy, V>, bool>
+      inline auto operator == ( const Type< T, Policy>& lhs, const V& rhs) requires detail::has::extended_equality< T, Policy, V> 
       { 
          return lhs.value() == rhs;
       }
 
       template< typename T, typename Policy, typename V>
-      inline auto operator != ( const Type< T, Policy>& lhs, const V& rhs) 
-         -> std::enable_if_t< detail::traits::enable::extended_equality_v< T, Policy, V>, bool>
+      inline auto operator != ( const Type< T, Policy>& lhs, const V& rhs) requires detail::has::extended_equality< T, Policy, V>
       { 
          return ! ( lhs.value() == rhs);
       }
 
       template< typename V, typename T, typename Policy>
-      inline auto operator == ( const V& lhs, const Type< T, Policy>& rhs) 
-         -> std::enable_if_t< detail::traits::enable::extended_equality_v< T, Policy, V>, bool>
+      inline auto operator == ( const V& lhs, const Type< T, Policy>& rhs) requires detail::has::extended_equality< T, Policy, V>
       { 
          return rhs.value() == lhs;
       }
 
       template< typename V, typename T, typename Policy>
-      inline auto operator != ( const V& lhs, const Type< T, Policy>& rhs) 
-         -> std::enable_if_t< detail::traits::enable::extended_equality_v< T, Policy, V>, bool>
+      inline auto operator != ( const V& lhs, const Type< T, Policy>& rhs) requires detail::has::extended_equality< T, Policy, V>
       { 
          return ! ( rhs.value() == lhs);
       }
@@ -215,7 +198,7 @@ namespace casual
          auto stream( std::ostream& out, const T& value, common::traits::priority::tag< 0>) 
             -> decltype( out << value.value())
          {
-            if constexpr( detail::traits::has::valid_v< T>)
+            if constexpr( detail::has::valid< T>)
                if( ! value.valid())
                   return out << "nil";
             
@@ -237,38 +220,18 @@ namespace casual
       { 
          return in >> rhs.underlying();
       }
-
-      namespace detail::hash
-      {
-         // some stuff to only enable std::hash specialization if the value type of
-         // the option can be used with std::hash
-         // if needed somewere else, maybe move this to traits?
-         // @{
-         template< typename T>
-         using detail_has_hash = decltype( std::hash< T>{}( std::declval< T&>()));
-
-         template< typename T>
-         constexpr bool has_hash_v = common::traits::detect::is_detected_v< detail_has_hash, T>;
-
-         template< typename Type, typename>
-         using enable_helper = Type;
-
-         template< typename Type, typename Key>
-         using enable = enable_helper< Type, std::enable_if_t< has_hash_v< Key>>>;
-         // @}
-      } // detail::hash
       
    } // common::strong
 } // casual
 
 namespace std 
 {
-   template< typename T, typename P>
-   struct hash< casual::common::strong::detail::hash::enable< casual::common::strong::Type< T, P>, std::remove_const_t< T>>>
+   template< casual::common::strong::detail::has::value_hash T>
+   struct hash< T>
    {
-     auto operator()( const casual::common::strong::Type< T, P>& value) const 
-     {
-         return std::hash< std::remove_const_t< T>>{}( value.value());
-     }
+      auto operator()( const T& value) const noexcept
+      {
+         return std::hash< std::remove_cvref_t< decltype( value.value())>>{}( value.value());
+      }
    };
 }

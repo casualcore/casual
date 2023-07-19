@@ -99,7 +99,7 @@ namespace casual
       {
          common::unittest::Trace trace;
 
-         typename TestFixture::type current_type;
+         typename TestFixture::type current_type{};
 
          platform::binary::type original;
 

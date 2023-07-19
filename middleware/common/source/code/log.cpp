@@ -46,7 +46,7 @@ namespace casual
 
          std::error_condition make_error_condition( code::log code)
          {
-            return { cast::underlying( code), local::category};
+            return { std::to_underlying( code), local::category};
          }
 
 

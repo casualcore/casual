@@ -26,7 +26,8 @@ namespace casual
 
             using Type = strong::Type< int, policy>;
 
-            static_assert( strong::detail::traits::has::valid_v< Type>);
+            static_assert( strong::detail::has::valid< Type>);
+            static_assert( strong::detail::has::initialize< policy>);
 
          } // <unnamed>
       } // local

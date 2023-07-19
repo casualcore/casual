@@ -66,14 +66,14 @@ namespace casual
       {
          log::line( verbose::log, "set - socket: ", m_descriptor, ", option: ", option);
          auto flags = ::fcntl( m_descriptor.value(), F_GETFL);
-         posix::result( ::fcntl( m_descriptor.value(), F_SETFL, flags | cast::underlying( option)), "failed to set file option: ", option);
+         posix::result( ::fcntl( m_descriptor.value(), F_SETFL, flags | std::to_underlying( option)), "failed to set file option: ", option);
       }
 
       void Socket::unset( socket::option::File option)
       {
          log::line( verbose::log, "unset - socket: ", m_descriptor, ", option: ", option);
          auto flags = ::fcntl( m_descriptor.value(), F_GETFL);
-         posix::result( ::fcntl( m_descriptor.value(), F_SETFL, flags & ~cast::underlying( option)), "failed to unset file option: ", option);
+         posix::result( ::fcntl( m_descriptor.value(), F_SETFL, flags & ~std::to_underlying( option)), "failed to unset file option: ", option);
       }
 
 

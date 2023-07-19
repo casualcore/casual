@@ -39,7 +39,7 @@ namespace casual
             template< typename T, typename... Args>
             auto implementation( T&& value, Args&&... args) ->
                std::conditional_t<
-                  traits::is::same_v< T, Args...>,
+                  concepts::same_as< T, Args...>,
                   T, // only if T and Args are exactly the same, we use T, otherwise we convert to common type
                   std::common_type_t< T, Args...>>
             {

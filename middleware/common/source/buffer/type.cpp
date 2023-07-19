@@ -35,7 +35,8 @@ namespace casual
 
          } // type
 
-         static_assert( traits::is::nothrow::movable_v< Payload>);
+         static_assert( concepts::nothrow::movable< Payload>);
+
          // TODO make sure this type is move only, and remove the copy during _service-forward_
          //static_assert( ! traits::is::copyable_v< Payload>);
 
@@ -79,8 +80,8 @@ namespace casual
             }
          }
 
-         static_assert( traits::is::nothrow::movable_v< Buffer>);
-         static_assert( ! traits::is::copyable_v< Buffer>);
+         static_assert( concepts::nothrow::movable< Buffer>);
+         static_assert( ! concepts::copyable< Buffer>);
 
          Buffer::Buffer( Payload payload) : payload( std::move( payload)) {}
 

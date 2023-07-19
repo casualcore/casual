@@ -32,5 +32,25 @@ namespace casual
          std::string_view description( Type value) noexcept;
       } // dynamic
 
+
+      namespace network
+      {
+         namespace detail
+         {
+            template< typename A>
+            concept normalizing = requires 
+            {  
+               typename A::is_network_normalizing;
+            };
+         } // detail
+
+         //! default instance -> all types that has a typedef of `is_network_normalizing`
+         template< typename A>
+         struct normalizing : std::bool_constant< detail::normalizing< A>>{};
+
+         template< typename A>
+         inline constexpr bool normalizing_v = normalizing< A>::value;
+      } // network
+
    } // common::serialize::archive
 } // casual

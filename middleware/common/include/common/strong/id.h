@@ -103,6 +103,9 @@ namespace casual
             inline static auto generate() { return uuid::make();}
          };
          using id = strong::Type< Uuid, policy>;
+
+         static_assert( strong::detail::has::value_hash< id>);
+
       } // correlation
       
 

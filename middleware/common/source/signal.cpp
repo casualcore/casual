@@ -12,7 +12,6 @@
 #include "common/process.h"
 #include "common/chronology.h"
 #include "common/memory.h"
-#include "common/cast.h"
 
 #include "common/code/raise.h"
 #include "common/code/signal.h"
@@ -47,7 +46,7 @@ namespace casual
                log::line( verbose::log, "local::signal::send ", signal, " -> pid: ", pid);
 
                return posix::log::result( 
-                  ::kill( pid.value(), cast::underlying( signal)), 
+                  ::kill( pid.value(), std::to_underlying( signal)), 
                   "failed to send signal - ", signal, " -> pid: ", pid);
             }
 
@@ -118,7 +117,7 @@ namespace casual
                   sa.sa_handler = handler;
                   sa.sa_flags = flags;
 
-                  if( ::sigaction( cast::underlying( signal), &sa, nullptr) == -1)
+                  if( ::sigaction( std::to_underlying( signal), &sa, nullptr) == -1)
                   {
                      stream::write( std::cerr, "failed to register handle for signal: ", signal, " - " , code::system::last::error(), '\n');
                      code::system::raise( "failed to register handle for signal");
@@ -356,18 +355,18 @@ namespace casual
 
       void Set::add( code::signal signal)
       {
-         sigaddset( &set, cast::underlying( signal));
+         sigaddset( &set, std::to_underlying( signal));
       }
 
       void Set::remove( code::signal signal)
       {
-         sigdelset( &set, cast::underlying( signal));
+         sigdelset( &set, std::to_underlying( signal));
       }
 
 
       bool Set::exists( code::signal signal) const
       {
-         return sigismember( &set, cast::underlying( signal)) == 1;
+         return sigismember( &set, std::to_underlying( signal)) == 1;
       }
 
 
@@ -470,7 +469,7 @@ namespace casual
          {
             if( pthread_kill( thread, 0) == 0)
             {
-               if( pthread_kill( thread, cast::underlying( signal)) != 0)
+               if( pthread_kill( thread, std::to_underlying( signal)) != 0)
                      log::line( log::category::error, "failed to send signal - ", signal, " -> thread: ", thread, " - error: " , code::system::last::error());
             }
          }

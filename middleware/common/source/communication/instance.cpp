@@ -41,7 +41,7 @@ namespace casual
                         case Directive::direct: return Enum::direct;
                         case Directive::wait: return Enum::wait;
                      }
-                     casual::terminate( "invalid lookup directive: ", cast::underlying( directive));
+                     casual::terminate( "invalid lookup directive: ", std::to_underlying( directive));
                   };
 
                   common::message::domain::process::lookup::Request request{ caller};

@@ -188,7 +188,7 @@ namespace casual
          {
             auto reply = common::message::reverse::type( request, common::process::handle());
 
-            using Connection = common::traits::iterable::value_t< decltype( reply.state.connections)>;
+            using Connection = std::ranges::range_value_t< decltype( reply.state.connections)>;
 
             reply.state.connections = common::algorithm::transform( m_connections, [&]( auto& connection)
             {

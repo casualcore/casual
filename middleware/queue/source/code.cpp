@@ -6,7 +6,6 @@
 
 #include "queue/code.h"
 
-#include "common/cast.h"
 #include "common/code/serialize.h"
 #include "common/code/category.h"
 #include "common/code/log.h"
@@ -70,7 +69,7 @@ namespace casual
 
       std::error_code make_error_code( queue::code code)
       {
-         return { common::cast::underlying( code), local::category};
+         return { std::to_underlying( code), local::category};
       }
 
    } // queue

@@ -74,7 +74,7 @@ namespace casual
             value.payload.size(), ", offset: ", value.m_offset, ", complete: ", value.complete());
       }
 
-      static_assert( traits::is::nothrow::movable_v< Complete>, "not movable");
+      static_assert( concepts::nothrow::movable< Complete>, "not movable");
 
    } // common::communication::ipc::message
 

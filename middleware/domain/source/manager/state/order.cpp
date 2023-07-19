@@ -46,7 +46,7 @@ namespace casual
                });
 
                algorithm::transform( std::get< 0>( slice), output, []( auto& e){
-                  common::traits::iterable::value_t< decltype( output)> result;
+                  std::ranges::range_value_t< decltype( output)> result;
                   result = e.get().id;
                   return result;
                });

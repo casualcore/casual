@@ -241,8 +241,8 @@ namespace casual
                      resources.emplace_back( id);
                }
 
-               template< typename R> 
-               auto involve( R&& range) -> std::enable_if_t< common::traits::is::iterable_v< R>>
+               template< concepts::range R> 
+               void involve( R&& range)
                {
                   common::algorithm::append_unique( range, resources);
                }

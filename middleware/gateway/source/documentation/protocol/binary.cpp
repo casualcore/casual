@@ -38,7 +38,7 @@ namespace casual
                std::filesystem::path information = common::string::compose(
                   common::message::type( message), 
                   '.', message::protocol::version< M>(),
-                  '.', cast::underlying( common::message::type( message)),
+                  '.', std::to_underlying( common::message::type( message)),
                   '.', extension);
                
                return std::ofstream{ base / information, std::ios::binary | std::ios::trunc};

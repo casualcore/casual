@@ -50,8 +50,8 @@ namespace casual
          //! associate resource
          void involve( strong::resource::id id);
 
-         template< typename R>
-         auto involve( R&& range) -> std::enable_if_t< traits::is::iterable_v< R>>
+         template< concepts::range R>
+         void involve( R&& range)
          {
             for( auto id : range) 
                involve( id);

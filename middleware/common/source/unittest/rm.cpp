@@ -69,7 +69,7 @@ namespace casual
                auto error( code::xa code)
                {
                   errors.push_back( code);
-                  return cast::underlying( code);
+                  return std::to_underlying( code);
                }
 
                CASUAL_LOG_SERIALIZE(
@@ -195,7 +195,7 @@ namespace casual
          }
 
          log::line( log, "xa_open_entry - openinfo: ", openinfo, ", id: ", id, " flags: ", flags);
-         return cast::underlying( state.result.open);
+         return std::to_underlying( state.result.open);
       }
 
       int xa_close_entry( const char* closeinfo, int rmid, long flags)
@@ -213,7 +213,7 @@ namespace casual
          }
          log::line( log, "closeinfo: ", closeinfo, " id: ", id, " flags: ", flags);
 
-         return cast::underlying( state.result.close);
+         return std::to_underlying( state.result.close);
       }
 
       int xa_start_entry( XID* xid, int rmid, long flags)
@@ -233,7 +233,7 @@ namespace casual
          }
 
          if( state.result.start != code::xa::ok)
-            return cast::underlying( state.result.start);
+            return std::to_underlying( state.result.start);
 
          auto found = algorithm::find( state.transactions.all, trid);
 
@@ -252,7 +252,7 @@ namespace casual
 
          state.transactions.current = trid;
 
-         return cast::underlying( state.result.start);
+         return std::to_underlying( state.result.start);
       }
 
       int xa_end_entry( XID* xid, int rmid, long flags)
@@ -286,7 +286,7 @@ namespace casual
             if( auto found = algorithm::find( state.transactions.all, trid))
                state.transactions.all.erase( std::begin( found));
          }
-         return cast::underlying( state.result.end);
+         return std::to_underlying( state.result.end);
       }
 
       int xa_rollback_entry( XID* xid, int rmid, long flags)
@@ -299,7 +299,7 @@ namespace casual
 
          auto& state = local::state::get( id, rm::state::Invoke::xa_rollback_entry);
 
-         return cast::underlying( state.result.rollback);
+         return std::to_underlying( state.result.rollback);
       }
 
       int xa_prepare_entry( XID* xid, int rmid, long flags)
@@ -312,7 +312,7 @@ namespace casual
 
          auto& state = local::state::get( id, rm::state::Invoke::xa_prepare_entry);
 
-         return cast::underlying( state.result.prepare);
+         return std::to_underlying( state.result.prepare);
       }
 
       int xa_commit_entry( XID* xid, int rmid, long flags)
@@ -336,7 +336,7 @@ namespace casual
                state.transactions.all.erase( std::begin( found));
          }
 
-         return cast::underlying( state.result.commit);
+         return std::to_underlying( state.result.commit);
       }
 
       int xa_recover_entry( XID* xid, long count, int rmid, long flags)

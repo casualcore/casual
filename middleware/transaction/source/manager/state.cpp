@@ -154,7 +154,7 @@ namespace casual
                   case xa::read_only: return common::code::xa::read_only;
                }
 
-               casual::terminate( "invalid value for code::priority::xa: ", cast::underlying( code));
+               casual::terminate( "invalid value for code::priority::xa: ", std::to_underlying( code));
 
             }
 
@@ -188,7 +188,7 @@ namespace casual
                   case common::code::xa::read_only: return xa::read_only;
                }
 
-               casual::terminate( "invalid value for common::code::xa: ", cast::underlying( code));
+               casual::terminate( "invalid value for common::code::xa: ", std::to_underlying( code));
             }
             
          } // code::priority

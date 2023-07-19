@@ -22,9 +22,9 @@ namespace casual
             template< typename D>
             constexpr auto& destination( D& destination) noexcept
             {
-               if constexpr( std::is_same_v< traits::remove_cvref_t< D>, strong::ipc::id>)
+               if constexpr( std::is_same_v< std::remove_cvref_t< D>, strong::ipc::id>)
                   return std::as_const( destination);
-               else if constexpr( std::is_same_v< traits::remove_cvref_t< D>, process::Handle>)
+               else if constexpr( std::is_same_v< std::remove_cvref_t< D>, process::Handle>)
                   return std::as_const( destination.ipc);
             }
          } // detail::deduce
@@ -128,14 +128,14 @@ namespace casual
             // separately, and constexpr if on the message type. 
 
 
-            if constexpr( std::is_same_v< traits::remove_cvref_t< M>, ipc::message::Complete>)
+            if constexpr( std::is_same_v< std::remove_cvref_t< M>, ipc::message::Complete>)
             {
                return send_dispatch( 
                   destination, 
                   coordinator::Message{ ipc::message::complete::Send{ std::forward< M>( message)}, std::forward< C>( callback)...},
                   traits::priority::tag< 1>{});
             }
-            else if constexpr( std::is_same_v< traits::remove_cvref_t< M>, ipc::message::complete::Send>)
+            else if constexpr( std::is_same_v< std::remove_cvref_t< M>, ipc::message::complete::Send>)
             {
                return send_dispatch( 
                   destination, 

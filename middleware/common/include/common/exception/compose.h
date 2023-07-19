@@ -7,7 +7,6 @@
 #pragma once
 
 #include "common/string/compose.h"
-#include "common/cast.h"
 
 #include <system_error>
 
@@ -23,7 +22,7 @@ namespace casual
          if constexpr( std::is_error_code_enum_v< Code>)
             return std::system_error{ std::error_code{ code}, string::compose( std::forward< Ts>( ts)...)};
          else
-            return std::system_error{ cast::underlying( code), std::system_category(), string::compose( std::forward< Ts>( ts)...)};
+            return std::system_error{ std::to_underlying( code), std::system_category(), string::compose( std::forward< Ts>( ts)...)};
       }
    } // common::exception
 } // casual

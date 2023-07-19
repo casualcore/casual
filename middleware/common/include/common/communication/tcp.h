@@ -174,12 +174,12 @@ namespace casual
    } // common::communication::tcp
 
 
-   namespace common::serialize::traits::is::network
+   namespace common::serialize::archive::network
    {
       template<>
       struct normalizing< communication::tcp::Duplex>: std::true_type {};
       
-   } //common::serialize::traits::is::network
+   } // common::serialize::archive::network
 
 } // casual
 

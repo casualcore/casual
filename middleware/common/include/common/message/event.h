@@ -307,7 +307,7 @@ namespace casual
             template< typename M>
             constexpr bool message( M&& message)
             {
-               return is::event::message< traits::remove_cvref_t< M>>();
+               return is::event::message< std::remove_cvref_t< M>>();
             }
          } // event
       } // is

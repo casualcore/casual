@@ -164,7 +164,7 @@ namespace casual
                         socket.descriptor().value(), 
                         transport.data(), 
                         transport.size(),
-                        0, //| cast::underlying( platform::flag::msg::no_signal), 
+                        0, //| std::to_underlying( platform::flag::msg::no_signal), 
                         destination.native_pointer(),
                         destination.native_size())
                   );
@@ -195,7 +195,7 @@ namespace casual
                   handle.socket().descriptor().value(),
                   transport.data(),
                   message::transport::max_message_size(),
-                  0); // | cast::underlying( platform::flag::msg::no_signal));
+                  0); // | std::to_underlying( platform::flag::msg::no_signal));
 
                if( result == -1)
                   return local::check_error();
@@ -222,7 +222,7 @@ namespace casual
                         socket.descriptor().value(), 
                         transport.data(), 
                         transport.size(),
-                        cast::underlying( Flag::non_blocking), //| cast::underlying( platform::flag::msg::no_signal), 
+                        std::to_underlying( Flag::non_blocking), //| std::to_underlying( platform::flag::msg::no_signal), 
                         destination.native_pointer(),
                         destination.native_size())
                   );
@@ -242,7 +242,7 @@ namespace casual
                      handle.socket().descriptor().value(),
                      transport.data(),
                      message::transport::max_message_size(),
-                     cast::underlying( Flag::non_blocking)); // | cast::underlying( platform::flag::msg::no_signal));
+                     std::to_underlying( Flag::non_blocking)); // | std::to_underlying( platform::flag::msg::no_signal));
 
                   if( result == -1)
                      return local::check_error();

@@ -50,7 +50,7 @@ namespace casual
                         return;
 
                      using traits_type = traits::function< Callback>;
-                     using message_type = traits::remove_cvref_t< typename traits_type::template argument_t< 0>>;
+                     using message_type = std::remove_cvref_t< typename traits_type::template argument_t< 0>>;
 
                      event::unsubscribe( process::handle(), { message_type::type()});
                   }

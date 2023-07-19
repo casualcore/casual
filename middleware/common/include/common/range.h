@@ -9,7 +9,7 @@
 
 
 #include "casual/platform.h"
-#include "common/concepts.h"
+#include "casual/concepts.h"
 #include "common/traits.h"
 
 #include <iterator>
@@ -158,7 +158,7 @@ namespace casual
          constexpr auto reverse( R&& range)
          {
             // R can't be an owning r-value container.
-            static_assert( ! traits::is::container::like_v< R> || std::is_lvalue_reference_v< R>, "");
+            static_assert( ! concepts::container::like< R> || std::is_lvalue_reference_v< R>, "");
 
             return make( 
                detail::make_reverse_iterator( std::end( range)),

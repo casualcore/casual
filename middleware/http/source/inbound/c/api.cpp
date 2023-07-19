@@ -8,7 +8,6 @@
 #include "http/inbound/call.h"
 #include "http/common.h"
 
-#include "common/cast.h"
 #include "common/algorithm.h"
 #include "casual/assert.h"
 
@@ -183,7 +182,7 @@ namespace casual::http::inbound
                   reply->content_type.size = 0;
                }
 
-               reply->code = cast::underlying( context_holder->reply.code);
+               reply->code = std::to_underlying( context_holder->reply.code);
                reply->payload.data = context_holder->reply.payload.body.data();
                reply->payload.size = context_holder->reply.payload.body.size();
             }

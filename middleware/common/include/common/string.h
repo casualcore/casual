@@ -80,7 +80,7 @@ namespace casual
       } // detail
 
       template< typename R>
-      auto trim( R&& range) -> traits::remove_cvref_t< decltype( range)>
+      auto trim( R&& range) -> std::remove_cvref_t< decltype( range)>
       {
          const auto ws = [] ( const auto character)
          { 
@@ -94,7 +94,7 @@ namespace casual
             ;
 
          // TODO maintainence: remove dispatch when string_view get ctor with only iterators - C++20
-         return detail::create< traits::remove_cvref_t< decltype( range)>>( first, last, traits::priority::tag< 1>{});
+         return detail::create< std::remove_cvref_t< decltype( range)>>( first, last, traits::priority::tag< 1>{});
       }
 
 

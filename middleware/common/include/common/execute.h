@@ -76,7 +76,7 @@ namespace casual
       template< typename E>
       auto scope( E&& executor)
       {
-         return basic_scope< traits::remove_cvref_t< E>>{ std::forward< E>( executor)};
+         return basic_scope< std::remove_cvref_t< E>>{ std::forward< E>( executor)};
       }
 
    } // common::execute

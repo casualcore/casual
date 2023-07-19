@@ -254,7 +254,7 @@ namespace casual
                      }
                      catch( common::service::call::Fail& exception)
                      {
-                        transport->code = common::cast::underlying( common::code::xatmi::service_fail);
+                        transport->code = std::to_underlying( common::code::xatmi::service_fail);
 
                         if( local::configuration().force_binary_base64)
                            http::buffer::transcode::to::wire( exception.result.buffer);
@@ -272,7 +272,7 @@ namespace casual
                         if( common::code::is::category< common::code::xatmi>( error.code()))
                            transport->code = error.code().value();
                         else 
-                           transport->code = common::cast::underlying( common::code::xatmi::os);
+                           transport->code = std::to_underlying( common::code::xatmi::os);
 
                         transport->payload = buffer::copy( common::string::compose( error));
                      }
@@ -366,7 +366,7 @@ namespace casual
                         return exception::handle( transport);
                      }
 
-                     transport->code = common::cast::underlying( common::code::xatmi::ok);
+                     transport->code = std::to_underlying( common::code::xatmi::ok);
 
                      return OK;
                   }
@@ -408,7 +408,7 @@ namespace casual
                         transport->payload = buffer::copy( reply.buffer.data);
 
                         // Handle reply headers
-                        auto header = header::codes::add( common::cast::underlying( common::code::xatmi::ok), reply.user);
+                        auto header = header::codes::add( std::to_underlying( common::code::xatmi::ok), reply.user);
                         transport->header_out = header::copy( header);
 
 

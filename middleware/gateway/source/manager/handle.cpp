@@ -22,7 +22,6 @@
 #include "common/event/send.h"
 #include "common/environment.h"
 #include "common/process.h"
-#include "common/cast.h"
 
 namespace casual
 {

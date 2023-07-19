@@ -38,11 +38,11 @@ namespace casual
                //! invoked with (tpservice template).
                enum class Flag : long
                {
-                  conversation = cast::underlying( flag::xatmi::Flag::conversation),
-                  in_transaction = cast::underlying( flag::xatmi::Flag::in_transaction),
-                  no_reply = cast::underlying( flag::xatmi::Flag::no_reply),
-                  send_only = cast::underlying( flag::xatmi::Flag::send_only),
-                  receive_only = cast::underlying( flag::xatmi::Flag::receive_only),
+                  conversation = std::to_underlying( flag::xatmi::Flag::conversation),
+                  in_transaction = std::to_underlying( flag::xatmi::Flag::in_transaction),
+                  no_reply = std::to_underlying( flag::xatmi::Flag::no_reply),
+                  send_only = std::to_underlying( flag::xatmi::Flag::send_only),
+                  receive_only = std::to_underlying( flag::xatmi::Flag::receive_only),
                };
                using Flags = common::Flags< Flag>;
 
@@ -71,8 +71,8 @@ namespace casual
             {
                enum class Transaction : int
                {
-                  commit = cast::underlying( flag::xatmi::Return::success),
-                  rollback = cast::underlying( flag::xatmi::Return::fail)
+                  commit = std::to_underlying( flag::xatmi::Return::success),
+                  rollback = std::to_underlying( flag::xatmi::Return::fail)
                };
 
                Result() = default;

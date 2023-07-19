@@ -8,6 +8,7 @@
 
 
 #include "common/range.h"
+#include "casual/concepts.h"
 #include "common/transcode.h"
 
 
@@ -52,20 +53,19 @@ namespace casual
                }
 
             } // detail
-            template< typename Iter, std::enable_if_t< traits::is::binary::iterator_v< Iter>, int> = 0>
+            template< concepts::binary::iterator Iter>
             auto make( Iter first, Iter last)
             {
                return detail::make( first, last);
             }
 
-            template< typename Iter, typename Count, std::enable_if_t< 
-               traits::is::binary::iterator_v< Iter> && std::is_integral_v< Count>, int> = 0>
+            template< concepts::binary::iterator Iter, std::integral Count>
             auto make( Iter first, Count count)
             {
                return make( first, first + count);
             }
 
-            template< typename C, std::enable_if_t< std::is_lvalue_reference_v< C> && common::traits::is::binary::like_v< C>, int> = 0>
+            template< concepts::binary::like C>
             auto make( C&& container)
             {
                return make( std::begin( container), std::end( container));

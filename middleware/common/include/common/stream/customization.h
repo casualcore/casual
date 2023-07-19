@@ -37,9 +37,9 @@ namespace casual
             // highest priority, takes all that have specialized customization::supersede::point
             template< typename T> 
             auto write( std::ostream& out, T&& value, traits::priority::tag< 2>) 
-               -> decltype( void( stream::customization::supersede::point< traits::remove_cvref_t< T>>::stream( out, std::forward< T>( value))), out)
+               -> decltype( void( stream::customization::supersede::point< std::remove_cvref_t< T>>::stream( out, std::forward< T>( value))), out)
             {
-               stream::customization::supersede::point< traits::remove_cvref_t< T>>::stream( out, std::forward< T>( value));
+               stream::customization::supersede::point< std::remove_cvref_t< T>>::stream( out, std::forward< T>( value));
                return out;
             }
 
@@ -53,9 +53,9 @@ namespace casual
 
             template< typename T> 
             auto write( std::ostream& out, T&& value, traits::priority::tag< 0>) 
-               -> decltype( void( stream::customization::point< traits::remove_cvref_t< T>>::stream( out, std::forward< T>( value))), out)
+               -> decltype( void( stream::customization::point< std::remove_cvref_t< T>>::stream( out, std::forward< T>( value))), out)
             {
-               stream::customization::point< traits::remove_cvref_t< T>>::stream( out, std::forward< T>( value));
+               stream::customization::point< std::remove_cvref_t< T>>::stream( out, std::forward< T>( value));
                return out;
             }
             

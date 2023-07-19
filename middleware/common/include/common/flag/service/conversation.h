@@ -7,10 +7,7 @@
 
 #pragma once
 
-
 #include "common/flag/xatmi.h"
-
-#include "common/cast.h"
 
 namespace casual
 {
@@ -24,12 +21,12 @@ namespace casual
             {
                enum class Event : long
                {
-                  absent = cast::underlying( xatmi::Event::absent),
-                  disconnect = cast::underlying( xatmi::Event::disconnect),
-                  send_only = cast::underlying( xatmi::Event::send_only),
-                  service_error = cast::underlying( xatmi::Event::service_error),
-                  service_fail = cast::underlying( xatmi::Event::service_fail),
-                  service_success = cast::underlying( xatmi::Event::service_success),
+                  absent = std::to_underlying( xatmi::Event::absent),
+                  disconnect = std::to_underlying( xatmi::Event::disconnect),
+                  send_only = std::to_underlying( xatmi::Event::send_only),
+                  service_error = std::to_underlying( xatmi::Event::service_error),
+                  service_fail = std::to_underlying( xatmi::Event::service_fail),
+                  service_success = std::to_underlying( xatmi::Event::service_success),
                };
 
                using Events = common::Flags< Event>;
@@ -38,12 +35,12 @@ namespace casual
                {
                   enum class Flag : long
                   {
-                     no_transaction = cast::underlying( xatmi::Flag::no_transaction),
-                     send_only =  cast::underlying( xatmi::Flag::send_only),
-                     receive_only =  cast::underlying( xatmi::Flag::receive_only),
-                     no_block =  cast::underlying( xatmi::Flag::no_block),
-                     no_time =  cast::underlying( xatmi::Flag::no_time),
-                     signal_restart =  cast::underlying( xatmi::Flag::signal_restart)
+                     no_transaction = std::to_underlying( xatmi::Flag::no_transaction),
+                     send_only =  std::to_underlying( xatmi::Flag::send_only),
+                     receive_only =  std::to_underlying( xatmi::Flag::receive_only),
+                     no_block =  std::to_underlying( xatmi::Flag::no_block),
+                     no_time =  std::to_underlying( xatmi::Flag::no_time),
+                     signal_restart =  std::to_underlying( xatmi::Flag::signal_restart)
                   };
 
                   using Flags = common::Flags< connect::Flag>;
@@ -54,10 +51,10 @@ namespace casual
                {
                   enum class Flag : long
                   {
-                     receive_only =  cast::underlying( xatmi::Flag::receive_only),
-                     no_block =  cast::underlying( xatmi::Flag::no_block),
-                     no_time =  cast::underlying( xatmi::Flag::no_time),
-                     signal_restart =  cast::underlying( xatmi::Flag::signal_restart)
+                     receive_only =  std::to_underlying( xatmi::Flag::receive_only),
+                     no_block =  std::to_underlying( xatmi::Flag::no_block),
+                     no_time =  std::to_underlying( xatmi::Flag::no_time),
+                     signal_restart =  std::to_underlying( xatmi::Flag::signal_restart)
                   };
 
                   using Flags = common::Flags< send::Flag>;
@@ -67,10 +64,10 @@ namespace casual
                {
                   enum class Flag : long
                   {
-                     no_change = cast::underlying( xatmi::Flag::no_change),
-                     no_block =  cast::underlying( xatmi::Flag::no_block),
-                     no_time =  cast::underlying( xatmi::Flag::no_time),
-                     signal_restart =  cast::underlying( xatmi::Flag::signal_restart)
+                     no_change = std::to_underlying( xatmi::Flag::no_change),
+                     no_block =  std::to_underlying( xatmi::Flag::no_block),
+                     no_time =  std::to_underlying( xatmi::Flag::no_time),
+                     signal_restart =  std::to_underlying( xatmi::Flag::signal_restart)
                   };
 
                   using Flags = common::Flags< receive::Flag>;

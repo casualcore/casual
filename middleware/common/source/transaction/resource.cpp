@@ -269,7 +269,7 @@ namespace casual
                {
                   m_xa->xa_recover_entry(
                      xids.data(), 1, m_id.value(),
-                     cast::underlying( flag::xa::Flag::end_scan));
+                     std::to_underlying( flag::xa::Flag::end_scan));
                }
 
                return true;

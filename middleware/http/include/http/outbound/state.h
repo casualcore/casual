@@ -128,8 +128,8 @@ namespace casual
                curl::type::easy m_easy;
                common::move::Pimpl< State> m_state;
             };
-            static_assert( common::traits::is::nothrow::movable_v< Request>, "not movable");
-            static_assert( ! common::traits::is::copyable_v< Request>, "not movable");
+            static_assert( concepts::nothrow::movable< Request>, "not movable");
+            static_assert( ! concepts::copyable< Request>, "not movable");
 
 
 

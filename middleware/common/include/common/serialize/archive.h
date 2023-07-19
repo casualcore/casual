@@ -9,7 +9,6 @@
 
 #include "common/serialize/archive/type.h"
 #include "common/serialize/archive/consume.h"
-#include "common/serialize/traits.h"
 #include "common/serialize/value.h"
 #include "casual/platform.h"
 #include "common/view/binary.h"
@@ -22,6 +21,18 @@ namespace casual
 {
    namespace common::serialize
    {
+      namespace detail
+      {
+         template< typename A>
+         constexpr archive::dynamic::Type convert_archive_type() noexcept
+         {
+            if constexpr( A::archive_type() == serialize::archive::Type::static_need_named)
+               return serialize::archive::dynamic::Type::named;
+            else if constexpr( A::archive_type() == serialize::archive::Type::static_order_type)
+               return serialize::archive::dynamic::Type::order_type;
+         }
+
+      } // detail
 
       struct Reader
       {
@@ -142,15 +153,17 @@ namespace casual
             protocol_type m_protocol;
          };
 
+
+
          template< typename Protocol>
          Reader( std::unique_ptr< model< Protocol>>&& model)
-            : m_protocol( std::move( model)), m_type{ traits::archive::dynamic::convert_v< Protocol>} {}
+            : m_protocol( std::move( model)), m_type{ detail::convert_archive_type< Protocol>()} {}
          
          std::unique_ptr< Concept> m_protocol;
          archive::dynamic::Type m_type;
       };
 
-      static_assert( traits::archive::type_v< Reader> == archive::Type::dynamic_type);
+      static_assert( Reader::archive_type() == archive::Type::dynamic_type);
 
 
       struct Writer
@@ -174,9 +187,8 @@ namespace casual
 
          //! restricted write, so we don't consume convertible types by mistake
          //! binary types, such as char[16] that easily converts to const std::string& 
-         template< typename T>
+         template< concepts::serialize::archive::native::type T>
          auto write( const T& value, const char* name)
-            -> std::enable_if_t< traits::is::archive::native::type_v< common::traits::remove_cvref_t< T>>>
          {
             save( value, name);
          }
@@ -284,13 +296,13 @@ namespace casual
 
          template< typename Protocol>
          Writer( std::unique_ptr< model< Protocol>>&& model) 
-            : m_protocol( std::move( model)), m_type{ traits::archive::dynamic::convert_v< Protocol>} {}
+            : m_protocol( std::move( model)), m_type{ detail::convert_archive_type< Protocol>()} {}
 
          std::unique_ptr< Concept> m_protocol;
          archive::dynamic::Type m_type;
       };
 
-      static_assert( traits::archive::type_v< Writer> == archive::Type::dynamic_type);
+      static_assert( Writer::archive_type() == archive::Type::dynamic_type);
 
    } // common::serialize
 } // casual

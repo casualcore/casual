@@ -8,6 +8,7 @@
 #include <common/unittest.h>
 
 #include "common/traits.h"
+#include "casual/concepts.h"
 
 #include <array>
 #include <stack>
@@ -17,21 +18,23 @@ namespace casual
 
    namespace common
    {
+      static_assert( concepts::container::array< std::array< int, 10>>);
+
       TEST( casual_common_traits, is_container_array_like)
       {
          common::unittest::Trace trace;
 
-         EXPECT_TRUE( ( traits::is::container::array::like_v< std::array< int, 10>>));
+         EXPECT_TRUE( ( concepts::container::array< std::array< int, 10>>));
       }
 
       TEST( casual_common_traits, is_container_sequence_like)
       {
          common::unittest::Trace trace;
 
-         EXPECT_TRUE(  traits::is::container::sequence::like_v< std::vector< int>>);
-         EXPECT_TRUE(  traits::is::container::sequence::like_v< std::deque< int>>);
-         EXPECT_TRUE(  traits::is::container::sequence::like_v< std::list< int>>);
-         EXPECT_FALSE(  traits::is::container::sequence::like_v< std::set< int>>);
+         EXPECT_TRUE(  concepts::container::sequence< std::vector< int>>);
+         EXPECT_TRUE(  concepts::container::sequence< std::deque< int>>);
+         EXPECT_TRUE(  concepts::container::sequence< std::list< int>>);
+         EXPECT_FALSE(  concepts::container::sequence< std::set< int>>);
 
          //EXPECT_TRUE( ( traits::is::container::sequence::like< std::array< int, 10>>::value));
       }
@@ -40,17 +43,17 @@ namespace casual
       {
          common::unittest::Trace trace;
 
-         EXPECT_TRUE( ( traits::is::container::associative::like_v< std::map< int, int>>));
-         EXPECT_TRUE( ( traits::is::container::associative::like_v< std::multimap< int, int>>));
-         EXPECT_TRUE( ( traits::is::container::associative::like_v< std::unordered_map< int, int>>));
-         EXPECT_TRUE( ( traits::is::container::associative::like_v< std::unordered_multimap< int, int>>));
+         EXPECT_TRUE( ( concepts::container::associative< std::map< int, int>>));
+         EXPECT_TRUE( ( concepts::container::associative< std::multimap< int, int>>));
+         EXPECT_TRUE( ( concepts::container::associative< std::unordered_map< int, int>>));
+         EXPECT_TRUE( ( concepts::container::associative< std::unordered_multimap< int, int>>));
 
-         EXPECT_TRUE(  traits::is::container::associative::like_v< std::set< int>>);
-         EXPECT_TRUE(  traits::is::container::associative::like_v< std::multiset< int>>);
-         EXPECT_TRUE(  traits::is::container::associative::like_v< std::unordered_set< int>>);
-         EXPECT_TRUE(  traits::is::container::associative::like_v< std::unordered_multiset< int>>);
+         EXPECT_TRUE(  concepts::container::associative< std::set< int>>);
+         EXPECT_TRUE(  concepts::container::associative< std::multiset< int>>);
+         EXPECT_TRUE(  concepts::container::associative< std::unordered_set< int>>);
+         EXPECT_TRUE(  concepts::container::associative< std::unordered_multiset< int>>);
 
-         EXPECT_FALSE(  traits::is::container::associative::like_v< std::vector< int>>);
+         EXPECT_FALSE(  concepts::container::associative< std::vector< int>>);
       }
 
 
@@ -58,21 +61,21 @@ namespace casual
       {
          common::unittest::Trace trace;
 
-         EXPECT_TRUE( ( traits::is::container::like_v< std::map< int, int>>));
-         EXPECT_TRUE( ( traits::is::container::like_v< std::multimap< int, int>>));
-         EXPECT_TRUE( ( traits::is::container::like_v< std::unordered_map< int, int>>));
-         EXPECT_TRUE( ( traits::is::container::like_v< std::unordered_multimap< int, int>>));
+         EXPECT_TRUE( ( concepts::container::like< std::map< int, int>>));
+         EXPECT_TRUE( ( concepts::container::like< std::multimap< int, int>>));
+         EXPECT_TRUE( ( concepts::container::like< std::unordered_map< int, int>>));
+         EXPECT_TRUE( ( concepts::container::like< std::unordered_multimap< int, int>>));
 
-         EXPECT_TRUE(  traits::is::container::like_v< std::set< int>>);
-         EXPECT_TRUE(  traits::is::container::like_v< std::multiset< int>>);
-         EXPECT_TRUE(  traits::is::container::like_v< std::unordered_set< int>>);
-         EXPECT_TRUE(  traits::is::container::like_v< std::unordered_multiset< int>>);
+         EXPECT_TRUE(  concepts::container::like< std::set< int>>);
+         EXPECT_TRUE(  concepts::container::like< std::multiset< int>>);
+         EXPECT_TRUE(  concepts::container::like< std::unordered_set< int>>);
+         EXPECT_TRUE(  concepts::container::like< std::unordered_multiset< int>>);
 
-         EXPECT_TRUE(  traits::is::container::like_v< std::vector< int>>);
-         EXPECT_TRUE(  traits::is::container::like_v< std::deque< int>>);
-         EXPECT_TRUE(  traits::is::container::like_v< std::list< int>>);
+         EXPECT_TRUE(  concepts::container::like< std::vector< int>>);
+         EXPECT_TRUE(  concepts::container::like< std::deque< int>>);
+         EXPECT_TRUE(  concepts::container::like< std::list< int>>);
 
-         EXPECT_FALSE(  traits::is::container::like_v< long>);
+         EXPECT_FALSE(  concepts::container::like< long>);
       }
 
       TEST( casual_common_traits_function, functor_void)

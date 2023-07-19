@@ -97,7 +97,7 @@ namespace casual
 
       std::error_code make_error_code( code::xatmi code) noexcept
       {
-         return { cast::underlying( code), local::category};
+         return { std::to_underlying( code), local::category};
       }
 
    } // common::code

@@ -50,10 +50,10 @@ namespace casual
 
 
 
-         template< typename C1, typename C2>
-         auto encode( C1&& source, C2& target) -> std::enable_if_t< traits::has::resize_v< decltype( target)>>
+         template< concepts::binary::like C1, concepts::container::resize C2>
+         void encode( C1&& source, C2& target)
          {
-            static_assert( sizeof( traits::iterable::value_t< C1>) == sizeof( traits::iterable::value_t< C2>), "not the same value type size");
+            static_assert( sizeof( std::ranges::range_value_t< C1>) == sizeof( std::ranges::range_value_t< C2>), "not the same value type size");
 
             target.resize( capacity::encoded( source.size()));
 
@@ -63,7 +63,7 @@ namespace casual
          //! @return Base64-encoded binary data of @p container
          //!
          //! @throw exception::Casual on failure
-         template< typename C>
+         template< concepts::binary::like C>
          std::string encode( C&& container)
          {
             std::string result;
@@ -76,9 +76,8 @@ namespace casual
          //! @pre @p Iter has to be a random access iterator
          //!
          //! @throw exception::Casual on failure
-         template< typename Iter>
-         auto encode( Iter first, Iter last) -> 
-            std::enable_if_t< traits::is::iterator_v< Iter>, std::string>
+         template< concepts::binary::iterator Iter>
+         std::string encode( Iter first, Iter last)
          {
             return encode( range::make( first, last));
          }
@@ -97,12 +96,8 @@ namespace casual
          //! decode Base64 to a binary representation
          //! @attention [first, last) needs to be bigger than the [first, result) (by some bytes...)
          //!
-         template< typename Source, typename Iter>
-         std::enable_if_t<
-            traits::is::string::like_v< Source>
-            && traits::is::binary::iterator_v< Iter>,
-            Iter >
-         decode( Source&& source, Iter first, Iter last)
+         template< concepts::binary::iterator Iter>
+         auto decode( std::string_view source, Iter first, Iter last)
          {
             auto cast_source = []( auto&& i){ return reinterpret_cast< const char*>( &(*i));};
             auto cast_target = []( auto&& i){ return reinterpret_cast< char*>( &(*i));};
@@ -213,26 +208,23 @@ namespace casual
          //! @param first start of binary
          //! @param last end of binary (exclusive)
          //! @return hex-encoded string of [first, last)
-         template< typename Iter>
-         std::enable_if_t< traits::is::binary::iterator_v< Iter>, std::string>
-         encode( Iter first, Iter last)
+         template< concepts::binary::iterator Iter>
+         std::string encode( Iter first, Iter last)
          {
             std::string result( std::distance( first, last) * 2, 0);
             detail::encode( first, last, std::begin( result));
             return result;
          }
 
-         template< typename Iter>
-         std::enable_if_t< traits::is::binary::iterator_v< Iter>, std::ostream&>
-         encode( std::ostream& out, Iter first, Iter last)
+         template< concepts::binary::iterator Iter>
+         std::ostream& encode( std::ostream& out, Iter first, Iter last)
          {
             detail::encode( first, last, std::ostream_iterator< char>( out));
             return out;
          }
 
-         template< typename R>
-         auto encode( std::ostream& out, R&& range) -> 
-            std::enable_if_t< traits::is::binary::like_v< R>, std::ostream&>
+         template< concepts::binary::like R>
+         std::ostream& encode( std::ostream& out, const R& range)
          {
             return encode( out, std::begin( range), std::end( range));
          }
@@ -241,8 +233,8 @@ namespace casual
          //!
          //! @param container binary representation
          //! @return hex-encoded string of @p container
-         template< typename C>
-         std::string encode( C&& container)
+         template< concepts::binary::like C>
+         std::string encode( const C& container)
          {
             return encode( std::begin( container), std::end( container));
          }
@@ -258,28 +250,20 @@ namespace casual
             return result;
          }
 
-         template< typename Source, typename Iter>
-         std::enable_if_t< 
-            traits::is::string::like_v< Source>
-            && traits::is::binary::iterator_v< Iter>
-         >
-         decode( Source&& source, Iter first, Iter last)
+         template< concepts::binary::iterator Iter>
+         void decode( std::string_view source, Iter first, Iter last)
          {
             assert( range::size( source) <= ( std::distance( first, last)  * 2) + 1);
-            detail::decode( std::begin( source), std::end( source),  first);
+            detail::decode( std::begin( source), std::end( source), first);
          }
 
          //! decode hex-string to a binary representation
          //!
          //! @return binary representation of @p value
-         template< typename Source, typename Target>
-         std::enable_if_t< 
-            traits::is::string::like_v< Source>
-            && traits::is::binary::like_v< Target>
-         >
-         decode( Source&& source, Target&& target)
+         template< concepts::binary::like Target>
+         void decode( std::string_view source, Target&& target)
          {
-            decode( std::forward< Source>( source), std::begin( target), std::end( target));
+            decode( source, std::begin( target), std::end( target));
          }
 
          namespace stream

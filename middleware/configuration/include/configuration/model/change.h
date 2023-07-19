@@ -51,7 +51,7 @@ namespace casual
          template< typename Range, typename Predicate>
          auto calculate( Range&& current, Range&& wanted, Predicate key)
          {
-            using range_type = std::vector< common::traits::iterable::value_t< Range>>;
+            using range_type = std::vector< std::ranges::range_value_t< Range>>;
             Result< range_type> result;
 
             auto calculated = change::calculate( std::forward< Range>( current), std::forward< Range>( wanted), std::move( key));

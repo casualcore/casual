@@ -7,7 +7,7 @@
 #pragma once
 
 #include "common/traits.h"
-#include "common/concepts.h"
+#include "casual/concepts.h"
 #include "common/algorithm.h"
 
 namespace casual
@@ -57,7 +57,7 @@ namespace casual
          // take care of iterator
          template< typename C, typename Iter>
          auto extract( C& container, Iter where, traits::priority::tag< 1>)
-            -> traits::remove_cvref_t< decltype( *container.erase( where))>
+            -> std::remove_cvref_t< decltype( *container.erase( where))>
          {
             auto result = std::move( *where);
             container.erase( where);
@@ -71,7 +71,7 @@ namespace casual
          {
             C result;
 
-            if constexpr( traits::has::reserve_v< decltype( result)>)
+            if constexpr( concepts::container::reserve< C>)
                result.reserve( range.size());
             
             std::move( std::begin( range), std::end( range), std::back_inserter( result));
@@ -112,7 +112,7 @@ namespace casual
       }
 
       template< typename C, typename Iter>
-      C& erase( C& container, Iter where) requires std::same_as< traits::iterator_t< C>, Iter>
+      C& erase( C& container, Iter where) requires std::same_as< std::ranges::iterator_t< C>, Iter>
       {
          container.erase( where);
          return container;
@@ -187,7 +187,7 @@ namespace casual
          template< typename Range>
          auto create( Range&& range)
          {
-            using result_typ = std::vector< traits::iterable::value_t< Range>>;
+            using result_typ = std::vector< std::ranges::range_value_t< Range>>;
             return container::create< result_typ>( std::forward< Range>( range));
          }
 
@@ -211,7 +211,7 @@ namespace casual
             result.push_back( std::move( value));
          }
 
-         template< typename T, common::concepts::range R>
+         template< typename T, concepts::range R>
          void compose( std::vector< T>& result, R value)
          {
             container::move::append( std::move( value), result);

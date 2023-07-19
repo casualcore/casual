@@ -73,7 +73,7 @@ namespace casual
             return stream::write( out, value.m_path);
          }
 
-         static_assert( traits::is::movable_v< Input>);
+         static_assert( concepts::movable< Input>);
 
          namespace output
          {
@@ -97,7 +97,7 @@ namespace casual
                return stream::write( out, value.m_path);
             }
 
-            static_assert( traits::is::movable_v< Append>);
+            static_assert( concepts::movable< Append>);
             
          } // output
          

@@ -4,9 +4,7 @@
 //! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-
 #include "common/service/type.h"
-#include "common/cast.h"
 #include "common/string.h"
 
 #include "common/code/raise.h"
@@ -48,7 +46,7 @@ namespace casual
 
          Type transform( short value)
          {
-            CASUAL_ASSERT( value >= cast::underlying( Type::discoverable) && value <= cast::underlying( Type::undiscoverable));
+            CASUAL_ASSERT( value >= std::to_underlying( Type::discoverable) && value <= std::to_underlying( Type::undiscoverable));
 
             return static_cast< Type>( value);
          }
@@ -112,7 +110,7 @@ namespace casual
 
          Type mode( std::uint16_t mode)
          {
-            if( mode < cast::underlying( Type::automatic) || mode > cast::underlying( Type::branch))
+            if( mode < std::to_underlying( Type::automatic) || mode > std::to_underlying( Type::branch))
                code::raise::error( code::casual::invalid_argument, "transaction mode: ", mode);
 
             return static_cast< Type>( mode);

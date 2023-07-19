@@ -4,14 +4,11 @@
 //! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-
 #pragma once
-
 
 #include "common/serialize/macro.h"
 #include "common/string.h"
 #include "common/traits.h"
-#include "common/cast.h"
 
 #include "common/code/raise.h"
 #include "common/code/casual.h"
@@ -73,7 +70,7 @@ namespace casual
 
          constexpr bool exist( enum_type flag) const noexcept
          {
-            return ( m_flags & cast::underlying( flag)) == cast::underlying( flag);
+            return ( m_flags & std::to_underlying( flag)) == std::to_underlying( flag);
          }
 
          platform::size::type bits() const noexcept
@@ -160,9 +157,9 @@ namespace casual
          template< typename... Enums>
          static constexpr underlying_type bitmask( Enums... enums) noexcept
          {
-            static_assert( traits::is::same_v< enum_type, Enums...>, "wrong enum type");
+            static_assert( concepts::same_as< enum_type, Enums...>, "wrong enum type");
 
-            return ( 0 | ... | cast::underlying( enums) );
+            return ( 0 | ... | std::to_underlying( enums) );
          }
 
          underlying_type m_flags = underlying_type{};
@@ -171,10 +168,8 @@ namespace casual
       namespace flags
       {
          template< typename Enum, typename... Enums>
-         constexpr auto compose( Enum flag, Enums... flags)
+         constexpr auto compose( Enum flag, Enums... flags) requires concepts::same_as< Enum, Enums...>
          {
-            // TODO fix is::same so it can take only one Type.
-            static_assert( traits::is::same_v< Enum, Enum, Enums...> && std::is_enum_v< Enum>, "flags::compose only accepts enums of the same type");
             return Flags< Enum>{ flag, flags...};
          }
       } // flags

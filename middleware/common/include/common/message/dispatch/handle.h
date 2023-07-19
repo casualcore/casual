@@ -114,7 +114,7 @@ namespace casual
             }
          };
 
-         using ipc = basic< traits::remove_cvref_t< decltype( communication::ipc::inbound::device())>::complete_type>;
+         using ipc = basic< std::remove_cvref_t< decltype( communication::ipc::inbound::device())>::complete_type>;
       } // protocol
 
    } // common::message::dispatch::handle

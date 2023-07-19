@@ -178,7 +178,7 @@ namespace casual
             namespace pending
             {
                template< typename P>
-               auto consume( P& pending, const strong::correlation::id& correlation) -> std::optional< common::traits::iterable::value_t< P>>
+               auto consume( P& pending, const strong::correlation::id& correlation) -> std::optional< std::ranges::range_value_t< P>>
                {
                   if( auto found = common::algorithm::find( pending, correlation))
                      return algorithm::container::extract( pending, std::begin( found));
@@ -209,7 +209,7 @@ namespace casual
                         request.selector = forward.selector;
                         request.block = true;
 
-                        using Pending = common::traits::remove_cvref_t< decltype( state.pending.dequeues.back())>;
+                        using Pending = std::remove_cvref_t< decltype( state.pending.dequeues.back())>;
 
                         Pending pending;
                         pending.id = forward.id;
@@ -344,7 +344,7 @@ namespace casual
 
                         algorithm::for_each_while( get_pendings( state.pending.dequeues), send_discard_request);
 
-                        if constexpr( std::is_same_v< traits::remove_cvref_t< decltype( forward)>, state::forward::Service>)
+                        if constexpr( std::is_same_v< std::remove_cvref_t< decltype( forward)>, state::forward::Service>)
                         {
                            // extract and discard all (0..1) pending lookups for the forward, and put'em in lookup-lookup discard 
                            auto pending = algorithm::filter( get_pendings( state.pending.service.lookups), send_discard_request);

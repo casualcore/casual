@@ -38,25 +38,34 @@ namespace casual
 
    namespace common
    {
+
       // static test of traits
 
-      static_assert( traits::is::same_v< traits::remove_cvref_t< char const&>, char>, "traits::remove_cvref_t does not work...");
+      static_assert( concepts::same_as< char, char, char, char, char>, "concepts::same_as does not work...");
 
-      static_assert( traits::is::string::like_v< decltype( "some string")>, "traits::is::string::like_v does not work...");
+      static_assert( concepts::string::like< decltype( "some string")>, "concepts::string::like does not work...");
 
-      static_assert( traits::is::string::like_v< char const (&)[7]>, "traits::is::string::like_v does not work...");
-      static_assert( traits::is::string::like_v< char[ 20]>, "traits::is::string::like_v does not work...");
+      static_assert( concepts::string::like< char const (&)[7]>, "concepts::string::like does not work...");
+      static_assert( concepts::string::like< char[ 20]>, "concepts::string::like does not work...");
 
-      static_assert( ! traits::is::string::like_v< char* [ 20]>, "traits::is::string::like_v does not work...");
+      static_assert( ! concepts::string::like< char* [ 20]>, "concepts::string::like does not work...");
 
 
-      static_assert( traits::is::iterable_v< char[ 20]>, "traits::is::iterable does not work...");
+      static_assert( concepts::range< char[ 20]>, "traits::is::iterable does not work...");
 
-      static_assert( ! traits::is::any_v< char, unsigned char, signed char>, "traits::is::any_v does not work...");
-      static_assert( traits::is::any_v< char, unsigned char, signed char, char>, "traits::is_any does not work...");
+      static_assert( ! concepts::any_of< char, unsigned char, signed char>, "concepts::any_of does not work...");
+      static_assert( concepts::any_of< char, unsigned char, signed char, char>, "concepts::any_of does not work...");
 
-      static_assert( traits::is::tuple_v< std::pair< int, long>>, "traits::is::tuple_v does not work...");
+      static_assert( concepts::tuple::like< std::pair< int, long>>, "concepts::tuple::like does not work...");
 
+      static_assert( concepts::range_with_value< std::vector< int>, int>, "concepts not work...");
+      static_assert( ! concepts::range_with_value< std::vector< int>, long>, "concepts not work...");
+
+
+      static_assert( concepts::binary::like< std::vector< char>>, "concepts not work...");
+      static_assert( ! concepts::binary::like< std::vector< int>>, "concepts not work...");
+      static_assert( concepts::binary::iterator< std::vector< char>::iterator>, "concepts not work...");
+      static_assert( ! concepts::binary::iterator< std::vector< int>::iterator>, "concepts not work...");
 
 
       template< int... values>

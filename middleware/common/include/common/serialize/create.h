@@ -97,7 +97,7 @@ namespace casual
                template< typename Value, typename... Values>
                inline constexpr bool value_any_of( Value value, Values... values)
                {
-                  static_assert( common::traits::is::same_v< Value, Values...>, "all compared values has to be the same type");
+                  static_assert( concepts::same_as< Value, Values...>, "all compared values has to be the same type");
 
                   return ( ... || (value == values) );
                }
@@ -158,7 +158,7 @@ namespace casual
             //! helper to convert _string view array_ to the known range_type (during the lifetime of the expression)
             template< typename T>
             auto registration( writer::Creator&& creator, T&& keys) 
-               -> std::enable_if_t< std::is_same_v< traits::remove_cvref_t< decltype( range::make( keys))>, range_type>>
+               -> std::enable_if_t< std::is_same_v< std::remove_cvref_t< decltype( range::make( keys))>, range_type>>
             {
                registration( std::move( creator), range::make( keys));
             } 

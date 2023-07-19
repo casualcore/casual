@@ -6,7 +6,8 @@
 
 #include "common/unittest.h"
 
-#include "common/serialize/traits.h"
+#include "casual/concepts/serialize.h"
+
 #include "common/serialize/macro.h"
 
 namespace casual
@@ -25,7 +26,7 @@ namespace casual
             {
             };
 
-            EXPECT_FALSE( ( traits::has::serialize_v< Value, long>));
+            EXPECT_FALSE( ( concepts::serialize::has::serialize< Value, long>));
          }
 
          namespace local
@@ -43,7 +44,7 @@ namespace casual
          {
             common::unittest::Trace trace;
 
-            EXPECT_TRUE( ( traits::has::serialize_v< local::Value, long>));
+            EXPECT_TRUE( ( concepts::serialize::has::serialize< local::Value, long>));
          }
 
 
@@ -66,16 +67,10 @@ namespace casual
             } // <unnamed>
          } // local
 
-         TEST( casual_serialize_traits, need_named__true)
-         {
+         static_assert( concepts::serialize::need::named< local::archive::Named>);
 
-            EXPECT_TRUE( ( traits::need::named_v< local::archive::Named>));
-         }
+         static_assert( ! concepts::serialize::need::named< local::archive::Order>);
 
-         TEST( casual_serialize_traits, need_named__false)
-         {
-            EXPECT_TRUE( ( ! traits::need::named_v< local::archive::Order>));
-         }
       } // serialize
    } // common
 } // casual

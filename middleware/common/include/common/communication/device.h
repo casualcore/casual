@@ -71,7 +71,7 @@ namespace casual
 
          using cache_type = typename Connector::cache_type;
          using cache_range_type = range::type_t< cache_type>;
-         using complete_type = traits::iterable::value_t< cache_type>;
+         using complete_type = std::ranges::range_value_t< cache_type>;
          using correlation_type = strong::correlation::id;
 
          template< typename... Args>
@@ -149,10 +149,8 @@ namespace casual
          //!
          //! @return a logical complete message if there is one,
          //!         otherwise the message has absent_message as type
-         template< typename R, typename P>
+         template< concepts::range_with_value< common::message::Type> R, typename P>
          [[nodiscard]] auto next( R&& types, P&& policy) 
-            // `types` is a temple to enable other forms of containers than std::vector
-            -> std::enable_if_t< traits::is::same_v< traits::remove_cvref_t< decltype( *std::begin( types))>, common::message::Type>, complete_type>
          {
             return select(
                [&types]( auto& complete){ return ! common::algorithm::find( types, complete.type()).empty();},
@@ -168,10 +166,8 @@ namespace casual
          //!
          //! @return a logical complete message if there is one,
          //!         otherwise the message has absent_message as type
-         template< typename R, typename P>
+         template< concepts::range_with_value< common::message::Type> R, typename P>
          [[nodiscard]] auto next( R&& types, const correlation_type& correlation, P&& policy) 
-            // `types` is a temple to enable other forms of containers than std::vector
-            -> std::enable_if_t< traits::is::same_v< traits::remove_cvref_t< decltype( *std::begin( types))>, common::message::Type>, complete_type>
          {
             return select( [ &types, &correlation]( auto& complete){ 
                   return ( ! common::algorithm::find( types, complete.type()).empty()) 

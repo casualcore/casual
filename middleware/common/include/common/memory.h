@@ -20,36 +20,36 @@ namespace casual
    {
       namespace memory
       {
-         using size_type = platform::size::type;
-
          namespace detail
          {
             template< typename T>
-            constexpr auto size() -> std::enable_if_t< ! std::is_array< T>::value && std::is_trivially_copyable< T>::value, size_type>
+            constexpr auto size() -> std::enable_if_t< ! std::is_array< T>::value && std::is_trivially_copyable< T>::value, platform::size::type>
             {
                return sizeof( T);
             }
 
             template< typename T>
-            constexpr auto size() -> std::enable_if_t< std::is_array< T>::value && std::is_trivially_copyable< T>::value, size_type>
+            constexpr auto size() -> std::enable_if_t< std::is_array< T>::value && std::is_trivially_copyable< T>::value, platform::size::type>
             {
                return size< std::remove_extent_t< T>>() * std::extent< T>::value;
             }
+
+            template< typename T>
+            concept binary_copyable = std::is_trivially_copyable_v< T> && ! concepts::binary::like< T>;
+
 
          } // detail
 
 
          template< typename T>
-         constexpr size_type size( T&&)
+         constexpr platform::size::type size( T&&)
          {
-            return detail::size< traits::remove_cvref_t<T>>();
+            return detail::size< std::remove_cvref_t<T>>();
          }
 
 
-         template< typename T>
-         auto append( T&& value, platform::binary::type& destination)
-            -> std::enable_if_t< std::is_trivially_copyable_v< traits::remove_cvref_t< T>> 
-               && ! traits::is::binary::like_v< traits::remove_cvref_t< T>>, size_type>
+         template< detail::binary_copyable T>
+         auto append( const T& value, platform::binary::type& destination)
          {
             auto first = reinterpret_cast< const platform::character::type*>( &value);
             auto last = first + memory::size( value);
@@ -62,9 +62,8 @@ namespace casual
             return destination.size();
          }
 
-         template< typename T>
-         auto append( T&& value, platform::binary::type& destination) 
-            -> std::enable_if_t< traits::is::binary::like_v< traits::remove_cvref_t< T>>, size_type>
+         template< concepts::binary::like T>
+         auto append( const T& value, platform::binary::type& destination) 
          {
             destination.insert(
                   std::end( destination),
@@ -82,9 +81,8 @@ namespace casual
          //! @param value value to be 'assigned'
          //! @return the new offset ( @p offset + memory::size( value) )
          //!
-         template< typename S, typename T>
-         auto copy( S&& source, size_type offset, T& value)
-            -> std::enable_if_t< std::is_trivially_copyable_v< T>, size_type>
+         template< typename S, detail::binary_copyable T>
+         auto copy( S&& source, platform::size::type offset, T& value)
          {
             auto size = memory::size( value);
             auto first = std::begin( source) + offset;
@@ -97,9 +95,8 @@ namespace casual
             return offset + size;
          }
 
-         template< typename S, typename T>
-         auto copy( S&& source, size_type offset, T&& value)
-            -> std::enable_if_t< traits::is::binary::like_v< traits::remove_cvref_t< T>>, size_type>
+         template< typename S, concepts::binary::like T>
+         auto copy( S&& source, platform::size::type offset, T&& value)
          {
             auto size = std::distance( std::begin( value), std::end( value));
             auto first = std::begin( source) + offset;

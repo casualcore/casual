@@ -288,7 +288,7 @@ namespace casual
                         auto destination( const M& message)
                         {
                            
-                           if constexpr( common::traits::is::any_v< M, common::message::transaction::commit::Request, common::message::transaction::rollback::Request>)
+                           if constexpr( concepts::any_of< M, common::message::transaction::commit::Request, common::message::transaction::rollback::Request>)
                               // local "user" commit/rollback request has no specific resource (of course)
                               return Destination{ message.process, message.correlation, message.execution, common::strong::resource::id{}};
                            else
@@ -313,7 +313,7 @@ namespace casual
                               result.execution = destination.execution;
                               
                               // local transaction instigator replies need to convert to tx state
-                              if constexpr( common::traits::is::any_v< Reply, common::message::transaction::commit::Reply, common::message::transaction::rollback::Reply>)
+                              if constexpr( concepts::any_of< Reply, common::message::transaction::commit::Reply, common::message::transaction::rollback::Reply>)
                                  result.state = common::code::convert::to::tx( code);
                               else
                               {
@@ -349,7 +349,7 @@ namespace casual
 
                               auto reply = create::reply< Reply>( origin, destination, detail::accumulate::code( replies, outcome, code));
 
-                              if constexpr( common::traits::is::any_v< Reply, common::message::transaction::commit::Reply>)
+                              if constexpr( concepts::any_of< Reply, common::message::transaction::commit::Reply>)
                                  reply.stage = decltype( reply.stage)::commit;
 
                               common::log::line( verbose::log, "reply: ", reply);   
@@ -381,7 +381,7 @@ namespace casual
                                  return;
                               }
 
-                              if constexpr( common::traits::is::any_v< Reply, common::message::transaction::commit::Reply>)
+                              if constexpr( concepts::any_of< Reply, common::message::transaction::commit::Reply>)
                                  reply.stage = decltype( reply.stage)::rollback;
 
                               common::log::line( verbose::log, "reply: ", reply);
@@ -418,7 +418,7 @@ namespace casual
                                  // we can send the reply directly
                                  auto reply = create::reply< Reply>( origin, destination, code);
                                  
-                                 if constexpr( common::traits::is::any_v< Reply, common::message::transaction::commit::Reply>)
+                                 if constexpr( concepts::any_of< Reply, common::message::transaction::commit::Reply>)
                                     reply.stage = decltype( reply.stage)::commit;
                                  
                                  state.multiplex.send( destination.process.ipc, reply);
@@ -429,7 +429,7 @@ namespace casual
                                  state.persistent.log.prepare( *transaction);
                                  
                                  // add _commit-prepare_ message to persistent reply, if reply is the commit reply type
-                                 if constexpr( common::traits::is::any_v< Reply, common::message::transaction::commit::Reply>)
+                                 if constexpr( concepts::any_of< Reply, common::message::transaction::commit::Reply>)
                                  {
                                     auto reply = create::reply< Reply>( origin, destination, code);
                                     reply.stage = decltype( reply.stage)::prepare;

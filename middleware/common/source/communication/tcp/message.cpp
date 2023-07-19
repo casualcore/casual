@@ -48,7 +48,7 @@ namespace casual
       Complete::Complete( common::message::Type type, strong::correlation::id correlation, payload_type payload)
          : payload{ std::move( payload)}
       {
-         m_header.type = network::byteorder::encode( cast::underlying( type));
+         m_header.type = network::byteorder::encode( std::to_underlying( type));
          correlation.underlying().copy( m_header.correlation);
          m_header.size = network::byteorder::size::encode( Complete::payload.size());
       }

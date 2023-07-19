@@ -19,7 +19,7 @@ namespace casual
             template< typename M>
             auto message( M&& message)
             {
-               if constexpr( std::is_same_v< traits::remove_cvref_t< M>, ipc::message::Complete>)
+               if constexpr( std::is_same_v< std::remove_cvref_t< M>, ipc::message::Complete>)
                {
                   static_assert( std::is_rvalue_reference_v< M>, "message::Complete needs to be rvalue reference");
                   return std::forward< M>( message);

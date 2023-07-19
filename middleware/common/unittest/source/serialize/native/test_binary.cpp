@@ -119,7 +119,7 @@ namespace casual
 
                advertise.process.ipc = ipc;
 
-               traits::iterable::value_t< decltype( advertise.services.add)> service;
+               std::ranges::range_value_t< decltype( advertise.services.add)> service;
 
                service.name = "service1";
                advertise.services.add.push_back( service);

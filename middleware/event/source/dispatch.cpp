@@ -45,7 +45,7 @@ namespace casual
 
                      result.pending = std::move( metric.pending);
 
-                     result.code = common::cast::underlying( metric.code);
+                     result.code = std::to_underlying( metric.code);
 
                      return result;
                   }

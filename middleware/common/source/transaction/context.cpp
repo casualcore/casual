@@ -1044,7 +1044,7 @@ namespace casual
                info->xid = transaction.trid.xid;
                info->transaction_state = static_cast< decltype( info->transaction_state)>( transaction.state);
                info->transaction_timeout = std::chrono::duration_cast< std::chrono::seconds>( m_timeout).count();
-               info->transaction_control = cast::underlying( m_control);
+               info->transaction_control = std::to_underlying( m_control);
             }
             return static_cast< bool>( transaction);
          }
@@ -1209,7 +1209,7 @@ namespace casual
                   return code;
             }
 
-            casual::terminate( code::casual::internal_unexpected_value, "unknown control directive: ", cast::underlying( m_control), " - this can not happen");
+            casual::terminate( code::casual::internal_unexpected_value, "unknown control directive: ", std::to_underlying( m_control), " - this can not happen");
          }
 
       } // transaction

@@ -7,11 +7,7 @@
 
 #pragma once
 
-
-
 #include "common/flag/xatmi.h"
-
-#include "common/cast.h"
 
 namespace casual 
 {
@@ -27,12 +23,12 @@ namespace casual
                {
                   enum class Flag : long
                   {
-                     no_flags = cast::underlying( xatmi::Flag::no_flags),
-                     no_transaction = cast::underlying( xatmi::Flag::no_transaction),
-                     no_reply = cast::underlying( xatmi::Flag::no_reply),
-                     no_block = cast::underlying( xatmi::Flag::no_block),
-                     no_time = cast::underlying( xatmi::Flag::no_time),
-                     signal_restart = cast::underlying( xatmi::Flag::signal_restart)
+                     no_flags = std::to_underlying( xatmi::Flag::no_flags),
+                     no_transaction = std::to_underlying( xatmi::Flag::no_transaction),
+                     no_reply = std::to_underlying( xatmi::Flag::no_reply),
+                     no_block = std::to_underlying( xatmi::Flag::no_block),
+                     no_time = std::to_underlying( xatmi::Flag::no_time),
+                     signal_restart = std::to_underlying( xatmi::Flag::signal_restart)
                   };
                   using Flags = common::Flags< async::Flag>;
                } // async
@@ -41,12 +37,12 @@ namespace casual
                {
                   enum class Flag : long
                   {
-                     no_flags = cast::underlying( xatmi::Flag::no_flags),
-                     any = cast::underlying( xatmi::Flag::any),
-                     no_change = cast::underlying( xatmi::Flag::no_change),
-                     no_block = cast::underlying( xatmi::Flag::no_block),
-                     no_time = cast::underlying( xatmi::Flag::no_time),
-                     signal_restart = cast::underlying( xatmi::Flag::signal_restart)
+                     no_flags = std::to_underlying( xatmi::Flag::no_flags),
+                     any = std::to_underlying( xatmi::Flag::any),
+                     no_change = std::to_underlying( xatmi::Flag::no_change),
+                     no_block = std::to_underlying( xatmi::Flag::no_block),
+                     no_time = std::to_underlying( xatmi::Flag::no_time),
+                     signal_restart = std::to_underlying( xatmi::Flag::signal_restart)
                   };
                   using Flags = common::Flags< reply::Flag>;
 
@@ -58,12 +54,12 @@ namespace casual
                {
                   enum class Flag : long
                   {
-                     no_flags = cast::underlying( xatmi::Flag::no_flags),
-                     no_transaction = cast::underlying( xatmi::Flag::no_transaction),
-                     no_change = cast::underlying( xatmi::Flag::no_change),
-                     no_block = cast::underlying( xatmi::Flag::no_block),
-                     no_time = cast::underlying( xatmi::Flag::no_time),
-                     signal_restart = cast::underlying( xatmi::Flag::signal_restart)
+                     no_flags = std::to_underlying( xatmi::Flag::no_flags),
+                     no_transaction = std::to_underlying( xatmi::Flag::no_transaction),
+                     no_change = std::to_underlying( xatmi::Flag::no_change),
+                     no_block = std::to_underlying( xatmi::Flag::no_block),
+                     no_time = std::to_underlying( xatmi::Flag::no_time),
+                     signal_restart = std::to_underlying( xatmi::Flag::signal_restart)
                   };
                   using Flags = common::Flags< sync::Flag>;
                } // sync

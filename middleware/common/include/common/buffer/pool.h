@@ -27,25 +27,22 @@ namespace casual
 {
    namespace common::buffer::pool
    {
-      //! if needed somewhere else, move it to common/traits.h (if it's possible)
-      namespace traits::is
+      //! if needed somewhere else, move it to casual/concepts.h (if it's possible)
+      namespace is
       {
-         namespace detail
+         template< typename T>
+         concept loggable = requires( const T& a)
          {
-            template< typename T> 
-            using loggable = decltype( common::stream::write( std::declval< std::ostream&>(), std::declval< const T&>()));
-
-            template< typename T> 
-            using adoptable = decltype( std::declval< T&>().adopt( Payload{}, std::add_pointer_t< buffer::handle::type>{}));
-         } // detail
+            common::stream::write( std::declval< std::ostream&>(), a);
+         };
 
          template< typename T>
-         constexpr bool loggable_v = common::traits::detect::is_detected_v< detail::loggable, T>;
-
-         template< typename T>
-         constexpr bool adoptable_v = common::traits::detect::is_detected_v< detail::adoptable, T>;
+         concept adoptable = requires( T& a)
+         {
+            a.adopt( Payload{}, std::add_pointer_t< buffer::handle::type>{});
+         };
          
-      } // traits::is
+      } // is
 
 
       struct Holder
@@ -140,7 +137,7 @@ namespace casual
             
             buffer::handle::mutate::type adopt( Payload payload, [[maybe_unused]] buffer::handle::type* inbound) override 
             {
-               if constexpr( traits::is::adoptable_v< pool_type>)
+               if constexpr( is::adoptable< pool_type>)
                   return m_pool.adopt( std::move( payload), inbound);
                else
                   return m_pool.insert( std::move( payload));
@@ -177,7 +174,7 @@ namespace casual
             {
                stream::write( out, "{ types: ", pool_type::types());
 
-               if constexpr( traits::is::loggable_v< pool_type>)
+               if constexpr( is::loggable< pool_type>)
                   stream::write( out, ", pool: ", m_pool, '}');
                else
                   stream::write( out, '}');

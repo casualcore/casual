@@ -69,7 +69,7 @@ namespace casual
 
             template<typename T>
             auto write( T&& value, traits::priority::tag< 1>)
-               -> decltype( void( std::hash< traits::remove_cvref_t< T>>{}( value)))
+               -> decltype( void( std::hash< std::remove_cvref_t< T>>{}( value)))
             {
                add( std::forward< T>( value));
             }
@@ -104,7 +104,7 @@ namespace casual
             {
                // stolen from: https://stackoverflow.com/questions/2590677/how-do-i-combine-hash-values-in-c0x
                // assumes that the 'boost guys' knows this stuff and have tested the entropy
-               std::hash< traits::remove_cvref_t< T>> hasher;
+               std::hash< std::remove_cvref_t< T>> hasher;
                m_hash ^= hasher( value) + 0x9e3779b9 + (m_hash<<6) + (m_hash>>2);
             }
 

@@ -361,7 +361,7 @@ namespace casual
          using underlying_type = std::underlying_type_t< message::Type>;
 
          constexpr auto type( underlying_type type) { return static_cast< Type>( type);}
-         constexpr auto type( Type type) { return cast::underlying( type);}
+         constexpr auto type( Type type) { return std::to_underlying( type);}
 
       } // convert
 
@@ -480,6 +480,14 @@ namespace casual
          }
 
       } // reverse
+
+      template< typename T>
+      concept like = requires( T a) 
+      {
+         { a.type()} -> std::same_as< message::Type>;
+         a.correlation;
+         a.execution;
+      };
 
    } // common::message
 } // casual

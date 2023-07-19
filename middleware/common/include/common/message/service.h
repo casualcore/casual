@@ -482,9 +482,9 @@ namespace casual
             {
                enum class Flag : long
                {
-                  no_transaction = cast::underlying( flag::xatmi::Flag::no_transaction),
-                  no_reply = cast::underlying( flag::xatmi::Flag::no_reply),
-                  no_time = cast::underlying( flag::xatmi::Flag::no_time),
+                  no_transaction = std::to_underlying( flag::xatmi::Flag::no_transaction),
+                  no_reply = std::to_underlying( flag::xatmi::Flag::no_reply),
+                  no_time = std::to_underlying( flag::xatmi::Flag::no_time),
                };
                using Flags = common::Flags< Flag>;
 

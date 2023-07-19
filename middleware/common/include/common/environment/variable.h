@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include "common/traits.h"
+#include "casual/concepts.h"
 
 #include <string>
 #include <string_view>
@@ -43,7 +43,7 @@ namespace casual
             }
          };
 
-         static_assert( traits::is::string::like_v< Variable>, "environment::Variable should be string-like");
+         static_assert( concepts::string::like< Variable>, "environment::Variable should be string-like");
 
       } // environment
    } // common

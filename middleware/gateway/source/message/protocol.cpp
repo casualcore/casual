@@ -6,7 +6,6 @@
 
 #include "gateway/message/protocol.h"
 
-#include "common/cast.h"
 #include "common/algorithm.h"
 
 
@@ -22,7 +21,7 @@ namespace casual
          if( ! common::algorithm::find( versions, value))
             return out << "invalid";
 
-         return out << common::cast::underlying( value) / 1000 << '.' << common::cast::underlying( value) % 1000;
+         return out << std::to_underlying( value) / 1000 << '.' << std::to_underlying( value) % 1000;
       }
 
    } //gateway::message::protocol

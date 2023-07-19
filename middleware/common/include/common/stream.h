@@ -10,8 +10,11 @@
 #include "common/traits.h"
 #include "common/algorithm.h"
 #include "common/functional.h"
+#include "common/message/type.h"
 
 #include "common/serialize/line.h"
+
+#include "casual/concepts/serialize.h"
 
 #include <ostream>
 
@@ -125,11 +128,11 @@ namespace casual
 
 
          //! Specialization for iterables, to log ranges
-         template< typename C> 
+         template< typename C>
          struct point< C, std::enable_if_t< 
-            traits::is::iterable_v< C>
-            && ! traits::is::string::like_v< C>
-            && traits::has::empty_v< C>>>
+            concepts::range< C>
+            && ! concepts::string::like< C>
+            && concepts::container::empty< C>>>
          {
             template< typename R>
             static void stream( std::ostream& out, R&& range)
@@ -166,14 +169,14 @@ namespace casual
             
             static auto stream( std::ostream& out, T value, traits::priority::tag< 0>)
             {
-               out << common::cast::underlying( value);
+               out << std::to_underlying( value);
             }
          };
 
 
          //! Specialization for named
          template< typename T>
-         struct point< T, std::enable_if_t< serialize::traits::is::named::value_v< T>>>
+         struct point< T, std::enable_if_t< concepts::serialize::named::value< T>>>
          {               
             template< typename C>
             static void stream( std::ostream& out, const C& value)
@@ -216,7 +219,7 @@ namespace casual
 
          //! Specialization for _messages_
          template< typename T>
-         struct point< T, std::enable_if_t< serialize::traits::is::message::like_v< T>>>
+         struct point< T, std::enable_if_t< common::message::like< T>>>
          {  
             static void stream( std::ostream& out, const T& value)
             {

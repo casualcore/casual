@@ -19,7 +19,7 @@ namespace casual
       namespace traits
       {
          template< typename T, typename A>
-         using value_t = customize::Value< common::traits::remove_cvref_t< T>, common::traits::remove_cvref_t< A>>;
+         using value_t = customize::Value< std::remove_cvref_t< T>, std::remove_cvref_t< A>>;
       } // traits
 
       namespace composite
@@ -31,7 +31,7 @@ namespace casual
          namespace traits
          {
             template< typename T, typename A>
-            using value_t = composite::Value< common::traits::remove_cvref_t< T>, common::traits::remove_cvref_t< A>>;
+            using value_t = composite::Value< std::remove_cvref_t< T>, std::remove_cvref_t< A>>;
          } // traits
          
       } // composite
@@ -45,7 +45,7 @@ namespace casual
          namespace traits
          {
             template< typename T, typename A>
-            using value_t = composite::Value< common::traits::remove_cvref_t< T>, common::traits::remove_cvref_t< A>>;
+            using value_t = composite::Value< std::remove_cvref_t< T>, std::remove_cvref_t< A>>;
          } // traits
          
       } // forward

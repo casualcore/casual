@@ -115,7 +115,7 @@ namespace casual
 
             static_assert( traits_type::arguments() == 1, "handlers has to have this signature: void( <some message>), can be declared const");
             static_assert(
-               traits::is::any_v< typename traits_type::result_type, void, bool>,
+               concepts::any_of< typename traits_type::result_type, void, bool>,
                "handlers has to have this signature: void|bool( <some message>), can be declared const");
 
             using message_type = std::decay_t< typename traits_type::template argument< 0>::type>;

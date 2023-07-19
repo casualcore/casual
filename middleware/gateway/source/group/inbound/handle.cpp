@@ -412,16 +412,19 @@ namespace casual
                namespace detail
                {
                   template< typename T>
-                  using has_trid = decltype( std::declval< T&>().trid);   
+                  concept has_trid = requires( T& a) 
+                  {
+                     { a.trid } -> std::convertible_to< common::transaction::ID>;
+                  };
                } // detail
+
+               static_assert( detail::has_trid< common::message::service::call::callee::Request>);
 
                template< typename M>
                auto correlate( State& state, const M& message)
                {
-                  if constexpr( common::traits::detect::is_detected_v< detail::has_trid, M>)
-                  {
+                  if constexpr( detail::has_trid< M>)
                      state.in_flight_cache.add( state.external.last(), message.trid);
-                  }
 
                   state.correlations.emplace_back( message.correlation, state.external.last());
                   return state.external.last();

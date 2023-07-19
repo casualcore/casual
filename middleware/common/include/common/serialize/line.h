@@ -10,9 +10,7 @@
 #include "common/serialize/value.h"
 #include "common/serialize/archive.h"
 #include "common/stream/customization.h"
-#include "common/cast.h"
 #include "common/array.h"
-
 
 #include <ostream>
 
@@ -56,9 +54,8 @@ namespace casual
          std::ostringstream m_stream;
          const char* m_prefix = detail::first;
 
-         template<typename T>
+         template< concepts::serialize::archive::native::type T>
          auto dispatch( T&& value, const char* name, common::traits::priority::tag< 1>) 
-            -> std::enable_if_t< traits::is::archive::native::type_v< common::traits::remove_cvref_t< T>>>
          {
             save( std::forward< T>( value), name);
          }

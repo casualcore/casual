@@ -401,7 +401,7 @@ namespace casual
 
          int casual_queue_get_errno()
          {
-            return casual::common::cast::underlying( local::global::code);
+            return std::to_underlying( local::global::code);
          }
 
          casual_message_descriptor_t casual_queue_message_create( casual_buffer_t buffer)

@@ -9,7 +9,6 @@
 #include "casual/platform.h"
 
 #include "common/array.h"
-#include "common/serialize/traits.h"
 
 #include <iosfwd>
 
@@ -45,7 +44,7 @@ namespace casual
       template< typename M>
       constexpr auto version()
       {
-         return version_traits< common::traits::remove_cvref_t< M>>::version();
+         return version_traits< std::remove_cvref_t< M>>::version();
       }
 
       //! @returns true if M (message) is compatible with `current`

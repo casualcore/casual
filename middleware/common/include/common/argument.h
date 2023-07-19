@@ -192,7 +192,11 @@ namespace casual
                friend std::ostream& operator << ( std::ostream& out, const Invoked& value);
             };
 
-
+            template< typename T>
+            concept has_validate = requires( T a) 
+            {
+               a.validate();
+            };
  
             struct Handler
             {
@@ -273,20 +277,14 @@ namespace casual
 
                   std::unique_ptr< Concept> copy() const override { return std::make_unique< model>( *this); }
                private:
-                  template< typename T>
-                  using has_validate = decltype( std::declval< T&>().validate());
 
                   template< typename T>
-                  static auto selective_validate( T& handler) -> 
-                     std::enable_if_t< common::traits::detect::is_detected< has_validate, T>::value>
+                  static void selective_validate( T& handler)
                   {
-                     handler.validate();
+                     if constexpr( has_validate< T>)
+                        handler.validate();
                   }
-                  template< typename T>
-                  static auto selective_validate( T& handler) -> 
-                     std::enable_if_t< ! common::traits::detect::is_detected< has_validate, T>::value>
-                  { }
-
+  
                   H m_handler;
                };
                std::unique_ptr< Concept> m_handler;
@@ -323,8 +321,8 @@ namespace casual
                   // container sequences
                   template< typename T> 
                   struct value_traits< T, std::enable_if_t< 
-                     traits::is::container::sequence::like_v< T>
-                     && ! traits::is::string::like_v< T>>>
+                     concepts::container::sequence< T>
+                     && ! concepts::string::like< T>>>
                   {
                      using value_type = std::decay_t< decltype( *std::begin( std::declval< T&>()))>;
                      using value_cardinality = decltype( value_traits< value_type>::cardinality());
@@ -350,7 +348,7 @@ namespace casual
 
                   // tuple
                   template< typename T> 
-                  struct value_traits< T, std::enable_if_t< traits::is::tuple_v< T>>>
+                  struct value_traits< T, std::enable_if_t< concepts::tuple::like< T>>>
                   {
                      constexpr static auto cardinality() 
                      { 
@@ -366,7 +364,7 @@ namespace casual
 
                   // optional like
                   template< typename T> 
-                  struct value_traits< T, std::enable_if_t< traits::is::optional_like_v< T>>>
+                  struct value_traits< T, std::enable_if_t< concepts::optional::like< T>>>
                   {
                      
                      using value_type = std::decay_t< decltype( std::declval< T&>().value())>;
@@ -471,7 +469,7 @@ namespace casual
                   struct Invoke;
 
                   template< typename C>
-                  struct Invoke< C, std::enable_if_t< traits::is::function_v< C>>> 
+                  struct Invoke< C, std::enable_if_t< traits::is::function< C>>> 
                   {
                      using value_type = value_holder< typename traits::function< C>::decayed>;
                      
@@ -504,7 +502,7 @@ namespace casual
                   };
 
                   template< typename T> 
-                  struct Invoke< T, std::enable_if_t< traits::is::tuple_v< T>>> : value_holder< T>
+                  struct Invoke< T, std::enable_if_t< concepts::tuple::like< T>>> : value_holder< T>
                   {
                      using base_type = value_holder< T>;
                      using base_type::base_type;
@@ -1025,14 +1023,14 @@ namespace casual
                {
                   template< typename T, 
                      std::enable_if_t< 
-                        traits::is::function_v< T>
+                        traits::is::function< T>
                         && traits::function< T>::arguments() == 1
                         && std::is_same_v< typename traits::function< T>::result_type, void>,
                      int> = 0> 
                   auto many( T&& callable)
                   {
-                     using rest_type = traits::remove_cvref_t< typename traits::function< T>::template argument< 0>::type>;
-                     using first_type = traits::iterable::value_t< rest_type>;
+                     using rest_type = std::remove_cvref_t< typename traits::function< T>::template argument< 0>::type>;
+                     using first_type = std::ranges::range_value_t< rest_type>;
 
                      return [ callable = std::forward< T>( callable)]( first_type first, rest_type rest)
                      {

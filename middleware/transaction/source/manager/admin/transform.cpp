@@ -125,7 +125,7 @@ namespace casual
                         case state::transaction::Stage::commit: return admin::model::transaction::Stage::commit;
                         case state::transaction::Stage::rollback: return admin::model::transaction::Stage::rollback;
                      }
-                     casual::terminate( "unknown value for stage: ", common::cast::underlying( stage));
+                     casual::terminate( "unknown value for stage: ", std::to_underlying( stage));
                   };
 
                   admin::model::Transaction result;

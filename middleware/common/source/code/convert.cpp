@@ -76,7 +76,7 @@ namespace casual
                      case std::errc::interrupted:        return code::casual::interrupted;
 
                      default: 
-                       stream::write( log::debug, "no explict conversion for ", code, "(", cast::underlying( code), ") - using: ", code::casual::internal_unexpected_value, '\n'); 
+                       stream::write( log::debug, "no explict conversion for ", code, "(", std::to_underlying( code), ") - using: ", code::casual::internal_unexpected_value, '\n'); 
                        return code::casual::internal_unexpected_value;
                   }
 

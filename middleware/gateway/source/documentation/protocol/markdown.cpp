@@ -95,16 +95,16 @@ namespace casual
                   return typeid( T).name();
                }
 
-               template< typename T>
-               auto network( T&& value) -> std::enable_if_t< ! common::serialize::native::binary::network::detail::is_network_array_v< T>, Type>
+               template< common::serialize::native::binary::network::detail::network_value T>
+               auto network( T&& value)
                {
                   auto network = common::network::byteorder::encode( common::serialize::native::binary::network::detail::cast( value));
                   const auto size = common::memory::size( network);
                   return Type{ name( network), { size, size}};
                }
 
-               template< typename T>
-               auto network( T&& value) -> std::enable_if_t< common::serialize::native::binary::network::detail::is_network_array_v< T>, Type>
+               template< common::serialize::native::binary::network::detail::network_array T>
+               auto network( T&& value)
                {
                   const auto size = common::memory::size( value);
                   return Type{ "fixed array", { size, size}};
@@ -178,9 +178,8 @@ namespace casual
                inline void composite_end(  const char*) { canonical.pop();}
 
 
-               template< typename T> 
+               template< concepts::serialize::archive::native::type T> 
                auto write( T&& value, const char* name)
-                  -> std::enable_if_t< common::serialize::traits::is::archive::native::type_v< common::traits::remove_cvref_t< T>>>
                { 
                   canonical.push( name);
                   write( std::forward< T>( value));
@@ -218,7 +217,7 @@ namespace casual
                   m_types.push_back( std::move( info));               
                }
                template< typename T>
-               auto write( T&& value) -> std::enable_if_t< std::is_arithmetic< common::traits::remove_cvref_t< T>>::value>
+               auto write( T&& value) -> std::enable_if_t< std::is_arithmetic< std::remove_cvref_t< T>>::value>
                {
                   type( value);
                }
@@ -368,7 +367,7 @@ namespace casual
                      return algorithm::find( range::reverse( gateway::message::protocol::versions), gateway::message::protocol::version< Message>());
                   };
 
-                  return common::stream::write( out, "\n\n", bangs, ' ', Message::type(), " - **#", cast::underlying( Message::type()), "** - _", versions(), '_');
+                  return common::stream::write( out, "\n\n", bangs, ' ', Message::type(), " - **#", std::to_underlying( Message::type()), "** - _", versions(), '_');
                }
             } // message
 
@@ -458,7 +457,7 @@ version | protocol value
 --------|----------------------------
 )";
             for( auto version : common::range::reverse( message::protocol::versions))
-               common::stream::write( out, version, "     | ", common::cast::underlying( version), '\n');
+               common::stream::write( out, version, "     | ", std::to_underlying( version), '\n');
 
 
             out << R"(
@@ -992,7 +991,7 @@ Sent to establish a conversation
                         { "xid.gtrid_length", "length of the transaction gtrid part"},
                         { "xid.bqual_length", "length of the transaction branch part"},
                         { "xid.data", "byte array with the size of gtrid_length + bqual_length (max 128)"},
-                        { "duplex", string::compose( "in what duplex the callee shall enter (", Duplex::receive, ":", cast::underlying( Duplex::receive), ", ", Duplex::send, ":", cast::underlying( Duplex::send),')') },
+                        { "duplex", string::compose( "in what duplex the callee shall enter (", Duplex::receive, ":", std::to_underlying( Duplex::receive), ", ", Duplex::send, ":", std::to_underlying( Duplex::send),')') },
                         { "buffer.type.size", "buffer type name size"},
                         { "buffer.type.data", "byte array with buffer type in the form 'type/subtype'"},
                         { "buffer.data.size", "buffer payload size (could be very big)"},
@@ -1033,7 +1032,7 @@ Represent a message sent 'over' an established connection
 
                local::format::type( out, message, {
                         { "execution", "uuid of the current execution context (breadcrumb)"},
-                        { "duplex", string::compose( "in what duplex the callee shall enter (", Duplex::receive, ":", cast::underlying( Duplex::receive), ", ", Duplex::send, ":", cast::underlying( Duplex::send),')') },
+                        { "duplex", string::compose( "in what duplex the callee shall enter (", Duplex::receive, ":", std::to_underlying( Duplex::receive), ", ", Duplex::send, ":", std::to_underlying( Duplex::send),')') },
                         { "events", "events"},
                         { "code.result", "status of the connection"},
                         { "code.user", "user code, if callee did a tpreturn and supplied user-code"},

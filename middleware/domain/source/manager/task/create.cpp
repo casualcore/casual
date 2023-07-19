@@ -92,6 +92,8 @@ namespace casual
                   // duration of the task, and then back to the origin (which could be true)
                   struct Shared
                   {
+                     Shared( State& state, strong::server::id id) : state{ &state}, id{ id} {}
+
                      State* state{};
                      strong::server::id id;
                      bool origin_restart{};
@@ -99,7 +101,7 @@ namespace casual
                      std::vector< strong::process::id> spawned_not_connected;
                   };
 
-                  auto shared = std::make_shared< Shared>( Shared{ .state = &state, .id = id});
+                  auto shared = std::make_shared< Shared>( state, id);
 
                   // helper to send done event.
                   static constexpr auto send_done_event = []( const Shared& shared, casual::task::unit::id id)
@@ -202,13 +204,15 @@ namespace casual
                   // duration of the task, and then back to the origin (which could be true)
                   struct Shared
                   {
+                     Shared( State& state, strong::executable::id id) : state{ &state}, id{ id} {}
+
                      State* state{};
                      strong::executable::id id;
                      bool origin_restart{};
                      std::vector< strong::process::id> pids;
                   };
 
-                  auto shared = std::make_shared< Shared>( Shared{ .state = &state, .id = id});
+                  auto shared = std::make_shared< Shared>( state, id);
 
                   // helper to send done event.
                   static constexpr auto send_done_event = []( const Shared& shared, casual::task::unit::id id)
@@ -480,6 +484,9 @@ namespace casual
       {
          struct Shared
          {
+            Shared( State& state, casual::configuration::Model wanted)
+               : state{ &state}, wanted{ std::move( wanted)} {}
+            
             struct Correlation
             {
                strong::correlation::id id;
@@ -497,7 +504,7 @@ namespace casual
          {
             Trace trace{ "domain::manager::task::create::configuration::managers::update"};
 
-            auto shared = std::make_shared< Shared>( Shared{ .state = &state, .wanted = std::move( wanted)});
+            auto shared = std::make_shared< Shared>( state, std::move( wanted));
 
             auto action = [ shared, destinations]( casual::task::unit::id id)
             {

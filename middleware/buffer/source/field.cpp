@@ -213,7 +213,7 @@ namespace casual
                }
             };
 
-            static_assert( common::buffer::pool::traits::is::adoptable_v< Allocator>, "not adoptable"); 
+            static_assert( common::buffer::pool::is::adoptable< Allocator>, "not adoptable"); 
 
          } // <unnamed>
       } // local

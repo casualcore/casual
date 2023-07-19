@@ -60,7 +60,7 @@ namespace casual
                template< count::Tag tag, typename C, typename Message>
                constexpr auto create( C creator, const Message&)
                {
-                  constexpr auto type = common::message::type< common::traits::remove_cvref_t< Message>>();
+                  constexpr auto type = common::message::type< std::remove_cvref_t< Message>>();
                   return creator( 
                      type, 
                      detail::count::basic_count< tag, type>::value());
@@ -86,7 +86,7 @@ namespace casual
                template< typename Message>
                constexpr void receive( Message&&)
                {
-                  detail::count::Receive< common::message::type< common::traits::remove_cvref_t< Message>>()>::increment();
+                  detail::count::Receive< common::message::type< std::remove_cvref_t< Message>>()>::increment();
                }
 
                template< typename C, typename... Messages>
@@ -98,7 +98,7 @@ namespace casual
                template< typename Message>
                constexpr void send( Message&&)
                {
-                  detail::count::Send< common::message::type< common::traits::remove_cvref_t< Message>>()>::increment();
+                  detail::count::Send< common::message::type< std::remove_cvref_t< Message>>()>::increment();
                }
 
                template< typename C, typename... Messages>
