@@ -150,6 +150,9 @@ namespace casual
 
       template< typename T, typename... Ts> 
       concept derived_from = ( std::derived_from< std::remove_cvref_t< T>, Ts> || ...);
+
+      template< typename T>
+      concept enumerator = std::is_enum_v< T>;
       
    } // concepts
 } // casual

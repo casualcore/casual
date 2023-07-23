@@ -104,8 +104,8 @@ namespace casual
 
             //! specialization for std::error_code
             template< typename T> 
-            struct point< T, std::enable_if_t< 
-               std::is_error_code_enum_v < T>>>
+            requires std::is_error_code_enum_v < T>
+            struct point< T>
             {
                static void stream( std::ostream& out, T value)
                {
@@ -115,8 +115,8 @@ namespace casual
 
             //! specialization for std::error_condition
             template< typename T> 
-            struct point< T, std::enable_if_t< 
-               std::is_error_condition_enum_v< T>>>
+            requires std::is_error_condition_enum_v< T>
+            struct point< T>
             {
                static void stream( std::ostream& out, T value)
                {
@@ -129,10 +129,8 @@ namespace casual
 
          //! Specialization for iterables, to log ranges
          template< typename C>
-         struct point< C, std::enable_if_t< 
-            concepts::range< C>
-            && ! concepts::string::like< C>
-            && concepts::container::empty< C>>>
+         requires ( concepts::range< C> && ! concepts::string::like< C> && concepts::container::empty< C>)
+         struct point< C>
          {
             template< typename R>
             static void stream( std::ostream& out, R&& range)
@@ -150,8 +148,8 @@ namespace casual
          };
 
          //! Specialization for enum
-         template< typename T>
-         struct point< T, std::enable_if_t< std::is_enum_v< T>>>
+         template< concepts::enumerator T>
+         struct point< T>
          { 
             static void stream( std::ostream& out, T value) 
             {
@@ -175,8 +173,8 @@ namespace casual
 
 
          //! Specialization for named
-         template< typename T>
-         struct point< T, std::enable_if_t< concepts::serialize::named::value< T>>>
+         template< concepts::serialize::named::value T>
+         struct point< T>
          {               
             template< typename C>
             static void stream( std::ostream& out, const C& value)
@@ -186,8 +184,8 @@ namespace casual
          };
 
          //! Specialization for std::exception
-         template< typename T>
-         struct point< T, std::enable_if_t< std::is_base_of_v< std::exception, T>>>
+         template< std::derived_from< std::exception>  T>
+         struct point< T>
          {
             template< typename C>
             static void stream( std::ostream& out, const C& value)
@@ -218,8 +216,8 @@ namespace casual
          };
 
          //! Specialization for _messages_
-         template< typename T>
-         struct point< T, std::enable_if_t< common::message::like< T>>>
+         template< common::message::like T>
+         struct point< T>
          {  
             static void stream( std::ostream& out, const T& value)
             {

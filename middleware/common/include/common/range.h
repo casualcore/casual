@@ -191,7 +191,7 @@ namespace casual
          constexpr platform::size::type size( const C& container) noexcept { return std::ssize( container);}
 
          template< typename C>
-         constexpr auto empty( C&& container) noexcept { return std::empty( std::forward< C>( container));}
+         constexpr auto empty( C&& container) noexcept { return std::ranges::empty( std::forward< C>( container));}
 
 
          //! Returns the first value in the range

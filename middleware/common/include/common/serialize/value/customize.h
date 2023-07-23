@@ -10,10 +10,11 @@
 
 namespace casual
 {
+   
    namespace common::serialize::customize
    {
       //! customization point for serialization
-      template< typename T, typename A, typename Enable = void> 
+      template< typename T, typename A> 
       struct Value;
 
       namespace traits
@@ -25,7 +26,7 @@ namespace casual
       namespace composite
       {
          //! customization point for serialization
-         template< typename T, typename A, typename Enable = void> 
+         template< typename T, typename A> 
          struct Value;
 
          namespace traits
@@ -36,19 +37,6 @@ namespace casual
          
       } // composite
 
-      namespace forward
-      {
-         //! customization point for forward
-         template< typename T, typename A, typename Enable = void> 
-         struct Value;
-
-         namespace traits
-         {
-            template< typename T, typename A>
-            using value_t = composite::Value< std::remove_cvref_t< T>, std::remove_cvref_t< A>>;
-         } // traits
-         
-      } // forward
-
    } // common::serialize::customize
+   
 } // casual

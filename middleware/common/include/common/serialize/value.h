@@ -28,7 +28,7 @@ namespace casual
    
       //! "customization point" for casual known stuff
       //! @{
-      template< typename T, typename A, typename Enable = void> 
+      template< typename T, typename A> 
       struct Value;
 
       namespace traits
@@ -178,25 +178,14 @@ namespace casual
             }
          } // detail
 
-         //! take care of read that returns bool
+         //! take care of read. if returns void -> and always return true
          template< typename A, typename T>
-         auto read( A& archive, T&& value, const char* name) -> std::enable_if_t<
-            std::is_same< 
-               decltype( detail::read( archive, std::forward< T>( value), name)), 
-               bool
-            >::value, bool>
+         auto read( A& archive, T&& value, const char* name)
          {
-            return detail::read( archive, std::forward< T>( value), name);
-         }
-
-         //! take care of read that returns void -> and always return true
-         template< typename A, typename T>
-         auto read( A& archive, T&& value, const char* name) -> std::enable_if_t<
-            ! std::is_same< 
-               decltype( detail::read( archive, std::forward< T>( value), name)), 
-               bool
-            >::value, bool>
-         {
+            if constexpr( std::same_as< bool, decltype( detail::read( archive, std::forward< T>( value), name))>)
+               return detail::read( archive, std::forward< T>( value), name);
+            
+            // otherwise always return true.
             detail::read( archive, std::forward< T>( value), name);
             return true;
          }
@@ -225,7 +214,8 @@ namespace casual
 
       //! Specialization for serializable
       template< typename T, typename A>
-      struct Value< T, A, std::enable_if_t< detail::has::value::serialize< A, T>>>
+      requires detail::has::value::serialize< A, T>
+      struct Value< T, A>
       {
          template< typename V> 
          static void write( A& archive, const V& value, const char* name)
@@ -269,11 +259,17 @@ namespace casual
          };
       } // detail::integral::archive::conformant
 
+      namespace detail
+      {
+         template< typename T>
+         concept odd_integral_types = concepts::any_of< T, 
+         std::int8_t, std::uint8_t, std::uint16_t, int, unsigned int, std::int32_t, std::uint32_t, unsigned long, std::uint64_t>;
+         
+      } // detail
+
       //! Specialization for "odd" integral types
-      template< typename T, typename A>
-      struct Value< T, A, std::enable_if_t< concepts::any_of< T, 
-         std::int8_t, std::uint8_t, std::uint16_t, int, unsigned int, std::int32_t, std::uint32_t, unsigned long, std::uint64_t
-      >>>
+      template< detail::odd_integral_types T, typename A>
+      struct Value< T, A>
       {
          static void write( A& archive, const T& value, const char* name)
          {
@@ -299,8 +295,8 @@ namespace casual
       };
 
       //! Specialization for enum
-      template< typename T, typename A>
-      struct Value< T, A, std::enable_if_t< std::is_enum_v< T>>>
+      template< concepts::enumerator T, typename A>
+      struct Value< T, A>
       {
          template< typename V> 
          static void write( A& archive, V&& value, const char* name)
@@ -397,8 +393,8 @@ namespace casual
       } // detail
 
       //! Specialization for tuple
-      template< typename T, typename A>
-      struct Value< T, A, std::enable_if_t< concepts::tuple::like< T>>>
+      template< concepts::tuple::like T, typename A>
+      struct Value< T, A>
       {
          template< typename V> 
          static void write( A& archive, V&& value, const char* name)
@@ -429,13 +425,10 @@ namespace casual
 
       namespace detail
       {
-         namespace is
-         {
-            template< typename T, typename C = std::remove_cvref_t< T>> 
-            inline constexpr bool container_v = concepts::container::like< C>
-               && ! concepts::string::like< C>
-               && ! concepts::serialize::archive::native::type< C>;
-         } // is
+         template< typename T>
+         concept container_like = concepts::container::like< std::remove_cvref_t< T>>
+               && ! concepts::string::like< std::remove_cvref_t< T>>
+               && ! concepts::serialize::archive::native::type< std::remove_cvref_t< T>>;
 
          namespace container
          {
@@ -500,8 +493,8 @@ namespace casual
 
 
       //! Specialization for containers
-      template< typename T, typename A>
-      struct Value< T, A, std::enable_if_t< detail::is::container_v< T>>>
+      template< detail::container_like T, typename A>
+      struct Value< T, A>
       {
          template< typename C> 
          static void write( A& archive, C&& container, const char* name)
@@ -517,10 +510,8 @@ namespace casual
 
       //! Specialization for binary array likes
       template< typename T, typename A>
-      struct Value< T, A, std::enable_if_t< 
-         concepts::container::array< T>
-         && concepts::binary::like< T>
-      >>
+      requires concepts::container::array< T> && concepts::binary::like< T>
+      struct Value< T, A>
       {
          template< typename V> 
          static void write( A& archive, V&& value, const char* name)
@@ -622,10 +613,8 @@ namespace casual
 
       //! Specialization for optional-like (that hasn't 'serialize')
       template< typename T, typename A>
-      struct Value< T, A, std::enable_if_t< 
-         concepts::optional::like< T>
-         && ! concepts::serialize::has::serialize< T, A>
-      >>
+      requires ( concepts::optional::like< T> && ! concepts::serialize::has::serialize< T, A>)
+      struct Value< T, A>
       {
          template< typename V> 
          static void write( A& archive, V&& value, const char* name)
@@ -748,8 +737,8 @@ namespace casual
       };  
 
       //! Specialization for named value
-      template< typename T, typename A>
-      struct Value< T, A, std::enable_if_t< concepts::serialize::named::value< T>>>
+      template< concepts::serialize::named::value T, typename A>
+      struct Value< T, A>
       {
          template< typename V>
          static auto write( A& archive, V&& value, const char*)

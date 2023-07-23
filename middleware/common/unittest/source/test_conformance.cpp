@@ -39,7 +39,9 @@ namespace casual
    namespace common
    {
 
-      // static test of traits
+
+
+      // static test of concepts
 
       static_assert( concepts::same_as< char, char, char, char, char>, "concepts::same_as does not work...");
 
@@ -66,6 +68,44 @@ namespace casual
       static_assert( ! concepts::binary::like< std::vector< int>>, "concepts not work...");
       static_assert( concepts::binary::iterator< std::vector< char>::iterator>, "concepts not work...");
       static_assert( ! concepts::binary::iterator< std::vector< int>::iterator>, "concepts not work...");
+
+      namespace detail 
+      {
+         template< typename T>
+         struct Specialization;
+
+         template< concepts::range T>
+         struct Specialization< T>
+         {
+            constexpr static std::string_view type() noexcept { return "range";}
+         };
+
+         template< std::integral T>
+         struct Specialization< T>
+         {
+            constexpr static std::string_view type() noexcept { return "integral";}
+         };
+
+         template< typename T>
+         requires std::floating_point< T>
+         struct Specialization< T> 
+         {
+            constexpr static std::string_view type() noexcept { return "floating_point";}
+         };
+
+         template< concepts::range T>
+         requires concepts::string::like< T>
+         struct Specialization< T>
+         {
+            constexpr static std::string_view type() noexcept { return "string_like";}
+         };
+         
+      } // detail
+
+      static_assert( detail::Specialization< std::vector< int>>::type() == "range");
+      static_assert( detail::Specialization< int>::type() == "integral");
+      static_assert( detail::Specialization< double>::type() == "floating_point");
+      static_assert( detail::Specialization< std::string>::type() == "string_like");
 
 
       template< int... values>
@@ -119,6 +159,37 @@ namespace casual
       TEST( common_conformance, concepts)
       {
          EXPECT_TRUE( test_predicate( 21, []( auto value){ return value == 21;}));
+
+      }
+
+      namespace detail
+      {
+         template< concepts::range R>
+         auto sort( R&& range)  
+            -> decltype( void( std::sort( std::begin( range), std::end( range))), std::forward< R>( range))
+         {
+            std::sort( std::begin( range), std::end( range));
+            return std::forward< R>( range);
+         }
+
+         struct A
+         {
+            const char* a;
+            long b;
+            short c;
+
+            friend auto operator<=>( const A&, const A&) = default;
+         };
+
+      } // detail
+
+      TEST( common_conformance, range)
+      {
+         auto as = std::vector< detail::A>{ { "1", 1, 2}, { "2", 2, 3}};
+
+         auto result = as | std::views::filter( []( auto& v){ return v.b == 2;}) | std::views::transform( []( auto& v){ return v.c;});
+
+         EXPECT_TRUE( range::front( result) == 3);
 
       }
 

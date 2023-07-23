@@ -18,14 +18,14 @@ namespace casual
       struct delay;
 
       //! kicks in if T does not have an ostream stream operator
-      template< typename T, typename Enable = void>
+      template< typename T>
       struct point;
 
       namespace supersede
       {
          // highest priority, and will supersede ostream stream operator
          // used to 'override' standard defined stream operators
-         template< typename T, typename Enable = void>
+         template< typename T>
          struct point;
       } // supersede
 
