@@ -216,8 +216,8 @@ namespace casual
                   info.network.type = type;
                   m_types.push_back( std::move( info));               
                }
-               template< typename T>
-               auto write( T&& value) -> std::enable_if_t< std::is_arithmetic< std::remove_cvref_t< T>>::value>
+               template< concepts::arithmetic T>
+               void write( const T& value)
                {
                   type( value);
                }

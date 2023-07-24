@@ -306,7 +306,7 @@ namespace casual
 
 
                   // default for a single argument
-                  template< typename T, typename Enable = void> 
+                  template< typename T> 
                   struct value_traits
                   {
                      constexpr static auto cardinality() { return cardinality::one();};
@@ -319,10 +319,9 @@ namespace casual
                   };
 
                   // container sequences
-                  template< typename T> 
-                  struct value_traits< T, std::enable_if_t< 
-                     concepts::container::sequence< T>
-                     && ! concepts::string::like< T>>>
+                  template< typename T>
+                  requires ( concepts::container::sequence< T> && ! concepts::string::like< T>)
+                  struct value_traits< T>
                   {
                      using value_type = std::decay_t< decltype( *std::begin( std::declval< T&>()))>;
                      using value_cardinality = decltype( value_traits< value_type>::cardinality());
@@ -347,8 +346,8 @@ namespace casual
                   };
 
                   // tuple
-                  template< typename T> 
-                  struct value_traits< T, std::enable_if_t< concepts::tuple::like< T>>>
+                  template< concepts::tuple::like T> 
+                  struct value_traits< T>
                   {
                      constexpr static auto cardinality() 
                      { 
@@ -363,8 +362,8 @@ namespace casual
                   };
 
                   // optional like
-                  template< typename T> 
-                  struct value_traits< T, std::enable_if_t< concepts::optional::like< T>>>
+                  template< concepts::optional::like T> 
+                  struct value_traits< T>
                   {
                      
                      using value_type = std::decay_t< decltype( std::declval< T&>().value())>;
@@ -465,11 +464,11 @@ namespace casual
                      tuple_type arguments;
                   };
                   
-                  template< typename C, typename Enable = void>
+                  template< typename C>
                   struct Invoke;
 
-                  template< typename C>
-                  struct Invoke< C, std::enable_if_t< traits::is::function< C>>> 
+                  template< traits::is::function C>
+                  struct Invoke< C> 
                   {
                      using value_type = value_holder< typename traits::function< C>::decayed>;
                      
@@ -501,8 +500,8 @@ namespace casual
                      std::vector< value_type> m_values;
                   };
 
-                  template< typename T> 
-                  struct Invoke< T, std::enable_if_t< concepts::tuple::like< T>>> : value_holder< T>
+                  template< concepts::tuple::like T> 
+                  struct Invoke< T> : value_holder< T>
                   {
                      using base_type = value_holder< T>;
                      using base_type::base_type;
@@ -1021,12 +1020,8 @@ namespace casual
             {
                namespace detail
                {
-                  template< typename T, 
-                     std::enable_if_t< 
-                        traits::is::function< T>
-                        && traits::function< T>::arguments() == 1
-                        && std::is_same_v< typename traits::function< T>::result_type, void>,
-                     int> = 0> 
+                  template< typename T>
+                  requires ( traits::is::function< T> && traits::function< T>::arguments() == 1 && std::same_as< typename traits::function< T>::result_type, void>)
                   auto many( T&& callable)
                   {
                      using rest_type = std::remove_cvref_t< typename traits::function< T>::template argument< 0>::type>;

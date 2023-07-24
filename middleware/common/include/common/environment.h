@@ -76,9 +76,8 @@ namespace casual
             namespace detail
             {
 
-               template< typename A>
-               auto get( std::string_view name, A alternative, traits::priority::tag< 2>)
-                  -> std::enable_if_t< std::is_convertible_v< A, std::string>, std::string>
+               template< std::convertible_to< std::string>  A>
+               std::string get( std::string_view name, A alternative, traits::priority::tag< 2>)
                {
                   if( variable::exists( name))
                      return variable::get( name);

@@ -65,13 +65,6 @@ namespace casual
             {
                inline constexpr static auto archive_type() { return serialize::archive::Type::static_order_type;}
 
-
-               template< typename T>
-               constexpr static bool is_integer() { return concepts::any_of< T, short, int, long, long long, unsigned short, unsigned int, unsigned long, unsigned long long>;}
-
-               template< typename T>
-               constexpr static bool is_float() { return concepts::any_of< T, float, double, long double>;}
-
                inline std::tuple< platform::size::type, bool> container_start( platform::size::type size, const char*) 
                {
                   return { basic_archive::size( Policy::size::container()) , true};
@@ -89,16 +82,16 @@ namespace casual
                inline bool composite_start( const char*) { return true;}
                inline void composite_end(  const char* name) {} // no-op
 
-               template< typename T>
-               auto read( T& value, const char*) -> std::enable_if_t< is_integer< T>(), bool>
+               template< std::integral T>
+               bool read( T& value, const char*)
                {
                   static auto distribution = std::uniform_int_distribution< T>{ std::numeric_limits< T>::min(), std::numeric_limits< T>::max()};
                   value = distribution( detail::engine());
                   return true;
                }
 
-               template< typename T>
-               auto read( T& value, const char*) -> std::enable_if_t< is_float< T>(), bool>
+               template< std::floating_point T>
+               bool read( T& value, const char*)
                {
                   static auto distribution = std::uniform_real_distribution< T>{ T{ -3.0}, T{ 3.0}};
                   value = distribution( detail::engine());

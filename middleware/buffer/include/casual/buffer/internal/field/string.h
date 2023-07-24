@@ -217,8 +217,8 @@ namespace casual
                      }
                      
                      // to string
-                     template< typename T>
-                     auto operator() ( T value, stream::Output::view_type destination, char padding) -> std::enable_if_t< std::is_integral< T>::value>
+                     template< std::integral T>
+                     auto operator() ( T value, stream::Output::view_type destination, char padding)
                      {
                         auto string = std::to_string( value);
                         operator()( string.c_str(), destination, padding);
@@ -238,8 +238,8 @@ namespace casual
                      }
 
                      // from string
-                     template< typename T>
-                     auto operator() ( stream::Input::view_type source, T& value, char padding) -> std::enable_if_t< std::is_integral< T>::value>
+                     template< std::integral T>
+                     auto operator() ( stream::Input::view_type source, T& value, char padding)
                      {
                         std::string string;
                         operator()( source, string, padding);
@@ -264,8 +264,8 @@ namespace casual
                      }
 
                      // to string
-                     template< typename T>
-                     auto operator() ( T value, stream::Output::view_type destination, char padding) -> std::enable_if_t< std::is_integral< T>::value>
+                     template< std::integral T>
+                     auto operator() ( T value, stream::Output::view_type destination, char padding)
                      {
                         auto string = std::to_string( value);
                         operator()( string.c_str(), destination, padding);
@@ -280,8 +280,8 @@ namespace casual
                      }
 
                      // from string
-                     template< typename T>
-                     auto operator() ( stream::Input::view_type source, T& value, char padding) -> std::enable_if_t< std::is_integral< T>::value>
+                     template< std::integral T>
+                     auto operator() ( stream::Input::view_type source, T& value, char padding)
                      {
                         std::string string;
                         operator()( source, string, padding);

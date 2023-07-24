@@ -270,7 +270,7 @@ namespace casual
 
          //! push a message (or complete) to the cache
          template< typename M>
-         auto push( M&& message) -> std::enable_if_t< std::is_rvalue_reference_v< decltype( message)>, correlation_type>
+         correlation_type push( M&& message) requires std::is_rvalue_reference_v< decltype( message)>
          {
             // Make sure we consume up to one messages from the real device first.
             // So progress can be made.

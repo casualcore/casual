@@ -80,10 +80,10 @@ namespace casual
             inline void composite_end(  const char* name) { /* no-op */ }
 
 
-            template< typename T>
-            auto write( T&& value, const char*) -> std::enable_if_t< std::is_arithmetic< std::remove_cvref_t< T>>::value>
+            template< concepts::arithmetic T>
+            auto write( const T& value, const char*)
             {
-               policy_type::write( std::forward< T>( value), m_buffer);
+               policy_type::write( value, m_buffer);
             }
 
             void write( const std::string& value, const char*) 
@@ -163,8 +163,8 @@ namespace casual
             inline bool composite_start( const char*) { return true;}
             inline void composite_end(  const char* name) {} // no-op
 
-            template< typename T>
-            auto read( T& value, const char*) -> std::enable_if_t< std::is_arithmetic< std::remove_cvref_t< T>>::value, bool>
+            template< concepts::arithmetic T>
+            bool read( T& value, const char*)
             {
                m_offset = policy_type::read( m_buffer, m_offset, value);
                return true;

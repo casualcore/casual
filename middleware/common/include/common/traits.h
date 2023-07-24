@@ -76,16 +76,15 @@ namespace casual
          };
       }
 
-      template<typename T, typename Enable = void>
+      template<typename T>
       struct function {};
 
-      template<typename T>
-      struct function< T, std::enable_if_t< has::call_operator< T>>>
-         : function< decltype( &T::operator())>
+      template< has::call_operator T>
+      struct function< T> : function< decltype( &T::operator())>
       {
       };
 
-      template<typename T>
+      template< typename T>
       struct function< std::reference_wrapper< T>> : function< T>
       {
       };

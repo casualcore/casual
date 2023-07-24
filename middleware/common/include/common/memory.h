@@ -23,13 +23,15 @@ namespace casual
          namespace detail
          {
             template< typename T>
-            constexpr auto size() -> std::enable_if_t< ! std::is_array< T>::value && std::is_trivially_copyable< T>::value, platform::size::type>
+            requires ( ! std::is_array_v< T> && std::is_trivially_copyable_v< T>)
+            constexpr platform::size::type size()
             {
                return sizeof( T);
             }
 
             template< typename T>
-            constexpr auto size() -> std::enable_if_t< std::is_array< T>::value && std::is_trivially_copyable< T>::value, platform::size::type>
+            requires ( std::is_array_v< T> && std::is_trivially_copyable_v< T>)
+            constexpr platform::size::type size()
             {
                return size< std::remove_extent_t< T>>() * std::extent< T>::value;
             }

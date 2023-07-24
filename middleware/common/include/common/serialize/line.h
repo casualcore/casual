@@ -34,8 +34,8 @@ namespace casual
       struct Writer
       {
       private:
-         template< typename T>
-         auto save( T value, const char* name) -> std::enable_if_t< std::is_arithmetic_v< T>>
+         template< concepts::arithmetic T>
+         auto save( T value, const char* name)
          {
              maybe_name( name) << value;
          }

@@ -41,6 +41,9 @@ namespace casual
       };
 
       template< typename T>
+      concept arithmetic = std::integral< T> || std::floating_point< T>;
+
+      template< typename T>
       concept movable = requires { std::is_move_constructible_v< T> && std::is_move_assignable_v< T>; };
 
       namespace nothrow

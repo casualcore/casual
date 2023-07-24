@@ -107,6 +107,28 @@ namespace casual
       static_assert( detail::Specialization< double>::type() == "floating_point");
       static_assert( detail::Specialization< std::string>::type() == "string_like");
 
+      namespace detail
+      {
+         template< typename T>
+         constexpr std::string_view foo( T&& value) requires std::is_rvalue_reference_v< decltype( value)>
+         {
+            return "rvalue";
+         }
+
+         template< typename T>
+         constexpr std::string_view foo( T&& value) requires std::is_lvalue_reference_v< decltype( value)>
+         {
+            return "lvalue";
+         }
+
+         constexpr int lvalue_int = 42;
+         
+      } // detail
+
+      static_assert( detail::foo( int{}) == "rvalue");
+      static_assert( detail::foo( detail::lvalue_int) == "lvalue");
+
+
 
       template< int... values>
       constexpr auto size_of_parameter_pack()

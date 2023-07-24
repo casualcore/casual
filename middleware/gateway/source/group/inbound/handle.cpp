@@ -471,8 +471,8 @@ namespace casual
                   namespace detail
                   {
                      template< typename M>
-                     auto lookup( State& state, strong::file::descriptor::id descriptor, M&& message, common::message::service::lookup::request::context::Semantic semantic)
-                        -> std::enable_if_t< std::is_rvalue_reference_v< decltype( message)>>
+                     void lookup( State& state, strong::file::descriptor::id descriptor, M&& message, common::message::service::lookup::request::context::Semantic semantic)
+                        requires std::is_rvalue_reference_v< decltype( message)>
                      {
                         Trace trace{ "gateway::group::inbound::handle::local::external::service::detail::lookup"};
                         common::log::line( verbose::log, "message: ", message);

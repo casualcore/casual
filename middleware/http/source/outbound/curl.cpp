@@ -11,6 +11,7 @@
 #include "common/code/casual.h"
 #include "common/code/serialize.h"
 #include "common/exception/capture.h"
+#include "common/algorithm/compare.h"
 
 namespace casual
 {
@@ -65,27 +66,23 @@ namespace casual
             {
                using info_code = decltype( CURLINFO_EFFECTIVE_URL);
 
-               template< info_code code, typename Enable = void>
+               template< info_code code>
                struct info_value;
 
                // long
                template< info_code code>
-               struct info_value< code, std::enable_if_t< 
-                  code == CURLINFO_HTTP_CONNECTCODE || 
-                  code == CURLINFO_NUM_CONNECTS ||
-                  code == CURLINFO_PRIMARY_PORT ||
-                  code == CURLINFO_LOCAL_PORT ||
-                  code == CURLINFO_RESPONSE_CODE>> 
+               requires ( common::algorithm::compare::any( code, 
+                  CURLINFO_HTTP_CONNECTCODE, CURLINFO_NUM_CONNECTS, CURLINFO_PRIMARY_PORT, CURLINFO_LOCAL_PORT, CURLINFO_RESPONSE_CODE))
+               struct info_value< code>
                {
                   using type = long;
                };
 
                // char*
                template< info_code code>
-               struct info_value< code, std::enable_if_t< 
-                  code == CURLINFO_EFFECTIVE_URL ||
-                  code == CURLINFO_PRIMARY_IP ||
-                  code == CURLINFO_LOCAL_IP>> 
+               requires ( common::algorithm::compare::any( code, 
+                  CURLINFO_EFFECTIVE_URL, CURLINFO_PRIMARY_IP, CURLINFO_LOCAL_IP))
+               struct info_value< code>
                {
                   using type = char*;
                };

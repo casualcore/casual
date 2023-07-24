@@ -21,9 +21,9 @@ namespace casual
    {
          namespace detail
          {
-            template< typename I>
-            inline auto predicate( I result) -> std::enable_if_t< std::is_integral_v< I>, I> { return result != -1;}
-            inline bool predicate( const void* result) { return result != nullptr;}
+            template< std::integral I>
+            inline auto predicate( I result) noexcept { return result != -1;}
+            inline bool predicate( const void* result) noexcept { return result != nullptr;}
          } // detail
 
          //! checks posix result, if -1 or nullptr -> transform `errno` to `code::casual` and throws this.

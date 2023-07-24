@@ -102,13 +102,16 @@ namespace casual
                   return ( ... || (value == values) );
                }
 
+               template< typename I> 
+               concept valid_implementation = requires 
+               {
+                  I::archive_type();
+                  { I::archive_type() == archive::Type::static_need_named || I::archive_type() == archive::Type::dynamic_type}; 
+               };
 
-               template< typename Implementation, typename Range> 
+
+               template< valid_implementation Implementation, typename Range> 
                auto registration( Range keys) 
-                  -> std::enable_if_t< value_any_of( 
-                        Implementation::archive_type(), 
-                        archive::Type::static_need_named,
-                        archive::Type::dynamic_type), bool>
                {
                   relaxed::detail::registration( reader::Creator::construct< Implementation, policy::Relaxed>(), keys);
                   strict::detail::registration( reader::Creator::construct< Implementation, policy::Strict>(), keys);
@@ -157,8 +160,7 @@ namespace casual
 
             //! helper to convert _string view array_ to the known range_type (during the lifetime of the expression)
             template< typename T>
-            auto registration( writer::Creator&& creator, T&& keys) 
-               -> std::enable_if_t< std::is_same_v< std::remove_cvref_t< decltype( range::make( keys))>, range_type>>
+            void registration( writer::Creator&& creator, T&& keys) requires std::same_as< range_type, decltype( range::make( keys))>
             {
                registration( std::move( creator), range::make( keys));
             } 

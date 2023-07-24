@@ -8,7 +8,7 @@
 
 #include <sqlite3.h>
 
-
+#include "casual/concepts.h"
 #include "common/algorithm.h"
 #include "common/string.h"
 #include "common/compare.h"
@@ -193,34 +193,20 @@ namespace sql
       }
 
 
-      template< typename T>
-      inline std::enable_if_t< std::is_enum< T>::value, std::error_code>
-      parameter_bind( sqlite3_stmt* statement, int column, T value)
+      template< casual::concepts::enumerator T>
+      std::error_code parameter_bind( sqlite3_stmt* statement, int column, T value)
       {
          return parameter_bind( statement, column, static_cast< std::underlying_type_t< T>>( value));
       }
 
-
-      //! handles all integrals over 32b
-      template< typename T>
-      auto column_get( sqlite3_stmt* statement, int column, T& value)
-        -> std::enable_if_t< std::is_integral< T>::value && ( sizeof( T) > 4), bool>
+      template< std::integral T>
+      bool column_get( sqlite3_stmt* statement, int column, T& value)
       {
-         value = sqlite3_column_int64( statement, column);
-
-         if( value == T{})
-            return sqlite3_column_type( statement, column) != SQLITE_NULL;
-
-         return true;
-      }
-
-
-      //! handles all integrals up to 32b
-      template< typename T>
-      auto column_get( sqlite3_stmt* statement, int column, T& value)
-        -> std::enable_if_t< std::is_integral< T>::value && ( sizeof( T) <= 4), bool>
-      {
-         value = sqlite3_column_int( statement, column);
+         //! handles all integrals over 32b (4B)
+         if constexpr( sizeof( T) > 4)
+            value = sqlite3_column_int64( statement, column);
+         else
+            value = sqlite3_column_int( statement, column);
 
          if( value == T{})
             return sqlite3_column_type( statement, column) != SQLITE_NULL;
@@ -294,11 +280,10 @@ namespace sql
          return false;
       }
 
-      template< typename T>
-      inline std::enable_if_t< std::is_enum< T>::value, bool>
-      column_get( sqlite3_stmt* statement, int column, T& value)
+      template< casual::concepts::enumerator T>
+      bool column_get( sqlite3_stmt* statement, int column, T& value)
       {
-         std::underlying_type_t< T> underlying;
+         auto underlying = std::to_underlying( value);
          if( ! column_get( statement, column, underlying))
             return false;
          
