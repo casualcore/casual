@@ -449,22 +449,21 @@ static ngx_int_t send_response_upstream( ngx_http_casual_ctx_t* context)
 
    set_custom_header_in_headers_out( http_request, &reply.headers);
 
-   if( ngx_http_send_header(http_request) != NGX_OK)
+   // we can only return NGX_OK, NGX_ERROR and such, since this is one of the arguments to ngx_http_finalize_request (above)
+   ngx_int_t result_code = ngx_http_send_header( http_request);
+
+   if( result_code == NGX_ERROR || result_code > NGX_OK || http_request->header_only) 
    {
-      ngx_log_error(NGX_LOG_ERR, http_request->connection->log, 0, "casual: ngx_http_send_header(http_request) != NGX_OK");
-      return NGX_HTTP_INTERNAL_SERVER_ERROR;
+      ngx_log_debug( NGX_LOG_DEBUG_ALL, http_request->connection->log, 0, "casual: ngx_http_send_header() == %d", result_code);
+      return result_code;
    }
 
-   if( http_request->headers_out.content_type.len != 0)
+   if( ( result_code = ngx_http_output_filter(http_request, response)) != NGX_OK)
    {
-      if( ngx_http_output_filter(http_request, response) != NGX_OK)
-      {
-         ngx_log_error(NGX_LOG_ERR, http_request->connection->log, 0, "casual: ngx_http_output_filter() != NGX_OK");
-         return NGX_HTTP_INTERNAL_SERVER_ERROR;
-      }
+      ngx_log_debug( NGX_LOG_DEBUG_ALL, http_request->connection->log, 0, "casual: ngx_http_output_filter() == %d", result_code);
    }
 
-   return http_request->headers_out.status;
+   return result_code;
 }
 
 static void request_cleanup( void* data)
@@ -650,6 +649,11 @@ static ngx_chain_t* create_response( ngx_pool_t* pool, casual_http_inbound_strin
       ngx_buf_t* buffer = ngx_create_temp_buf( pool, payload->size);
       buffer->last = ngx_cpymem( buffer->pos, payload->data, payload->size); 
       buffer->memory = 1;
+      
+      // we need to set that this is the one and only buffer and buffer window?
+      buffer->last_buf = 1;
+      buffer->last_in_chain = 1;
+
       ngx_chain_t* response = ngx_alloc_chain_link( pool);
       response->next = NULL;
       response->buf = buffer;
