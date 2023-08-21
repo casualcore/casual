@@ -256,7 +256,8 @@ namespace casual
                if( rhs.duration)
                   lhs.duration = std::move( rhs.duration);
 
-               lhs.contract = rhs.contract;
+               if( rhs.contract)
+                  lhs.contract = rhs.contract;
                return lhs;
             }
 
