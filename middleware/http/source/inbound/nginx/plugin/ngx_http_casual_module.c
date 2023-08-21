@@ -238,6 +238,10 @@ static ngx_int_t ngx_http_casual_request_handler( ngx_http_request_t* http_reque
       return NGX_HTTP_INTERNAL_SERVER_ERROR;
    }
 
+   http_request->request_body_in_single_buf = 1;
+   // make sure we do not buffer. -> not no buffering -> we want buffering! -> the whole body when the callback is called.
+   http_request->request_body_no_buffering = 0;
+
    return_code = ngx_http_read_client_request_body( http_request, ngx_http_casual_request_data_handler); // delegates to body handler callback
    if( return_code >= NGX_HTTP_SPECIAL_RESPONSE)
    {
@@ -271,8 +275,9 @@ static void ngx_http_casual_request_data_handler( ngx_http_request_t* http_reque
    ngx_log_error( NGX_LOG_NOTICE, http_request->connection->log, 0, "casual: %s", __FUNCTION__);
 
    ngx_http_casual_ctx_t* context = ngx_http_get_module_ctx( http_request, ngx_http_casual_module);
-
-   int last_buffer = 1;
+   
+   // since we've set http_request->request_body_in_single_buf = 1; and http_request->request_body_no_buffering = 0;
+   // we know that we'll get a single buffer/file and don't need to check last_buf and such.
    for( ngx_chain_t* cl = http_request->request_body->bufs; cl; cl = cl->next)
    {
       off_t buffer_size = ngx_buf_size(cl->buf);
@@ -294,28 +299,24 @@ static void ngx_http_casual_request_data_handler( ngx_http_request_t* http_reque
       {
          casual_http_inbound_push_payload( &context->casual_handle, cl->buf->pos, buffer_size);
       }
-
-      last_buffer = cl->buf->last_buf;
    }
 
-   if( last_buffer)
-   { // only starts casual call when all data have been received
-      ngx_log_error( NGX_LOG_NOTICE, context->http_request->connection->log, 0, "casual: last buffer");
-      ngx_int_t return_code = send_request_to_casual( context);
-      if (return_code == NGX_ERROR)
-      {
-         ngx_http_finalize_request( http_request, NGX_HTTP_INTERNAL_SERVER_ERROR);
-      }
-      else if (return_code == NGX_OK)
-      { // finalize right away on OK; TODO: enable this case and prevent NULL errors
-         ngx_http_finalize_request( http_request, send_response_upstream( context));
-      }
-      // else NGX_AGAIN to finalize later
-   }
-   else
+   ngx_int_t return_code = send_request_to_casual( context);
+   if (return_code == NGX_ERROR)
    {
-      ngx_log_error( NGX_LOG_NOTICE, context->http_request->connection->log, 0, "casual: not last buffer");
+      ngx_http_finalize_request( http_request, NGX_HTTP_INTERNAL_SERVER_ERROR);
    }
+   else if (return_code == NGX_OK)
+   { 
+      // finalize right away on OK; TODO: enable this case and prevent NULL errors
+      // send_request_to_casual will never return NGX_OK, so why this?
+      ngx_http_finalize_request( http_request, send_response_upstream( context));
+   }
+   // else 
+   // NGX_AGAIN to finalize later
+   // ngx_http_finalize_request is only needed if we wan't do to a premature http-finalization?
+
+   // everything went OK and nginx will finalize? 
 }
 
 static ngx_int_t send_request_to_casual( ngx_http_casual_ctx_t* context)
