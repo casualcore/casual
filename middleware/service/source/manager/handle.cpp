@@ -17,12 +17,14 @@
 #include "common/environment/normalize.h"
 #include "common/algorithm.h"
 #include "common/algorithm/is.h"
+#include "common/algorithm/coalesce.h"
 #include "common/process.h"
 #include "common/message/dispatch.h"
 #include "common/message/dispatch/handle.h"
 #include "common/message/internal.h"
 #include "common/event/listen.h"
 #include "common/event/send.h"
+#include "common/service/type.h"
 
 #include "common/communication/instance.h"
 
@@ -162,7 +164,7 @@ namespace casual
                // send event, at least domain-manager want's to know...
                common::message::event::process::Assassination event{ common::process::handle()};
                event.target = entry.target;
-               event.contract = entry.service->timeout.contract;
+               event.contract = algorithm::coalesce( entry.service->timeout.contract, state.timeout.contract).value_or( common::service::execution::timeout::contract::Type::linger);
                common::event::send( event);
             }
          };

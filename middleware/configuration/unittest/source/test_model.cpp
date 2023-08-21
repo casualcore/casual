@@ -685,6 +685,65 @@ domain:
          EXPECT_TRUE( A == result) << CASUAL_NAMED_VALUE( A) << "\n" << CASUAL_NAMED_VALUE( result);
       }
 
+
+      TEST( configuration_model_set_operations, A_union_B__partial_override_of_A_in_B)
+      {
+         common::unittest::Trace trace;
+
+         constexpr auto configuration = R"(
+domain:
+   name: A
+   global:
+      service:
+         execution:
+            timeout:
+               duration: 90
+               contract: terminate
+   servers:
+      - alias: a
+        path: a
+)";
+
+         // note: we do not override contract
+         constexpr auto add = R"(
+domain:
+   name: B
+   global:
+      service:
+         execution:
+            timeout:
+               duration: 45
+   servers:
+      - alias: b
+        path: b
+)";
+
+         // expect contract from A to carry over, but duration to be overridden
+         constexpr auto expected = R"(
+domain:
+   name: B
+   global:
+      service:
+         execution:
+            timeout:
+               duration: 45
+               contract: terminate
+   servers:
+      - alias: a
+        path: a
+      - alias: b
+        path: b
+)";
+
+         auto A = local::configuration( configuration);
+         auto B = local::configuration( add);
+         auto result = local::configuration( expected);
+
+         A = set_union( A, std::move( B));
+
+         EXPECT_TRUE( A == result) << CASUAL_NAMED_VALUE( A) << "\n" << CASUAL_NAMED_VALUE( result);
+      }
+
    } // configuration
 
 } // casual

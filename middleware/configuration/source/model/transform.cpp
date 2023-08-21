@@ -578,7 +578,8 @@ namespace casual
                      if( model.duration)
                         timeout.duration = chronology::to::string( model.duration.value());
 
-                     timeout.contract = common::service::execution::timeout::contract::transform( model.contract);
+                     if( model.contract)
+                        timeout.contract = common::service::execution::timeout::contract::transform( *model.contract);
 
                      std::optional<configuration::user::domain::service::Execution> result;
                      if( timeout.duration || timeout.contract)
@@ -624,7 +625,8 @@ namespace casual
 
                      auto& timeout = result.global.emplace().service.emplace().execution.emplace().timeout.emplace();
 
-                     timeout.contract = common::service::execution::timeout::contract::transform( model.service.global.timeout.contract);
+                     if( model.service.global.timeout.contract)
+                        timeout.contract = common::service::execution::timeout::contract::transform( *model.service.global.timeout.contract);
 
                      if( model.service.global.timeout.duration)
                         timeout.duration = chronology::to::string( *model.service.global.timeout.duration);
