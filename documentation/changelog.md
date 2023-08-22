@@ -1,6 +1,11 @@
 # Changelog
 This is the changelog for `casual` and all changes are listed in this document.
 
+## [1.6.13] - 2023-08-22
+### Fixes
+- http: nginx could block caller for ever with payloads > ~50k (#242, #243)
+- configuration: prevent global contract setting being default overridden (#244)
+
 ## [1.6.12] - 2023-07-18
 ### Fixes
 - discovery: hops are not correctly propagated if services are known
