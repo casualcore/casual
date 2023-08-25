@@ -154,6 +154,19 @@ namespace casual
             }};
          }
 
+         void fill( casual::domain::message::discovery::topology::implicit::Update& message)
+         {
+            local::set_general( message);
+
+            message.origin.id = common::strong::domain::id{ 0xe1f6b7c37f734a0982a0ab1581b21fa1_uuid};
+            message.origin.name = "A";
+
+            message.domains = {
+               common::domain::Identity{ common::strong::domain::id{ 0xe1f6b7c37f734a0982a0ab1581b21fa2_uuid}, "B"},
+            };
+
+         }
+
          void fill( common::message::service::call::callee::Request& message)
          {
             local::set_general( message);

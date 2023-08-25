@@ -28,6 +28,7 @@ namespace casual
 
                   void fill( casual::domain::message::discovery::Request& message);
                   void fill( casual::domain::message::discovery::Reply& message);
+                  void fill( casual::domain::message::discovery::topology::implicit::Update& message);
 
                   void fill( common::message::service::call::callee::Request& message);
                   void fill( common::message::service::call::Reply& message);
