@@ -16,6 +16,7 @@
 #include "common/predicate.h"
 #include "common/traits.h"
 #include "common/algorithm/container.h"
+#include "common/message/counter.h"
 
 #include "common/code/casual.h"
 
@@ -106,7 +107,7 @@ namespace casual
             auto is_complete = []( auto& message){ return message.complete();};
 
             if( auto found = algorithm::find_if( m_cache, is_complete))
-               return algorithm::container::extract( m_cache, std::begin( found));
+               return extract_complete( std::begin( found));
 
             return {};
          }
@@ -119,7 +120,7 @@ namespace casual
             auto is_relevant = [ &types]( auto& message){ return algorithm::find( types, message.type()) && message.complete();};
 
             if( auto found = algorithm::find_if( m_cache, is_relevant))
-               return algorithm::container::extract( m_cache, std::begin( found));
+               return extract_complete( std::begin( found));
 
             return {};
          }
@@ -217,7 +218,7 @@ namespace casual
                         std::forward< Predicate>( predicate)));
 
             if( found)
-               return algorithm::container::extract( m_cache, std::begin( found));
+               return extract_complete( std::begin( found));
 
             return {};
          }
@@ -348,6 +349,15 @@ namespace casual
          )
 
       private:
+
+         template< typename Iter> 
+         complete_type extract_complete( Iter where)
+         {
+            auto complete = algorithm::container::extract( m_cache, where);
+            message::counter::add::received( complete.type());
+            return complete;
+         }
+
 
          template< typename D>
          static auto flush( D& device, platform::size::type count, traits::priority::tag< 1>) -> decltype( policy::non::blocking(device), void())
@@ -499,7 +509,12 @@ namespace casual
                try
                {
                   // Delegate the invocation to the policy
-                  return policy.send( Base::connector(), std::forward< C>( complete));
+                  auto result = policy.send( Base::connector(), std::forward< C>( complete));
+
+                  if( result)
+                     message::counter::add::sent( complete.type());
+
+                  return result;
                }
                catch( ...)
                {
