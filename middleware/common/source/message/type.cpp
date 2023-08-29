@@ -21,6 +21,8 @@ namespace casual
             case Type::shutdown_reply: return "shutdown_reply";
             case Type::delay_message: return "delay_message";
             case Type::inbound_ipc_connect: return "inbound_ipc_connect";
+            case Type::counter_request: return "counter_request";
+            case Type::counter_reply: return "counter_reply";
             case Type::process_lookup_request: return "process_lookup_request";
             case Type::process_lookup_reply: return "process_lookup_reply";
             case Type::domain_process_connect_request: return "domain_process_connect_request";

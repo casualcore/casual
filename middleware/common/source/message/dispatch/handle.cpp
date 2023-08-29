@@ -5,6 +5,7 @@
 //!
 
 #include "common/message/dispatch/handle.h"
+#include "common/message/counter.h"
 #include "common/communication/ipc.h"
 #include "common/environment.h"
 #include "common/instance.h"
@@ -98,6 +99,21 @@ namespace casual
                   }
                } // configure
 
+               auto counter()
+               {
+                  return []( const message::counter::Request& message)
+                  {
+                     Trace trace{ "common::message::dispatch::handle::local::handle::counter"};
+                     log::line( log::debug, "message: ", message);
+
+                     auto reply = message::reverse::type( message);
+                     reply.entries = message::counter::entries();
+
+                     log::line( log::debug, "reply: ", reply);
+                     local::send( message.process, reply);
+                  };
+               }
+
             } // handle
          } // <unnamed>
       } // local
@@ -109,7 +125,8 @@ namespace casual
             local::handle::ping(),
             local::handle::shutdown(),
             local::handle::configure::log(),
-            local::handle::global::state());
+            local::handle::global::state(), 
+            local::handle::counter());
       }
 
    } // common::message::dispatch::handle

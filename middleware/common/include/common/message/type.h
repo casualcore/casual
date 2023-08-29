@@ -37,6 +37,9 @@ namespace casual
          delay_message,
          inbound_ipc_connect,
 
+         counter_request,
+         counter_reply,
+
          process_lookup_request = 600, // not pinned
          process_lookup_reply,
 

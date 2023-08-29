@@ -103,6 +103,7 @@ casual_common_objectfiles = [
     make.Compile( 'source/message/dispatch/handle.cpp'),
     make.Compile( 'source/message/type.cpp'), 
     make.Compile( 'source/message/event.cpp'),
+    make.Compile( 'source/message/counter.cpp'),
 
     make.Compile( 'source/event/listen.cpp'),
     make.Compile( 'source/event/send.cpp'),
