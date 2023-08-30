@@ -115,7 +115,8 @@ namespace casual
                            message::service::lookup::Request request{ process::handle()};
                            request.requested = message.service.name;
                            request.correlation = message.correlation;
-                           request.context.semantic = decltype( request.context.semantic)::no_busy_intermediate;
+                           // semantic explicitly as a lookup from service-forward
+                           request.context.semantic = decltype( request.context.semantic)::forward_request;
                            state.multiplex.send( communication::instance::outbound::service::manager::device(), request);
                         }
 
@@ -169,7 +170,4 @@ namespace casual
 
    } // service::forward::handle
 } // casual
-
-
-
 
