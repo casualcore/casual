@@ -452,6 +452,10 @@ namespace casual
 
                               break;
                            }
+                           case Semantic::forward_request:
+                              // This is a request from service-forward from a previous _forward_ lookup.
+                              // We treat it as "regular" pending lookup.
+                              [[fallthrough]];
                            case Semantic::no_busy_intermediate:
                            {
                               // the caller does not want to get a busy intermediate, only want's to wait until
@@ -493,7 +497,14 @@ namespace casual
                      {  
                         if( service.is_sequential())
                         {
-                           if( auto destination = service.reserve_sequential( message.process, message.correlation))
+                           auto get_caller = []( const auto& message) -> common::process::Handle
+                           {
+                              if( message.no_reply())
+                                 return {};
+                              return message.process;
+                           };
+
+                           if( auto destination = service.reserve_sequential( get_caller( message), message.correlation))
                               dispatch::lookup::reply( state, service, destination, message, pending);
                            else
                               dispatch::lookup::pending( state, service, message);

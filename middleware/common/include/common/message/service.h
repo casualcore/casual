@@ -16,6 +16,7 @@
 #include "common/uuid.h"
 #include "common/flag/xatmi.h"
 #include "common/code/xatmi.h"
+#include "common/algorithm/compare.h"
 
 #include "common/service/header.h"
 
@@ -151,8 +152,6 @@ namespace casual
                return "<unknown>";
             }
 
-            
-            
          } // transaction
 
          struct Transaction
@@ -312,6 +311,8 @@ namespace casual
                      forward,
                      no_busy_intermediate,
                      wait,
+                     // used fromm service-forward only (fire-and-forget)
+                     forward_request,
                   };
 
                   inline constexpr std::string_view description( Semantic value) noexcept
@@ -320,9 +321,9 @@ namespace casual
                      {
                         case Semantic::regular: return "regular";
                         case Semantic::forward: return "forward";
-                        case Semantic::no_busy_intermediate: return "no-busy-intermediate";
+                        case Semantic::no_busy_intermediate: return "no_busy_intermediate";
                         case Semantic::wait: return "wait";
-                        
+                        case Semantic::forward_request: return "forward_request";
                      }
                      return "<unknown>";
                   }
@@ -375,6 +376,12 @@ namespace casual
                std::string requested;
                request::Context context;
                std::optional< platform::time::point::type> deadline{};
+
+               inline bool no_reply() const noexcept
+               {
+                  using Enum = request::context::Semantic;
+                  return algorithm::compare::any( context.semantic, Enum::forward, Enum::forward_request);
+               }
 
                CASUAL_CONST_CORRECT_SERIALIZE(
                   base_request::serialize( archive);
