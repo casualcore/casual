@@ -118,7 +118,15 @@ namespace casual
             {
                state::Service result;
                result.information.name = service.name;
-               result.timeout = service.timeout;
+
+               auto service_timeout = [ &state]( auto& timeout)
+               {
+                  casual::configuration::model::service::Timeout result;
+                  result.duration = algorithm::coalesce( timeout.duration, state.timeout.duration).value_or( platform::time::unit::zero());
+                  result.contract = algorithm::coalesce( timeout.contract, state.timeout.contract).value_or( common::service::execution::timeout::contract::Type::linger);
+                  return result;
+               };
+               result.timeout = service_timeout( service.timeout);
                result.visibility = service.visibility;
 
                if( service.routes.empty())
@@ -164,7 +172,7 @@ namespace casual
                // send event, at least domain-manager want's to know...
                common::message::event::process::Assassination event{ common::process::handle()};
                event.target = entry.target;
-               event.contract = algorithm::coalesce( entry.service->timeout.contract, state.timeout.contract).value_or( common::service::execution::timeout::contract::Type::linger);
+               event.contract = entry.service->timeout.contract.value_or( common::service::execution::timeout::contract::Type::linger);
                common::event::send( event);
             }
          };

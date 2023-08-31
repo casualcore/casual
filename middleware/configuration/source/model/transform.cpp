@@ -275,9 +275,8 @@ namespace casual
 
                         if( service.visibility)
                            result.visibility = common::service::visibility::transform( *service.visibility);
-                           
-                        if( service.execution)
-                           result.timeout = detail::execution::timeout( algorithm::coalesce( service.execution, defaults.execution));
+
+                        result.timeout = detail::execution::timeout( algorithm::coalesce( service.execution, defaults.execution));
 
                         return result;
                      });
@@ -574,7 +573,7 @@ namespace casual
                {
                   auto execution( const configuration::model::service::Timeout& model)
                   {
-                     configuration::user::domain::service::execution::Timeout timeout;                  
+                     configuration::user::domain::service::execution::Timeout timeout;
                      if( model.duration)
                         timeout.duration = chronology::to::string( model.duration.value());
 
@@ -585,7 +584,7 @@ namespace casual
                      if( timeout.duration || timeout.contract)
                         result.emplace().timeout = std::move( timeout);
 
-                     return result;                     
+                     return result;
                   }
 
                }
