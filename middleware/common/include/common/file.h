@@ -45,6 +45,23 @@ namespace casual
             std::filesystem::path m_path;
          };
 
+         struct Output : std::ofstream
+         {
+            //! does not throw
+            Output( std::filesystem::path path, std::ios::openmode mode = std::ios::app);
+
+            //! @returns a new/reopened file with the same path and mode.
+            Output reopen( std::ios::openmode mode = std::ios::app) &&;
+
+            inline const std::filesystem::path& path() const noexcept { return m_path;}
+            
+            friend std::ostream& operator << ( std::ostream& out, const Output& value);
+
+         private:
+            std::ofstream m_stream;
+            std::filesystem::path m_path;
+         };
+
          namespace output
          {
             struct base
@@ -76,7 +93,6 @@ namespace casual
                void reopen() { base::reopen( mode);}
             };
 
-            using Append = basic< std::ios::app>;
             using Truncate = basic< std::ios::trunc>;
             
          } // output

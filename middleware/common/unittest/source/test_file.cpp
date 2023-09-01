@@ -80,8 +80,8 @@ namespace casual
          common::unittest::Trace trace;
 
          unittest::directory::temporary::Scoped dir;
-         file::output::Append a{ dir.path() / "a_foo.yaml"};
-         file::output::Append b{ dir.path() / "b_foo.yaml"};
+         file::Output a{ dir.path() / "a_foo.yaml"};
+         file::Output b{ dir.path() / "b_foo.yaml"};
          
          auto paths = common::file::find( { dir.path() / "b*.yaml", dir.path() / "a*.yaml"});
          ASSERT_TRUE( paths.size() == 2) << trace.compose( "paths: ", paths);
@@ -94,8 +94,8 @@ namespace casual
          common::unittest::Trace trace;
 
          unittest::directory::temporary::Scoped dir;
-         file::output::Append b{ dir.path() / "b_foo.yaml"};
-         file::output::Append a{ dir.path() / "a_foo.yaml"};
+         file::Output b{ dir.path() / "b_foo.yaml"};
+         file::Output a{ dir.path() / "a_foo.yaml"};
          
          auto paths = common::file::find( ( dir.path() / "*.yaml").string());
          ASSERT_TRUE( paths.size() == 2) << trace.compose( "paths: ", paths);
