@@ -80,6 +80,7 @@ namespace casual
             case casual::invalid_node: return "invalid-node";
             case casual::invalid_version: return "invalid-version";
             case casual::invalid_path: return "invalid-path";
+            case casual::invalid_file: return "invalid-file";
             case casual::invalid_argument: return "invalid_argument";
             case casual::invalid_semantics: return "invalid-semantics";
             case casual::failed_transcoding: return "failed-transcoding";

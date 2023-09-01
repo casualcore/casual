@@ -28,6 +28,7 @@ namespace casual
             invalid_node,
             invalid_version,
             invalid_path,
+            invalid_file,
             invalid_argument,
             invalid_semantics,
 
