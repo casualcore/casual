@@ -1,6 +1,15 @@
 # Changelog
 This is the changelog for `casual` and all changes are listed in this document.
 
+## [1.6.14] - 2023-09-03
+### Fixes
+- event: make sure we try to reopen the event file if it's "broken" (#250)
+- log: do not throw if we can't open logfile -> error to stderr (#250)
+- cli: add _internal_ cli for generic message count metric 
+- service: SM sends error-reply to no-reply request on timeout/core (#247)
+- documentation: add topology::Update to protocol documentation
+- service: improve handling of service timeout (config/cli) (#244)
+
 ## [1.6.13] - 2023-08-22
 ### Fixes
 - http: nginx could block caller for ever with payloads > ~50k (#242, #243)
