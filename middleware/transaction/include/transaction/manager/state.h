@@ -247,6 +247,8 @@ namespace casual
                   common::algorithm::append_unique( range, resources);
                }
 
+               inline void remove( common::strong::resource::id id) { common::algorithm::container::erase( resources, id);}
+
                common::transaction::ID trid;
                std::vector< branch::Resource> resources;
 
@@ -287,16 +289,13 @@ namespace casual
             //! used only when the prepare/commmit/rollback starts
             void purge();
 
+            //! remove all resources associated with branches that is in `replies`
             template< typename R>
             void purge( const R& replies)
             {
-               auto equal_resource = []( auto& resource, auto& reply)
-               {
-                  return resource == reply.resource;
-               };
-
-               for( auto& branch : branches)
-                  common::algorithm::container::trim( branch.resources, std::get< 0>( common::algorithm::intersection( branch.resources, replies, equal_resource)));
+               for( auto& reply : replies)
+                  if( auto found = common::algorithm::find( branches, reply.trid))
+                     found->remove( reply.resource);
 
                purge();
             }

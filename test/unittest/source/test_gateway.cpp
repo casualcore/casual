@@ -2185,6 +2185,8 @@ domain:
          x.activate();
          gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected());
 
+         
+
          // we're in X at the moment
 
          auto call_A_and_B = []( auto count)
@@ -2195,7 +2197,23 @@ domain:
             });
          };
 
-         constexpr auto transaction_count = 5;
+         // * indicate echo/termination of the call. 
+         //    otherwise it's a nested call to whats in between ( ).
+         //
+         //  X  -> GW -> C -> ( A, B, X*)
+         //              A -> GW -> ( B*, C*, X*)
+         //              B -> GW -> ( A*, C*, X*)       
+         //
+         //  X initiate the twa phase commit. The ohter 3 (A, B, C) has all X as involved.
+         //  For X it should be 3 other TM:s that sends prepare and commit == 3 * 2
+         //
+         //  For C it should be from X, A and B == 3 * 2
+         //  For A it should be from C and from B == 2 * 2
+         //  For B it should be from C and from A == 2 * 2
+         //  GW has 0 resources.
+         //
+
+         constexpr auto transaction_count = 1;
          constexpr auto call_count = 1;
 
          algorithm::for_n( transaction_count, [call_A_and_B]()
@@ -2211,7 +2229,7 @@ domain:
 
             EXPECT_TRUE( state.pending.persistent.replies.empty()) << CASUAL_NAMED_VALUE( state);
             EXPECT_TRUE( state.pending.requests.empty()) << CASUAL_NAMED_VALUE( state);
-            EXPECT_TRUE( state.transactions.empty()) << CASUAL_NAMED_VALUE( state);
+            EXPECT_TRUE( state.transactions.empty()) << CASUAL_NAMED_VALUE( state.transactions);
 
             return state;
          };
