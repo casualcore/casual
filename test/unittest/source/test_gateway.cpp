@@ -3363,6 +3363,95 @@ domain:
          
       }
 
+      TEST( test_transaction, a_b_c_domains__a_enqueue_in_b__and_calls_resource_server_in_c__mockup_RM_gives_RMERR_on_prepare__expect_rollback_on_queue)
+      {
+         common::unittest::Trace trace;
+
+         auto b = local::domain( R"(
+domain:
+   name: B
+   servers:
+      -  path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/queue/bin/casual-queue-manager"
+         memberships: [ queue]
+   queue:
+      groups:
+         -  alias: B
+            queuebase: ':memory:'
+            queues:
+               -  name: b1
+   gateway:
+      inbound:
+         groups:
+            -  connections: 
+               -  address: 127.0.0.1:7778
+
+)");
+
+         auto c = local::domain( R"(
+domain:
+   name: C
+   transaction:
+      resources:
+         -  name: example-resource-server
+            key: rm-mockup
+            # XAER_RMERR   -3 
+            openinfo: --prepare -3
+            instances: 1
+   servers:
+      -  path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-resource-server"
+         memberships: [ user]
+         instances: 1
+   gateway:
+      inbound:
+         groups:
+            -  connections: 
+               -  address: 127.0.0.1:7779
+
+)");
+
+            auto a = local::domain( R"(
+domain:
+   name: A
+   servers:
+      -  path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/queue/bin/casual-queue-manager"
+         memberships: [ queue]
+   gateway:
+      outbound:
+         groups:
+            -  connections: 
+               -  address: 127.0.0.1:7778
+               -  address: 127.0.0.1:7779
+
+)");
+
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected());
+
+         EXPECT_EQ( tx_begin(), TX_OK);
+
+         {
+            auto payload = common::unittest::random::binary( 1024);
+            queue::Message message;
+            message.payload.type = common::buffer::type::json;
+            message.payload.data = payload;
+            EXPECT_TRUE( queue::enqueue( "b1", message));
+         }
+
+         local::call( "casual/example/resource/domain/echo/C", code::xatmi::ok);
+
+         // expect commit to fail and issue rollback
+         // TODO: should the return code really be TX_ROLLBACK? A resource have fatally failed...
+         EXPECT_EQ( tx_commit(), TX_ROLLBACK);
+
+         // no ongoing transaction
+         EXPECT_TRUE( tx_info( nullptr) == 0);
+
+         {
+            // expect the enqueue to have been rolled back.
+            auto message = queue::dequeue( "b1");
+            EXPECT_TRUE( message.empty());
+         }
+      }
+
       //! put in this TU to enable all helpers to check state
       TEST( test_assassinate, interdomain_call__timeout_1ms__call)
       {
