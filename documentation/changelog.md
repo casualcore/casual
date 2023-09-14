@@ -1,6 +1,10 @@
 # Changelog
 This is the changelog for `casual` and all changes are listed in this document.
 
+## [1.6.15] - 2023-09-14
+### Fixes
+- transaction: TM commits when it act as a resource and gets a prepare (#256)
+
 ## [1.6.14] - 2023-09-03
 ### Fixes
 - event: make sure we try to reopen the event file if it's "broken" (#250)
