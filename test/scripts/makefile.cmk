@@ -1,0 +1,28 @@
+import casual.make.api as make
+import casual.middleware.make.api as dsl
+
+import os
+
+make.IncludePaths( [
+    '../../middleware/common/include',
+    '../../middleware/buffer/include']
+    + make.optional_include_paths()
+    + dsl.paths().include.gtest
+   )
+
+make.LibraryPaths( [ 
+    '../../middleware/common/bin',
+    '../../middleware/buffer/bin']
+    + make.optional_library_paths()
+    + dsl.paths().library.gtest
+   )
+
+
+lib_casually_genarated = make.LinkLibrary( '/tmp/casually-generated',
+    [
+     make.Compile( '/tmp/casually-generated.cpp'),
+    ],
+    [
+     'casual-buffer', 'casual-common'
+    ])
+
