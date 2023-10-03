@@ -10,26 +10,15 @@ import subprocess
 
 from shutil import copyfile
 
-URL="http://nginx.org/download/"
-FILENAME="nginx-1.22.0.tar.gz"
-TMP="/tmp/"
+NGINX_VERSION = "1.22.1"
+BASENAME = "nginx-" + NGINX_VERSION
 SOURCE_ROOT = os.getenv( "CASUAL_MAKE_SOURCE_ROOT", os.getenv("CASUAL_BUILD_HOME"))
+CASUAL_THIRDPARTY = os.getenv("CASUAL_THIRDPARTY")
 
-if not SOURCE_ROOT or not os.getenv("CASUAL_HOME"):
+if not SOURCE_ROOT or not os.getenv("CASUAL_HOME") or not CASUAL_THIRDPARTY:
 	raise SystemError("CASUAL-environment need to be set")
 
-BASENAME=os.path.splitext(os.path.splitext(FILENAME)[0])[0]
-
-if not os.path.exists(TMP + BASENAME):
-	print("Fetching: " + URL + FILENAME)
-	with urllib.request.urlopen( URL + FILENAME) as response:
-		with open(TMP + FILENAME, "wb") as f:
-			f.write(response.read())
-	
-	archive = tarfile.open(TMP + FILENAME, "r:gz")
-	archive.extractall(TMP)
-
-os.chdir(TMP + BASENAME)
+os.chdir(CASUAL_THIRDPARTY + '/nginx/' + BASENAME)
 
 prefix = os.getenv('CASUAL_HOME', '/usr/local/casual') + '/nginx'
 
