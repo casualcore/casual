@@ -1260,5 +1260,36 @@ domain:
          }), std::system_error);
       }
 
+      TEST( casual_queue, dequeue_fails__expect_error_reply)
+      {
+         common::unittest::Trace trace;
+
+         auto domain = local::domain();
+
+         auto find_queuegroup = []
+         {
+            ipc::message::lookup::Request request{ common::process::handle()};
+            request.name = "a1";
+
+            common::communication::device::blocking::send( 
+               common::communication::instance::outbound::queue::manager::device(), 
+               request);
+
+            ipc::message::lookup::Reply reply;
+            common::communication::device::blocking::receive( common::communication::ipc::inbound::device(), reply);
+            return reply.process.ipc;
+         };
+
+         // We cause an error by requesting a nonexistent queue
+         ipc::message::group::dequeue::Request request{ common::process::handle()};
+         request.name = "i_dont_exist";
+
+         common::communication::device::blocking::send( find_queuegroup(), request);
+
+         ipc::message::group::dequeue::Reply reply;
+         common::communication::device::blocking::receive( common::communication::ipc::inbound::device(), reply);
+         EXPECT_TRUE( reply.message.empty());
+      }
+
    } // queue
 } // casual
