@@ -31,6 +31,7 @@
 #include "domain/unittest/manager.h"
 #include "domain/unittest/configuration.h"
 #include "domain/unittest/discover.h"
+#include "domain/unittest/utility.h"
 #include "domain/discovery/api.h"
 
 #include "service/unittest/utility.h"
@@ -57,8 +58,10 @@ domain:
 
    groups: 
       - name: base
-      - name: gateway
+      - name: user
         dependencies: [ base]
+      - name: gateway
+        dependencies: [ user]
    
    servers:
       - path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/service/bin/casual-service-manager
@@ -1440,6 +1443,136 @@ domain:
          }
 
          EXPECT_EQ( transaction::context().commit(), code::tx::ok);
+      }
+
+
+      TEST( gateway_manager_inbound, A_B_kill_A_rollback_during_pending_call__expect_TPESVCERR_no_pending)
+      {
+         common::unittest::Trace trace;
+
+         constexpr std::string_view system = R"(
+system:
+   resources:
+      -  key: rm-mockup
+         server: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/transaction/bin/rm-proxy-casual-mockup"
+         xa_struct_name: casual_mockup_xa_switch_static
+         libraries:
+            -  casual-mockup-rm
+)";
+
+         auto b = local::domain( system, R"(
+domain:
+   name: B
+   transaction:
+      resources:
+         -  name: example-resource-server
+            key: rm-mockup
+            instances: 1
+   servers:
+   -  path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-resource-server
+      arguments: [ --nested-calls, x ]
+      memberships: [ user]
+   gateway:
+      inbound:
+         groups:
+            -  connections: 
+                  -  address: 127.0.0.1:7001
+)");
+
+
+         // we advertise service a
+         casual::service::unittest::advertise( { "x"});
+
+         auto a = local::domain( system, R"(
+domain:
+   name: A
+   transaction:
+      resources:
+         -  name: example-resource-server
+            key: rm-mockup
+            instances: 1
+   servers:
+      -  alias: a-forward
+         path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-resource-server
+         arguments: [ --nested-calls, casual/example/resource/nested/calls/B, casual/example/resource/nested/calls/B]
+         memberships: [ user]
+   gateway:
+      outbound:
+         groups:
+            -  connections: 
+                  -  address: 127.0.0.1:7001
+)");
+
+         unittest::fetch::until( unittest::fetch::predicate::outbound::connected());
+
+         auto call_service = []( auto service)
+         {
+            buffer::Payload payload;
+            payload.type = "X_OCTET/";
+            payload.data = common::unittest::random::binary( 512);
+
+            return common::service::call::context().async( service, common::buffer::payload::Send{ payload}, {});
+         };
+
+         [[maybe_unused]] auto send_reply = []( auto& request)
+         {
+            auto reply = common::message::reverse::type( request);
+            reply.transaction.trid = request.trid;
+            reply.code.result = decltype( reply.code.result)::ok;
+            reply.buffer = request.buffer;
+
+            EXPECT_TRUE( request.service.name == "x");
+
+            // ack to SM
+            casual::service::unittest::send::ack( request);
+            common::communication::device::blocking::send( request.process.ipc, reply);
+         };
+
+         auto receive_reply = []()
+         {
+            auto reply = common::communication::ipc::receive< common::message::service::call::Reply>();
+            return reply.code.result;
+         };
+
+         // get the pid of the A-forward
+         auto a_forward = casual::domain::unittest::server( casual::domain::unittest::state(), "a-forward");
+         EXPECT_TRUE( a_forward);
+
+         // The following is the flow:
+         // * call nested/calls/B via nested/calls/A  (two calls to nested/calls/B)
+         // * first on will be in progress, since we will not reply ( from x)
+         // * second will be pending in B inbound
+         // * kill a-forward -> TPESVCERR 
+         // * TM issue rollback
+         // * B inbound just replies TPETIME (to the died process) and clean up
+         // * We reply from x to nested/calls/B -> B inbound, ack to B SM
+         // * B get a lookup::Reply from B SM -> inbound does not have any pending any more (replied during rollback) -> lookup::discard to B SM.
+         // * We just call domain/echo/B to ensure that example-server instance in B is not reserved (lookup discard)
+
+         call_service( "casual/example/resource/nested/calls/A");
+
+         // receive the first request
+         auto request = common::communication::ipc::receive< common::message::service::call::callee::Request>();
+
+         // kill the one who has started the transaction
+         common::signal::send( a_forward.pid, common::code::signal::kill);
+
+         // we should get a service-error from our call to casual/example/resource/nested/calls/A
+         EXPECT_EQ( receive_reply(), common::code::xatmi::service_error);
+         
+         // switch to B
+         b.activate();
+         // reply to the only call that got through, the other one was pending and inbound replied to A 
+         // when the rollback from A's TM arrived (the call was pending)
+         send_reply( request);
+
+         // call casual/example/resource/domain/echo//B to make sure instance reservation was released
+         {
+            a.activate();
+
+            call_service( "casual/example/resource/domain/echo/B");
+            EXPECT_EQ( receive_reply(), common::code::xatmi::ok);
+         }
       }
 
    } // gateway
