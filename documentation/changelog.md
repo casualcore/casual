@@ -1,6 +1,13 @@
 # Changelog
 This is the changelog for `casual` and all changes are listed in this document.
 
+
+## [1.6.16] - 2023-10-10
+### Fixes
+- queue: send reply on failed dequeues (#262)
+- gateway: pending 'calls' could be sent after a rollback (#261)
+- buffer: buffer-field-serialize should generate with [[maybe_unused]] (#255)
+
 ## [1.6.15] - 2023-09-14
 ### Fixes
 - transaction: TM commits when it act as a resource and gets a prepare (#256)
