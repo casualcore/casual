@@ -37,6 +37,7 @@ extern int casual_user_log( const char* category, const char* const message);
 
 extern void casual_execution_id_set( const uuid_t* id);
 extern const uuid_t* casual_execution_id_get();
+extern const uuid_t* casual_execution_id_reset();
 
 /**
  * @returns the name of current execution service name

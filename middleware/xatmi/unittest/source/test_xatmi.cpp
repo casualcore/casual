@@ -39,6 +39,20 @@ namespace casual
 
          EXPECT_EQ( uuid::string( uuid), uuid::string( *get_id));
       }
+
+      TEST( xatmi_execution, execution_id_reset)
+      {
+         common::unittest::Trace trace;
+
+         uuid_t uuid;
+         uuid_generate( uuid);
+
+         casual_execution_id_set( &uuid);
+
+         auto reset_id = casual_execution_id_reset();
+
+         EXPECT_NE( uuid::string( uuid), uuid::string( *reset_id));
+      }
    } // common
 } // casual
 
