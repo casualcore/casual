@@ -144,6 +144,12 @@ const uuid_t* casual_execution_id_get()
    return &casual::common::execution::id().underlying().get();
 }
 
+const uuid_t* casual_execution_id_reset()
+{
+   casual::common::execution::reset();
+   return &casual::common::execution::id().underlying().get();
+}
+
 void casual_instance_browse_services( casual_instance_browse_callback callback, void* context)
 {
    using namespace casual;
