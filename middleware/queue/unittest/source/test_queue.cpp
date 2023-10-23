@@ -558,7 +558,49 @@ domain:
          EXPECT_TRUE( common::algorithm::equal( message.payload.data, payload));
       }
 
-      TEST( casual_queue, enqueue_1_message___dequeue_rollback___expect_availiable_after_retry_delay_100ms)
+      TEST( casual_queue, enqueue_available_5min___expect_dequeue_with_id_to_ignore_available)
+      {
+         common::unittest::Trace trace;
+
+         auto domain = local::domain( R"(
+domain:
+   name: A
+   queue:
+      groups:
+         -  alias: A
+            queuebase: ":memory:"
+            queues:
+               -  name: a1
+)");
+
+         const auto payload = common::unittest::random::binary( 128);
+
+         const auto id = [ &]()
+         {
+            queue::Message message;
+            {
+               message.attributes.properties = "poop";
+               message.attributes.available = platform::time::clock::type::now() + std::chrono::minutes{ 5};
+               message.payload.type = common::buffer::type::binary;
+               message.payload.data = payload;
+            }
+
+            return queue::enqueue( "a1", message);
+         }();
+
+
+         queue::Selector selector;
+         selector.id = id;
+         auto message = queue::dequeue( "a1", selector);
+
+         ASSERT_TRUE( ! message.empty()) << CASUAL_NAMED_VALUE( id);
+         
+         // we expect the property available to be in the future.
+         EXPECT_TRUE( message.at( 0).attributes.available > platform::time::clock::type::now());
+         EXPECT_TRUE( common::algorithm::equal( message.at( 0).payload.data, payload));
+      }
+
+      TEST( casual_queue, enqueue_1_message___dequeue_rollback___expect_available_after_retry_delay_100ms)
       {
          common::unittest::Trace trace;
 

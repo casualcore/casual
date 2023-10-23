@@ -396,7 +396,7 @@ namespace casual
             auto query = [&]()
             {
                if( message.selector.id)
-                  return m_statement.dequeue.first_id.query( message.selector.id.get(), message.queue.value(), now);
+                  return m_statement.dequeue.first_id.query( message.selector.id.get(), message.queue.value());
                if( ! message.selector.properties.empty())
                   return m_statement.dequeue.first_match.query( message.queue.value(), message.selector.properties, now);
                
