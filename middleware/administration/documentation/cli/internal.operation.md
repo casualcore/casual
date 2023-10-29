@@ -23,4 +23,9 @@ host# casual --help internal
             Works the same as the `CASUAL_LOG` variable
             Note: only works for 'servers' with a message pump
 
+      --message-count [0..1]  (<value>) [1]
+            lists message count metrics for a given pid
+            
+            The pid needs to be a casual server
+
 ```

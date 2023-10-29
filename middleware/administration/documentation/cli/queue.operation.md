@@ -52,7 +52,7 @@ host# casual --help queue
             @note: part of casual-pipe
 
       -d, --dequeue [0..1]  (<queue>, [<id>]) [1..2]
-            dequeue buffer from a queue to stdout
+            dequeue message from a queue to `casual-pipe`
             
             if id is absent the oldest available message is dequeued. 
             
