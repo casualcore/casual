@@ -10,20 +10,31 @@
 
 namespace casual
 {
-   namespace cli
+   namespace cli::message
    {
-      namespace message
+      
+      namespace pipe
       {
-         namespace to
+         std::string_view description( State value) noexcept
          {
-            void human< queue::message::ID>::stream( const queue::message::ID& message)
+            switch( value)
             {
-               std::cout << message.id << '\n';
-               std::cout.flush();
+               case State::ok: return "ok";
+               case State::error: return "error";
             }
+            return "<unknown>";
+         }
+         
+      } // pipe
 
+      namespace to
+      {
+         void human< queue::message::ID>::stream( const queue::message::ID& message)
+         {
+            std::cout << message.id << '\n';
+            std::cout.flush();
+         }
+      } // to
 
-         } // to
-      } // message
-   } // cli
+   } // cli::message
 } // casual

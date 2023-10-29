@@ -283,7 +283,7 @@ namespace casual
 
             if constexpr( std::is_same_v< std::decay_t< M>, complete_type>)
             {
-               static_assert( std::is_rvalue_reference_v< M>, "complete_type needs to be a rvalue");
+               static_assert( std::is_rvalue_reference_v< decltype( message)>, "complete_type needs to be a rvalue");
                m_cache.push_back( std::forward< M>( message));
             }
             else

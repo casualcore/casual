@@ -304,12 +304,14 @@ The pid needs to be a casual server)"
                   {
                      auto invoke = []()
                      {
-                        bool done = false;
+                        Trace trace{ "administration::local::pipe::option::human_sink::invoke"};
+
+                        casual::cli::pipe::done::Detector done;
 
                         auto handler = cli::message::dispatch::create(
                            // use all defaults, but force human readable
                            cli::pipe::forward::handle::defaults( true),
-                           cli::pipe::handle::done( done)
+                           std::ref( done)
                         );
 
                         // consume from casual-pipe

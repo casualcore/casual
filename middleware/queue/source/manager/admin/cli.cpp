@@ -474,7 +474,7 @@ namespace casual
                      return result;
                   };
 
-                  cli::message::queue::Message result{ process::handle()};
+                  cli::message::queue::Message result;
                   result.id = message.id;
                   result.attributes = transform_attributes( std::move( message.attributes));
 
@@ -488,7 +488,6 @@ namespace casual
                {
                   ipc::message::group::enqueue::Request result{ process::handle()};
 
-                  result.trid = value.transaction.trid;
                   result.message.payload.data = std::move( value.payload.data);
                   result.message.payload.type = std::move( value.payload.type);
 
@@ -502,8 +501,6 @@ namespace casual
                   result.message.attributes.properties = std::move( message.attributes.properties);
                   result.message.attributes.reply = std::move( message.attributes.reply);
                   result.message.attributes.available = message.attributes.available;
-
-                  result.trid = message.transaction.trid;
                   result.message.payload.data = std::move( message.payload.data);
                   result.message.payload.type = std::move( message.payload.type);
 
@@ -839,47 +836,70 @@ use auto-complete to help which options has legends)"
                } // forward
             } // list
 
+            namespace pipe
+            {
+               struct State
+               {
+                  cli::pipe::done::Scope done;
+                  queue::ipc::message::lookup::Reply destination;
+                  common::transaction::ID current;
+
+                  CASUAL_LOG_SERIALIZE(
+                     CASUAL_SERIALIZE( done);
+                     CASUAL_SERIALIZE( destination);
+                     CASUAL_SERIALIZE( current);
+                  )
+               };
+               
+            } // pipe
+
             namespace enqueue
             {
+               auto create_enqueue_handle( const pipe::State& state)
+               {
+                  return [ &state]( auto& message)
+                  {
+                     Trace trace{ "queue::local::enqueue::create_enqueue_handle"};
+                     log::line( verbose::log, "message: ", message);
+                     log::line( verbose::log, "state: ", state);
+
+                     auto request = local::transform::enqueue( std::move( message));
+
+                     request.name = state.destination.name;
+                     request.queue = state.destination.queue;
+                     // use the explict transaction regardless.
+                     request.trid = state.current;
+
+                     cli::message::queue::message::ID id;
+                     id.id = communication::ipc::call( state.destination.process.ipc, request).id;
+                     
+                     cli::pipe::forward::message( id);
+                  };
+               }
+
                auto option()
                {
                   auto invoke = []( std::string name)
                   {
                      Trace trace{ "queue::local::enqueue::invoke"};
 
-                     auto destination = queue::Lookup{ name}();
-                     log::line( verbose::log, "queue: ", destination);
-                     
-                     cli::pipe::transaction::Association associate;
-
-                     // handle for the two message types cli::message::payload::Message and cli::message::queue::Message
-                     auto handle_payload = [ &name, &destination, &associate]( auto& message)
-                     {
-                        associate( message);
-                        auto request = local::transform::enqueue( std::move( message));
-
-                        request.name = name;
-                        request.queue = destination.queue;
-
-                        cli::message::queue::message::ID id{ process::handle()};
-                        id.id = communication::ipc::call( destination.process.ipc, request).id;
-                        id.transaction = message.transaction;
-                        cli::pipe::forward::message( id);
-                     };
-
-                     bool done = false;
+                     pipe::State state;
+                     state.destination = queue::Lookup{ name}();
 
                      auto handler = cli::message::dispatch::create( 
                         cli::pipe::forward::handle::defaults(),
-                        casual::cli::pipe::handle::done( done),
-                        cli::pipe::transaction::handle::directive( associate)) +
-                        cli::message::payload::handler( std::move( handle_payload));
+                        std::ref( state.done),
+                        // handle Current, sets it our curren, and forward the message downstream
+                        cli::pipe::transaction::handle::current( state.current),
+                        // we will enqueue services replies and queue messages
+                        cli::pipe::handle::payloads( create_enqueue_handle( state)));
 
                      // start the pump
                      communication::stream::inbound::Device in{ std::cin};
-                     common::message::dispatch::pump( cli::pipe::condition::done( done), handler, in);
+                     common::message::dispatch::pump( cli::pipe::condition::done( state.done), handler, in);
 
-                     cli::pipe::done();
+                     // state.done dtor will send Done downstream
+
                   };
 
                   return argument::Option{
@@ -900,8 +920,6 @@ cat somefile.bin | casual queue --enqueue <queue-name>
                
             } // enqueue
 
-
-
             struct Empty : public std::runtime_error
             {
                using std::runtime_error::runtime_error;
@@ -909,41 +927,32 @@ cat somefile.bin | casual queue --enqueue <queue-name>
 
             namespace dequeue
             {
-               auto forward = []( auto& destination, auto& associate, const std::optional< Uuid>& id)
+               auto dequeue_and_forward = []( const pipe::State& state, const std::optional< Uuid>& id)
                {
                   // we 'start' a new execution 'context'
                   common::execution::reset();
 
                   Trace trace{ "queue::local::dequeue::action"};
-                  log::line( verbose::log, "destination: ", destination);
-                  log::line( verbose::log, "associate: ", associate);
+                  log::line( verbose::log, "state: ", state);
 
                   ipc::message::group::dequeue::Request request{ process::handle()};
-                  // associate the request to 'transaction', if no ongoing directive -> no-op
-                  associate( request);
-                  request.name = destination.name;
-                  request.queue = destination.queue;
+                  request.name = state.destination.name;
+                  request.queue = state.destination.queue;
+                  request.trid = state.current;
 
                   if( id)
                      request.selector.id = *id;
 
-                  if( auto reply = communication::ipc::call( destination.process.ipc, request))
+                  log::line( verbose::log, "request: ", request);
+
+                  if( auto reply = communication::ipc::call( state.destination.process.ipc, request))
                   {
+                     log::line( verbose::log, "reply: ", reply);
                      auto result = local::transform::message( std::move( reply.message.front()));
                      cli::pipe::forward::message( result);
 
                      return true;
                   }
-
-                  // if associated with a transaction, send the transaction downstream, 
-                  // since associate has sent the association of the transaction upstream already
-                  if( request.trid)
-                  {
-                     cli::message::transaction::Propagate message{ process::handle()};
-                     message.transaction.trid = request.trid;
-                     cli::pipe::forward::message( message);
-                  }
-
                   return false;
                };
 
@@ -953,27 +962,23 @@ cat somefile.bin | casual queue --enqueue <queue-name>
                   {
                      Trace trace{ "queue::local::dequeue::invoke"};
 
-                     auto destination = queue::Lookup{ std::move( queue)}();
-                     
-                     cli::pipe::transaction::Association associate;
-
-                     // we need to consume to see if we've got an ongoing transaction
-
-                     bool done = false;
+                     pipe::State state;
+                     state.destination = queue::Lookup{ std::move( queue)}();
 
                      auto handler = cli::message::dispatch::create(
                         cli::pipe::forward::handle::defaults(),
-                        cli::pipe::handle::done( done),
-                        cli::pipe::transaction::handle::directive( associate)
+                        // handle Current, sets it our curren, and forward the message downstream
+                        cli::pipe::transaction::handle::current( state.current),
+                        std::ref( state.done)
                      );
 
                      // consume the pipe
                      communication::stream::inbound::Device in{ std::cin};
-                     common::message::dispatch::pump( cli::pipe::condition::done( done), handler, in);
+                     common::message::dispatch::pump( cli::pipe::condition::done( state.done), handler, in);
 
-                     dequeue::forward( destination, associate, id);
+                     dequeue_and_forward( state, id);
 
-                     cli::pipe::done();
+                     // state.done dtor will send Done downstream
                   };
 
                   auto complete = []()
@@ -991,7 +996,7 @@ cat somefile.bin | casual queue --enqueue <queue-name>
                      std::move( invoke),
                      complete(),
                      { "-d", "--dequeue"},
-                     R"(dequeue buffer from a queue to stdout
+                     R"(dequeue message from a queue to `casual-pipe`
 
 if id is absent the oldest available message is dequeued. 
 
@@ -1006,8 +1011,6 @@ casual queue --dequeue <queue> <id> | <some other part in casual-pipe> | ... | <
                }
             } // dequeue
 
-
-
             namespace consume
             {
                auto option()
@@ -1015,30 +1018,26 @@ casual queue --dequeue <queue> <id> | <some other part in casual-pipe> | ... | <
                   auto invoke = []( std::string queue, std::optional< platform::size::type> count)
                   {
                      Trace trace{ "queue::local::consume::invoke"};
-                     auto destination = queue::Lookup{ std::move( queue)}();
 
-                     cli::pipe::transaction::Association associate;
-
-                     // we need to consume to see if we've got a ongoing transaction
-
-                     bool done = false;
+                     pipe::State state;
+                     state.destination = queue::Lookup{ std::move( queue)}();
 
                      auto handler = cli::message::dispatch::create(
                         cli::pipe::forward::handle::defaults(),
-                        cli::pipe::handle::done( done),
-                        cli::pipe::transaction::handle::directive( associate)
+                        cli::pipe::transaction::handle::current( state.current),
+                        std::ref( state.done)
                      );
 
                      // consume the pipe
                      communication::stream::inbound::Device in{ std::cin};
-                     common::message::dispatch::pump( cli::pipe::condition::done( done), handler, in);
+                     common::message::dispatch::pump( cli::pipe::condition::done( state.done), handler, in);
 
                      auto remaining = count.value_or( std::numeric_limits< platform::size::type>::max());
 
-                     while( remaining > 0 && dequeue::forward( destination, associate, {}))
+                     while( remaining > 0 && dequeue::dequeue_and_forward( state, {}))
                         --remaining;
 
-                     cli::pipe::done();
+                     // state.done dtor will send Done downstream
                   };
 
                   return argument::Option{
@@ -1074,13 +1073,11 @@ casual queue --consume <queue-name> [<count>] | <some other part of casual-pipe>
                {
                   auto invoke = [](const std::string& queue, const std::vector< queue::Message::id_type>& ids)
                   {
-                     // we need to consume to see if we've got a ongoing transaction
-
-                     bool done = false;
+                     cli::pipe::done::Scope done;
 
                      auto handler = cli::message::dispatch::create(
                         cli::pipe::forward::handle::defaults(),
-                        cli::pipe::handle::done( done)
+                        std::ref( done)
                      );
 
                      // consume the pipe
@@ -1092,7 +1089,7 @@ casual queue --consume <queue-name> [<count>] | <some other part of casual-pipe>
                         cli::pipe::forward::message( local::transform::message( std::move( message)));
                      });
 
-                     cli::pipe::done();
+                     // done dtor will send Done downstream
                   };
 
                   auto complete = []( auto& values, bool help) -> std::vector< std::string>
@@ -1152,22 +1149,21 @@ casual queue --peek <queue-name> <id1> <id2> | <some other part of casual-pipe> 
 
                      auto handle_payload_message = [ handle_queue_message]( cli::message::payload::Message& message)
                      {
-                        cli::message::queue::Message result{ message.process};
+                        cli::message::queue::Message result;
                         result.correlation = message.correlation;
                         result.execution = message.execution;
                         result.payload = std::move( message.payload);
-                        result.transaction = std::move( message.transaction);
 
                         handle_queue_message( result);
                      };
                      
-                     bool done = false;
+                    cli::pipe::done::Scope done;
 
                      auto handler = cli::message::dispatch::create(
                         cli::pipe::forward::handle::defaults(),
                         std::move( handle_queue_message),
                         std::move( handle_payload_message),
-                        cli::pipe::handle::done( done)
+                        std::ref( done)
                      );
 
                      // consume from casual-pipe
@@ -1176,7 +1172,7 @@ casual queue --peek <queue-name> <id1> <id2> | <some other part of casual-pipe> 
                         cli::pipe::condition::done( done), 
                         handler, in);
 
-                     cli::pipe::done();
+                     // done dtor will send Done downstream.
                   };
 
                   auto complete = []( auto& values, bool help) -> std::vector< std::string>

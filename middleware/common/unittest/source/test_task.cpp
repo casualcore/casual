@@ -26,7 +26,7 @@ namespace casual
             using B = common::message::basic_request< common::message::Type::cli_pipe_done>;
             using C = common::message::basic_request< common::message::Type::cli_pipe_error_fatal>;
             using D = common::message::basic_request< common::message::Type::cli_queue_message_id>;
-            using E = common::message::basic_request< common::message::Type::cli_transaction_associated>;
+            using E = common::message::basic_request< common::message::Type::cli_transaction_current>;
 
          } // message
 
