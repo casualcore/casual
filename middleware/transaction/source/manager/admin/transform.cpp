@@ -54,7 +54,7 @@ namespace casual
                   result.id = value.id;
                   result.process = value.process;
                   result.state = static_cast< admin::model::resource::Instance::State>( value.state());
-                  result.metrics = transform::metrics( value.metrics);
+                  result.metrics = transform::metrics( value.metrics());
 
                   return result;
                }

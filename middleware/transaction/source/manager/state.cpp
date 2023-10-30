@@ -38,11 +38,32 @@ namespace casual
 
          namespace resource
          {
+            void Proxy::Instance::reserve()
+            {
+               if( m_state != State::idle)
+                  common::code::raise::error( common::code::casual::invalid_semantics, "trying to reserve rm instance: ", process.pid, " in state: ", m_state);
+
+               m_state = State::busy;
+               m_reserved = platform::time::clock::type::now();
+            }
+
+            void Proxy::Instance::unreserve( const common::message::Statistics& statistics)
+            {
+               // could be in some more "severe" state, we only go back to idle if it was in busy.
+               if( m_state == State::busy)
+                  m_state = State::idle;
+
+               m_metrics.resource += statistics.end - statistics.start;
+               m_metrics.roundtrip +=  platform::time::clock::type::now() - std::exchange( m_reserved, {});
+            }
+
+
             void Proxy::Instance::state( State state)
             {
                if( m_state != State::shutdown)
                   m_state = state;
             }
+
 
             Proxy::Instance::State Proxy::Instance::state() const
             {
@@ -66,20 +87,16 @@ namespace casual
 
             bool Proxy::remove_instance( common::strong::process::id pid)
             {
-               auto found = common::algorithm::find_if( instances, [pid]( auto& i){
-                  return i.process.pid == pid;
-               });
-
-               if( found)
+               if( auto found = algorithm::find( instances, pid))
                {
-                  metrics += found->metrics;
+                  metrics += found->metrics();
                   instances.erase( std::begin( found));
                   return true;
                }
                return false;
             }
 
-            std::string_view description( Proxy::Instance::State value)
+            std::string_view description( Proxy::Instance::State value) noexcept
             {
                switch( value)
                {
@@ -252,10 +269,18 @@ namespace casual
 
       state::resource::Proxy& State::get_resource( common::strong::resource::id rm)
       {
-         if( auto found = common::algorithm::find( resources, rm))
+         if( auto found = find_resource( rm))
             return *found;
 
          code::raise::error( code::casual::invalid_argument, "failed to find resource - rm: ", rm);
+      }
+
+      state::resource::Proxy* State::find_resource( common::strong::resource::id rm)
+      {
+         if( auto found = common::algorithm::find( resources, rm))
+            return found.data();
+
+         return nullptr;
       }
 
       state::resource::Proxy* State::find_resource( const std::string& name)
@@ -285,9 +310,7 @@ namespace casual
       state::resource::Proxy::Instance& State::get_instance( common::strong::resource::id rm, common::strong::process::id pid)
       {
          auto& resource = get_resource( rm);
-         auto has_pid = [pid]( auto& instance){ return instance.process.pid == pid;};
-
-         if( auto found = common::algorithm::find_if( resource.instances, has_pid))
+         if( auto found = common::algorithm::find( resource.instances, pid))
             return *found;
 
          code::raise::error( code::casual::invalid_argument, "failed to find instance - rm: ", rm, ", pid: ", pid);
@@ -300,11 +323,18 @@ namespace casual
          }).empty();
       }
 
-      state::resource::Proxy::Instance* State::idle( common::strong::resource::id rm)
+      state::resource::Proxy::Instance* State::try_reserve( common::strong::resource::id rm)
       {
-         auto& resource = get_resource( rm);
-
-         return common::algorithm::find_if( resource.instances, []( auto& instance){ return instance.state() == decltype( instance.state())::idle;}).data();
+         if( auto resource = find_resource( rm))
+         {
+            if( auto found = common::algorithm::find( resource->instances, state::resource::Proxy::Instance::State::idle))
+            {
+               found->reserve();
+               return found.data();
+            }
+         }
+         
+         return nullptr;
       }
 
       const state::resource::external::Proxy& State::get_external( common::strong::resource::id rm) const

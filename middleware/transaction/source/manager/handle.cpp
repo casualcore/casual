@@ -216,13 +216,8 @@ namespace casual
 
                               if( state::resource::id::local( request.resource))
                               {
-                                 if( auto found = state.idle( request.resource))
-                                 {
-                                    auto correlation = state.multiplex.send( found->process.ipc, request);
-                                    found->state( state::resource::Proxy::Instance::State::busy);
-                                    found->metrics.requested = platform::time::clock::type::now();
-                                    return correlation;
-                                 }
+                                 if( auto reserved = state.try_reserve( request.resource))
+                                    return state.multiplex.send( reserved->process.ipc, request);
 
                                  common::log::line( log, "could not send to resource: ", request.resource, " - action: try later");
                                  // (we know message is an rvalue, so it's going to be a move)
@@ -590,17 +585,15 @@ namespace casual
                      {
                         namespace instance
                         {
-                           void done( State& state, state::resource::Proxy::Instance& instance)
+                           void ready( State& state, state::resource::Proxy::Instance& instance)
                            {
                               Trace trace{ "transaction::manager::handle::local::resource::detail::instance::done"};
-
-                              instance.state( state::resource::Proxy::Instance::State::idle);
 
                               if( auto request = state.pending.requests.next( instance.id))
                               {
                                  // We got a pending request for this resource, let's oblige
                                  if( state.multiplex.send( instance.process.ipc, std::move( request)))
-                                    instance.state( state::resource::Proxy::Instance::State::busy);
+                                    instance.reserve();
                                  else
                                     common::log::line( common::log::category::error, "the instance: ", instance , " - does not seem to be running");
                               }
@@ -614,8 +607,8 @@ namespace casual
                                  // The resource is a local resource proxy, and it's done, and ready for more work
                                  auto& instance = state.get_instance( message.resource, message.process.pid);
                                  {
-                                    instance::done( state, instance);
-                                    instance.metrics.add( message);
+                                    instance.unreserve( message.statistics);
+                                    instance::ready( state, instance);
                                  }
                               } 
                            }
@@ -955,7 +948,8 @@ namespace casual
 
                            auto& instance = state.get_instance( message.id, message.process.pid);
                            instance.process = message.process;
-                           detail::instance::done( state, instance);
+                           instance.state( state::resource::Proxy::Instance::State::idle);
+                           detail::instance::ready( state, instance);
                         };
                      }
 
