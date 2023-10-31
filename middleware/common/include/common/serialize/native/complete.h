@@ -25,7 +25,7 @@ namespace casual
 
 
       template< typename C, typename M>
-      auto complete( M&& message) -> decltype( void( typename customization::point< std::decay_t< C>>::writer{}() << message), C{})
+      auto complete( const M& message) -> decltype( void( typename customization::point< std::decay_t< C>>::writer{}() << message), C{})
       {
          if( ! message.execution)
             message.execution = execution::id();
