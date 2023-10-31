@@ -77,8 +77,10 @@ namespace casual
                   };
                   friend std::string_view description( State value) noexcept;
 
-               
+                  
                   void reserve();
+                  //! used when requests has been pending.
+                  void reserve( platform::time::point::type requested);
                   void unreserve( const common::message::Statistics& statistics);
 
                   common::strong::resource::id id;
@@ -88,6 +90,7 @@ namespace casual
                   State state() const;
 
                   inline const Metrics& metrics() const noexcept { return m_metrics;}
+                  inline const common::Metric& pending() const noexcept { return m_pending;}
 
                   inline friend bool operator == ( const Instance& lhs, common::strong::process::id rhs) { return lhs.process.pid == rhs;}
                   inline friend bool operator == ( const Instance& lhs, State rhs) { return lhs.state() == rhs;}
@@ -98,12 +101,16 @@ namespace casual
                      CASUAL_SERIALIZE( m_state);
                      CASUAL_SERIALIZE( m_reserved);
                      CASUAL_SERIALIZE( m_metrics);
+                     CASUAL_SERIALIZE( m_pending);
                   )
 
                private:
+                  void general_reserve( platform::time::point::type now);
+
                   State m_state = State::absent;
                   platform::time::point::type m_reserved{};
                   Metrics m_metrics;
+                  common::Metric m_pending;
                };
 
                inline Proxy( configuration::model::transaction::Resource configuration)
@@ -114,9 +121,11 @@ namespace casual
                std::vector< Instance> instances;
                configuration::model::transaction::Resource configuration;
 
-               //! This 'counter' keep track of metrics for removed
+               //! This 'counters' keep track of metrics for removed
                //! instances, so we can give a better view for the operator.
                Metrics metrics;
+               common::Metric pending;
+
 
                //! @return true if all instances 'has connected'
                bool booted() const;
@@ -132,6 +141,7 @@ namespace casual
                   CASUAL_SERIALIZE( configuration);
                   CASUAL_SERIALIZE( instances);
                   CASUAL_SERIALIZE( metrics);
+                  CASUAL_SERIALIZE( pending);
                )
             };
 
@@ -321,6 +331,30 @@ namespace casual
             )
          };
 
+         namespace pending
+         {
+            //! type to help hold pending request to re
+            struct Request
+            {
+               Request() = default;
+               inline Request( common::communication::ipc::message::Complete complete)
+                  : created{ platform::time::clock::type::now()}, complete{ std::move( complete)} 
+               {}
+
+               inline explicit operator bool() const noexcept { return common::predicate::boolean( complete);}
+
+               platform::time::point::type created{};
+               common::communication::ipc::message::Complete complete;
+
+               inline const auto& correlation() const noexcept { return complete.correlation();}
+
+               CASUAL_LOG_SERIALIZE(
+                  CASUAL_SERIALIZE( created);
+                  CASUAL_SERIALIZE( complete);
+               )
+            };
+         } // pending
+
       } // state
 
       struct State
@@ -367,7 +401,7 @@ namespace casual
          {
             //! Resource request, that will be processed as soon as possible,
             //! that is, as soon as corresponding resources is done/idle
-            common::communication::ipc::pending::basic_holder< common::strong::resource::id> requests;
+            common::communication::ipc::pending::basic_holder< common::strong::resource::id, state::pending::Request> requests;
 
             CASUAL_LOG_SERIALIZE(
                CASUAL_SERIALIZE( requests);

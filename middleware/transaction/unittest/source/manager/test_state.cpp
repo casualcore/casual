@@ -87,6 +87,94 @@ namespace casual
          EXPECT_TRUE( metrics.roundtrip.limit.max > metrics.resource.limit.max);
 
          EXPECT_TRUE( metrics.roundtrip.total > metrics.resource.total);
+
+
+         auto pending = instance.pending();
+         EXPECT_TRUE( pending.count == 0);
+         EXPECT_TRUE( pending.total == platform::time::unit{});
+      }
+
+      TEST( transaction_manager_state, proxy_instance_pending)
+      {
+         state::resource::Proxy::Instance instance;
+         instance.state( decltype( instance.state())::idle);
+
+         static constexpr auto duration = std::chrono::microseconds{ 100};
+
+         // will get reservation time = now
+         instance.reserve( platform::time::clock::type::now() -  duration);
+         instance.unreserve( local::resource_roundtrip( duration));
+
+         // make sure metrics woks as before
+         { 
+            auto metrics = instance.metrics();
+
+            EXPECT_TRUE( metrics.resource.count == 1);
+            EXPECT_TRUE( metrics.resource.limit.max > duration);
+            EXPECT_TRUE( metrics.resource.limit.min > duration);
+
+            EXPECT_TRUE( metrics.roundtrip.count == 1);
+            EXPECT_TRUE( metrics.roundtrip.limit.min > metrics.resource.limit.min) << CASUAL_NAMED_VALUE( metrics);
+            EXPECT_TRUE( metrics.roundtrip.limit.max > metrics.resource.limit.max);
+
+            EXPECT_TRUE( metrics.roundtrip.total > metrics.resource.total);
+         }
+
+         {
+            auto pending = instance.pending();
+
+            EXPECT_TRUE( pending.count == 1);
+            EXPECT_TRUE( pending.total == duration);
+            EXPECT_TRUE( pending.limit.min == duration);
+            EXPECT_TRUE( pending.limit.max == duration);
+         }
+      }
+
+      TEST( transaction_manager_state, proxy_instance_multiple_pending)
+      {
+         state::resource::Proxy::Instance instance;
+         instance.state( decltype( instance.state())::idle);
+
+         auto pending_roundtrip = [ &instance]( auto requested)
+         {
+            instance.reserve( requested);
+            instance.unreserve( local::resource_roundtrip( std::chrono::microseconds{ 10}));
+
+         };
+
+         static constexpr auto pending_durations = common::array::make( 
+            std::chrono::milliseconds{ 1000}, 
+            std::chrono::milliseconds{ 500}, 
+            std::chrono::milliseconds{ 250}, 
+            std::chrono::milliseconds{ 100}, 
+            std::chrono::milliseconds{ 10});
+
+         for( auto& duration : pending_durations)
+            pending_roundtrip( platform::time::clock::type::now() - duration);
+
+         auto total = algorithm::accumulate( pending_durations, std::chrono::microseconds{});
+
+         const auto min = *algorithm::min( pending_durations);
+         const auto max = *algorithm::max( pending_durations);
+
+         {
+            // we need to compensate for the time it takes for `instance` to take current time internally
+            // 5ms seems more than enough.
+            static constexpr auto compensation = std::chrono::milliseconds{ 5};
+
+            auto pending = instance.pending();
+
+            EXPECT_TRUE( pending.count == pending_durations.size());
+            EXPECT_TRUE( pending.total >= total);
+            // some sanity check 
+            EXPECT_TRUE( pending.total < ( total + compensation)) << CASUAL_NAMED_VALUE( pending.total) << "\n        " << CASUAL_NAMED_VALUE( total);
+
+            EXPECT_TRUE( pending.limit.min >= min);
+            EXPECT_TRUE( pending.limit.min < min + compensation); // sanity
+            
+            EXPECT_TRUE( pending.limit.max >= max);
+            EXPECT_TRUE( pending.limit.max < max + compensation); // sanity
+         }
       }
       
    } // transaction::manager

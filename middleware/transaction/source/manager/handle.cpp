@@ -592,7 +592,7 @@ namespace casual
                               if( auto request = state.pending.requests.next( instance.id))
                               {
                                  // We got a pending request for this resource, let's oblige
-                                 if( state.multiplex.send( instance.process.ipc, std::move( request)))
+                                 if( state.multiplex.send( instance.process.ipc, std::move( request.complete)))
                                     instance.reserve();
                                  else
                                     common::log::line( common::log::category::error, "the instance: ", instance , " - does not seem to be running");

@@ -38,7 +38,8 @@ namespace casual
 
          namespace resource
          {
-            void Proxy::Instance::reserve()
+
+            void Proxy::Instance::general_reserve( platform::time::point::type now)
             {
                if( m_state != State::idle)
                   common::code::raise::error( common::code::casual::invalid_semantics, "trying to reserve rm instance: ", process.pid, " in state: ", m_state);
@@ -46,6 +47,18 @@ namespace casual
                m_state = State::busy;
                m_reserved = platform::time::clock::type::now();
             }
+
+            void Proxy::Instance::reserve()
+            {
+               general_reserve( platform::time::clock::type::now());
+            }
+
+            void Proxy::Instance::reserve( platform::time::point::type requested)
+            {
+               auto now = platform::time::clock::type::now();
+               general_reserve( now);
+               m_pending += now - requested;
+            };
 
             void Proxy::Instance::unreserve( const common::message::Statistics& statistics)
             {
@@ -90,6 +103,7 @@ namespace casual
                if( auto found = algorithm::find( instances, pid))
                {
                   metrics += found->metrics();
+                  pending += found->pending();
                   instances.erase( std::begin( found));
                   return true;
                }

@@ -11,6 +11,7 @@
 #include "common/metric.h"
 #include "common/process.h"
 #include "common/code/xa.h"
+#include "common/message/type.h"
 
 namespace casual
 {
@@ -70,6 +71,7 @@ namespace casual
             common::process::Handle process;
 
             Metrics metrics;
+            Metric pending;
 
             State state = State::absent;
 
@@ -78,6 +80,7 @@ namespace casual
                CASUAL_SERIALIZE( process);
                CASUAL_SERIALIZE( state);
                CASUAL_SERIALIZE( metrics);
+               CASUAL_SERIALIZE( pending);
             )
 
             inline friend bool operator < ( const Instance& lhs,  const Instance& rhs)
@@ -99,6 +102,7 @@ namespace casual
             std::string closeinfo;
             platform::size::type concurrency = 0;
             Metrics metrics;
+            Metric pending;
 
             std::vector< Instance> instances;
 
@@ -110,6 +114,7 @@ namespace casual
                CASUAL_SERIALIZE( closeinfo);
                CASUAL_SERIALIZE( concurrency);
                CASUAL_SERIALIZE( metrics);
+               CASUAL_SERIALIZE( pending);
                CASUAL_SERIALIZE( instances);
             )
 
@@ -143,21 +148,23 @@ namespace casual
          struct Request
          {
             common::strong::resource::id resource;
-            common::Uuid correlation;
-            long type;
+            common::strong::correlation::id correlation;
+            common::message::Type type;
+            platform::time::point::type created{};
 
             CASUAL_CONST_CORRECT_SERIALIZE(
                CASUAL_SERIALIZE( resource);
                CASUAL_SERIALIZE( correlation);
                CASUAL_SERIALIZE( type);
+               CASUAL_SERIALIZE( created);
             )
          };
 
          struct Reply
          {
             common::process::Handle destination;
-            common::Uuid correlation;
-            long type;
+            common::strong::correlation::id correlation;
+            common::message::Type type;
 
             CASUAL_CONST_CORRECT_SERIALIZE(
                CASUAL_SERIALIZE( destination);
