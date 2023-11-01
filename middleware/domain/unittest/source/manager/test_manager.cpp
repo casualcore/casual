@@ -1334,6 +1334,7 @@ domain:
          alias: simple-server
          instances: 2
          memberships: [ A]
+         restart: true
 
    executables:
       -  alias: sleep
@@ -1341,6 +1342,7 @@ domain:
          arguments: [60]
          instances: 2
          memberships: [ B]
+         restart: true
 
 )";
 
@@ -1351,7 +1353,6 @@ domain:
          auto model = casual::configuration::model::transform( unittest::internal::call< casual::configuration::user::Model>( admin::service::name::configuration::get));
 
          EXPECT_TRUE( origin.domain == model.domain) << CASUAL_NAMED_VALUE( origin.domain) << "\n " << CASUAL_NAMED_VALUE( model.domain);
-
       }
 
       namespace local
