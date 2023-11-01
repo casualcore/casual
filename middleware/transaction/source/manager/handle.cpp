@@ -593,7 +593,7 @@ namespace casual
                               {
                                  // We got a pending request for this resource, let's oblige
                                  if( state.multiplex.send( instance.process.ipc, std::move( request.complete)))
-                                    instance.reserve();
+                                    instance.reserve( request.created);
                                  else
                                     common::log::line( common::log::category::error, "the instance: ", instance , " - does not seem to be running");
                               }

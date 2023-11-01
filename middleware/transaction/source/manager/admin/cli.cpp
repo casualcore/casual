@@ -98,6 +98,12 @@ namespace casual
                            common::Metric roundtrip;
                         };
 
+                        struct Result
+                        {
+                           Metrics metrics;
+                           common::Metric pending;
+                        };
+
                         auto transform_metric = []( auto& v)
                         {  
                            common::Metric result;
@@ -108,14 +114,16 @@ namespace casual
                            return result;
                         };
 
-                        Metrics result;
-                        result.resource = transform_metric( value.metrics.resource);
-                        result.roundtrip = transform_metric( value.metrics.roundtrip);
+                        Result result;
+                        result.metrics.resource = transform_metric( value.metrics.resource);
+                        result.metrics.roundtrip = transform_metric( value.metrics.roundtrip);
+                        result.pending = transform_metric( value.pending);
 
                         for( auto& instance : value.instances)
                         {
-                           result.resource += transform_metric( instance.metrics.resource);
-                           result.roundtrip += transform_metric( instance.metrics.roundtrip);
+                           result.metrics.resource += transform_metric( instance.metrics.resource);
+                           result.metrics.roundtrip += transform_metric( instance.metrics.roundtrip);
+                           result.pending += transform_metric( instance.pending);
                         }
                         return result;
                      }
@@ -172,43 +180,80 @@ namespace casual
                         auto format_invoked = []( const admin::model::resource::Proxy& value)
                         {
                            auto result = accumulate_statistics( value);
-                           return result.roundtrip.count;
+                           return result.metrics.roundtrip.count;
                         };
 
                         auto format_min = []( const admin::model::resource::Proxy& value)
                         {
                            auto result = accumulate_statistics( value);
-                           return std::chrono::duration_cast< time_type>( result.roundtrip.limit.min).count();
+                           return std::chrono::duration_cast< time_type>( result.metrics.roundtrip.limit.min).count();
                         };
 
                         auto format_max = []( const admin::model::resource::Proxy& value)
                         {
                            auto result = accumulate_statistics( value);
-                           return std::chrono::duration_cast< time_type>( result.roundtrip.limit.max).count(); 
+                           return std::chrono::duration_cast< time_type>( result.metrics.roundtrip.limit.max).count(); 
                         };
 
                         auto format_avg = []( const admin::model::resource::Proxy& value)
                         {
                            auto result = accumulate_statistics( value);
-                           if( result.roundtrip.count == 0) return 0.0;
-                           return std::chrono::duration_cast< time_type>( result.roundtrip.total / result.roundtrip.count).count();
+                           if( result.metrics.roundtrip.count == 0) 
+                              return 0.0;
+                           return std::chrono::duration_cast< time_type>( result.metrics.roundtrip.total / result.metrics.roundtrip.count).count();
                         };
 
+                        auto format_pending_count = []( const admin::model::resource::Proxy& value)
+                        {
+                           return accumulate_statistics( value).pending.count;
+                        };
 
-                        return common::terminal::format::formatter< admin::model::resource::Proxy>::construct(
-                           common::terminal::format::column( "name", std::mem_fn( &admin::model::resource::Proxy::name), common::terminal::color::yellow),
-                           common::terminal::format::column( "id", std::mem_fn( &admin::model::resource::Proxy::id), common::terminal::color::yellow, terminal::format::Align::right),
-                           common::terminal::format::column( "key", std::mem_fn( &admin::model::resource::Proxy::key), common::terminal::color::yellow),
-                           common::terminal::format::column( "openinfo", std::mem_fn( &admin::model::resource::Proxy::openinfo), common::terminal::color::no_color),
-                           common::terminal::format::column( "closeinfo", std::mem_fn( &admin::model::resource::Proxy::closeinfo), common::terminal::color::no_color),
-                           terminal::format::column( "invoked", format_invoked, terminal::color::blue, terminal::format::Align::right),
-                           terminal::format::column( "min (s)", format_min, terminal::color::blue, terminal::format::Align::right),
-                           terminal::format::column( "max (s)", format_max, terminal::color::blue, terminal::format::Align::right),
-                           terminal::format::column( "avg (s)", format_avg, terminal::color::blue, terminal::format::Align::right),
-                           terminal::format::column( "#", format_number_of_instances{}, terminal::color::white, terminal::format::Align::right)
-                        );
+                        auto format_avg_pending_time = []( const admin::model::resource::Proxy& value)
+                        {
+                           auto pending = accumulate_statistics( value).pending;
+                           if( pending.count == 0) 
+                              return 0.0;
+                           return std::chrono::duration_cast< time_type>( pending.total / pending.count).count();
+                        };
 
+                        if( ! terminal::output::directive().porcelain())
+                        {
+                           return common::terminal::format::formatter< admin::model::resource::Proxy>::construct(
+                              common::terminal::format::column( "name", std::mem_fn( &admin::model::resource::Proxy::name), common::terminal::color::yellow),
+                              common::terminal::format::column( "id", std::mem_fn( &admin::model::resource::Proxy::id), common::terminal::color::yellow, terminal::format::Align::right),
+                              common::terminal::format::column( "key", std::mem_fn( &admin::model::resource::Proxy::key), common::terminal::color::yellow),
+                              common::terminal::format::column( "openinfo", std::mem_fn( &admin::model::resource::Proxy::openinfo), common::terminal::color::no_color),
+                              common::terminal::format::column( "closeinfo", std::mem_fn( &admin::model::resource::Proxy::closeinfo), common::terminal::color::no_color),
+                              terminal::format::column( "invoked", format_invoked, terminal::color::blue, terminal::format::Align::right),
+                              terminal::format::column( "min", format_min, terminal::color::blue, terminal::format::Align::right),
+                              terminal::format::column( "max", format_max, terminal::color::blue, terminal::format::Align::right),
+                              terminal::format::column( "avg", format_avg, terminal::color::blue, terminal::format::Align::right),
+                              terminal::format::column( "P", format_pending_count, terminal::color::magenta, terminal::format::Align::right),
+                              terminal::format::column( "PAT", format_avg_pending_time, terminal::color::magenta, terminal::format::Align::right),
+                              terminal::format::column( "#", format_number_of_instances{}, terminal::color::white, terminal::format::Align::right)
+                           );
+                        }
+                        else
+                        {
+                           // we need to keep compatibility with porcelain
+                           return common::terminal::format::formatter< admin::model::resource::Proxy>::construct(
+                              common::terminal::format::column( "name", std::mem_fn( &admin::model::resource::Proxy::name), common::terminal::color::yellow),
+                              common::terminal::format::column( "id", std::mem_fn( &admin::model::resource::Proxy::id), common::terminal::color::yellow, terminal::format::Align::right),
+                              common::terminal::format::column( "key", std::mem_fn( &admin::model::resource::Proxy::key), common::terminal::color::yellow),
+                              common::terminal::format::column( "openinfo", std::mem_fn( &admin::model::resource::Proxy::openinfo), common::terminal::color::no_color),
+                              common::terminal::format::column( "closeinfo", std::mem_fn( &admin::model::resource::Proxy::closeinfo), common::terminal::color::no_color),
+                              terminal::format::column( "invoked", format_invoked, terminal::color::blue, terminal::format::Align::right),
+                              terminal::format::column( "min", format_min, terminal::color::blue, terminal::format::Align::right),
+                              terminal::format::column( "max", format_max, terminal::color::blue, terminal::format::Align::right),
+                              terminal::format::column( "avg", format_avg, terminal::color::blue, terminal::format::Align::right),
+                              terminal::format::column( "#", format_number_of_instances{}, terminal::color::white, terminal::format::Align::right),
+                              // last to keep compatibility
+                              terminal::format::column( "P", format_pending_count, terminal::color::magenta, terminal::format::Align::right),
+                              terminal::format::column( "PAT", format_avg_pending_time, terminal::color::magenta, terminal::format::Align::right)
+                           );
+                        }
                      }
+
 
                      auto external_resource()
                      {
@@ -278,7 +323,6 @@ namespace casual
                            return std::chrono::duration_cast< time_type>( value.metrics.resource.total / value.metrics.resource.count).count();
                         };
 
-
                         return common::terminal::format::formatter< admin::model::resource::Instance>::construct(
                            terminal::format::column( "id", std::mem_fn( &admin::model::resource::Instance::id), common::terminal::color::yellow, terminal::format::Align::right),
                            terminal::format::column( "pid", format_pid, common::terminal::color::white, terminal::format::Align::right),
@@ -292,7 +336,6 @@ namespace casual
                            terminal::format::column( "rm-max (s)", format_rm_max, terminal::color::blue, terminal::format::Align::right),
                            terminal::format::column( "rm-avg (s)", format_rm_avg, terminal::color::blue, terminal::format::Align::right)
                         );
-
                      }
                   } // format
 
