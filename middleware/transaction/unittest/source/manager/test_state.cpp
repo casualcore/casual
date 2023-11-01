@@ -99,7 +99,7 @@ namespace casual
          state::resource::Proxy::Instance instance;
          instance.state( decltype( instance.state())::idle);
 
-         static constexpr auto duration = std::chrono::microseconds{ 100};
+         static constexpr auto duration = std::chrono::milliseconds{ 1};
 
          // will get reservation time = now
          instance.reserve( platform::time::clock::type::now() -  duration);
@@ -123,10 +123,17 @@ namespace casual
          {
             auto pending = instance.pending();
 
+            // we need to compensate for the time it takes for `instance` to take current time internally
+            // 0.5ms seems more than enough.
+            auto check_span = []( auto value, auto duration)
+            {
+               return value >= duration && value < duration + std::chrono::microseconds{ 500};
+            };
+
             EXPECT_TRUE( pending.count == 1);
-            EXPECT_TRUE( pending.total == duration);
-            EXPECT_TRUE( pending.limit.min == duration);
-            EXPECT_TRUE( pending.limit.max == duration);
+            EXPECT_TRUE( check_span( pending.total, duration));
+            EXPECT_TRUE( check_span( pending.limit.min, duration));
+            EXPECT_TRUE( check_span( pending.limit.max, duration));
          }
       }
 
@@ -138,8 +145,8 @@ namespace casual
          auto pending_roundtrip = [ &instance]( auto requested)
          {
             instance.reserve( requested);
-            instance.unreserve( local::resource_roundtrip( std::chrono::microseconds{ 10}));
-
+            // we don't verify the roundtrip -> we can make it real small.
+            instance.unreserve( local::resource_roundtrip( std::chrono::microseconds{ 5}));
          };
 
          static constexpr auto pending_durations = common::array::make( 
@@ -160,20 +167,17 @@ namespace casual
          {
             // we need to compensate for the time it takes for `instance` to take current time internally
             // 5ms seems more than enough.
-            static constexpr auto compensation = std::chrono::milliseconds{ 5};
+            auto check_span = []( auto value, auto duration)
+            {
+               return value >= duration && value < duration + std::chrono::milliseconds{ 5};
+            };
 
             auto pending = instance.pending();
 
             EXPECT_TRUE( pending.count == pending_durations.size());
-            EXPECT_TRUE( pending.total >= total);
-            // some sanity check 
-            EXPECT_TRUE( pending.total < ( total + compensation)) << CASUAL_NAMED_VALUE( pending.total) << "\n        " << CASUAL_NAMED_VALUE( total);
-
-            EXPECT_TRUE( pending.limit.min >= min);
-            EXPECT_TRUE( pending.limit.min < min + compensation); // sanity
-            
-            EXPECT_TRUE( pending.limit.max >= max);
-            EXPECT_TRUE( pending.limit.max < max + compensation); // sanity
+            EXPECT_TRUE( check_span( pending.total, total)) << CASUAL_NAMED_VALUE( pending.total) << "\n        " << CASUAL_NAMED_VALUE( total);
+            EXPECT_TRUE( check_span( pending.limit.min, min));
+            EXPECT_TRUE( check_span( pending.limit.max, max));
          }
       }
       
