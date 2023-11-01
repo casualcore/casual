@@ -1672,5 +1672,76 @@ domain:
 
       }
 
+
+      TEST( domain_manager, restart_executable_server__1_restarts)
+      {
+         common::unittest::Trace trace;
+
+         constexpr auto sleep =  R"(
+domain:
+   name: sleep
+   executables:
+      -  path: sleep
+         alias: sleep
+         arguments: [60]
+         instances: 1
+         restart: true
+   servers:
+      -  path: ./bin/test-simple-server
+         alias: simple-server
+         instances: 1
+         restart: true
+)";
+
+         auto domain = local::domain( sleep);
+         message::event::process::Exit died;
+         common::event::subscribe( common::process::handle(), { died.type()});
+
+         auto order_hit = []( auto& state, auto& target)
+         {
+            message::event::process::Assassination assassination;
+            assassination.target = target;
+            assassination.contract = Contract::kill;
+            communication::device::blocking::send( communication::instance::outbound::domain::manager::device(), assassination);
+         };
+
+         {
+            auto state = local::call::state();
+
+            auto executable = local::find::alias( state.executables, "sleep");
+            auto server = local::find::alias( state.servers, "simple-server");
+            ASSERT_TRUE( executable) << CASUAL_NAMED_VALUE( state);
+            ASSERT_TRUE( server) << CASUAL_NAMED_VALUE( server);
+
+            EXPECT_TRUE( executable->restarts == 0) << executable->restarts;
+            EXPECT_TRUE( server->restarts == 0) << server->restarts;
+
+            order_hit( state, executable->instances.at( 0).handle);
+            order_hit( state, server->instances.at( 0).handle.pid);
+         }
+
+         // check if/when hit is performed
+         algorithm::for_n< 2>([ &died]()
+            {
+               common::communication::device::blocking::receive( common::communication::ipc::inbound::device(), died);
+            }
+         );
+
+         local::fetch::until( casual::domain::unittest::fetch::predicate::alias::has::instances( "sleep", 1));
+         local::fetch::until( casual::domain::unittest::fetch::predicate::alias::has::instances( "simple-server", 1));
+
+         {
+            auto state = local::call::state();
+
+            auto executable = local::find::alias( state.executables, "sleep");
+            auto server = local::find::alias( state.servers, "simple-server");
+            ASSERT_TRUE( executable) << CASUAL_NAMED_VALUE( state);
+            ASSERT_TRUE( server) << CASUAL_NAMED_VALUE( server);
+
+            EXPECT_TRUE( executable->restarts == 1) << executable->restarts;
+            EXPECT_TRUE( server->restarts == 1) << server->restarts;
+         }
+      }
+
    } // domain::manager
 } // casual
