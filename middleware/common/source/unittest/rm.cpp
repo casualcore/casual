@@ -17,6 +17,7 @@
 #include "common/flag.h"
 #include "common/exception/capture.h"
 #include "common/algorithm/compare.h"
+#include "common/chronology.h"
 
 
 
@@ -172,6 +173,14 @@ namespace casual
                };
             };
 
+            auto sleep_option = []( auto& duration)
+            {
+               return [ &duration]( const std::string& value)
+               {
+                  duration = common::chronology::from::string( value);
+               };
+            };
+
             argument::Parse{ "mockup rm",
                argument::Option( parse_result( state.result.open), { "--open"}, ""),
                argument::Option( parse_result( state.result.close), { "--close"}, ""),
@@ -179,7 +188,10 @@ namespace casual
                argument::Option( parse_result( state.result.end), { "--end"}, ""),
                argument::Option( parse_result( state.result.prepare), { "--prepare"}, ""),
                argument::Option( parse_result( state.result.commit), { "--commit"}, ""),
-               argument::Option( parse_result( state.result.rollback), { "--rollback"}, "")
+               argument::Option( parse_result( state.result.rollback), { "--rollback"}, ""),
+               argument::Option( sleep_option( state.sleep_prepare), { "--sleep-prepare"}, ""),
+               argument::Option( sleep_option( state.sleep_commit), { "--sleep-commit"}, ""),
+               argument::Option( sleep_option( state.sleep_rollback), { "--sleep-rollback"}, "")
             }( common::string::split( openinfo));
          }
          catch( ...)
@@ -299,6 +311,9 @@ namespace casual
 
          auto& state = local::state::get( id, rm::state::Invoke::xa_rollback_entry);
 
+         if( state.sleep_rollback)
+            process::sleep( *state.sleep_rollback);
+
          return cast::underlying( state.result.rollback);
       }
 
@@ -312,6 +327,9 @@ namespace casual
 
          auto& state = local::state::get( id, rm::state::Invoke::xa_prepare_entry);
 
+         if( state.sleep_prepare)
+            process::sleep( *state.sleep_prepare);
+
          return cast::underlying( state.result.prepare);
       }
 
@@ -324,6 +342,9 @@ namespace casual
          log::line( log, "xid: ", transaction, " id: ", id, " flags: ", flag::xa::Flags{ flags});
 
          auto& state = local::state::get( id, rm::state::Invoke::xa_commit_entry);
+
+         if( state.sleep_commit)
+            process::sleep( *state.sleep_commit);
 
          if( state.result.commit == code::xa::ok)
          {
