@@ -188,6 +188,20 @@ domain:
          ASSERT_TRUE( tx_commit() == TX_OK);
       }
 
+      TEST( cli_transaction, legend)
+      {
+         auto a = local::cli::domain();
+
+         const auto output = administration::unittest::cli::command::execute( R"(casual transaction --legend list-resources)").consume();
+
+         using namespace std::literals;
+
+         // check some legend specific strings
+         EXPECT_TRUE( algorithm::search( output, "min:"sv));
+         EXPECT_TRUE( algorithm::search( output, "openinfo:"sv));
+         EXPECT_TRUE( algorithm::search( output, "P:"sv)) << CASUAL_NAMED_VALUE( output);
+         EXPECT_TRUE( algorithm::search( output, "PAT:"sv));
+      }
 
       TEST( cli_transaction, pending_resource_proxies)
       {

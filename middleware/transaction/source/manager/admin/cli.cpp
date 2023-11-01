@@ -254,6 +254,33 @@ namespace casual
                         }
                      }
 
+                     constexpr auto resource_proxy_legend = R"(
+   name:
+      name of the resource-proxy
+   id: 
+      id of the resource proxy. `L-XX` if local and `E-XX` if _external_
+   key:
+      the configured `key` of the resource
+   openinfo:
+      configured openinfo for the resource
+   closeinfo:
+      configured closeinfo for the resource
+   invoked:
+      number of invocations to the resource-proxy
+   min:
+      minimum-time - the minimum roundtrip time to the resource-proxy (in seconds)
+   max:
+      maximum-time - the maximum roundtrip time to the resource-proxy (in seconds)
+   avg:
+      average-time - the average roundtrip time to the resource-proxy (in seconds)
+   P:
+      Pending - total number of pending request, over time.
+   PAT:
+      Pending-Average-Time - the average time request has waited for a resource-proxy (in seconds)
+      This only includes pending requests.
+   #:
+      number of instances
+)";
 
                      auto external_resource()
                      {
@@ -776,6 +803,42 @@ namespace casual
                      }
 
                   } // commit
+
+                  namespace legend
+                  {
+                     auto option()
+                     {
+                        static const std::map< std::string, std::string_view> legends{
+                           { "list-resources", local::format::resource_proxy_legend},
+                        };
+
+                        auto invoke = []( const std::string& option)
+                        {
+                           if( auto found = algorithm::find( legends, option))
+                              std::cout << found->second;
+                           else
+                              code::raise::error( code::casual::invalid_argument, "not a valid argument to --legend: ", option);
+                        };
+
+                        auto complete = []( auto values, auto help)
+                        {
+                           return algorithm::transform( legends, []( auto& pair){ return pair.first;});
+                        };
+
+                        return argument::Option{
+                           std::move( invoke),
+                           std::move( complete),
+                           { "--legend"},
+                           R"(the legend for the supplied option
+
+Documentation and description for abbreviations and acronyms used as columns in output
+
+note: not all options has legend, use 'auto complete' to find out which legends are supported.
+)"};
+                     }
+
+                  } // legend
+
                } // <unnamed>
             } // local
 
@@ -793,6 +856,7 @@ namespace casual
                      local::rollback::option(),
                      local::scale::instances::option(),
                      local::list::pending::option(),
+                     local::legend::option(),
                      local::information::option(),
                      casual::cli::state::option( &local::call::state),
                   };
