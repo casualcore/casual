@@ -601,19 +601,11 @@ namespace casual
                            else
                               log::line( log::category::information, "process exited, alias: ", alias, ", details: ", message.state);
 
-                           auto scale = [ &state]( auto& executable)
-                           {
-                              auto spawnable = executable->spawnable();
-                              handle::scale::instances( state, *executable);
-                              if( spawnable)
-                                 executable->restarts++;
-                           };
-
                            if( server)
-                              scale( server);
+                              handle::scale::instances( state, *server);
 
                            if( executable)
-                              scale( executable);
+                              handle::scale::instances( state, *executable);
 
                            // dispatch to tasks
                            state.tasks.event( state, message);

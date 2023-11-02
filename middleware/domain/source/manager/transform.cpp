@@ -208,7 +208,7 @@ namespace casual
                      });
 
                      result.restart = value.restart;
-                     result.restarts = value.restarts;
+                     result.restarts = value.initiated_restarts;
 
                      return result;
                   }
