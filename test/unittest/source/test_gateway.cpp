@@ -3363,6 +3363,116 @@ domain:
          
       }
 
+
+
+      TEST( test_gateway, domain_A_to_GW_to_B__perform_discovery_in_GW_if_service_unknown)
+      {
+         common::unittest::Trace trace;
+
+         // sink child signals
+         signal::callback::registration< code::signal::child>( [](){});
+
+         // domain containing example services scaled down to 0 instances
+         constexpr auto B = R"(
+domain:
+   name: B
+
+   servers:
+      - path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-server"
+        instances: 0
+
+   gateway:
+      inbound:
+         groups:
+            -  connections:
+               -  address: 127.0.0.1:7002
+)";
+
+         auto b = local::domain(  B);
+
+         {
+            // scale up to 1 instance
+            casual::domain::manager::admin::cli cli;
+            common::argument::Parse parse{ "", cli.options()};
+            parse( { "domain", "--scale-instances", "casual-example-server", "1"});
+            casual::service::unittest::fetch::until( casual::service::unittest::fetch::predicate::instances( "casual/example/echo", 1));
+         }
+
+         // gateway domain with forward inbound
+         constexpr auto GW = R"(
+domain:
+   name: GW
+   gateway:
+
+      inbound:
+         groups:
+            -  connections:
+                  -  address: 127.0.0.1:7001
+                     discovery:
+                        forward: true
+      outbound:
+         groups:
+            -  connections:
+                  -  address: 127.0.0.1:7002
+)";
+
+
+         auto gw = local::domain(  GW);
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected());
+
+         // domain with no local example services
+         constexpr auto A = R"(
+domain:
+   name: A
+
+   gateway:
+      outbound:
+         groups:
+            -  connections:
+                  -  address: 127.0.0.1:7001
+
+)";
+
+         auto a = local::domain( A);
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected());
+
+         // make call and trigger discovery
+         local::call( "casual/example/echo", code::xatmi::ok);
+
+         // shutdown domain b
+         b.async_shutdown();
+
+         // wait to detect that domain b is down
+         gw.activate();
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::disconnected());
+
+         // create b again
+         auto new_b = local::domain(  B);
+
+         // wait for connection to b
+         gw.activate();
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected());
+
+         {
+            new_b.activate();
+            // scale up to 1 instance
+            casual::domain::manager::admin::cli cli;
+            common::argument::Parse parse{ "", cli.options()};
+            parse( { "domain", "--scale-instances", "casual-example-server", "1"});
+            casual::service::unittest::fetch::until( casual::service::unittest::fetch::predicate::instances( "casual/example/echo", 1));
+         }
+
+         // domain a: routing to service via gw exists
+         // domain gw: example service is known by service-manager after previous call, but no routing to domain b exists for service
+         // the call trigger a new discovery for service in gw instead of tpenoent
+         a.activate();
+         local::call( "casual/example/echo", code::xatmi::ok);
+
+      }
+
+
+
+
       TEST( test_transaction, a_b_c_domains__a_enqueue_in_b__and_calls_resource_server_in_c__mockup_RM_gives_RMERR_on_prepare__expect_rollback_on_queue)
       {
          common::unittest::Trace trace;
