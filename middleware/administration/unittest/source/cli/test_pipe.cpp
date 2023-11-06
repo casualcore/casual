@@ -62,6 +62,16 @@ domain:
          } // <unnamed>
       } // local
 
+      TEST( cli_pipe, log_file_to_stdout__expect_cli_error)
+      {
+         auto domain = local::domain();
+
+          auto output = local::execute( R"(CASUAL_LOG_PATH=/dev/stdout casual service --list-services 2>&1 )");
+
+          EXPECT_TRUE( algorithm::search( output, std::string_view( "casual:precondition"))) << output;
+
+      }
+
       TEST( cli_pipe, enqueue_dequeue_call_echo)
       {
          common::unittest::Trace trace;

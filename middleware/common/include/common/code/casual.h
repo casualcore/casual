@@ -23,6 +23,8 @@ namespace casual
             shutdown = 1,
             interrupted,
 
+            preconditions,
+
             invalid_configuration,
             invalid_document,
             invalid_node,
