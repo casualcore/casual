@@ -306,25 +306,12 @@ namespace casual
                         return std::chrono::duration_cast< second_t>( value.execution.timeout.duration.value()).count();
                      };
 
-                     auto format_timeout_contract = []( const auto& value)
+                     auto format_timeout_contract = []( const auto& value) -> std::string_view
                      {
-                        return value.execution.timeout.contract;
+                        if( ! value.execution.timeout.contract)
+                           return "-";
+                        return description( *value.execution.timeout.contract);
                      };
-
-/*
-                     auto format_mode = []( auto& service)
-                     {
-                        switch( service.transaction)
-                        {
-                           case Enum::automatic: return "auto";
-                           case Enum::atomic: return "atomic";
-                           case Enum::join: return "join";
-                           case Enum::none: return "none";
-                           case Enum::branch: return "branch";
-                        };
-                        assert( ! "unknown transaction mode");
-                     };
-                     */
 
 
                      // we need to set something when category is empty to help

@@ -10,6 +10,8 @@
 
 #include "administration/unittest/cli/command.h"
 
+#include "service/unittest/utility.h"
+
 namespace casual
 {
    using namespace common;
@@ -165,6 +167,33 @@ domain:
             const auto output = administration::unittest::cli::command::execute( R"(casual service --list-services --porcelain true | awk -F'|' '{printf $15}')").string();
             constexpr auto expected = "kill";
             EXPECT_EQ( output, expected);
+         }
+      }
+
+      TEST( cli_service, list_services__unknown_contract__expect_hyphen)
+      {
+         common::unittest::Trace trace;
+
+         auto domain = local::cli::domain( R"(
+domain:
+   name: A
+   services:
+      -  name: with-contract
+         execution:
+            timeout:
+               contract: kill
+)");
+
+         casual::service::unittest::concurrent::advertise( { "without-contract"});
+
+         {  
+            const auto output = administration::unittest::cli::command::execute( R"(casual --color false service --list-services | grep with-contract | awk '{ print $6}' )").consume();
+            EXPECT_EQ( output, "kill\n");
+         }
+
+         {  
+            const auto output = administration::unittest::cli::command::execute( R"(casual --color false service --list-services | grep without-contract | awk '{ print $6}' )").consume();
+            EXPECT_EQ( output, "-\n");
          }
       }
 
