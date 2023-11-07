@@ -7,11 +7,12 @@
 
 #include "casual/xatmi.h"
 #include "casual/xatmi/internal/code.h"
+#include "casual/xatmi/internal/signal.h"
 
 #include "common/service/conversation/context.h"
 #include "common/buffer/pool.h"
 
-int tpconnect( const char* svc, const char* idata, long ilen, long flags)
+int tpconnect( const char* svc, const char* idata, long ilen, long bitmap)
 {
    casual::xatmi::internal::clear();
 
@@ -35,10 +36,14 @@ int tpconnect( const char* svc, const char* idata, long ilen, long flags)
          Flag::send_only,
          Flag::signal_restart};
 
+      auto flags = valid_flags.convert( bitmap);
+
+      auto maybe_block = casual::xatmi::internal::signal::maybe_block( flags);
+
       return casual::common::service::conversation::context().connect(
             svc,
             buffer,
-            valid_flags.convert( flags)).value();
+            flags).value();
 
    }
    catch( ...)
@@ -88,7 +93,7 @@ namespace local
    } // <unnamed>
 } // local
 
-int tpsend( int id, const char* idata, long ilen, long flags, long* event)
+int tpsend( int id, const char* idata, long ilen, long bitmap, long* event)
 {
    return local::conversation::wrap( *event, [&]()
    {
@@ -102,10 +107,14 @@ int tpsend( int id, const char* idata, long ilen, long flags, long* event)
          Flag::no_time,
          Flag::signal_restart};
 
+      auto flags = valid_flags.convert( bitmap);
+
+      auto maybe_block = casual::xatmi::internal::signal::maybe_block( flags);
+
       auto result = casual::common::service::conversation::context().send(
             casual::common::strong::conversation::descriptor::id{ id},
             std::move( buffer),
-            valid_flags.convert( flags));
+            flags);
       // There may be a user return code. It need to be set.
       // Occurs if/when callee called tpreturn (and thereby
       // terminated the conversation). It is a bit unusaual
@@ -151,6 +160,8 @@ int tprecv( int id, char ** odata, long *olen, long flags, long* event)
       };
 
       auto flag = valid_flags.convert( flags);
+
+      auto maybe_block = casual::xatmi::internal::signal::maybe_block( flag);
 
       auto result = casual::common::service::conversation::context().receive(
             casual::common::strong::conversation::descriptor::id{ id},

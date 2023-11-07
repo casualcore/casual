@@ -20,6 +20,7 @@
 #include "common/environment/scoped.h"
 #include "common/execute.h"
 #include "common/unittest/file.h"
+#include "common/signal.h"
 
 
 #include "casual/xatmi.h"
@@ -620,6 +621,108 @@ domain:
 
          EXPECT_FALSE( local::call( "casual/example/error/TPESVCFAIL"));
          EXPECT_TRUE( tperrno == TPESVCFAIL) << "tperrno: " << tperrno;
+      }
+
+      TEST( test_xatmi_call, tpcall_signal_interrupt__expect_error_TPGOTSIG)
+      {
+         common::unittest::Trace trace;
+
+         auto domain = local::domain();
+
+         auto buffer = tpalloc( X_OCTET, nullptr, 128);
+         auto len = tptypes( buffer, nullptr, nullptr);
+
+         signal::send( process::id(), code::signal::alarm);
+
+         EXPECT_TRUE( tpcall( "casual/example/echo", buffer, 128, &buffer, &len, 0) == -1);
+         EXPECT_TRUE( tperrno == TPGOTSIG) << "tperrno: " << tperrnostring( tperrno);
+      }
+
+      TEST( test_xatmi_call, tpcall_with_TPSIGRSTRT__signal_interrupt__expect_no_error)
+      {
+         common::unittest::Trace trace;
+
+         auto domain = local::domain();
+
+         auto buffer = tpalloc( X_OCTET, nullptr, 128);
+         auto len = tptypes( buffer, nullptr, nullptr);
+
+         signal::send( process::id(), code::signal::alarm);
+
+         EXPECT_TRUE( tpcall( "casual/example/echo", buffer, 128, &buffer, &len, TPSIGRSTRT) == 0);
+         EXPECT_TRUE( tperrno == 0) << "tperrno: " << tperrnostring( tperrno);
+
+         signal::clear();
+      }
+
+      TEST( test_xatmi_call, tpacall_signal_interrupt__expect_error_TPGOTSIG)
+      {
+         common::unittest::Trace trace;
+
+         auto domain = local::domain();
+
+         auto buffer = tpalloc( X_OCTET, nullptr, 128);
+
+         signal::send( process::id(), code::signal::interrupt);
+
+         EXPECT_TRUE( tpacall( "casual/example/echo", buffer, 128, 0) == -1);
+         EXPECT_TRUE( tperrno == TPGOTSIG) << "tperrno: " << tperrnostring( tperrno);
+      }
+
+      TEST( test_xatmi_call, tpacall_with_TPSIGRSTRT__signal_interrupt__expect_no_error)
+      {
+         common::unittest::Trace trace;
+
+         auto domain = local::domain();
+
+         auto buffer = tpalloc( X_OCTET, nullptr, 128);
+
+         signal::send( process::id(), code::signal::alarm);
+
+         EXPECT_TRUE( tpacall( "casual/example/echo", buffer, 128, TPSIGRSTRT) != -1);
+         EXPECT_TRUE( tperrno == 0) << "tperrno: " << tperrnostring( tperrno);
+
+         signal::clear();
+      }
+
+      TEST( test_xatmi_call, tpgetrply_signal_interrupt__expect_error_TPGOTSIG)
+      {
+         common::unittest::Trace trace;
+
+         auto domain = local::domain();
+
+         auto buffer = tpalloc( X_OCTET, nullptr, 128);
+         auto len = tptypes( buffer, nullptr, nullptr);
+
+         auto desc = tpacall( "casual/example/echo", buffer, 128, 0);
+         EXPECT_TRUE( desc != -1);
+         EXPECT_TRUE( tperrno == 0) << "tperrno: " << tperrnostring( tperrno);
+
+         signal::send( process::id(), code::signal::alarm);
+
+         EXPECT_TRUE( tpgetrply( &desc, &buffer, &len, 0) == -1);
+         EXPECT_TRUE( tperrno == TPGOTSIG) << "tperrno: " << tperrnostring( tperrno);
+      }
+
+      TEST( test_xatmi_call, tpgetrply_with_TPSIGRSTRT__signal_interrupt__expect_no_error)
+      {
+         common::unittest::Trace trace;
+
+         auto domain = local::domain();
+
+         auto buffer = tpalloc( X_OCTET, nullptr, 128);
+         auto len = tptypes( buffer, nullptr, nullptr);
+
+         auto desc = tpacall( "casual/example/echo", buffer, 128, 0);
+         EXPECT_TRUE( desc != -1);
+         EXPECT_TRUE( tperrno == 0) << "tperrno: " << tperrnostring( tperrno);
+
+         signal::send( process::id(), code::signal::alarm);
+
+         EXPECT_TRUE( tpgetrply( &desc, &buffer, &len, TPSIGRSTRT) == 0);
+         EXPECT_TRUE( tperrno == 0) << "tperrno: " << tperrnostring( tperrno);
+
+         signal::clear();
       }
 
       namespace local

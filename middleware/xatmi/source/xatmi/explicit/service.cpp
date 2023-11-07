@@ -9,6 +9,7 @@
 #include "casual/tx.h"
 
 #include "casual/xatmi/internal/code.h"
+#include "casual/xatmi/internal/signal.h"
 
 #include "common/buffer/pool.h"
 #include "common/server/context.h"
@@ -43,7 +44,6 @@ namespace local
          *odata = std::get< 0>( buffer).underlying();
          *olen = std::get< 1>( buffer);
       }
-
    } // <unnamed>
 } // local
 
@@ -73,6 +73,8 @@ int casual_service_call( const char* const service, char* idata, const long ilen
 
       auto flags = valid_flags.convert( bitmap);
 
+      auto maybe_block = casual::xatmi::internal::signal::maybe_block( flags);
+
       auto result = casual::common::service::call::Context::instance().sync(
             service,
             buffer,
@@ -100,7 +102,7 @@ int casual_service_call( const char* const service, char* idata, const long ilen
    return -1;
 }
 
-int casual_service_asynchronous_send( const char* const service, char* idata, const long ilen, const long flags)
+int casual_service_asynchronous_send( const char* const service, char* idata, const long ilen, const long bitmap)
 {
    casual::xatmi::internal::clear();
 
@@ -123,10 +125,14 @@ int casual_service_asynchronous_send( const char* const service, char* idata, co
          Flag::no_time,
          Flag::signal_restart};
 
+      auto flags = valid_flags.convert( bitmap);
+
+      auto maybe_block = casual::xatmi::internal::signal::maybe_block( flags);
+
       return casual::common::service::call::Context::instance().async(
             service,
             buffer,
-            valid_flags.convert( flags));
+            flags);
    }
    catch( ...)
    {
@@ -151,6 +157,8 @@ int casual_service_asynchronous_receive( int *const descriptor, char** odata, lo
          Flag::signal_restart};
 
       auto flags = valid_flags.convert( bitmap);
+
+      auto maybe_block = casual::xatmi::internal::signal::maybe_block( flags);
 
       auto result = casual::common::service::call::Context::instance().reply( *descriptor, flags);
 
