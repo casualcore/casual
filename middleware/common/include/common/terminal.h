@@ -32,6 +32,9 @@ namespace casual
             bool color() const;
             inline auto porcelain() const { return m_porcelain;}
             bool header() const;
+            //! user has used --header true explicitly
+            //! @note this is to enable print header with porcelain -> not break backward compatible
+            bool explict_header() const;
             inline auto precision() const { return m_precision;}
             inline auto block() const { return m_block;}
             inline auto verbose() const { return m_verbose;}
@@ -43,6 +46,15 @@ namespace casual
             using options_type = decltype( std::declval< argument::Option>() + std::declval< argument::Option>());
 
             options_type options() &;
+
+            CASUAL_LOG_SERIALIZE(
+               CASUAL_SERIALIZE( m_color);
+               CASUAL_SERIALIZE( m_porcelain);
+               CASUAL_SERIALIZE( m_header);
+               CASUAL_SERIALIZE( m_block);
+               CASUAL_SERIALIZE( m_verbose);
+               CASUAL_SERIALIZE( m_precision);
+            )
 
          private:
             std::string m_color;
@@ -209,6 +221,20 @@ namespace casual
                }
             }
 
+            void print_porcelain_headers( std::ostream& out)
+            {
+               auto print_delimiter = [&](){
+                  out << '|';
+               };
+
+               auto print_name = [&out]( const column_holder& c){
+                  out << c.name();
+               };
+
+               algorithm::for_each_interleave( m_columns, print_name, print_delimiter);
+               out << '\n';
+            }
+
 
 
             template< typename R>
@@ -259,6 +285,10 @@ namespace casual
                {
                   calculate_width( range, out);
                   print_headers( out);
+               }
+               else if( output::directive().explict_header())
+               {
+                  print_porcelain_headers( out);
                }
 
                print_rows( out, range);
