@@ -399,7 +399,15 @@ namespace casual
                               common::log::line( verbose::log, "replies: ", replies, ", outcome: ", outcome);
 
                               auto transaction = common::algorithm::find( state.transactions, origin);
-                              casual::assertion( transaction, "failed to find transaction 'context' for: ", origin);
+
+                              if( ! transaction)
+                              {
+                                 using namespace common;
+                                 log::line( log::category::error, code::casual::invalid_semantics, " prepare callback - failed to find transaction 'context' for: ", origin, " - action: ignore");
+                                 log::line( log::category::verbose::error, "replies: ", replies, ", outcome: ", outcome);
+
+                                 return;
+                              }
 
                               // filter away all read-only replies
                               auto [ active, read_only] = common::algorithm::partition( replies, []( auto& reply){ return reply.state != decltype( reply.state)::read_only;});
