@@ -174,7 +174,7 @@ namespace casual
 
             auto pending = instance.pending();
 
-            EXPECT_TRUE( pending.count == pending_durations.size());
+            EXPECT_TRUE( pending.count == range::size( pending_durations));
             EXPECT_TRUE( check_span( pending.total, total)) << CASUAL_NAMED_VALUE( pending.total) << "\n        " << CASUAL_NAMED_VALUE( total);
             EXPECT_TRUE( check_span( pending.limit.min, min));
             EXPECT_TRUE( check_span( pending.limit.max, max));
