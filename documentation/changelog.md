@@ -1,6 +1,21 @@
 # Changelog
 This is the changelog for `casual` and all changes are listed in this document.
 
+## [1.6.17] - 2023-11-13
+### Fixes
+- transaction: TM asserts when transaction is not found in prepare-handle (#288)
+- cli: header output in porcelain if --header true (#283)
+- service: perform discovery on external_discovery (#269)
+- xatmi: comply to specification signal handling (#271)
+- service: cli --list-services does not add - when _contract_ is missing (#281)
+- cli: add precondition casual log can't be tied to stdout (#259)
+- domain: propagate restart to configuration-get (#240)
+- domain: handle restarts attribute correct (#277)
+- transaction: cli - add legend for list-resources
+- transaction: show metric for resource-proxy pending requests in cli (#273)
+- transaction: fix resource-proxy metric (#273)
+- cli: fixed and simplified the transaction cli (#272)
+- queue: dequeue with id as selector should ignore available (#270)
 
 ## [1.6.16] - 2023-10-10
 ### Fixes
