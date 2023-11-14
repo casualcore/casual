@@ -8,7 +8,7 @@
 
 
 
-#include "common/log/stream.h"
+#include "common/log/line.h"
 #include "common/log/trace.h"
 
 

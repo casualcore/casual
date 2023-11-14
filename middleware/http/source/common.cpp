@@ -11,6 +11,7 @@
 #include "common/algorithm/compare.h"
 #include "common/buffer/type.h"
 #include "common/string/compose.h"
+#include "common/log/line.h"
 
 #include "casual/buffer/field.h"
 #include "casual/buffer/string.h"

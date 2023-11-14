@@ -11,7 +11,7 @@
 #include "common/transaction/id.h"
 #include "common/environment/expand.h"
 
-#include "common/log/category.h"
+#include "common/log/line.h"
 #include "common/flag.h"
 
 #include "common/code/raise.h"
@@ -56,7 +56,7 @@ namespace casual
                auto code( code::xa code, strong::resource::id rm, Ts&&... ts)
                {
                   if( code != code::xa::ok)
-                     common::log::line( common::log::category::error, code, " resource: ", rm, " - ", std::forward< Ts>( ts)...);
+                     common::log::error( code, "resource: ", rm, " - ", std::forward< Ts>( ts)...);
 
                   return code;
                }
@@ -235,7 +235,7 @@ namespace casual
          if( result != code::xa::resource_fail)
             return result;
          
-         log::line( log::category::error, result, " failed to interact with resource ", m_id, " - action: try to reopen the resource");
+         log::error( result, "failed to interact with resource ", m_id, " - action: try to reopen the resource");
                      
          // we try to reopen the resource, and apply the functor again
 

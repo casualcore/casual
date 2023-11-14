@@ -94,18 +94,5 @@ namespace casual
          }
       }
 
-      template< typename... Args>
-      void line( std::ostream& out, Args&&... args)
-      {
-         if( out)
-         {
-            stream::thread::Lock lock;
-            common::stream::write( out, std::forward< Args>( args)..., '\n');
-         }
-      } 
-
    } // common::log
 } // casual
-
-
-

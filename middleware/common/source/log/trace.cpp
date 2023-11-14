@@ -6,7 +6,7 @@
 
 
 #include "common/log/trace.h"
-
+#include "common/log/line.h"
 
 namespace casual
 {

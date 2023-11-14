@@ -12,6 +12,7 @@
 #include "common/string.h"
 #include "common/code/raise.h"
 #include "common/code/casual.h"
+#include "common/log/line.h"
 
 
 
@@ -143,7 +144,7 @@ namespace casual
                   // deprecated listeners
                   if( manager.listeners && ! manager.listeners->empty())
                   {
-                     log::line( log::category::warning, code::casual::invalid_configuration, " domain.gateway.listeners[] is deprecated - use domain.gateway.inbound.groups[]");
+                     log::warning( code::casual::invalid_configuration, "domain.gateway.listeners[] is deprecated - use domain.gateway.inbound.groups[]");
 
                      gateway::inbound::Group group;
                      group.alias = "inbound";
@@ -185,7 +186,7 @@ namespace casual
                   // deprecated connections
                   if( manager.connections && ! manager.connections->empty())
                   {
-                     log::line( log::category::warning, code::casual::invalid_configuration, " domain.gateway.connections[ is deprecated - use domain.gateway.outbound.groups[]");
+                     log::warning( code::casual::invalid_configuration, "domain.gateway.connections[ is deprecated - use domain.gateway.outbound.groups[]");
 
                      common::algorithm::transform( *manager.connections, local::value_or_emplace( manager.outbound).groups, []( gateway::Connection& value)
                      {
@@ -217,7 +218,7 @@ namespace casual
                   // TODO deprecated remove on 2.0
                   if( manager.defaults->connection && manager.connections)
                   {
-                     log::line( log::category::error, code::casual::invalid_configuration, " domain.gateway.default.connection is deprecated/removed - there is no replacement");
+                     log::error( code::casual::invalid_configuration, "domain.gateway.default.connection is deprecated/removed - there is no replacement");
 
                      auto update_connection = [ &defaults = *manager.defaults->connection]( auto& connection)
                      {
@@ -233,7 +234,7 @@ namespace casual
                   // TODO deprecated remove on 2.0
                   if( manager.defaults->listener && manager.listeners)
                   {
-                     log::line( log::category::warning, code::casual::invalid_configuration, " domain.gateway.default.listener is deprecated - use domain.gateway.inbound.default");
+                     log::warning( code::casual::invalid_configuration, "domain.gateway.default.listener is deprecated - use domain.gateway.inbound.default");
 
                      auto update_listener = [&defaults = manager.defaults->listener.value()]( auto& listener)
                      {
@@ -353,7 +354,7 @@ namespace casual
                   auto normalize = [&]( auto& group)
                   {
                      if( group.name)
-                        log::line( log::category::warning, "configuration - domain.queue.groups[].name is deprecated - use domain.queue.groups[].alias instead");
+                        log::warning( code::casual::invalid_configuration, "configuration - domain.queue.groups[].name is deprecated - use domain.queue.groups[].alias instead");
 
                      group.alias = algorithm::coalesce( std::move( group.alias), std::move( group.name));
 
@@ -423,7 +424,7 @@ namespace casual
                   if( model.service->execution && model.service->execution->timeout 
                      && ( model.service->execution->timeout->duration || model.service->execution->timeout->contract))
                   {
-                     log::line( log::category::warning, code::casual::invalid_configuration, " domain.service.timeout.(duration|contract) is deprecated - use domain.global.service.timeout.(duration|contract) instead");
+                     log::warning( code::casual::invalid_configuration, "domain.service.timeout.(duration|contract) is deprecated - use domain.global.service.timeout.(duration|contract) instead");
                      local::value_or_emplace( get_global_service( model).execution).timeout = std::move( model.service->execution->timeout);
                   }
 
@@ -438,13 +439,12 @@ namespace casual
                {
                   if( service.timeout)
                   {
-                     log::line( log::category::warning, code::casual::invalid_configuration, 
-                        " domain.services[].timeout is deprecated - use domain.services[].execution.duration instead");
+                     log::warning( code::casual::invalid_configuration, "domain.services[].timeout is deprecated - use domain.services[].execution.duration instead");
 
                      if( service.execution && service.execution->timeout && service.execution->timeout->duration)
                      {
-                        log::line( log::category::error, code::casual::invalid_configuration, 
-                           " ambiguity - domain.services[].timeout is used the same time as domain.services[].execution.duration - remove domain.services[].timeout");
+                        log::error( code::casual::invalid_configuration, 
+                           "ambiguity - domain.services[].timeout is used the same time as domain.services[].execution.duration - remove domain.services[].timeout");
                      }
                      else
                      {
@@ -461,8 +461,8 @@ namespace casual
             {
                if( model.defaults && model.defaults->service && model.defaults->service->timeout)
                {
-                  log::line( log::category::warning, code::casual::invalid_configuration, 
-                     " domain.default.service.timeout is deprecated - use domain.default.service.execution.duration instead");
+                  log::warning( code::casual::invalid_configuration, 
+                     "domain.default.service.timeout is deprecated - use domain.default.service.execution.duration instead");
                   local::value_or_emplace( local::value_or_emplace( model.defaults->service->execution).timeout).duration 
                      = std::move( model.defaults->service->timeout);
                }
@@ -473,7 +473,7 @@ namespace casual
 
             if( model.defaults->environment)
             {
-               log::line( log::category::warning, "configuration - domain.default.environment is deprecated - use domain.environment instead");
+               log::warning( code::casual::invalid_configuration, "domain.default.environment is deprecated - use domain.environment instead");
                model.environment = algorithm::coalesce( std::move( model.environment), std::move( model.defaults->environment));
             }
 
