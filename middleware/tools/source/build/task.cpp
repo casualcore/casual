@@ -9,6 +9,7 @@
 
 #include "common/environment/expand.h"
 #include "common/process.h"
+#include "common/log/line.h"
 
 #include "common/code/raise.h"
 #include "common/code/casual.h"

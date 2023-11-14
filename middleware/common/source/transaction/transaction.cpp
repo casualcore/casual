@@ -6,7 +6,7 @@
 
 
 #include "common/transaction/transaction.h"
-#include "common/log/stream.h"
+#include "common/log/line.h"
 #include "common/algorithm/container.h"
 #include "common/log/category.h"
 

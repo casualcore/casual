@@ -7,7 +7,7 @@
 #include "casual/buffer/internal/field/string.h"
 #include "casual/buffer/internal/common.h"
 
-#include "common/log/category.h"
+#include "common/log/line.h"
 
 #include "common/code/raise.h"
 #include "common/code/xatmi.h"

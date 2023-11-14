@@ -9,7 +9,7 @@
 #include "serviceframework/service/protocol/implementation.h"
 #include "serviceframework/log.h"
 
-#include "common/log/stream.h"
+#include "common/log/line.h"
 
 #include "common/code/raise.h"
 #include "common/code/casual.h"

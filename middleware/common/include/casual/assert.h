@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include "common/log/category.h"
+#include "common/log/line.h"
 
 #include "common/code/casual.h"
 
@@ -16,7 +16,7 @@ namespace casual
    template< typename... Ts>
    [[noreturn]] void terminate( Ts&&... context) noexcept
    {
-      common::log::line( common::log::category::error, common::code::casual::fatal_terminate, ' ', std::forward< Ts>( context)...);
+      common::log::error( common::code::casual::fatal_terminate, std::forward< Ts>( context)...);
       common::log::category::error.flush();
       std::terminate();
    }

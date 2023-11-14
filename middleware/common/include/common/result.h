@@ -11,6 +11,7 @@
 #include "common/code/raise.h"
 #include "common/code/log.h"
 #include "common/algorithm/compare.h"
+#include "common/log/line.h"
 
 #include <system_error>
 #include <string>

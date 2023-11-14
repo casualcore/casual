@@ -12,6 +12,7 @@
 #include "common/algorithm/container.h"
 #include "common/service/type.h"
 #include "common/chronology.h"
+#include "common/log/line.h"
 #include "common/algorithm/coalesce.h"
 
 namespace casual
@@ -78,7 +79,7 @@ namespace casual
                   }
                   else if( model.resources)
                   {
-                     log::line( log::category::warning, code::casual::invalid_configuration, " root 'resources' is deprecated - use system.resources instead");
+                     log::warning( code::casual::invalid_configuration, "root 'resources' is deprecated - use system.resources instead");
                      result.resources = algorithm::transform( model.resources.value(), transform_resource);
                   }
                }

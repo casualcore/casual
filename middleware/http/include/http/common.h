@@ -9,6 +9,7 @@
 
 
 #include "common/log/trace.h"
+#include "common/log/line.h"
 #include "common/code/xatmi.h"
 #include "common/buffer/type.h"
 
