@@ -349,7 +349,7 @@ namespace casual
    restart;
       if instances should be restarted if exited
    #r:
-      number of times instances has been restarted
+      number of times instances has been initiated for a restart
    path:
       the path to the binary
 

@@ -78,7 +78,7 @@ namespace casual
             return exception::main::log::guard( [&]()
             {
                argument::Parse{ "Only? for unittests",
-                  argument::Option{ std::tie( local::global.nested.services), {"--nested-calls"}, "service that casual/example/forward should call"}
+                  argument::Option{ std::tie( local::global.nested.services), {"--nested-calls"}, "services that casual/example/resource/nested/calls/<domain-name> should call"}
                }( argc, argv);
 
                auto advertise_service = []( auto function, std::string_view name)

@@ -33,7 +33,7 @@ pipe           ?                                          pipe related options
 --precision    ?  <value>                              1  set number of decimal points used for output (default: 3)                               
 --block        ?  [true, false]                        1  set/unset blocking - if false return control to user as soon as possible (default: true)
 --verbose      ?  [true, false]                        1  verbose output (default: false)                                                         
---porcelain    ?  [true, false]                        1  easy to parse output format (default: false)                                            
+--porcelain    ?  [true, false]                        1  backward compatible, easy to parse output format (default: false)                       
 internal       ?                                          internal casual stuff for troubleshooting etc...                                        
 --version      ?                                          display version information                                                             
 --help         ?  <value>                              *  use --help <option> to see further details                                              

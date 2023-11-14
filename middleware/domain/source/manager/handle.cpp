@@ -644,6 +644,7 @@ namespace casual
 
                            if( server)
                               handle::scale::instances( state, *server);
+
                            if( executable)
                               handle::scale::instances( state, *executable);
 

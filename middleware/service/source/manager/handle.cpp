@@ -17,12 +17,14 @@
 #include "common/environment/normalize.h"
 #include "common/algorithm.h"
 #include "common/algorithm/is.h"
+#include "common/algorithm/coalesce.h"
 #include "common/process.h"
 #include "common/message/dispatch.h"
 #include "common/message/dispatch/handle.h"
 #include "common/message/internal.h"
 #include "common/event/listen.h"
 #include "common/event/send.h"
+#include "common/service/type.h"
 
 #include "common/communication/instance.h"
 
@@ -116,7 +118,15 @@ namespace casual
             {
                state::Service result;
                result.information.name = service.name;
-               result.timeout = service.timeout;
+
+               auto service_timeout = [ &state]( auto& timeout)
+               {
+                  casual::configuration::model::service::Timeout result;
+                  result.duration = algorithm::coalesce( timeout.duration, state.timeout.duration).value_or( platform::time::unit::zero());
+                  result.contract = algorithm::coalesce( timeout.contract, state.timeout.contract).value_or( common::service::execution::timeout::contract::Type::linger);
+                  return result;
+               };
+               result.timeout = service_timeout( service.timeout);
                result.visibility = service.visibility;
 
                if( service.routes.empty())
@@ -162,7 +172,7 @@ namespace casual
                // send event, at least domain-manager want's to know...
                common::message::event::process::Assassination event{ common::process::handle()};
                event.target = entry.target;
-               event.contract = entry.service->timeout.contract;
+               event.contract = entry.service->timeout.contract.value_or( common::service::execution::timeout::contract::Type::linger);
                common::event::send( event);
             }
          };
@@ -442,6 +452,10 @@ namespace casual
 
                               break;
                            }
+                           case Semantic::forward_request:
+                              // This is a request from service-forward from a previous _forward_ lookup.
+                              // We treat it as "regular" pending lookup.
+                              [[fallthrough]];
                            case Semantic::no_busy_intermediate:
                            {
                               // the caller does not want to get a busy intermediate, only want's to wait until
@@ -483,7 +497,14 @@ namespace casual
                      {  
                         if( service.is_sequential())
                         {
-                           if( auto destination = service.reserve_sequential( message.process, message.correlation))
+                           auto get_caller = []( const auto& message) -> common::process::Handle
+                           {
+                              if( message.no_reply())
+                                 return {};
+                              return message.process;
+                           };
+
+                           if( auto destination = service.reserve_sequential( get_caller( message), message.correlation))
                               dispatch::lookup::reply( state, service, destination, message, pending);
                            else
                               dispatch::lookup::pending( state, service, message);
@@ -527,7 +548,7 @@ namespace casual
                               break;
                            case Enum::external_discovery:
                               if( ! dispatch::lookup::external_internal( state, *service, message, pending))
-                                 dispatch::lookup::no_entry( state, message);
+                                 discover( state, std::move( message), service->information.name);
                               break;
                            case Enum::internal:
                               if( ! dispatch::lookup::external_internal( state, *service, message, pending))
@@ -798,7 +819,8 @@ namespace casual
                               reply.content.services.emplace_back( std::move( name),
                                  service->information.category,
                                  service->information.transaction, 
-                                 service->information.visibility);
+                                 service->information.visibility, 
+                                 service->property());
                            }
                            else
                            {

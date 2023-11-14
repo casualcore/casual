@@ -133,6 +133,9 @@ namespace casual
                         template< typename M>
                         void reply( State& state, M&& message, const common::process::Handle& target)
                         {
+                           Trace trace{ "transaction::manager::handle::local::detail::send::persist::reply"};
+                           common::log::line( verbose::log, "message: ", message);
+
                            state.persistent.replies.add( target, std::forward< M>( message));
                            detail::persist::batch::send( state);
                         }
@@ -213,13 +216,8 @@ namespace casual
 
                               if( state::resource::id::local( request.resource))
                               {
-                                 if( auto found = state.idle( request.resource))
-                                 {
-                                    auto correlation = state.multiplex.send( found->process.ipc, request);
-                                    found->state( state::resource::Proxy::Instance::State::busy);
-                                    found->metrics.requested = platform::time::clock::type::now();
-                                    return correlation;
-                                 }
+                                 if( auto reserved = state.try_reserve( request.resource))
+                                    return state.multiplex.send( reserved->process.ipc, request);
 
                                  common::log::line( log, "could not send to resource: ", request.resource, " - action: try later");
                                  // (we know message is an rvalue, so it's going to be a move)
@@ -401,13 +399,23 @@ namespace casual
                               common::log::line( verbose::log, "replies: ", replies, ", outcome: ", outcome);
 
                               auto transaction = common::algorithm::find( state.transactions, origin);
-                              casual::assertion( transaction, "failed to find transaction 'context' for: ", origin);
+
+                              if( ! transaction)
+                              {
+                                 using namespace common;
+                                 log::line( log::category::error, code::casual::invalid_semantics, " prepare callback - failed to find transaction 'context' for: ", origin, " - action: ignore");
+                                 log::line( log::category::verbose::error, "replies: ", replies, ", outcome: ", outcome);
+
+                                 return;
+                              }
 
                               // filter away all read-only replies
                               auto [ active, read_only] = common::algorithm::partition( replies, []( auto& reply){ return reply.state != decltype( reply.state)::read_only;});
+                              common::log::line( verbose::log, "read_only: ", read_only);
 
-                              // purge all read_only resources for each branch, and if a branch has 0 resources, remove it.
+                              // purge/remove all resources that is ead_only for each branch, and if a branch has 0 resources, remove it.
                               transaction->purge( read_only);
+                              common::log::line( verbose::log, "transaction: ", *transaction);
 
                               auto code = detail::accumulate::code( active, outcome);
 
@@ -428,6 +436,14 @@ namespace casual
                                  // Prepare has gone ok. Log persistent state
                                  state.persistent.log.prepare( *transaction);
                                  
+                                 // if we act as a resource, we just reply after persistent write and let upstream TM orchestrate.
+                                 if constexpr( concepts::any_of< Reply, common::message::transaction::resource::prepare::Reply>)
+                                 {
+                                    auto reply = create::reply< Reply>( origin, destination, code);
+                                    detail::send::persist::reply( state, std::move( reply), destination.process);
+                                    return;
+                                 }
+                                 
                                  // add _commit-prepare_ message to persistent reply, if reply is the commit reply type
                                  if constexpr( concepts::any_of< Reply, common::message::transaction::commit::Reply>)
                                  {
@@ -445,6 +461,14 @@ namespace casual
                               }
                               else
                               {
+                                 // if we act as a resource, we just reply the "error" and let upstream TM orchestrate.
+                                 if constexpr( concepts::any_of< Reply, common::message::transaction::resource::prepare::Reply>)
+                                 {
+                                    auto reply = create::reply< Reply>( origin, destination, code);
+                                    state.multiplex.send( destination.process.ipc, reply);
+                                    return;
+                                 }
+
                                  // we try to rollback all active resources, if any.
                                  auto pending = detail::coordinate::pending::replies< common::message::transaction::resource::rollback::Request>( 
                                     state, active, state.coordinate.rollback.empty_pendings());
@@ -521,7 +545,7 @@ namespace casual
                               {
                                  // More than one resource involved, we do the prepare stage
                                  common::log::line( log, "global: ", transaction->global, " more than one resource involved");
-                                 transaction->stage = decltype( transaction->stage())::prepare;
+                                 transaction->stage = decltype( transaction->stage())::commit;
 
                                  auto pending = detail::coordinate::pending::branches< common::message::transaction::resource::prepare::Request>( 
                                     state, transaction->branches, state.coordinate.prepare.empty_pendings());
@@ -569,17 +593,15 @@ namespace casual
                      {
                         namespace instance
                         {
-                           void done( State& state, state::resource::Proxy::Instance& instance)
+                           void ready( State& state, state::resource::Proxy::Instance& instance)
                            {
                               Trace trace{ "transaction::manager::handle::local::resource::detail::instance::done"};
-
-                              instance.state( state::resource::Proxy::Instance::State::idle);
 
                               if( auto request = state.pending.requests.next( instance.id))
                               {
                                  // We got a pending request for this resource, let's oblige
-                                 if( state.multiplex.send( instance.process.ipc, std::move( request)))
-                                    instance.state( state::resource::Proxy::Instance::State::busy);
+                                 if( state.multiplex.send( instance.process.ipc, std::move( request.complete)))
+                                    instance.reserve( request.created);
                                  else
                                     common::log::line( common::log::category::error, "the instance: ", instance , " - does not seem to be running");
                               }
@@ -593,8 +615,8 @@ namespace casual
                                  // The resource is a local resource proxy, and it's done, and ready for more work
                                  auto& instance = state.get_instance( message.resource, message.process.pid);
                                  {
-                                    instance::done( state, instance);
-                                    instance.metrics.add( message);
+                                    instance.unreserve( message.statistics);
+                                    instance::ready( state, instance);
                                  }
                               } 
                            }
@@ -765,6 +787,8 @@ namespace casual
                                     return;
                                  }
 
+                                 common::log::line( log, "transaction: ", *transaction);
+
                                  if( transaction->stage > decltype( transaction->stage())::involved)
                                  {
                                     common::log::line( log, "transaction stage is passed the _involved_ - stage: ", transaction->stage, " - action: reply with read-only");
@@ -815,55 +839,43 @@ namespace casual
                                     return;
                                  }
 
-                                 if( transaction->stage > decltype( transaction->stage())::involved)
+                                 common::log::line( log, "transaction: ", *transaction);
+
+                                 // Either we're in a prepared stage of the transaction, or we're in involved and the upstream TM 
+                                 // request a one-phase optimization.
+
+                                 if( transaction->stage == decltype( transaction->stage())::prepare)
                                  {
-                                    common::log::line( log, "transaction stage is passed the _involved_ - stage: ", transaction->stage, " - action: reply with read-only");
+                                    transaction->stage = decltype( transaction->stage())::commit;
+
+                                    auto pending = local::detail::coordinate::pending::branches< common::message::transaction::resource::commit::Request>( 
+                                    state, transaction->branches, state.coordinate.commit.empty_pendings());
+
+                                    local::detail::coordinate::commit< common::message::transaction::resource::commit::Reply>( 
+                                       state, std::move( pending), message.trid, local::detail::coordinate::destination( message));
+                                 }
+                                 else if( transaction->stage == decltype( transaction->stage())::involved)
+                                 {
+                                    // this should be a one-phase optimization, if not, we log error and still commit.
+                                    // TODO: this should not matter, but does it?
+                                    if( ! message.flags.exist( common::flag::xa::Flag::one_phase))
+                                       common::log::line( common::log::category::error, common::code::casual::invalid_semantics, " resource commit request without TMONEPHASE, gtrid: ", transaction->global);
+
+                                    transaction->stage = decltype( transaction->stage())::commit;
+
+                                    auto pending = local::detail::coordinate::pending::branches< common::message::transaction::resource::prepare::Request>( 
+                                       state, transaction->branches, state.coordinate.prepare.empty_pendings());
+                                 
+                                    local::detail::coordinate::prepare< common::message::transaction::resource::commit::Reply>( 
+                                       state, std::move( pending), message.trid, local::detail::coordinate::destination( message));
+                                 }
+                                 else
+                                 {
+                                    // The transaction is already in "process", we assume this request is due to topology "complexity".
+                                    common::log::line( log, "transaction already in commit progress: ", *transaction, " - action: reply with read-only");
                                     detail::send::read::only::reply( state, message);
-                                    return;
                                  }
 
-                                 switch( transaction->resource_count())
-                                 {
-                                    case 0:
-                                    {
-                                       common::log::line( log, transaction->global, " no resources involved: ");
-                                       // We can remove this transaction
-                                       state.transactions.erase( std::begin( transaction));
-
-                                       detail::send::read::only::reply( state, message);
-                                       break;
-                                    }
-                                    case 1:
-                                    {
-                                       // Only one resource involved, we do a one-phase-commit optimization.
-                                       common::log::line( log, "global: ", transaction->global, " - only one resource involved");
-                                       transaction->stage = decltype( transaction->stage())::commit;
-
-                                       auto pending = local::detail::coordinate::pending::branches< common::message::transaction::resource::commit::Request>( 
-                                          state, transaction->branches, state.coordinate.commit.empty_pendings(), common::flag::xa::Flag::one_phase);
-
-                                       // different reply, depending on prepare or commit phase, below
-                                       local::detail::coordinate::commit< common::message::transaction::resource::commit::Reply>( 
-                                          state, std::move( pending), message.trid, local::detail::coordinate::destination( message));
-
-                                       break;
-                                    }
-                                    default:
-                                    {
-                                       // More than one resource involved, we do the prepare stage
-                                       common::log::line( log, "global: ", transaction->global, " more than one resource involved");
-                                       transaction->stage = decltype( transaction->stage())::prepare;
-
-                                       auto pending = local::detail::coordinate::pending::branches< common::message::transaction::resource::prepare::Request>( 
-                                          state, transaction->branches, state.coordinate.prepare.empty_pendings());
-                                       
-                                       // different reply, depending on prepare or commit phase, below
-                                       local::detail::coordinate::prepare< common::message::transaction::resource::commit::Reply>( 
-                                          state, std::move( pending), message.trid, local::detail::coordinate::destination( message));
-
-                                       break;
-                                    }
-                                 }
                               };
                            }
                            
@@ -880,23 +892,22 @@ namespace casual
 
                                  auto transaction = common::algorithm::find( state.transactions, message.trid);
 
-                                 if( ! transaction || transaction->stage > decltype( transaction->stage())::involved)
+                                 if( ! transaction)
                                  {
-                                    // Either the transaction is absent (???) or we're already in at least the prepare stage.
-                                    // Either way we reply with read_only
-                                    detail::send::reply( state, message, []( auto& reply)
-                                    {
-                                       reply.statistics.start = platform::time::clock::type::now();
-                                       reply.statistics.end = reply.statistics.start;
-                                       reply.state = decltype( reply.state)::read_only;
-                                    });
+                                    common::log::line( log, "failed to find trid: ", message.trid, " - action: reply with read-only");
+                                    detail::send::read::only::reply( state, message);
                                     return;
                                  }
 
-                                 // We dont 'optimize' the rollback phase. We could check if there are 0 resources involved and
-                                 // possible gain a few us.
+                                 if( transaction->stage == decltype( transaction->stage())::rollback)
+                                 {
+                                    common::log::line( verbose::log, " transaction already in rollback: ", transaction->global, " - action: reply with read-only");
+                                    detail::send::read::only::reply( state, message);
+                                    return;
+                                 }
+                                 
+                                 transaction->stage = decltype( transaction->stage())::rollback;   
 
-                                 transaction->stage = decltype( transaction->stage())::rollback;
                                  transaction->owner = message.process;
 
                                  auto pending = local::detail::coordinate::pending::branches< common::message::transaction::resource::rollback::Request>( 
@@ -945,7 +956,8 @@ namespace casual
 
                            auto& instance = state.get_instance( message.id, message.process.pid);
                            instance.process = message.process;
-                           detail::instance::done( state, instance);
+                           instance.state( state::resource::Proxy::Instance::State::idle);
+                           detail::instance::ready( state, instance);
                         };
                      }
 

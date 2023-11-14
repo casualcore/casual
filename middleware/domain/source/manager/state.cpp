@@ -194,6 +194,8 @@ namespace casual
                   found->handle = common::strong::process::id{};
                   found->state =  state == state_type::running && restart ? state_type::scale_out : state_type::exit;
                   log::line( verbose::log, "reset: ", *found);
+                  if( found->state == state_type::scale_out)
+                     initiated_restarts++;
                }
             }
          }
@@ -222,6 +224,9 @@ namespace casual
                   return algorithm::container::extract( instances, std::begin( found)).handle;
 
                found->state = found->state == state_type::running && restart ? state_type::scale_out : state_type::exit;
+               if( found->state == state_type::scale_out)
+                  initiated_restarts++;
+
                return std::exchange( found->handle, {});
             }
 

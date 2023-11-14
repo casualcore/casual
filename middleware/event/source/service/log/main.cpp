@@ -67,13 +67,16 @@ namespace casual
                   Log( std::filesystem::path path, std::string delimiter) 
                      : file{ std::move( path)}, delimiter{ std::move( delimiter)} {}
                   
-                  common::file::output::Append file;
+                  common::file::Output file;
                   std::string delimiter;
 
                   void reopen()
                   {  
                      common::log::line( event::log, "reopen service event log: ", file);
-                     file.reopen();
+                     file = std::move( file).reopen();
+
+                     if( ! file)
+                        common::log::line( common::log::category::error ? common::log::category::error : std::cerr, common::code::casual::invalid_file, " failed to reopen event log: ", file);
                   }
 
                   void flush()
@@ -137,6 +140,10 @@ namespace casual
                            common::log::line( event::verbose::log, "metric: ", metric);
 
                            auto service_category = []( auto type){ return type == decltype( type)::sequential ? 'S' : 'C';};
+
+                           // if the file is "broken", we try to reopen it. Mostly to notify user
+                           if( ! log.file)
+                              log.reopen();
 
                            log.file << metric.service
                               << log.delimiter << metric.parent

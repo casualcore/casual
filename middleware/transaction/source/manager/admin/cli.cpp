@@ -98,6 +98,12 @@ namespace casual
                            common::Metric roundtrip;
                         };
 
+                        struct Result
+                        {
+                           Metrics metrics;
+                           common::Metric pending;
+                        };
+
                         auto transform_metric = []( auto& v)
                         {  
                            common::Metric result;
@@ -108,14 +114,16 @@ namespace casual
                            return result;
                         };
 
-                        Metrics result;
-                        result.resource = transform_metric( value.metrics.resource);
-                        result.roundtrip = transform_metric( value.metrics.roundtrip);
+                        Result result;
+                        result.metrics.resource = transform_metric( value.metrics.resource);
+                        result.metrics.roundtrip = transform_metric( value.metrics.roundtrip);
+                        result.pending = transform_metric( value.pending);
 
                         for( auto& instance : value.instances)
                         {
-                           result.resource += transform_metric( instance.metrics.resource);
-                           result.roundtrip += transform_metric( instance.metrics.roundtrip);
+                           result.metrics.resource += transform_metric( instance.metrics.resource);
+                           result.metrics.roundtrip += transform_metric( instance.metrics.roundtrip);
+                           result.pending += transform_metric( instance.pending);
                         }
                         return result;
                      }
@@ -172,43 +180,107 @@ namespace casual
                         auto format_invoked = []( const admin::model::resource::Proxy& value)
                         {
                            auto result = accumulate_statistics( value);
-                           return result.roundtrip.count;
+                           return result.metrics.roundtrip.count;
                         };
 
                         auto format_min = []( const admin::model::resource::Proxy& value)
                         {
                            auto result = accumulate_statistics( value);
-                           return std::chrono::duration_cast< time_type>( result.roundtrip.limit.min).count();
+                           return std::chrono::duration_cast< time_type>( result.metrics.roundtrip.limit.min).count();
                         };
 
                         auto format_max = []( const admin::model::resource::Proxy& value)
                         {
                            auto result = accumulate_statistics( value);
-                           return std::chrono::duration_cast< time_type>( result.roundtrip.limit.max).count(); 
+                           return std::chrono::duration_cast< time_type>( result.metrics.roundtrip.limit.max).count(); 
                         };
 
                         auto format_avg = []( const admin::model::resource::Proxy& value)
                         {
                            auto result = accumulate_statistics( value);
-                           if( result.roundtrip.count == 0) return 0.0;
-                           return std::chrono::duration_cast< time_type>( result.roundtrip.total / result.roundtrip.count).count();
+                           if( result.metrics.roundtrip.count == 0) 
+                              return 0.0;
+                           return std::chrono::duration_cast< time_type>( result.metrics.roundtrip.total / result.metrics.roundtrip.count).count();
                         };
 
+                        auto format_pending_count = []( const admin::model::resource::Proxy& value)
+                        {
+                           return accumulate_statistics( value).pending.count;
+                        };
 
-                        return common::terminal::format::formatter< admin::model::resource::Proxy>::construct(
-                           common::terminal::format::column( "name", std::mem_fn( &admin::model::resource::Proxy::name), common::terminal::color::yellow),
-                           common::terminal::format::column( "id", std::mem_fn( &admin::model::resource::Proxy::id), common::terminal::color::yellow, terminal::format::Align::right),
-                           common::terminal::format::column( "key", std::mem_fn( &admin::model::resource::Proxy::key), common::terminal::color::yellow),
-                           common::terminal::format::column( "openinfo", std::mem_fn( &admin::model::resource::Proxy::openinfo), common::terminal::color::no_color),
-                           common::terminal::format::column( "closeinfo", std::mem_fn( &admin::model::resource::Proxy::closeinfo), common::terminal::color::no_color),
-                           terminal::format::column( "invoked", format_invoked, terminal::color::blue, terminal::format::Align::right),
-                           terminal::format::column( "min (s)", format_min, terminal::color::blue, terminal::format::Align::right),
-                           terminal::format::column( "max (s)", format_max, terminal::color::blue, terminal::format::Align::right),
-                           terminal::format::column( "avg (s)", format_avg, terminal::color::blue, terminal::format::Align::right),
-                           terminal::format::column( "#", format_number_of_instances{}, terminal::color::white, terminal::format::Align::right)
-                        );
+                        auto format_avg_pending_time = []( const admin::model::resource::Proxy& value)
+                        {
+                           auto pending = accumulate_statistics( value).pending;
+                           if( pending.count == 0) 
+                              return 0.0;
+                           return std::chrono::duration_cast< time_type>( pending.total / pending.count).count();
+                        };
 
+                        if( ! terminal::output::directive().porcelain())
+                        {
+                           return common::terminal::format::formatter< admin::model::resource::Proxy>::construct(
+                              common::terminal::format::column( "name", std::mem_fn( &admin::model::resource::Proxy::name), common::terminal::color::yellow),
+                              common::terminal::format::column( "id", std::mem_fn( &admin::model::resource::Proxy::id), common::terminal::color::yellow, terminal::format::Align::right),
+                              common::terminal::format::column( "key", std::mem_fn( &admin::model::resource::Proxy::key), common::terminal::color::yellow),
+                              common::terminal::format::column( "openinfo", std::mem_fn( &admin::model::resource::Proxy::openinfo), common::terminal::color::no_color),
+                              common::terminal::format::column( "closeinfo", std::mem_fn( &admin::model::resource::Proxy::closeinfo), common::terminal::color::no_color),
+                              terminal::format::column( "invoked", format_invoked, terminal::color::blue, terminal::format::Align::right),
+                              terminal::format::column( "min", format_min, terminal::color::blue, terminal::format::Align::right),
+                              terminal::format::column( "max", format_max, terminal::color::blue, terminal::format::Align::right),
+                              terminal::format::column( "avg", format_avg, terminal::color::blue, terminal::format::Align::right),
+                              terminal::format::column( "P", format_pending_count, terminal::color::magenta, terminal::format::Align::right),
+                              terminal::format::column( "PAT", format_avg_pending_time, terminal::color::magenta, terminal::format::Align::right),
+                              terminal::format::column( "#", format_number_of_instances{}, terminal::color::white, terminal::format::Align::right)
+                           );
+                        }
+                        else
+                        {
+                           // we need to keep compatibility with porcelain
+                           return common::terminal::format::formatter< admin::model::resource::Proxy>::construct(
+                              common::terminal::format::column( "name", std::mem_fn( &admin::model::resource::Proxy::name), common::terminal::color::yellow),
+                              common::terminal::format::column( "id", std::mem_fn( &admin::model::resource::Proxy::id), common::terminal::color::yellow, terminal::format::Align::right),
+                              common::terminal::format::column( "key", std::mem_fn( &admin::model::resource::Proxy::key), common::terminal::color::yellow),
+                              common::terminal::format::column( "openinfo", std::mem_fn( &admin::model::resource::Proxy::openinfo), common::terminal::color::no_color),
+                              common::terminal::format::column( "closeinfo", std::mem_fn( &admin::model::resource::Proxy::closeinfo), common::terminal::color::no_color),
+                              terminal::format::column( "invoked", format_invoked, terminal::color::blue, terminal::format::Align::right),
+                              terminal::format::column( "min", format_min, terminal::color::blue, terminal::format::Align::right),
+                              terminal::format::column( "max", format_max, terminal::color::blue, terminal::format::Align::right),
+                              terminal::format::column( "avg", format_avg, terminal::color::blue, terminal::format::Align::right),
+                              terminal::format::column( "#", format_number_of_instances{}, terminal::color::white, terminal::format::Align::right),
+                              // last to keep compatibility
+                              terminal::format::column( "P", format_pending_count, terminal::color::magenta, terminal::format::Align::right),
+                              terminal::format::column( "PAT", format_avg_pending_time, terminal::color::magenta, terminal::format::Align::right)
+                           );
+                        }
                      }
+
+                     constexpr auto resource_proxy_legend = R"(
+   name:
+      name of the resource-proxy
+   id: 
+      id of the resource proxy. `L-XX` if local and `E-XX` if _external_
+   key:
+      the configured `key` of the resource
+   openinfo:
+      configured openinfo for the resource
+   closeinfo:
+      configured closeinfo for the resource
+   invoked:
+      number of invocations to the resource-proxy
+   min:
+      minimum-time - the minimum roundtrip time to the resource-proxy (in seconds)
+   max:
+      maximum-time - the maximum roundtrip time to the resource-proxy (in seconds)
+   avg:
+      average-time - the average roundtrip time to the resource-proxy (in seconds)
+   P:
+      Pending - total number of pending request, over time.
+   PAT:
+      Pending-Average-Time - the average time request has waited for a resource-proxy (in seconds)
+      This only includes pending requests.
+   #:
+      number of instances
+)";
 
                      auto external_resource()
                      {
@@ -278,7 +350,6 @@ namespace casual
                            return std::chrono::duration_cast< time_type>( value.metrics.resource.total / value.metrics.resource.count).count();
                         };
 
-
                         return common::terminal::format::formatter< admin::model::resource::Instance>::construct(
                            terminal::format::column( "id", std::mem_fn( &admin::model::resource::Instance::id), common::terminal::color::yellow, terminal::format::Align::right),
                            terminal::format::column( "pid", format_pid, common::terminal::color::white, terminal::format::Align::right),
@@ -292,7 +363,6 @@ namespace casual
                            terminal::format::column( "rm-max (s)", format_rm_max, terminal::color::blue, terminal::format::Align::right),
                            terminal::format::column( "rm-avg (s)", format_rm_avg, terminal::color::blue, terminal::format::Align::right)
                         );
-
                      }
                   } // format
 
@@ -534,422 +604,151 @@ namespace casual
 
                   } // information
 
-                  namespace handle
-                  {
-                     namespace terminate
-                     {
-                        auto directive()
-                        {
-                           return []( const cli::message::transaction::Directive& message)
-                           {
-                              Trace trace{ "transaction::manager::admin::local::handle::terminate::directive"};
-
-                              // terminate the upstream transaction directive
-                              communication::device::blocking::optional::send( message.process.ipc, 
-                                 cli::message::transaction::directive::Terminated{ common::process::handle()});
-
-                           };
-                        }
-                        
-                     } // terminate
-                  } // handle
-
 
                   namespace begin
                   {
-                     struct State
-                     {
-                        State( std::vector< common::transaction::ID> pending) : m_pending{ std::move( pending)} {}
-
-                        enum class Machine : short
-                        {
-                           done,
-                           pending,
-                        };
-
-                        friend std::ostream& operator << ( std::ostream& out, const Machine& value)
-                        {
-                           switch( value)
-                           {
-                              case Machine::done: return out << "done";
-                              case Machine::pending: return out << "pending";
-                           }
-                           return out << "<unknown>";
-                        }
-
-                        bool done() const { return m_machine == Machine::done;}
-                        bool operator () () const { return done();}
-
-                        void terminate()
-                        {
-                           if( m_pending.empty())
-                              m_machine = Machine::done;
-                        }
-
-                        void consume( const common::transaction::ID& trid)
-                        {
-                           algorithm::container::trim( m_pending, algorithm::remove( m_pending, trid));
-                           if( m_pending.empty())
-                              m_machine = Machine::done;
-                        }
-
-                        void add( const std::vector< common::transaction::ID>& pending) { algorithm::container::append( pending, m_pending);}
-                        void add( const common::transaction::ID& pending) { m_pending.push_back( pending);}
-
-                        CASUAL_LOG_SERIALIZE(
-                           CASUAL_SERIALIZE_NAME( m_machine, "machine");
-                           CASUAL_SERIALIZE_NAME( m_pending, "pending");
-                        )
-
-                     private:
-                        Machine m_machine = Machine::pending;
-                        std::vector< common::transaction::ID> m_pending;
-                     };
-
-
-                     namespace handle
-                     {
-                        template< typename A>
-                        auto upstream( A&& associate)
-                        {
-                           Trace trace{ "transaction::manager::admin::local::begin::handle::upstream"};
-
-                           // handle upstream, associate and forward, if any
-                           {
-                              bool done = false;
-                        
-                              communication::stream::inbound::Device in{ std::cin};
-
-                              auto handler = common::message::dispatch::handler( in, 
-                                 casual::cli::pipe::forward::handle::defaults(),
-                                 casual::cli::pipe::handle::associate( associate),
-                                 local::handle::terminate::directive(),
-                                 casual::cli::pipe::handle::done( done)
-                              );
-
-                              // start the pump, and associate all relevant messages
-                              common::message::dispatch::pump( casual::cli::pipe::condition::done( done), handler, in);
-                           };
-
-                           // send our directive downstream
-                           {  
-                              communication::stream::outbound::Device out{ std::cout};
-                              communication::device::blocking::send( out, associate.directive);
-                           }
-
-                           // we're done in a 'casual-pipe' way.
-                           casual::cli::pipe::done();
-
-                           // we need to keep track of associated transactions
-                           return State{ std::move( associate.associated)};
-                        };
-
-                        namespace downstream
-                        {
-                           auto finalize( State& state)
-                           {
-                              return [&state]( casual::cli::message::transaction::Finalize& message)
-                              {
-                                 Trace trace{ "transaction::manager::admin::local::begin::handle::downstream::finalize"};
-                                 log::line( verbose::log, "message: ", message);
-
-                                 // TODO error - check if our associations is a subset of the message.
-
-                                 auto finalize_request = []( auto& transaction)
-                                 {
-                                    using Code = decltype( transaction.code);
-
-                                    auto& tm = communication::instance::outbound::transaction::manager::device();
-
-                                    if( transaction.code == Code::ok)
-                                    {
-                                       common::message::transaction::commit::Request request{ process::handle()};
-                                       request.trid = transaction.trid;
-                                       communication::device::blocking::optional::send( tm, request);
-                                    }
-                                    else 
-                                    {
-                                       common::message::transaction::rollback::Request request{ process::handle()};
-                                       request.trid = transaction.trid;
-                                       communication::device::blocking::optional::send( tm, request);
-                                    }
-
-                                    return transaction.trid;
-                                 };
-
-                                 state.add( algorithm::transform( message.transactions, finalize_request));
-                                 log::line( verbose::log, "state: ", state);
-
-                              };
-                           }
-
-                           auto terminated( State& state)
-                           {
-                              return [&state]( const casual::cli::message::transaction::directive::Terminated& message)
-                              {
-                                 Trace trace{ "transaction::manager::admin::local::begin::handle::downstream::terminated"};
-                                 log::line( verbose::log, "message: ", message);
-
-                                 state.terminate();
-                                 log::line( verbose::log, "state: ", state);
-                              };
-                           }
-                        } // downstream
-
-
-                        namespace reply
-                        {
-                           auto commit( State& state)
-                           {
-                              return [&state]( common::message::transaction::commit::Reply& message)
-                              {
-                                 Trace trace{ "transaction::manager::admin::local::begin::handle::reply::commit"};
-                                 log::line( verbose::log, "message: ", message);
-                                 
-                                 switch( message.stage)
-                                 {
-                                    using Enum = decltype( message.stage);
-                                    case Enum::prepare: 
-                                       return; // we wait for the next one
-                                       break;
-                                    case Enum::rollback:
-                                    {
-                                       casual::cli::pipe::log::error( "transaction commit failed - rolled back: ", message.trid);
-                                       break;
-                                    }
-                                    case Enum::commit:
-                                       break;
-                                 }
-                                 
-                                 // consume the pending
-                                 state.consume( message.trid);
-                                 log::line( verbose::log, "state: ", state);
-                              };
-                           }
-
-                           auto rollback( State& state)
-                           {
-                              return [&state]( common::message::transaction::rollback::Reply& message)
-                              {
-                                 Trace trace{ "transaction::manager::admin::local::begin::handle::reply::rollback"};
-                                 log::line( verbose::log, "message: ", message);
-
-                                 switch( message.stage)
-                                 {
-                                    using Enum = decltype( message.stage);
-                                    case Enum::error:
-                                    {
-                                       casual::cli::pipe::log::error( "transaction rollback error: ", message.trid);
-                                       break;
-                                    }
-                                    case Enum::rollback:
-                                       break;
-                                 }
-
-                                 // consume the pending
-                                 state.consume( message.trid);
-                                 log::line( verbose::log, "state: ", state);
-                              };
-                           }
-                        } // reply
-
-                        auto associate( State& state)
-                        {
-                           return [&state]( const cli::message::transaction::Associated& message)
-                           {
-                              Trace trace{ "transaction::manager::admin::local::begin::handle::associate"};
-                              common::log::line( verbose::log, "message: ", message);
-
-                              state.add( message.trid);
-                              log::line( verbose::log, "state: ", state);
-                           };
-                        }
-
-                        
-                     } // handle
-
-                     template< typename A>
-                     auto invoke( A associate)
-                     {
-                        return [ associate = std::move( associate)]() mutable
-                        {
-                           Trace trace{ "transaction::manager::admin::local::begin::invoke"};
-
-                           if( casual::cli::pipe::terminal::out())
-                           {
-                              casual::cli::pipe::log::error( "stdout is terminal - action: don't 'begin' transaction");
-                              return;
-                           }
-                           
-                           // handle upstream messages, associate and forward, if any. 
-                           // send 'done' downstream
-                           auto state = handle::upstream( std::move( associate));
-
-                           // wait for downstream finalize, and/or terminate
-
-                           auto& device = communication::ipc::inbound::device();
-
-                           auto handler = common::message::dispatch::handler( device,
-                              common::message::dispatch::handle::defaults(),
-                              begin::handle::downstream::finalize( state),
-                              begin::handle::downstream::terminated( state),
-                              begin::handle::reply::commit( state),
-                              begin::handle::reply::rollback( state),
-                              begin::handle::associate( state));
-
-                           auto condition = common::message::dispatch::condition::compose(
-                              common::message::dispatch::condition::done( [&state](){ return state.done();}));
-
-                           common::message::dispatch::pump( condition, handler, device);
-                        };  
-                     }
-              
-
                      auto option()
                      {
+                        auto invoke = []()
+                        {
+                           Trace trace{ "transaction::manager::admin::local::handle::begin::invoke"};
+
+                           // create transaction and send it downstream
+                           {
+                              casual::cli::message::transaction::Current message;
+                              message.trid = common::transaction::id::create();
+
+                              cli::pipe::forward::message( message);
+                           }
+
+                           communication::stream::inbound::Device in{ std::cin};
+
+                           cli::pipe::done::Scope done;
+
+                           auto handler = common::message::dispatch::handler( in, 
+                              casual::cli::pipe::forward::handle::defaults(),
+                              std::ref( done)
+                           );
+
+                           // start the pump, and forward all upstream messages
+                           common::message::dispatch::pump( casual::cli::pipe::condition::done( done), handler, in);
+
+                           // done dtor will send Done downstream
+
+                        };
+
                         return argument::Option{
-                           begin::invoke( casual::cli::pipe::transaction::association::single()),
+                           std::move( invoke),
                            { "--begin"},
                            R"(creates a 'single' transaction directive
 
-* associates all upstream transaction aware messages with the 'single' transaction, if they aren't associated already.
-* all directives from upstream will be 'terminated', that is, notify the upstream 'owner' and not forward the directive
-* sends the directive downstream, so other casual-pipe components can associate 'new stuff' with the 'single' transaction
+* creates a new transaction and send it downstream.
+* all downstream `actions` will be associated with this transaction, until commit/rollback.
+* @attention there has to be a corresponding commit/rollback downstream for every 
+   --begin, otherwise the transaction(s) will be unresolved (indoubt).
 
-hence, only one 'directive' can be in flight within a link in the casual-pipe.
+@note: part of casual-pipe
 )"
                         };
                      }
-
-                     namespace compound
-                     {
-                        auto option()
-                        {
-                           return argument::Option{
-                              begin::invoke( casual::cli::pipe::transaction::association::compound()),
-                              { "--compound"},
-                              R"(creates a compound transaction directive 
-
-* associates all upstream transaction aware messages with a new transaction, if they aren't associated already.
-* all directives from upstream will be 'terminated', that is, notify the upstream 'owner' and not forward the directive
-* sends the directive downstream, so other casual-pipe components can associate 'new stuff' with a new transaction
-
-hence, only one 'directive' can be in flight within a link in the casual-pipe.
-)"
-                           };
-                        }
-                     } // compound
  
                   } // begin
 
                   namespace handle
                   {
-                     namespace predicate
+                     struct State
                      {
-                        namespace owner
-                        {
-                           auto less = []( auto& l, auto& r){ return l.trid.owner() < r.trid.owner();};
-                        } // owner
-                     } // predicate
+                        common::transaction::ID current;
+                        casual::cli::pipe::done::Scope done;
 
-                     namespace detail
+                        CASUAL_LOG_SERIALIZE(
+                           CASUAL_SERIALIZE( current);
+                           CASUAL_SERIALIZE( done);
+                        )
+                     };
+
+
+                     template< typename C>
+                     auto consume( State& state, C&& callback)
                      {
-                        void update( std::vector< cli::message::Transaction>& transactions, cli::message::Transaction&& source)
-                        {
-                           if( source)
-                           {
-                              // do we got it before?
-                              if( auto found = algorithm::find( transactions, source))
-                              {
-                                 // is the new one in an 'error state'? if so, use that... 
-                                 if( ! source.committable())
-                                    *found = std::move( source);
-                              }
-                              else
-                                 transactions.push_back( std::move( source));
-                           }
+                        Trace trace{ "transaction::manager::admin::local::handle::consume"};
 
-                        }
-
-                        template< typename M>
-                        auto accumulate( std::vector< cli::message::Transaction>& transactions)
-                        {
-                           return [&transactions]( M& message)
-                           {
-                              detail::update( transactions, std::exchange( message.transaction, {}));
-                              cli::pipe::forward::message( message);
-                           };
-                        }
-                        
-                     } // detail
-
-                     auto accumulate()
-                     {
-                        Trace trace{ "transaction::manager::admin::local::handle::accumulate"};
-
-                        bool done = false;
-                        std::vector< cli::message::Transaction> result;
                         communication::stream::inbound::Device in{ std::cin};
 
-                        auto handler = common::message::dispatch::handler( in, 
-                           casual::cli::pipe::forward::handle::defaults(),
-                           casual::cli::pipe::handle::done( done),
-                           local::handle::terminate::directive(),
-                           detail::accumulate< cli::message::payload::Message>( result),
-                           detail::accumulate< cli::message::queue::Message>( result),
-                           detail::accumulate< cli::message::queue::message::ID>( result),
-                           [&result]( cli::message::transaction::Propagate& message)
+                        // first we wait for the transaction::Current message (and done), and invoke the 
+                        // callback with it. This to ensure that we commit/rollback before we send
+                        // other stuff downstream.
+                        {
+                           // snatch the first transaction, and forward the rest (if any)
+                           auto transcation_current = [ &state]( cli::message::transaction::Current& current)
                            {
-                              Trace trace{ "transaction::manager::admin::local::handle::accumulate Propagate"};
+                              if( state.current)
+                                 cli::pipe::forward::message( current);
+                              else
+                                  state.current = current.trid;
+                           };
 
-                              detail::update( result, std::move( message.transaction));
-                           }
-                        );
+                           auto handler = common::message::dispatch::handler( in, 
+                              std::move( transcation_current),
+                              std::ref( state.done));
 
-                        // start the pump, and accumulate the transaction messages
-                        common::message::dispatch::pump( casual::cli::pipe::condition::done( done), handler, in);
+                           // we start a relaxed pump, to consume all other messages to the "device cache".
+                           common::message::dispatch::relaxed::pump( casual::cli::pipe::condition::done( state.done), handler, in);
 
-                        // we're done in a 'casual-pipe' way
-                        cli::pipe::done();
+                           callback( state);
+                        }
+                      
+                        // we need to send the stuff we have in the "device cache" downstream.
+                        auto handler = common::message::dispatch::handler( in, casual::cli::pipe::forward::handle::defaults());
 
-                        // sort/partition on owner. could be a lot of 'owners' (not likely though)
-                        algorithm::stable_sort( result, predicate::owner::less);
-
-                        log::line( verbose::log, "result: ", result);
-
-                        return result;
-                     }
-
-                     auto finalize( std::vector< cli::message::Transaction>&& transactions)
-                     {
-                        Trace trace{ "transaction::manager::admin::local::handle::finalize"};
-
-                        if( transactions.empty())
-                           return;
-
-                        auto next_range = []( auto range)
-                        {
-                           return algorithm::sorted::upper_bound( range, *range, handle::predicate::owner::less);
-                        };
-
-                        auto handle_finalize = []( auto range)
-                        {
-                           Trace trace{ "transaction::manager::admin::local::handle::finalize handle_finalize"};
-                           cli::message::transaction::Finalize message{ process::handle()};
-                           algorithm::copy( range, message.transactions);
-
-                           communication::device::blocking::send( 
-                              range::front( message.transactions).trid.owner().ipc, 
-                              message);
-                        };
-
-                        algorithm::for_each( 
-                           range::adapter::make( next_range, range::make( transactions)),
-                           handle_finalize); 
-
+                        while( handler( communication::device::non::blocking::next( in)))
+                           ; // no-op
                      }
                      
                   } // handle
+
+                  namespace rollback
+                  {
+                     void apply( const common::transaction::ID& trid)
+                     {
+                        common::message::transaction::rollback::Request request{ process::handle()};
+                        request.trid = trid;
+
+                        auto reply = communication::ipc::call( communication::instance::outbound::transaction::manager::device(), request);
+
+                        if( reply.state != decltype( reply.state)::ok)                           
+                           cli::pipe::log::error( reply.state, " failed to rollback trid: ", trid);
+                     }
+
+                     auto option()
+                     {
+                        auto invoke = []()
+                        {
+                           Trace trace{ "transaction::manager::admin::local::rollback::invoke"};
+
+                           handle::State state;
+
+                           handle::consume( state, []( const handle::State& state)
+                           {
+                              rollback::apply( state.current);
+                           });
+
+                           // dtor in state.done will send done downstream
+                        };
+
+                        return argument::Option{
+                           std::move( invoke),
+                           { "--rollback"},
+                           R"(tries to rollback the upstream transaction
+
+* The current transaction will be rolled back.
+* Downstream `actions` will not be associated with the current transaction.
+
+@note: part of casual-pipe
+)"
+                        };
+                     }
+                  } // rollback
 
                   namespace commit
                   {
@@ -958,56 +757,88 @@ hence, only one 'directive' can be in flight within a link in the casual-pipe.
                         auto invoke = []()
                         {
                            Trace trace{ "transaction::manager::admin::local::commit::invoke"};
-                           handle::finalize( handle::accumulate());
+
+                            handle::State state;
+
+                           handle::consume( state, []( const handle::State& state)
+                           {  
+                              Trace trace{ "transaction::manager::admin::local::commit::invoke consume"};
+                              log::line( verbose::log, "state: ", state); 
+
+                              // check if we got errors upstream, and need to rollback.
+                              if( state.done.pipe_error())
+                              {
+                                 cli::pipe::log::error( "transaction in rollback only state - rollback trid: ", state.current);
+                                 rollback::apply( state.current);
+                                 return;
+                              }
+
+                              common::message::transaction::commit::Request request{ process::handle()};
+                              request.trid = state.current;
+
+                              auto reply = communication::ipc::call( communication::instance::outbound::transaction::manager::device(), request);
+                              
+                              // If we get the persistent prepare, we need to wait for the final commit-reply
+                              if( reply.stage == decltype( reply.stage)::prepare)
+                                 reply = communication::ipc::receive< common::message::transaction::commit::Reply>( reply.correlation);
+
+                              if( reply.state != decltype( reply.state)::ok)
+                                 code::raise::error( reply.state);
+                           });
+
+                           // dtor in state.done will send done downstream
                         };
 
                         return argument::Option{
                            std::move( invoke),
                            { "--commit"},
-                            R"(sends transaction finalize request to the 'owners' of upstream transactions
+                            R"(tries to commit the upstream transaction
 
-* all committable associated transaction will be sent for commit.
-* all NOT committable associated transactions will be sent for rollback
-* all transaction directives from upstream will be 'terminated', that is, notify the upstream 'owner' and not forward the directive
-* all 'forward' 'payloads' downstream will not have any transaction associated
+* The current transaction will be committed (if error from upstream -> rollback)
+* Downstream `actions` will not be associated with the current transaction.
 
-hence, directly downstream there will be no transaction, but users can start new transaction directives downstream.
+@note: part of casual-pipe
 )"
                         };
                      }
 
                   } // commit
 
-                  namespace rollback
+                  namespace legend
                   {
                      auto option()
                      {
-                        auto invoke = []()
+                        static const std::map< std::string, std::string_view> legends{
+                           { "list-resources", local::format::resource_proxy_legend},
+                        };
+
+                        auto invoke = []( const std::string& option)
                         {
-                           Trace trace{ "transaction::manager::admin::local::rollback::invoke"};
+                           if( auto found = algorithm::find( legends, option))
+                              std::cout << found->second;
+                           else
+                              code::raise::error( code::casual::invalid_argument, "not a valid argument to --legend: ", option);
+                        };
 
-                           auto set_rollback = []( auto& transaction)
-                           {
-                              transaction.code = decltype( transaction.code)::rollback;
-                           };
-
-                           handle::finalize( algorithm::for_each( handle::accumulate(), set_rollback));
+                        auto complete = []( auto values, auto help)
+                        {
+                           return algorithm::transform( legends, []( auto& pair){ return pair.first;});
                         };
 
                         return argument::Option{
                            std::move( invoke),
-                           { "--rollback"},
-                           R"(sends transaction (rollback) finalize request to the 'owners' of upstream transactions
+                           std::move( complete),
+                           { "--legend"},
+                           R"(the legend for the supplied option
 
-* all associated transaction will be sent for rollback
-* all transaction directives from upstream will be 'terminated', that is, notify the upstream 'owner' and not forward the directive
-* all 'forward' 'payloads' downstream will not have any transaction associated
+Documentation and description for abbreviations and acronyms used as columns in output
 
-hence, directly downstream there will be no transaction, but users can start new transaction directives downstream.
-)"
-                        };
+note: not all options has legend, use 'auto complete' to find out which legends are supported.
+)"};
                      }
-                  } // rollback
+
+                  } // legend
+
                } // <unnamed>
             } // local
 
@@ -1021,11 +852,11 @@ hence, directly downstream there will be no transaction, but users can start new
                      local::list::instances::option(),
                      local::list::external::option(),
                      local::begin::option(),
-                     local::begin::compound::option(),
                      local::commit::option(),
                      local::rollback::option(),
                      local::scale::instances::option(),
                      local::list::pending::option(),
+                     local::legend::option(),
                      local::information::option(),
                      casual::cli::state::option( &local::call::state),
                   };

@@ -13,6 +13,7 @@
 #include "common/message/internal.h"
 #include "common/communication/instance.h"
 #include "common/build.h"
+#include "common/message/counter.h"
 
 #include "casual/cli/message.h"
 #include "casual/cli/pipe.h"
@@ -248,6 +249,36 @@ Works the same as the `CASUAL_LOG` variable
 Note: only works for 'servers' with a message pump)"
                      };
                   }
+
+                  auto message_count()
+                  {
+                     auto invoke = []( common::strong::process::id pid)
+                     {
+                        auto address = detail::fetch_handles( { pid});
+
+                        if( address.empty() || ! address.at( 0).ipc)
+                           return;
+
+                        auto reply = communication::ipc::call( address.at( 0).ipc, message::counter::Request( process::handle()));
+
+                        auto formatter = terminal::format::formatter< message::counter::Entry>::construct(
+                           terminal::format::column( "type", []( auto& entry){ return entry.type;}, terminal::color::yellow),
+                           terminal::format::column( "sent", []( auto& entry){ return entry.sent;}, terminal::color::cyan, terminal::format::Align::right),
+                           terminal::format::column( "received", []( auto& entry){ return entry.received;}, terminal::color::cyan, terminal::format::Align::right)
+                        );  
+
+                        formatter.print( std::cout, reply.entries);
+                     };
+
+                     return common::argument::Option{
+                        std::move( invoke),
+                        { "--message-count"},
+                        R"(lists message count metrics for a given pid
+
+The pid needs to be a casual server)"
+                     };
+
+                  }
                   
                } // option
 
@@ -259,6 +290,7 @@ Note: only works for 'servers' with a message pump)"
                      option::state_dump(),
                      option::log_path(),
                      option::log_expression_inclusive(),
+                     option::message_count()
                   };
                }
                
@@ -272,12 +304,14 @@ Note: only works for 'servers' with a message pump)"
                   {
                      auto invoke = []()
                      {
-                        bool done = false;
+                        Trace trace{ "administration::local::pipe::option::human_sink::invoke"};
+
+                        casual::cli::pipe::done::Detector done;
 
                         auto handler = cli::message::dispatch::create(
                            // use all defaults, but force human readable
                            cli::pipe::forward::handle::defaults( true),
-                           cli::pipe::handle::done( done)
+                           std::ref( done)
                         );
 
                         // consume from casual-pipe

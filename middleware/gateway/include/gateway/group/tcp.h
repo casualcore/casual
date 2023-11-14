@@ -45,6 +45,8 @@ namespace casual
             return send( directive, common::serialize::native::complete< complete_type>( std::forward< M>( message)));
          }
 
+         common::strong::correlation::id send( common::communication::select::Directive& directive, complete_type&& complete);
+
          inline auto next()
          {
             return common::communication::device::non::blocking::next( m_device);
@@ -62,9 +64,6 @@ namespace casual
          )
 
       private:
-         
-         common::strong::correlation::id send( common::communication::select::Directive& directive, complete_type&& complete);
-
          std::vector< complete_type> m_unsent;
          common::communication::tcp::Duplex m_device;
          message::protocol::Version m_protocol;

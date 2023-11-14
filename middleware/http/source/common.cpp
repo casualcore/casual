@@ -216,7 +216,9 @@ namespace casual
                      // make sure we've got null termination on payload...
                      payload.data.push_back( '\0');
 
-                     auto last = common::transcode::base64::decode( payload.data, std::begin( payload.data), std::end( payload.data));
+                     auto view = string::view::make( payload.data);
+
+                     auto last = common::transcode::base64::decode( view, std::begin( payload.data), std::end( payload.data));
                      payload.data.erase( last, std::end( payload.data));
                   };
 

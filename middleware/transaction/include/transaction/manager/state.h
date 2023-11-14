@@ -45,22 +45,11 @@ namespace casual
             common::Metric resource;
             common::Metric roundtrip;
 
-            platform::time::point::type requested{};
-
             Metrics& operator += ( const Metrics& rhs);
-
-            //! adds/aggregate metrics from a resource reply
-            template< typename R>
-            void add( const R& reply, platform::time::point::type now = platform::time::clock::type::now())
-            {
-               resource += reply.statistics.end - reply.statistics.start;
-               roundtrip += now - requested;
-            }
 
             CASUAL_LOG_SERIALIZE(
                CASUAL_SERIALIZE( resource);
                CASUAL_SERIALIZE( roundtrip);
-               CASUAL_SERIALIZE( requested);
             )
          };
 
@@ -72,7 +61,6 @@ namespace casual
                inline bool local( common::strong::resource::id id) { return id > common::strong::resource::id{0};}
 
             } // id
-
 
             struct Proxy
             {
@@ -87,29 +75,42 @@ namespace casual
                      error,
                      shutdown
                   };
-                  friend std::string_view description( State value);
+                  friend std::string_view description( State value) noexcept;
 
+                  
+                  void reserve();
+                  //! used when requests has been pending.
+                  void reserve( platform::time::point::type requested);
+                  void unreserve( const common::message::Statistics& statistics);
 
                   common::strong::resource::id id;
                   common::process::Handle process;
 
-                  Metrics metrics;
-
                   void state( State state);
                   State state() const;
 
+                  inline const Metrics& metrics() const noexcept { return m_metrics;}
+                  inline const common::Metric& pending() const noexcept { return m_pending;}
+
                   inline friend bool operator == ( const Instance& lhs, common::strong::process::id rhs) { return lhs.process.pid == rhs;}
+                  inline friend bool operator == ( const Instance& lhs, State rhs) { return lhs.state() == rhs;}
 
                   CASUAL_LOG_SERIALIZE(
                      CASUAL_SERIALIZE( id);
                      CASUAL_SERIALIZE( process);
-                     CASUAL_SERIALIZE( metrics);
-                     CASUAL_SERIALIZE_NAME( m_state, "state");
+                     CASUAL_SERIALIZE( m_state);
+                     CASUAL_SERIALIZE( m_reserved);
+                     CASUAL_SERIALIZE( m_metrics);
+                     CASUAL_SERIALIZE( m_pending);
                   )
 
                private:
-                  State m_state = State::absent;
+                  void general_reserve( platform::time::point::type now);
 
+                  State m_state = State::absent;
+                  platform::time::point::type m_reserved{};
+                  Metrics m_metrics;
+                  common::Metric m_pending;
                };
 
                inline Proxy( configuration::model::transaction::Resource configuration)
@@ -120,9 +121,11 @@ namespace casual
                std::vector< Instance> instances;
                configuration::model::transaction::Resource configuration;
 
-               //! This 'counter' keep track of metrics for removed
+               //! This 'counters' keep track of metrics for removed
                //! instances, so we can give a better view for the operator.
                Metrics metrics;
+               common::Metric pending;
+
 
                //! @return true if all instances 'has connected'
                bool booted() const;
@@ -138,6 +141,7 @@ namespace casual
                   CASUAL_SERIALIZE( configuration);
                   CASUAL_SERIALIZE( instances);
                   CASUAL_SERIALIZE( metrics);
+                  CASUAL_SERIALIZE( pending);
                )
             };
 
@@ -247,6 +251,8 @@ namespace casual
                   common::algorithm::append_unique( range, resources);
                }
 
+               inline void remove( common::strong::resource::id id) { common::algorithm::container::erase( resources, id);}
+
                common::transaction::ID trid;
                std::vector< branch::Resource> resources;
 
@@ -287,16 +293,13 @@ namespace casual
             //! used only when the prepare/commmit/rollback starts
             void purge();
 
+            //! remove all resources associated with branches that is in `replies`
             template< typename R>
             void purge( const R& replies)
             {
-               auto equal_resource = []( auto& resource, auto& reply)
-               {
-                  return resource == reply.resource;
-               };
-
-               for( auto& branch : branches)
-                  common::algorithm::container::trim( branch.resources, std::get< 0>( common::algorithm::intersection( branch.resources, replies, equal_resource)));
+               for( auto& reply : replies)
+                  if( auto found = common::algorithm::find( branches, reply.trid))
+                     found->remove( reply.resource);
 
                purge();
             }
@@ -327,6 +330,30 @@ namespace casual
                CASUAL_SERIALIZE( deadline);
             )
          };
+
+         namespace pending
+         {
+            //! type to help hold pending request to re
+            struct Request
+            {
+               Request() = default;
+               inline Request( common::communication::ipc::message::Complete complete)
+                  : created{ platform::time::clock::type::now()}, complete{ std::move( complete)} 
+               {}
+
+               inline explicit operator bool() const noexcept { return common::predicate::boolean( complete);}
+
+               platform::time::point::type created{};
+               common::communication::ipc::message::Complete complete;
+
+               inline const auto& correlation() const noexcept { return complete.correlation();}
+
+               CASUAL_LOG_SERIALIZE(
+                  CASUAL_SERIALIZE( created);
+                  CASUAL_SERIALIZE( complete);
+               )
+            };
+         } // pending
 
       } // state
 
@@ -374,7 +401,7 @@ namespace casual
          {
             //! Resource request, that will be processed as soon as possible,
             //! that is, as soon as corresponding resources is done/idle
-            common::communication::ipc::pending::basic_holder< common::strong::resource::id> requests;
+            common::communication::ipc::pending::basic_holder< common::strong::resource::id, state::pending::Request> requests;
 
             CASUAL_LOG_SERIALIZE(
                CASUAL_SERIALIZE( requests);
@@ -414,13 +441,14 @@ namespace casual
          state::resource::Proxy& get_resource( common::strong::resource::id rm);
          state::resource::Proxy& get_resource( const std::string& name);
          const state::resource::Proxy& get_resource( const std::string& name) const;
+         state::resource::Proxy* find_resource( common::strong::resource::id rm);
          state::resource::Proxy* find_resource( const std::string& name);
          state::resource::Proxy::Instance& get_instance( common::strong::resource::id rm, common::strong::process::id pid);
 
          bool remove_instance( common::strong::process::id pid);
 
-         //! @return an idle instance, nullptr if all are busy.
-         state::resource::Proxy::Instance* idle( common::strong::resource::id rm);
+         //! @return a reserved instance, nullptr if all are busy.
+         state::resource::Proxy::Instance* try_reserve( common::strong::resource::id rm);
 
          const state::resource::external::Proxy& get_external( common::strong::resource::id rm) const;
 

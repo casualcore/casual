@@ -943,6 +943,58 @@ domain:
          }
       }
 
+      TEST( transaction_manager, remote_owner__one_resource_involved__prepare_request__expects_no_commit_to_resource_before_prepare_reply)
+      {
+         common::unittest::Trace trace;
+
+         auto domain = local::domain( local::configuration::system, local::configuration::base);
+
+         auto trid = common::transaction::id::create();
+
+         constexpr auto resource = strong::resource::id{ -200}; 
+
+
+         // remote involved
+         {
+            common::message::transaction::resource::external::Involved message{ process::handle()};
+            message.trid = trid;
+
+            local::send::tm( message);
+         }
+
+         // remote prepare request
+         {
+            common::message::transaction::resource::prepare::Request message{ process::handle()};
+            message.trid = trid;
+            message.resource = resource;
+
+            local::send::tm( message);
+         }
+
+         // we will get a prepare request from TM since we pretend to be an involved remote resource
+         {
+            auto request = communication::ipc::receive< common::message::transaction::resource::prepare::Request>();
+            EXPECT_TRUE( request.trid == trid);
+
+            // the first involved "external" resource gets "E-1" (-1)
+            EXPECT_TRUE( request.resource == common::strong::resource::id{ -1});
+
+            auto reply = common::message::reverse::type( request);
+            reply.trid = request.trid;
+            reply.resource = request.resource;
+            reply.state = decltype( reply.state)::ok;
+            communication::device::blocking::send( request.process.ipc, reply);
+         }
+
+         // we get the prepare reply from TM. We know that TM could not do something crazy as start committing the resource
+         // since we would not get the prepare reply until we replied to commit/rollback as the resource 
+         {
+            auto reply = communication::ipc::receive< common::message::transaction::resource::prepare::Reply>();
+            EXPECT_TRUE( reply.trid == trid);
+            EXPECT_TRUE( reply.state == decltype( reply.state)::ok);
+         }
+
+      }
 
       TEST( transaction_manager, begin_transaction__1_remote_resource_involved___expect_one_phase_optimization)
       {

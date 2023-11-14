@@ -67,10 +67,17 @@ namespace casual
                template< typename M>
                strong::file::descriptor::id send( State& state, M&& message)
                {
-                  if( auto descriptor = state.consume( message.correlation))
+                  if constexpr( std::is_same_v< std::decay_t< M>, communication::tcp::message::Complete>)
                   {
-                     if( tcp::send( state, descriptor, std::forward< M>( message)))
-                        return descriptor;
+                     if( auto descriptor = state.consume( message.correlation()))
+                        if( tcp::send( state, descriptor, std::forward< M>( message)))
+                           return descriptor;
+                  }
+                  else
+                  {
+                     if( auto descriptor = state.consume( message.correlation))
+                        if( tcp::send( state, descriptor, std::forward< M>( message)))
+                           return descriptor;
                   }
                
                   log::line( log::category::error, code::casual::communication_unavailable, " connection absent when trying to send reply - ", message.type());
@@ -143,13 +150,27 @@ namespace casual
 
                            auto request = state.pending.requests.consume( lookup.correlation, lookup);
 
-                           switch( common::message::type( request))
+                           if( ! request)
                            {
-                              using Type = decltype( common::message::type( request));
+                              // we assume we have removed the the request for valid reasons. Either way, we need to 
+                              // tell SM to forget the lookup (potential reservation)
+                              common::message::service::lookup::discard::Request request{ process::handle()};
+                              request.correlation = lookup.correlation;
+                              request.reply = false;
+                              request.requested = lookup.service.name;
+                              state.multiplex.send( ipc::manager::service(), request);
+
+                              return;
+                           }
+                              
+
+                           switch( common::message::type( *request))
+                           {
+                              using Type = decltype( common::message::type( *request));
 
                               case Type::service_call:
 
-                                 detail::reply( state, std::move( request), lookup, []( auto& state, auto& correlation, auto code)
+                                 detail::reply( state, std::move( *request), lookup, []( auto& state, auto& correlation, auto code)
                                  {
                                     common::message::service::call::Reply reply;
                                     reply.correlation = correlation;
@@ -161,7 +182,7 @@ namespace casual
 
                               case Type::conversation_connect_request:
                                  
-                                 detail::reply( state, std::move( request), lookup, []( auto& state, auto& correlation, auto code)
+                                 detail::reply( state, std::move( *request), lookup, []( auto& state, auto& correlation, auto code)
                                  {
                                     common::message::conversation::connect::Reply reply;
                                     reply.correlation = correlation;
@@ -171,7 +192,7 @@ namespace casual
                                  break;
 
                               default:
-                                 log::line( log::category::error, code::casual::internal_unexpected_value, " message type: ", common::message::type( request), " - action: discard");
+                                 log::line( log::category::error, code::casual::internal_unexpected_value, " message type: ", common::message::type( *request), " - action: discard");
 
                            }
 
@@ -246,9 +267,12 @@ namespace casual
 
                            auto request = state.pending.requests.consume( message.correlation);
 
+                           if( ! request)
+                              return;
+
                            if( message.process)
                            {
-                              state.multiplex.send( message.process.ipc, std::move( request));
+                              state.multiplex.send( message.process.ipc, std::move( *request));
                               return;
                            }
 
@@ -260,9 +284,9 @@ namespace casual
                               tcp::send( state, reply);
                            };
 
-                           switch( request.type())
+                           switch( request->type())
                            {
-                              using Enum = decltype( request.type());
+                              using Enum = decltype( request->type());
                               case Enum::queue_group_dequeue_request:
                               {
                                  send_error( casual::queue::ipc::message::group::dequeue::Reply{});
@@ -728,8 +752,28 @@ namespace casual
                      } // commit
                      namespace rollback
                      {
-                        auto request = basic_request< common::message::transaction::resource::rollback::Request>;
-                     } // commit
+                        auto request( State& state)
+                        {
+                           return [&state]( common::message::transaction::resource::rollback::Request& message)
+                           {
+                              Trace trace{ "gateway::inbound::handle::local::external::transaction::rollback::request"};
+                              common::log::line( verbose::log, "message: ", message);
+
+                              external::correlate( state, message);
+
+                              // Set 'sender' so we get the reply
+                              message.process = common::process::handle();
+                              state.multiplex.send(ipc::manager::transaction(), message);
+
+                              // almost always empty.
+                              // TODO this is a hack - remove in 1.7
+                              auto aborted_pending = state.pending.requests.abort_pending( message);
+
+                              for( auto& complete : aborted_pending)
+                                 local::tcp::send( state, std::move( complete));
+                           };
+                        }
+                     } // rollback
                   } // resource
                } // transaction
             } // external

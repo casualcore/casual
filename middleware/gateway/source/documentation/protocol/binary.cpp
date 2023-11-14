@@ -99,6 +99,7 @@ namespace casual
                generator( example::message< gateway::message::domain::disconnect::Reply>(), basename);
                generator( example::message< casual::domain::message::discovery::Request>(), basename);
                generator( example::message< casual::domain::message::discovery::Reply>(), basename);
+               generator( example::message< casual::domain::message::discovery::topology::implicit::Update>(), basename);
                generator( example::message< common::message::service::call::callee::Request>(), basename);
                generator( example::message< common::message::service::call::Reply>(), basename);
                generator( example::message< common::message::conversation::connect::callee::Request>(), basename);

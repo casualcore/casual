@@ -1,5 +1,5 @@
 //!
-//! Copyright (c) 2019, The casual project
+//! Copyright (c) 2023, The casual project
 //!
 //! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
@@ -10,117 +10,177 @@
 
 namespace casual
 {
-   namespace transaction
+   using namespace common;
+
+   namespace transaction::manager
    {
       namespace local
       {
          namespace
          {
-            auto rm_1 = common::strong::resource::id{ 1};
-            auto rm_2 = common::strong::resource::id{ 2};
+            auto resource_roundtrip( platform::time::unit duration)
+            {
+               // transport tm -> rm
+               process::sleep( duration);
+
+               common::message::Statistics time;
+
+               time.start = platform::time::clock::type::now();
+               // xa time
+               process::sleep( duration);
+               time.end = platform::time::clock::type::now();
+
+               // transport rm -> tm
+               process::sleep( duration);
+
+               return time;
+            }
          } // <unnamed>
       } // local
 
-
-      TEST( transaction_manager_state_transaction, instantiation)
+      TEST( transaction_manager_state, proxy_instance_metric)
       {
-         common::unittest::Trace trace;
+         state::resource::Proxy::Instance instance;
+         instance.state( decltype( instance.state())::idle);
 
-         EXPECT_NO_THROW({
-            manager::Transaction transaction{ common::transaction::id::create()};
+         static constexpr auto duration = std::chrono::microseconds{ 100};
+
+         // will get reservation time = now
+         instance.reserve();
+         instance.unreserve( local::resource_roundtrip( duration));
+
+         auto metrics = instance.metrics();
+
+         EXPECT_TRUE( metrics.resource.count == 1);
+         EXPECT_TRUE( metrics.resource.limit.max > duration);
+         EXPECT_TRUE( metrics.resource.limit.min > duration);
+
+         EXPECT_TRUE( metrics.roundtrip.count == 1);
+         EXPECT_TRUE( metrics.roundtrip.limit.min > metrics.resource.limit.min) << CASUAL_NAMED_VALUE( metrics);
+         EXPECT_TRUE( metrics.roundtrip.limit.max > metrics.resource.limit.max);
+
+         EXPECT_TRUE( metrics.roundtrip.total > metrics.resource.total);
+      }
+
+      TEST( transaction_manager_state, proxy_instance_metric_100)
+      {
+         state::resource::Proxy::Instance instance;
+         instance.state( decltype( instance.state())::idle);
+
+         static constexpr auto duration = std::chrono::microseconds{ 10};
+
+         algorithm::for_n< 100>( [ &instance]()
+         {
+            instance.reserve();
+            instance.unreserve( local::resource_roundtrip( duration));
          });
+
+
+         auto metrics = instance.metrics();
+
+         EXPECT_TRUE( metrics.resource.count == 100);
+         EXPECT_TRUE( metrics.resource.limit.max > duration);
+         EXPECT_TRUE( metrics.resource.limit.min > duration);
+
+         EXPECT_TRUE( metrics.roundtrip.count == 100);
+         EXPECT_TRUE( metrics.roundtrip.limit.min > metrics.resource.limit.min) << CASUAL_NAMED_VALUE( metrics);
+         EXPECT_TRUE( metrics.roundtrip.limit.max > metrics.resource.limit.max);
+
+         EXPECT_TRUE( metrics.roundtrip.total > metrics.resource.total);
+
+
+         auto pending = instance.pending();
+         EXPECT_TRUE( pending.count == 0);
+         EXPECT_TRUE( pending.total == platform::time::unit{});
       }
 
-      TEST( transaction_manager_state_transaction, stage__resources__1_involved__1__involved___gives__involved)
+      TEST( transaction_manager_state, proxy_instance_pending)
       {
-         common::unittest::Trace trace;
+         state::resource::Proxy::Instance instance;
+         instance.state( decltype( instance.state())::idle);
 
-         manager::Transaction transaction{ common::transaction::id::create()};
+         static constexpr auto duration = std::chrono::milliseconds{ 1};
 
-         auto& branch = transaction.branches.back();
+         // will get reservation time = now
+         instance.reserve( platform::time::clock::type::now() -  duration);
+         instance.unreserve( local::resource_roundtrip( duration));
 
-         {
-            branch.involve( local::rm_1);
-            branch.involve( local::rm_2);
+         // make sure metrics woks as before
+         { 
+            auto metrics = instance.metrics();
 
-            ASSERT_TRUE( branch.resources.size() == 2);
+            EXPECT_TRUE( metrics.resource.count == 1);
+            EXPECT_TRUE( metrics.resource.limit.max > duration);
+            EXPECT_TRUE( metrics.resource.limit.min > duration);
+
+            EXPECT_TRUE( metrics.roundtrip.count == 1);
+            EXPECT_TRUE( metrics.roundtrip.limit.min > metrics.resource.limit.min) << CASUAL_NAMED_VALUE( metrics);
+            EXPECT_TRUE( metrics.roundtrip.limit.max > metrics.resource.limit.max);
+
+            EXPECT_TRUE( metrics.roundtrip.total > metrics.resource.total);
          }
 
-         EXPECT_TRUE( transaction.stage() == manager::Transaction::Resource::Stage::involved) << CASUAL_NAMED_VALUE( transaction);
+         {
+            auto pending = instance.pending();
+
+            // we need to compensate for the time it takes for `instance` to take current time internally
+            // 0.5ms seems more than enough.
+            auto check_span = []( auto value, auto duration)
+            {
+               return value >= duration && value < duration + std::chrono::microseconds{ 500};
+            };
+
+            EXPECT_TRUE( pending.count == 1);
+            EXPECT_TRUE( check_span( pending.total, duration));
+            EXPECT_TRUE( check_span( pending.limit.min, duration));
+            EXPECT_TRUE( check_span( pending.limit.max, duration));
+         }
       }
 
-      TEST( transaction_manager_state_transaction, stage__1_branch__rm__1_involved__1__prepare_requested___gives__involved)
+      TEST( transaction_manager_state, proxy_instance_multiple_pending)
       {
-         common::unittest::Trace trace;
+         state::resource::Proxy::Instance instance;
+         instance.state( decltype( instance.state())::idle);
 
-         manager::Transaction transaction{ common::transaction::id::create()};
+         auto pending_roundtrip = [ &instance]( auto requested)
+         {
+            instance.reserve( requested);
+            // we don't verify the roundtrip -> we can make it real small.
+            instance.unreserve( local::resource_roundtrip( std::chrono::microseconds{ 5}));
+         };
 
-         auto& branch = transaction.branches.back();
+         static constexpr auto pending_durations = common::array::make( 
+            std::chrono::milliseconds{ 1000}, 
+            std::chrono::milliseconds{ 500}, 
+            std::chrono::milliseconds{ 250}, 
+            std::chrono::milliseconds{ 100}, 
+            std::chrono::milliseconds{ 10});
+
+         for( auto& duration : pending_durations)
+            pending_roundtrip( platform::time::clock::type::now() - duration);
+
+         auto total = algorithm::accumulate( pending_durations, std::chrono::microseconds{});
+
+         const auto min = *algorithm::min( pending_durations);
+         const auto max = *algorithm::max( pending_durations);
 
          {
-            branch.involve( local::rm_1);
-            branch.involve( local::rm_2);
+            // we need to compensate for the time it takes for `instance` to take current time internally
+            // 5ms seems more than enough.
+            auto check_span = []( auto value, auto duration)
+            {
+               return value >= duration && value < duration + std::chrono::milliseconds{ 5};
+            };
 
-            ASSERT_TRUE( branch.resources.size() == 2);
-            branch.resources.back().stage = manager::Transaction::Resource::Stage::prepare_requested;
+            auto pending = instance.pending();
+
+            EXPECT_TRUE( pending.count == range::size( pending_durations));
+            EXPECT_TRUE( check_span( pending.total, total)) << CASUAL_NAMED_VALUE( pending.total) << "\n        " << CASUAL_NAMED_VALUE( total);
+            EXPECT_TRUE( check_span( pending.limit.min, min));
+            EXPECT_TRUE( check_span( pending.limit.max, max));
          }
-
-         EXPECT_TRUE( transaction.stage() == manager::Transaction::Resource::Stage::involved) << CASUAL_NAMED_VALUE( transaction);
       }
-
-      TEST( transaction_manager_state_transaction, stage__branch1__rm1_involved__branch2__rm2_prepare_requested___gives__involved)
-      {
-         common::unittest::Trace trace;
-
-         auto trid = common::transaction::id::create();
-         manager::Transaction transaction{ trid};
-         transaction.branches.emplace_back( common::transaction::id::branch( trid));
-
-         {
-            auto& branch = transaction.branches.at( 0);
-            branch.involve( local::rm_1);
-         }
-         
-
-         {
-            auto& branch = transaction.branches.at( 1);
-            branch.involve( local::rm_2);
-
-            ASSERT_TRUE( branch.resources.size() == 1);
-            branch.resources.back().stage = manager::Transaction::Resource::Stage::prepare_requested;
-         }
-
-         EXPECT_TRUE( transaction.stage() == manager::Transaction::Resource::Stage::involved) << CASUAL_NAMED_VALUE( transaction);
-      }
-
-      TEST( transaction_manager_state_transaction, stage__branch1__rm1_involved_rm2_prepare_requested__branch2__rm2_prepare_requested___gives__involved)
-      {
-         common::unittest::Trace trace;
-
-         auto trid = common::transaction::id::create();
-         manager::Transaction transaction{ trid};
-         transaction.branches.emplace_back( common::transaction::id::branch( trid));
-
-         {
-            auto& branch = transaction.branches.at( 0);
-            branch.involve( local::rm_1);
-            branch.involve( local::rm_2);
-
-            ASSERT_TRUE( branch.resources.size() == 2);
-            branch.resources.back().stage = manager::Transaction::Resource::Stage::prepare_requested;
-         }
-         
-         {
-            auto& branch = transaction.branches.at( 1);
-            branch.involve( local::rm_2);
-
-            ASSERT_TRUE( branch.resources.size() == 1);
-            branch.resources.back().stage = manager::Transaction::Resource::Stage::prepare_requested;
-         }
-
-
-         EXPECT_TRUE( transaction.resource_count() == 3);
-         EXPECT_TRUE( transaction.stage() == manager::Transaction::Resource::Stage::involved) << CASUAL_NAMED_VALUE( transaction);
-      }
-   } // transaction
+      
+   } // transaction::manager
+   
 } // casual

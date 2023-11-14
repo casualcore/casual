@@ -207,7 +207,7 @@ namespace casual
                      });
 
                      result.restart = value.restart;
-                     result.restarts = value.restarts;
+                     result.restarts = value.initiated_restarts;
 
                      return result;
                   }
@@ -462,6 +462,7 @@ namespace casual
             result.memberships = name_groups( server.memberships);
             result.instances = server.instances.size();
             result.note = server.note;
+            result.lifetime.restart = server.restart;
 
             return result;
          }, [&reserved_groups]( auto& server)
@@ -479,6 +480,7 @@ namespace casual
             result.memberships = name_groups( executable.memberships);
             result.instances = executable.instances.size();
             result.note = executable.note;
+            result.lifetime.restart = executable.restart;
 
             return result;
          });

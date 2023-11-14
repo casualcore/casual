@@ -37,6 +37,9 @@ namespace casual
          delay_message,
          inbound_ipc_connect,
 
+         counter_request,
+         counter_reply,
+
          process_lookup_request = 600, // not pinned
          process_lookup_reply,
 
@@ -325,11 +328,7 @@ namespace casual
          
          cli_pipe_error_fatal = CLI_BASE + 100,
 
-         cli_transaction_directive = CLI_BASE + 200,
-         cli_transaction_directive_terminated,
-         cli_transaction_associated,
-         cli_transaction_finalize,
-         cli_transaction_propagate,
+         cli_transaction_current = CLI_BASE + 200,
 
          // internal "troubleshooting" messages
          INTERNAL_BASE  = 11000,

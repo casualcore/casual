@@ -319,7 +319,15 @@ namespace casual
          bool Service::timeoutable() const noexcept
          {
             return is_sequential() && timeout.duration > platform::time::unit::zero();
-         }         
+         }
+
+        service::instance::Concurrent::Property Service::property() const noexcept
+         {
+            if( ! is_sequential() && ! instances.concurrent.empty())
+               return range::front( instances.concurrent).property;
+            
+            return {};
+         }
 
 
          std::string_view description( Runlevel value)

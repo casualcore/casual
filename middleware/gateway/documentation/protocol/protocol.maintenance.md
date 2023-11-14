@@ -145,6 +145,21 @@ content.queues.element.name.data          | dynamic string |       [0..*] | dyna
 content.queues.element.retries            | uint64         |            8 | how many 'retries' the queue has                                
 
 
+## domain_discovery_topology_implicit_update - **#7302** - _[1.2]_
+
+Sent to all inbound connections from a domain when when it gets a new connection or gets this message from an outbound.
+When the message is passed "upstream" domains will add its id to the domains array, hence it's possible to mitigate endless 
+loops of this message, depending on the topology of the deployment.
+
+role name                 | network type   | network size | description                                                       
+------------------------- | -------------- | ------------ | ------------------------------------------------------------------
+execution                 | (fixed) binary |           16 | uuid of the current execution context (breadcrumb)                
+domains.size              | uint64         |            8 | number of domains (an array of domains that has seen this message)
+domains.element.id        | (fixed) binary |           16 | uuid of the domain                                                
+domains.element.name.size | uint64         |            8 | size of the domain name                                           
+domains.element.name.data | dynamic string |       [0..*] | dynamic byte array with the domain name                           
+
+
 ## service_call - **#3100** - _[1.0, 1.1, 1.2]_
 
 Sent to and received from other domains when one domain wants call a service in the other domain
@@ -164,8 +179,8 @@ xid.data                 | (fixed) binary |           32 | byte array with the s
 flags                    | uint64         |            8 | XATMI flags sent to the service                                    
 buffer.type.size         | uint64         |            8 | buffer type name size                                              
 buffer.type.data         | dynamic string |       [0..*] | byte array with buffer type in the form 'type/subtype'             
-buffer.memory.size       | uint64         |            8 | buffer payload size (could be very big)                            
-buffer.memory.data       | dynamic binary |       [0..*] | buffer payload data (with the size of buffer.payload.size)         
+buffer.data.size         | uint64         |            8 | buffer payload size (could be very big)                            
+buffer.data.data         | dynamic binary |       [0..*] | buffer payload data (with the size of buffer.payload.size)         
 
 
 ## service_reply - **#3101** - _[1.0, 1.1, 1.2]_
@@ -175,7 +190,7 @@ Reply to call request
 role name                    | network type   | network size | description                                                                   
 ---------------------------- | -------------- | ------------ | ------------------------------------------------------------------------------
 execution                    | (fixed) binary |           16 | uuid of the current execution context (breadcrumb)                            
-code.result                  | uint32         |            4 | XATMI result/error code, 0 represent OK                                       
+code.result                  | uint64         |            8 | XATMI result/error code, 0 represent OK                                       
 code.user                    | uint64         |            8 | XATMI user supplied code                                                      
 transaction.xid.formatID     | uint64         |            8 | xid format type. if 0 no more information of the xid is transported           
 transaction.xid.gtrid_length | uint64         |            8 | length of the transaction gtrid part                                          
@@ -184,8 +199,8 @@ transaction.xid.data         | (fixed) binary |           32 | byte array with t
 transaction.state            | uint8          |            1 | state of the transaction TX_ACTIVE, TX_TIMEOUT_ROLLBACK_ONLY, TX_ROLLBACK_ONLY
 buffer.type.size             | uint64         |            8 | buffer type name size                                                         
 buffer.type.data             | dynamic string |       [0..*] | byte array with buffer type in the form 'type/subtype'                        
-buffer.memory.size           | uint64         |            8 | buffer payload size (could be very big)                                       
-buffer.memory.data           | dynamic binary |       [0..*] | buffer payload data (with the size of buffer.payload.size)                    
+buffer.data.size             | uint64         |            8 | buffer payload size (could be very big)                                       
+buffer.data.data             | dynamic binary |       [0..*] | buffer payload data (with the size of buffer.payload.size)                    
 
 
 ## transaction_resource_prepare_request - **#5201** - _[1.0, 1.1, 1.2]_
@@ -199,7 +214,7 @@ xid.formatID     | uint64         |            8 | xid format type. if 0 no more
 xid.gtrid_length | uint64         |            8 | length of the transaction gtrid part                               
 xid.bqual_length | uint64         |            8 | length of the transaction branch part                              
 xid.data         | (fixed) binary |           32 | byte array with the size of gtrid_length + bqual_length (max 128)  
-resource         | uint32         |            4 | RM id of the resource - has to correlate with the reply            
+resource         | uint64         |            8 | RM id of the resource - has to correlate with the reply            
 flags            | uint64         |            8 | XA flags to be forward to the resource                             
 
 
@@ -214,8 +229,8 @@ xid.formatID     | uint64         |            8 | xid format type. if 0 no more
 xid.gtrid_length | uint64         |            8 | length of the transaction gtrid part                               
 xid.bqual_length | uint64         |            8 | length of the transaction branch part                              
 xid.data         | (fixed) binary |           32 | byte array with the size of gtrid_length + bqual_length (max 128)  
-resource         | uint32         |            4 | RM id of the resource - has to correlate with the request          
-state            | uint32         |            4 | The state of the operation - If successful XA_OK ( 0)              
+resource         | uint64         |            8 | RM id of the resource - has to correlate with the request          
+state            | uint64         |            8 | The state of the operation - If successful XA_OK ( 0)              
 
 ### Resource commit
 
@@ -232,7 +247,7 @@ xid.formatID     | uint64         |            8 | xid format type. if 0 no more
 xid.gtrid_length | uint64         |            8 | length of the transaction gtrid part                               
 xid.bqual_length | uint64         |            8 | length of the transaction branch part                              
 xid.data         | (fixed) binary |           32 | byte array with the size of gtrid_length + bqual_length (max 128)  
-resource         | uint32         |            4 | RM id of the resource - has to correlate with the reply            
+resource         | uint64         |            8 | RM id of the resource - has to correlate with the reply            
 flags            | uint64         |            8 | XA flags to be forward to the resource                             
 
 
@@ -247,8 +262,8 @@ xid.formatID     | uint64         |            8 | xid format type. if 0 no more
 xid.gtrid_length | uint64         |            8 | length of the transaction gtrid part                               
 xid.bqual_length | uint64         |            8 | length of the transaction branch part                              
 xid.data         | (fixed) binary |           32 | byte array with the size of gtrid_length + bqual_length (max 128)  
-resource         | uint32         |            4 | RM id of the resource - has to correlate with the request          
-state            | uint32         |            4 | The state of the operation - If successful XA_OK ( 0)              
+resource         | uint64         |            8 | RM id of the resource - has to correlate with the request          
+state            | uint64         |            8 | The state of the operation - If successful XA_OK ( 0)              
 
 
 ## transaction_resource_rollback_request - **#5205** - _[1.0, 1.1, 1.2]_
@@ -263,7 +278,7 @@ xid.formatID     | uint64         |            8 | xid format type. if 0 no more
 xid.gtrid_length | uint64         |            8 | length of the transaction gtrid part                               
 xid.bqual_length | uint64         |            8 | length of the transaction branch part                              
 xid.data         | (fixed) binary |           32 | byte array with the size of gtrid_length + bqual_length (max 128)  
-resource         | uint32         |            4 | RM id of the resource - has to correlate with the reply            
+resource         | uint64         |            8 | RM id of the resource - has to correlate with the reply            
 flags            | uint64         |            8 | XA flags to be forward to the resource                             
 
 
@@ -278,33 +293,33 @@ xid.formatID     | uint64         |            8 | xid format type. if 0 no more
 xid.gtrid_length | uint64         |            8 | length of the transaction gtrid part                               
 xid.bqual_length | uint64         |            8 | length of the transaction branch part                              
 xid.data         | (fixed) binary |           32 | byte array with the size of gtrid_length + bqual_length (max 128)  
-resource         | uint32         |            4 | RM id of the resource - has to correlate with the request          
-state            | uint32         |            4 | The state of the operation - If successful XA_OK ( 0)              
+resource         | uint64         |            8 | RM id of the resource - has to correlate with the request          
+state            | uint64         |            8 | The state of the operation - If successful XA_OK ( 0)              
 
 
 ## queue_group_enqueue_request - **#6100** - _[1.0, 1.1, 1.2]_
 
 Represent enqueue request.
 
-role name               | network type   | network size | description                                                        
------------------------ | -------------- | ------------ | -------------------------------------------------------------------
-execution               | (fixed) binary |           16 | uuid of the current execution context (breadcrumb)                 
-name.size               | uint64         |            8 | size of queue name                                                 
-name.data               | dynamic string |       [0..*] | data of queue name                                                 
-xid.formatID            | uint64         |            8 | xid format type. if 0 no more information of the xid is transported
-xid.gtrid_length        | uint64         |            8 | length of the transaction gtrid part                               
-xid.bqual_length        | uint64         |            8 | length of the transaction branch part                              
-xid.data                | (fixed) binary |           32 | byte array with the size of gtrid_length + bqual_length (max 128)  
-message.id              | (fixed) binary |           16 | id of the message                                                  
-message.properties.size | uint64         |            8 | length of message properties                                       
-message.properties.data | dynamic string |       [0..*] | data of message properties                                         
-message.reply.size      | uint64         |            8 | length of the reply queue                                          
-message.reply.data      | dynamic string |       [0..*] | data of reply queue                                                
-message.available       | uint64         |            8 | when the message is available for dequeue (us since epoch)         
-message.type.size       | uint64         |            8 | length of the type string                                          
-message.type.data       | dynamic string |       [0..*] | data of the type string                                            
-message.payload.size    | uint64         |            8 | size of the payload                                                
-message.payload.data    | dynamic binary |       [0..*] | data of the payload                                                
+role name                          | network type   | network size | description                                                        
+---------------------------------- | -------------- | ------------ | -------------------------------------------------------------------
+execution                          | (fixed) binary |           16 | uuid of the current execution context (breadcrumb)                 
+name.size                          | uint64         |            8 | size of queue name                                                 
+name.data                          | dynamic string |       [0..*] | data of queue name                                                 
+xid.formatID                       | uint64         |            8 | xid format type. if 0 no more information of the xid is transported
+xid.gtrid_length                   | uint64         |            8 | length of the transaction gtrid part                               
+xid.bqual_length                   | uint64         |            8 | length of the transaction branch part                              
+xid.data                           | (fixed) binary |           32 | byte array with the size of gtrid_length + bqual_length (max 128)  
+message.id                         | (fixed) binary |           16 | id of the message                                                  
+message.attributes.properties.size | uint64         |            8 | length of message properties                                       
+message.attributes.properties.data | dynamic string |       [0..*] | data of message properties                                         
+message.attributes.reply.size      | uint64         |            8 | length of the reply queue                                          
+message.attributes.reply.data      | dynamic string |       [0..*] | data of reply queue                                                
+message.attributes.available       | uint64         |            8 | when the message is available for dequeue (us since epoch)         
+message.payload.type.size          | uint64         |            8 | length of the type string                                          
+message.payload.type.data          | dynamic string |       [0..*] | data of the type string                                            
+message.payload.data.size          | uint64         |            8 | size of the payload                                                
+message.payload.data.data          | dynamic binary |       [0..*] | data of the payload                                                
 
 
 ## queue_group_enqueue_reply - **#6101** - _[1.0, 1.1, 1.2]_
@@ -340,22 +355,22 @@ block                    | uint8          |            1 | dictates if this is a
 
 Represent dequeue reply.
 
-role name                       | network type   | network size | description                                                
-------------------------------- | -------------- | ------------ | -----------------------------------------------------------
-execution                       | (fixed) binary |           16 | uuid of the current execution context (breadcrumb)         
-message.size                    | uint64         |            8 | number of messages dequeued                                
-message.element.id              | (fixed) binary |           16 | id of the message                                          
-message.element.properties.size | uint64         |            8 | length of message properties                               
-message.element.properties.data | dynamic string |       [0..*] | data of message properties                                 
-message.element.reply.size      | uint64         |            8 | length of the reply queue                                  
-message.element.reply.data      | dynamic string |       [0..*] | data of reply queue                                        
-message.element.available       | uint64         |            8 | when the message was available for dequeue (us since epoch)
-message.element.type.size       | uint64         |            8 | length of the type string                                  
-message.element.type.data       | dynamic string |       [0..*] | data of the type string                                    
-message.element.payload.size    | uint64         |            8 | size of the payload                                        
-message.element.payload.data    | dynamic binary |       [0..*] | data of the payload                                        
-message.element.redelivered     | uint64         |            8 | how many times the message has been redelivered            
-message.element.timestamp       | uint64         |            8 | when the message was enqueued (us since epoch)             
+role name                                  | network type   | network size | description                                                
+------------------------------------------ | -------------- | ------------ | -----------------------------------------------------------
+execution                                  | (fixed) binary |           16 | uuid of the current execution context (breadcrumb)         
+message.size                               | uint64         |            8 | number of messages dequeued                                
+message.element.id                         | (fixed) binary |           16 | id of the message                                          
+message.element.attributes.properties.size | uint64         |            8 | length of message properties                               
+message.element.attributes.properties.data | dynamic string |       [0..*] | data of message properties                                 
+message.element.attributes.reply.size      | uint64         |            8 | length of the reply queue                                  
+message.element.attributes.reply.data      | dynamic string |       [0..*] | data of reply queue                                        
+message.element.attributes.available       | uint64         |            8 | when the message was available for dequeue (us since epoch)
+message.element.payload.type.size          | uint64         |            8 | length of the type string                                  
+message.element.payload.type.data          | dynamic string |       [0..*] | data of the type string                                    
+message.element.payload.data.size          | uint64         |            8 | size of the payload                                        
+message.element.payload.data.data          | dynamic binary |       [0..*] | data of the payload                                        
+message.element.redelivered                | uint64         |            8 | how many times the message has been redelivered            
+message.element.timestamp                  | uint64         |            8 | when the message was enqueued (us since epoch)             
 
 
 ## conversation_connect_request - **#3210** - _[1.0, 1.1, 1.2]_
@@ -377,8 +392,8 @@ xid.data                 | (fixed) binary |           32 | byte array with the s
 duplex                   | uint16         |            2 | in what duplex the callee shall enter (receive:1, send:0)          
 buffer.type.size         | uint64         |            8 | buffer type name size                                              
 buffer.type.data         | dynamic string |       [0..*] | byte array with buffer type in the form 'type/subtype'             
-buffer.memory.size       | uint64         |            8 | buffer payload size (could be very big)                            
-buffer.memory.data       | dynamic binary |       [0..*] | buffer payload data (with the size of buffer.payload.size)         
+buffer.data.size         | uint64         |            8 | buffer payload size (could be very big)                            
+buffer.data.data         | dynamic binary |       [0..*] | buffer payload data (with the size of buffer.payload.size)         
 
 
 ## conversation_connect_reply - **#3211** - _[1.0, 1.1, 1.2]_
@@ -388,23 +403,23 @@ Reply for a conversation
 role name   | network type   | network size | description                                       
 ----------- | -------------- | ------------ | --------------------------------------------------
 execution   | (fixed) binary |           16 | uuid of the current execution context (breadcrumb)
-code.result | uint32         |            4 | result code of the connection attempt             
+code.result | uint64         |            8 | result code of the connection attempt             
 
 
 ## conversation_send - **#3212** - _[1.0, 1.1, 1.2]_
 
 Represent a message sent 'over' an established connection
 
-role name          | network type   | network size | description                                               
------------------- | -------------- | ------------ | ----------------------------------------------------------
-execution          | (fixed) binary |           16 | uuid of the current execution context (breadcrumb)        
-duplex             | uint16         |            2 | in what duplex the callee shall enter (receive:1, send:0) 
-code.result        | uint32         |            4 | status of the connection                                  
-code.user          | uint64         |            8 | user code, if callee did a tpreturn and supplied user-code
-buffer.type.size   | uint64         |            8 | buffer type name size                                     
-buffer.type.data   | dynamic string |       [0..*] | byte array with buffer type in the form 'type/subtype'    
-buffer.memory.size | uint64         |            8 | buffer payload size (could be very big)                   
-buffer.memory.data | dynamic binary |       [0..*] | buffer payload data (with the size of buffer.payload.size)
+role name        | network type   | network size | description                                               
+---------------- | -------------- | ------------ | ----------------------------------------------------------
+execution        | (fixed) binary |           16 | uuid of the current execution context (breadcrumb)        
+duplex           | uint16         |            2 | in what duplex the callee shall enter (receive:1, send:0) 
+code.result      | uint64         |            8 | status of the connection                                  
+code.user        | uint64         |            8 | user code, if callee did a tpreturn and supplied user-code
+buffer.type.size | uint64         |            8 | buffer type name size                                     
+buffer.type.data | dynamic string |       [0..*] | byte array with buffer type in the form 'type/subtype'    
+buffer.data.size | uint64         |            8 | buffer payload size (could be very big)                   
+buffer.data.data | dynamic binary |       [0..*] | buffer payload data (with the size of buffer.payload.size)
 
 
 ## conversation_disconnect - **#3213** - _[1.0, 1.1, 1.2]_

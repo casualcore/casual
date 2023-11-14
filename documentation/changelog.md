@@ -1,11 +1,57 @@
 # Changelog
 This is the changelog for `casual` and all changes are listed in this document.
 
+## [1.6.17] - 2023-11-13
+### Fixes
+- transaction: TM asserts when transaction is not found in prepare-handle (#288)
+- cli: header output in porcelain if --header true (#283)
+- service: perform discovery on external_discovery (#269)
+- xatmi: comply to specification signal handling (#271)
+- service: cli --list-services does not add - when _contract_ is missing (#281)
+- cli: add precondition casual log can't be tied to stdout (#259)
+- domain: propagate restart to configuration-get (#240)
+- domain: handle restarts attribute correct (#277)
+- transaction: cli - add legend for list-resources
+- transaction: show metric for resource-proxy pending requests in cli (#273)
+- transaction: fix resource-proxy metric (#273)
+- cli: fixed and simplified the transaction cli (#272)
+- queue: dequeue with id as selector should ignore available (#270)
+
+## [1.6.16] - 2023-10-10
+### Fixes
+- queue: send reply on failed dequeues (#262)
+- gateway: pending 'calls' could be sent after a rollback (#261)
+- buffer: buffer-field-serialize should generate with [[maybe_unused]] (#255)
+
+## [1.6.15] - 2023-09-14
+### Fixes
+- transaction: TM commits when it act as a resource and gets a prepare (#256)
+
+## [1.6.14] - 2023-09-03
+### Fixes
+- event: make sure we try to reopen the event file if it's "broken" (#250)
+- log: do not throw if we can't open logfile -> error to stderr (#250)
+- cli: add _internal_ cli for generic message count metric 
+- service: SM sends error-reply to no-reply request on timeout/core (#247)
+- documentation: add topology::Update to protocol documentation
+- service: improve handling of service timeout (config/cli) (#244)
+
+## [1.6.13] - 2023-08-22
+### Fixes
+- http: nginx could block caller for ever with payloads > ~50k (#242, #243)
+- configuration: prevent global contract setting being default overridden (#244)
+
+## [1.6.12] - 2023-07-18
+### Fixes
+- discovery: hops are not correctly propagated if services are known
+
 ## [1.6.11] - 2023-06-22
 ### Fixes
 - xatmi: error log unexpected error codes (#226)
 - service: handle multiple busy lookups (#217)
 - common: reduce complexity for the fan::Out abstraction
+- queue: forward stability during sqlite error (#222)
+- queue: group to handle > 1 message between persistent writes
 
 ## [1.6.10] - 2023-06-09
 ### Fixes

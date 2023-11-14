@@ -108,8 +108,7 @@ namespace casual
 
             bool restart = false;
 
-            //! Number of instances that has been restarted
-            platform::size::type restarts = 0;
+            platform::size::type initiated_restarts = 0;
 
             inline friend bool operator < ( const Process& l, const Process& r) { return l.id < r.id;}
             inline friend bool operator == ( const Process& lhs, const std::string& alias) { return lhs.alias == alias;}
@@ -124,7 +123,7 @@ namespace casual
                CASUAL_SERIALIZE( memberships);
                CASUAL_SERIALIZE( environment);
                CASUAL_SERIALIZE( restart);
-               CASUAL_SERIALIZE( restarts);
+               CASUAL_SERIALIZE( initiated_restarts);
             )
          };
 

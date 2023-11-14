@@ -680,7 +680,35 @@ namespace casual
          EXPECT_NO_THROW({
             parse( { "-g", "-a", "42"});
          });
-         
+      }
+
+
+      TEST( common_argument_parse, group_with_1_invoke_and_callback__expect_invoke_to_be_invoked_last)
+      {
+         unittest::Trace trace;
+
+         bool a = false;
+
+         auto invoked = [&]()
+         {
+            EXPECT_TRUE( a);
+         };
+
+         auto callback = [&]()
+         {
+            EXPECT_FALSE( a);
+         };
+
+         argument::Parse parse{ "description", 
+            argument::Group{ invoked, callback, { "-g"}, "description",
+               argument::Option( [ &a](){ a = true;}, {"-a"}, "description")   
+            }
+         };
+          
+         EXPECT_NO_THROW({
+            parse( { "-g", "-a"});
+         });
+
       }
 
       TEST( common_argument_parse, option_1__values_0__expect_throw)

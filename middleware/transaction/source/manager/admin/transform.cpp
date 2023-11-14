@@ -23,24 +23,25 @@ namespace casual
          namespace
          {
             template< typename R, typename T>
+            R metric( const T& value)
+            {
+               R result;
+               result.limit.min = value.limit.min;
+               result.limit.max = value.limit.max;
+               result.total = value.total;
+               result.count = value.count;
+               return result;
+            }
+
+            template< typename R, typename T>
             R metrics( const T& value)
             {
-               auto transform_metric = []( auto& value)
-               {
-                  decltype( R{}.resource) result;
+               using Metric = decltype( R{}.resource);
 
-                  result.limit.min = value.limit.min;
-                  result.limit.max = value.limit.max;
-                  result.total = value.total;
-                  result.count = value.count;
-
-                  return result;
-
-               };
                R result;
 
-               result.resource = transform_metric( value.resource);
-               result.roundtrip = transform_metric( value.roundtrip);
+               result.resource = local::metric< Metric>( value.resource);
+               result.roundtrip = local::metric< Metric>( value.roundtrip);
 
                return result;
             }
@@ -54,7 +55,8 @@ namespace casual
                   result.id = value.id;
                   result.process = value.process;
                   result.state = static_cast< admin::model::resource::Instance::State>( value.state());
-                  result.metrics = transform::metrics( value.metrics);
+                  result.metrics = local::metrics< admin::model::Metrics>( value.metrics());
+                  result.pending = local::metric< admin::model::Metric>( value.pending());
 
                   return result;
                }
@@ -149,8 +151,9 @@ namespace casual
                      admin::model::pending::Request result;
 
                      result.resource = value.destination;
-                     result.correlation = value.complete.correlation().value();
-                     result.type = common::message::convert::type( value.complete.type());
+                     result.correlation = value.complete.correlation();
+                     result.type = value.complete.complete.type();
+                     result.created = value.complete.created;
 
                      return result;
                   };
@@ -163,8 +166,8 @@ namespace casual
                      admin::model::pending::Reply result;
 
                      result.destination = value.destination;
-                     result.type = common::message::convert::type( value.complete.type());
-                     result.correlation = value.complete.correlation().value();
+                     result.type = value.complete.type();
+                     result.correlation = value.complete.correlation();
 
                      return result;
                   };

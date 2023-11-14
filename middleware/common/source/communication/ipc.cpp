@@ -20,6 +20,7 @@
 #include "common/code/system.h"
 #include "common/code/convert.h"
 
+#include "common/message/counter.h"
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -492,6 +493,7 @@ namespace casual
 
                complete.pop();
             }
+            common::message::counter::add::sent( complete.type());
             return true;
          }
          

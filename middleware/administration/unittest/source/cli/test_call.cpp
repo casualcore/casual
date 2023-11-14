@@ -67,15 +67,16 @@ domain:
             namespace check
             {
                template< typename C, typename... Ts>
-               auto format( const std::string& candidate, C code, Ts&&... ts)
+               auto format( std::string_view output, C code)
                {
-                  auto error_string = []( auto& error){ return string::view::make( std::begin( error), std::begin( algorithm::find( error, '\n')));};
+                  auto error_string = [ code]()
+                  {
+                     std::ostringstream out;
+                     exception::format::terminal( out, exception::compose( code));
+                     return std::move( out).str();
+                  }();
 
-                  std::ostringstream out;
-                  exception::format::terminal( out, exception::compose( code, std::forward< Ts>( ts)...));
-                  auto error = std::move( out).str();
-
-                  return error_string( candidate) == error_string( error);
+                  return predicate::boolean( algorithm::search( output, error_string));
                }
             } // check
 
@@ -130,7 +131,7 @@ casual
          EXPECT_TRUE( output == expected) << output;
       }
 
-      TEST( cli_call, synchronous_call_no_emt)
+      TEST( cli_call, synchronous_call_no_entry)
       {
          common::unittest::Trace trace;
          
@@ -160,6 +161,19 @@ domain:
 
          auto output = administration::unittest::cli::command::execute( R"(echo "casual" | casual buffer --compose | casual call --service casual/example/error/TPESYSTEM 2>&1 )").consume();
          EXPECT_TRUE( local::check::format( output, code::xatmi::system)) << "output: '" << output << "'";
+      }
+
+      TEST( cli_call, show_examples)
+      {
+         common::unittest::Trace trace;
+         
+         auto domain = local::domain();
+
+         auto output = unittest::cli::command::execute( R"(casual call --examples)").consume();
+
+         // don't really know how to test stuff like this. 
+         EXPECT_TRUE( algorithm::search( output, std::string_view( "examples:"))) << output;
+         
       }
 
    } // administration

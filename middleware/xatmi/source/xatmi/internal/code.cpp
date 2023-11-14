@@ -10,6 +10,7 @@
 #include "common/exception/capture.h"
 #include "common/code/category.h"
 #include "common/log.h"
+#include "common/code/signal.h"
 
 namespace casual
 {
@@ -27,6 +28,9 @@ namespace casual
 
                if( code == common::code::casual::invalid_argument)
                   return common::code::xatmi::argument;
+
+               if( common::code::is::category< common::code::signal>( code))
+                  return common::code::xatmi::signal;
 
                common::log::line( common::log::category::error, common::code::xatmi::system, " unexpected error-code: ", code);
                return common::code::xatmi::system;

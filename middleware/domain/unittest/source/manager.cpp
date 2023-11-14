@@ -7,6 +7,7 @@
 #include "domain/unittest/manager.h"
 #include "domain/manager/admin/server.h"
 #include "domain/manager/task/message.h"
+#include "domain/discovery/api.h"
 
 #include "common/environment.h"
 #include "common/communication/ipc.h"
@@ -86,6 +87,8 @@ namespace casual
                   // reset service instance, if any.
                   exception::guard( [](){ communication::instance::outbound::service::manager::device().connector().clear();});
                   exception::guard( [](){ communication::instance::outbound::transaction::manager::device().connector().clear();});
+
+                  exception::guard( [](){ casual::domain::discovery::instance::device::clear();});
                }
 
             } // instance::devices
@@ -98,8 +101,8 @@ namespace casual
 
                auto create_handler = []( auto& tasks)
                {
-                  return message::dispatch::handler( communication::ipc::inbound::device(),
-                     [ &tasks]( const message::event::Task& event)
+                  return common::message::dispatch::handler( communication::ipc::inbound::device(),
+                     [ &tasks]( const common::message::event::Task& event)
                      {
                         log::line( verbose::log, "event: ", event);
                         if( event.done())
@@ -108,7 +111,7 @@ namespace casual
                         
                         log::line( log::debug, "TODO shutdown tasks: ", tasks);
                      },
-                     []( const message::event::Error& event)
+                     []( const common::message::event::Error& event)
                      {
                         log::line( log::category::error, "event: ", event);
                      }
@@ -258,7 +261,7 @@ namespace casual
             
             auto condition = []( auto& tasks)
             { 
-               return message::dispatch::condition::compose( 
+               return common::message::dispatch::condition::compose( 
                   event::condition::done( [&tasks]()
                   {
                      // we're done waiting when we got the ipc of domain-manager
@@ -270,9 +273,9 @@ namespace casual
             auto handler = []( auto& state, auto& tasks)
             {
                return common::message::dispatch::handler( communication::ipc::inbound::device(),
-                  common::message::dispatch::handle::discard< message::event::process::Spawn>(),
-                  common::message::dispatch::handle::discard< message::event::process::Exit>(),
-                  common::message::dispatch::handle::discard< message::event::sub::Task>(),
+                  common::message::dispatch::handle::discard< common::message::event::process::Spawn>(),
+                  common::message::dispatch::handle::discard< common::message::event::process::Exit>(),
+                  common::message::dispatch::handle::discard< common::message::event::sub::Task>(),
                   [ &state]( const manager::task::message::domain::Information& event)
                   {
                      log::line( log::debug, "event: ", event);
@@ -286,7 +289,7 @@ namespace casual
                         common::environment::variable::name::ipc::domain::manager,
                         state.manager.handle());
                   },
-                  [ &tasks]( const message::event::Task& event)
+                  [ &tasks]( const common::message::event::Task& event)
                   {
                      log::line( log::debug, "event: ", event);
 
@@ -297,7 +300,7 @@ namespace casual
                      log::line( log::debug, "tasks: ", tasks);
 
                   },
-                  []( const message::event::Error& event)
+                  []( const common::message::event::Error& event)
                   {
                      log::line( log::debug, "event: ", event);
 

@@ -147,6 +147,13 @@ namespace casual
          }
       } // rediscovery
 
+      namespace instance::device
+      {
+         void clear()
+         {
+            local::instance::device().connector().clear();
+         }
+      } // instance::device
 
    } // domain::discovery  
 } // casual

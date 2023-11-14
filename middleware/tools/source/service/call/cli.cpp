@@ -60,8 +60,23 @@ namespace casual
                }
             }
 
+            struct Arguments
+            {
+               std::string service;
+               platform::size::type iterations = 1;
+               bool show_examples = false;
+
+               CASUAL_LOG_SERIALIZE(
+                  CASUAL_SERIALIZE( service);
+                  CASUAL_SERIALIZE( iterations);
+                  CASUAL_SERIALIZE( show_examples);
+               )
+            };
+
             struct State
             {
+               State( Arguments arguments) : arguments{ std::move( arguments)} {}
+
                enum class Flag : short
                {
                   done = 0,
@@ -95,16 +110,17 @@ namespace casual
 
                } pending;
 
-               std::string service;
-               platform::size::type iterations = 1;
+               Arguments arguments;
+               common::transaction::ID current;
+               casual::cli::pipe::done::Scope done;
 
                CASUAL_LOG_SERIALIZE(
                   CASUAL_SERIALIZE( machine);
                   CASUAL_SERIALIZE( pending);
-                  CASUAL_SERIALIZE( service);
-                  CASUAL_SERIALIZE( iterations);
+                  CASUAL_SERIALIZE( arguments);
+                  CASUAL_SERIALIZE( current);
+                  CASUAL_SERIALIZE( done);
                )
-
             };
 
             namespace service
@@ -141,7 +157,7 @@ namespace casual
                   {
                      Trace trace{ "tools::service::call::local::handle::detail::call"};
 
-                     auto lookup = detail::lookup( state.service);
+                     auto lookup = detail::lookup( state.arguments.service);
                      log::line( verbose::log, "lookup: ", lookup);
 
                      if( lookup.state == decltype( lookup.state)::absent)
@@ -154,16 +170,14 @@ namespace casual
                      request.service = lookup.service;
                      request.pending = lookup.pending;
                      request.correlation = strong::correlation::id::emplace( uuid::make());
-
-                     using Type = common::service::transaction::Type;
-                     if( algorithm::compare::any( lookup.service.transaction, Type::automatic, Type::join, Type::branch))
-                        request.trid = message.transaction.trid;
+                     // set trid, if any.
+                     request.trid = state.current;
                      
                      return local::flush::send( lookup.process.ipc, request);
                   
                   }
 
-                  void reply( common::message::service::call::Reply& message)
+                  void reply( State& state, common::message::service::call::Reply& message)
                   {
                      Trace trace{ "tools::service::call::local::handle::detail::reply"};
                      log::line( verbose::log, "message: ", message);
@@ -171,15 +185,17 @@ namespace casual
                      // only log error to stderr. 
                      // TODO: is this "enough"?.
                      if( message.code.result != decltype( message.code.result)::ok)
+                     {
+                        // set the pipe in error-state to let downstream know
+                        state.done.state( decltype( state.done.state())::error);
                         exception::format::terminal( std::cerr, exception::compose( message.code.result));
+                     }
 
-                     casual::cli::message::payload::Message result{ process::handle()};
+                     casual::cli::message::payload::Message result;
                      result.correlation = message.correlation;
                      result.execution = message.execution;
                      result.payload = std::move( message.buffer);
                      result.code = message.code;
-                     result.transaction.trid = message.transaction.trid;
-                     result.transaction.code = message.transaction.state == decltype( message.transaction.state)::active ? code::tx::ok : code::tx::rollback;
 
                      log::line( verbose::log, "result: ", result);
 
@@ -195,10 +211,10 @@ namespace casual
                      Trace trace{ "tools::service::call::local::handle::pipe"};
                      log::line( verbose::log, "state: ", state);
 
-                     if( state.iterations <= 0)
+                     if( state.arguments.iterations <= 0)
                         return;
 
-                     algorithm::for_n( state.iterations, [&]()
+                     algorithm::for_n( state.arguments.iterations, [&]()
                      {
                         // we let 'communication' create a new correlation id
                         state.pending.calls.push_back( detail::call( state, message));
@@ -212,9 +228,12 @@ namespace casual
 
                   return casual::cli::message::dispatch::create(
                      casual::cli::pipe::forward::handle::defaults(),
-                     casual::cli::message::payload::handler( std::move( handle_payload)),
-                     [ &state]( const casual::cli::message::pipe::Done&)
+                     // make sure to get the ongoing transaction, if any
+                     casual::cli::pipe::transaction::handle::current( state.current),
+                     casual::cli::pipe::handle::payloads( std::move( handle_payload)),
+                     [ &state]( const casual::cli::message::pipe::Done& message)
                      {
+                        state.done( message);
                         // remove the pipe from the state-machine
                         state.machine -= State::Flag::pipe;
                      }
@@ -233,7 +252,7 @@ namespace casual
                         else
                            log::line( log::category::error, "failed to correlate reply: ", message.correlation);
 
-                        detail::reply( message);
+                        detail::reply( state, message);
 
                         // if we got no pending, we remove our self
                         if( state.pending.empty())
@@ -247,7 +266,7 @@ namespace casual
 
             namespace blocking
             {
-               void call( State& state)
+               void call( State state)
                {
                   Trace trace{ "tools::service::call::local::blocking::call"};
                   log::line( verbose::log, "state: ", state);
@@ -271,10 +290,10 @@ namespace casual
                         Trace trace{ "tools::service::call::local::blocking::call handler"};
                         common::log::line( verbose::log, "message: ", message);
 
-                        if( state.iterations <= 0)
+                        if( state.arguments.iterations <= 0)
                            return;
 
-                        algorithm::for_n( state.iterations, [&]()
+                        algorithm::for_n( state.arguments.iterations, [&]()
                         {
                            handle::detail::call( state, message);
 
@@ -284,16 +303,18 @@ namespace casual
                               communication::ipc::inbound::device(),
                               reply);
 
-                           handle::detail::reply( reply);
+                           handle::detail::reply( state, reply);
                         });
                      };
 
                      return casual::cli::message::dispatch::create(
                         casual::cli::pipe::forward::handle::defaults(),
-                        casual::cli::message::payload::handler( std::move( handle_payload)),
-                        [ &state]( const casual::cli::message::pipe::Done& done)
+                        casual::cli::pipe::transaction::handle::current( state.current),
+                        casual::cli::pipe::handle::payloads( std::move( handle_payload)),
+                        [ &state]( const casual::cli::message::pipe::Done& message)
                         {
-                           common::log::line( verbose::log, "done: ", done);
+                           common::log::line( verbose::log, "done: ", message);
+                           state.done( message);
                            state.machine = State::Flag::done;
                         }
                      );
@@ -304,13 +325,11 @@ namespace casual
                      handler( state), 
                      pipe);
 
-                  // we're done
-                  casual::cli::pipe::done();
-
+                  // we're done, state.done dtor will pipe done downstream;
                }
             } // blocking
          
-            void call( State& state)
+            void call( State state)
             {
                Trace trace{ "tools::service::call::local::call"};
                log::line( verbose::log, "state: ", state);
@@ -379,8 +398,7 @@ namespace casual
                   }
                }
 
-               // we're done
-               casual::cli::pipe::done();
+               // we're done, state.done dtor will pipe done downstream;
             }
 
             namespace complete
@@ -401,16 +419,10 @@ namespace casual
                };
             } // complete
 
-            namespace option
-            {
-               auto examples( State& state)
-               {
-                  auto invoke = [&state]()
-                  {
-                     // make sure we don't do any calls
-                     state.machine = State::Flag::done;
 
-                     std::cout << R"(examples:
+            auto show_examples()
+            {
+               std::cout << R"(examples:
 
 json buffer:
 `host# echo '{ "key" : "some", "value": "json"}' | casual buffer --compose ".json/" | casual call --service a | casual buffer --extract`
@@ -432,12 +444,8 @@ from a dequeue
 `host# casual queue --dequeue qA | casual call --service a | casual queue --enqueue qB`
 )";
 
-                  };
-
-                  return argument::Option{ invoke, { "--examples"}, "prints several examples of how casual call can be used"};
-
-               }
-            } // option
+            }
+   
          } // <unnamed>
       } // local
    
@@ -447,10 +455,16 @@ from a dequeue
          {
             auto invoked = [&]()
             {
+               if( m_arguments.show_examples)
+               {
+                  local::show_examples();
+                  return;
+               }
+
                if( terminal::output::directive().block())
-                  local::blocking::call( m_state);
+                  local::blocking::call( std::move( m_arguments));
                else
-                  local::call( m_state);
+                  local::call( std::move( m_arguments));
             };
 
             constexpr auto transaction_information = R"([removed] use `casual transaction --begin` instead)";
@@ -458,11 +472,7 @@ from a dequeue
 
             auto deprecated = []( auto message)
             {
-               return [message]( bool on)
-               {
-                  if( on)
-                     std::cerr << message << '\n';
-               };
+               return [message]( bool) { std::cerr << message << '\n';};
             };
 
             return argument::Group{ invoked, [](){}, { "call"}, R"(generic service call
@@ -473,9 +483,10 @@ Errors will be printed to stderr
 
 @note: part of casual-pipe
 )",
-               argument::Option( std::tie( m_state.service), local::complete::service, { "-s", "--service"}, "service to call")( argument::cardinality::one{}),
-               argument::Option( std::tie( m_state.iterations), { "--iterations"}, "number of iterations (default: 1) - this could be helpful for testing load"),
-               local::option::examples( m_state),
+               argument::Option( std::tie( m_arguments.service), local::complete::service, { "-s", "--service"}, "service to call")( argument::cardinality::one{}),
+               argument::Option( std::tie( m_arguments.iterations), { "--iterations"}, "number of iterations (default: 1) - this could be helpful for testing load"),
+               argument::Option{ argument::option::toggle( m_arguments.show_examples), { "--examples"}, "prints several examples of how casual call can be used"},
+
 
                // deprecated
                argument::Option( deprecated( asynchronous_information), argument::option::keys( {}, { "--asynchronous"}), asynchronous_information),
@@ -483,7 +494,7 @@ Errors will be printed to stderr
             };
          }
 
-         local::State m_state;
+         local::Arguments m_arguments;
       };
 
       cli::cli() = default; 

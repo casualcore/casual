@@ -51,12 +51,13 @@ FROM
    message
 WHERE queue = :queue AND state = 2 AND available < :available ORDER BY timestamp ASC, available ASC LIMIT 1; )");
 
+            // for dequeue with an explicit id we ignore _available_
             result.dequeue.first_id = connection.precompile( R"(
 SELECT
    ROWID, id, properties, reply, redelivered, type, available, timestamp, payload
 FROM 
    message
-WHERE id = :id AND queue = :queue AND state = 2 AND available < :available; )");
+WHERE id = :id AND queue = :queue AND state = 2; )");
 
             result.dequeue.first_match = connection.precompile( R"(
 SELECT

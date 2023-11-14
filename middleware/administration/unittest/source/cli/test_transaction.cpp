@@ -188,5 +188,92 @@ domain:
          ASSERT_TRUE( tx_commit() == TX_OK);
       }
 
+      TEST( cli_transaction, legend)
+      {
+         auto a = local::cli::domain();
+
+         const auto output = administration::unittest::cli::command::execute( R"(casual transaction --legend list-resources)").consume();
+
+         using namespace std::literals;
+
+         // check some legend specific strings
+         EXPECT_TRUE( algorithm::search( output, "min:"sv));
+         EXPECT_TRUE( algorithm::search( output, "openinfo:"sv));
+         EXPECT_TRUE( algorithm::search( output, "P:"sv)) << CASUAL_NAMED_VALUE( output);
+         EXPECT_TRUE( algorithm::search( output, "PAT:"sv));
+      }
+
+      TEST( cli_transaction, pending_resource_proxies)
+      {
+         auto a = local::cli::domain( R"(
+system:
+   resources:
+      -  key: rm-mockup
+         server: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/transaction/bin/rm-proxy-casual-mockup
+         xa_struct_name: casual_mockup_xa_switch_static
+         libraries:
+            -  casual-mockup-rm
+domain: 
+   name: A
+   transaction:
+      resources:
+         -  key: rm-mockup
+            openinfo: --sleep-commit 20ms
+            name: example-resource-server
+            instances: 1
+
+   servers:
+      -  path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-resource-server
+         memberships: [ user]
+         arguments: [ --nested-calls, casual/example/resource/echo]
+         instances: 4
+
+)");
+
+         // do 2 asynchronous calls to casual/example/resource/nested/calls/A that will start a transaction (auto)
+         // call casual/example/resource/echo -> distributed transaction. TM will do the 2pc (one involved resource -> one-phase-commit-optimisation),
+         // and we should get pending request to resource-proxy since we only got one instance.
+         auto correlations = common::array::make( 
+            common::unittest::service::send( "casual/example/resource/nested/calls/A", common::unittest::random::binary( 512)),
+            common::unittest::service::send( "casual/example/resource/nested/calls/A", common::unittest::random::binary( 512)));
+
+         // collect and discard replies
+         algorithm::for_each( correlations, []( auto& correlation)
+         {
+            auto reply = communication::ipc::receive< common::message::service::call::Reply>( correlation);
+            EXPECT_TRUE( reply.buffer.data.size() == 512);
+         });
+
+         // order of columns
+         // ----------------
+         // name:
+         // id: 
+         // key:
+         // openinfo:
+         // closeinfo:
+         // invoked:
+         // min:
+         // max:
+         // avg:
+         // #:
+         // P:
+         // PAT:
+
+         auto output = string::split( administration::unittest::cli::command::execute( R"(casual --porcelain true transaction --list-resources)").consume(), '|');
+         ASSERT_TRUE( output.size() == 12);
+         EXPECT_TRUE( output[ 0] == "example-resource-server");
+         EXPECT_TRUE( output[ 1] == "L-1");
+         EXPECT_TRUE( output[ 2] == "rm-mockup");
+         //EXPECT_TRUE( output[ 3] == ""); // openinfo
+         //EXPECT_TRUE( output[ 4] == ""); // closeinfo
+         EXPECT_TRUE( string::from< long>( output[ 5]) == 2); // invoked
+         EXPECT_TRUE( string::from< double>( output[ 6]) >= 0.02); // min
+         EXPECT_TRUE( string::from< double>( output[ 7]) >= 0.02); // max
+         EXPECT_TRUE( string::from< double>( output[ 8]) >= 0.02); // avg
+         EXPECT_TRUE( string::from< long>( output[ 9]) == 1); // #
+         EXPECT_TRUE( string::from< long>( output[ 10]) == 1); // P
+         EXPECT_TRUE( string::from< double>( output[ 11]) > 0.01); // PAT should be close to 0.02 but to be safe we expect at least half.
+      }
+
    } // administration
 } // casual

@@ -243,9 +243,8 @@ namespace casual
                      Trace trace{ "queue::handle::dequeue::Request::handle"};
                      log::line( verbose::log, "message: ", message);
 
-                     auto now = platform::time::clock::type::now();
-
-                     auto reply = state.queuebase.dequeue( message, now);
+                     // send an empty reply on error TODO: is this the api we want?
+                     auto reply = common::message::reverse::type( message);
                      reply.correlation = message.correlation;
 
                      // make sure we always send reply
@@ -253,6 +252,14 @@ namespace casual
                      {
                         state.multiplex.send( message.process.ipc, reply);
                      });
+
+                     // Make sure we've got the quid.
+                     message.queue = state.queuebase.id( message);
+
+                     auto now = platform::time::clock::type::now();
+
+                     reply = state.queuebase.dequeue( message, now);
+                     reply.correlation = message.correlation;
 
                      if( ! reply.message.empty())
                      {
@@ -292,9 +299,6 @@ namespace casual
 
                         try
                         {
-                           // Make sure we've got the quid.
-                           message.queue = state.queuebase.id( message);
-
                            return handle( state, message);
                         }
                         catch( ...)

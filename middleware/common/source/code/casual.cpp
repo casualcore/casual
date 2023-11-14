@@ -75,11 +75,13 @@ namespace casual
          {
             case casual::shutdown: return "shutdown";
             case casual::interrupted: return "interrupted";
+            case casual::preconditions: return "preconditions";
             case casual::invalid_configuration: return "invalid-configuration";
             case casual::invalid_document: return "invalid-document";
             case casual::invalid_node: return "invalid-node";
             case casual::invalid_version: return "invalid-version";
             case casual::invalid_path: return "invalid-path";
+            case casual::invalid_file: return "invalid-file";
             case casual::invalid_argument: return "invalid_argument";
             case casual::invalid_semantics: return "invalid-semantics";
             case casual::failed_transcoding: return "failed-transcoding";

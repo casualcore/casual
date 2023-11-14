@@ -68,11 +68,10 @@ namespace casual
                }
                
                template< typename M>
-               inline auto add( M&& message)
+               inline auto add( const M& message)
                {
                   static_assert( ! std::is_same_v< std::decay_t< M>, common::message::service::call::callee::Request>);
-                  m_complete.push_back( common::serialize::native::complete< complete_type>( std::forward< M>( message)));
-                  m_size += m_complete.back().size();
+                  m_size += m_complete.emplace_back( message).complete.size();
                }
 
                inline void add( common::message::service::call::callee::Request&& message)
@@ -82,8 +81,8 @@ namespace casual
                }
 
                //! consumes pending calls, and sets the 'pending-roundtrip-state'
-               complete_type consume( const common::strong::correlation::id& correlation, const common::message::service::lookup::Reply& lookup);
-               complete_type consume( const common::strong::correlation::id& correlation);
+               std::optional< complete_type> consume( const common::strong::correlation::id& correlation, const common::message::service::lookup::Reply& lookup);
+               std::optional< complete_type> consume( const common::strong::correlation::id& correlation);
 
                //! consumes all pending associated with the correlations, if any.
                struct Result
@@ -97,6 +96,11 @@ namespace casual
                   )
                };
 
+               //! @returns "error replies" if there are pending messages associated with the gtrid that is to be rolled back
+               //! @attention this is a hack that only fixes part of premature rollback due to timeout. 
+               //! TODO fix and remove in 1.7
+               std::vector< common::communication::tcp::message::Complete> abort_pending( const common::message::transaction::resource::rollback::Request& message);
+
                Result consume( const std::vector< common::strong::correlation::id>& correlations);
 
                CASUAL_LOG_SERIALIZE( 
@@ -108,13 +112,40 @@ namespace casual
 
             private:
 
+               struct Holder
+               {
+                  template< typename M>
+                  Holder( const M& message) 
+                     : gtrid{ message.trid}, complete{ common::serialize::native::complete< complete_type>( message)} 
+                  {
+                     using Type = common::message::Type;
+
+                     // make sure we only add expected types
+                     static_assert( common::algorithm::compare::any( M::type(), 
+                        Type::conversation_connect_request,
+                        Type::queue_group_dequeue_request,
+                        Type::queue_group_enqueue_request));
+                  }
+
+                  common::transaction::global::ID gtrid;
+                  complete_type complete;
+
+                  inline friend bool operator == ( const Holder& lhs, const common::strong::correlation::id& rhs) { return lhs.complete.correlation() == rhs;}
+                  inline friend bool operator == ( const common::strong::correlation::id& lhs, const Holder& rhs) { return lhs == rhs.complete.correlation();}
+
+                  CASUAL_LOG_SERIALIZE( 
+                     CASUAL_SERIALIZE( gtrid);
+                     CASUAL_SERIALIZE( complete);
+                  )
+               };
+
                inline static platform::size::type size( const common::message::service::call::callee::Request& message)
                {
                   return sizeof( message) + message.buffer.data.size() + message.buffer.type.size();
                }
 
                std::vector< common::message::service::call::callee::Request> m_services;
-               std::vector< complete_type> m_complete;
+               std::vector< Holder> m_complete;
                platform::size::type m_size = 0;
                pending::Limit m_limits;
                

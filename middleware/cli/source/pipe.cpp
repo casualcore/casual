@@ -17,124 +17,106 @@
 namespace casual
 {
    using namespace common;
-   namespace cli
+   namespace cli::pipe
    {
-      namespace pipe
+
+      namespace terminal
       {
-         namespace terminal
+         namespace local
          {
-            namespace local
+            namespace
             {
-               namespace
+               auto is_terminal( int fd)
                {
-                  auto is_terminal( int fd)
-                  {
-                     return ::isatty( fd) == 1;
-                  }
-               } // <unnamed>
-            } // local
-            bool out()
-            {
-               return local::is_terminal( ::fileno( stdout));
-            }
-          
-            bool in()
-            {
-               return local::is_terminal( ::fileno( stdin));
-            }
-
-         } // terminal
-         namespace forward
-         {
-            namespace standard
-            {
-               void in()
-               {
-                  Trace trace{ "cli::pipe::forward::standard::in"};
-
-                  if( ! cli::pipe::terminal::in() && std::cin.peek() != std::istream::traits_type::eof())
-                     std::cout << std::cin.rdbuf();
+                  return ::isatty( fd) == 1;
                }
-            } // standard
-            
-         } // forward
-
-         void done()
+            } // <unnamed>
+         } // local
+         bool out()
          {
-             Trace trace{ "cli::pipe::done"};
+            return local::is_terminal( ::fileno( stdout));
+         }
+         
+         bool in()
+         {
+            return local::is_terminal( ::fileno( stdin));
+         }
+      } // terminal
 
-            if( ! pipe::terminal::out())
-               forward::message( cli::message::pipe::Done{});
+      namespace forward
+      {
+         namespace standard
+         {
+            void in()
+            {
+               Trace trace{ "cli::pipe::forward::standard::in"};
 
-            std::cout.flush();
+               if( ! cli::pipe::terminal::in() && std::cin.peek() != std::istream::traits_type::eof())
+                  std::cout << std::cin.rdbuf();
+            }
+         } // standard
+         
+      } // forward
+
+      namespace done
+      {
+
+         void Detector::state( State state)
+         {
+            // we only update if the new state is more _severe_
+            if( m_state < state)
+               m_state = state;
          }
 
-         namespace transaction
+         State Detector::state() const noexcept
          {
-            void Association::operator() ( common::transaction::ID& trid)
+            return m_state;
+         }
+
+         bool Detector::pipe_error() const noexcept
+         {
+            return m_state != State::ok;
+         }
+
+         Detector::operator bool() const noexcept
+         {
+            if( m_done || cli::pipe::terminal::in() || std::cin.peek() == std::istream::traits_type::eof())
             {
-               // the trid might be associated already
-               if( trid)
-                  return;
-
-               // associate based on the transaction-context
-               switch( directive.context())
-               {
-                  using Context = decltype( directive.context());
-
-                  case Context::absent:
-                     // no association present
-                     return;
-
-                  case Context::single:
-                     trid = directive.transaction.trid;
-                     break;
-                  case Context::compound:
-                     trid = common::transaction::id::create( directive.process);
-                     common::log::line( verbose::log, "created trid: ", trid);
-                     break;
-               }
-
-
-               // we might have associated this trid before
-               if( algorithm::find( associated, trid))
-                  return;
-
-               associated.push_back( trid);
-
-               // we might be the 'owner', hence know about the transaction
-               if( trid.owner() == common::process::handle())
-                  return;
-
-               // make sure the owner knows that we've associated a new trid
-               cli::message::transaction::Associated message{ common::process::handle()};
-               message.trid = trid;
-               common::communication::device::blocking::send( directive.process.ipc, message);
+               common::log::line( verbose::log, "cli::pipe::condition::done - is done");
+               return true;
             }
+            return false;
+         }
+
+         void Detector::operator () ( const cli::message::pipe::Done& message)
+         {
+            m_done = true;
+            state( message.state);
+         }
 
 
-            namespace handle
+         Scope::Scope() : m_uncaught_count{ std::uncaught_exceptions()}
+         {}    
+         
+         Scope::~Scope()
+         {
+            common::exception::guard( [ &]()
             {
-               common::function< void(cli::message::transaction::Directive&)> directive( Association& associator)
-               {
-                  return [&]( cli::message::transaction::Directive& message)
-                  {
-                     if( associator && associator.directive.process != common::process::handle())
-                     {
-                        // we need to send 'termination' to owner
-                        common::communication::device::blocking::send( 
-                           associator.directive.process.ipc, 
-                           cli::message::transaction::directive::Terminated{ common::process::handle()});
-                     }
-
-                     associator.directive = std::move( message);
-                  };
-               }
+               // if the out is a terminal, we don't pipe it.
+               if( pipe::terminal::out())
+                  return;
                
-            } // handle
+               // if we're in stack unwinding -> always error
+               if( m_uncaught_count != std::uncaught_exceptions())
+                  state( State::error);
 
-         } // transaction
+               cli::message::pipe::Done message;
+               message.state = state();
+               pipe::forward::message( message);
+            });
+         }
+   
+      } // done
 
-      } // pipe
-   } // cli
+   } // cli::pipe
 } // casual

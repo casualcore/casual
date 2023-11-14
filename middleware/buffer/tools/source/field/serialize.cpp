@@ -136,7 +136,7 @@ namespace casual
                   out << indentation << "      }\n"
                      << indentation << "   };\n"; 
 
-                  out << indentation << "   " << "CASUAL_MAYBE_UNUSED auto registred = internal::field::string::convert::registration( \"" <<  model.key << "\", std::move( action));\n";
+                  out << indentation << "   " << "[[maybe_unused]] auto registred = internal::field::string::convert::registration( \"" <<  model.key << "\", std::move( action));\n";
                   out << indentation << '}' << '\n';
                }
 

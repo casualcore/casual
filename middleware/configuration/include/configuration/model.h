@@ -239,7 +239,7 @@ namespace casual::configuration
             using Contract = common::service::execution::timeout::contract::Type;
             
             std::optional< platform::time::unit> duration;
-            Contract contract = Contract::linger;
+            std::optional< Contract> contract;
 
             Timeout set_union( Timeout lhs, Timeout rhs);
 

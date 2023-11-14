@@ -21,6 +21,8 @@ namespace casual
             case Type::shutdown_reply: return "shutdown_reply";
             case Type::delay_message: return "delay_message";
             case Type::inbound_ipc_connect: return "inbound_ipc_connect";
+            case Type::counter_request: return "counter_request";
+            case Type::counter_reply: return "counter_reply";
             case Type::process_lookup_request: return "process_lookup_request";
             case Type::process_lookup_reply: return "process_lookup_reply";
             case Type::domain_process_connect_request: return "domain_process_connect_request";
@@ -195,11 +197,7 @@ namespace casual
             case Type::cli_queue_message: return "cli_queue_message";
             case Type::cli_queue_message_id: return "cli_queue_message_id";
             case Type::cli_pipe_error_fatal: return "cli_pipe_error_fatal";
-            case Type::cli_transaction_directive: return "cli_transaction_directive";
-            case Type::cli_transaction_directive_terminated: return "cli_transaction_directive_terminated";
-            case Type::cli_transaction_associated: return "cli_transaction_associated";
-            case Type::cli_transaction_finalize: return "cli_transaction_finalize";
-            case Type::cli_transaction_propagate: return "cli_transaction_propagate";
+            case Type::cli_transaction_current: return "cli_transaction_current";
             case Type::internal_dump_state: return "internal_dump_state";
             case Type::internal_configure_log: return "internal_configure_log";
             case Type::unittest_message: return "unittest_message";

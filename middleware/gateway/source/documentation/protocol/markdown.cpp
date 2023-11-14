@@ -768,6 +768,7 @@ Confirmation that the outbound has got the disconnect request.
                      { "execution", "uuid of the current execution context (breadcrumb)"},
                   });
             }
+            
          }
 
 
@@ -834,6 +835,30 @@ Sent to and received from other domains when one domain wants to discover inform
                         { "content.queues.element.retries", "how many 'retries' the queue has"},
                      });
             }
+
+            {
+               using message_type = casual::domain::message::discovery::topology::implicit::Update;
+
+               local::message::section< message_type>( out, "##") << R"(
+
+Sent to all inbound connections from a domain when when it gets a new connection or gets this message from an outbound.
+When the message is passed "upstream" domains will add its id to the domains array, hence it's possible to mitigate endless 
+loops of this message, depending on the topology of the deployment.
+
+)";            
+               auto message = protocol::example::message< message_type>();
+
+               local::format::type( out, message, {
+                        { "execution", "uuid of the current execution context (breadcrumb)"},
+                        { "origin.id", "uuid of the origin domain"},
+                        { "origin.name.size", "size of the origin domain name"},
+                        { "origin.name.data", "dynamic byte array with the origin domain name"},
+                        { "domains.size", "number of domains (an array of domains that has seen this message)"},
+                        { "domains.element.id", "uuid of the domain"},
+                        { "domains.element.name.size", "size of the domain name"},
+                        { "domains.element.name.data", "dynamic byte array with the domain name"},
+                     });
+            }
          }
 
          void queue( std::ostream& out)
@@ -864,15 +889,15 @@ Represent enqueue request.
                         { "xid.bqual_length", "length of the transaction branch part"},
                         { "xid.data", "byte array with the size of gtrid_length + bqual_length (max 128)"},
                         { "message.id", "id of the message"},
-                        { "message.properties.size", "length of message properties"},
-                        { "message.properties.data", "data of message properties"},
-                        { "message.reply.size", "length of the reply queue"},
-                        { "message.reply.data", "data of reply queue"},
-                        { "message.available", "when the message is available for dequeue (us since epoch)"},
-                        { "message.type.size", "length of the type string"},
-                        { "message.type.data", "data of the type string"},
-                        { "message.payload.size", "size of the payload"},
-                        { "message.payload.data", "data of the payload"},
+                        { "message.attributes.properties.size", "length of message properties"},
+                        { "message.attributes.properties.data", "data of message properties"},
+                        { "message.attributes.reply.size", "length of the reply queue"},
+                        { "message.attributes.reply.data", "data of reply queue"},
+                        { "message.attributes.available", "when the message is available for dequeue (us since epoch)"},
+                        { "message.payload.type.size", "length of the type string"},
+                        { "message.payload.type.data", "data of the type string"},
+                        { "message.payload.data.size", "size of the payload"},
+                        { "message.payload.data.data", "data of the payload"},
                      });
             }
 
@@ -944,15 +969,15 @@ Represent dequeue reply.
                         { "execution", "uuid of the current execution context (breadcrumb)"},
                         { "message.size", "number of messages dequeued"},
                         { "message.element.id", "id of the message"},
-                        { "message.element.properties.size", "length of message properties"},
-                        { "message.element.properties.data", "data of message properties"},
-                        { "message.element.reply.size", "length of the reply queue"},
-                        { "message.element.reply.data", "data of reply queue"},
-                        { "message.element.available", "when the message was available for dequeue (us since epoch)"},
-                        { "message.element.type.size", "length of the type string"},
-                        { "message.element.type.data", "data of the type string"},
-                        { "message.element.payload.size", "size of the payload"},
-                        { "message.element.payload.data", "data of the payload"},
+                        { "message.element.attributes.properties.size", "length of message properties"},
+                        { "message.element.attributes.properties.data", "data of message properties"},
+                        { "message.element.attributes.reply.size", "length of the reply queue"},
+                        { "message.element.attributes.reply.data", "data of reply queue"},
+                        { "message.element.attributes.available", "when the message was available for dequeue (us since epoch)"},
+                        { "message.element.payload.type.size", "length of the type string"},
+                        { "message.element.payload.type.data", "data of the type string"},
+                        { "message.element.payload.data.size", "size of the payload"},
+                        { "message.element.payload.data.data", "data of the payload"},
                         { "message.element.redelivered", "how many times the message has been redelivered"},
                         { "message.element.timestamp", "when the message was enqueued (us since epoch)"},
                      });

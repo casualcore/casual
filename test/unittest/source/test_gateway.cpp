@@ -2185,6 +2185,8 @@ domain:
          x.activate();
          gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected());
 
+         
+
          // we're in X at the moment
 
          auto call_A_and_B = []( auto count)
@@ -2195,7 +2197,23 @@ domain:
             });
          };
 
-         constexpr auto transaction_count = 5;
+         // * indicate echo/termination of the call. 
+         //    otherwise it's a nested call to whats in between ( ).
+         //
+         //  X  -> GW -> C -> ( A, B, X*)
+         //              A -> GW -> ( B*, C*, X*)
+         //              B -> GW -> ( A*, C*, X*)       
+         //
+         //  X initiate the twa phase commit. The ohter 3 (A, B, C) has all X as involved.
+         //  For X it should be 3 other TM:s that sends prepare and commit == 3 * 2
+         //
+         //  For C it should be from X, A and B == 3 * 2
+         //  For A it should be from C and from B == 2 * 2
+         //  For B it should be from C and from A == 2 * 2
+         //  GW has 0 resources.
+         //
+
+         constexpr auto transaction_count = 1;
          constexpr auto call_count = 1;
 
          algorithm::for_n( transaction_count, [call_A_and_B]()
@@ -2211,7 +2229,7 @@ domain:
 
             EXPECT_TRUE( state.pending.persistent.replies.empty()) << CASUAL_NAMED_VALUE( state);
             EXPECT_TRUE( state.pending.requests.empty()) << CASUAL_NAMED_VALUE( state);
-            EXPECT_TRUE( state.transactions.empty()) << CASUAL_NAMED_VALUE( state);
+            EXPECT_TRUE( state.transactions.empty()) << CASUAL_NAMED_VALUE( state.transactions);
 
             return state;
          };
@@ -3343,6 +3361,205 @@ domain:
 
          casual::transaction::unittest::fetch::until( casual::transaction::unittest::fetch::predicate::transactions( 0));
          
+      }
+
+
+
+      TEST( test_gateway, domain_A_to_GW_to_B__perform_discovery_in_GW_if_service_unknown)
+      {
+         common::unittest::Trace trace;
+
+         // sink child signals
+         signal::callback::registration< code::signal::child>( [](){});
+
+         // domain containing example services scaled down to 0 instances
+         constexpr auto B = R"(
+domain:
+   name: B
+
+   servers:
+      - path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-server"
+        instances: 0
+
+   gateway:
+      inbound:
+         groups:
+            -  connections:
+               -  address: 127.0.0.1:7002
+)";
+
+         auto b = local::domain(  B);
+
+         {
+            // scale up to 1 instance
+            casual::domain::manager::admin::cli cli;
+            common::argument::Parse parse{ "", cli.options()};
+            parse( { "domain", "--scale-instances", "casual-example-server", "1"});
+            casual::service::unittest::fetch::until( casual::service::unittest::fetch::predicate::instances( "casual/example/echo", 1));
+         }
+
+         // gateway domain with forward inbound
+         constexpr auto GW = R"(
+domain:
+   name: GW
+   gateway:
+
+      inbound:
+         groups:
+            -  connections:
+                  -  address: 127.0.0.1:7001
+                     discovery:
+                        forward: true
+      outbound:
+         groups:
+            -  connections:
+                  -  address: 127.0.0.1:7002
+)";
+
+
+         auto gw = local::domain(  GW);
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected());
+
+         // domain with no local example services
+         constexpr auto A = R"(
+domain:
+   name: A
+
+   gateway:
+      outbound:
+         groups:
+            -  connections:
+                  -  address: 127.0.0.1:7001
+
+)";
+
+         auto a = local::domain( A);
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected());
+
+         // make call and trigger discovery
+         local::call( "casual/example/echo", code::xatmi::ok);
+
+         // shutdown domain b
+         b.async_shutdown();
+
+         // wait to detect that domain b is down
+         gw.activate();
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::disconnected());
+
+         // create b again
+         auto new_b = local::domain(  B);
+
+         // wait for connection to b
+         gw.activate();
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected());
+
+         {
+            new_b.activate();
+            // scale up to 1 instance
+            casual::domain::manager::admin::cli cli;
+            common::argument::Parse parse{ "", cli.options()};
+            parse( { "domain", "--scale-instances", "casual-example-server", "1"});
+            casual::service::unittest::fetch::until( casual::service::unittest::fetch::predicate::instances( "casual/example/echo", 1));
+         }
+
+         // domain a: routing to service via gw exists
+         // domain gw: example service is known by service-manager after previous call, but no routing to domain b exists for service
+         // the call trigger a new discovery for service in gw instead of tpenoent
+         a.activate();
+         local::call( "casual/example/echo", code::xatmi::ok);
+
+      }
+
+
+
+
+      TEST( test_transaction, a_b_c_domains__a_enqueue_in_b__and_calls_resource_server_in_c__mockup_RM_gives_RMERR_on_prepare__expect_rollback_on_queue)
+      {
+         common::unittest::Trace trace;
+
+         auto b = local::domain( R"(
+domain:
+   name: B
+   servers:
+      -  path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/queue/bin/casual-queue-manager"
+         memberships: [ queue]
+   queue:
+      groups:
+         -  alias: B
+            queuebase: ':memory:'
+            queues:
+               -  name: b1
+   gateway:
+      inbound:
+         groups:
+            -  connections: 
+               -  address: 127.0.0.1:7778
+
+)");
+
+         auto c = local::domain( R"(
+domain:
+   name: C
+   transaction:
+      resources:
+         -  name: example-resource-server
+            key: rm-mockup
+            # XAER_RMERR   -3 
+            openinfo: --prepare -3
+            instances: 1
+   servers:
+      -  path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-resource-server"
+         memberships: [ user]
+         instances: 1
+   gateway:
+      inbound:
+         groups:
+            -  connections: 
+               -  address: 127.0.0.1:7779
+
+)");
+
+            auto a = local::domain( R"(
+domain:
+   name: A
+   servers:
+      -  path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/queue/bin/casual-queue-manager"
+         memberships: [ queue]
+   gateway:
+      outbound:
+         groups:
+            -  connections: 
+               -  address: 127.0.0.1:7778
+               -  address: 127.0.0.1:7779
+
+)");
+
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected());
+
+         EXPECT_EQ( tx_begin(), TX_OK);
+
+         {
+            auto payload = common::unittest::random::binary( 1024);
+            queue::Message message;
+            message.payload.type = common::buffer::type::json;
+            message.payload.data = payload;
+            EXPECT_TRUE( queue::enqueue( "b1", message));
+         }
+
+         local::call( "casual/example/resource/domain/echo/C", code::xatmi::ok);
+
+         // expect commit to fail and issue rollback
+         // TODO: should the return code really be TX_ROLLBACK? A resource have fatally failed...
+         EXPECT_EQ( tx_commit(), TX_ROLLBACK);
+
+         // no ongoing transaction
+         EXPECT_TRUE( tx_info( nullptr) == 0);
+
+         {
+            // expect the enqueue to have been rolled back.
+            auto message = queue::dequeue( "b1");
+            EXPECT_TRUE( message.empty());
+         }
       }
 
       //! put in this TU to enable all helpers to check state

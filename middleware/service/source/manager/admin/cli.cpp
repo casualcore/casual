@@ -290,7 +290,16 @@ namespace casual
 
                      static auto instances = normalized::instances( state);
 
-                     auto format_timeout_duration = []( const auto& value)
+                     auto format_timeout_duration_string = []( const auto& value) -> std::string
+                     {
+                        if( ! value.execution.timeout.duration || *value.execution.timeout.duration == platform::time::unit::zero())
+                           return "-";
+                        using second_t = std::chrono::duration< double>;
+                        return std::to_string( std::chrono::duration_cast< second_t>( value.execution.timeout.duration.value()).count());
+                     };
+
+                     // porcelain
+                     auto format_timeout_duration_double = []( const auto& value)
                      {
                         if( ! value.execution.timeout.duration)
                            return 0.0;
@@ -298,30 +307,18 @@ namespace casual
                         return std::chrono::duration_cast< second_t>( value.execution.timeout.duration.value()).count();
                      };
 
-                     auto format_timeout_contract = []( const auto& value)
+                     auto format_timeout_contract = []( const auto& value) -> std::string_view
                      {
-                        return value.execution.timeout.contract;
+                        if( ! value.execution.timeout.contract)
+                           return "-";
+                        return description( *value.execution.timeout.contract);
                      };
-
-/*
-                     auto format_mode = []( auto& service)
-                     {
-                        switch( service.transaction)
-                        {
-                           case Enum::automatic: return "auto";
-                           case Enum::atomic: return "atomic";
-                           case Enum::join: return "join";
-                           case Enum::none: return "none";
-                           case Enum::branch: return "branch";
-                        };
-                        assert( ! "unknown transaction mode");
-                     };
-                     */
 
 
                      // we need to set something when category is empty to help
                      // enable possible use of sort, cut, awk and such
-                     auto format_category = []( const admin::model::Service& value) -> std::string_view{
+                     auto format_category = []( const admin::model::Service& value) -> std::string_view
+                     {
                         if( value.category.empty())
                            return "-";
                         return value.category;
@@ -339,13 +336,15 @@ namespace casual
                      };
 
 
-                     auto format_invoked = []( const admin::model::Service& value){
+                     auto format_invoked = []( const admin::model::Service& value)
+                     {
                         return value.metric.invoked.count;
                      };
 
                      using time_type = std::chrono::duration< double>;
 
-                     auto format_avg_time = []( const admin::model::Service& value){
+                     auto format_avg_time = []( const admin::model::Service& value)
+                     {
                         if( value.metric.invoked.count == 0)
                            return 0.0;
 
@@ -367,7 +366,8 @@ namespace casual
                         return value.metric.pending.count;
                      };
 
-                     auto format_avg_pending_time = []( const admin::model::Service& value){
+                     auto format_avg_pending_time = []( const admin::model::Service& value)
+                     {
                         if( value.metric.pending.count == 0)
                            return 0.0;
 
@@ -391,7 +391,7 @@ namespace casual
                            terminal::format::column( "category", format_category, terminal::color::no_color, terminal::format::Align::left),
                            terminal::format::column( "V", format_visibility, terminal::color::no_color, terminal::format::Align::left),
                            terminal::format::column( "mode", std::mem_fn( &admin::model::Service::transaction), terminal::color::no_color, terminal::format::Align::left),
-                           terminal::format::column( "timeout", format_timeout_duration, terminal::color::blue, terminal::format::Align::right),
+                           terminal::format::column( "timeout", format_timeout_duration_string, terminal::color::blue, terminal::format::Align::right),
                            terminal::format::column( "contract", format_timeout_contract, terminal::color::blue, terminal::format::Align::right),
                            terminal::format::column( "I", format::instance::local::total{}, terminal::color::white, terminal::format::Align::right),
                            terminal::format::column( "C", format_invoked, terminal::color::white, terminal::format::Align::right),
@@ -411,7 +411,7 @@ namespace casual
                            terminal::format::column( "name", std::mem_fn( &admin::model::Service::name)),
                            terminal::format::column( "category", format_category),
                            terminal::format::column( "mode", std::mem_fn( &admin::model::Service::transaction)),
-                           terminal::format::column( "timeout", format_timeout_duration),
+                           terminal::format::column( "timeout", format_timeout_duration_double),
                            terminal::format::column( "I", format::instance::local::total{}),
                            terminal::format::column( "C", format_invoked),
                            terminal::format::column( "AT", format_avg_time),
@@ -443,7 +443,8 @@ namespace casual
 
                      auto format_pid = []( auto& v){ return v.process.pid;};
 
-                     auto format_service_name = []( const value_type& v){
+                     auto format_service_name = []( const value_type& v)
+                     {
                         return v.service.get().name;
                      };
 
@@ -486,7 +487,8 @@ namespace casual
                         }
                      };
 
-                     auto format_hops = []( const value_type& value){
+                     auto format_hops = []( const value_type& value)
+                     {
                         return value.hops;
                      };
 

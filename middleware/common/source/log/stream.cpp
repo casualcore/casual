@@ -51,8 +51,8 @@ namespace casual
                //! to set the state from within a signal-handler.
                //! Hence, this has to be a 'global' outside `File`.
                std::atomic< bool> reopen{ false};
+               
             } // global::file
-
 
             struct File
             {
@@ -85,8 +85,17 @@ namespace casual
 
                void relocate( std::filesystem::path path)
                {
-                  log( "casual.log", string::compose( "relocate logfile to: ", m_output));
-                  m_output = file::output::Append{ std::move( path)};
+                  auto output = file::Output{ std::move( path)};
+
+                  if( output)
+                  {
+                     log( "casual.log", string::compose( "relocate logfile to: ", output));
+                     m_output = std::move( output);
+                  }
+                  else if( m_output)
+                     log( "error", string::compose( code::casual::invalid_file, " failed to relocate logfile to: ", output));
+                  else
+                     common::log::line( std::cerr, code::casual::invalid_file, " failed to relocate logfile to: ", output);
                }
 
                inline auto& path() const noexcept { return m_output.path();}
@@ -94,18 +103,24 @@ namespace casual
 
             private:
 
-               File() : m_output( common::environment::log::path())
+               File() : m_output{ common::environment::log::path()}
                {}
 
                void reopen() 
                {
-                  local::global::file::reopen.store( false);
-                  m_output.reopen();
+                  m_output = std::move( m_output).reopen();
 
-                  log( "casual.log", string::compose( "logfile reopened: ", m_output));
+                  if( m_output)
+                  {
+                     local::global::file::reopen.store( false);
+                     log( "casual.log", string::compose( "logfile reopened: ", m_output));
+                  }
+                  else
+                     common::log::line( std::cerr, code::casual::invalid_file, " failed to reopen logfile: ", m_output);
+
                }
 
-               common::file::output::Append m_output;
+               file::Output m_output;
                std::string m_alias = instance::alias();
             };
 

@@ -24,45 +24,41 @@ host# casual --help transaction
       --begin [0..1]
             creates a 'single' transaction directive
             
-            * associates all upstream transaction aware messages with the 'single' transaction, if they aren't associated already.
-            * all directives from upstream will be 'terminated', that is, notify the upstream 'owner' and not forward the directive
-            * sends the directive downstream, so other casual-pipe components can associate 'new stuff' with the 'single' transaction
+            * creates a new transaction and send it downstream.
+            * all downstream `actions` will be associated with this transaction, until commit/rollback.
+            * @attention there has to be a corresponding commit/rollback downstream for every 
+               --begin, otherwise the transaction(s) will be unresolved (indoubt).
             
-            hence, only one 'directive' can be in flight within a link in the casual-pipe.
-
-      --compound [0..1]
-            creates a compound transaction directive 
-            
-            * associates all upstream transaction aware messages with a new transaction, if they aren't associated already.
-            * all directives from upstream will be 'terminated', that is, notify the upstream 'owner' and not forward the directive
-            * sends the directive downstream, so other casual-pipe components can associate 'new stuff' with a new transaction
-            
-            hence, only one 'directive' can be in flight within a link in the casual-pipe.
+            @note: part of casual-pipe
 
       --commit [0..1]
-            sends transaction finalize request to the 'owners' of upstream transactions
+            tries to commit the upstream transaction
             
-            * all committable associated transaction will be sent for commit.
-            * all NOT committable associated transactions will be sent for rollback
-            * all transaction directives from upstream will be 'terminated', that is, notify the upstream 'owner' and not forward the directive
-            * all 'forward' 'payloads' downstream will not have any transaction associated
+            * The current transaction will be committed (if error from upstream -> rollback)
+            * Downstream `actions` will not be associated with the current transaction.
             
-            hence, directly downstream there will be no transaction, but users can start new transaction directives downstream.
+            @note: part of casual-pipe
 
       --rollback [0..1]
-            sends transaction (rollback) finalize request to the 'owners' of upstream transactions
+            tries to rollback the upstream transaction
             
-            * all associated transaction will be sent for rollback
-            * all transaction directives from upstream will be 'terminated', that is, notify the upstream 'owner' and not forward the directive
-            * all 'forward' 'payloads' downstream will not have any transaction associated
+            * The current transaction will be rolled back.
+            * Downstream `actions` will not be associated with the current transaction.
             
-            hence, directly downstream there will be no transaction, but users can start new transaction directives downstream.
+            @note: part of casual-pipe
 
       -si, --scale-instances [0..1]  (rm-id, # instances) [0..* {2}]
             scale resource proxy instances
 
       -lp, --list-pending [0..1]
             list pending tasks
+
+      --legend [0..1]  (list-resources) [1]
+            the legend for the supplied option
+            
+            Documentation and description for abbreviations and acronyms used as columns in output
+            
+            note: not all options has legend, use 'auto complete' to find out which legends are supported.
 
       --information [0..1]
             collect aggregated information about transactions in this domain

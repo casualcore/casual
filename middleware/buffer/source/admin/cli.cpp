@@ -121,18 +121,20 @@ if --verbose is provided the type of the buffer will be sent to stderr.
                   communication::stream::outbound::Device out{ std::cout};
                   communication::device::blocking::send( out, message);
 
-                  casual::cli::pipe::done();
+                  // done downstream
+                  casual::cli::pipe::done::Scope{};
                }
 
                void to_human( std::optional< std::string> format)
                {
                   Trace trace{ "buffer::admin::cli::detail::field::to_human"};
 
-                  bool done = false;
+                  // will not send done downstream. 
+                  casual::cli::pipe::done::Detector done;
 
                   auto handler = casual::cli::message::dispatch::create(
                      casual::cli::pipe::discard::handle::defaults(),
-                     casual::cli::message::payload::handler( 
+                     casual::cli::pipe::handle::payloads( 
                         [ format = std::move( format)]( auto& message)
                         {
                            casual::buffer::field::internal::payload::stream( 
@@ -140,7 +142,7 @@ if --verbose is provided the type of the buffer will be sent to stderr.
                               std::cout, 
                               format.value_or( ""));
                         }),
-                     casual::cli::pipe::handle::done( done)
+                     std::ref( done)
                   );
 
                   communication::stream::inbound::Device in{ std::cin};
@@ -165,18 +167,19 @@ if --verbose is provided the type of the buffer will be sent to stderr.
                communication::stream::outbound::Device out{ std::cout};
                communication::device::blocking::send( out, message);
 
-               casual::cli::pipe::done();
+               // done dtor will send Done downstream
+               casual::cli::pipe::done::Scope{};
             }
 
             void duplicate( platform::size::type count)
             {
                Trace trace{ "buffer::admin::cli::detail::duplicate"};
 
-               bool done = false;
+               casual::cli::pipe::done::Scope done;
 
                auto handler = casual::cli::message::dispatch::create( 
                   casual::cli::pipe::forward::handle::defaults(),
-                  casual::cli::message::payload::handler(
+                  casual::cli::pipe::handle::payloads(
                      [ count]( const auto& message)
                      {
                         communication::stream::outbound::Device out{ std::cout};
@@ -186,13 +189,13 @@ if --verbose is provided the type of the buffer will be sent to stderr.
                            communication::device::blocking::send( out, message);
                         });
                      }),
-                  casual::cli::pipe::handle::done( done)
+                  std::ref( done)
                );
 
                communication::stream::inbound::Device in{ std::cin};
                common::message::dispatch::pump( casual::cli::pipe::condition::done( done), handler, in);
 
-               casual::cli::pipe::done();
+               // done dtor will send Done downstream
             }
 
             void extract()
@@ -201,11 +204,13 @@ if --verbose is provided the type of the buffer will be sent to stderr.
 
                communication::stream::inbound::Device in{ std::cin};
 
-               bool done = false;
+               // will not send Done downstream
+               casual::cli::pipe::done::Detector done;
 
                auto handler = casual::cli::message::dispatch::create(
-                  casual::cli::pipe::forward::handle::defaults(),
-                  casual::cli::message::payload::handler(
+                  // this is a casual-pipe termination, we discard all but payloads
+                  casual::cli::pipe::discard::handle::defaults(),
+                  casual::cli::pipe::handle::payloads(
                      []( const auto& message)
                      {
                         if( terminal::output::directive().verbose())
@@ -213,7 +218,7 @@ if --verbose is provided the type of the buffer will be sent to stderr.
 
                         std::cout.write( message.payload.data.data(), message.payload.data.size());
                      }),
-                  casual::cli::pipe::handle::done( done)
+                  std::ref( done)
                );
 
                common::message::dispatch::pump( casual::cli::pipe::condition::done( done), handler, in);

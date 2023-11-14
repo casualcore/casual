@@ -52,6 +52,57 @@ namespace casual
                      Directive& directive = Directive::instance();
                   } // global
 
+                  namespace option
+                  {
+                     auto trinary_completer()
+                     { 
+                        return []( auto, bool )
+                        {
+                           return std::vector< std::string>{ "true", "false", "auto"};
+                        };
+                     }
+
+                     auto bool_completer()
+                     {
+                        return []( auto, bool )
+                        {
+                           return std::vector< std::string>{ "true", "false"};
+                        };
+                     }
+
+                     auto header_default() 
+                     {
+                        return local::get( environment::variable::name::terminal::header, "true");
+                     }
+
+                     auto header( std::string& value)
+                     {
+                        return argument::Option( 
+                           std::tie( value), 
+                           trinary_completer(), 
+                           { "--header"}, 
+                           string::compose( "set/unset header - if auto, headers are used if tty is bound to stdout (default: ", header_default(), ")"));
+                     }
+
+                     auto porcelain( bool& value)
+                     {
+                        return argument::Option( 
+                           std::tie( value), 
+                           bool_completer(), 
+                           { "--porcelain"}, 
+                           string::compose( "backward compatible, easy to parse output format (default: ", std::boolalpha, value, R"()
+
+Format: `<column1>|<column2>|...|<columnN>`, with no `ws`. 
+casual guarantees that any new columns will be appended to existing, to preserve compatibility within major versions.
+Hence, column order can differ between `porcelain` and "regular".
+
+@note To view `header` in porcelain-mode an explicit `--header true` must be used.
+)"));
+
+                     }
+                     
+                  } // option
+
                } // <unnamed>
             } // local
 
@@ -62,30 +113,30 @@ namespace casual
 
             bool Directive::header() const
             {
-               return local::deduce::option( m_header);
+               if( ! m_header.empty())
+                  return local::deduce::option( m_header);
+               else
+                  return local::deduce::option( local::option::header_default());
+            }
+
+            bool Directive::explict_header() const
+            {
+               return ! m_header.empty() && m_header != "auto" && local::deduce::option( m_header);
             }
 
             Directive::options_type Directive::options() &
             {
-               auto bool_completer = []( auto, bool ){
-                  return std::vector< std::string>{ "true", "false"};
-               };
-
-               auto trinary_completer = []( auto, bool ){
-                  return std::vector< std::string>{ "true", "false", "auto"};
-               };
-
                auto default_description = []( const char* message, auto value)
                {
                   return string::compose( message, " (default: ", std::boolalpha, value, ')');
                };
 
-               return argument::Option( std::tie( m_color), trinary_completer, { "--color"}, default_description( "set/unset color - if auto, colors are used if tty is bound to stdout", m_color))
-                  + argument::Option( std::tie( m_header), trinary_completer, { "--header"}, default_description( "set/unset header - if auto, headers are used if tty is bound to stdout", m_header))
+               return argument::Option( std::tie( m_color), local::option::trinary_completer(), { "--color"}, default_description( "set/unset color - if auto, colors are used if tty is bound to stdout", m_color))
+                  + local::option::header( m_header)
                   + argument::Option( std::tie( m_precision), { "--precision"}, default_description( "set number of decimal points used for output", m_precision))
-                  + argument::Option( std::tie( m_block), bool_completer, { "--block"}, default_description( "set/unset blocking - if false return control to user as soon as possible", m_block))
-                  + argument::Option( std::tie( m_verbose), bool_completer, { "--verbose"}, default_description( "verbose output", m_verbose))
-                  + argument::Option( std::tie( m_porcelain), bool_completer, { "--porcelain"}, default_description( "easy to parse output format", m_porcelain));
+                  + argument::Option( std::tie( m_block), local::option::bool_completer(), { "--block"}, default_description( "set/unset blocking - if false return control to user as soon as possible", m_block))
+                  + argument::Option( std::tie( m_verbose), local::option::bool_completer(), { "--verbose"}, default_description( "verbose output", m_verbose))
+                  + local::option::porcelain( m_porcelain);
             }
 
 
@@ -98,7 +149,6 @@ namespace casual
             Directive::Directive()
                : m_color{ local::get( environment::variable::name::terminal::color, "true")},
                   m_porcelain{ local::get( environment::variable::name::terminal::porcelain, false)},
-                  m_header{ local::get( environment::variable::name::terminal::header, "true")},
                   m_block{ local::get( environment::variable::name::terminal::precision, true)},
                   m_verbose{ local::get( environment::variable::name::terminal::verbose, false)},
                   m_precision{ local::get( environment::variable::name::terminal::precision, 3)}

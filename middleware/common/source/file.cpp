@@ -22,6 +22,7 @@
 
 // std
 #include <cstdio>
+#include <iostream>
 
 // posix
 #include <glob.h>
@@ -75,6 +76,23 @@ namespace casual
 
          static_assert( concepts::movable< Input>);
 
+
+         Output::Output( std::filesystem::path path, std::ios::openmode mode)
+            : std::ofstream{ local::create_parent( path), std::ios::out | mode}, m_path{ std::move( path)}
+         {}
+
+         //! @returns a new/reopened file with the same path
+         Output Output::reopen( std::ios::openmode mode) &&
+         {
+            return Output{ std::move( m_path), mode};
+         }
+         
+         std::ostream& operator << ( std::ostream& out, const Output& value)
+         {
+            return out << value.m_path;
+         }
+
+
          namespace output
          {
             base::base( std::filesystem::path path, std::ios::openmode mode) 
@@ -97,7 +115,7 @@ namespace casual
                return stream::write( out, value.m_path);
             }
 
-            static_assert( concepts::movable< Append>);
+            static_assert( concepts::movable< Truncate>);
             
          } // output
          

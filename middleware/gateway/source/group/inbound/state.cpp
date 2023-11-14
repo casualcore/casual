@@ -31,7 +31,7 @@ namespace casual
 
          namespace pending
          {
-            Requests::complete_type Requests::consume( const strong::correlation::id& correlation, const common::message::service::lookup::Reply& lookup)
+            std::optional< Requests::complete_type> Requests::consume( const strong::correlation::id& correlation, const common::message::service::lookup::Reply& lookup)
             {
                if( auto found = common::algorithm::find( m_services, correlation))
                {
@@ -48,18 +48,87 @@ namespace casual
                return Requests::consume( correlation);
             }
 
-            Requests::complete_type Requests::consume( const strong::correlation::id& correlation)
+            std::optional< Requests::complete_type> Requests::consume( const strong::correlation::id& correlation)
             {
                if( auto found = algorithm::find( m_complete, correlation))
                {
-                  auto result = algorithm::container::extract( m_complete, std::begin( found));
+                  auto result = algorithm::container::extract( m_complete, std::begin( found)).complete;
                   m_size -= result.payload.size();
 
                   return result;
                }
 
-               code::raise::error( code::casual::invalid_argument, "failed to find correlation: ", correlation);
-            } 
+               return std::nullopt;
+            }
+
+            std::vector< common::communication::tcp::message::Complete> Requests::abort_pending( const common::message::transaction::resource::rollback::Request& message)
+            {
+               using complete_type = common::communication::tcp::message::Complete;
+
+               std::vector< complete_type> result;
+
+               // take care of pending service calls
+               if( ! m_services.empty())
+               {
+                  auto has_trid = [ &trid = message.trid]( auto& message){ return message.trid == trid;};
+
+                  auto services = algorithm::container::extract( m_services, algorithm::filter( m_services, has_trid));
+
+                  auto transform_error_reply = []( const common::message::service::call::callee::Request& request)
+                  {
+                     auto reply = common::message::reverse::type( request);
+                     reply.code.result = decltype( reply.code.result)::timeout; // TODO is this severe enough?
+                     return serialize::native::complete< complete_type>( reply);
+                  };
+
+                  result = algorithm::transform( services, transform_error_reply);
+               }
+
+               // take care of the rest of pending messages
+               if( ! m_complete.empty())
+               {
+                  const common::transaction::global::ID gtrid = message.trid;
+                  
+                  auto has_gtrid = [ &gtrid ]( auto& holder){ return holder.gtrid == gtrid;};
+
+                  auto holders = algorithm::container::extract( m_complete, algorithm::filter( m_complete, has_gtrid));
+
+                  auto transform_error_reply = []( const Holder& holder)
+                  {
+                     switch( holder.complete.type())
+                     {
+                        case common::message::conversation::connect::callee::Request::type():
+                        {
+                           auto request = serialize::native::complete< common::message::conversation::connect::callee::Request>( holder.complete);
+                           auto reply = common::message::reverse::type( request);
+                           reply.code.result = decltype( reply.code.result)::timeout;
+                           return serialize::native::complete< complete_type>( reply);
+                        }
+                        case casual::queue::ipc::message::group::enqueue::Request::type():
+                        {
+                           auto request = serialize::native::complete< casual::queue::ipc::message::group::enqueue::Request>( holder.complete);
+                           auto reply = common::message::reverse::type( request);
+                           return serialize::native::complete< complete_type>( reply);
+                        }
+                        case casual::queue::ipc::message::group::dequeue::Request::type():
+                        {
+                           auto request = serialize::native::complete< casual::queue::ipc::message::group::dequeue::Request>( holder.complete);
+                           auto reply = common::message::reverse::type( request);
+                           return serialize::native::complete< complete_type>( reply);
+                        }
+                        default:
+                        {
+                           casual::terminate( "unexpected/impossible message type: ", holder.complete);
+                        }
+                     }
+                  };
+
+                  algorithm::transform( holders, std::back_inserter( result), transform_error_reply);
+               }
+
+               return result;
+            }
+
 
             Requests::Result Requests::consume( const std::vector< strong::correlation::id>& correlations)
             {
@@ -68,11 +137,17 @@ namespace casual
                   return ! algorithm::find( correlations, value).empty();
                };
 
-               return {
-                  algorithm::container::extract( m_services, algorithm::filter( m_services, has_correlation)),
-                  algorithm::container::extract( m_complete, algorithm::filter( m_complete, has_correlation)),
-               };
-            }     
+               Requests::Result result;
+               result.services = algorithm::container::extract( m_services, algorithm::filter( m_services, has_correlation));
+
+               auto holders = algorithm::container::extract( m_complete, algorithm::filter( m_complete, has_correlation));
+
+               for( auto& holder : holders)
+                  result.complete.push_back( std::move( holder.complete));
+
+               return result;
+            } 
+
          } // pending
 
          namespace in::flight

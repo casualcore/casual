@@ -9,6 +9,7 @@
 #include "common/unittest.h"
 
 #include "domain/unittest/manager.h"
+#include "domain/unittest/discover.h"
 #include "domain/discovery/api.h"
 
 #include "common/communication/instance.h"
@@ -55,6 +56,12 @@ namespace casual
                auto result = tperrno;
                tpfree( buffer);
                return result;
+            }
+
+            auto discover( std::vector< std::string> service, std::vector< std::string> queues)
+            {
+               return communication::ipc::receive< casual::domain::message::discovery::api::Reply>( 
+                   casual::domain::discovery::request( std::move( service), std::move( queues)));
             }
 
             namespace configuration
@@ -142,14 +149,106 @@ domain:
          auto a = local::manager( local::configuration::base, A);
          gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected( "B"));
 
+         EXPECT_TRUE( local::call( "casual/example/echo") == TPOK);
+      }
+
+
+      TEST( test_gateway_discovery, domain_chain_A_B_C__B_has_forward__expect_A_0_hops__B_1_hop__C_2_hops)
+      {
+         common::unittest::Trace trace;
+
+         auto c = local::manager( local::configuration::base, R"(
+domain: 
+   name: C
+
+   servers:
+      - path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-server"
+        memberships: [ user]
+   gateway:
+      inbound:
+         groups:
+            -  connections:
+               -  address: 127.0.0.1:7710
+)");
+
+         auto b = local::manager( local::configuration::base, R"(
+domain: 
+   name: B
+   servers:
+      - path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-server"
+        memberships: [ user]
+   gateway:
+      outbound:
+         groups:
+            -  connections:
+               -  address: 127.0.0.1:7710
+      inbound:
+         groups:
+            -  connections:
+               -  address: 127.0.0.1:7720
+                  discovery:
+                     forward: true
+)");
+
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected( "C"));
+
+         // Let B know about service C
+         local::discover( { "casual/example/domain/echo/C"}, {});
+
+
+         auto a = local::manager( local::configuration::base, R"(
+domain: 
+   name: A
+   servers:
+      - path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-server"
+        memberships: [ user]
+   gateway:
+      outbound:
+         groups:
+            -  connections:
+               -  address: 127.0.0.1:7720
+)");
+
+         
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected( "B"));
+
+         // we need to discover the services (A,) B and C.
+         // verify what the discovery api says
          {
-            auto buffer = local::allocate( 128);
-            auto len = tptypes( buffer, nullptr, nullptr);
+            trace.line( "A discovery");
 
-            EXPECT_TRUE( tpcall( "casual/example/echo", buffer, 128, &buffer, &len, 0) == 0) << "tperrno: " << tperrnostring( tperrno);
+            auto reply = local::discover( { "casual/example/domain/echo/A", "casual/example/domain/echo/B", "casual/example/domain/echo/C"}, {});
 
-            tpfree( buffer);
+            auto get_hops = [ &reply]( auto service) -> platform::size::type
+            {
+               if( auto found = algorithm::find( reply.content.services, service))
+                  return found->property.hops;
+
+               return -1;
+            };
+
+            // A would not be found during an explicit external discovery
+            EXPECT_EQ( get_hops( "casual/example/domain/echo/B"), 1) << CASUAL_NAMED_VALUE( reply);
+            EXPECT_EQ( get_hops( "casual/example/domain/echo/C"), 2);
          }
+
+         auto get_hops = [ state = casual::service::unittest::state()]( std::string_view service) -> platform::size::type
+         {
+            if( auto found = algorithm::find( state.services, service))
+            {
+               if( ! found->instances.sequential.empty())
+                  return 0;
+
+               if( ! found->instances.concurrent.empty())
+                  return range::front( found->instances.concurrent).hops;
+            }
+            return -1;
+         };
+
+         // verify what service-manager says
+         EXPECT_EQ( get_hops( "casual/example/domain/echo/A"), 0);
+         EXPECT_EQ( get_hops( "casual/example/domain/echo/B"), 1);
+         EXPECT_EQ( get_hops( "casual/example/domain/echo/C"), 2);
       }
 
 

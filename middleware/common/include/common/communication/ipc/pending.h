@@ -31,9 +31,13 @@ namespace casual
          
       } // detail
 
-      template< typename Destination>
+      template< typename Destination, typename complete_type = message::Complete>
       struct basic_message
       {
+         inline basic_message( const Destination& destination, complete_type&& complete)
+            : destination{ destination}, complete{ std::move( complete)}
+         {}
+
          template< typename M>
          inline basic_message( const Destination& destination, M&& message)
             : destination{ destination}, complete{ detail::serialize::message( std::forward< M>( message))}
@@ -48,15 +52,15 @@ namespace casual
          friend bool operator == ( const basic_message& lhs, const D& rhs) { return lhs.destination == rhs;}
 
          Destination destination;
-         message::Complete complete;
+         complete_type complete;
       };
 
       using Message = basic_message< process::Handle>;
 
-      template< typename Destination>
+      template< typename Destination, typename complete_type = message::Complete>
       struct basic_holder
       {
-         using message_type = basic_message< Destination>;
+         using message_type = basic_message< Destination, complete_type>;
 
          basic_holder() = default;
          basic_holder( std::vector< message_type> messages) : m_messages{ std::move( messages)} {}
@@ -81,7 +85,7 @@ namespace casual
          }
 
          template< typename D>
-         message::Complete next( const D& destination) noexcept
+         complete_type next( const D& destination) noexcept
          {
             if( auto found = algorithm::find( m_messages, destination))
                return algorithm::container::extract( m_messages, std::begin( found)).complete;

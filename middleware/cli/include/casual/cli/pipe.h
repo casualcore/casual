@@ -77,11 +77,10 @@ namespace casual
             auto defaults( bool human = false)
             {
                return message::dispatch::create(
-                  handle::message< message::transaction::Directive>( human),
                   handle::message< message::payload::Message>( human),
                   handle::message< message::queue::Message>( human),
                   handle::message< message::queue::message::ID>( human),
-                  handle::message< message::transaction::Propagate>( human));
+                  handle::message< message::transaction::Current>( human));
             }
          } // handle
          
@@ -110,10 +109,9 @@ namespace casual
             auto defaults()
             {
                return message::dispatch::create( 
-                  handle::message< message::transaction::Directive>(),
                   handle::message< message::payload::Message>(),
                   handle::message< message::queue::message::ID>(),
-                  handle::message< message::transaction::Propagate>());
+                  handle::message< message::transaction::Current>());
             }
 
          } // handle            
@@ -134,96 +132,83 @@ namespace casual
                return false;
             });
          };
-      } // condition
+      } // condition    
 
-      void done();
-
-      namespace transaction
+      namespace transaction::handle
       {
-         struct Association
+         //! @returns a handler for transaction::Current, assign the passed `current` and
+         //! forward the message downstream.
+         auto current( common::transaction::ID& current)
          {
-            using handler_type = decltype( message::dispatch::create());
-
-            void operator() ( common::transaction::ID& trid);
-
-            template< typename M>
-            auto operator() ( M& message) -> decltype( std::declval< Association&>()( message.transaction.trid))
+            return [ &current]( const message::transaction::Current& message)
             {
-               (*this)( message.transaction.trid);
-            }
-
-            template< typename M>
-            auto operator() ( M& message) -> decltype( std::declval< Association&>()( message.trid))
-            {
-               (*this)( message.trid);
-            }
-
-            inline explicit operator bool() const { return static_cast< bool>( directive);}
-
-            cli::message::transaction::Directive directive;
-            std::vector< common::transaction::ID> associated;
-
-            CASUAL_LOG_SERIALIZE(
-               CASUAL_SERIALIZE( directive);
-               CASUAL_SERIALIZE( associated);
-            )
-            
-         };
-         
-         namespace association
-         {
-            inline auto single()
-            {
-               return Association{ cli::message::transaction::directive::single(), {}};
-            }
-
-            inline auto compound()
-            {
-               return Association{ cli::message::transaction::directive::compound(), {}};
-            }
-         } // association
-
-         namespace handle
-         {
-            common::function< void(cli::message::transaction::Directive&)> directive( Association& associator);
-            
-         } // handle
-      } // transaction
-
-      
-      namespace handle
-      {
-         //! @returns a handler that sets `done` to true when done-message is consumed
-         auto done( bool& done)
-         {
-            return [&done]( const cli::message::pipe::Done& message)
-            {
-               common::log::line( verbose::log, "done: ", message);
-               done = true;
+               // if we already got a trid, we assume there is nested transactions
+               // going on, and just pass them through.
+               if( ! current)
+                  current = message.trid;
+               forward::message( message);
             };
          }
+         
+      } // transaction::handle
 
-         namespace detail
+      namespace done
+      {
+         using State = cli::message::pipe::State;
+
+         //! Helps with consuming the done message from upstream
+         struct Detector : common::traits::unrelocatable
          {
-            template< typename M, typename A>
-            auto associate( A& associate)
-            {
-               return [&associate]( M& message)
-               {
-                  Trace trace{ "cli::pipe::handle::associate"};
-                  common::log::line( verbose::log, "message: ", message);
-                  associate( message);
-               };
-            }
-         } // detail
 
+            //! Will only update state if the new state is more _severe_
+            //! since this represent the "total pipe outcome state".
+            void state( State state);
+            State state() const noexcept;
 
-         template< typename A>
-         auto associate( A& associate)
+            //! @returns true if `state()` is not `ok`
+            bool pipe_error() const noexcept;
+
+            //! @returns true if done has been consumed from upstream -> upstream is done.
+            explicit operator bool() const noexcept;
+            void operator () ( const cli::message::pipe::Done& message);
+
+            CASUAL_LOG_SERIALIZE(
+               CASUAL_SERIALIZE( m_state);
+               CASUAL_SERIALIZE( m_done);
+            )
+
+         private:
+            State m_state{};
+            bool m_done = false;
+         };
+
+         //! A helper to make sure we always send done message downstream.
+         struct Scope : Detector
          {
-            return message::dispatch::create( 
-               detail::associate< message::payload::Message>( associate),
-               detail::associate< message::queue::message::ID>( associate));
+            Scope();
+
+            //! will send a pipe::Done downstream regardless (unless downstream is a tty)
+            ~Scope(); 
+
+         private:
+            int m_uncaught_count;
+         };
+         
+      } // done
+
+
+      namespace handle
+      {
+         //! @return a _dispatch handler_ that have handlers for the messages
+         //!  `payload::Message`and `queue::Message`, these uses the same 
+         //!  provided `handler`. Useful when one wants to handle both messages
+         //!  in a generic way. 
+         template< typename H>
+         auto payloads( H handler)
+         {
+            return cli::message::dispatch::compose< 
+               cli::message::payload::Message, 
+               cli::message::queue::Message>( std::move( handler));
          }
 
       } // handle
