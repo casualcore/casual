@@ -184,15 +184,15 @@ domain:
                contract: kill
 )");
 
-         casual::service::unittest::concurrent::advertise( { "without-contract"});
-
          {  
             const auto output = administration::unittest::cli::command::execute( R"(casual --color false service --list-services | grep with-contract | awk '{ print $6}' )").consume();
             EXPECT_EQ( output, "kill\n");
          }
 
          {  
-            const auto output = administration::unittest::cli::command::execute( R"(casual --color false service --list-services | grep without-contract | awk '{ print $6}' )").consume();
+            // list admin services to check oputput in contract column for a service
+            // without contract. Admin services do not have contract specified. 
+            const auto output = administration::unittest::cli::command::execute( R"(casual --color false service --list-admin-services | grep configuration/get | awk '{ print $6}' )").consume();
             EXPECT_EQ( output, "-\n");
          }
       }
