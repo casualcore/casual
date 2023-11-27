@@ -67,7 +67,7 @@ namespace casual
                      // Hence, it's a fire-and-forget message.
 
                      message::service::lookup::request::Context context;
-                     context.semantic = flags.exist( call::async::Flag::no_reply) ? decltype( context.semantic)::forward : decltype( context.semantic)::regular;
+                     context.semantic = flags.exist( call::async::Flag::no_reply) ? decltype( context.semantic)::no_reply : decltype( context.semantic)::regular;
                      return context;
                   };
 

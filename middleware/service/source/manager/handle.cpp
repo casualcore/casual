@@ -439,7 +439,7 @@ namespace casual
                         {
                            using Semantic = decltype( message.context.semantic);
 
-                           case Semantic::forward:
+                           case Semantic::no_reply:
                            {
                               // The intention is "send and forget", or a plain forward, we use our forward-cache for this
                               reply.process = state.forward;
