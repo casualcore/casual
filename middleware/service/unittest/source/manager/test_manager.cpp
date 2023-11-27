@@ -670,7 +670,7 @@ domain:
 
 
          {
-            common::service::Lookup lookup{ "service1", decltype(common::service::Lookup::Context::semantic)::forward};
+            common::service::Lookup lookup{ "service1", decltype(common::service::Lookup::Context::semantic)::no_reply};
             auto service = lookup();
             EXPECT_TRUE( service.service.name == "service1");
 

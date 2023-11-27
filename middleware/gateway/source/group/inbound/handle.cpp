@@ -537,7 +537,7 @@ namespace casual
                            auto descriptor = external::correlate( state, message);
 
                            using namespace common::message::service::lookup::request;
-                           auto semantics =  message.flags.exist( decltype( message.flags.type())::no_reply) ? context::Semantic::forward : context::Semantic::no_busy_intermediate;
+                           auto semantics =  message.flags.exist( decltype( message.flags.type())::no_reply) ? context::Semantic::no_reply : context::Semantic::no_busy_intermediate;
                            detail::lookup( state, descriptor, std::move( message), semantics);
                         };
                      }
