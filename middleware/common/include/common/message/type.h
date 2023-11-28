@@ -199,6 +199,9 @@ namespace casual
          transaction_resource_id_request = TRANSACTION_BASE + 500,
          transaction_resource_id_reply,
 
+         transaction_coordinate_inbound_request = TRANSACTION_BASE + 600,
+         transaction_coordinate_inbound_reply,
+
          // casual queue
          QUEUE_BASE = 6000,
 
