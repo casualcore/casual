@@ -98,6 +98,7 @@ namespace casual
          inline auto type() const noexcept { return header::detail::type( m_header);}
          inline auto size() const noexcept { return header::detail::size( m_header);}
          inline auto correlation() const noexcept { return header::detail::correlation( m_header);}
+         inline friend auto correlation( const Complete& value ) noexcept { return value.correlation();}
          //! @}
 
 

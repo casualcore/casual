@@ -5,6 +5,7 @@
 //!
 
 #include "gateway/group/inbound/handle.h"
+#include "gateway/group/inbound/tcp.h"
 #include "gateway/group/ipc.h"
 
 #include "gateway/message.h"
@@ -30,6 +31,7 @@ namespace casual
       {
          namespace
          {
+            /*
             namespace tcp
             {
                template< typename M>
@@ -87,6 +89,7 @@ namespace casual
                }
                
             } // tcp
+            */
 
             namespace internal
             {
@@ -239,7 +242,7 @@ namespace casual
 
                         if( auto found = algorithm::find( state.conversations, message.correlation))
                         {
-                           local::tcp::send( state, found->descriptor, message);
+                           inbound::tcp::send( state, found->descriptor, message);
                            
                            // if the `send` has event that indicate that it will end the conversation - we remove our "route" state
                            // for the connection
@@ -362,7 +365,7 @@ namespace casual
                                  if( algorithm::find( message.domains, information->domain))
                                     return;
 
-                                 local::tcp::send( state, descriptor, message);
+                                 inbound::tcp::send( state, descriptor, message);
                               };
 
                               algorithm::for_each( state.external.descriptors(), send_if_compatible);
@@ -770,7 +773,7 @@ namespace casual
                               auto aborted_pending = state.pending.requests.abort_pending( message);
 
                               for( auto& complete : aborted_pending)
-                                 local::tcp::send( state, std::move( complete));
+                                 inbound::tcp::send( state, std::move( complete));
                            };
                         }
                      } // rollback
@@ -886,7 +889,7 @@ namespace casual
 
                if( message::protocol::compatible< message::domain::disconnect::Request>( connection->protocol()))
                {
-                  if( auto correlation = local::tcp::send( state, descriptor, message::domain::disconnect::Request{}))
+                  if( auto correlation = inbound::tcp::send( state, descriptor, message::domain::disconnect::Request{}))
                      state.correlations.emplace_back( correlation, descriptor);
                }
                else

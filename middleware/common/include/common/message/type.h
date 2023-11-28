@@ -378,6 +378,8 @@ namespace casual
          //! The execution-id
          mutable strong::execution::id execution;
 
+         inline friend auto& correlation( const basic_message& value ) noexcept { return value.correlation;}
+
          constexpr friend bool operator == ( const basic_message& lhs, message::Type rhs) { return message::type( lhs) == rhs;}
          constexpr friend bool operator == ( message::Type lhs, const basic_message& rhs) { return message::type( rhs) == lhs;}
 
