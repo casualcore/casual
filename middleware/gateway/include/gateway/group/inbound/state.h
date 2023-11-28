@@ -116,7 +116,7 @@ namespace casual
                {
                   template< typename M>
                   Holder( const M& message) 
-                     : gtrid{ message.trid}, complete{ common::serialize::native::complete< complete_type>( message)} 
+                     : gtrid{ common::transaction::id::range::global( message.trid)}, complete{ common::serialize::native::complete< complete_type>( message)} 
                   {
                      using Type = common::message::Type;
 

@@ -282,7 +282,8 @@ namespace casual
             Transaction( Transaction&&) = default;
             Transaction& operator = ( Transaction&&) = default;
 
-            inline explicit Transaction( const common::transaction::ID& trid) : global( trid)
+            inline explicit Transaction( const common::transaction::ID& trid) 
+               : global( common::transaction::id::range::global( trid))
             {
                branches.emplace_back( trid);
             }
@@ -318,7 +319,7 @@ namespace casual
             platform::time::point::type deadline;
 
             inline friend bool operator == ( const Transaction& lhs, const common::transaction::global::ID& rhs) { return lhs.global == rhs;}
-            inline friend bool operator == ( const Transaction& lhs, common::transaction::id::range::range_type rhs) { return common::algorithm::equal( lhs.global(), rhs);}
+            inline friend bool operator == ( const Transaction& lhs, common::transaction::id::range::type::global rhs) { return lhs.global == rhs;}
             
             inline friend bool operator == ( const Transaction& lhs, const common::transaction::ID& rhs) { return lhs.global == rhs;}
 

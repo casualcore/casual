@@ -83,7 +83,7 @@ namespace casual
          common::log::line( verbose::log, "total prepares: ", m_stats.update.prepare);
       }
 
-      void Log::remove( common::transaction::id::range::range_type global)
+      void Log::remove( common::transaction::id::range::type::global global)
       {
          Trace trace{ "transaction::Log::remove"};
 

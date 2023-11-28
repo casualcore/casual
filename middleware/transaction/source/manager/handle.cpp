@@ -320,12 +320,12 @@ namespace casual
 
                   namespace remove
                   {
-                     void transaction( State& state, common::transaction::id::range::range_type global)
+                     void transaction( State& state, common::transaction::id::range::type::global global)
                      {
                         state.persistent.log.remove( global);
                         if( auto found = common::algorithm::find( state.transactions, global))
                            state.transactions.erase( std::begin( found));
-                           
+
                         if( auto found = common::algorithm::find( state.coordinate.inbound, global))
                            common::algorithm::container::erase( state.coordinate.inbound, std::begin( found));
                      }
@@ -977,8 +977,8 @@ namespace casual
                         reply.trid = found->second;
                      }
                      else
-                     {
-                        reply.trid = common::transaction::global::to::trid( message.gtrid);
+                     {  
+                        reply.trid = common::transaction::ID{ message.gtrid};
                         common::log::line( log, "created: ", reply.trid);
 
                         state.coordinate.inbound.emplace( message.gtrid, reply.trid);                        

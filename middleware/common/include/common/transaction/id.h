@@ -8,8 +8,7 @@
 #pragma once
 
 
-#include <tx.h>
-
+#include "common/transaction/global.h"
 
 #include "common/uuid.h"
 
@@ -19,6 +18,7 @@
 
 #include "common/serialize/value/customize.h"
 
+#include <tx.h>
 
 #include <string>
 #include <ostream>
@@ -71,6 +71,8 @@ namespace casual
 
             explicit ID( const xid_type& xid);
 
+            explicit ID( const global::ID& gtrid);
+
             //! Initialize with uuid, gtrid and bqual.
             //! Sets the format id to "casual"
             //!
@@ -103,11 +105,13 @@ namespace casual
                return ! ( lhs == rhs);
             }
 
+            friend bool operator == ( const ID& lhs, const global::ID& rhs);
+            friend bool operator == ( const global::ID& lhs, const ID& rhs) { return rhs == lhs;}
+
             CASUAL_CONST_CORRECT_SERIALIZE(
-            {
                CASUAL_SERIALIZE_NAME( m_owner, "owner");
                CASUAL_SERIALIZE( xid);
-            })
+            )
 
 
             //! The XA-XID object.
@@ -146,7 +150,13 @@ namespace casual
             
             namespace range
             {
-               using range_type = decltype( view::binary::make( std::declval< const xid_type&>().data));
+               namespace type
+               {
+                  using global = transaction::global::id::range;
+
+                  struct branch_tag{};
+                  using branch = strong::Span< const char, branch_tag>;
+               } // type
 
                namespace detail
                {
@@ -167,14 +177,14 @@ namespace casual
 
                //! @return a (binary) range that represent the global part of the xid
                //! @{
-               range_type global( const ID& id);
-               range_type global( const xid_type& id);
+               type::global global( const ID& id);
+               type::global global( const xid_type& id);
                //! @}
 
                //! @return a (binary) range that represent the branch part of the xid
                //! @{
-               range_type branch( const ID& id);
-               range_type branch( const xid_type& id);
+               type::branch branch( const ID& id);
+               type::branch branch( const xid_type& id);
                //! @}
 
             } // range

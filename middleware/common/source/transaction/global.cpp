@@ -20,13 +20,12 @@ namespace casual::common
 {
    namespace transaction::global
    {
-      ID::ID( const common::transaction::ID& trid)
+      ID::ID( id::range gtrid)
       {
-         auto global = common::transaction::id::range::global( trid);
-         assertion( global.size() <= 64, "trid: ", trid, " has larger gtrid size than 64");
+         assertion( gtrid.size() <= 64, "trid: ", transcode::hex::encode( gtrid), " has larger gtrid size than 64");
 
-         m_size = global.size();
-         common::algorithm::copy( global, std::begin( m_gtrid));
+         m_size = gtrid.size();
+         common::algorithm::copy( gtrid, std::begin( m_gtrid));
       }
 
       ID::ID( const std::string& gtrid)
@@ -38,7 +37,7 @@ namespace casual::common
 
       std::ostream& operator << ( std::ostream& out, const ID& value)
       {         
-         return common::transcode::hex::encode( out, value());
+         return common::transcode::hex::encode( out, value.range());
       }
 
       std::istream& operator >> ( std::istream& in, common::transaction::global::ID& gtrid)
@@ -58,7 +57,6 @@ namespace casual::common
          gtrid.m_size = string.size() / 2;
 
          return in;
-         
       }
    } // transaction::global
 } // casual::common

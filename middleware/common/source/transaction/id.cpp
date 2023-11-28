@@ -87,14 +87,15 @@ namespace casual
       {
          namespace
          {
-
-            void casual_xid( Uuid gtrid, Uuid bqual, XID& xid )
+            
+            template< typename T, typename U>
+            void casual_xid( const T& gtrid, const U& bqual, XID& xid )
             {
-               xid.gtrid_length = memory::size( bqual.get());
-               xid.bqual_length = xid.gtrid_length;
+               xid.gtrid_length = std::size( gtrid);
+               xid.bqual_length = std::size( bqual);
 
-               algorithm::copy( gtrid.get(), xid.data);
-               algorithm::copy( bqual.get(), xid.data + xid.gtrid_length);
+               algorithm::copy( gtrid, xid.data);
+               algorithm::copy( bqual, xid.data + xid.gtrid_length);
 
                xid.formatID = ID::Format::casual;
             }
@@ -106,12 +107,17 @@ namespace casual
       {}
 
       ID::ID( const xid_type& xid) : xid( xid)
+      {}
+
+      ID::ID( const global::ID& gtrid)
       {
+         auto bqual = uuid::make();
+         local::casual_xid( gtrid.range(), bqual.get(), xid);
       }
 
       ID::ID( Uuid gtrid, Uuid bqual, const process::Handle& owner) : m_owner( std::move( owner))
       {
-         local::casual_xid( gtrid, bqual, xid);
+         local::casual_xid( gtrid.get(), bqual.get(), xid);
       }
 
       ID::ID( ID&& rhs) noexcept
@@ -164,6 +170,11 @@ namespace casual
          return lhs.xid == rhs;
       }
 
+      bool operator == ( const ID& lhs, const global::ID& rhs)
+      {
+         return rhs == id::range::global( lhs);
+      }
+
       std::ostream& operator << ( std::ostream& out, const ID& id)
       {
          if( out && id)
@@ -209,23 +220,23 @@ namespace casual
 
          namespace range
          {
-            range_type global( const xid_type& xid)
+            type::global global( const xid_type& xid)
             {
-               return range_type{ xid.data, xid.data + xid.gtrid_length};
+               return type::global{ xid.data, xid.data + xid.gtrid_length};
             }
 
-            range_type branch( const xid_type& xid)
+            type::branch branch( const xid_type& xid)
             {
-               return range_type{ xid.data + xid.gtrid_length,
+               return type::branch{ xid.data + xid.gtrid_length,
                      xid.data + xid.gtrid_length + xid.bqual_length};
             }
 
-            range_type global( const ID& id)
+            type::global global( const ID& id)
             {
                return global( id.xid);
             }
 
-            range_type branch( const ID& id)
+            type::branch branch( const ID& id)
             {
                return branch( id.xid);
             }

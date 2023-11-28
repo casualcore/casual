@@ -131,7 +131,7 @@ namespace casual
                   };
 
                   admin::model::Transaction result;
-                  result.global.id = common::transcode::hex::encode( transaction.global());
+                  result.global.id = common::transcode::hex::encode( transaction.global.range());
                   result.owner = transaction.owner;
                   result.stage = stage( transaction.stage());
 
