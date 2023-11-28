@@ -187,6 +187,7 @@ namespace casual
 
          inline auto type() const noexcept { return m_type;}
          inline auto& correlation() const noexcept { return m_correlation;}
+         inline friend auto correlation( const Complete& value ) noexcept { return value.correlation();}
          inline auto offset() noexcept { return m_offset;}
 
          platform::binary::type payload;

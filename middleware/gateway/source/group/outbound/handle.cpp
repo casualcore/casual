@@ -34,33 +34,7 @@ namespace casual
                template< typename M>
                strong::correlation::id send( State& state, strong::file::descriptor::id descriptor, M&& message)
                {
-                  if( auto connection = state.external.connection( descriptor))
-                  {
-                     try
-                     {
-                        return connection->send( state.directive, std::forward< M>( message));
-                     }
-                     catch( ...)
-                     {
-                        const auto error = exception::capture();
-
-                        auto lost = connection::lost( state, descriptor);
-
-                        if( error.code() != code::casual::communication_unavailable)
-                           log::line( log::category::error, error, " send failed to remote: ", lost.remote, " - action: remove connection");
-
-                        // we 'lost' the connection in some way - we put a connection::Lost on our own ipc-device, and handle it
-                        // later (and differently depending on if we're 'regular' or 'reversed')
-                        communication::ipc::inbound::device().push( std::move( lost));
-                     }
-                  }
-                  else
-                  {
-                     log::line( log::category::error, code::casual::internal_correlation, " tcp::send - failed to correlate descriptor: ", descriptor, " for message type: ", message.type());
-                     log::line( log::category::verbose::error, "state: ", state);
-                  }
-
-                  return {};
+                  return group::tcp::send( state, &connection::lost, descriptor, std::forward< M>( message));
                }
             } // tcp
 

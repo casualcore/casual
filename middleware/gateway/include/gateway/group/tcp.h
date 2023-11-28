@@ -26,6 +26,39 @@ namespace casual
    namespace gateway::group::tcp
    {
 
+      template< typename S, typename LC, typename M>
+      common::strong::correlation::id send( S& state, LC&& lost_callback, common::strong::file::descriptor::id descriptor, M&& message)
+      {
+         if( auto connection = state.external.connection( descriptor))
+         {
+            try
+            {
+               return connection->send( state.directive, std::forward< M>( message));
+            }
+            catch( ...)
+            {
+               const auto error = common::exception::capture();
+
+               auto lost = lost_callback( state, descriptor);
+
+               if( error.code() != common::code::casual::communication_unavailable)
+                  common::log::line( common::log::category::error, error, " send failed to remote: ", lost.remote, " - action: remove connection");
+
+               // we 'lost' the connection in some way - we put a connection::Lost on our own ipc-device, and handle it
+               // later (and differently depending on if we're inbound, outbound, 'regular' or 'reversed')
+               common::communication::ipc::inbound::device().push( std::move( lost));
+            }
+         }
+         else
+         {
+            common::log::line( common::log::category::error, common::code::casual::internal_correlation, " tcp::send -  failed to correlate descriptor: ", descriptor, " for message type: ", message.type());
+            common::log::line( common::log::category::verbose::error, "state: ", state);
+         }
+
+         return {};
+      }
+
+
       struct Connection
       {
          using complete_type = common::communication::tcp::message::Complete;
