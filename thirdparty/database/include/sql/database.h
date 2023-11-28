@@ -109,14 +109,6 @@ namespace sql
 
       using duration_type = std::chrono::microseconds;
 
-      struct Blob
-      {
-
-         Blob( long size, const char* data) : size( size), data( data) {};
-
-         long size;
-         const char* data;
-      };
 
       inline auto parameter_bind( sqlite3_stmt* statement, int index, std::nullptr_t)
       {
@@ -128,40 +120,15 @@ namespace sql
          return code::make( sqlite3_bind_text( statement, index, value.data(), value.size(), SQLITE_STATIC));
       }
 
-      inline auto parameter_bind( sqlite3_stmt* statement, int index, std::string_view value)
+      inline auto parameter_bind( sqlite3_stmt* statement, int index, const std::string_view& value)
       {
          return code::make( sqlite3_bind_text( statement, index, value.data(), value.size(), SQLITE_STATIC));
-      }
-
-      inline auto parameter_bind( sqlite3_stmt* statement, int index, const std::vector< char>& value)
-      {
-         return code::make( sqlite3_bind_blob( statement, index, value.data(), value.size(), SQLITE_STATIC));
-      }
-
-      inline auto parameter_bind( sqlite3_stmt* statement, int index, const Blob& value)
-      {
-         return code::make( sqlite3_bind_blob( statement, index, value.data, value.size, SQLITE_STATIC));
-      }
-
-      template< typename Iter>
-      inline auto parameter_bind( sqlite3_stmt* statement, int index, const casual::common::Range< Iter>& value)
-      {
-         return code::make( sqlite3_bind_blob( statement, index, value.data(), value.size(), SQLITE_STATIC));
       }
 
       template< casual::concepts::binary::like Range>
       inline auto parameter_bind( sqlite3_stmt* statement, int index, const Range& value)
       {
          return code::make( sqlite3_bind_blob( statement, index, std::data( value), std::size( value), SQLITE_STATIC));
-      }
-
-
-      template< typename T, std::size_t array_size>
-      inline auto parameter_bind( sqlite3_stmt* statement, int index, T const (&value)[ array_size])
-      {
-         const auto value_size = sizeof( T) * array_size;
-
-         return code::make( sqlite3_bind_blob( statement, index, value, value_size, SQLITE_STATIC));
       }
 
       inline auto parameter_bind( sqlite3_stmt* statement, int index, int value)
