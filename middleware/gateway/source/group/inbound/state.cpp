@@ -87,7 +87,7 @@ namespace casual
                // take care of the rest of pending messages
                if( ! m_complete.empty())
                {
-                  const common::transaction::global::ID gtrid = message.trid;
+                  auto gtrid = transaction::id::range::global( message.trid);
                   
                   auto has_gtrid = [ &gtrid ]( auto& holder){ return holder.gtrid == gtrid;};
 

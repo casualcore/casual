@@ -149,6 +149,12 @@ namespace sql
          return code::make( sqlite3_bind_blob( statement, index, value.data(), value.size(), SQLITE_STATIC));
       }
 
+      template< casual::concepts::binary::like Range>
+      inline auto parameter_bind( sqlite3_stmt* statement, int index, const Range& value)
+      {
+         return code::make( sqlite3_bind_blob( statement, index, std::data( value), std::size( value), SQLITE_STATIC));
+      }
+
 
       template< typename T, std::size_t array_size>
       inline auto parameter_bind( sqlite3_stmt* statement, int index, T const (&value)[ array_size])

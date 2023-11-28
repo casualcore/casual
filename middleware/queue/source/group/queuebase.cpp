@@ -594,9 +594,9 @@ namespace casual
       {
          auto missing_message = [&]( auto& id)
          {
-            m_statement.commit1.execute( id());
+            m_statement.commit1.execute( id.range());
             const auto commit1_affected = m_connection.affected();
-            m_statement.commit2.execute( id());
+            m_statement.commit2.execute( id.range());
             const auto commit2_affected = m_connection.affected();
  
             return commit1_affected == 0 && commit2_affected == 0;
@@ -611,11 +611,11 @@ namespace casual
       {
          auto missing_message = [&]( auto& id)
          {
-            m_statement.rollback1.execute( id());
+            m_statement.rollback1.execute( id.range());
             const auto rollback1_affected = m_connection.affected();
-            m_statement.rollback2.execute( id());
+            m_statement.rollback2.execute( id.range());
             const auto rollback2_affected = m_connection.affected();
-            m_statement.rollback3.execute( id());
+            m_statement.rollback3.execute( id.range());
 
             return rollback1_affected == 0 && rollback2_affected == 0;
          };
