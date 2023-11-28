@@ -375,10 +375,15 @@ namespace casual
             Coordinate< common::message::transaction::resource::commit::Reply> commit;
             Coordinate< common::message::transaction::resource::rollback::Reply> rollback;
 
+            // keep track of the requested inbound branches.
+            // using transparent hashing to be able to compare with binary::view
+            std::unordered_map< common::transaction::global::ID, common::transaction::ID, common::transaction::global::hash, std::equal_to<>> inbound;
+
             CASUAL_LOG_SERIALIZE( 
                CASUAL_SERIALIZE( prepare);
                CASUAL_SERIALIZE( commit);
                CASUAL_SERIALIZE( rollback);
+               CASUAL_SERIALIZE( inbound);
             )
          } coordinate;
 

@@ -325,6 +325,9 @@ namespace casual
                         state.persistent.log.remove( global);
                         if( auto found = common::algorithm::find( state.transactions, global))
                            state.transactions.erase( std::begin( found));
+                           
+                        if( auto found = common::algorithm::find( state.coordinate.inbound, global))
+                           common::algorithm::container::erase( state.coordinate.inbound, std::begin( found));
                      }
                      
                   } // remove
@@ -957,6 +960,36 @@ namespace casual
 
             } // resource
 
+            namespace coordinate::inbound
+            {
+               auto request( State& state)
+               {
+                  return [ &state]( const common::message::transaction::coordinate::inbound::Request& message)
+                  {
+                     Trace trace{ "transaction::manager::handle::local::coordinate::inbound::request"};
+                     common::log::line( log, "message: ", message);
+
+                     auto reply = common::message::reverse::type( message);
+
+                     if( auto found = common::algorithm::find( state.coordinate.inbound, message.gtrid))
+                     {
+                        common::log::line( log, "found: ", *found);
+                        reply.trid = found->second;
+                     }
+                     else
+                     {
+                        reply.trid = common::transaction::global::to::trid( message.gtrid);
+                        common::log::line( log, "created: ", reply.trid);
+
+                        state.coordinate.inbound.emplace( message.gtrid, reply.trid);                        
+                     }
+
+                     state.multiplex.send( message.process.ipc, reply);
+                  };
+               }
+               
+            } // coordinate::inbound
+
             namespace process
             {
                auto exit( State& state)
@@ -1091,6 +1124,7 @@ namespace casual
             local::resource::external::prepare::request( state),
             local::resource::external::commit::request( state),
             local::resource::external::rollback::request( state),
+            local::coordinate::inbound::request( state),
             common::server::handle::admin::Call{
                manager::admin::services( state)}
          );
