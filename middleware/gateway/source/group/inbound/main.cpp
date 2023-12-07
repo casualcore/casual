@@ -80,7 +80,7 @@ namespace casual
                            // TODO maintainence - make sure we can handle runtime updates...
 
                            state.alias = message.model.alias;
-                           state.pending.requests.limit( message.model.limit);
+                           state.limit = message.model.limit;
 
                            tcp::listen::attempt( state, std::move( message.model.connections));
 

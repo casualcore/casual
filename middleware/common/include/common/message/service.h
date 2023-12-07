@@ -375,6 +375,7 @@ namespace casual
 
                std::string requested;
                request::Context context;
+               common::transaction::global::ID gtrid;
                std::optional< platform::time::point::type> deadline{};
 
                inline bool no_reply() const noexcept
@@ -387,6 +388,7 @@ namespace casual
                   base_request::serialize( archive);
                   CASUAL_SERIALIZE( requested);
                   CASUAL_SERIALIZE( context);
+                  CASUAL_SERIALIZE( gtrid);
                   CASUAL_SERIALIZE( deadline);
                )
             };

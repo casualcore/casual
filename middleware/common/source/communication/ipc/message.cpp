@@ -68,6 +68,18 @@ namespace casual
 
       bool Complete::complete() const noexcept { return static_cast< platform::size::type>( payload.size()) == m_offset;}
 
+   
+      strong::execution::id Complete::execution() const noexcept
+      {
+         if( payload.size() > 16)
+            return {};
+
+         Uuid::uuid_type uuid{};
+         algorithm::copy_max( payload, uuid);
+
+         return strong::execution::id{ uuid};
+      }
+
       std::ostream& operator << ( std::ostream& out, const Complete& value)
       {
          return stream::write( out, "{ type: ", value.type(), ", correlation: ", value.correlation(), ", size: ",

@@ -190,6 +190,9 @@ namespace casual
          inline friend auto correlation( const Complete& value ) noexcept { return value.correlation();}
          inline auto offset() noexcept { return m_offset;}
 
+         //! @returns the extracted mandatory execution id from the payload
+         strong::execution::id execution() const noexcept;
+
          platform::binary::type payload;
 
          //! Adds a transport message.

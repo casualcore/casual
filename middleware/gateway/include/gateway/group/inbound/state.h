@@ -9,6 +9,8 @@
 #include "gateway/group/tcp.h"
 #include "gateway/message.h"
 
+#include "casual/task/concurrent.h"
+
 #include "common/serialize/macro.h"
 #include "common/communication/select.h"
 #include "common/communication/tcp.h"
@@ -48,9 +50,12 @@ namespace casual
          };
          std::string_view description( Runlevel value);
 
+         using Limit = configuration::model::gateway::inbound::Limit;
+
+/*
          namespace pending
          {
-            using Limit = configuration::model::gateway::inbound::Limit;
+            
 
             struct Requests
             {
@@ -152,6 +157,7 @@ namespace casual
             };
 
          } // pending
+         */
 
 
          struct Correlation
@@ -187,50 +193,85 @@ namespace casual
             )
          };
 
-         namespace in::flight
-         {
-            struct Cache
-            {
-               void add( common::strong::file::descriptor::id descriptor, const common::transaction::ID& trid);
-               void remove( common::strong::file::descriptor::id descriptor, const common::transaction::ID& trid);
-
-               //! remove all associated transactions to the `descriptor`
-               void remove( common::strong::file::descriptor::id descriptor);
-
-               bool empty( common::strong::file::descriptor::id descriptor) const noexcept;
-
-               
-               
-               //! @returns and extract/remove the associated transactions tor the `descriptor`. 
-               std::vector< common::transaction::ID> extract( common::strong::file::descriptor::id descriptor);
-
-               CASUAL_LOG_SERIALIZE( 
-                  CASUAL_SERIALIZE( m_transactions);
-               )
-
-            private:
-               std::unordered_map< common::strong::file::descriptor::id, std::vector< common::transaction::ID>> m_transactions;
-            };
-         } // in::flight
-
          namespace extract
          {
             struct Result
             {
                group::tcp::External< configuration::model::gateway::inbound::Connection>::Information information;
-               state::pending::Requests::Result pending;
-               std::vector< common::transaction::ID> transactions;
+               std::vector< common::strong::correlation::id> correlations; 
+               std::vector< common::transaction::ID> trids;
 
-               inline bool empty() const noexcept { return pending.complete.empty() && pending.services.empty() && transactions.empty();}
+               inline bool empty() const noexcept { return correlations.empty() && trids.empty();}
 
                CASUAL_LOG_SERIALIZE( 
                   CASUAL_SERIALIZE( information);
-                  CASUAL_SERIALIZE( pending);
-                  CASUAL_SERIALIZE( transactions);
+                  CASUAL_SERIALIZE( correlations);
+                  CASUAL_SERIALIZE( trids);
                )
-
             };
          } // extract
+
+         namespace transaction
+         {
+            struct Cache
+            {
+               //! associate the external trid with the `descriptor`. @returns a cached branched internal trid, if any.
+               const common::transaction::ID* associate( common::strong::file::descriptor::id descriptor, const common::transaction::ID& external);
+               void dissociate( common::strong::file::descriptor::id descriptor, const common::transaction::ID& external);
+
+               void add_branch( common::strong::file::descriptor::id descriptor, const common::transaction::ID& branched_trid);
+
+               //! @returns true if the descriptor is associated with 
+               bool associated( common::strong::file::descriptor::id descriptor) const noexcept;
+
+               const common::transaction::ID* find( common::transaction::global::id::range gtrid) const noexcept;
+
+               std::vector< common::transaction::ID> extract( common::strong::file::descriptor::id descriptor) noexcept;
+
+               inline bool empty() const noexcept { return m_associations.empty() && m_transactions.empty();}
+
+               CASUAL_LOG_SERIALIZE( 
+                  CASUAL_SERIALIZE( m_transactions);
+                  CASUAL_SERIALIZE( m_associations);
+               )
+
+            private:
+
+               struct Association
+               {
+                  inline Association( common::strong::file::descriptor::id descriptor, const common::transaction::ID& trid)
+                     : descriptor{ descriptor}, trids{ trid} {}
+
+                  common::strong::file::descriptor::id descriptor;
+                  std::unordered_set< common::transaction::ID> trids;
+
+                  inline friend bool operator == ( const Association& lhs, common::strong::file::descriptor::id rhs) { return lhs.descriptor == rhs;}
+
+                  CASUAL_LOG_SERIALIZE( 
+                     CASUAL_SERIALIZE( descriptor);
+                     CASUAL_SERIALIZE( trids);
+                  )
+               };
+
+               struct Map
+               {
+                  inline Map( common::strong::file::descriptor::id descriptor, const common::transaction::ID& trid)
+                     : trid{ trid}, descriptors{ descriptor} {}
+
+                  common::transaction::ID trid;
+                  std::vector< common::strong::file::descriptor::id> descriptors;
+
+                  CASUAL_LOG_SERIALIZE( 
+                     CASUAL_SERIALIZE( trid);
+                     CASUAL_SERIALIZE( descriptors);
+                  )
+               };
+
+               std::vector< Association> m_associations;
+               std::unordered_map< common::transaction::global::ID, Map, common::transaction::global::hash, std::equal_to<>> m_transactions;
+            };
+            
+         } // transaction
 
       } // state
 
@@ -239,25 +280,29 @@ namespace casual
          common::state::Machine< state::Runlevel, state::Runlevel::running> runlevel;
 
          common::communication::select::Directive directive;
+         common::communication::ipc::send::Coordinator multiplex{ directive};
+
          group::tcp::External< configuration::model::gateway::inbound::Connection> external;
+
+         casual::task::concurrent::Coordinator tasks;
 
          struct
          {
-            state::pending::Requests requests;
+            //state::pending::Requests requests;
             std::vector< common::strong::file::descriptor::id> disconnects;
             
             CASUAL_LOG_SERIALIZE( 
-               CASUAL_SERIALIZE( requests);
+               //CASUAL_SERIALIZE( requests);
                CASUAL_SERIALIZE( disconnects);
             )
          } pending;
-
-         common::communication::ipc::send::Coordinator multiplex{ directive};
          
          std::vector< state::Correlation> correlations;
          std::vector< state::Conversation> conversations;
 
-         state::in::flight::Cache in_flight_cache;
+         state::transaction::Cache transaction_cache;
+
+         state::Limit limit;
 
          std::string alias;
          std::string note;
@@ -284,7 +329,7 @@ namespace casual
 
             reply.state.alias = alias;
             reply.state.note = note;
-            reply.state.limit = pending.requests.limit();
+            reply.state.limit = limit;
 
             return reply;
          }
@@ -296,7 +341,8 @@ namespace casual
             CASUAL_SERIALIZE( pending);
             CASUAL_SERIALIZE( correlations);
             CASUAL_SERIALIZE( conversations);
-            CASUAL_SERIALIZE( in_flight_cache);
+            CASUAL_SERIALIZE( transaction_cache);
+            CASUAL_SERIALIZE( limit);
             CASUAL_SERIALIZE( alias);
             CASUAL_SERIALIZE( note);
          )
