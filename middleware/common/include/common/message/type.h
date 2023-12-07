@@ -34,14 +34,15 @@ namespace casual
          poke,
          shutdown_request,
          shutdown_reply,
-         delay_message,
-         inbound_ipc_connect,
 
          counter_request,
          counter_reply,
 
          process_lookup_request = 600, // not pinned
          process_lookup_reply,
+
+         // internal message to conclude/remove tasks
+         task_conclude = 700, // not pinned
 
          // domain
          DOMAIN_BASE = 1000,

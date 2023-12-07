@@ -2189,7 +2189,7 @@ domain:
 
          // we're in X at the moment
 
-         auto call_A_and_B = []( auto count)
+         static constexpr auto call_A_and_B = []( auto count)
          {
             algorithm::for_n( count, []()
             {
@@ -2204,19 +2204,13 @@ domain:
          //              A -> GW -> ( B*, C*, X*)
          //              B -> GW -> ( A*, C*, X*)       
          //
-         //  X initiate the twa phase commit. The ohter 3 (A, B, C) has all X as involved.
-         //  For X it should be 3 other TM:s that sends prepare and commit == 3 * 2
-         //
-         //  For C it should be from X, A and B == 3 * 2
-         //  For A it should be from C and from B == 2 * 2
-         //  For B it should be from C and from A == 2 * 2
-         //  GW has 0 resources.
+         //  X initiate the two phase commit. The ohter 3 (A, B, C) has all X as involved.
          //
 
          constexpr auto transaction_count = 1;
          constexpr auto call_count = 1;
 
-         algorithm::for_n( transaction_count, [call_A_and_B]()
+         algorithm::for_n( transaction_count, []()
          {
             ASSERT_TRUE( tx_begin() == TX_OK);
             call_A_and_B( call_count);
@@ -2243,7 +2237,7 @@ domain:
             ASSERT_TRUE( resource.instances.size() == 1);
             auto& instance = resource.instances[ 0];
             // distributed transactions, prepare and commit.
-            EXPECT_TRUE( instance.metrics.resource.count == transaction_count * 2 * 3) << CASUAL_NAMED_VALUE( instance.metrics.resource);
+            EXPECT_TRUE( instance.metrics.resource.count == transaction_count * 2) << CASUAL_NAMED_VALUE( instance.metrics.resource);
          }
 
 
@@ -2255,7 +2249,7 @@ domain:
             auto& resource = state.resources[ 0];
             ASSERT_TRUE( resource.instances.size() == 1);
             auto& instance = resource.instances[ 0];
-            // distributed transactions, prepare and commit.
+            // GW does not have any resources involved
             EXPECT_TRUE( instance.metrics.resource.count == 0) << CASUAL_NAMED_VALUE( instance.metrics.resource);
          }
 
@@ -2267,7 +2261,7 @@ domain:
             ASSERT_TRUE( resource.instances.size() == 1);
             auto& instance = resource.instances[ 0];
             // distributed transactions, prepare and commit.
-            EXPECT_TRUE( instance.metrics.resource.count == transaction_count * 2 * 2) << CASUAL_NAMED_VALUE( instance.metrics.resource);
+            EXPECT_TRUE( instance.metrics.resource.count == transaction_count * 2) << CASUAL_NAMED_VALUE( instance.metrics.resource);
          }
 
          {
@@ -2278,7 +2272,7 @@ domain:
             ASSERT_TRUE( resource.instances.size() == 1);
             auto& instance = resource.instances[ 0];
             // distributed transactions, prepare and commit.
-            EXPECT_TRUE( instance.metrics.resource.count == transaction_count * 2 * 2) << CASUAL_NAMED_VALUE( instance.metrics.resource);
+            EXPECT_TRUE( instance.metrics.resource.count == transaction_count * 2) << CASUAL_NAMED_VALUE( instance.metrics.resource);
          }
 
          {
@@ -2289,7 +2283,7 @@ domain:
             ASSERT_TRUE( resource.instances.size() == 1);
             auto& instance = resource.instances[ 0];
             // distributed transactions, prepare and commit.
-            EXPECT_TRUE( instance.metrics.resource.count == transaction_count * 2 * 3) << CASUAL_NAMED_VALUE( instance.metrics.resource);
+            EXPECT_TRUE( instance.metrics.resource.count == transaction_count * 2) << CASUAL_NAMED_VALUE( instance.metrics.resource);
          }  
       }
 
@@ -2468,7 +2462,7 @@ domain:
             ASSERT_TRUE( resource.instances.size() == 1);
             auto& instance = resource.instances[ 0];
             // distributed transactions, prepare and commit.
-            EXPECT_TRUE( instance.metrics.resource.count == transaction_count * 2 * 3) << CASUAL_NAMED_VALUE( state);
+            EXPECT_TRUE( instance.metrics.resource.count == transaction_count * 2) << CASUAL_NAMED_VALUE( state);
          }
 
 
@@ -2492,7 +2486,7 @@ domain:
             ASSERT_TRUE( resource.instances.size() == 1);
             auto& instance = resource.instances[ 0];
             // distributed transactions, prepare and commit.
-            EXPECT_TRUE( instance.metrics.resource.count == transaction_count * 2 * 2) << CASUAL_NAMED_VALUE( instance.metrics.resource);
+            EXPECT_TRUE( instance.metrics.resource.count == transaction_count * 2) << CASUAL_NAMED_VALUE( instance.metrics.resource);
          }
 
          {
@@ -2503,7 +2497,7 @@ domain:
             ASSERT_TRUE( resource.instances.size() == 1);
             auto& instance = resource.instances[ 0];
             // distributed transactions, prepare and commit.
-            EXPECT_TRUE( instance.metrics.resource.count == transaction_count * 2 * 2) << CASUAL_NAMED_VALUE( instance.metrics.resource);
+            EXPECT_TRUE( instance.metrics.resource.count == transaction_count * 2) << CASUAL_NAMED_VALUE( instance.metrics.resource);
          }
 
          {
@@ -2514,7 +2508,7 @@ domain:
             ASSERT_TRUE( resource.instances.size() == 1);
             auto& instance = resource.instances[ 0];
             // distributed transactions, prepare and commit.
-            EXPECT_TRUE( instance.metrics.resource.count == transaction_count * 2 * 3) << CASUAL_NAMED_VALUE( instance.metrics.resource);
+            EXPECT_TRUE( instance.metrics.resource.count == transaction_count * 2) << CASUAL_NAMED_VALUE( instance.metrics.resource);
          }  
       }
 
@@ -2706,7 +2700,7 @@ domain:
             ASSERT_TRUE( resource.instances.size() == 1);
             auto& instance = resource.instances[ 0];
             // distributed transactions, prepare and commit.
-            EXPECT_TRUE( instance.metrics.resource.count == transaction_count * 2 * 3) << CASUAL_NAMED_VALUE( instance.metrics.resource);
+            EXPECT_TRUE( instance.metrics.resource.count == transaction_count * 2) << CASUAL_NAMED_VALUE( instance.metrics.resource);
          }
 
 
@@ -2730,7 +2724,7 @@ domain:
             ASSERT_TRUE( resource.instances.size() == 1);
             auto& instance = resource.instances[ 0];
             // distributed transactions, prepare and commit.
-            EXPECT_TRUE( instance.metrics.resource.count == transaction_count * 2 * 2) << CASUAL_NAMED_VALUE( instance.metrics.resource);
+            EXPECT_TRUE( instance.metrics.resource.count == transaction_count * 2) << CASUAL_NAMED_VALUE( instance.metrics.resource);
          }
 
          {
@@ -2741,7 +2735,7 @@ domain:
             ASSERT_TRUE( resource.instances.size() == 1);
             auto& instance = resource.instances[ 0];
             // distributed transactions, prepare and commit.
-            EXPECT_TRUE( instance.metrics.resource.count == transaction_count * 2 * 2) << CASUAL_NAMED_VALUE( instance.metrics.resource);
+            EXPECT_TRUE( instance.metrics.resource.count == transaction_count * 2) << CASUAL_NAMED_VALUE( instance.metrics.resource);
          }
 
          {
@@ -2752,7 +2746,7 @@ domain:
             ASSERT_TRUE( resource.instances.size() == 1);
             auto& instance = resource.instances[ 0];
             // distributed transactions, prepare and commit.
-            EXPECT_TRUE( instance.metrics.resource.count == transaction_count * 2 * 3) << CASUAL_NAMED_VALUE( instance.metrics.resource);
+            EXPECT_TRUE( instance.metrics.resource.count == transaction_count * 2) << CASUAL_NAMED_VALUE( instance.metrics.resource);
          }  
       }
 
@@ -2941,7 +2935,7 @@ domain:
             ASSERT_TRUE( resource.instances.size() == 1);
             auto& instance = resource.instances[ 0];
             // distributed transactions, only rollback
-            EXPECT_TRUE( instance.metrics.resource.count == transaction_count * 2) << CASUAL_NAMED_VALUE( instance.metrics.resource);
+            EXPECT_TRUE( instance.metrics.resource.count == transaction_count) << CASUAL_NAMED_VALUE( instance.metrics.resource);
          }
 
 
@@ -2965,7 +2959,7 @@ domain:
             ASSERT_TRUE( resource.instances.size() == 1);
             auto& instance = resource.instances[ 0];
             // distributed transactions, only rollback
-            EXPECT_TRUE( instance.metrics.resource.count == transaction_count * 2) << CASUAL_NAMED_VALUE( instance.metrics.resource);
+            EXPECT_TRUE( instance.metrics.resource.count == transaction_count) << CASUAL_NAMED_VALUE( instance.metrics.resource);
          }
 
          {
@@ -2976,7 +2970,7 @@ domain:
             ASSERT_TRUE( resource.instances.size() == 1);
             auto& instance = resource.instances[ 0];
             // distributed transactions, only rollback
-            EXPECT_TRUE( instance.metrics.resource.count == transaction_count * 1) << CASUAL_NAMED_VALUE( instance.metrics.resource);
+            EXPECT_TRUE( instance.metrics.resource.count == transaction_count) << CASUAL_NAMED_VALUE( instance.metrics.resource);
          }
 
          {
@@ -2987,7 +2981,7 @@ domain:
             ASSERT_TRUE( resource.instances.size() == 1);
             auto& instance = resource.instances[ 0];
             // distributed transactions, only rollback
-            EXPECT_TRUE( instance.metrics.resource.count == transaction_count * 2) << CASUAL_NAMED_VALUE( instance.metrics.resource);
+            EXPECT_TRUE( instance.metrics.resource.count == transaction_count) << CASUAL_NAMED_VALUE( instance.metrics.resource);
          }  
       }
 
@@ -3162,7 +3156,7 @@ domain:
             ASSERT_TRUE( resource.instances.size() == 1);
             auto& instance = resource.instances[ 0];
             // distributed transactions, only rollback
-            EXPECT_TRUE( instance.metrics.resource.count == transaction_count * 3) << CASUAL_NAMED_VALUE( instance.metrics.resource);
+            EXPECT_TRUE( instance.metrics.resource.count == transaction_count) << CASUAL_NAMED_VALUE( instance.metrics.resource);
          }
 
 
@@ -3186,7 +3180,7 @@ domain:
             ASSERT_TRUE( resource.instances.size() == 1);
             auto& instance = resource.instances[ 0];
             // distributed transactions, only rollback
-            EXPECT_TRUE( instance.metrics.resource.count == transaction_count * 2) << CASUAL_NAMED_VALUE( instance.metrics.resource);
+            EXPECT_TRUE( instance.metrics.resource.count == transaction_count) << CASUAL_NAMED_VALUE( instance.metrics.resource);
          }
 
          {
@@ -3197,7 +3191,7 @@ domain:
             ASSERT_TRUE( resource.instances.size() == 1);
             auto& instance = resource.instances[ 0];
             // distributed transactions, only rollback
-            EXPECT_TRUE( instance.metrics.resource.count == transaction_count  * 2) << CASUAL_NAMED_VALUE( instance.metrics.resource);
+            EXPECT_TRUE( instance.metrics.resource.count == transaction_count) << CASUAL_NAMED_VALUE( instance.metrics.resource);
          }
 
          {
@@ -3208,7 +3202,7 @@ domain:
             ASSERT_TRUE( resource.instances.size() == 1);
             auto& instance = resource.instances[ 0];
             // distributed transactions, only rollback
-            EXPECT_TRUE( instance.metrics.resource.count == transaction_count * 3) << CASUAL_NAMED_VALUE( instance.metrics.resource);
+            EXPECT_TRUE( instance.metrics.resource.count == transaction_count) << CASUAL_NAMED_VALUE( instance.metrics.resource);
          }  
       }
 

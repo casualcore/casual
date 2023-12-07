@@ -29,20 +29,20 @@ namespace casual
 
       namespace service
       {
-         casual::task::concurrent::Unit call( State& state, lookup::Context context, common::message::service::call::callee::Request&& message);
-         casual::task::concurrent::Unit conversation( State& state, lookup::Context context, common::message::conversation::connect::callee::Request&& message);
+         [[nodiscard]] casual::task::concurrent::Unit call( State& state, common::strong::file::descriptor::id descriptor, common::message::service::call::callee::Request&& message);
+         [[nodiscard]] casual::task::concurrent::Unit conversation( State& state, common::strong::file::descriptor::id descriptor, common::message::conversation::connect::callee::Request&& message);
          
       } // service
 
       namespace queue
       {
-         casual::task::concurrent::Unit enqueue( State& state, lookup::Context context, casual::queue::ipc::message::group::enqueue::Request&& message);
-         casual::task::concurrent::Unit dequeue( State& state, lookup::Context context, casual::queue::ipc::message::group::dequeue::Request&& message);
+         [[nodiscard]] casual::task::concurrent::Unit enqueue( State& state, common::strong::file::descriptor::id descriptor, casual::queue::ipc::message::group::enqueue::Request&& message);
+         [[nodiscard]] casual::task::concurrent::Unit dequeue( State& state, common::strong::file::descriptor::id descriptor, casual::queue::ipc::message::group::dequeue::Request&& message);
       } // queue
 
-      casual::task::concurrent::Unit transaction( State& state, common::message::transaction::resource::prepare::Request&& message);
-      casual::task::concurrent::Unit transaction( State& state, common::message::transaction::resource::commit::Request&& message);
-      casual::task::concurrent::Unit transaction( State& state, common::message::transaction::resource::rollback::Request&& message);
+      [[nodiscard]] casual::task::concurrent::Unit transaction( State& state, common::strong::file::descriptor::id descriptor, common::message::transaction::resource::prepare::Request&& message);
+      [[nodiscard]] casual::task::concurrent::Unit transaction( State& state, common::strong::file::descriptor::id descriptor, common::message::transaction::resource::commit::Request&& message);
+      [[nodiscard]] casual::task::concurrent::Unit transaction( State& state, common::strong::file::descriptor::id descriptor, common::message::transaction::resource::rollback::Request&& message);
 
    
       

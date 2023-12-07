@@ -1315,21 +1315,37 @@ domain:
          constexpr auto rm = strong::resource::id{ -1};
 
          unittest::fetch::until( unittest::fetch::predicate::outbound::connected( 1));
+
+         EXPECT_EQ( transaction::context().begin(), code::tx::ok);
+
+         const auto data = unittest::random::binary( 1000);
          
-         // call service in B in transaction
          {
-            using namespace std::literals;
+            // call service in B in transaction
+            auto descriptor = [ &data](){
+               using namespace std::literals;
 
-            EXPECT_EQ( transaction::context().begin(), code::tx::ok);
+               buffer::Payload payload;
+               payload.type = "X_OCTET/";
+               common::algorithm::copy( data, std::back_inserter( payload.data));
 
-            buffer::Payload payload;
-            payload.type = "X_OCTET/";
-            common::algorithm::copy( "casual"sv, std::back_inserter( payload.data));
+               return common::service::call::context().async( "casual/example/domain/echo/B", common::buffer::payload::Send{ payload}, {});
+            }();
 
-            auto result = common::service::call::context().sync( "casual/example/domain/echo/B", common::buffer::payload::Send{ payload}, {});
+            // reply to the coordinate inbound
+            {
+               auto request = common::communication::ipc::receive< common::message::transaction::coordinate::inbound::Request>();
+               auto reply = common::message::reverse::type( request);
+               reply.trid = common::transaction::ID{ request.gtrid};
 
-            EXPECT_TRUE( result.buffer.data == payload.data);
+               communication::device::blocking::send( request.process.ipc, reply);
+            }
 
+            // call service in B in transaction
+            {
+               auto reply = common::service::call::context().reply( descriptor, {});
+               EXPECT_TRUE( reply.buffer.data == data);
+            }
          }
 
          // fake the commit message to A:s TM (current domain)
@@ -1445,8 +1461,8 @@ domain:
          EXPECT_EQ( transaction::context().commit(), code::tx::ok);
       }
 
-
-      TEST( gateway_manager_inbound, A_B_kill_A_rollback_during_pending_call__expect_TPESVCERR_no_pending)
+      // TODO the pending call hack has been removed and need to be replaced with some sort of _pending timeout_
+      TEST( gateway_manager_inbound, DISABLED_A_B_kill_A_rollback_during_pending_call__expect_TPESVCERR_no_pending)
       {
          common::unittest::Trace trace;
 

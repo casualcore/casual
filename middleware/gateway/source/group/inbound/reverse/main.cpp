@@ -105,7 +105,7 @@ namespace casual
 
                            // TODO maintainece - make sure we can handle runtime updates...
                            state.alias = message.model.alias;
-                           state.pending.requests.limit( message.model.limit);
+                           state.limit = message.model.limit;
                            
                            for( auto& configuration : message.model.connections)
                               state.connect.prospects.emplace_back( std::move( configuration));

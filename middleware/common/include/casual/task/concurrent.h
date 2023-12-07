@@ -18,6 +18,11 @@ namespace casual
 {
    namespace task::concurrent
    {
+      namespace message
+      {
+         using Conclude = common::message::basic_message< common::message::Type::task_conclude>;
+      } // message
+
       namespace unit
       {
 
@@ -86,7 +91,7 @@ namespace casual
          explicit operator bool() const noexcept { return ! empty();}
 
          CASUAL_LOG_SERIALIZE(
-            CASUAL_SERIALIZE_NAME( m_handlers, "handlers");
+            CASUAL_SERIALIZE( m_handlers);
          );
 
       private:

@@ -218,6 +218,18 @@ namespace casual
 } // casual
 
 
+namespace std 
+{
+   template<>
+   struct hash< casual::common::transaction::ID>
+   {
+      std::size_t operator()( const casual::common::transaction::ID& value) const noexcept
+      {
+         auto range = casual::common::transaction::id::range::data( value);
+         return std::hash< std::string_view>{}( std::string_view( range.data(), range.size()));
+      }
+   };
+}
 
 
 

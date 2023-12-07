@@ -6,6 +6,7 @@
 
 #include "gateway/group/inbound/handle.h"
 #include "gateway/group/inbound/tcp.h"
+#include "gateway/group/inbound/task/create.h"
 #include "gateway/group/ipc.h"
 
 #include "gateway/message.h"
@@ -31,66 +32,6 @@ namespace casual
       {
          namespace
          {
-            /*
-            namespace tcp
-            {
-               template< typename M>
-               strong::correlation::id send( State& state, strong::file::descriptor::id descriptor, M&& message)
-               {
-                  if( auto connection = state.external.connection( descriptor))
-                  {
-                     try
-                     {
-                        return connection->send( state.directive, std::forward< M>( message));
-                     }
-                     catch( ...)
-                     {
-                        const auto error = exception::capture();
-
-                        auto lost = connection::lost( state, descriptor);
-
-                        if( error.code() != code::casual::communication_unavailable)
-                           log::line( log::category::error, error, " send failed to remote: ", lost.remote, " - action: remove connection");
-
-                        // we 'lost' the connection in some way - we put a connection::Lost on our own ipc-device, and handle it
-                        // later (and differently depending on if we're 'regular' or 'reversed')
-                        communication::ipc::inbound::device().push( std::move( lost));
-                     }
-                  }
-                  else
-                  {
-                     log::line( log::category::error, code::casual::internal_correlation, " tcp::send -  failed to correlate descriptor: ", descriptor, " for message type: ", message.type());
-                     log::line( log::category::verbose::error, "state: ", state);
-                  }
-
-                  return {};
-               }
-
-               template< typename M>
-               strong::file::descriptor::id send( State& state, M&& message)
-               {
-                  if constexpr( std::is_same_v< std::decay_t< M>, communication::tcp::message::Complete>)
-                  {
-                     if( auto descriptor = state.consume( message.correlation()))
-                        if( tcp::send( state, descriptor, std::forward< M>( message)))
-                           return descriptor;
-                  }
-                  else
-                  {
-                     if( auto descriptor = state.consume( message.correlation))
-                        if( tcp::send( state, descriptor, std::forward< M>( message)))
-                           return descriptor;
-                  }
-               
-                  log::line( log::category::error, code::casual::communication_unavailable, " connection absent when trying to send reply - ", message.type());
-                  log::line( log::category::verbose::error, "state: ", state);
-               
-                  return {};
-               }
-               
-            } // tcp
-            */
-
             namespace internal
             {
                template< typename Message>
@@ -105,108 +46,31 @@ namespace casual
                   };
                }
 
+               template< typename Message>
+               auto basic_task( State& state)
+               {
+                  return [ &state]( Message& message)
+                  {
+                     Trace trace{ "gateway::group::inbound::handle::local::basic_task"};
+                     common::log::line( verbose::log, "message: ", message);
+
+                     state.tasks( message);
+
+                     common::log::line( verbose::log, "state.tasks: ", state.tasks);
+                  };
+               }
+
                namespace service
                {
                   namespace lookup
                   {
-                     namespace detail
-                     {
-                        template< typename R, typename E>
-                        void reply( State& state, R&& request, common::message::service::lookup::Reply& lookup, E send_error)
-                        {
-                           
-                           switch( lookup.state)
-                           {
-                              using Enum = decltype( lookup.state);
-                              case Enum::idle:
-                              {
-                                 state.multiplex.send( lookup.process.ipc, std::forward< R>( request), [ &state, send_error]( auto& destination, auto& message)
-                                 {
-                                    log::line( common::log::category::error, common::code::xatmi::service_error, " destination: ", destination, " has been 'removed' during interdomain call - action: reply with: ", common::code::xatmi::service_error);
-                                    send_error( state, message.correlation(), common::code::xatmi::service_error);
-                                 });
-                                 break;
-                              }
-                              case Enum::absent:
-                              {
-                                 log::line( common::log::category::error, common::code::xatmi::no_entry, " service: ", lookup.service, " is not handled by this domain (any more) - action: reply with: ", common::code::xatmi::no_entry);
-                                 send_error( state, lookup.correlation, common::code::xatmi::no_entry);
-                                 break;
-                              }
-                              default:
-                              {
-                                 log::line( common::log::category::error, common::code::xatmi::system, " unexpected state on lookup reply: ", lookup, " - action: reply with: ", common::code::xatmi::service_error);
-                                 send_error( state, lookup.correlation, common::code::xatmi::system);
-                                 break;
-                              }
-                           }
-
-                        }
-                     } // detail
-
-                     auto reply( State& state)
-                     {
-                        return [&state]( common::message::service::lookup::Reply& lookup)
-                        {
-                           Trace trace{ "gateway::group::inbound::handle::local::internal::call::lookup::reply"};
-                           common::log::line( verbose::log, "message: ", lookup);
-
-                           auto request = state.pending.requests.consume( lookup.correlation, lookup);
-
-                           if( ! request)
-                           {
-                              // we assume we have removed the the request for valid reasons. Either way, we need to 
-                              // tell SM to forget the lookup (potential reservation)
-                              common::message::service::lookup::discard::Request request{ process::handle()};
-                              request.correlation = lookup.correlation;
-                              request.reply = false;
-                              request.requested = lookup.service.name;
-                              state.multiplex.send( ipc::manager::service(), request);
-
-                              return;
-                           }
-                              
-
-                           switch( common::message::type( *request))
-                           {
-                              using Type = decltype( common::message::type( *request));
-
-                              case Type::service_call:
-
-                                 detail::reply( state, std::move( *request), lookup, []( auto& state, auto& correlation, auto code)
-                                 {
-                                    common::message::service::call::Reply reply;
-                                    reply.correlation = correlation;
-                                    reply.code.result = code;
-                                    tcp::send( state, reply);
-                                 });
-
-                                 break;
-
-                              case Type::conversation_connect_request:
-                                 
-                                 detail::reply( state, std::move( *request), lookup, []( auto& state, auto& correlation, auto code)
-                                 {
-                                    common::message::conversation::connect::Reply reply;
-                                    reply.correlation = correlation;
-                                    reply.code.result = code;
-                                    tcp::send( state, reply);
-                                 });
-                                 break;
-
-                              default:
-                                 log::line( log::category::error, code::casual::internal_unexpected_value, " message type: ", common::message::type( *request), " - action: discard");
-
-                           }
-
-                        };  
-                     }
+                     auto reply = internal::basic_task< common::message::service::lookup::Reply>;
 
                   } // lookup
 
                   namespace call
                   {
-                     auto reply = basic_forward< common::message::service::call::Reply>;
+                     auto reply = internal::basic_task< common::message::service::call::Reply>;
                   } // call
 
                } // service
@@ -215,21 +79,7 @@ namespace casual
                {
                   namespace connect
                   {
-                     auto reply( State& state)
-                     {
-                        return [&state]( common::message::conversation::connect::Reply& message)
-                        {
-                           Trace trace{ "gateway::group::inbound::handle::local::internal::conversation::connect::reply"};
-                           common::log::line( verbose::log, "message: ", message);
-
-                           // we consume the correlation to connection, and add a conversation specific "route"
-                           if( auto descriptor = tcp::send( state, message))
-                           {
-                              state.conversations.push_back( state::Conversation{ message.correlation, descriptor, message.process});
-                              common::log::line( verbose::log, "state.conversations: ", state.conversations);
-                           }
-                        };
-                     }
+                     auto reply = internal::basic_task< common::message::conversation::connect::Reply>;
                      
                   } // connect
 
@@ -261,60 +111,17 @@ namespace casual
                {
                   namespace lookup
                   {
-                     auto reply( State& state)
-                     {
-                        return [&state]( casual::queue::ipc::message::lookup::Reply& message)
-                        {
-                           Trace trace{ "gateway::group::inbound::handle::local::internal::queue::lookup::reply"};
-                           common::log::line( verbose::log, "message: ", message);
-
-                           auto request = state.pending.requests.consume( message.correlation);
-
-                           if( ! request)
-                              return;
-
-                           if( message.process)
-                           {
-                              state.multiplex.send( message.process.ipc, std::move( *request));
-                              return;
-                           }
-
-                           // queue not available - send error reply
-               
-                           auto send_error = [&state, &message]( auto&& reply)
-                           {
-                              reply.correlation = message.correlation;
-                              tcp::send( state, reply);
-                           };
-
-                           switch( request->type())
-                           {
-                              using Enum = decltype( request->type());
-                              case Enum::queue_group_dequeue_request:
-                              {
-                                 send_error( casual::queue::ipc::message::group::dequeue::Reply{});
-                                 break;
-                              }
-                              case Enum::queue_group_enqueue_request:
-                              {
-                                 send_error( casual::queue::ipc::message::group::enqueue::Reply{});
-                                 break;
-                              }
-                              default:
-                                 common::log::line( common::log::category::error, "unexpected message type for queue request: ", message, " - action: drop message");
-                           }
-                        };
-                     }
+                     auto reply = internal::basic_task< casual::queue::ipc::message::lookup::Reply>;
                   } // lookup
 
                   namespace dequeue
                   {
-                     auto reply = basic_forward< casual::queue::ipc::message::group::dequeue::Reply>;
+                     auto reply = internal::basic_task< casual::queue::ipc::message::group::dequeue::Reply>;
                   } // dequeue
 
                   namespace enqueue
                   {
-                     auto reply = basic_forward< casual::queue::ipc::message::group::enqueue::Reply>;
+                     auto reply = internal::basic_task< casual::queue::ipc::message::group::enqueue::Reply>;
                   } // enqueue
                } // queue
 
@@ -383,76 +190,37 @@ namespace casual
                {
                   namespace resource
                   {
-                     template< typename Message>
-                     auto basic_clean( State& state)
-                     {
-                        return [&state]( Message& message)
-                        {
-                           Trace trace{ "gateway::group::inbound::handle::local::internal::transaction::resource::detail::basic_clean"};
-                           common::log::line( verbose::log, "message: ", message);
-
-                           if( auto descriptor = state.consume( message.correlation))
-                           {
-                              
-                              if constexpr( std::is_same_v< Message, common::message::transaction::resource::prepare::Reply>)
-                              {
-                                 // prepare can be optimize with read-only, or detect some error. We know that if 
-                                 // it is not "ok", we will not get commit/rollback and need to clean state. 
-                                 if( message.state != decltype( message.state)::ok)
-                                    state.in_flight_cache.remove( descriptor, message.trid);
-                              }
-                              else
-                                 state.in_flight_cache.remove( descriptor, message.trid);
-
-                              if( tcp::send( state, descriptor, message))
-                                 return;
-
-                              log::line( log::category::error, code::casual::communication_unavailable, " transaction - failed to send ", message.type(), " to descriptor: ", descriptor);
-                              return;
-                           }
-
-                           log::line( log::category::error, code::casual::communication_unavailable, " transaction - failed to correlate ", message.type());
-                        };
-                     }
-                     
                      namespace prepare
                      {
-                        auto reply = resource::basic_clean< common::message::transaction::resource::prepare::Reply>;
+                        auto reply = internal::basic_task< common::message::transaction::resource::prepare::Reply>;
                      } // prepare
                      namespace commit
                      {
                         //! when we get this reply, we know the transaction is 'done', at least in this domain (and downstream)
-                        auto reply = resource::basic_clean< common::message::transaction::resource::commit::Reply>;
+                        auto reply = internal::basic_task< common::message::transaction::resource::commit::Reply>;
                      } // commit
                      namespace rollback
                      {
                         //! when we get this reply, we know the transaction is 'done', at least in this domain (and downstream)
-                        auto reply = resource::basic_clean< common::message::transaction::resource::rollback::Reply>;
+                        auto reply = internal::basic_task< common::message::transaction::resource::rollback::Reply>;
                      } // commit
                   } // resource
+
+
+                  namespace coordinate::inbound
+                  {
+                     auto reply = internal::basic_task< common::message::transaction::coordinate::inbound::Reply>;
+                  } // coordinate::inbound   
+
                } // transaction
 
             } // internal
 
             namespace external
             {
-               namespace detail
-               {
-                  template< typename T>
-                  concept has_trid = requires( T& a) 
-                  {
-                     { a.trid } -> std::convertible_to< common::transaction::ID>;
-                  };
-               } // detail
-
-               static_assert( detail::has_trid< common::message::service::call::callee::Request>);
-
                template< typename M>
                auto correlate( State& state, const M& message)
                {
-                  if constexpr( detail::has_trid< M>)
-                     state.in_flight_cache.add( state.external.last(), message.trid);
-
                   state.correlations.emplace_back( message.correlation, state.external.last());
                   return state.external.last();
                }
@@ -470,9 +238,9 @@ namespace casual
                         {
                            common::log::line( verbose::log, "descriptor: ", descriptor);
 
-                           if( algorithm::find( state.correlations, descriptor) || ! state.in_flight_cache.empty( descriptor))
+                           if( algorithm::find( state.correlations, descriptor) || state.transaction_cache.associated( descriptor))
                            {
-                              common::log::line( verbose::log, "state.correlations: ", state.correlations, ", state.in_flight_cache: ", state.in_flight_cache);
+                              common::log::line( verbose::log, "state.correlations: ", state.correlations, ", state.transaction_cache: ", state.transaction_cache);
 
                               // connection still got pending stuff to do, we keep track until its 'idle'.
                               state.pending.disconnects.push_back( descriptor);
@@ -495,53 +263,17 @@ namespace casual
 
                namespace service
                {
-                  namespace detail
-                  {
-                     template< typename M>
-                     void lookup( State& state, strong::file::descriptor::id descriptor, M&& message, common::message::service::lookup::request::context::Semantic semantic)
-                        requires std::is_rvalue_reference_v< decltype( message)>
-                     {
-                        Trace trace{ "gateway::group::inbound::handle::local::external::service::detail::lookup"};
-                        common::log::line( verbose::log, "message: ", message);
-
-                        // Change 'sender' so we get the reply
-                        message.process = common::process::handle();
-
-                        // Prepare lookup
-                        common::message::service::lookup::Request request{ common::process::handle()};
-                        {
-                           // get the information (with an assertion)
-                           auto information = casual::assertion( state.external.information( descriptor), "invalid descriptor: ", descriptor, ", message: ", message);
-                           request.correlation = message.correlation;
-                           request.requested = message.service.name;
-                           request.context.semantic = semantic;
-
-                           request.context.requester = information->configuration.discovery == decltype( information->configuration.discovery)::forward ?
-                              decltype( request.context.requester)::external_discovery : decltype( request.context.requester)::external;
-                        }
-
-                        // Add message to pending (we know message is an rvalue, so it's going to be a move)
-                        state.pending.requests.add( std::forward< M>( message));
-
-                        // Send lookup
-                        state.multiplex.send( ipc::manager::service(), request); 
-
-                     }
-                  } // detail
                   namespace call
                   {
                      auto request( State& state)
                      {
-                        return [&state]( common::message::service::call::callee::Request& message)
+                        return [ &state]( common::message::service::call::callee::Request& message)
                         {
                            Trace trace{ "gateway::group::inbound::handle::local::external::service::call::request"};
                            log::line( verbose::log, "message: ", message);
                            
                            auto descriptor = external::correlate( state, message);
-
-                           using namespace common::message::service::lookup::request;
-                           auto semantics =  message.flags.exist( decltype( message.flags.type())::no_reply) ? context::Semantic::no_reply : context::Semantic::no_busy_intermediate;
-                           detail::lookup( state, descriptor, std::move( message), semantics);
+                           state.tasks.add( task::create::service::call( state, descriptor, std::move( message)));
                         };
                      }
                   } // call
@@ -557,12 +289,11 @@ namespace casual
                         {
                            Trace trace{ "gateway::group::inbound::handle::local::external::conversation::connect::request"};
                            log::line( verbose::log, "message: ", message);
-                           
+
                            auto descriptor = external::correlate( state, message);
-                           service::detail::lookup( state, descriptor, std::move( message), common::message::service::lookup::request::context::Semantic::no_busy_intermediate);
+                           state.tasks.add( task::create::service::conversation( state, descriptor, std::move( message)));
                         };
                      }
-                     
                   } // connect
 
                   auto disconnect( State& state)
@@ -592,7 +323,7 @@ namespace casual
                         if( auto found = algorithm::find( state.conversations, message.correlation))
                            state.multiplex.send( found->process.ipc, message);
                         else
-                           common::log::line( common::log::category::error, "(external) failed to correlate conversation: ", message.correlation);
+                           common::log::error( code::casual::invalid_semantics, "(external) failed to correlate conversation: ", message.correlation);
                      };
                   }
                   
@@ -601,43 +332,6 @@ namespace casual
 
                namespace queue
                {
-                  namespace lookup
-                  {
-                     template< typename M>
-                     bool send( State& state, strong::file::descriptor::id descriptor, M&& message)
-                     {
-                        Trace trace{ "gateway::group::inbound::handle::local::external::queue::lookup::send"};
-
-                        // Prepare queue lookup
-                        casual::queue::ipc::message::lookup::Request request{ common::process::handle()};
-                        {
-                           request.correlation = message.correlation;
-                           request.name = message.name;
-
-                           auto information = casual::assertion( state.external.information( descriptor), "invalid descriptor: ", descriptor, ", message: ", message);
-
-                           using Enum = decltype( request.context.requester);
-                           request.context.requester = information->configuration.discovery == decltype( information->configuration.discovery)::forward ?
-                              Enum::external_discovery : Enum::external;
-                           
-                        }
-
-                        if( state.multiplex.send( ipc::manager::optional::queue(), request))
-                        {
-                           // Change 'sender' so we get the reply
-                           message.process = common::process::handle();
-
-                           // Add message to buffer
-                           state.pending.requests.add( std::forward< M>( message));
-
-                           return true;
-                        }
-
-                        return false;
-
-                     }
-                  } // lookup
-
                   namespace enqueue
                   {
                      auto request( State& state)
@@ -647,22 +341,8 @@ namespace casual
                            Trace trace{ "gateway::group::inbound::handle::local::external::queue::enqueue::Request"};
                            common::log::line( verbose::log, "message: ", message);
 
-                           external::correlate( state, message);
-
-                           // Send lookup
-                           if( ! queue::lookup::send( state, state.external.last(), message))
-                           {
-                              common::log::line( common::log::category::error, "failed to lookup queue: ", message.name, " - action: send error reply");
-
-                              casual::queue::ipc::message::group::enqueue::Reply reply;
-                              reply.correlation = message.correlation;
-                              reply.execution = message.execution;
-
-                              // empty uuid represent error. TODO: is this enough? No, it is not.
-                              reply.id = common::uuid::empty();
-
-                              tcp::send( state, reply);
-                           }
+                           auto descriptor = external::correlate( state, message);
+                           state.tasks.add( task::create::queue::enqueue( state, descriptor, std::move( message)));
                         };
                      }
                   } // enqueue
@@ -673,25 +353,11 @@ namespace casual
                      {
                         return [&state]( casual::queue::ipc::message::group::dequeue::Request& message)
                         {
-                           Trace trace{ "gateway::group::inbound::handle::queue::dequeue::Request::operator()"};
+                           Trace trace{ "gateway::group::inbound::handle::local::external::queue::dequeue::Request"};
                            common::log::line( verbose::log, "message: ", message);
 
-                           external::correlate( state, message);
-
-                           // Send lookup
-                           if( ! queue::lookup::send( state, state.external.last(), message))
-                           {
-                              common::log::line( common::log::category::error, "failed to lookup queue: ", message.name, " - action: send error reply");
-
-                              casual::queue::ipc::message::group::enqueue::Reply reply;
-                              reply.correlation = message.correlation;
-                              reply.execution = message.execution;
-
-                              // empty uuid represent error. TODO: is this enough? No, it is not.
-                              reply.id = common::uuid::empty();
-
-                              tcp::send( state, reply);
-                           }
+                           auto descriptor = external::correlate( state, message);
+                           state.tasks.add( task::create::queue::dequeue( state, descriptor, std::move( message)));
                         };
                      }
                   } // dequeue
@@ -713,11 +379,12 @@ namespace casual
                            // Set 'sender' so we get the reply
                            message.process = common::process::handle();
 
-                           const auto information = state.external.information( descriptor);
-                           assert( information);
+                           {
+                              auto information = casual::assertion( state.external.information( descriptor), "invalid descriptor: ", descriptor);
 
-                           if( information->configuration.discovery == decltype( information->configuration.discovery)::forward)
-                              message.directive = decltype( message.directive)::forward;
+                              if( information->configuration.discovery == decltype( information->configuration.discovery)::forward)
+                                 message.directive = decltype( message.directive)::forward;
+                           }
 
                            casual::domain::discovery::request( message);                    
                         };
@@ -737,11 +404,8 @@ namespace casual
                            Trace trace{ "gateway::inbound::handle::local::external::transaction::basic_request"};
                            common::log::line( verbose::log, "message: ", message);
 
-                           external::correlate( state, message);
-
-                           // Set 'sender' so we get the reply
-                           message.process = common::process::handle();
-                           state.multiplex.send(ipc::manager::transaction(), message);
+                           auto descriptor = external::correlate( state, message);
+                           state.tasks.add( task::create::transaction( state, descriptor, std::move( message)));
                         };
                      }
 
@@ -755,27 +419,7 @@ namespace casual
                      } // commit
                      namespace rollback
                      {
-                        auto request( State& state)
-                        {
-                           return [&state]( common::message::transaction::resource::rollback::Request& message)
-                           {
-                              Trace trace{ "gateway::inbound::handle::local::external::transaction::rollback::request"};
-                              common::log::line( verbose::log, "message: ", message);
-
-                              external::correlate( state, message);
-
-                              // Set 'sender' so we get the reply
-                              message.process = common::process::handle();
-                              state.multiplex.send(ipc::manager::transaction(), message);
-
-                              // almost always empty.
-                              // TODO this is a hack - remove in 1.7
-                              auto aborted_pending = state.pending.requests.abort_pending( message);
-
-                              for( auto& complete : aborted_pending)
-                                 inbound::tcp::send( state, std::move( complete));
-                           };
-                        }
+                        auto request = basic_request< common::message::transaction::resource::rollback::Request>;
                      } // rollback
                   } // resource
                } // transaction
@@ -813,6 +457,7 @@ namespace casual
             local::internal::transaction::resource::prepare::reply( state),
             local::internal::transaction::resource::commit::reply( state),
             local::internal::transaction::resource::rollback::reply( state),
+            local::internal::transaction::coordinate::inbound::reply( state),
 
             local::internal::domain::connected( state),
          };
@@ -861,18 +506,15 @@ namespace casual
                log::line( log::category::error, code::casual::communication_unavailable, " lost connection - address: ", extracted.information.configuration.address, ", domain: ", extracted.information.domain);
                log::line( log::category::verbose::error, "extracted: ", extracted);
 
-               // discard service lookup
-               // There is no other pending we need to discard at the moment.
-               algorithm::for_each( extracted.pending.services, [ &state]( auto& call)
+               // Let ongoing task associated with the connections conclude their work.
+               // Mostly to cancel service lookups and such.
+               algorithm::for_each( extracted.correlations, [ &state]( auto& correlations)
                {
-                  common::message::service::lookup::discard::Request request{ process::handle()};
-                  request.correlation = call.correlation;
-                  request.requested = call.service.name;
-                  // we don't need the reply
-                  request.reply = false;
+                  casual::task::concurrent::message::Conclude message;
+                  message.correlation = correlations;
 
-                  state.multiplex.send( ipc::manager::service(), request);
-               });            
+                  state.tasks( message);
+               });          
             }
 
             return { std::move( extracted.information.configuration), std::move( extracted.information.domain)};

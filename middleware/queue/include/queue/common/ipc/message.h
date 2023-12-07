@@ -139,6 +139,7 @@ namespace casual
 
             request::Context context;
             std::string name;
+            common::transaction::global::ID gtrid;
 
             inline friend bool operator == ( const Request& lhs, const std::string& name) { return lhs.name == name;}
 
@@ -146,6 +147,7 @@ namespace casual
                base_request::serialize( archive);
                CASUAL_SERIALIZE( context);
                CASUAL_SERIALIZE( name);
+               CASUAL_SERIALIZE( gtrid);
             )
          };
 

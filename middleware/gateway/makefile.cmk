@@ -126,6 +126,7 @@ inbound_archive = make.LinkArchive( 'bin/casual-gateway-inbound-archive',
     [
         make.Compile( 'source/group/inbound/handle.cpp'),
         make.Compile( 'source/group/inbound/state.cpp'),
+        make.Compile( 'source/group/inbound/task/create.cpp'),
     ]
 )
 
@@ -186,11 +187,13 @@ target_unittest = make.LinkUnittest( 'bin/test-casual-gateway',
         make.Compile( 'unittest/source/test_manager.cpp'),
         make.Compile( 'unittest/source/test_protocol.cpp'),
         make.Compile( 'unittest/source/group/outbound/test_state.cpp'),
+        make.Compile( 'unittest/source/group/inbound/test_state.cpp'),
         make.Compile( 'unittest/source/test_reverse.cpp'),
    ] + protocol_objects, 
    [    
         unittest_archive,
         outbound_archive,
+        inbound_archive,
         common_archive, 
         'casual-serviceframework',
         'casual-queue-api',
