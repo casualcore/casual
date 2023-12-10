@@ -173,6 +173,8 @@ namespace casual
                inbound::Limit limit{};
                std::string note;
 
+               inline friend bool operator == ( const Group& lhs, std::string_view rhs) { return lhs.alias == rhs;}
+
                CASUAL_CONST_CORRECT_SERIALIZE(
                   CASUAL_SERIALIZE( alias);
                   CASUAL_SERIALIZE( runlevel);
@@ -244,6 +246,8 @@ namespace casual
                platform::size::type order{};
                Pending pending;
                std::string note;
+
+               inline friend bool operator == ( const Group& lhs, std::string_view rhs) { return lhs.alias == rhs;}
 
                CASUAL_CONST_CORRECT_SERIALIZE(
                   CASUAL_SERIALIZE( alias);

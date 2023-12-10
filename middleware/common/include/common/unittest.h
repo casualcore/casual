@@ -66,8 +66,7 @@ namespace casual
             return reply;
          }
          
-         // not implemented yet.
-         // platform::binary::type receive( const strong::correlation::id& correlation);
+         platform::binary::type receive( const strong::correlation::id& correlation);
 
          namespace wait::until
          {
@@ -143,7 +142,7 @@ namespace casual
                   source.rdbuf( origin);
                });
             }
-         } // outpout
+         } // output
 
          namespace standard
          {
