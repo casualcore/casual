@@ -40,7 +40,16 @@ namespace casual
          void ack( const common::message::service::call::callee::Request& request);
          void ack( const common::message::service::lookup::Reply& lookup);
          //! @}
+
       } // send
+
+      namespace server
+      {
+         // emulate a server reply. receives a request, send echo reply.
+         // and send ACK to SM.
+         common::strong::correlation::id echo( const common::strong::correlation::id& correlation);
+         
+      } // server
 
       manager::admin::model::State state();
 
