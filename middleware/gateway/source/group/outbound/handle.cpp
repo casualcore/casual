@@ -501,9 +501,11 @@ namespace casual
 
                                  for( auto& domain : message.domains)
                                  {
+                                    // Make sure to exclude connections that are disconnecting
                                     if( auto information = state.external.information( domain.id))
-                                       if( auto correlation = local::tcp::send( state, information->descriptor, request))
-                                          result.emplace_back( correlation, information->descriptor);
+                                       if( ! algorithm::find( state.disconnecting, information->descriptor))
+                                          if( auto correlation = local::tcp::send( state, information->descriptor, request))
+                                             result.emplace_back( correlation, information->descriptor);
                                  }
 
                                  return result;
