@@ -159,25 +159,41 @@ namespace casual
          auto expired = state.pending.deadline.expired( now);
          log::line( verbose::log, "expired: ", expired);
 
-         auto send_error_reply = [&state]( auto& entry)
+         auto handle_timeout = [&state]( auto& entry)
          {
+            auto order_assassination = []( auto& target, auto& contract)
+            {
+               // send event, at least domain-manager want's to know...
+               common::message::event::process::Assassination event{ common::process::handle()};
+               event.target = target;
+               event.contract = contract;
+               common::event::send( event);
+            };
+
+            auto contract = entry.service->timeout.contract.value_or( common::service::execution::timeout::contract::Type::linger);
+
             if( auto caller = entry.service->consume( entry.correlation))
             {
                // keep track of instance until we get an ACK, or the server dies
                // We need to notify TM if this call was in transaction.
                state.timeout_instances.push_back( entry.target);
-
                local::error::reply( state, caller, common::code::xatmi::timeout);
-
-               // send event, at least domain-manager want's to know...
-               common::message::event::process::Assassination event{ common::process::handle()};
-               event.target = entry.target;
-               event.contract = entry.service->timeout.contract.value_or( common::service::execution::timeout::contract::Type::linger);
-               common::event::send( event);
+               order_assassination( entry.target, contract);
             }
+            else
+               // This happens during shutdown
+               // Sadly the state of service-manager is not yet `Runlevel::shutdown`
+               // due to the fact that service-manager is still only in "prepare::shutdown" state.
+               // TODO: 
+               //   - find a way to check a more precise condition on shutdown
+               //   - in this case the reply to the caller is not going to be TPETIME
+               //     but rather TPESVCERR, can we redesign that?
+               // 
+               order_assassination( entry.target, contract);
+
          };
 
-         algorithm::for_each( expired.entries, send_error_reply);
+         algorithm::for_each( expired.entries, handle_timeout);
 
          if( expired.deadline)
             signal::timer::set( expired.deadline.value() - now);

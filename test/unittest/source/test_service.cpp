@@ -4,9 +4,12 @@
 //! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
+#define CASUAL_NO_XATMI_UNDEFINE
+
 #include "common/unittest.h"
 
 #include "domain/unittest/manager.h"
+#include "domain/unittest/utility.h"
 
 #include "service/unittest/utility.h"
 
@@ -17,6 +20,7 @@
 #include "common/event/listen.h"
 #include "common/service/lookup.h"
 #include "common/communication/ipc/send.h"
+
 
 #include "casual/xatmi.h"
 
@@ -453,6 +457,74 @@ domain:
 
 
 
+      }
+
+      TEST( test_service, service_casual_example_sleep_execution_timeout_duration_100ms__call_service__prepare_shutdown____expect__assassination_event)
+      {
+         common::unittest::Trace trace;
+
+         constexpr auto configuration = R"(
+domain:
+   servers:
+      -  path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-server
+         memberships: [ user]
+         instances: 1
+         arguments:
+            - --sleep
+            - 2s
+   services:
+      -  name: "casual/example/sleep"
+         execution:
+            timeout:
+               duration: "100ms"
+               contract: "kill"
+)";
+
+         auto domain = casual::domain::unittest::manager( local::configuration::base, configuration);
+
+         auto state = casual::domain::unittest::state();
+         auto example_server_handle = casual::domain::unittest::server( state, "casual-example-server");
+         ASSERT_TRUE( example_server_handle);
+
+         // setup subscription to verify event
+         common::event::subscribe( common::process::handle(), { common::message::event::process::Assassination::type()});
+
+         int descriptor{};
+         {
+            // Call casual/example/sleep service
+            auto buffer = tpalloc( X_OCTET, nullptr, 128);
+            auto len = tptypes( buffer, nullptr, nullptr);
+            descriptor = tpacall( "casual/example/sleep", buffer, len, 0);
+         }
+
+         {
+            // simulate shutdown of example-server
+            common::message::domain::process::prepare::shutdown::Request request;
+            request.process = common::process::handle();
+            request.processes.push_back( example_server_handle);
+
+            common::communication::ipc::call( common::communication::instance::outbound::service::manager::device(), request);
+         }
+
+         {
+            // check reply from service, expect error due to timeout and shutdown
+            auto buffer = tpalloc( X_OCTET, nullptr, 128);
+            auto len = tptypes( buffer, nullptr, nullptr);
+            auto result = tpgetrply( &descriptor, &buffer, &len, 0);
+            EXPECT_EQ( result, -1);
+            EXPECT_EQ( tperrno, TPESVCERR);
+         }
+
+         {
+            // check if assassinate is triggered
+            common::message::event::process::Assassination event;
+            EXPECT_TRUE( common::communication::device::blocking::receive(
+               common::communication::ipc::inbound::device(),
+               event));
+
+            EXPECT_EQ( event.target, example_server_handle);
+            EXPECT_EQ( event.contract, decltype( event.contract)::kill);
+         }
       }
 
 
