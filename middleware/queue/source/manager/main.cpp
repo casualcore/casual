@@ -44,7 +44,7 @@ namespace casual
                State state;
 
                // We ask the domain manager for configuration, and 'comply' to it...
-               handle::comply::configuration( state, casual::domain::configuration::fetch().queue);
+               handle::comply::configuration( state, casual::domain::configuration::fetch());
 
                return state;
             }

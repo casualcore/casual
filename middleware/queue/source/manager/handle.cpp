@@ -390,6 +390,7 @@ namespace casual
                         // send configuration
                         queue::ipc::message::forward::group::configuration::update::Request request{ common::process::handle()};
                         request.model = found->configuration;
+                        request.groups = state.group_coordinator.config();
                         state.multiplex.send( message.process.ipc, request);
                      }
                      else
@@ -568,17 +569,18 @@ namespace casual
 
       namespace comply
       {
-         void configuration( State& state, casual::configuration::model::queue::Model model)
+         void configuration( State& state, casual::configuration::Model model)
          {
             Trace trace{ "queue::manager::handle::comply::configuration"};
             log::line( verbose::log, "model: ", model);
 
             // TODO maintainence: runtime configuration
 
-            state.note = model.note;
+            state.note = model.queue.note;
+            state.group_coordinator.update( model.domain.groups);
 
-            state.groups = algorithm::transform( model.groups, []( auto& config){ return state::Group{ std::move( config)};});
-            state.forward.groups = algorithm::transform( model.forward.groups, []( auto& config){ return state::forward::Group{ std::move( config)};});
+            state.groups = algorithm::transform( model.queue.groups, []( auto& config){ return state::Group{ std::move( config)};});
+            state.forward.groups = algorithm::transform( model.queue.forward.groups, []( auto& config){ return state::forward::Group{ std::move( config)};});
 
             auto spawn = []( auto& entity)
             {

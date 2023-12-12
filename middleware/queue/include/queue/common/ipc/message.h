@@ -909,10 +909,12 @@ namespace casual
                using base_request::base_request;
 
                casual::configuration::model::queue::forward::Group model;
+               std::vector< casual::configuration::model::domain::Group> groups;
 
                CASUAL_CONST_CORRECT_SERIALIZE(
                   base_request::serialize( archive);
                   CASUAL_SERIALIZE( model);
+                  CASUAL_SERIALIZE( groups);
                )
             };
 
@@ -993,6 +995,7 @@ namespace casual
                   Instances instances;
                   Metric metric;
                   std::string note;
+                  bool enabled = true;
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
                      CASUAL_SERIALIZE( alias);
@@ -1001,6 +1004,7 @@ namespace casual
                      CASUAL_SERIALIZE( instances);
                      CASUAL_SERIALIZE( metric);
                      CASUAL_SERIALIZE( note);
+                     CASUAL_SERIALIZE( enabled);
                   )
                };
 
@@ -1024,6 +1028,7 @@ namespace casual
                   std::optional< Reply> reply;
                   Metric metric;
                   std::string note;
+                  bool enabled = true;
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
                      CASUAL_SERIALIZE( alias);
@@ -1033,6 +1038,7 @@ namespace casual
                      CASUAL_SERIALIZE( reply);
                      CASUAL_SERIALIZE( metric);
                      CASUAL_SERIALIZE( note);
+                     CASUAL_SERIALIZE( enabled);
                   )
                };
 
@@ -1040,6 +1046,7 @@ namespace casual
                std::vector< Service> services;
                std::vector< Queue> queues;
                std::string note;
+               bool enabled = true;
 
                inline friend Reply operator + ( Reply lhs, Reply rhs)
                {
@@ -1055,6 +1062,7 @@ namespace casual
                   CASUAL_SERIALIZE( services);
                   CASUAL_SERIALIZE( queues);
                   CASUAL_SERIALIZE( note);
+                  CASUAL_SERIALIZE( enabled);
                )
             };
 

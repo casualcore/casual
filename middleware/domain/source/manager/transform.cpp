@@ -51,7 +51,7 @@ namespace casual
                // 'two phase' - we add all groups, and then take care of dependencies. Hence, we don't rely on order...
                algorithm::transform( source, std::back_inserter( target), [master = state.group_id.master]( auto& group)
                {
-                  return manager::state::Group{ group.name, { master}, group.note};
+                  return manager::state::Group{ group.name, { master}, group.note, group.enabled};
                });
 
                // take care of dependencies
@@ -141,6 +141,7 @@ namespace casual
                      result.id = value.id.value();
                      result.name = value.name;
                      result.note = value.note;
+                     result.enabled = value.enabled;
 
                      result.dependencies = algorithm::transform( value.dependencies, []( auto& id)
                      {
@@ -442,6 +443,7 @@ namespace casual
             configuration::model::domain::Group result;
             result.name = group.name;
             result.note = group.note;
+            result.enabled = group.enabled;
             result.dependencies = name_groups( group.dependencies);
             return result;
          }, []( auto& group)

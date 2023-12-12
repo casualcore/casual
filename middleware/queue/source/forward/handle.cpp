@@ -34,13 +34,21 @@ namespace casual
          {
             namespace transform::forward
             {
-
-               auto service()
+               namespace detail::forward
                {
-                  return []( auto& service)
+                  bool enabled( State& state, const std::vector< std::string>& forward_memberships)
+                  {
+                     return state.group_coordinator.enabled( state.memberships) && state.group_coordinator.enabled( forward_memberships);
+                  }
+               } // detail::forward
+
+               auto service( State& state)
+               {
+                  return [ &]( auto& service)
                   {
                      state::forward::Service result;
                      result.alias = service.alias;
+                     result.enabled = detail::forward::enabled( state, service.memberships);
                      result.source.queue = service.source;
                      
                      if( service.reply)
@@ -56,12 +64,13 @@ namespace casual
                      return result;
                   };
                }
-               auto queue()
+               auto queue( State& state)
                {
-                  return []( auto& queue)
+                  return [ &]( auto& queue)
                   {
                      state::forward::Queue result;
                      result.alias = queue.alias;
+                     result.enabled = detail::forward::enabled( state, queue.memberships);
                      result.source.queue = queue.source;
 
                      result.target.queue = queue.target.queue;
@@ -228,7 +237,8 @@ namespace casual
                         
                      };
 
-                     common::algorithm::for_n( forward.instances.missing(), send_request);
+                     if( forward.enabled)
+                        common::algorithm::for_n( forward.instances.missing(), send_request);
                   }
                } // dequeue
 
@@ -319,7 +329,7 @@ namespace casual
                   {
                      auto cancel_surplus_instances = [ &state]( const auto& forward)
                      {
-                        auto surplus = forward.instances.surplus();
+                        auto surplus = forward.enabled ? forward.instances.surplus() : forward.instances.running;
                         if( surplus == 0)
                            return;
 
@@ -364,7 +374,7 @@ namespace casual
                   {
                      auto is_configured = []( auto& forward)
                      {
-                        return forward.instances.configured > 0;
+                        return forward.enabled && forward.instances.configured > 0;
                      };
 
                      algorithm::for_each( 
@@ -394,6 +404,8 @@ namespace casual
                         log::line( verbose::log, "message: ", message);
 
                         state.alias = message.model.alias;
+                        state.memberships = message.model.memberships;
+                        state.group_coordinator.update( message.groups);
 
                         // TODO maintenance we only update instances
                         auto add_or_update = []( auto& source, auto& target, auto transform)
@@ -411,12 +423,12 @@ namespace casual
                            algorithm::for_each( source, handle_source);
                         };
 
-                        add_or_update( message.model.services, state.forward.services, transform::forward::service());
-                        add_or_update( message.model.queues, state.forward.queues, transform::forward::queue());
+                        add_or_update( message.model.services, state.forward.services, transform::forward::service( state));
+                        add_or_update( message.model.queues, state.forward.queues, transform::forward::queue( state));
 
                         comply::to::state( state);
 
-                        state.multiplex.send( message.process.ipc, common::message::reverse::type( message, process::handle()));                        
+                        state.multiplex.send( message.process.ipc, common::message::reverse::type( message, process::handle()));
                      };
                   }
 
@@ -886,6 +898,7 @@ namespace casual
                            target.metric.rollback.count = source.metric.rollback.count;
                            target.metric.rollback.last = source.metric.rollback.last;
                            target.note = source.note;
+                           target.enabled = source.enabled;
                         };
 
                         auto transform_service = [basic_assign]( const auto& service)
@@ -918,6 +931,7 @@ namespace casual
 
                         auto reply = common::message::reverse::type( message, process::handle());
                         reply.alias = state.alias;
+                        reply.enabled = state.group_coordinator.enabled( state.memberships);
                         reply.services = algorithm::transform( state.forward.services, transform_service);
                         reply.queues = algorithm::transform( state.forward.queues, transform_queue);
 

@@ -109,7 +109,8 @@ queue_manager = make.LinkExecutable( 'bin/casual-queue-manager',
      'casual-common', 
      'casual-domain-utility',
      'casual-domain-discovery',
-     'casual-serviceframework', 
+     'casual-serviceframework',
+     'casual-configuration'
      ])
 
 
@@ -153,7 +154,7 @@ forward_server = make.LinkExecutable( 'bin/casual-queue-forward-group',
     make.Compile( 'source/forward/state.cpp'),
     make.Compile( 'source/forward/main.cpp'),
 ],
-[ common, 'casual-common', 'casual-buffer'])
+[ common, 'casual-common', 'casual-buffer', 'casual-configuration'])
 
 install_bin.append( forward_server)
 

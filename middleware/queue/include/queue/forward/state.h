@@ -20,6 +20,7 @@
 #include "common/communication/select.h"
 #include "common/communication/ipc/send.h"
 
+#include "configuration/group.h"
 
 #include <vector>
 #include <string>
@@ -97,7 +98,7 @@ namespace casual
                platform::size::type configured{};
                platform::size::type running{};
 
-               //! @returns how many concurrent that hare missing before we
+               //! @returns how many concurrent that are missing before we
                //! reach the configured...
                inline platform::size::type missing() const 
                { 
@@ -170,6 +171,7 @@ namespace casual
 
                std::string alias;
                std::string note;
+               bool enabled = true;
 
                //! increment and decrement running instances
                Service& operator++();
@@ -197,6 +199,7 @@ namespace casual
                   CASUAL_SERIALIZE( instances);
                   CASUAL_SERIALIZE( metric);
                   CASUAL_SERIALIZE( selector);
+                  CASUAL_SERIALIZE( enabled);
                )
             };
 
@@ -213,6 +216,7 @@ namespace casual
 
                std::string alias;
                std::string note;
+               bool enabled = true;
 
                //! increment and decrement running instances
                Queue& operator++();
@@ -238,6 +242,7 @@ namespace casual
                   CASUAL_SERIALIZE( instances);
                   CASUAL_SERIALIZE( metric);
                   CASUAL_SERIALIZE( selector);
+                  CASUAL_SERIALIZE( enabled);
                )
             };
 
@@ -439,6 +444,10 @@ namespace casual
 
          std::string alias;
 
+         std::vector< std::string> memberships;
+
+         configuration::group::Coordinator group_coordinator;
+
          //! we're done when we're in shutdown mode
          //! and all forwards has no concurrent stuff in flight.
          bool done() const noexcept;
@@ -464,6 +473,7 @@ namespace casual
             CASUAL_SERIALIZE( alias);
             CASUAL_SERIALIZE( forward);
             CASUAL_SERIALIZE( pending);
+            CASUAL_SERIALIZE( memberships);
          )
       };
    } // queue::forward

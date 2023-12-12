@@ -30,6 +30,7 @@ namespace casual
             id_type id;
             std::string name;
             std::string note;
+            bool enabled = true;
 
             std::vector< id_type> dependencies;
 
@@ -37,6 +38,7 @@ namespace casual
                CASUAL_SERIALIZE( id);
                CASUAL_SERIALIZE( name);
                CASUAL_SERIALIZE( note);
+               CASUAL_SERIALIZE( enabled);
                CASUAL_SERIALIZE( dependencies);
             )
          };

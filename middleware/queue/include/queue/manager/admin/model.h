@@ -198,6 +198,7 @@ namespace casual
             Instances instances;
             Metric metric;
             std::string note;
+            bool enabled = true;
 
             inline friend bool operator == ( const Queue& lhs, common::strong::process::id rhs) { return lhs.group == rhs;}
 
@@ -209,6 +210,7 @@ namespace casual
                CASUAL_SERIALIZE( instances);
                CASUAL_SERIALIZE( metric);
                CASUAL_SERIALIZE( note);
+               CASUAL_SERIALIZE( enabled);
             )
          };
 
@@ -234,6 +236,7 @@ namespace casual
             std::optional< Reply> reply;
             Metric metric;
             std::string note;
+            bool enabled = true;
 
             inline friend bool operator == ( const Service& lhs, common::strong::process::id rhs) { return lhs.group == rhs;}
 
@@ -246,6 +249,7 @@ namespace casual
                CASUAL_SERIALIZE( reply);
                CASUAL_SERIALIZE( metric);
                CASUAL_SERIALIZE( note);
+               CASUAL_SERIALIZE( enabled);
             )
          };
 
@@ -254,6 +258,7 @@ namespace casual
             std::string alias;
             common::process::Handle process;
             std::string note;
+            bool enabled = true;
 
             inline friend bool operator == ( const Group& lhs, common::strong::process::id rhs) { return lhs.process.pid == rhs;}
 
@@ -261,6 +266,7 @@ namespace casual
                CASUAL_SERIALIZE( alias);
                CASUAL_SERIALIZE( process);
                CASUAL_SERIALIZE( note);
+               CASUAL_SERIALIZE( enabled);
             )
          };
 

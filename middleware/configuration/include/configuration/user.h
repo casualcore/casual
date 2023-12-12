@@ -107,6 +107,7 @@ namespace casual
          {
             std::string name;
             std::optional< std::string> note;
+            std::optional< bool> enabled;
 
             std::optional< std::vector< std::string>> resources;
             std::optional< std::vector< std::string>> dependencies;
@@ -116,6 +117,7 @@ namespace casual
             CASUAL_CONST_CORRECT_SERIALIZE(
                CASUAL_SERIALIZE( name);
                CASUAL_SERIALIZE( note);
+               CASUAL_SERIALIZE( enabled);
                CASUAL_SERIALIZE( resources);
                CASUAL_SERIALIZE( dependencies);
             )
@@ -716,12 +718,14 @@ namespace casual
                   std::string source;
                   std::optional< platform::size::type> instances;
                   std::optional< std::string> note;
+                  std::optional< std::vector< std::string>> memberships;
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
                      CASUAL_SERIALIZE( alias);
                      CASUAL_SERIALIZE( source);
                      CASUAL_SERIALIZE( instances);
                      CASUAL_SERIALIZE( note);
+                     CASUAL_SERIALIZE( memberships);
                   )
                };
 
@@ -775,6 +779,7 @@ namespace casual
                   std::optional< std::vector< forward::Service>> services;
                   std::optional< std::vector< forward::Queue>> queues;
                   std::optional< std::string> note;
+                  std::optional< std::vector< std::string>> memberships;
 
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
@@ -782,6 +787,7 @@ namespace casual
                      CASUAL_SERIALIZE( note);
                      CASUAL_SERIALIZE( services);
                      CASUAL_SERIALIZE( queues);
+                     CASUAL_SERIALIZE( memberships);
                   )
                };
             } // forward

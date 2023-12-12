@@ -191,6 +191,7 @@ namespace casual
                         configuration::model::domain::Group result;
                         result.name = group.name;
                         result.note = group.note.value_or( "");
+                        result.enabled = group.enabled.value_or( result.enabled);
                         result.dependencies = group.dependencies.value_or( result.dependencies);
                         return result;
                      });
@@ -441,6 +442,8 @@ namespace casual
                      {
                         queue::forward::Group result;
                         result.alias = group.alias.value_or( "");
+                        result.note = group.note.value_or( "");
+                        result.memberships = group.memberships.value_or( result.memberships);
 
                         auto set_base_forward = []( auto& source, auto& target)
                         {
@@ -450,6 +453,7 @@ namespace casual
                               target.instances = source.instances.value();
 
                            target.note = source.note.value_or( "");
+                           target.memberships = source.memberships.value_or( target.memberships);
                         };
 
                         if( group.services)
@@ -681,6 +685,7 @@ namespace casual
                      configuration::user::domain::Group result;
                      result.name = value.name;
                      result.note = null_if_empty( value.note);
+                     result.enabled = value.enabled;
                      result.dependencies = null_if_empty( value.dependencies);
 
                      return result;
@@ -876,6 +881,7 @@ namespace casual
                         user::domain::queue::forward::Group result;
                         result.alias = group.alias;
                         result.note = null_if_empty( group.note);
+                        result.memberships = null_if_empty( group.memberships);
 
                         result.services = null_if_empty( algorithm::transform( group.services, []( auto& service)
                         {
@@ -883,6 +889,7 @@ namespace casual
                            result.alias = service.alias;
                            result.instances = service.instances;
                            result.note = null_if_empty( service.note);
+                           result.memberships = null_if_empty( service.memberships);
                            result.source = service.source;
                            result.target.service = service.target.service;
 
@@ -903,6 +910,7 @@ namespace casual
                            result.alias = queue.alias;
                            result.instances = queue.instances;
                            result.note = null_if_empty( queue.note);
+                           result.memberships = null_if_empty( queue.memberships);
                            result.source = queue.source;
                            result.target.queue = queue.target.queue;
                            result.target.delay = chronology::to::string( queue.target.delay);

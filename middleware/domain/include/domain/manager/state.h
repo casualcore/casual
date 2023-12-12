@@ -45,13 +45,14 @@ namespace casual
             using id_type = strong::group::id;
             Group() = default;
 
-            Group( std::string name, std::vector< id_type> dependencies, std::string note = "")
-               : name( std::move( name)), note( std::move( note)), dependencies( std::move( dependencies)) {}
+            Group( std::string name, std::vector< id_type> dependencies, std::string note = "", bool enabled = true)
+               : name( std::move( name)), note( std::move( note)), enabled( enabled), dependencies( std::move( dependencies)) {}
 
             id_type id = id_type::generate();
 
             std::string name;
             std::string note;
+            bool enabled = true;
 
             std::vector< id_type> dependencies;
 
@@ -73,6 +74,7 @@ namespace casual
                CASUAL_SERIALIZE( id);
                CASUAL_SERIALIZE( name);
                CASUAL_SERIALIZE( note);
+               CASUAL_SERIALIZE( enabled);
                CASUAL_SERIALIZE( dependencies);
             )
          };

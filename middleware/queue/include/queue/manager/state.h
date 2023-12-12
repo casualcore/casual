@@ -18,6 +18,7 @@
 
 
 #include "configuration/model.h"
+#include "configuration/group.h"
 
 #include <string>
 #include <vector>
@@ -164,6 +165,8 @@ namespace casual
          common::communication::ipc::send::Coordinator multiplex{ directive};
 
          std::unordered_map< std::string, std::vector< state::Queue>> queues;
+
+         configuration::group::Coordinator group_coordinator;
 
          struct
          {

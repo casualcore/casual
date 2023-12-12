@@ -28,7 +28,7 @@ namespace casual
 
       namespace comply
       {
-         void configuration( State& state, casual::configuration::model::queue::Model model);
+         void configuration( State& state, casual::configuration::Model model);
          
       } // comply
 

@@ -226,14 +226,30 @@ namespace casual
                         return std::to_string( forward.group.value());
                      }, terminal::color::white);
                   };
-                  
-                  auto column_configure_instances = []()
-                  { 
-                     return terminal::format::column( "CI", []( auto& forward){ return forward.instances.configured;}, terminal::color::white);
+
+                  auto column_enabled = []()
+                  {
+                     // todo: is this the best title?
+                     return terminal::format::column( "S", []( auto& forward)
+                     {
+                        return forward.enabled ? "E" : "D";
+                     });
                   };
+                  
+                  auto column_configured_instances = []()
+                  { 
+                     return terminal::format::column( "CI", []( auto& forward)
+                     { 
+                        return forward.instances.configured;
+                     }, terminal::color::white, terminal::format::Align::right);
+                  };
+
                   auto column_running_instances = []()
                   { 
-                     return terminal::format::column( "I", []( auto& forward){ return forward.instances.running;}, terminal::color::white);
+                     return terminal::format::column( "I", []( auto& forward)
+                     { 
+                        return forward.instances.running;
+                     }, terminal::color::white, terminal::format::Align::right);
                   };
 
                   auto column_source = []()
@@ -296,19 +312,40 @@ namespace casual
                         }, terminal::color::cyan, terminal::format::Align::right);
                      };
 
-                     return terminal::format::formatter< manager::admin::model::forward::Service>::construct(
-                        column_alias(),
-                        column_group( state.forward.groups),
-                        column_source(),
-                        column_target(),
-                        column_reply_name(),
-                        column_reply_delay(),
-                        column_configure_instances(),
-                        column_running_instances(),
-                        column_commit(),
-                        column_rollback(),
-                        column_last()
-                     );
+                     if( ! terminal::output::directive().porcelain())
+                     {
+                        return terminal::format::formatter< manager::admin::model::forward::Service>::construct(
+                           column_alias(),
+                           column_group( state.forward.groups),
+                           column_source(),
+                           column_target(),
+                           column_reply_name(),
+                           column_reply_delay(),
+                           column_enabled(),
+                           column_configured_instances(),
+                           column_running_instances(),
+                           column_commit(),
+                           column_rollback(),
+                           column_last()
+                        );
+                     }
+                     else
+                     {
+                        return terminal::format::formatter< manager::admin::model::forward::Service>::construct(
+                           column_alias(),
+                           column_group( state.forward.groups),
+                           column_source(),
+                           column_target(),
+                           column_reply_name(),
+                           column_reply_delay(),
+                           column_configured_instances(),
+                           column_running_instances(),
+                           column_commit(),
+                           column_rollback(),
+                           column_last(),
+                           column_enabled()
+                        );
+                     }
                   }
    
                   auto queues( const manager::admin::model::State& state)
@@ -326,18 +363,38 @@ namespace casual
                         }, terminal::color::white, terminal::format::Align::right);
                      };
 
-                     return terminal::format::formatter< manager::admin::model::forward::Queue>::construct(
-                        column_alias(),
-                        column_group( state.forward.groups),
-                        column_source(),
-                        column_target(),
-                        column_target_delay(),
-                        column_configure_instances(),
-                        column_running_instances(),
-                        column_commit(),
-                        column_rollback(),
-                        column_last()
-                     );
+                     if( ! terminal::output::directive().porcelain())
+                     {
+                        return terminal::format::formatter< manager::admin::model::forward::Queue>::construct(
+                           column_alias(),
+                           column_group( state.forward.groups),
+                           column_source(),
+                           column_target(),
+                           column_target_delay(),
+                           column_enabled(),
+                           column_configured_instances(),
+                           column_running_instances(),
+                           column_commit(),
+                           column_rollback(),
+                           column_last()
+                        );
+                     }
+                     else
+                     {
+                        return terminal::format::formatter< manager::admin::model::forward::Queue>::construct(
+                           column_alias(),
+                           column_group( state.forward.groups),
+                           column_source(),
+                           column_target(),
+                           column_target_delay(),
+                           column_configured_instances(),
+                           column_running_instances(),
+                           column_commit(),
+                           column_rollback(),
+                           column_last(),
+                           column_enabled()
+                        );
+                     }
                   }
 
                   auto groups( const manager::admin::model::State& state)
@@ -424,15 +481,32 @@ namespace casual
                         }, terminal::color::blue);
                      };
 
-                     return terminal::format::formatter< manager::admin::model::forward::Group>::construct(
-                        column_alias(),
-                        column_pid(),
-                        column_services(),
-                        column_queues(),
-                        column_commit(),
-                        column_rollback(),
-                        column_last()
-                     );
+                     if( ! terminal::output::directive().porcelain())
+                     {
+                        return terminal::format::formatter< manager::admin::model::forward::Group>::construct(
+                           column_alias(),
+                           column_pid(),
+                           column_enabled(),
+                           column_services(),
+                           column_queues(),
+                           column_commit(),
+                           column_rollback(),
+                           column_last()
+                        );
+                     }
+                     else
+                     {
+                        return terminal::format::formatter< manager::admin::model::forward::Group>::construct(
+                           column_alias(),
+                           column_pid(),
+                           column_services(),
+                           column_queues(),
+                           column_commit(),
+                           column_rollback(),
+                           column_last(),
+                           column_enabled()
+                        );
+                     }
                   }
 
                } // forward
@@ -572,6 +646,10 @@ namespace casual
       alias of the group
    pid:
       the pid of the process that is running the group
+   S:
+      the state of the group
+         E: enabled
+         D: disabled
    services:
       number of forward-services running within the group
    queues:
@@ -581,7 +659,7 @@ namespace casual
    rollbacks:
       accumulated number of rollbacks for all forwards within the group
    last:
-      when the last time one of the forward did something
+      the last time one of the forwards did something
 )";
 
                      constexpr auto services = R"(legend: list-forward-services
@@ -597,6 +675,10 @@ namespace casual
       the queue to put the reply to, if any
    delay:
       delay of the reply message, duration until the message will be available for others to consume
+   S:
+      the state of the forward
+         E: enabled
+         D: disabled
    CI:
       configured 'instances'
    I:
@@ -606,7 +688,7 @@ namespace casual
    rollbacks:
       number of rollbacks the forward has performed
    last:
-      when the last time the forward did something
+      the last time the forward did something
 )";
 
                      constexpr auto queues = R"(legend: list-forward-queues
@@ -620,6 +702,10 @@ namespace casual
       the queue to enqueue to
    delay:
       delay of the enqueued message, duration until the message will be available for others to consume
+   S:
+      the state of the forward
+         E: enabled
+         D: disabled
    CI:
       configured 'instances'
    I:
@@ -629,7 +715,7 @@ namespace casual
    rollbacks:
       number of rollbacks the forward has performed
    last:
-      when the last time the forward did something
+      the last time the forward did something
 )";
 
                   } // forward

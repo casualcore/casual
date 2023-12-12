@@ -76,7 +76,9 @@ namespace casual
                   return result;
                };
 
-               result.forward.groups.push_back( admin::model::forward::Group{ std::move( forward.alias), forward.process, std::move( forward.note)});
+               result.forward.groups.push_back(
+                  admin::model::forward::Group{ std::move( forward.alias), forward.process, std::move( forward.note), forward.enabled}
+               );
 
                auto transform_service = [&forward, &transform_metric]( auto& service)
                {
@@ -99,7 +101,8 @@ namespace casual
                      admin::model::forward::Instances{ service.instances.configured, service.instances.running},
                      transform_reply( service.reply),
                      transform_metric( service.metric),
-                     std::move(  service.note)
+                     std::move( service.note),
+                     service.enabled
                   };
                };
 
@@ -114,7 +117,8 @@ namespace casual
                      admin::model::forward::Queue::Target{ queue.target.queue, queue.target.delay},
                      admin::model::forward::Instances{ queue.instances.configured, queue.instances.running},
                      transform_metric( queue.metric),
-                     std::move(  queue.note)
+                     std::move(  queue.note),
+                     queue.enabled
                   };
                };
 

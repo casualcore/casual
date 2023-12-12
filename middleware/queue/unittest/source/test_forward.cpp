@@ -744,5 +744,111 @@ domain:
          });
       }
 
+      TEST( casual_queue_forward, forward_group_membership_disabled__expect_0_running_forward_instances)
+      {
+         common::unittest::Trace trace;
+
+         constexpr auto configuration = R"(
+domain: 
+   name: test
+
+   groups: 
+      -  name: disabled-group
+         dependencies: [ queue]
+         enabled: false
+
+   queue:
+      groups:
+         -  alias: a
+            queuebase: ":memory:"
+            queues:
+               - name: a1
+               - name: a2
+
+      forward:
+         groups:
+            -  alias: forward-group
+               memberships:
+                  -  disabled-group
+               services:
+                  -  alias: foo
+                     instances: 1
+                     source: a1
+                     target: 
+                        service: queue/unittest/service
+                     reply:
+                        queue: a2
+               queues:
+                  -  alias: bar
+                     instances: 1
+                     source: a2
+                     target:
+                        queue: a1
+)";
+
+         auto domain = local::domain( configuration);
+
+         auto state = unittest::state();
+
+         auto configured_but_not_running = []( auto& forward){ return forward.instances.configured == 1 && forward.instances.running == 0;};
+
+         EXPECT_TRUE( common::algorithm::all_of( state.forward.services, configured_but_not_running));
+         EXPECT_TRUE( common::algorithm::all_of( state.forward.queues, configured_but_not_running));
+      }
+
+      TEST( casual_queue_forward, forward_service_queue_membership_disabled__expect_0_running_forward_instances)
+      {
+         common::unittest::Trace trace;
+
+         constexpr auto configuration = R"(
+domain: 
+   name: test
+
+   groups: 
+      -  name: disabled-group
+         dependencies: [ queue]
+         enabled: false
+
+   queue:
+      groups:
+         -  alias: a
+            queuebase: ":memory:"
+            queues:
+               - name: a1
+               - name: a2
+
+      forward:
+         groups:
+            -  alias: forward-group-1
+               services:
+                  -  alias: foo
+                     instances: 1
+                     memberships:
+                        -  disabled-group
+                     source: a1
+                     target: 
+                        service: queue/unittest/service
+                     reply:
+                        queue: a2
+               queues:
+                  -  alias: bar
+                     instances: 1
+                     memberships:
+                        -  disabled-group
+                     source: a2
+                     target:
+                        queue: a1
+)";
+
+         auto domain = local::domain( configuration);
+
+         auto state = unittest::state();
+
+         auto configured_but_not_running = []( auto& forward){ return forward.instances.configured == 1 && forward.instances.running == 0;};
+
+         EXPECT_TRUE( common::algorithm::all_of( state.forward.services, configured_but_not_running));
+         EXPECT_TRUE( common::algorithm::all_of( state.forward.queues, configured_but_not_running));
+      }
+
    } // queue
 } // casual

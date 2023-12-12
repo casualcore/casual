@@ -101,6 +101,7 @@ namespace casual::configuration
          {
             std::string name;
             std::string note;
+            bool enabled = true;
 
             std::vector< std::string> dependencies;
 
@@ -109,10 +110,11 @@ namespace casual::configuration
             CASUAL_CONST_CORRECT_SERIALIZE(
                CASUAL_SERIALIZE( name);
                CASUAL_SERIALIZE( note);
+               CASUAL_SERIALIZE( enabled);
                CASUAL_SERIALIZE( dependencies);
             )
 
-            inline auto tie() const { return std::tie( name, note, dependencies);}
+            inline auto tie() const { return std::tie( name, note, enabled, dependencies);}
          };
 
          struct Lifetime : common::Compare< Lifetime>
@@ -651,15 +653,17 @@ namespace casual::configuration
                std::string source;
                platform::size::type instances = 1;
                std::string note;
+               std::vector< std::string> memberships;
 
                CASUAL_CONST_CORRECT_SERIALIZE(
                   CASUAL_SERIALIZE( alias);
                   CASUAL_SERIALIZE( source);
                   CASUAL_SERIALIZE( instances);
                   CASUAL_SERIALIZE( note);
+                  CASUAL_SERIALIZE( memberships);
                )
 
-               inline auto tie() const { return std::tie( alias, source, instances, note);}
+               inline auto tie() const { return std::tie( alias, source, instances, note, memberships);}
             };
 
             struct Queue : forward_base, common::Compare< Queue>
@@ -719,6 +723,7 @@ namespace casual::configuration
                std::vector< forward::Service> services;
                std::vector< forward::Queue> queues;
                std::string note;
+               std::vector< std::string> memberships;
 
                Group set_union( Group lhs, Group rhs);
                Group set_difference( Group lhs, Group rhs);
@@ -729,9 +734,10 @@ namespace casual::configuration
                   CASUAL_SERIALIZE( services);
                   CASUAL_SERIALIZE( queues);
                   CASUAL_SERIALIZE( note);
+                  CASUAL_SERIALIZE( memberships);
                )
 
-               inline auto tie() const { return std::tie( alias, services, queues);}
+               inline auto tie() const { return std::tie( alias, services, queues, note, memberships);}
             };
          } // forward
 
@@ -777,7 +783,7 @@ namespace casual::configuration
    {
       model::system::Model system;
       model::domain::Model domain;
-      model::transaction::Model transaction;               
+      model::transaction::Model transaction;
       model::service::Model service;
       model::queue::Model queue;
       model::gateway::Model gateway;

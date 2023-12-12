@@ -102,7 +102,7 @@ namespace casual
                   {
                      return [&state]( auto& group)
                      {
-                        manager::state::Group result{ group.name, { state.group_id.master}, group.note};
+                        manager::state::Group result{ group.name, { state.group_id.master}, group.note, group.enabled};
                         result.dependencies = algorithm::transform( group.dependencies, group::id( state));
                         return result;
                      };
@@ -117,6 +117,7 @@ namespace casual
 
                         found->dependencies = algorithm::transform( group.dependencies, group::id( state));
                         found->note = group.note;
+                        found->enabled = group.enabled;
                      };
                   }
 
@@ -313,7 +314,7 @@ namespace casual
 
                   // TODO the order?
 
-                  if( state.configuration.model.queue != wanted.queue)
+                  if( state.configuration.model.queue != wanted.queue || state.configuration.model.domain.groups != wanted.domain.groups)
                      add_singleton( communication::instance::identity::queue::manager.id, "casual-queue-manager");
                   if( state.configuration.model.transaction != wanted.transaction)
                      add_singleton( communication::instance::identity::transaction::manager.id, "casual-transaction-manager");
@@ -367,6 +368,7 @@ namespace casual
          algorithm::move( local::domain( state, wanted.domain), std::back_inserter( tasks));
 
          // we use the wanted as our new configuration when 'managers' ask for it.
+         
          state.configuration.model = std::move( wanted);
 
          auto result = casual::task::ids( tasks, done_event);
