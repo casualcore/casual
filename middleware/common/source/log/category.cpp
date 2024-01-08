@@ -32,7 +32,21 @@ namespace casual
       {
          Stream service{ "casual.event.service"};
          Stream server{ "casual.event.server"};
-         Stream transaction{ "casual.event.transaction"}; 
+         Stream transaction{ "casual.event.transaction"};
+
+         namespace message
+         {
+            namespace part
+            {
+               Stream sent{ "casual.event.message.part.sent"};
+               Stream received{ "casual.event.message.part.received"};
+            } // part
+
+            Stream sent{ "casual.event.message.sent"};
+            Stream received{ "casual.event.message.received"};
+
+         } // message
+
       } // event
 
    } // common::log::category
