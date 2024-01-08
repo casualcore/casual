@@ -100,6 +100,8 @@ namespace casual
          inline auto correlation() const noexcept { return header::detail::correlation( m_header);}
          //! @}
 
+         //! @returns the extracted mandatory execution id from the payload
+         strong::execution::id execution() const noexcept;
 
          inline const char* header_data() const noexcept { return reinterpret_cast< const char*>( &m_header);}
          inline char* header_data() noexcept { return reinterpret_cast< char*>( &m_header);}

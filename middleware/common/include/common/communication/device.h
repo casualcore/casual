@@ -405,6 +405,10 @@ namespace casual
                      // Try to find a massage that matches the predicate
                      found = algorithm::find_if( m_cache, predicate);
                   }
+
+                  if( found)
+                     log::line( log::category::event::message::received, found->type(), '|', found->correlation(), '|', found->execution(), '|', found->size());
+
                   return found;
                }
                catch( ...)
@@ -512,7 +516,10 @@ namespace casual
                   auto result = policy.send( Base::connector(), std::forward< C>( complete));
 
                   if( result)
+                  {
                      message::counter::add::sent( complete.type());
+                     log::line( log::category::event::message::sent, complete.type(), '|', complete.correlation(), '|', complete.execution(), '|', complete.size());
+                  }
 
                   return result;
                }

@@ -53,6 +53,17 @@ namespace casual
          m_header.size = network::byteorder::size::encode( Complete::payload.size());
       }
 
+      strong::execution::id Complete::execution() const noexcept
+      {
+         if( payload.size() < 16)
+            return {};
+
+         Uuid::uuid_type uuid{};
+         algorithm::copy_max( payload, uuid);
+
+         return strong::execution::id{ uuid};
+      }
+
       bool Complete::complete() const noexcept 
       { 
          return type() != common::message::Type::absent_message 

@@ -542,7 +542,12 @@ namespace casual
                         message.msg_iov = &part;
                         message.msg_iovlen = 1;
 
-                        complete.offset += send_message( socket, &message);
+                        if( auto count = send_message( socket, &message))
+                        {
+                           complete.offset += count;
+                           log::line( log::category::event::message::part::sent, complete.type(), '|', complete.correlation(), '|', count, '|', complete.offset - count, '|', complete.size());
+                        }
+                        
                      }
                      else
                      {
@@ -554,14 +559,18 @@ namespace casual
                         parts[ 0].iov_len = message::header::size - complete.offset;
 
                         // then we set the payload
-                        parts[ 1].iov_base = const_cast< char*>( complete.payload.data());
+                        parts[ 1].iov_base = complete.payload.data();
                         parts[ 1].iov_len = complete.payload.size();
 
                         ::msghdr message{};
                         message.msg_iov = parts.data();
                         message.msg_iovlen = parts.size();
 
-                        complete.offset += send_message( socket, &message);
+                        if( auto count = send_message( socket, &message))
+                        {
+                           complete.offset += count;
+                           log::line( log::category::event::message::part::sent, complete.type(), '|', complete.correlation(), '|', count, '|', complete.offset - count, '|', complete.size());
+                        }
                      }
 
                      log::line( log, "tcp send ---> descriptor: ", socket.descriptor(), ", complete: ", complete);
@@ -604,10 +613,13 @@ namespace casual
                   {
                      // we receive the header (or the rest of it)
                      auto first = complete.header_data() + complete.offset;
-                     complete.offset += receive_message( socket, first, message::header::size - complete.offset);
+                     auto count = receive_message( socket, first, message::header::size - complete.offset);
+                     complete.offset += count;
 
                      if( complete.offset == message::header::size)
                         complete.payload.resize( complete.size());
+
+                     log::line( log::category::event::message::part::received, complete.type(), '|', complete.correlation(), '|', count, '|', complete.offset - count, '|', complete.size());
                   }
 
                   if( complete.offset >= message::header::size)
@@ -615,8 +627,11 @@ namespace casual
                      // we receive the payload (or the rest of it).
                      auto offset = complete.offset - message::header::size;
                      auto first = complete.payload.data() + offset;
+                     auto count = receive_message( socket, first, complete.payload.size() - offset);
                      
-                     complete.offset += receive_message( socket, first, complete.payload.size() - offset);
+                     complete.offset += count;
+
+                     log::line( log::category::event::message::part::received, complete.type(), '|', complete.correlation(), '|', count, '|', complete.offset - count, '|', complete.size());
                   }
 
                   log::line( log, "tcp receive <---- descriptor: ", socket.descriptor(), " , complete: ", complete);

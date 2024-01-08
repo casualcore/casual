@@ -189,6 +189,9 @@ namespace casual
          inline auto& correlation() const noexcept { return m_correlation;}
          inline auto offset() noexcept { return m_offset;}
 
+         //! @returns the extracted mandatory execution id from the payload
+         strong::execution::id execution() const noexcept;
+
          platform::binary::type payload;
 
          //! Adds a transport message.
@@ -269,7 +272,9 @@ namespace casual
                m_offset += left();
             }
 
+            inline auto execution() const noexcept { return m_complete.execution();}
             inline const auto& correlation() const noexcept { return m_complete.correlation();}
+            inline auto size() const noexcept { return m_complete.size();}
             inline const auto& complete() const noexcept { return m_complete;}
             inline auto type() const noexcept { return m_complete.type();}
 
