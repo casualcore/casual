@@ -61,41 +61,112 @@ namespace casual
                   }
 
                   namespace resource
-                  {    
+                  {  
+                     namespace request
+                     {               
+                        template< typename Message>
+                           requires concepts::any_of< Message, // sanity for the constexpr if.
+                              common::message::transaction::resource::prepare::Request,
+                              common::message::transaction::resource::commit::Request,
+                              common::message::transaction::resource::rollback::Request>
+                        void fan_out( State& state, auto& fan_out, Message& message) 
+                        {
+                           Trace trace{ "gateway::group::outbound::handle::local::internal::transaction::resource::fan_out"};
+                           log::line( verbose::log, "message: ", message);
+
+                           // make sure we get unique correlations for the coordination
+                           auto correlation = std::exchange( message.correlation, {});
+
+                           // keep track of failed send.
+                           std::vector< strong::file::descriptor::id> failed_connections;
+
+                           auto send_requests = [ &state, &failed_connections, &fan_out]( auto& message)
+                           {
+                              auto result = fan_out.empty_pendings();
+                              auto connections = state.lookup.connections( common::transaction::id::range::global( message.trid));
+
+                              log::line( verbose::log, "connections: ", connections);
+
+                              auto send_request = [ &state, &result, &message, &failed_connections]( auto descriptor)
+                              {
+                                 auto failed = [ &result, &failed_connections]( auto descriptor)
+                                 {
+                                    result.emplace_back( strong::correlation::id{}, descriptor);
+                                    failed_connections.push_back( descriptor);
+                                 };
+                                 
+                                 // if not a valid descriptor, the associated connection has failed (connection lost)
+                                 if( ! descriptor)
+                                    failed( descriptor);
+                                 else if( auto correlation = local::tcp::send( state, descriptor, message))
+                                    result.emplace_back( correlation, descriptor);
+                                 else
+                                    failed( descriptor);
+                              };
+
+                              algorithm::for_each( connections, send_request);
+
+                              return result;
+                           };
+
+                           auto callback = [ &state, correlation, trid = message.trid, ipc = message.process.ipc, rm = message.resource]( auto&& replies, auto&& outcome)
+                           {
+                              Trace trace{ "gateway::group::outbound::handle::local::internal::transaction::resource::fan_out callback"};
+                              log::line( verbose::log, "replies: ", replies, ", outcome: ", outcome);
+
+                              auto most_severe = []( auto result, auto& reply)
+                              {
+                                 return code::severest( result, reply.state);
+                              };
+
+                              common::message::reverse::type_t< Message> reply;
+                              reply.correlation = correlation;
+                              reply.trid = trid;
+                              reply.resource = rm;
+
+                              // normalize/accumulate the state from several replies to one
+
+                              if( algorithm::find( outcome, decltype( range::front( outcome).state)::failed))
+                                 reply.state = code::xa::resource_fail;
+                              else
+                                 reply.state = algorithm::accumulate( replies, code::xa::read_only, most_severe);
+
+                              // clean up state. It could be failed connections that is not removed by replies (of course)
+                              if constexpr( std::same_as< Message, common::message::transaction::resource::prepare::Request>)
+                                 if( reply.state == code::xa::read_only)
+                                    state.lookup.remove( common::transaction::id::range::global( trid));
+                              if constexpr( concepts::any_of< Message, common::message::transaction::resource::commit::Request>)
+                                 state.lookup.remove( common::transaction::id::range::global( trid));
+                              if constexpr( std::same_as< Message, common::message::transaction::resource::rollback::Request>)
+                                 state.lookup.remove( common::transaction::id::range::global( trid));
+
+                              log::line( verbose::log, "reply: ", reply);
+                              state.multiplex.send( ipc, reply);
+                           };
+
+                           // add the pending via call and the callback.
+                           fan_out( send_requests( message), std::move( callback));
+
+                           // take care of possible failed send
+                           for( auto connection : failed_connections)
+                              fan_out.failed( connection);
+
+                        }
+                     } // request
+
                      namespace basic
                      {
                         template< typename Message>
                         auto request( State& state)
                         {
-                           return [&state]( Message& message)
+                           return [ &state]( Message& message)
                            {
-                              Trace trace{ "gateway::group::outbound::handle::local::internal::transaction::resource::basic::request"};
-                              log::line( verbose::log, "message: ", message);
-
-                              auto error_callback = [ &state, rm = message.resource, trid = message.trid]( auto&& destination)
-                              {
-                                 common::message::reverse::type_t< Message> reply;
-                                 reply.correlation = destination.correlation;
-                                 reply.execution = destination.execution;
-                                 reply.resource = rm;
-                                 reply.trid = trid;
-                                 reply.state = decltype( reply.state)::resource_error; // is this the best error code?
-
-                                 log::line( verbose::log, "reply: ", reply);
-                                 state.multiplex.send( destination.ipc, reply);
-                              };
-
-                              if( auto descriptor = state.lookup.connection( message.trid))
-                              {
-                                 // add the route and the error callback
-                                 state.route.add( std::move( message), descriptor, std::move( error_callback));
-
-                                 // if we fail to send we want to invoke the error callback immediately
-                                 if( ! tcp::send( state, descriptor, message).valid())
-                                    state.route.consume( message.correlation).error();
-                              }
-                              else
-                                 error_callback( state::route::Destination{ message.correlation, message.process.ipc, message.execution});
+                              if constexpr( std::same_as< Message, common::message::transaction::resource::prepare::Request>)
+                                 resource::request::fan_out( state, state.coordinate.transaction.prepare, message);
+                              if constexpr( std::same_as< Message, common::message::transaction::resource::commit::Request>)
+                                 resource::request::fan_out( state, state.coordinate.transaction.commit, message);
+                              if constexpr( std::same_as< Message, common::message::transaction::resource::rollback::Request>)
+                                 resource::request::fan_out( state, state.coordinate.transaction.rollback, message);
                            };
                         }
                      } // basic
@@ -191,7 +262,7 @@ namespace casual
 
                            auto pending = state::service::Pending::Call{ message};
 
-                           auto [ lookup, involved] = state.lookup.service( message.service.name, message.trid);
+                           auto lookup = state.lookup.service( message.service.name, message.trid);
                            log::line( verbose::log, "lookup: ", lookup);
 
                            // check if we've has been called with the same correlation id before, hence we are in a
@@ -225,12 +296,8 @@ namespace casual
 
                            auto route = state::route::Point{ message, lookup.connection, create_error_callback( state, message)};
 
-
-                           // set the branched trid for the message, if any.
-                           std::exchange( message.trid, lookup.trid);
-
                            // notify TM that we act as a "resource" and are involved in the transaction
-                           if( involved)
+                           if( lookup.new_transaction)
                               transaction::involved( message);
                               
                            if( ! message.flags.exist( common::message::service::call::request::Flag::no_reply))
@@ -257,12 +324,10 @@ namespace casual
                            Trace trace{ "gateway::group::outbound::handle::local::internal::conversation::connect::request"};
                            log::line( verbose::log, "message: ", message);
 
-                           auto [ lookup, involved] = state.lookup.service( message.service.name, message.trid);
-
-                           message.trid = lookup.trid;
+                           auto lookup = state.lookup.service( message.service.name, message.trid);
 
                            // notify TM that this "resource" is involved in the branched transaction
-                           if( involved)
+                           if( lookup.new_transaction )
                               transaction::involved( message);
 
                            state.route.add( message, lookup.connection, [ &state]( auto& destination)
@@ -543,7 +608,7 @@ namespace casual
                            Trace trace{ "gateway::outbound::local::handle::internal::queue::basic::request"};
                            log::line( verbose::log, "message: ", message);
 
-                           auto [ lookup, involved] = state.lookup.queue( message.name, message.trid);
+                           auto lookup = state.lookup.queue( message.name, message.trid);
 
                            auto route = state::route::Point{ message, lookup.connection, [ &state]( auto& destination)
                            {
@@ -562,10 +627,8 @@ namespace casual
                               return;
                            }
 
-                           message.trid = lookup.trid;
-
                            // notify TM that this "resource" is involved in the branched transaction
-                           if( involved)
+                           if( lookup.new_transaction)
                               transaction::involved( message);
 
                            state.route.add( std::move( route));
@@ -637,9 +700,6 @@ namespace casual
                                     state.multiplex.send( ipc::manager::service(), unadvertise);
                                  }
                               }
-
-                              // get the internal "un-branched" trid
-                              message.transaction.trid = state.lookup.internal( message.transaction.trid);
 
                               state.multiplex.send( route.destination.ipc, message);
 
@@ -746,83 +806,56 @@ namespace casual
                {
                   namespace resource
                   {
-                     namespace detail
-                     {
-                        template< typename M>
-                        void send( State& state, M&& message)
-                        {
-                           if( auto point = state.route.consume( message.correlation))
-                           {
-                              message.process = process::handle();
-                              state.multiplex.send( point.destination.ipc, message);
-                           }
-                           else
-                              log::line( log::category::error, code::casual::internal_correlation, " failed to correlate [", message.correlation, "] reply with a destination - action: ignore");
-                        }
-                     } // detail
-
                      namespace prepare
                      {
                         auto reply( State& state)
                         {
-                           return [&state]( common::message::transaction::resource::prepare::Reply& message)
+                           return [ &state]( common::message::transaction::resource::prepare::Reply& message)
                            {
                               Trace trace{ "gateway::group::outbound::handle::local::external::transaction::resource::prepare::reply"};
                               log::line( verbose::log, "message: ", message);
 
-                              // We have register the external branch with the TM so it knows about it, hence
-                              // can communicate directly with the external branched trid
-
-                              // if the prepare is a _read-only_, the transaction is done.
+                              // if the prepare is a _read-only_, the transaction is done for the connection
                               if( message.state == decltype( message.state)::read_only)
-                                 state.lookup.remove( message.trid);
+                                 state.lookup.remove( common::transaction::id::range::global( message.trid), state.external.last());
 
-
-                              detail::send( state, message);
+                              state.coordinate.transaction.prepare( message);
                            };
                         }
+                           
                      } // prepare
 
                      namespace commit
                      {
                         auto reply( State& state)
                         {
-                           return [&state]( common::message::transaction::resource::commit::Reply& message)
+                           return [ &state]( common::message::transaction::resource::commit::Reply& message)
                            {
                               Trace trace{ "gateway::group::outbound::handle::local::external::transaction::resource::commit::reply"};
                               log::line( verbose::log, "message: ", message);
 
-                              // We have register the external branch with the TM so it knows about it, hence
-                              // can communicate directly with the external branched trid
-
-                              // this trid is done, remove it from the state
-                              state.lookup.remove( message.trid);
-
-                              detail::send( state, message);
+                              state.lookup.remove( common::transaction::id::range::global( message.trid), state.external.last());
+                              state.coordinate.transaction.commit( message);
                            };
                         }
+
                      } // commit
 
                      namespace rollback
                      {
                         auto reply( State& state)
                         {
-                           return [&state]( common::message::transaction::resource::rollback::Reply& message)
+                           return [ &state]( common::message::transaction::resource::rollback::Reply& message)
                            {
                               Trace trace{ "gateway::group::outbound::handle::local::external::transaction::resource::rollback::reply"};
                               log::line( verbose::log, "message: ", message);
 
-                              // We have register the external branch with the TM so it knows about it, hence
-                              // can communicate directly with the external branched trid
-
-                              // this trid is done, remove it from the state
-                              state.lookup.remove( message.trid);
-
-                              detail::send( state, message);
+                              state.lookup.remove( common::transaction::id::range::global( message.trid), state.external.last());
+                              state.coordinate.transaction.rollback( message);
                            };
                         }
+                     } // rollback
 
-                     } // commit
                   } // resource
                } // transaction
 
@@ -970,11 +1003,11 @@ namespace casual
             // unadvertise all 'orphanage' services and queues, if any.
             handle::unadvertise( state, state.lookup.remove( descriptor));
 
-            // take care of aggregated replies, if any.
-            state.coordinate.discovery.failed( descriptor);
+            // take care of aggregated/coordinated replies, if any.
+            state.coordinate.failed( descriptor);
 
             // extract all state associated with the descriptor
-            auto extracted = state.extract( descriptor);
+            auto extracted = state.failed( descriptor);
             log::line( verbose::log, "extracted: ", extracted);
 
             if( ! extracted.empty())

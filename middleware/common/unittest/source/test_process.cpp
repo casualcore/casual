@@ -78,8 +78,6 @@ namespace casual
       {
          common::unittest::Trace trace;
 
-         log::line( log::category::error, "REMOVE");
-
          auto pid = process::spawn( local::process::path(), {});
 
          EXPECT_TRUE( pid);

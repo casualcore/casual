@@ -449,9 +449,9 @@ namespace casual
 
       //! applies `functor` to all elements
       template< concepts::range R, typename F>
-      decltype( auto) for_each( R&& range, F&& functor)
+      constexpr decltype( auto) for_each( R&& range, F functor)
       {
-         std::for_each( std::begin( range), std::end( range), std::forward< F>( functor));
+         std::for_each( std::begin( range), std::end( range), functor);
          return std::forward< R>( range);
       }
 
