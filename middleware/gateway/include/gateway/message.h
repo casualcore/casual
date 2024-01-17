@@ -360,23 +360,12 @@ namespace casual
 
                struct Transaction
                {
-                  struct External
-                  {
-                     common::transaction::ID trid;
-                     common::strong::file::descriptor::id connection;
-
-                     CASUAL_CONST_CORRECT_SERIALIZE(
-                        CASUAL_SERIALIZE( trid);
-                        CASUAL_SERIALIZE( connection);
-                     )
-                  };
-
-                  common::transaction::ID internal;
-                  std::vector< External> externals;
+                  common::transaction::global::ID gtrid;
+                  std::vector< common::strong::file::descriptor::id> connections;
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
-                     CASUAL_SERIALIZE( internal);
-                     CASUAL_SERIALIZE( externals);
+                     CASUAL_SERIALIZE( gtrid);
+                     CASUAL_SERIALIZE( connections);
                   )
                };
 

@@ -53,40 +53,6 @@ namespace casual
 
          namespace lookup
          {
-            struct Mapping
-            {
-               inline Mapping( const common::transaction::ID& internal)
-                  : internal{ internal} {}
-
-               struct External
-               {
-                  External() = default;
-                  inline External( common::strong::file::descriptor::id connection, const common::transaction::ID& trid)
-                     : connection{ connection}, trid{ trid} {}
-
-                  common::strong::file::descriptor::id connection;
-                  common::transaction::ID trid;
-
-                  inline friend bool operator == ( const External& lhs, common::strong::file::descriptor::id rhs) { return lhs.connection == rhs;}
-                  inline friend bool operator == ( const External& lhs, const common::transaction::ID& rhs) { return lhs.trid == rhs;}
-
-                  CASUAL_LOG_SERIALIZE( 
-                     CASUAL_SERIALIZE( connection);
-                     CASUAL_SERIALIZE( trid);
-                  )
-               };
-
-               common::transaction::ID internal;
-               std::vector< External> externals;
-
-               const External& branch( common::strong::file::descriptor::id connection);
-
-               CASUAL_LOG_SERIALIZE( 
-                  CASUAL_SERIALIZE( internal);
-                  CASUAL_SERIALIZE( externals);
-               )
-            };
-
             namespace resource
             {
                struct Connection
@@ -125,23 +91,31 @@ namespace casual
                   CASUAL_SERIALIZE( queues);
                )
             };
+
+            struct Result
+            {
+               common::strong::file::descriptor::id connection;
+               bool new_transaction = true;
+
+               CASUAL_LOG_SERIALIZE( 
+                  CASUAL_SERIALIZE( connection);
+                  CASUAL_SERIALIZE( new_transaction);
+               )
+            };
             
          } // lookup
 
          struct Lookup
          {
 
-            using Result = std::tuple< lookup::Mapping::External, bool>;
+            using descriptor_range = common::range::const_type_t< std::vector< common::strong::file::descriptor::id>>;
 
-            Result service( const std::string& service, const common::transaction::ID& trid);
-            Result queue( const std::string& queue, const common::transaction::ID& trid);
+            lookup::Result service( const std::string& service, const common::transaction::ID& trid);
+            lookup::Result queue( const std::string& queue, const common::transaction::ID& trid);
 
-            
-            const common::transaction::ID& external( const common::transaction::ID& internal, common::strong::file::descriptor::id connection) const;
-            const common::transaction::ID& internal( const common::transaction::ID& external) const;
 
-            //! @returns the associated connection from the external branch
-            common::strong::file::descriptor::id connection( const common::transaction::ID& external) const;
+            //! @returns the associated connections from the gtrid, if any.
+            descriptor_range connections( common::transaction::global::id::range gtrid) const noexcept;
 
             //! @returns all lookup resources
             lookup::Resources resources() const;
@@ -154,11 +128,14 @@ namespace casual
             //! remove the connection for the provided services and queues, @returns all that needs to be un-advertised.
             lookup::Resources remove( common::strong::file::descriptor::id descriptor, std::vector< std::string> services, std::vector< std::string> queues);
 
-            //! extracts all (internal) transactions associated with `descriptor`
-            std::vector< common::transaction::ID> extract_transactions( common::strong::file::descriptor::id descriptor);
+            //! removes the `gtrid` association with the `descriptor`
+            void remove( common::transaction::global::id::range gtrid, common::strong::file::descriptor::id descriptor);
+
+            //! indic
+            std::vector< common::transaction::global::ID> failed( common::strong::file::descriptor::id descriptor);
             
-            //! removes the "mapping", based on the external (branched) trid.
-            void remove( const common::transaction::ID& external);
+            //! removes the mapping associated with the `gtrid`
+            void remove( common::transaction::global::id::range gtrid);
 
             inline auto& services() const noexcept { return m_services;}
             inline auto& transactions() const noexcept { return m_transactions;}
@@ -174,7 +151,7 @@ namespace casual
 
          private:
             std::unordered_map< std::string, std::vector< lookup::resource::Connection>> m_services;
-            std::vector< lookup::Mapping> m_transactions;
+            std::unordered_map< common::transaction::global::ID, std::vector< common::strong::file::descriptor::id>, common::transaction::global::hash, std::equal_to<>> m_transactions;
             std::unordered_map< std::string, std::vector< lookup::resource::Connection>> m_queues;
          };
 
@@ -259,14 +236,14 @@ namespace casual
             {
                group::tcp::External< configuration::model::gateway::outbound::Connection>::Information information;
                std::vector< route::Point> routes;
-               std::vector< common::transaction::ID> transactions;
+               std::vector< common::transaction::global::ID> gtrids;
 
-               inline bool empty() const noexcept { return routes.empty() && transactions.empty();}
+               inline bool empty() const noexcept { return routes.empty() && gtrids.empty();}
 
                CASUAL_LOG_SERIALIZE( 
                  CASUAL_SERIALIZE( information);
                  CASUAL_SERIALIZE( routes);
-                 CASUAL_SERIALIZE( transactions);
+                 CASUAL_SERIALIZE( gtrids);
                )
             };
          } // extract
@@ -288,9 +265,40 @@ namespace casual
          
          struct
          {
+            struct
+            {
+               template< typename R>
+               using fan_out = common::message::coordinate::fan::Out< R, common::strong::file::descriptor::id>;
+
+               fan_out< casual::common::message::transaction::resource::prepare::Reply> prepare;
+               fan_out< casual::common::message::transaction::resource::commit::Reply> commit;
+               fan_out< casual::common::message::transaction::resource::rollback::Reply> rollback;
+
+               inline void failed( common::strong::file::descriptor::id descriptor)
+               {
+                  prepare.failed( descriptor);
+                  commit.failed( descriptor);
+                  rollback.failed( descriptor);
+               }
+
+               CASUAL_LOG_SERIALIZE( 
+                  CASUAL_SERIALIZE( prepare);
+                  CASUAL_SERIALIZE( commit);
+                  CASUAL_SERIALIZE( rollback);
+               )
+
+            } transaction;
+
             common::message::coordinate::fan::Out< casual::domain::message::discovery::Reply, common::strong::file::descriptor::id> discovery;
 
+            inline void failed( common::strong::file::descriptor::id descriptor)
+            {
+               transaction.failed( descriptor);
+               discovery.failed( descriptor);
+            }
+            
             CASUAL_LOG_SERIALIZE( 
+               CASUAL_SERIALIZE( transaction);
                CASUAL_SERIALIZE( discovery);
             )
          } coordinate;
@@ -301,8 +309,8 @@ namespace casual
          std::string alias;
          platform::size::type order{};
 
-         //! extract all state associated with the `descriptor`
-         state::extract::Result extract( common::strong::file::descriptor::id descriptor); 
+         //! `descriptor? has failed, @returns "all" extracted state associated with the `descriptor`
+         state::extract::Result failed( common::strong::file::descriptor::id descriptor); 
 
          bool done() const;
 
@@ -343,18 +351,12 @@ namespace casual
                return result;
             });
 
-            reply.state.pending.transactions = common::algorithm::transform( lookup.transactions(), []( auto& transaction)
+            reply.state.pending.transactions = common::algorithm::transform( lookup.transactions(), []( auto& pair)
             {
-               message::outbound::state::pending::Transaction result;
-               result.internal = transaction.internal;
-               result.externals = common::algorithm::transform( transaction.externals, []( auto& external)
-               {
-                  message::outbound::state::pending::Transaction::External result;
-                  result.trid = external.trid;
-                  result.connection = external.connection;
-                  return result;
-               });
-               return result;
+               return message::outbound::state::pending::Transaction{
+                  pair.first,
+                  pair.second
+               };
             });
 
             return reply;

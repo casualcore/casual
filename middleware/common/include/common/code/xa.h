@@ -71,6 +71,9 @@ namespace casual
 
       std::error_code make_error_code( code::xa code);
 
+      //! @returns the most severe of `a` and `b`
+      code::xa severest( code::xa a, code::xa b) noexcept;
+
    } // common::code
 } // casual
 

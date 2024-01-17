@@ -25,50 +25,13 @@ namespace casual
                const transaction::ID trid;
             } // global
 
-            namespace predicate
-            {
-               auto is_internal( const transaction::ID& internal)
-               {
-                  return [&internal]( auto& mapping){ return mapping.internal == internal;};
-               }
-
-               auto is_global( const transaction::ID& trid)
-               {
-                  return [&trid]( auto& mapping)
-                  { 
-                     return algorithm::equal( transaction::id::range::global( trid), transaction::id::range::global( mapping.internal));
-                  };
-               }
-
-               auto is_external( const transaction::ID& external)
-               {
-                  return common::predicate::conjunction(
-                     is_global( external),
-                     [&external]( auto& mapping)
-                     {
-                        return ! algorithm::find( mapping.externals, external).empty();
-                     }
-                  );
-               }
-            } // predicate
-
             namespace lookup
             {
-
-               state::lookup::Mapping& transaction( std::vector< state::lookup::Mapping>& transactions, const transaction::ID& internal)
-               {
-                  if( auto mapping = algorithm::find_if( transactions, predicate::is_internal( internal)))
-                     return *mapping;
-
-                  return transactions.emplace_back( internal);
-               }
-
-               template< typename R>
-               state::Lookup::Result resource( 
-                  R& resources, 
-                  std::vector< state::lookup::Mapping>& transactions, 
+               state::lookup::Result resource( 
+                  auto& resources, 
+                  auto& transactions, 
                   const std::string& key, 
-                  const common::transaction::ID& internal)
+                  const common::transaction::ID& trid)
                {
                   auto resource = algorithm::find( resources, key);
 
@@ -87,18 +50,23 @@ namespace casual
                      return result;
                   };
 
-                  if( ! internal)
-                     return { { get_next_connection( connections), {}}, false};
+                  if( ! trid)
+                     return { get_next_connection( connections), false};
 
-                  auto& mapping = lookup::transaction( transactions, internal);
+                  auto gtrid = transaction::id::range::global( trid);
 
-                  // if we got a connection that has the service AND is associated with the 
-                  // transaction before, we use it.
-                  if( auto found = std::get< 0>( algorithm::intersection( mapping.externals, connections)))
-                     return { *found, false};
+                  if( auto found = algorithm::find( transactions, gtrid))
+                  {
+                     if( auto connection = algorithm::find_first_of( found->second, connections))
+                        return { *connection, false};
+                     else
+                        return { found->second.emplace_back( get_next_connection( connections)), false};
+                  }
 
-                  // we create a new branch for the connection.
-                  return { mapping.branch( get_next_connection( connections)), true};
+                  auto connection = get_next_connection( connections);
+                  transactions[ gtrid].push_back( connection);
+                  
+                  return { connection, true};
                }
 
             } // lookup
@@ -192,57 +160,24 @@ namespace casual
             return "<unknown>";
          }
          
-         namespace lookup
-         {
-            const Mapping::External& Mapping::branch( common::strong::file::descriptor::id connection)
-            {
-               return externals.emplace_back( connection, transaction::id::branch( internal));
-            }
-            
-         } // lookup
 
 
-         Lookup::Result Lookup::service( const std::string& service, const common::transaction::ID& trid)
+         lookup::Result Lookup::service( const std::string& service, const common::transaction::ID& trid)
          {
             return local::lookup::resource( m_services, m_transactions, service, trid);
          }
 
-         Lookup::Result Lookup::queue( const std::string& queue, const common::transaction::ID& trid)
+         lookup::Result Lookup::queue( const std::string& queue, const common::transaction::ID& trid)
          {
             return local::lookup::resource( m_queues, m_transactions, queue, trid);
          }
 
-         const common::transaction::ID& Lookup::external( const common::transaction::ID& internal, common::strong::file::descriptor::id connection) const
+
+         Lookup::descriptor_range Lookup::connections( common::transaction::global::id::range gtrid) const noexcept
          {
-            if( auto found = algorithm::find_if( m_transactions, local::predicate::is_internal( internal)))
-            {
-               if( auto external = algorithm::find( found->externals, connection))
-                  return external->trid;
-            }
-            
-            return local::global::trid;
-         }
+            if( auto found = algorithm::find( m_transactions, gtrid))
+               return range::make( found->second);
 
-         const common::transaction::ID& Lookup::internal( const common::transaction::ID& external) const
-         {
-            if( auto found = algorithm::find_if( m_transactions, local::predicate::is_external( external)))
-               return found->internal;
-
-            return local::global::trid;
-         }
-
-         common::strong::file::descriptor::id Lookup::connection( const common::transaction::ID& external) const
-         {
-            auto global = algorithm::find_if( m_transactions, local::predicate::is_global( external));
-
-            while( global)
-            {
-               if( auto found = algorithm::find( global->externals, external))
-                  return found->connection;
-
-               global = algorithm::find_if( ++global, local::predicate::is_global( external));
-            }
-                  
             return {};
          }
 
@@ -281,56 +216,45 @@ namespace casual
                local::remove::connection( descriptor, Lookup::m_queues, queues)
             };
          }
-         std::vector< common::transaction::ID> Lookup::extract_transactions( common::strong::file::descriptor::id descriptor)
+         
+         void Lookup::remove( common::transaction::global::id::range gtrid, common::strong::file::descriptor::id descriptor)
          {
-            std::vector< common::transaction::ID> result;
-            algorithm::container::erase_if( m_transactions, [ &result, descriptor]( auto& mapping)
-            {
-               if( auto remove = algorithm::filter( mapping.externals, predicate::value::equal( descriptor)))
-               {
-                  result.push_back( mapping.internal);
-                  algorithm::container::erase( mapping.externals, remove);
-               }
+            if( auto found = algorithm::find( m_transactions, gtrid))
+               if( std::empty( algorithm::container::erase( found->second, descriptor)))
+                  algorithm::container::erase( m_transactions, std::begin( found));
+         }
 
-               return mapping.externals.empty();
+         std::vector< common::transaction::global::ID> Lookup::failed( common::strong::file::descriptor::id descriptor)
+         {
+            std::vector< common::transaction::global::ID> result;
+            algorithm::for_each( m_transactions, [ &result, descriptor]( auto& pair)
+            {
+               if( auto found = algorithm::find( pair.second, descriptor))
+               {
+                  // nil the descriptor, to indicate error
+                  *found = common::strong::file::descriptor::id{};
+                  result.push_back( pair.first);
+               }
             });
 
             return result;
          } 
 
-         void Lookup::remove( const common::transaction::ID& external)
+         void Lookup::remove( common::transaction::global::id::range gtrid)
          {
             Trace trace{ "gateway::group::outbound::state::Lookup::remove"};
-            log::line( verbose::log, "external: ", external);
+            log::line( verbose::log, "gtrid: ", gtrid);
 
-            auto remove_external = [&external]( auto& transaction)
+            if( auto found = algorithm::find( m_transactions, gtrid))
             {
-               if( ! algorithm::equal( transaction::id::range::global( transaction.internal), transaction::id::range::global( external)))
-                  return false;
-
-               if( auto found = algorithm::find( transaction.externals, external))
-               {
-                  transaction.externals.erase( std::begin( found));
-                  return true;
-               }
-               
-               return false;
-            };
-
-            if( auto found = algorithm::find_if( m_transactions, remove_external))
-            {
-               if( found->externals.empty())
-                  m_transactions.erase( std::begin( found));
+               log::line( verbose::log, "found: ", *found);
+               algorithm::container::erase( m_transactions, std::begin( found));
             }
-            else 
-               log::line( log::category::error, code::casual::invalid_semantics, " failed to correlate the external trid: ", external, " - action: ignore");
-
-            log::line( verbose::log, "transactions: ", m_transactions);
          }
 
       } // state
 
-      state::extract::Result State::extract( common::strong::file::descriptor::id descriptor)
+      state::extract::Result State::failed( common::strong::file::descriptor::id descriptor)
       {
          Trace trace{ "gateway::group::outbound::State::extract"};
 
@@ -340,7 +264,7 @@ namespace casual
          return {
             external.remove( directive, descriptor),
             route.consume( descriptor),
-            lookup.extract_transactions( descriptor)
+            lookup.failed( descriptor)
          };
       }
 

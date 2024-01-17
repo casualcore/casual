@@ -9,8 +9,10 @@
 #include "common/code/log.h"
 #include "common/code/category.h"
 #include "common/code/serialize.h"
+#include "common/code/casual.h"
 
 #include "common/log/category.h"
+#include "common/log/line.h"
 
 
 #include <string>
@@ -62,6 +64,110 @@ namespace casual
 
             } // ax
 
+            namespace xa::severity
+            {
+               //! Used to rank the xa codes, the lower the enum value (higher up),
+               //! the more severe...
+               enum struct order : int
+               {
+                  heuristic_hazard,
+                  heuristic_mix,
+                  heuristic_commit,
+                  heuristic_rollback,
+                  resource_fail,
+                  resource_error,
+                  rollback_integrity,
+                  rollback_communication,
+                  rollback_unspecified,
+                  rollback_other,
+                  rollback_deadlock,
+                  protocol,
+                  rollback_protocoll,
+                  rollback_timeout,
+                  rollback_transient,
+                  argument,
+                  no_migrate,
+                  outside,
+                  outstanding_async,
+                  retry,
+                  duplicate_xid,
+                  invalid_xid,  //! nothing to do?
+                  ok,      //! Went as expected
+                  read_only,  //! Went "better" than expected
+               };
+
+               code::xa convert( severity::order code)
+               {
+                  switch( code)
+                  {
+                     case order::heuristic_hazard: return code::xa::heuristic_hazard;
+                     case order::heuristic_mix: return code::xa::heuristic_mix;
+                     case order::heuristic_commit: return code::xa::heuristic_commit;
+                     case order::heuristic_rollback: return code::xa::heuristic_rollback;
+                     case order::resource_fail: return code::xa::resource_fail;
+                     case order::resource_error: return code::xa::resource_error;
+                     case order::rollback_integrity: return code::xa::rollback_integrity;
+                     case order::rollback_communication: return code::xa::rollback_communication;
+                     case order::rollback_unspecified: return code::xa::rollback_unspecified;
+                     case order::rollback_other: return code::xa::rollback_other;
+                     case order::rollback_deadlock: return code::xa::rollback_deadlock;
+                     case order::protocol: return code::xa::protocol;
+                     case order::rollback_protocoll: return code::xa::rollback_protocoll;
+                     case order::rollback_timeout: return code::xa::rollback_timeout;
+                     case order::rollback_transient: return code::xa::rollback_transient;
+                     case order::argument: return code::xa::argument;
+                     case order::no_migrate: return code::xa::no_migrate;
+                     case order::outside: return code::xa::outside;
+                     case order::invalid_xid: return code::xa::invalid_xid;
+                     case order::outstanding_async: return code::xa::outstanding_async;
+                     case order::retry: return code::xa::retry;
+                     case order::duplicate_xid: return code::xa::duplicate_xid;
+                     case order::ok: return code::xa::ok;
+                     case order::read_only: return code::xa::read_only;
+                  }
+
+                  common::log::error( casual::invalid_argument, "invalid xa code - value: ", std::to_underlying( code));
+                  return code::xa::resource_error;
+               }
+
+               severity::order convert( code::xa code)
+               {
+                  switch( code)
+                  {
+                     case code::xa::heuristic_hazard: return order::heuristic_hazard;
+                     case code::xa::heuristic_mix: return order::heuristic_mix;
+                     case code::xa::heuristic_commit: return order::heuristic_commit;
+                     case code::xa::heuristic_rollback: return order::heuristic_rollback;
+                     case code::xa::resource_fail: return order::resource_fail;
+                     case code::xa::resource_error: return order::resource_error;
+                     case code::xa::rollback_integrity: return order::rollback_integrity;
+                     case code::xa::rollback_communication: return order::rollback_communication;
+                     case code::xa::rollback_unspecified: return order::rollback_unspecified;
+                     case code::xa::rollback_other: return order::rollback_other;
+                     case code::xa::rollback_deadlock: return order::rollback_deadlock;
+                     case code::xa::protocol: return order::protocol;
+                     case code::xa::rollback_protocoll: return order::rollback_protocoll;
+                     case code::xa::rollback_timeout: return order::rollback_timeout;
+                     case code::xa::rollback_transient: return order::rollback_transient;
+                     case code::xa::argument: return order::argument;
+                     case code::xa::no_migrate: return order::no_migrate;
+                     case code::xa::outside: return order::outside;
+                     case code::xa::invalid_xid: return order::invalid_xid;
+                     case code::xa::outstanding_async: return order::outstanding_async;
+                     case code::xa::retry: return order::retry;
+                     case code::xa::duplicate_xid: return order::duplicate_xid;
+                     case code::xa::ok: return order::ok;
+                     case code::xa::read_only: return order::read_only;
+                  }
+
+                  common::log::error( casual::invalid_argument, "invalid xa code - value: ", std::to_underlying( code));
+                  return order::resource_error;
+               }
+               
+
+               
+            } // xa::severity
+
 
          } // <unnamed>
       } // local
@@ -83,6 +189,11 @@ namespace casual
       std::error_code make_error_code( code::ax code)
       {
          return { static_cast< int>( code), local::ax::category};
+      }
+
+      code::xa severest( code::xa a, code::xa b) noexcept
+      {
+         return local::xa::severity::convert( std::min( local::xa::severity::convert( a), local::xa::severity::convert( b)));
       }
 
       namespace local

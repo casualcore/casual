@@ -3543,8 +3543,7 @@ domain:
          local::call( "casual/example/resource/domain/echo/C", code::xatmi::ok);
 
          // expect commit to fail and issue rollback
-         // TODO: should the return code really be TX_ROLLBACK? A resource have fatally failed...
-         EXPECT_EQ( tx_commit(), TX_ROLLBACK);
+         EXPECT_EQ( tx_commit(), TX_FAIL);
 
          // no ongoing transaction
          EXPECT_TRUE( tx_info( nullptr) == 0);

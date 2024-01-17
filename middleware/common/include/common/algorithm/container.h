@@ -124,8 +124,7 @@ namespace casual
       template< typename C, typename T>
       auto erase( C& container, const T& value) -> decltype( void( range::front( container) == value), container)
       {
-         while( auto found = algorithm::find( container, value))
-            container.erase( std::begin( found));
+         std::erase( container, value);
          return container;
       }
 

@@ -49,13 +49,13 @@ namespace casual
             template< typename L>
             auto get_connection( L& lookup, const std::string& service)
             {
-               return std::get< 0>( lookup.service( service, {})).connection;
+               return lookup.service( service, {}).connection;
             }
 
             template< typename L>
             auto get_connection( L& lookup, const std::string& service, const transaction::ID& trid)
             {
-               return std::get< 0>( lookup.service( service, trid)).connection;
+               return lookup.service( service, trid).connection;
             }
 
          } // <unnamed>
@@ -106,11 +106,9 @@ namespace casual
 
          for( auto& expected : connections)
          {
-            auto [ result, involved] = lookup.service( "a", {});
+            auto result = lookup.service( "a", {});
             EXPECT_TRUE( result.connection == expected.id) << CASUAL_NAMED_VALUE( result.connection);
-            EXPECT_TRUE( transaction::id::null( result.trid));
-            EXPECT_TRUE( ! involved);
-
+            EXPECT_TRUE( ! result.new_transaction);
          }
 
          // back to the first one
@@ -126,29 +124,24 @@ namespace casual
 
          const auto trid = transaction::id::create();
 
-         auto [ result, involved] = lookup.service( "a", trid);
-         EXPECT_TRUE( involved);
+         auto result = lookup.service( "a", trid);
+         EXPECT_TRUE( result.new_transaction);
          EXPECT_TRUE( result.connection == range::front( connections).id ) << CASUAL_NAMED_VALUE( result.connection);
-
-         const auto branched = result.trid;
-         EXPECT_TRUE( branched != trid) << CASUAL_NAMED_VALUE( branched);
-         // expect same global part of trid
-         EXPECT_TRUE( algorithm::equal( transaction::id::range::global( branched), transaction::id::range::global( trid)));
 
          // 'consume' two with no trid
          {
-            auto [ result, involved] = lookup.service( "a", {});
+            auto result = lookup.service( "a", {});
             EXPECT_TRUE( result.connection == range::front( ++connections_range).id);
-            EXPECT_TRUE( ! involved);
-            std::tie( result, involved) = lookup.service( "a", {});
+            EXPECT_TRUE( ! result.new_transaction);
+            result = lookup.service( "a", {});
             EXPECT_TRUE( result.connection == range::front( ++connections_range).id);
-            EXPECT_TRUE( ! involved);
+            EXPECT_TRUE( ! result.new_transaction);
          }
 
          // same xid as before - expect same fd as before
-         std::tie( result, involved) = lookup.service( "a", trid);
+         result = lookup.service( "a", trid);
          EXPECT_TRUE( result.connection == range::front( connections).id);
-         EXPECT_TRUE( result.trid == branched) << CASUAL_NAMED_VALUE( result.trid);
+         EXPECT_TRUE( ! result.new_transaction);
 
          // expect next in the round-robin
          EXPECT_TRUE( local::get_connection( lookup, "a", {}) == range::front( ++connections_range).id ) << CASUAL_NAMED_VALUE( lookup);
@@ -177,20 +170,22 @@ namespace casual
       {
          auto lookup = local::lookup();
 
-         auto internal_xids = array::make( transaction::id::create(), transaction::id::create(), transaction::id::create(), transaction::id::create());
-         auto external_xids = std::vector< transaction::ID>{};
+         auto xids = array::make( transaction::id::create(), transaction::id::create(), transaction::id::create(), transaction::id::create());
+
+         std::vector< strong::file::descriptor::id> connections;
 
 
-         // add 'calls' to a, b, c, d, with all the internal xids
+         // add 'calls' to a, b, c, d, with all the xids
          {
-            for( auto& xid : internal_xids)
+            for( auto& xid : xids)
                for( auto& name : array::make( "a", "b", "c", "d"))
-                  external_xids.push_back( std::get< 0>( lookup.service( name, xid)).trid);
+                  connections.push_back( lookup.service( name, xid).connection);
          }
 
-         // remove all externals (simulate that we've got commit/rollback for them)
-         for( auto& xid : external_xids)
-            lookup.remove( xid);
+         // remove all gtrids (simulate that we've got commit/rollback for them)
+         for( auto& xid : xids)
+            for( auto connection : connections)
+               lookup.remove( transaction::id::range::global( xid), connection);
 
          EXPECT_TRUE( lookup.transactions().empty()) << CASUAL_NAMED_VALUE( lookup);
       }
