@@ -19,7 +19,7 @@ namespace casual
       using internal_handler = decltype( common::message::dispatch::handler( common::communication::ipc::inbound::device()));
       internal_handler internal( State& state);
 
-      using external_handler = decltype( common::message::dispatch::handler( std::declval< common::communication::tcp::Duplex&>()));
+      using external_handler = common::message::dispatch::basic_handler< common::communication::tcp::message::Complete, common::strong::socket::id>;
       external_handler external( State& state);
       
 

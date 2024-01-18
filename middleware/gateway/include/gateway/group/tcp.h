@@ -209,9 +209,6 @@ namespace casual
          auto& pending() const noexcept { return m_pending;}
          auto& pending() noexcept { return m_pending;}
 
-         void last( common::strong::file::descriptor::id value) { m_last = value;}
-         auto last() const noexcept { return m_last;}
-
          auto empty() const noexcept { return m_connections.empty();}
 
          //! create a state reply and fill it with connections
@@ -254,19 +251,15 @@ namespace casual
 
 
          CASUAL_LOG_SERIALIZE( 
-            CASUAL_SERIALIZE_NAME( m_connections, "connections");
-            CASUAL_SERIALIZE_NAME( m_information, "information");
-            CASUAL_SERIALIZE_NAME( m_pending, "pending");
-            CASUAL_SERIALIZE_NAME( m_last, "last");
+            CASUAL_SERIALIZE( m_connections);
+            CASUAL_SERIALIZE( m_information);
+            CASUAL_SERIALIZE( m_pending);
          )
       private:
 
          std::vector< Connection> m_connections;
          std::vector< Information> m_information;
          logical::connect::Pending< Configuration> m_pending;
-
-         //! holds the last external connection that was used
-         common::strong::file::descriptor::id m_last;
       };
 
       namespace detail::handle::communication
@@ -319,10 +312,10 @@ namespace casual
                {
                   try
                   {
-                     state.external.last( descriptor);
-
                      auto count = Policy::next::tcp();
-                     while( count-- > 0 && handler( connection->next()))
+
+                     // we know the descriptor is a socket descriptor, we convert.
+                     while( count-- > 0 && handler( connection->next(), common::strong::socket::id{ descriptor}))
                         ; // no-op
                   }
                   catch( ...)
