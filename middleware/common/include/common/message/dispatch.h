@@ -26,7 +26,7 @@ namespace casual
    namespace common::message::dispatch
    {
 
-      template< typename Complete>
+      template< typename Complete, typename... DispatchArguments>
       class basic_handler
       {
       public:
@@ -47,9 +47,9 @@ namespace casual
          //!
          //! @return true if the message was handled.
          template< typename M>
-         auto operator () ( M&& complete)
+         auto operator () ( M&& complete, DispatchArguments... arguments)
          {
-            return dispatch( complete);
+            return dispatch( complete, arguments...);
          }
 
          platform::size::type size() const noexcept { return m_handlers.size();}
@@ -87,14 +87,14 @@ namespace casual
 
       private:
 
-         strong::correlation::id dispatch( complete_type& complete)
+         strong::correlation::id dispatch( complete_type& complete, DispatchArguments... arguments)
          {
             if( ! complete)
                return {};
 
             if( auto found = algorithm::find( m_handlers, complete.type()))
             {
-               if( found->second( complete))
+               if( found->second( complete, arguments...))
                   return complete.correlation();
                else
                   return {};
@@ -104,7 +104,7 @@ namespace casual
             return {};
          }
 
-         using concept_t = common::unique_function< bool( complete_type&)>;
+         using concept_t = common::unique_function< bool( complete_type&, DispatchArguments ...arguments)>;
 
 
          template< typename H>
@@ -113,52 +113,88 @@ namespace casual
             using handler_type = H;
             using traits_type = traits::function< H>;
 
-            static_assert( traits_type::arguments() == 1, "handlers has to have this signature: void( <some message>), can be declared const");
+            static_assert( traits_type::arguments() > 0, "handler has to at least take a message as a parameter");
+
+            using message_type_with_ref = typename traits_type::template argument< 0>::type;
+            using message_type = std::decay_t< message_type_with_ref>;
+            
+            using result_type = typename traits_type::result_type;
+
+            
+            inline static constexpr bool extra_arguments = traits_type::arguments() > 1;
+            inline static constexpr auto number_of_dispatch_arguments = sizeof...( DispatchArguments);
+            // we need to know if the handler takes the message by (r)value (we need/should move)
+            inline static constexpr bool move_message = std::movable< message_type> && ( std::is_rvalue_reference_v< message_type_with_ref> || ! std::is_lvalue_reference_v< message_type_with_ref>);
+            
+            inline static constexpr bool bool_return = std::convertible_to< result_type, bool>;
+            
+            static_assert( message::like< message_type>, "first parameter is not a message like type");
+
             static_assert(
-               concepts::any_of< typename traits_type::result_type, void, bool>,
-               "handlers has to have this signature: void|bool( <some message>), can be declared const");
+               bool_return || std::same_as< result_type, void>,
+               "handlers return type has to be void or be convertible to bool");
 
-            using message_type = std::decay_t< typename traits_type::template argument< 0>::type>;
+            inline static constexpr bool handler_is_invocable = ( ! extra_arguments && std::invocable< handler_type, message_type_with_ref>) ||
+               ( extra_arguments && std::invocable< handler_type, message_type_with_ref, DispatchArguments...>);
 
+            static_assert( handler_is_invocable, "handler is not invocable");
 
             model( model&&) = default;
             model& operator = ( model&&) = default;
 
             model( handler_type&& handler) : m_handler( std::move( handler)) {}
 
-            bool operator() ( complete_type& complete)
+            bool operator() ( complete_type& complete, DispatchArguments ...arguments)
             {
                message_type message;
 
                serialize::native::complete( complete, message);
                execution::id( message.execution);
-               
-               // if the handler returns bool, we return it
-               if constexpr( std::is_same_v< typename traits_type::result_type, bool>)
+
+               // We got 4 combinations of signature we need to take care of.
+               // We could move it out to a few function but that seems to get
+               // more complicated. With the named static predicate results I 
+               // think it is pretty readable.
+
+               if constexpr( extra_arguments)
                {
-                  return model::invoke( m_handler, message, traits::priority::tag< 1>{});
+                  if constexpr( bool_return)
+                  {
+                     if constexpr( move_message)
+                        return m_handler( std::move( message), arguments...);
+                     else
+                        return m_handler( message, arguments...);
+                  }
+                  else
+                  {
+                     if constexpr( move_message)
+                        m_handler( std::move( message), arguments...);
+                     else
+                        m_handler( message, arguments...);
+                  }
                }
                else
                {
-                  // if not, we return true.
-                  model::invoke( m_handler, message, traits::priority::tag< 1>{});
-                  return true;
+                  if constexpr( bool_return)
+                  {
+                     if constexpr( move_message)
+                        return m_handler( std::move( message));
+                     else
+                        return m_handler( message);
+                  }
+                  else
+                  {
+                     if constexpr( move_message)
+                        m_handler( std::move( message));
+                     else
+                        m_handler( message);
+                  }
                }
-            }
 
+               // if ! bool_return this will kick in.
+               return true;
+            }
          private:
-
-            template< typename M>
-            static auto invoke( handler_type& handler, M& message, traits::priority::tag< 1>) -> decltype( handler( std::move( message)))
-            {
-               return handler( std::move( message));
-            }
-
-            template< typename M>
-            static auto invoke( handler_type& handler, M& message, traits::priority::tag< 0>) -> decltype( handler( message))
-            {
-               return handler( message);
-            }
 
             handler_type m_handler;
          };

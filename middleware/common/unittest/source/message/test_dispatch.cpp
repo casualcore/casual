@@ -68,6 +68,48 @@ namespace casual
          EXPECT_TRUE( types.at( 0) == message::shutdown::Request::type());
       }
 
+      TEST( common_message_dispatch, extra_dispatch_arguments)
+      {
+         using complete_type = communication::ipc::message::Complete;
+         using handler_type = message::dispatch::basic_handler< complete_type, const std::string&, long>;
+
+         struct
+         {
+            std::string text;
+            long value{};
+         } state;
+         
+         handler_type handler{ 
+            []( message::shutdown::Request&){}, // no extra arguments
+            [ &state]( message::flush::IPC&&, const std::string& text, long value)
+            {
+               state.text = text;
+               state.value = value;
+            },
+            [ &state]( message::event::Idle&&, std::string text, const long& value)
+            {
+               state.text = text;
+               state.value = value;
+            }};
+
+         EXPECT_TRUE( handler.size() == 3);
+
+         handler( serialize::native::complete< complete_type>( message::shutdown::Request{}), "poop", 4);
+         // expect the extra dispatch arguments to be discarded since the handler
+         // for shutdown::Request does not have any extra arguments in its signature
+         EXPECT_TRUE( state.text.empty());
+         EXPECT_TRUE( state.value == 0);
+
+         handler( serialize::native::complete< complete_type>( message::flush::IPC{}), "text", 42);
+         EXPECT_TRUE( state.text == "text");
+         EXPECT_TRUE( state.value == 42);
+
+         handler( serialize::native::complete< complete_type>( message::event::Idle{}), "idle", 777);
+         EXPECT_TRUE( state.text == "idle");
+         EXPECT_TRUE( state.value == 777);
+
+      }
+
       TEST( common_message_dispatch, condition)
       {
          bool idle = false;
