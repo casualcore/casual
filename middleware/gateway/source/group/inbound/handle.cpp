@@ -218,43 +218,33 @@ namespace casual
 
             namespace external
             {
-               template< typename M>
-               auto correlate( State& state, const M& message)
-               {
-                  state.correlations.emplace_back( message.correlation, state.external.last());
-                  return state.external.last();
-               }
-
                namespace disconnect
                {
                   auto reply( State& state)
                   {
-                     return [&state]( const gateway::message::domain::disconnect::Reply& message)
+                     return [ &state]( const gateway::message::domain::disconnect::Reply& message, strong::socket::id descriptor)
                      {
                         Trace trace{ "gateway::group::inbound::handle::local::external::disconnect::reply"};
                         common::log::line( verbose::log, "message: ", message);
+                        common::log::line( verbose::log, "descriptor: ", descriptor);
 
-                        if( auto descriptor = state.consume( message.correlation))
+                        if( algorithm::find( state.correlations, descriptor) || state.transaction_cache.associated( descriptor))
                         {
-                           common::log::line( verbose::log, "descriptor: ", descriptor);
+                           common::log::line( verbose::log, "state.correlations: ", state.correlations, ", state.transaction_cache: ", state.transaction_cache);
 
-                           if( algorithm::find( state.correlations, descriptor) || state.transaction_cache.associated( descriptor))
-                           {
-                              common::log::line( verbose::log, "state.correlations: ", state.correlations, ", state.transaction_cache: ", state.transaction_cache);
-
-                              // connection still got pending stuff to do, we keep track until its 'idle'.
-                              state.pending.disconnects.push_back( descriptor);
-                           }
-                           else 
-                           {
-                              // connection is 'idle', we just 'loose' the connection
-                              handle::connection::lost( state, descriptor);
-
-                              // we return false to tell the dispatch not to try consume any more messages on
-                              // this connection
-                              return false;
-                           }
+                           // connection still got pending stuff to do, we keep track until its 'idle'.
+                           state.pending.disconnects.push_back( descriptor);
                         }
+                        else 
+                        {
+                           // connection is 'idle', we just 'loose' the connection
+                           handle::connection::lost( state, descriptor);
+
+                           // we return false to tell the dispatch not to try consume any more messages on
+                           // this connection
+                           return false;
+                        }
+
                         return true;
                      };
                   }
@@ -267,12 +257,12 @@ namespace casual
                   {
                      auto request( State& state)
                      {
-                        return [ &state]( common::message::service::call::callee::Request& message)
+                        return [ &state]( common::message::service::call::callee::Request& message, strong::socket::id descriptor)
                         {
                            Trace trace{ "gateway::group::inbound::handle::local::external::service::call::request"};
                            log::line( verbose::log, "message: ", message);
                            
-                           auto descriptor = external::correlate( state, message);
+                           state.correlations.emplace_back( message.correlation, descriptor);
                            state.tasks.add( task::create::service::call( state, descriptor, std::move( message)));
                         };
                      }
@@ -285,12 +275,12 @@ namespace casual
                   {
                      auto request( State& state)
                      {
-                        return [&state]( common::message::conversation::connect::callee::Request& message)
+                        return [&state]( common::message::conversation::connect::callee::Request& message, strong::socket::id descriptor)
                         {
                            Trace trace{ "gateway::group::inbound::handle::local::external::conversation::connect::request"};
                            log::line( verbose::log, "message: ", message);
 
-                           auto descriptor = external::correlate( state, message);
+                           state.correlations.emplace_back( message.correlation, descriptor);
                            state.tasks.add( task::create::service::conversation( state, descriptor, std::move( message)));
                         };
                      }
@@ -336,12 +326,12 @@ namespace casual
                   {
                      auto request( State& state)
                      {
-                        return [&state]( casual::queue::ipc::message::group::enqueue::Request& message)
+                        return [&state]( casual::queue::ipc::message::group::enqueue::Request& message, strong::socket::id descriptor)
                         {
                            Trace trace{ "gateway::group::inbound::handle::local::external::queue::enqueue::Request"};
                            common::log::line( verbose::log, "message: ", message);
 
-                           auto descriptor = external::correlate( state, message);
+                           state.correlations.emplace_back( message.correlation, descriptor);
                            state.tasks.add( task::create::queue::enqueue( state, descriptor, std::move( message)));
                         };
                      }
@@ -351,12 +341,12 @@ namespace casual
                   {
                      auto request( State& state)
                      {
-                        return [&state]( casual::queue::ipc::message::group::dequeue::Request& message)
+                        return [&state]( casual::queue::ipc::message::group::dequeue::Request& message, strong::socket::id descriptor)
                         {
                            Trace trace{ "gateway::group::inbound::handle::local::external::queue::dequeue::Request"};
                            common::log::line( verbose::log, "message: ", message);
 
-                           auto descriptor = external::correlate( state, message);
+                           state.correlations.emplace_back( message.correlation, descriptor);
                            state.tasks.add( task::create::queue::dequeue( state, descriptor, std::move( message)));
                         };
                      }
@@ -369,12 +359,12 @@ namespace casual
                   {
                      auto request( State& state)
                      {
-                        return [&state]( casual::domain::message::discovery::Request& message)
+                        return [&state]( casual::domain::message::discovery::Request& message, strong::socket::id descriptor)
                         {
                            Trace trace{ "gateway::inbound::handle::local::external::domain::discovery::request"};
                            common::log::line( verbose::log, "message: ", message);
 
-                           auto descriptor = external::correlate( state, message);
+                           state.correlations.emplace_back( message.correlation, descriptor);
 
                            // Set 'sender' so we get the reply
                            message.process = common::process::handle();
@@ -399,12 +389,12 @@ namespace casual
                      template< typename Message>
                      auto basic_request( State& state)
                      {
-                        return [&state]( Message& message)
+                        return [&state]( Message& message, strong::socket::id descriptor)
                         {
                            Trace trace{ "gateway::inbound::handle::local::external::transaction::basic_request"};
                            common::log::line( verbose::log, "message: ", message);
 
-                           auto descriptor = external::correlate( state, message);
+                           state.correlations.emplace_back( message.correlation, descriptor);
                            state.tasks.add( task::create::transaction( state, descriptor, std::move( message)));
                         };
                      }
@@ -530,14 +520,9 @@ namespace casual
                log::line( verbose::log, "connection: ", *connection);
 
                if( message::protocol::compatible< message::domain::disconnect::Request>( connection->protocol()))
-               {
-                  if( auto correlation = inbound::tcp::send( state, descriptor, message::domain::disconnect::Request{}))
-                     state.correlations.emplace_back( correlation, descriptor);
-               }
+                  inbound::tcp::send( state, descriptor, message::domain::disconnect::Request{});
                else
-               {
                   handle::connection::lost( state, descriptor);
-               }
             }
          }
          

@@ -656,15 +656,12 @@ namespace casual
                {
                   auto request( State& state)
                   {
-                     return [&state]( const gateway::message::domain::disconnect::Request& message)
+                     return [&state]( const gateway::message::domain::disconnect::Request& message, strong::socket::id descriptor)
                      {
                         Trace trace{ "gateway::group::outbound::handle::local::external::disconnect::request"};
                         log::line( verbose::log, "message: ", message);
 
-                        auto descriptor = state.external.last();
-
                         handle::connection::disconnect( state, descriptor);
-
                         tcp::send( state, descriptor, common::message::reverse::type( message));
                      };
                   }
@@ -810,14 +807,14 @@ namespace casual
                      {
                         auto reply( State& state)
                         {
-                           return [ &state]( common::message::transaction::resource::prepare::Reply& message)
+                           return [ &state]( common::message::transaction::resource::prepare::Reply& message, strong::socket::id descriptor)
                            {
                               Trace trace{ "gateway::group::outbound::handle::local::external::transaction::resource::prepare::reply"};
                               log::line( verbose::log, "message: ", message);
 
                               // if the prepare is a _read-only_, the transaction is done for the connection
                               if( message.state == decltype( message.state)::read_only)
-                                 state.lookup.remove( common::transaction::id::range::global( message.trid), state.external.last());
+                                 state.lookup.remove( common::transaction::id::range::global( message.trid), descriptor);
 
                               state.coordinate.transaction.prepare( message);
                            };
@@ -829,12 +826,12 @@ namespace casual
                      {
                         auto reply( State& state)
                         {
-                           return [ &state]( common::message::transaction::resource::commit::Reply& message)
+                           return [ &state]( common::message::transaction::resource::commit::Reply& message, strong::socket::id descriptor)
                            {
                               Trace trace{ "gateway::group::outbound::handle::local::external::transaction::resource::commit::reply"};
                               log::line( verbose::log, "message: ", message);
 
-                              state.lookup.remove( common::transaction::id::range::global( message.trid), state.external.last());
+                              state.lookup.remove( common::transaction::id::range::global( message.trid), descriptor);
                               state.coordinate.transaction.commit( message);
                            };
                         }
@@ -845,12 +842,12 @@ namespace casual
                      {
                         auto reply( State& state)
                         {
-                           return [ &state]( common::message::transaction::resource::rollback::Reply& message)
+                           return [ &state]( common::message::transaction::resource::rollback::Reply& message, strong::socket::id descriptor)
                            {
                               Trace trace{ "gateway::group::outbound::handle::local::external::transaction::resource::rollback::reply"};
                               log::line( verbose::log, "message: ", message);
 
-                              state.lookup.remove( common::transaction::id::range::global( message.trid), state.external.last());
+                              state.lookup.remove( common::transaction::id::range::global( message.trid), descriptor);
                               state.coordinate.transaction.rollback( message);
                            };
                         }
@@ -882,7 +879,7 @@ namespace casual
                      //! been updated.
                      auto update( State& state)
                      {
-                        return [ &state]( casual::domain::message::discovery::topology::implicit::Update&& message)
+                        return [ &state]( casual::domain::message::discovery::topology::implicit::Update&& message, strong::socket::id descriptor)
                         {
                            Trace trace{ "gateway::group::outbound::handle::local::external::domain::discover::topology::update"};
                            log::line( verbose::log, "message: ", message);
@@ -892,7 +889,7 @@ namespace casual
                               return;
 
                            // make sure to set who actually is updated.
-                           if( auto information = state.external.information( state.external.last()))
+                           if( auto information = state.external.information( descriptor))
                               message.origin = information->domain;
 
                            casual::domain::discovery::topology::implicit::update( state.multiplex, message);
