@@ -114,10 +114,10 @@ namespace casual
          std::optional< Reply> receive() noexcept;
 
          //! @return the file descriptor assocciated with this _call context_
-         inline common::strong::socket::id descriptor() const noexcept { return m_descriptor;}
+         inline auto descriptor() const noexcept { return m_descriptor;}
              
       private:
-         common::strong::socket::id m_descriptor;
+         common::strong::ipc::descriptor::id m_descriptor;
          std::string m_protocol;
          common::unique_function< std::optional< Reply>()> m_implementation;
          

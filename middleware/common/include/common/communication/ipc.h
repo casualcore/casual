@@ -36,6 +36,7 @@ namespace casual
 
          inline const Socket& socket() const { return m_socket;}
          inline strong::ipc::id ipc() const { return m_ipc;}
+         inline strong::ipc::descriptor::id descriptor() const noexcept { return strong::ipc::descriptor::id{ m_socket.descriptor().underlying()};}
 
          inline explicit operator bool () const { return ! m_socket.empty();}
 
@@ -186,7 +187,7 @@ namespace casual
 
             inline const Handle& handle() const { return m_handle;}
             inline Handle& handle() { return m_handle;}
-            inline auto descriptor() const { return m_handle.socket().descriptor();}
+            inline auto descriptor() const { return m_handle.descriptor();}
 
             CASUAL_LOG_SERIALIZE(
                CASUAL_SERIALIZE_NAME( m_handle, "handle");
