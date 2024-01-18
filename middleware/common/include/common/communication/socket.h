@@ -61,7 +61,7 @@ namespace casual
 
       } // socket::option
 
-      class Socket : compare::Equality< Socket>
+      class Socket
       {
       public:
 
@@ -105,9 +105,9 @@ namespace casual
 
          friend std::ostream& operator << ( std::ostream& out, const Socket& value);
 
-         inline friend bool operator == ( const Socket& lhs, strong::file::descriptor::id rhs) { return lhs.descriptor() == rhs;}
+         friend bool operator == ( const Socket&, const Socket&) = default;
 
-         inline auto tie() const { return std::tie( m_descriptor);}
+         inline friend bool operator == ( const Socket& lhs, strong::file::descriptor::id rhs) { return lhs.descriptor() == rhs;}
 
       private:
 

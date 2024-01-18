@@ -193,7 +193,7 @@ namespace casual
                select::block::read( handle.socket().descriptor());
 
                auto result = ::recv(
-                  handle.socket().descriptor().value(),
+                  handle.descriptor().value(),
                   transport.data(),
                   message::transport::max_message_size(),
                   0); // | std::to_underlying( platform::flag::msg::no_signal));

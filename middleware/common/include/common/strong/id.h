@@ -38,12 +38,7 @@ namespace casual
 
       } // process
 
-      namespace ipc
-      {
-         struct tag{};
-         using id = common::strong::Type< Uuid, tag>;
 
-      } // ipc
 
       namespace file
       {
@@ -55,9 +50,32 @@ namespace casual
          } // descriptor
       } // file
 
+      namespace ipc
+      {
+         struct tag{};
+         using id = common::strong::Type< Uuid, tag>;
+
+         namespace descriptor
+         {
+            namespace detail
+            {
+               struct tag{};
+               using base_type = strong::detail::integral::Type< platform::file::descriptor::native::type, tag, platform::file::descriptor::native::invalid>;
+            } // detail
+
+            struct id : detail::base_type
+            {
+               using detail::base_type::base_type;
+               inline explicit id( file::descriptor::id value) : detail::base_type{ value.underlying()} {}
+
+               //! implicit conversion to file descriptor
+               operator file::descriptor::id () const { return file::descriptor::id{ value()};}
+            };
+         } // descriptor
+      } // ipc
+
       namespace socket
       {
-
          namespace detail
          {
             struct tag{};
