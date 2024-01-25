@@ -42,15 +42,20 @@ namespace casual
 
          Payload::Payload() = default;
 
-         Payload::Payload( std::nullptr_t) : Payload{ std::string{ "NULL"}, 0} {}
+         Payload::Payload( std::nullptr_t) 
+          : Payload{ std::string{ "NULL"}} 
+         {}
 
-         Payload::Payload( string::Argument type) : type( std::move( type)) {}
-
-         Payload::Payload( string::Argument type, platform::binary::type buffer)
-          : type( std::move( type)), data( std::move( buffer)) {}
+         Payload::Payload( string::Argument type) 
+          : Payload{ std::move( type), 0} 
+         {}
 
          Payload::Payload( string::Argument type, platform::binary::size::type size)
-          : type( std::move( type)), data( size)
+          : Payload{ std::move( type), platform::binary::type( size)}
+         {}
+
+         Payload::Payload( string::Argument type, platform::binary::type buffer)
+          : type( std::move( type)), data( std::move( buffer)) 
          {
             if( ! data.data())
                data.reserve( 1);
