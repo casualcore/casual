@@ -20,6 +20,7 @@
 
 #include <cstring>
 #include <utility>
+#include <iostream>
 
 namespace casual
 {
@@ -137,7 +138,7 @@ namespace casual
 
                };
 
-            } // <unnamed>
+            } //
          } // local
 
          namespace
@@ -162,8 +163,12 @@ namespace casual
                   }
                   catch( ...)
                   {
-                     if( common::exception::capture().code() == common::code::xatmi::argument)
-                        return CASUAL_ORDER_INVALID_HANDLE;
+                     const auto error = common::exception::capture();
+
+                     if( error.code() == common::code::xatmi::argument)
+                        return CASUAL_ORDER_INVALID_HANDLE; 
+
+                     common::stream::write( std::cerr, "error: ", error, '\n');
 
                      return CASUAL_ORDER_INTERNAL_FAILURE;
                   }
@@ -176,7 +181,7 @@ namespace casual
 
                int buffer( const char* const handle, size_type* const reserved, size_type* const utilized, size_type* const consumed) noexcept
                {
-                  //const trace trace( "order::explore::buffer");
+                  //Trace trace( "order::explore::buffer");
 
                   try
                   {
@@ -202,7 +207,7 @@ namespace casual
 
                int reset( const char* const handle) noexcept
                {
-                  //const trace trace( "order::add::reset");
+                  //Trace trace( "order::add::reset");
 
                   try
                   {
@@ -268,7 +273,7 @@ namespace casual
                template<typename... A>
                int data( char** handle, A&&... arguments) noexcept
                {
-                  //const trace trace( "order::add::data");
+                  //Trace trace( "order::add::data");
 
                   try
                   {
@@ -298,7 +303,7 @@ namespace casual
             {
                int reset( const char* const handle) noexcept
                {
-                  //const trace trace( "order::get::reset");
+                  //Trace trace( "order::get::reset");
 
                   try
                   {
@@ -340,7 +345,7 @@ namespace casual
                template<typename... A>
                int data( const char* const handle, A&&... arguments) noexcept
                {
-                  //const trace trace( "order::add::data");
+                  //Trace trace( "order::add::data");
 
                   try
                   {
@@ -373,7 +378,7 @@ namespace casual
             } // get
 
 
-         } // <unnamed>
+         } //
 
       } // order
 

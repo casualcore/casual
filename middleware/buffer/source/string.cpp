@@ -19,6 +19,7 @@
 
 
 #include <cstring>
+#include <iostream>
 
 namespace casual
 {
@@ -53,12 +54,11 @@ namespace casual
                   // string within allocated area
 
                   if( used > size)
-                     common::code::raise::error( common::code::xatmi::argument, "string is longer than allocated size");
+                     throw std::invalid_argument{"string is longer than allocated size"};
 
                   return used;
                }
-
-            }
+            } // local
 
 
             struct Buffer : common::buffer::Buffer
@@ -129,14 +129,22 @@ namespace casual
                {
                   return CASUAL_STRING_OUT_OF_BOUNDS;
                }
+               catch( const std::invalid_argument&)
+               {
+                  return CASUAL_STRING_INVALID_ARGUMENT;
+               }
                catch( const std::bad_alloc&)
                {
                   return CASUAL_STRING_OUT_OF_MEMORY;
                }
                catch( ...)
                {
-                  if( common::exception::capture().code() == common::code::xatmi::argument)
-                     return CASUAL_STRING_INVALID_HANDLE;
+                  const auto error = common::exception::capture();
+
+                  if( error.code() == common::code::xatmi::argument)
+                     return CASUAL_STRING_INVALID_HANDLE; 
+
+                  common::stream::write( std::cerr, "error: ", error, '\n');
 
                   return CASUAL_STRING_INTERNAL_FAILURE;
                }
@@ -145,7 +153,7 @@ namespace casual
 
             int explore( const char* const handle, size_type* const size, size_type* const used)
             {
-               //const trace trace( "string::explore");
+               //Trace trace( "string::explore");
 
                try
                {
@@ -165,7 +173,7 @@ namespace casual
 
             int set( char** const handle, const char* const value)
             {
-               //const trace trace( "string::set");
+               //Trace trace( "string::set");
 
                try
                {
@@ -189,7 +197,7 @@ namespace casual
 
             int get( const char* const handle, const char** value)
             {
-               //const trace trace( "string::get");
+               //Trace trace( "string::get");
 
                try
                {
@@ -213,10 +221,9 @@ namespace casual
                }
 
                return CASUAL_STRING_SUCCESS;
-
             }
 
-         } // <unnamed>
+         } //
 
       } // string
 

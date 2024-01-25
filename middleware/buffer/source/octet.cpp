@@ -12,6 +12,8 @@
 #include "casual/platform.h"
 #include "common/exception/capture.h"
 
+#include <iostream>
+
 namespace casual
 {
    namespace buffer
@@ -98,8 +100,12 @@ namespace casual
                }
                catch( ...)
                {
-                  if( common::exception::capture().code() == common::code::xatmi::argument)
-                     return CASUAL_OCTET_INVALID_HANDLE;
+                  const auto error = common::exception::capture();
+
+                  if( error.code() == common::code::xatmi::argument)
+                     return CASUAL_OCTET_INVALID_HANDLE; 
+
+                  common::stream::write( std::cerr, "error: ", error, '\n');
 
                   return CASUAL_OCTET_INTERNAL_FAILURE;
                }
@@ -108,7 +114,7 @@ namespace casual
 
             int explore( const char* const handle, const char** name, size_type* const size) noexcept
             {
-               //const trace trace( "octet::explore");
+               //Trace trace( "octet::explore");
 
                try
                {
@@ -132,7 +138,7 @@ namespace casual
 
             int set( char** const handle, const_data_type data, const size_type size) noexcept
             {
-               //const trace trace( "string::set");
+               //Trace trace( "string::set");
 
                try
                {
@@ -154,7 +160,7 @@ namespace casual
 
             int get( const char* const handle, const_data_type& data, size_type& size) noexcept
             {
-               //const trace trace( "octet::get");
+               //Trace trace( "octet::get");
 
                try
                {
@@ -173,7 +179,7 @@ namespace casual
 
             }
 
-         } // <unnamed>
+         } //
 
       } // octet
 
