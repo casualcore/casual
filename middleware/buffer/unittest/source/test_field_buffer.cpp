@@ -1301,9 +1301,8 @@ namespace casual
 
          ASSERT_FALSE( casual_field_explore_buffer( source, nullptr, &memory_size));
 
-         std::vector<char> memory( source, source + memory_size + 2);
          // Somehow make the buffer invalid without asking for UB
-         memory.resize(memory.size() + 2);
+         const std::vector<char> memory( source, source + memory_size + 2);
 
          tpfree( source);
 
@@ -1313,7 +1312,31 @@ namespace casual
 
          tpfree( target);
 
-         ASSERT_EQ( result, CASUAL_FIELD_INVALID_HANDLE);
+         ASSERT_EQ( result, CASUAL_FIELD_INVALID_ARGUMENT);
+      }
+
+      TEST( buffer_field, serialize_empty_buffer__expecting_success)
+      {
+         common::unittest::Trace trace;
+
+         auto buffer = tpalloc( CASUAL_FIELD, "", 512);
+
+         ASSERT_TRUE( buffer != nullptr);
+
+         // Make some empty memory
+         const std::vector<char> memory;
+
+         const auto result = casual_field_copy_memory( &buffer, memory.data(), memory.size());
+
+         std::array< char, 8> type;
+         const auto size = tptypes( buffer, type.data(), nullptr);
+
+         EXPECT_NE(-1, size) << size;
+         EXPECT_EQ(std::string{CASUAL_FIELD}, std::string{type.data()}) << type.data();
+
+         tpfree( buffer);
+
+         ASSERT_EQ( result, CASUAL_FIELD_SUCCESS);
       }
 
       TEST( buffer_field, DISABLED_performance__expecting_good_enough_speed)

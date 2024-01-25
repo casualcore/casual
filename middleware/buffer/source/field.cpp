@@ -97,7 +97,7 @@ namespace casual
                   }
 
                   if( cursor > end)
-                     common::code::raise::error( common::code::xatmi::argument, "buffer is comprised");
+                     throw std::invalid_argument{ "buffer is comprised"};
                }
 
                // invoked when a service is invoked with the "buffer from the wire".
@@ -170,7 +170,7 @@ namespace casual
                // called on service invocation
                common::buffer::handle::mutate::type adopt( common::buffer::Payload&& payload, common::buffer::handle::type* inbound)
                {
-                  Trace trace{ "buffer::field::Allocator::adopt"};
+                  //Trace trace{ "buffer::field::Allocator::adopt"};
                   auto& buffer = allocator_base::emplace_back( std::move( payload), inbound);
                   return buffer.handle();
                }
@@ -215,7 +215,7 @@ namespace casual
 
             static_assert( common::buffer::pool::is::adoptable< Allocator>, "not adoptable"); 
 
-         } // <unnamed>
+         } //
       } // local
 
       namespace
@@ -247,7 +247,7 @@ namespace casual
                   const auto error = common::exception::capture();
 
                   if( error.code() == common::code::xatmi::argument)
-                     return CASUAL_FIELD_INVALID_HANDLE;
+                     return CASUAL_FIELD_INVALID_HANDLE; 
 
                   common::stream::write( std::cerr, "error: ", error, '\n');
                   
@@ -318,7 +318,7 @@ namespace casual
             template<typename... A>
             int data( char** handle, const item_type id, const int type, A&&... arguments)
             {
-               //const trace trace( "field::add::data");
+               //Trace trace( "field::add::data");
 
                if( type != (id / CASUAL_FIELD_TYPE_BASE))
                {
@@ -389,7 +389,7 @@ namespace casual
             template<typename... A>
             int data( const char* const handle, const item_type id, size_type occurrence, const int type, A&&... arguments)
             {
-               //const trace trace( "field::get::data");
+               //Trace trace( "field::get::data");
 
                if( type != (id / CASUAL_FIELD_TYPE_BASE))
                   return CASUAL_FIELD_INVALID_ARGUMENT;
@@ -455,7 +455,7 @@ namespace casual
 
             int data( const char* const handle, const item_type id, size_type occurrence)
             {
-               //const trace trace( "field::cut::data");
+               //Trace trace( "field::cut::data");
 
                if( ! (id > CASUAL_FIELD_NO_ID))
                   return CASUAL_FIELD_INVALID_ARGUMENT;
@@ -477,7 +477,7 @@ namespace casual
 
             int all( const char* const handle)
             {
-               //const trace trace( "field::cut::all");
+               //Trace trace( "field::cut::all");
 
                try
                {
@@ -561,7 +561,7 @@ namespace casual
             template<typename... A>
             int data( char** handle, const item_type id, size_type occurrence, const int type, A&&... arguments)
             {
-               //const trace trace( "field::set::data");
+               //Trace trace( "field::set::data");
 
                if( type != (id / CASUAL_FIELD_TYPE_BASE))
                   return CASUAL_FIELD_INVALID_ARGUMENT;
@@ -595,7 +595,7 @@ namespace casual
          {
             int value( const char* const handle, const item_type id, const size_type occurrence, size_type& count)
             {
-               //const trace trace( "field::explore::value");
+               //Trace trace( "field::explore::value");
 
                try
                {
@@ -615,7 +615,7 @@ namespace casual
 
             int buffer( const char* const handle, size_type& size, size_type& used)
             {
-               //const trace trace( "field::explore::buffer");
+               //Trace trace( "field::explore::buffer");
 
                try
                {
@@ -640,7 +640,7 @@ namespace casual
 
             int existence( const char* const handle, const item_type id, const size_type occurrence)
             {
-               //const trace trace( "field::explore::existence");
+               //Trace trace( "field::explore::existence");
 
                try
                {
@@ -661,7 +661,7 @@ namespace casual
 
             int count( const char* const handle, const item_type id, size_type& occurrences)
             {
-               //const trace trace( "field::explore::count");
+               //Trace trace( "field::explore::count");
 
                try
                {
@@ -684,7 +684,7 @@ namespace casual
 
             int count( const char* const handle, size_type& occurrences)
             {
-               //const trace trace( "field::explore::count");
+               //Trace trace( "field::explore::count");
 
                try
                {
@@ -710,7 +710,7 @@ namespace casual
          {
             int first( const char* const handle, item_type& id, size_type& index)
             {
-               //const trace trace( "field::iterate::first");
+               //Trace trace( "field::iterate::first");
 
                try
                {
@@ -735,7 +735,7 @@ namespace casual
 
             int next( const char* const handle, item_type& id, size_type& index)
             {
-               //const trace trace( "field::iterate::next");
+               //Trace trace( "field::iterate::next");
 
                try
                {
@@ -784,7 +784,7 @@ namespace casual
          {
             int buffer( char** target_handle, const char* const source_handle)
             {
-               //const trace trace( "field::copy::buffer");
+               //Trace trace( "field::copy::buffer");
 
 
                try
@@ -811,11 +811,14 @@ namespace casual
 
             int memory( char** const handle, const void* const source, const platform::binary::size::type count)
             {
-               //const trace trace( "field::copy::data");
+               //Trace trace( "field::copy::data");
 
                try
                {
                   auto& buffer = pool_type::pool().get( common::buffer::handle::type{ *handle});
+
+                  common::log::line( common::log::debug, "memory: ", buffer.payload);
+
 
                   const auto synchronize = common::execute::scope( [ handle, &buffer]() 
                   { 
@@ -826,6 +829,8 @@ namespace casual
                   const auto size = count;
 
                   buffer = common::buffer::Payload{ buffer.payload.type, { data, data + size}};
+
+                  common::log::line( common::log::debug, "memory: ", buffer.payload);
                }
                catch( ...)
                {
@@ -837,7 +842,7 @@ namespace casual
 
          } // copy
 
-      } // <unnamed>
+      } //
 
    } // buffer::field
 
@@ -1347,7 +1352,7 @@ namespace casual
 
                   } // fetch
 
-               } // <unnamed>
+               } //
 
                std::unordered_map< std::string, long> name_to_id( std::vector< std::filesystem::path> files)
                {
@@ -1599,13 +1604,13 @@ namespace casual
                };
 
 
-            } // <unnamed>
+            } //
 
             namespace payload
             {
                void stream( common::buffer::Payload payload, std::ostream& stream, const std::string& protocol)
                {
-                  const Trace trace{ "field::internal::stream out"};
+                  Trace trace{ "field::internal::stream out"};
 
                   const auto& buffer = pool_type::pool().get( pool_type::pool().insert( std::move( payload)));
 
@@ -1665,7 +1670,7 @@ namespace casual
 
             char* add( platform::binary::type buffer)
             {
-               const Trace trace{ "field::internal::add"};
+               Trace trace{ "field::internal::add"};
 
                return pool_type::pool().insert( common::buffer::Payload{ buffer::key, std::move( buffer)}).underlying();
             }
@@ -1938,7 +1943,7 @@ namespace casual
 
                int stream( const char* const handle, std::ostream& stream)
                {
-                  //const trace trace( "field::transform::stream");
+                  //Trace trace( "field::transform::stream");
 
                   try
                   {
@@ -2000,7 +2005,7 @@ namespace casual
 
                }
 
-            } // <unnamed>
+            } //
 
          } // transform
 
