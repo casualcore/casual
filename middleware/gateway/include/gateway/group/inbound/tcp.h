@@ -16,13 +16,13 @@ namespace casual
    namespace gateway::group::inbound::tcp
    {
       template< typename M>
-      common::strong::correlation::id send( State& state, common::strong::file::descriptor::id descriptor, M&& message)
+      common::strong::correlation::id send( State& state, common::strong::socket::id descriptor, M&& message)
       {
          return group::tcp::send( state, &handle::connection::lost, descriptor, std::forward< M>( message));
       }
 
       template< typename M>
-      common::strong::file::descriptor::id send( State& state, M&& message)
+      common::strong::socket::id send( State& state, M&& message)
       {
          if( auto descriptor = state.consume( correlation( message)))
          {

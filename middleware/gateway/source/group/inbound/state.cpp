@@ -32,7 +32,7 @@ namespace casual
          namespace transaction
          {
 
-            const common::transaction::ID* Cache::associate( common::strong::file::descriptor::id descriptor, const common::transaction::ID& external)
+            const common::transaction::ID* Cache::associate( common::strong::socket::id descriptor, const common::transaction::ID& external)
             {
                if( auto found = algorithm::find( m_associations, descriptor))
                {
@@ -55,7 +55,7 @@ namespace casual
                return nullptr;
             }
 
-            void Cache::dissociate( common::strong::file::descriptor::id descriptor, const common::transaction::ID& external)
+            void Cache::dissociate( common::strong::socket::id descriptor, const common::transaction::ID& external)
             {
                if( auto found = algorithm::find( m_associations, descriptor))
                {
@@ -71,7 +71,7 @@ namespace casual
                         algorithm::container::erase( m_transactions, std::begin( found));
             }
 
-            void Cache::add_branch( common::strong::file::descriptor::id descriptor, const common::transaction::ID& branched_trid)
+            void Cache::add_branch( common::strong::socket::id descriptor, const common::transaction::ID& branched_trid)
             {
                auto gtrid = common::transaction::id::range::global( branched_trid);
 
@@ -87,7 +87,7 @@ namespace casual
             }
 
 
-            bool Cache::associated( strong::file::descriptor::id descriptor) const noexcept
+            bool Cache::associated( common::strong::socket::id descriptor) const noexcept
             {
                if( auto found = algorithm::find( m_associations, descriptor))
                   return true;
@@ -103,7 +103,7 @@ namespace casual
                return nullptr;
             }
 
-            std::vector< common::transaction::ID> Cache::extract( common::strong::file::descriptor::id descriptor) noexcept
+            std::vector< common::transaction::ID> Cache::extract( common::strong::socket::id descriptor) noexcept
             {
                // remove the descriptor in all transaction mappings. We iterate over the whole set.
                algorithm::container::erase_if( m_transactions, [ descriptor]( auto& pair)
@@ -126,7 +126,7 @@ namespace casual
 
       } // state
 
-      common::strong::file::descriptor::id State::consume( const strong::correlation::id& correlation)
+      common::strong::socket::id State::consume( const strong::correlation::id& correlation)
       {
          if( auto found = algorithm::find( correlations, correlation))
             return algorithm::container::extract( correlations, std::begin( found)).descriptor;
@@ -137,12 +137,12 @@ namespace casual
       tcp::Connection* State::connection( const common::strong::correlation::id& correlation)
       {
          if( auto found = algorithm::find( correlations, correlation))
-            return external.connection( found->descriptor);
+            return external.find_external( found->descriptor);
 
          return nullptr;
       }
 
-      bool State::disconnectable( common::strong::file::descriptor::id descriptor) const noexcept
+      bool State::disconnectable( common::strong::socket::id descriptor) const noexcept
       {
          return ! algorithm::find( correlations, descriptor) && ! transaction_cache.associated( descriptor);
       }
@@ -152,7 +152,7 @@ namespace casual
          return runlevel > state::Runlevel::running && external.empty();
       }
 
-      state::extract::Result State::extract( common::strong::file::descriptor::id descriptor)
+      state::extract::Result State::extract( common::strong::socket::id descriptor)
       {
 
          // find possible in-flight request. We deduce this by extracting the correlations that map to the `descriptor`

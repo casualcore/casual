@@ -48,7 +48,7 @@ namespace casual
                : destination{ message.correlation, message.process.ipc, message.execution}, connection{ connection}, callback{ std::move( callback)} {}
 
             route::Destination destination;
-            common::strong::file::descriptor::id connection;
+            common::strong::socket::id connection;
             error::callback::type callback;
 
             void error();

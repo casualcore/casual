@@ -32,7 +32,7 @@ namespace casual
             namespace tcp
             {
                template< typename M>
-               strong::correlation::id send( State& state, strong::file::descriptor::id descriptor, M&& message)
+               strong::correlation::id send( State& state, strong::socket::id descriptor, M&& message)
                {
                   return group::tcp::send( state, &connection::lost, descriptor, std::forward< M>( message));
                }
@@ -484,7 +484,7 @@ namespace casual
                                     result.emplace_back( correlation, descriptor);
                               };
 
-                              algorithm::for_each( state.external.descriptors(), send_request);
+                              algorithm::for_each( state.external.external_descriptors(), send_request);
 
                               log::line( verbose::log, "pending: ", result);
                               
@@ -573,13 +573,13 @@ namespace casual
                         Trace trace{ "gateway::group::outbound::handle::local::internal::domain::connected"};
                         common::log::line( verbose::log, "message: ", message);
 
-                        auto descriptor = state.external.connected( state.directive, message);
+                        auto descriptors = state.external.connected( state.directive, message);
 
                         casual::domain::message::discovery::topology::direct::Update update{ process::handle()};
                         {
                            update.origin = message.domain;
 
-                           const auto information = casual::assertion( algorithm::find( state.external.information(), descriptor), "failed to find information for descriptor: ", descriptor);
+                           const auto information = casual::assertion( algorithm::find( state.external.information(), descriptors.tcp), "failed to find information for descriptor: ", descriptors.tcp);
                            
                            // should we add content
                            if( information->configuration)
@@ -992,7 +992,7 @@ namespace casual
 
       namespace connection
       {
-         message::outbound::connection::Lost lost( State& state, strong::file::descriptor::id descriptor)
+         message::outbound::connection::Lost lost( State& state, strong::socket::id descriptor)
          {
             Trace trace{ "gateway::group::outbound::handle::connection::lost"};
             log::line( verbose::log, "descriptor: ", descriptor);
@@ -1021,7 +1021,7 @@ namespace casual
             return { std::move( extracted.information.configuration), std::move( extracted.information.domain)};
          }
 
-         void disconnect( State& state, common::strong::file::descriptor::id descriptor)
+         void disconnect( State& state, common::strong::socket::id descriptor)
          {
             Trace trace{ "gateway::group::outbound::handle::connection::disconnect"};
             log::line( verbose::log, "descriptor: ", descriptor);
@@ -1060,7 +1060,7 @@ namespace casual
             state.multiplex.send( ipc::manager::service(), message);
          });
 
-         for( auto descriptor : state.external.descriptors())
+         for( auto descriptor : state.external.external_descriptors())
             handle::connection::disconnect( state, descriptor);
 
          log::line( verbose::log, "state: ", state);

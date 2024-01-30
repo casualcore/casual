@@ -163,14 +163,14 @@ namespace casual
          struct Correlation
          {
             Correlation() = default;
-            Correlation( common::strong::correlation::id correlation, common::strong::file::descriptor::id descriptor)
+            Correlation( common::strong::correlation::id correlation, common::strong::socket::id descriptor)
                : correlation{ std::move( correlation)}, descriptor{ descriptor} {}
 
             common::strong::correlation::id correlation;
-            common::strong::file::descriptor::id descriptor;
+            common::strong::socket::id descriptor;
 
             inline friend bool operator == ( const Correlation& lhs, const common::strong::correlation::id& rhs) { return lhs.correlation == rhs;}
-            inline friend bool operator == ( const Correlation& lhs, common::strong::file::descriptor::id rhs) { return lhs.descriptor == rhs;} 
+            inline friend bool operator == ( const Correlation& lhs, common::strong::socket::id rhs) { return lhs.descriptor == rhs;} 
 
             CASUAL_LOG_SERIALIZE( 
                CASUAL_SERIALIZE( correlation);
@@ -181,7 +181,7 @@ namespace casual
          struct Conversation
          {
             common::strong::correlation::id correlation;
-            common::strong::file::descriptor::id descriptor;
+            common::strong::socket::id descriptor;
             common::process::Handle process;
 
             inline friend bool operator == ( const Conversation& lhs, const common::strong::correlation::id& rhs) { return lhs.correlation == rhs;}
@@ -216,17 +216,17 @@ namespace casual
             struct Cache
             {
                //! associate the external trid with the `descriptor`. @returns a cached branched internal trid, if any.
-               const common::transaction::ID* associate( common::strong::file::descriptor::id descriptor, const common::transaction::ID& external);
-               void dissociate( common::strong::file::descriptor::id descriptor, const common::transaction::ID& external);
+               const common::transaction::ID* associate( common::strong::socket::id descriptor, const common::transaction::ID& external);
+               void dissociate( common::strong::socket::id descriptor, const common::transaction::ID& external);
 
-               void add_branch( common::strong::file::descriptor::id descriptor, const common::transaction::ID& branched_trid);
+               void add_branch( common::strong::socket::id descriptor, const common::transaction::ID& branched_trid);
 
                //! @returns true if the descriptor is associated with 
-               bool associated( common::strong::file::descriptor::id descriptor) const noexcept;
+               bool associated( common::strong::socket::id descriptor) const noexcept;
 
                const common::transaction::ID* find( common::transaction::global::id::range gtrid) const noexcept;
 
-               std::vector< common::transaction::ID> extract( common::strong::file::descriptor::id descriptor) noexcept;
+               std::vector< common::transaction::ID> extract( common::strong::socket::id descriptor) noexcept;
 
                inline bool empty() const noexcept { return m_associations.empty() && m_transactions.empty();}
 
@@ -239,13 +239,13 @@ namespace casual
 
                struct Association
                {
-                  inline Association( common::strong::file::descriptor::id descriptor, const common::transaction::ID& trid)
+                  inline Association( common::strong::socket::id descriptor, const common::transaction::ID& trid)
                      : descriptor{ descriptor}, trids{ trid} {}
 
-                  common::strong::file::descriptor::id descriptor;
+                  common::strong::socket::id descriptor;
                   std::unordered_set< common::transaction::ID> trids;
 
-                  inline friend bool operator == ( const Association& lhs, common::strong::file::descriptor::id rhs) { return lhs.descriptor == rhs;}
+                  inline friend bool operator == ( const Association& lhs, common::strong::socket::id rhs) { return lhs.descriptor == rhs;}
 
                   CASUAL_LOG_SERIALIZE( 
                      CASUAL_SERIALIZE( descriptor);
@@ -255,11 +255,11 @@ namespace casual
 
                struct Map
                {
-                  inline Map( common::strong::file::descriptor::id descriptor, const common::transaction::ID& trid)
+                  inline Map( common::strong::socket::id descriptor, const common::transaction::ID& trid)
                      : trid{ trid}, descriptors{ descriptor} {}
 
                   common::transaction::ID trid;
-                  std::vector< common::strong::file::descriptor::id> descriptors;
+                  std::vector< common::strong::socket::id> descriptors;
 
                   CASUAL_LOG_SERIALIZE( 
                      CASUAL_SERIALIZE( trid);
@@ -289,7 +289,7 @@ namespace casual
          struct
          {
             //state::pending::Requests requests;
-            std::vector< common::strong::file::descriptor::id> disconnects;
+            std::vector< common::strong::socket::id> disconnects;
             
             CASUAL_LOG_SERIALIZE( 
                //CASUAL_SERIALIZE( requests);
@@ -309,17 +309,17 @@ namespace casual
 
 
          //! @return the correlated descriptor, and remove the correlation
-         common::strong::file::descriptor::id consume( const common::strong::correlation::id& correlation);
+         common::strong::socket::id consume( const common::strong::correlation::id& correlation);
 
          tcp::Connection* connection( const common::strong::correlation::id& correlation);
 
          //! @returns true if `descriptor` is ready to be disconnected.
-         bool disconnectable( common::strong::file::descriptor::id descriptor) const noexcept;
+         bool disconnectable( common::strong::socket::id descriptor) const noexcept;
          
          //! @return true if the state is ready to 'terminate'
          bool done() const noexcept;
 
-         state::extract::Result extract( common::strong::file::descriptor::id connection);
+         state::extract::Result extract( common::strong::socket::id connection);
 
          //! @returns a reply message to state `request` that is filled with what's possible
          template< typename M>

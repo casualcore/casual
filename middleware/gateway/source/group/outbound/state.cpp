@@ -74,7 +74,7 @@ namespace casual
             namespace add
             {
                template< typename R, typename A>
-               auto resource( common::strong::file::descriptor::id descriptor, R& resources, A added) 
+               auto resource( common::strong::socket::id descriptor, R& resources, A added) 
                {
                   return algorithm::accumulate( added, std::vector< std::string>{}, [descriptor, &resources]( auto result, auto& add)
                   {
@@ -105,7 +105,7 @@ namespace casual
             namespace remove
             {
                template< typename R>
-               auto connection( common::strong::file::descriptor::id descriptor, R& resources) 
+               auto connection( common::strong::socket::id descriptor, R& resources) 
                {
                   std::vector< std::string> result;
 
@@ -124,7 +124,7 @@ namespace casual
                }
 
                template< typename R>
-               auto connection( common::strong::file::descriptor::id descriptor, R& resources, const std::vector< std::string>& keys) 
+               auto connection( common::strong::socket::id descriptor, R& resources, const std::vector< std::string>& keys) 
                {
                   return algorithm::accumulate( keys, std::vector< std::string>{}, [descriptor, &resources]( auto result, auto& key)
                   {
@@ -191,7 +191,7 @@ namespace casual
 
 
          lookup::Resources Lookup::add( 
-            common::strong::file::descriptor::id descriptor, 
+            common::strong::socket::id descriptor, 
             std::vector< lookup::Resource> services, 
             std::vector< lookup::Resource> queues)
          {
@@ -201,7 +201,7 @@ namespace casual
             };
          }
 
-         lookup::Resources Lookup::remove( common::strong::file::descriptor::id descriptor)
+         lookup::Resources Lookup::remove( common::strong::socket::id descriptor)
          {
             return {
                local::remove::connection( descriptor, m_services),
@@ -209,7 +209,7 @@ namespace casual
             };
          }
 
-         lookup::Resources Lookup::remove( common::strong::file::descriptor::id descriptor, std::vector< std::string> services, std::vector< std::string> queues)
+         lookup::Resources Lookup::remove( common::strong::socket::id descriptor, std::vector< std::string> services, std::vector< std::string> queues)
          {
             return {
                local::remove::connection( descriptor, Lookup::m_services, services),
@@ -217,14 +217,14 @@ namespace casual
             };
          }
          
-         void Lookup::remove( common::transaction::global::id::range gtrid, common::strong::file::descriptor::id descriptor)
+         void Lookup::remove( common::transaction::global::id::range gtrid, common::strong::socket::id descriptor)
          {
             if( auto found = algorithm::find( m_transactions, gtrid))
                if( std::empty( algorithm::container::erase( found->second, descriptor)))
                   algorithm::container::erase( m_transactions, std::begin( found));
          }
 
-         std::vector< common::transaction::global::ID> Lookup::failed( common::strong::file::descriptor::id descriptor)
+         std::vector< common::transaction::global::ID> Lookup::failed( common::strong::socket::id descriptor)
          {
             std::vector< common::transaction::global::ID> result;
             algorithm::for_each( m_transactions, [ &result, descriptor]( auto& pair)
@@ -232,7 +232,7 @@ namespace casual
                if( auto found = algorithm::find( pair.second, descriptor))
                {
                   // nil the descriptor, to indicate error
-                  *found = common::strong::file::descriptor::id{};
+                  *found = common::strong::socket::id{};
                   result.push_back( pair.first);
                }
             });
@@ -254,7 +254,7 @@ namespace casual
 
       } // state
 
-      state::extract::Result State::failed( common::strong::file::descriptor::id descriptor)
+      state::extract::Result State::failed( common::strong::socket::id descriptor)
       {
          Trace trace{ "gateway::group::outbound::State::extract"};
 
