@@ -78,16 +78,17 @@ namespace casual
       //! enable overloading on a specific id-type
       //! `Policy` can be 'empty' and just act as a `tag` to make the type unique
       template< typename T, typename Policy>
-      struct Type : public Compare< Type< T, Policy>>
+      struct Type 
       {
          using value_type = T;
          using policy_type = Policy;
          using value_traits = common::traits::type< value_type>;
 
          constexpr Type() noexcept = default;
-         constexpr explicit Type( common::traits::by_value_or_const_ref_t< T> value) noexcept( value_traits::nothrow_move_construct) 
-            : m_value{ std::move( value)} {}
 
+         template< std::convertible_to< T> V> 
+         constexpr explicit Type( V&& value) noexcept( value_traits::nothrow_move_construct)
+            : m_value( std::forward< V>( value)) {}
 
          //! creates a Type by emplacing on the internal value_type.
          template< typename... Ts>
@@ -139,8 +140,9 @@ namespace casual
          const value_type& underlying() const noexcept { return m_value;}
          //! @}
 
-         //! for Compare< T>
-         constexpr decltype( auto) tie() const noexcept { return value();}
+         friend auto operator <=> ( const Type& lhs, const Type& rhs) noexcept requires std::three_way_comparable< value_type> { return lhs.m_value <=> rhs.m_value;};
+         friend bool operator == ( const Type& lhs, const Type& rhs) noexcept requires std::equality_comparable< value_type> { return lhs.m_value == rhs.m_value;}
+         friend bool operator < ( const Type& lhs, const Type& rhs) noexcept requires concepts::compare::less< value_type> { return lhs.m_value < rhs.m_value;}
 
       protected:
       
@@ -157,32 +159,11 @@ namespace casual
 
       //! If the underlying type has equality operations defined for other types we expose
       //! these if the policy type has defined extended_equality
-      //! @{
       template< typename T, typename Policy, typename V>
-      inline auto operator == ( const Type< T, Policy>& lhs, const V& rhs) requires detail::has::extended_equality< T, Policy, V> 
+      inline bool operator == ( const Type< T, Policy>& lhs, const V& rhs) requires detail::has::extended_equality< T, Policy, V> 
       { 
          return lhs.value() == rhs;
       }
-
-      template< typename T, typename Policy, typename V>
-      inline auto operator != ( const Type< T, Policy>& lhs, const V& rhs) requires detail::has::extended_equality< T, Policy, V>
-      { 
-         return ! ( lhs.value() == rhs);
-      }
-
-      template< typename V, typename T, typename Policy>
-      inline auto operator == ( const V& lhs, const Type< T, Policy>& rhs) requires detail::has::extended_equality< T, Policy, V>
-      { 
-         return rhs.value() == lhs;
-      }
-
-      template< typename V, typename T, typename Policy>
-      inline auto operator != ( const V& lhs, const Type< T, Policy>& rhs) requires detail::has::extended_equality< T, Policy, V>
-      { 
-         return ! ( rhs.value() == lhs);
-      }
-
-      //! @}
 
       namespace detail::ostream
       {

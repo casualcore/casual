@@ -76,7 +76,7 @@ namespace casual
          using correlation_type = strong::correlation::id;
 
          template< typename... Args>
-         Inbound( Args&&... args) : m_connector{ std::forward< Args>( args)...} {}
+         explicit Inbound( Args&&... args) : m_connector{ std::forward< Args>( args)...} {}
 
          ~Inbound()
          {
@@ -444,7 +444,7 @@ namespace casual
          using connector_type = Connector;
 
          template< typename... Args>
-         base_connector( Args&&... args) : m_connector{ std::forward< Args>( args)...} {}
+         explicit base_connector( Args&&... args) : m_connector{ std::forward< Args>( args)...} {}
 
          Connector& connector() { return m_connector;}
          const Connector& connector() const { return m_connector;}
