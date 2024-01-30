@@ -34,7 +34,7 @@ namespace casual
          const std::filesystem::path& path();
 
          //! Holds pid and ipc-queue for a given process
-         struct Handle : Compare< Handle>
+         struct Handle
          {
 
             Handle() = default;
@@ -46,18 +46,14 @@ namespace casual
             //! unique identifier for this process
             strong::ipc::id ipc;
 
+            inline friend bool operator == ( const Handle&, const Handle&) = default;
+            inline friend bool operator < ( const Handle& lhs, const Handle& rhs) { return std::tie( lhs.pid, lhs.ipc) < std::tie( rhs.pid, rhs.ipc);}
+
             //! extended equality
             inline friend bool operator == ( const Handle& lhs, strong::process::id rhs) noexcept { return lhs.pid == rhs;}
-            inline friend bool operator != ( const Handle& lhs, strong::process::id rhs) noexcept { return lhs.pid != rhs;}
-            inline friend bool operator == ( strong::process::id lhs, const Handle& rhs) noexcept { return lhs == rhs.pid;}
             inline friend bool operator == ( const Handle& lhs, const strong::ipc::id& rhs) noexcept { return lhs.ipc == rhs;}
-            inline friend bool operator != ( const Handle& lhs, const strong::ipc::id& rhs) noexcept { return lhs.ipc != rhs;}
-            inline friend bool operator == ( const strong::ipc::id& lhs, const Handle& rhs) noexcept { return rhs == lhs;}
 
             inline explicit operator bool() const noexcept { return pid && ipc;}
-            
-            //! for Compare
-            inline auto tie() const noexcept { return std::tie( pid, ipc);}
 
             CASUAL_CONST_CORRECT_SERIALIZE(
                CASUAL_SERIALIZE( pid);

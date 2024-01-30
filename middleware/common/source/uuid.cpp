@@ -80,7 +80,7 @@ namespace casual
       {
          return ! empty();
       }
-
+      
       std::ostream& operator << ( std::ostream& out, const Uuid& uuid)
       {
          if( uuid.empty())

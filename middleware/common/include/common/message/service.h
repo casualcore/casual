@@ -227,16 +227,16 @@ namespace casual
                      }
                   } // property
 
-                  struct Property : common::Compare< Property>
+                  struct Property
                   {
-                     platform::size::type hops = 0;
                      property::Type type = property::Type::discovered;
-
-                     inline auto tie() const { return std::tie( type, hops);}
+                     platform::size::type hops = 0;
+                     
+                     friend auto operator <=> ( const Property&, const Property&) = default;
 
                      CASUAL_CONST_CORRECT_SERIALIZE(
-                        CASUAL_SERIALIZE( hops);
                         CASUAL_SERIALIZE( type);
+                        CASUAL_SERIALIZE( hops);
                      )
                   };
 
@@ -284,15 +284,11 @@ namespace casual
                   )
                } services;
 
-               //! indicate to remove all current advertised services, and replace with content in this message
-               bool reset = false;
-
                CASUAL_CONST_CORRECT_SERIALIZE(
                   basic_advertise::serialize( archive);
                   CASUAL_SERIALIZE( alias);
                   CASUAL_SERIALIZE( order);
                   CASUAL_SERIALIZE( services);
-                  CASUAL_SERIALIZE( reset);
                )
             };
             
