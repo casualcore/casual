@@ -234,8 +234,10 @@ namespace casual
                         Trace trace{ "service::manager::handle::local::event::process::detail::exit"};
                         log::line( verbose::log, "event: ", event);
 
+                        auto has_pid = [ pid = event.state.pid]( auto& pair){ return pair.second.process == pid;};
+
                         // we need to check if the dead process has anyone waiting for a reply
-                        if( auto found = common::algorithm::find( state.instances.sequential, event.state.pid))
+                        if( auto found = common::algorithm::find_if( state.instances.sequential, has_pid))
                         {
                            // if the callee (instance) is busy and the caller is not 'consumed' (due to a timeout and a 'timeout' reply has
                            // already been sent) we send error reply
@@ -305,7 +307,7 @@ namespace casual
                      log::line( verbose::log, "message: ", message);
 
                      // some pending might got resolved, from the update
-                     detail::handle::pending( state, state.update( message));
+                     detail::handle::pending( state, state.update( std::move( message)));
                   };
                }
 
@@ -319,7 +321,7 @@ namespace casual
                         common::log::line( verbose::log, "message: ", message);
 
                         // some pending might got resolved.
-                        detail::handle::pending( state, state.update( message));
+                        detail::handle::pending( state, state.update( std::move( message)));
                      };
                   }
 
@@ -423,9 +425,9 @@ namespace casual
                         }                             
 
                         // send reply, if caller gone, we discard the reservation.
-                        state.multiplex.send( message.process.ipc, reply, [ &state, pid = destination.pid]( auto& destination, auto& complete)
+                        state.multiplex.send( message.process.ipc, reply, [ &state]( auto& destination, auto& complete)
                         {
-                           if( auto found = algorithm::find( state.instances.sequential, pid))
+                           if( auto found = algorithm::find( state.instances.sequential, destination))
                               found->second.discard();
                         });
                      }
@@ -495,7 +497,7 @@ namespace casual
 
                      bool internal_only( State& state, state::Service& service, common::message::service::lookup::Request& message, platform::time::unit pending)
                      {  
-                        if( service.is_sequential())
+                        if( service.has_sequential())
                         {
                            auto get_caller = []( const auto& message) -> common::process::Handle
                            {
@@ -518,7 +520,7 @@ namespace casual
                         if( dispatch::lookup::internal_only( state, service, message, pending))
                            return true;
 
-                        if( auto destination = service.reserve_concurrent( message.process, message.correlation))
+                        if( auto destination = service.reserve_concurrent())
                         {
                            dispatch::lookup::reply( state, service, destination, message, pending);
                            return true;
@@ -807,7 +809,7 @@ namespace casual
                         auto predicate = [ scope = message.scope]( auto* service)
                         {
                            return service && service->is_discoverable() && 
-                              ( scope == decltype( scope)::internal ? service->is_sequential() : service->has_instances());
+                              ( scope == decltype( scope)::internal ? service->has_sequential() : service->has_instances());
                         };
 
                         auto reply = common::message::reverse::type( message);
@@ -886,7 +888,7 @@ namespace casual
                         reply.content.services = algorithm::accumulate( state.services, std::move( reply.content.services), []( auto result, auto& pair)
                         {
                            const auto& [ name, service] = pair;
-                           if( ! service.is_sequential())
+                           if( ! service.has_sequential())
                               result.push_back( name);
 
                            return result;
@@ -960,7 +962,7 @@ namespace casual
                   }
 
                   // This message can only come from a local instance
-                  if( auto instance = state.sequential( message.metric.process.pid))
+                  if( auto instance = state.sequential( message.metric.process.ipc))
                   {
                      log::line( verbose::log, "instance: ", *instance);
 

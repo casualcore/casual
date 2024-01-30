@@ -113,8 +113,8 @@ namespace casual
                      };
                   };
 
-                  common::algorithm::transform( value.instances.sequential, result.instances.sequential, transform_sequential);
-                  common::algorithm::transform( value.instances.concurrent, result.instances.concurrent, transform_concurrent);
+                  common::algorithm::transform( value.instances.sequential(), result.instances.sequential, transform_sequential);
+                  common::algorithm::transform( value.instances.concurrent(), result.instances.concurrent, transform_concurrent);
 
                   return result;
                };

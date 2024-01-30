@@ -11,6 +11,7 @@
 #include "common/server/service.h"
 #include "common/server/lifetime.h"
 #include "common/algorithm.h"
+#include "common/algorithm/random.h"
 #include "common/environment/normalize.h"
 #include "common/process.h"
 #include "common/service/type.h"
@@ -142,19 +143,75 @@ namespace casual
 
          namespace service
          {
+
+            void Instances::add( state::instance::Concurrent& instance, state::service::instance::Concurrent::Property property)
+            {
+               if( algorithm::find( m_concurrent, instance.process.ipc))
+               {
+                  log::line( casual::service::log, "instance already known to service");
+                  log::line( verbose::log, "instance: ", instance, ", service: ", *this);
+                  return;
+               }
+
+               m_concurrent.emplace_back( instance, std::move( property));
+               algorithm::sort( m_concurrent);
+
+               prioritize();
+            }
+
+            void Instances::remove( common::strong::process::id pid, const std::string& service)
+            {
+               if( auto found = algorithm::find( m_sequential, pid))
+               {
+                  found->get().remove( service);
+                  m_sequential.erase( std::begin( found));
+               }
+
+               algorithm::container::erase( m_concurrent, pid);
+               prioritize();
+            }
+
+            void Instances::remove( const common::strong::ipc::id& ipc)
+            {
+               algorithm::container::erase( m_concurrent, ipc);
+               prioritize();
+            }
+            
             state::instance::Caller Instances::consume( const strong::correlation::id& correlation)
             {
-               for( auto& instance : sequential)
+               for( auto& instance : m_sequential)
                   if( auto caller = instance.get().consume( correlation))
                      return caller;
 
                return {};
             }
 
+            state::service::instance::Concurrent* Instances::next_concurrent() noexcept
+            {
+               if( std::empty( m_prioritized_concurrent))
+                  return nullptr;
+
+               return std::data( std::ranges::rotate( m_prioritized_concurrent, std::next( std::begin( m_prioritized_concurrent))));
+            }
+
             void Instances::remove( const state::Service* service, state::Service* replacement)
             {
-               for( auto& instance : sequential)
+               for( auto& instance : m_sequential)
                   instance.get().remove( service, replacement);
+            }
+
+            void Instances::prioritize() noexcept
+            {
+               if( m_concurrent.empty())
+               {
+                  m_prioritized_concurrent = {};
+                  return;
+               }
+
+               // find the range/end of the most prioritized group/partition.
+               m_prioritized_concurrent = std::get< 0>( algorithm::sorted::upper_bound( m_concurrent, range::front( m_concurrent)));
+               algorithm::random::shuffle( m_prioritized_concurrent);
+
             }
 
             void Metric::update( const common::message::event::service::Metric& metric)
@@ -238,24 +295,14 @@ namespace casual
             } // pending
          } // service
 
-         void Service::remove( common::strong::process::id instance)
+         void Service::remove( common::strong::process::id pid)
          {
-            if( auto found = algorithm::find( instances.sequential, instance))
-            {
-               found->get().remove( information.name);
-               instances.sequential.erase( std::begin( found));
-            }
-
-            if( auto found = algorithm::find( instances.concurrent, instance))
-            {
-               instances.concurrent.erase( std::begin( found));
-               instances.partition();
-            }
+            instances.remove( pid, information.name);
          }
 
          state::instance::Sequential& Service::sequential( common::strong::process::id instance)
          {
-            if( auto found = algorithm::find( instances.sequential, instance))
+            if( auto found = algorithm::find( instances.m_sequential, instance))
                return *found;
 
             code::raise::error( code::casual::domain_instance_unavailable, "missing id: ", instance);
@@ -263,49 +310,40 @@ namespace casual
 
          void Service::add( state::instance::Sequential& instance)
          {
-            if( algorithm::find( instances.sequential, instance.process.pid))
+            if( algorithm::find( instances.m_sequential, instance.process.pid))
             {
                log::line( casual::service::log, "instance already known to service");
                log::line( verbose::log, "instance: ", instance, ", service: ", *this);
                return;
             }
 
-            instances.sequential.emplace_back( instance);
+            instances.m_sequential.emplace_back( instance);
             instance.add( *this);
          }
 
          void Service::add( state::instance::Concurrent& instance, state::service::instance::Concurrent::Property property)
          {
-            if( algorithm::find( instances.concurrent, instance.process.pid))
-            {
-               log::line( casual::service::log, "instance already known to service");
-               log::line( verbose::log, "instance: ", instance, ", service: ", *this);
-               return;
-            }
-            
-            instances.concurrent.emplace_back( instance, std::move( property));
-            instances.partition();
+            instances.add( instance, std::move( property));
          }
  
          common::process::Handle Service::reserve_sequential(
             const common::process::Handle& caller, 
             const strong::correlation::id& correlation)
          {
-            if( auto found = algorithm::find_if( instances.sequential, []( auto& i){ return i.idle();}))
+            if( auto found = algorithm::find_if( instances.m_sequential, []( auto& i){ return i.idle();}))
                return found->reserve( this, caller, correlation);
 
             return {};
          }
 
-         common::process::Handle Service::reserve_concurrent( 
-            const common::process::Handle& caller, 
-            const strong::correlation::id& correlation)
+         common::process::Handle Service::reserve_concurrent()
          {
-            if( instances.concurrent.empty())
-               return {};
-
-            ++metric.remote;
-            return instances.concurrent.front().process();
+            if( auto concurrent = instances.next_concurrent())
+            {
+               ++metric.remote;
+               return concurrent->process();
+            }            
+            return {};
          }
 
          bool Service::is_discoverable() const noexcept
@@ -318,13 +356,13 @@ namespace casual
 
          bool Service::timeoutable() const noexcept
          {
-            return is_sequential() && timeout.duration > platform::time::unit::zero();
+            return has_sequential() && timeout.duration > platform::time::unit::zero();
          }
 
         service::instance::Concurrent::Property Service::property() const noexcept
          {
-            if( ! is_sequential() && ! instances.concurrent.empty())
-               return range::front( instances.concurrent).property;
+            if( ! has_sequential() && ! instances.concurrent().empty())
+               return range::front( instances.concurrent()).property;
             
             return {};
          }
@@ -381,7 +419,9 @@ namespace casual
 
                log::line( verbose::log, "pid: ", pid);
 
-               if( auto found = common::algorithm::find( instances, pid))
+               auto has_pid = [ pid]( auto& pair){ return pair.second.process == pid;};
+
+               if( auto found = common::algorithm::find_if( instances, has_pid))
                {
                   for( auto& s : services)
                      s.second.remove( pid);
@@ -392,19 +432,17 @@ namespace casual
 
 
             template< typename I>
-            auto& find_or_add( I& instances, common::process::Handle process)
+            auto& find_or_add( I& instances, const common::process::Handle& process)
             {
                Trace trace{ "service::manager::local::find_or_add"};
 
-               auto found = algorithm::find( instances, process.pid);
-
-               if( found)
+               if( auto found = algorithm::find( instances, process.ipc))
                {
                   log::line( log, "process found: ", found->second);
                   return found->second;
                }
 
-               return instances.emplace( process.pid, process).first->second;
+               return instances.emplace( process.ipc, process).first->second;
             }
 
             template< typename A>
@@ -530,13 +568,13 @@ namespace casual
 
          algorithm::container::trim( processes, algorithm::remove_if( processes, [&]( auto& process)
          {
-            if( auto found = common::algorithm::find( instances.sequential, process.pid))
+            if( auto found = common::algorithm::find( instances.sequential, process.ipc))
             {
                algorithm::append_unique( found->second.detach(), std::get< 0>( result));
                std::get< 1>( result).push_back( algorithm::container::extract( instances.sequential, std::begin( found)).second);
                return true;
             }
-            else if( common::algorithm::find( instances.concurrent, process.pid))
+            else if( common::algorithm::find( instances.concurrent, process.ipc))
                local::remove_process( instances.concurrent, services, process.pid);
 
             return false;
@@ -547,7 +585,7 @@ namespace casual
          return result;
       }
 
-      std::vector< state::service::pending::Lookup> State::update( common::message::service::Advertise& message)
+      std::vector< state::service::pending::Lookup> State::update( common::message::service::Advertise&& message)
       {
          Trace trace{ "service::manager::State::update sequential"};
 
@@ -602,7 +640,7 @@ namespace casual
       }
 
 
-      std::vector< state::service::pending::Lookup> State::update( common::message::service::concurrent::Advertise& message)
+      std::vector< state::service::pending::Lookup> State::update( common::message::service::concurrent::Advertise&& message)
       {
          Trace trace{ "service::manager::State::update concurrent"};
 
@@ -612,9 +650,6 @@ namespace casual
             log::line( verbose::log, "message: ", message);
             return {};
          }
-
-         if( message.reset)
-            remove( message.process.pid);
 
          // honour possible restriction for the alias
          local::restrict_add_services( *this, message);
@@ -649,7 +684,7 @@ namespace casual
          {
             auto is_requested_concurrent_service = [ &]( const auto& service)
             {
-               return service.second.is_concurrent() && ! service.second.is_sequential() && service.first == pending.request.requested;
+               return service.second.has_concurrent() && ! service.second.has_sequential() && service.first == pending.request.requested;
             };
 
             if( auto found = algorithm::find_if( services, std::move( is_requested_concurrent_service)))
@@ -658,9 +693,7 @@ namespace casual
             return true; // keep
          });
 
-         auto result = algorithm::container::vector::create( remove);
-         algorithm::container::trim( pending.lookups, keep);
-         return result;
+         return algorithm::container::extract( pending.lookups, remove);
       }
 
       std::vector< std::string> State::metric_reset( std::vector< std::string> lookup)
@@ -693,20 +726,12 @@ namespace casual
          return result;
       }
 
-      state::instance::Sequential* State::sequential( common::strong::process::id pid)
+      state::instance::Sequential* State::sequential( common::strong::ipc::id ipc)
       {
-         if( auto found = algorithm::find( instances.sequential, pid))
+         if( auto found = algorithm::find( instances.sequential, ipc))
             return &found->second;
          return nullptr;
       }
-
-      state::instance::Concurrent* State::concurrent( common::strong::process::id pid)
-      {
-         if( auto found = algorithm::find( instances.concurrent, pid))
-            return &found->second;
-         return nullptr;
-      }
-
 
       void State::connect_manager( std::vector< common::server::Service> services)
       {
