@@ -65,14 +65,10 @@ namespace casual
             )
          } queues;
 
-         //! indicate to remove all current advertised queues, and replace with content in this message
-         bool reset = false;
-
          CASUAL_CONST_CORRECT_SERIALIZE(
             base_advertise::serialize( archive);
             CASUAL_SERIALIZE( order);
             CASUAL_SERIALIZE( queues);
-            CASUAL_SERIALIZE( reset);
          )
       };
 

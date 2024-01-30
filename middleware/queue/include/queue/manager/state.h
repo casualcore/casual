@@ -110,6 +110,7 @@ namespace casual
 
             inline friend bool operator < ( const Queue& lhs, const Queue& rhs) { return lhs.order < rhs.order;};
             inline friend bool operator == ( const Queue& lhs, common::strong::process::id rhs) { return lhs.process == rhs;}
+            inline friend bool operator == ( const Queue& lhs, const common::strong::ipc::id& rhs) { return lhs.process == rhs;}
 
             CASUAL_LOG_SERIALIZE(
                CASUAL_SERIALIZE( process);
@@ -201,8 +202,6 @@ namespace casual
 
          void update( queue::ipc::message::group::configuration::update::Reply group);
          void update( queue::ipc::message::Advertise& message);
-
-         std::vector< common::strong::process::id> processes() const noexcept;
 
          //! Removes all queues associated with the process
          //!
