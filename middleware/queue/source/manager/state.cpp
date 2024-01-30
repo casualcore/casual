@@ -90,12 +90,6 @@ namespace casual
          }
       }
 
-      std::vector< common::strong::process::id> State::processes() const noexcept
-      {
-         return algorithm::transform( groups, []( auto& group){ return group.process.pid;});
-      }
-
-
       void State::remove_queues( common::strong::process::id pid)
       {
          Trace trace{ "queue::manager::State::remove_queues"};
@@ -126,9 +120,6 @@ namespace casual
          // we only get queue::ipc::message::Advertise from _outbounds_, never
          // from this domains queue-groups. Hence, the advertised queues are
          // remote queues.
-
-         if( message.reset)
-            remove_queues( message.process.pid);
          
          // outbound order is zero-based, we add 1 to give it lower prio.
          auto order = message.order + 1;
@@ -141,7 +132,6 @@ namespace casual
          {
             auto& instances = queues[ queue.name];
 
-            
             instances.emplace_back( message.process, queue::remote::queue::id, order);
 
             // Make sure we prioritize local queue
@@ -153,15 +143,9 @@ namespace casual
 
          auto remove_queue = [&]( auto& name)
          {
-            auto& instances = queues[ name];
-
-            common::algorithm::container::trim( instances, common::algorithm::remove_if( instances, [&]( auto& queue)
-            {
-               return message.process.pid == queue.process.pid;
-            }));
-
-            if( instances.empty())
-               queues.erase( name);
+            if( auto found = algorithm::find( queues, name))
+               if( common::algorithm::container::erase( found->second, message.process.ipc).empty())
+                  queues.erase( name);
          };
 
          algorithm::for_each( message.queues.remove, remove_queue);
