@@ -361,7 +361,7 @@ namespace casual
                struct Transaction
                {
                   common::transaction::global::ID gtrid;
-                  std::vector< common::strong::file::descriptor::id> connections;
+                  std::vector< common::strong::socket::id> connections;
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
                      CASUAL_SERIALIZE( gtrid);
@@ -387,7 +387,7 @@ namespace casual
                struct Identifier
                {
                   common::strong::process::id pid{};
-                  common::strong::file::descriptor::id descriptor{};
+                  common::strong::socket::id descriptor{};
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
                      CASUAL_SERIALIZE( pid);

@@ -156,7 +156,7 @@ namespace casual
 
                               auto send_if_compatible = [ &state, &message]( auto descriptor)
                               {
-                                 auto connection = state.external.connection( descriptor);
+                                 auto connection = state.external.find_external( descriptor);
                                  CASUAL_ASSERT( connection);
 
                                  if( ! message::protocol::compatible( message, connection->protocol()))
@@ -175,7 +175,7 @@ namespace casual
                                  inbound::tcp::send( state, descriptor, message);
                               };
 
-                              algorithm::for_each( state.external.descriptors(), send_if_compatible);
+                              algorithm::for_each( state.external.external_descriptors(), send_if_compatible);
 
                            };
                         }
@@ -484,7 +484,7 @@ namespace casual
 
       namespace connection
       {
-         message::inbound::connection::Lost lost( State& state, common::strong::file::descriptor::id descriptor)
+         message::inbound::connection::Lost lost( State& state, common::strong::socket::id descriptor)
          {
             Trace trace{ "gateway::group::inbound::handle::connection::lost"};
             log::line( verbose::log, "descriptor: ", descriptor);
@@ -510,12 +510,12 @@ namespace casual
             return { std::move( extracted.information.configuration), std::move( extracted.information.domain)};
          }
 
-         void disconnect( State& state, common::strong::file::descriptor::id descriptor)
+         void disconnect( State& state, common::strong::socket::id descriptor)
          {
             Trace trace{ "gateway::group::inbound::handle::connection::disconnect"};
             log::line( verbose::log, "descriptor: ", descriptor);
 
-            if( auto connection = state.external.connection( descriptor))
+            if( auto connection = state.external.find_external( descriptor))
             {
                log::line( verbose::log, "connection: ", *connection);
 
@@ -555,7 +555,7 @@ namespace casual
          state.runlevel = decltype( state.runlevel())::shutdown;
 
          // try to do a 'soft' disconnect. copy - connection::disconnect mutates external
-         for( auto descriptor : state.external.descriptors())
+         for( auto descriptor : state.external.external_descriptors())
             handle::connection::disconnect( state, descriptor);
       }
 
@@ -566,7 +566,7 @@ namespace casual
          state.runlevel = decltype( state.runlevel())::error;
 
          // 'kill' all sockets, and try to take care of pending stuff. copy - connection::lost mutates external
-         for( auto descriptor : state.external.descriptors())
+         for( auto descriptor : state.external.external_descriptors())
             handle::connection::lost( state, descriptor);
       }
       

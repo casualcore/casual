@@ -27,9 +27,9 @@ namespace casual
    {
 
       template< typename S, typename LC, typename M>
-      common::strong::correlation::id send( S& state, LC&& lost_callback, common::strong::file::descriptor::id descriptor, M&& message)
+      common::strong::correlation::id send( S& state, LC&& lost_callback, common::strong::socket::id descriptor, M&& message)
       {
-         if( auto connection = state.external.connection( descriptor))
+         if( auto connection = state.external.find_external( descriptor))
          {
             try
             {
@@ -63,8 +63,8 @@ namespace casual
       {
          using complete_type = common::communication::tcp::message::Complete;
 
-         inline explicit Connection( common::communication::tcp::Duplex&& device, message::protocol::Version protocol)
-            : m_device{ std::move( device)}, m_protocol{ protocol} {}
+         inline explicit Connection( common::communication::Socket&& socket, message::protocol::Version protocol)
+            : m_device{ std::move( socket)}, m_protocol{ protocol} {}
 
       
          inline auto descriptor() const noexcept { return m_device.connector().descriptor();}
@@ -102,23 +102,23 @@ namespace casual
          message::protocol::Version m_protocol;
       };
 
-      template< typename Configuration>
-      struct External
+      namespace connection
       {
+         template< typename Configuration>
          struct Information
          {
-            Information( common::strong::file::descriptor::id descriptor,
+            Information( common::strong::socket::id descriptor,
                common::domain::Identity domain,
                Configuration configuration)
                : descriptor{ descriptor}, domain{ std::move( domain)}, configuration{ std::move( configuration)}
             {}
 
-            common::strong::file::descriptor::id descriptor;
+            common::strong::socket::id descriptor;
             common::domain::Identity domain;
             Configuration configuration;
             platform::time::point::type created = platform::time::clock::type::now();
 
-            inline friend bool operator == ( const Information& lhs, common::strong::file::descriptor::id rhs) { return lhs.descriptor == rhs;} 
+            inline friend bool operator == ( const Information& lhs, common::strong::socket::id rhs) { return lhs.descriptor == rhs;} 
             inline friend bool operator == ( const Information& lhs, const common::strong::domain::id& rhs) { return lhs.domain == rhs;} 
             
             CASUAL_LOG_SERIALIZE( 
@@ -128,6 +128,31 @@ namespace casual
                CASUAL_SERIALIZE( created);
             )
          };
+
+         namespace descriptor
+         {
+            struct Pair
+            {
+               common::strong::ipc::descriptor::id ipc;
+               common::strong::socket::id tcp;
+
+               inline friend bool operator == ( const Pair& lhs, common::strong::ipc::descriptor::id rhs) { return lhs.ipc == rhs;}
+               inline friend bool operator == ( const Pair& lhs, common::strong::socket::id rhs) { return lhs.tcp == rhs;}
+
+               CASUAL_CONST_CORRECT_SERIALIZE(
+                  CASUAL_SERIALIZE( ipc);
+                  CASUAL_SERIALIZE( tcp);
+               );
+            };
+            
+         } // descriptor
+         
+      } // connection
+
+      template< typename Configuration>
+      struct External
+      {
+         using Information = connection::Information< Configuration>;
 
          auto connected( 
             common::communication::select::Directive& directive,
@@ -141,32 +166,74 @@ namespace casual
             // no need for children to inherit the file descriptor from this point onwards.
             connector.socket.set( common::communication::socket::option::File::close_in_child);
             
-            auto descriptor = connector.socket.descriptor();
+            auto tcp_descriptor = connector.socket.descriptor();
 
             common::log::line( common::log::category::information, "connection established to domain: '", message.domain.name, 
                "' - host: ", common::communication::tcp::socket::address::host( connector.socket),
                ", peer: ", common::communication::tcp::socket::address::peer( connector.socket));
 
-            m_connections.emplace_back( std::move( connector.socket), message.version);
-            m_information.emplace_back( descriptor, message.domain, std::move( connector.configuration));
-            directive.read.add( descriptor);
+            {
+               common::communication::ipc::inbound::Device inbound;
+               auto ipc_descriptor = inbound.descriptor();
 
-            return descriptor;
+               m_mapping.push_back( connection::descriptor::Pair{ ipc_descriptor, tcp_descriptor});
+               m_internal.emplace( ipc_descriptor, std::move( inbound));
+
+               directive.read.add( ipc_descriptor);
+            }
+
+            {
+               m_external.emplace( tcp_descriptor, tcp::Connection{ std::move( connector.socket), message.version});
+               m_information.emplace_back( tcp_descriptor, message.domain, std::move( connector.configuration));
+               
+               directive.read.add( tcp_descriptor);
+            }
+
+            return common::range::back( m_mapping);
          }
 
-         auto descriptors() const noexcept 
+         inline std::vector< common::strong::socket::id> external_descriptors() const
          {
-            return common::algorithm::transform( m_connections, []( auto& connection){ return connection.descriptor();});
+            return common::algorithm::transform( m_mapping, []( auto& pair){ return pair.tcp;});
          }
 
-         group::tcp::Connection* connection( common::strong::file::descriptor::id descriptor)
+         inline std::vector< common::strong::ipc::descriptor::id> internal_descriptors() const
          {
-            if( auto found = common::algorithm::find( m_connections, descriptor))
-               return found.data();
+            return common::algorithm::transform( m_mapping, []( auto& pair){ return pair.ipc;});
+         }
+
+         inline common::strong::ipc::descriptor::id partner( common::strong::socket::id tcp) const noexcept
+         {
+            if( auto found = common::algorithm::find( m_mapping, tcp))
+               return found->ipc;
+            return {};
+         }
+
+         inline common::strong::socket::id partner( common::strong::ipc::descriptor::id ipc) const noexcept
+         {
+            if( auto found = common::algorithm::find( m_mapping, ipc))
+               return found->tcp;
+            return {};
+         }
+
+         inline tcp::Connection* find_external( common::strong::socket::id tcp) noexcept
+         {
+            if( auto found = common::algorithm::find( m_external, tcp))
+               return &found->second;
+
             return nullptr;
          }
 
-         const Information* information( common::strong::file::descriptor::id descriptor) const noexcept
+         inline tcp::Connection* find_external( common::strong::ipc::descriptor::id ipc) noexcept
+         {
+            if( auto mapped = common::algorithm::find( m_mapping, ipc))
+               if( auto found = common::algorithm::find( m_external, mapped->tcp))
+                  return &found->second;
+
+            return nullptr;
+         }
+
+         const Information* information( common::strong::socket::id descriptor) const noexcept
          {
             if( auto found = common::algorithm::find( m_information, descriptor))
                return found.data();
@@ -182,13 +249,19 @@ namespace casual
          // TODO should be named extract.
          Information remove( 
             common::communication::select::Directive& directive, 
-            common::strong::file::descriptor::id descriptor)
+            common::strong::socket::id descriptor)
          {
             casual::assertion( descriptor, "descriptor: ", descriptor);
 
+            // make sure we remove the ipc partner.
+            auto ipc = partner( descriptor);
+            common::algorithm::container::erase( m_internal, ipc);
+
             // make sure we remove from read and write
             directive.remove( descriptor);
-            common::algorithm::container::trim( m_connections, common::algorithm::remove( m_connections, descriptor));
+            common::algorithm::container::erase( m_external, descriptor);
+
+
             
             auto found = common::algorithm::find( m_information, descriptor);
             casual::assertion( found, "fail to find information for descriptor: ", descriptor);
@@ -198,18 +271,20 @@ namespace casual
 
          void clear( common::communication::select::Directive& directive)
          {
-            directive.remove( descriptors());
-            m_connections.clear();
-            m_information.clear();
+            directive.remove( external_descriptors());
+            directive.remove( internal_descriptors());
+            m_external.clear();
+            m_internal.clear();
          }
 
          auto& information() const noexcept { return m_information;}
-         auto& connections() const noexcept { return m_connections;}
+         auto& external() const noexcept { return m_external;}
+         auto& internal() const noexcept { return m_internal;}
 
          auto& pending() const noexcept { return m_pending;}
          auto& pending() noexcept { return m_pending;}
 
-         auto empty() const noexcept { return m_connections.empty();}
+         auto empty() const noexcept { return m_mapping.empty();}
 
          //! create a state reply and fill it with connections
          template< typename M>
@@ -219,9 +294,9 @@ namespace casual
 
             using Connection = std::ranges::range_value_t< decltype( reply.state.connections)>;
 
-            reply.state.connections = common::algorithm::transform( m_connections, [&]( auto& connection)
+            reply.state.connections = common::algorithm::transform( m_external, [&]( auto& pair)
             {
-               auto descriptor = connection.descriptor();
+               auto descriptor = pair.first;
                Connection result;
                result.runlevel = decltype( result.runlevel)::connected;
                result.descriptor = descriptor;
@@ -251,13 +326,18 @@ namespace casual
 
 
          CASUAL_LOG_SERIALIZE( 
-            CASUAL_SERIALIZE( m_connections);
+            CASUAL_SERIALIZE( m_mapping);
+            CASUAL_SERIALIZE( m_external);
+            CASUAL_SERIALIZE( m_internal);
             CASUAL_SERIALIZE( m_information);
             CASUAL_SERIALIZE( m_pending);
          )
       private:
 
-         std::vector< Connection> m_connections;
+         std::vector< connection::descriptor::Pair> m_mapping;
+         std::unordered_map< common::strong::socket::id, Connection> m_external;
+         std::unordered_map< common::strong::ipc::descriptor::id, common::communication::ipc::inbound::Device> m_internal;
+
          std::vector< Information> m_information;
          logical::connect::Pending< Configuration> m_pending;
       };
@@ -265,7 +345,7 @@ namespace casual
       namespace detail::handle::communication
       {
          template< typename State, typename Lost>
-         void exception( State& state, common::strong::file::descriptor::id descriptor, Lost lost) noexcept
+         void exception( State& state, common::strong::socket::id descriptor, Lost lost) noexcept
          {
             try
             {
@@ -306,16 +386,18 @@ namespace casual
          template< typename Policy, typename State, typename Handler, typename Lost>
          auto create( State& state, Handler handler, Lost lost)
          {
-            return [ &state, handler = std::move( handler), lost = std::move( lost)]( common::strong::file::descriptor::id descriptor, common::communication::select::tag::read) mutable
+            return [ &state, handler = std::move( handler), lost = std::move( lost)]( common::strong::file::descriptor::id fd, common::communication::select::tag::read) mutable
             {
-               if( auto connection = state.external.connection( descriptor))
+               auto descriptor = common::strong::socket::id{ fd};
+
+               if( auto connection = state.external.find_external( descriptor))
                {
                   try
                   {
                      auto count = Policy::next::tcp();
 
                      // we know the descriptor is a socket descriptor, we convert.
-                     while( count-- > 0 && handler( connection->next(), common::strong::socket::id{ descriptor}))
+                     while( count-- > 0 && handler( connection->next(), descriptor))
                         ; // no-op
                   }
                   catch( ...)
@@ -334,12 +416,14 @@ namespace casual
          template< typename State, typename Lost>
          auto create( State& state, Lost lost)
          {  
-            return [ &state, lost = std::move( lost)]( common::strong::file::descriptor::id descriptor, common::communication::select::tag::write) noexcept
+            return [ &state, lost = std::move( lost)]( common::strong::file::descriptor::id fd, common::communication::select::tag::write) noexcept
             {
                Trace trace{ "gateway::group::tcp::pending::send::dispatch"};
+
+               auto descriptor = common::strong::socket::id{ fd};
                common::log::line( verbose::log, "descriptor: ", descriptor);
 
-               if( auto connection = state.external.connection( descriptor))
+               if( auto connection = state.external.find_external( descriptor))
                {
                   try
                   {

@@ -57,13 +57,13 @@ namespace casual
             {
                struct Connection
                {
-                  inline Connection( common::strong::file::descriptor::id id, platform::size::type hops) : id{ id}, hops{ hops} {}
+                  inline Connection( common::strong::socket::id id, platform::size::type hops) : id{ id}, hops{ hops} {}
 
-                  common::strong::file::descriptor::id id;
+                  common::strong::socket::id id;
                   platform::size::type hops{};
 
                   // conversion operator to pretend to be a pure "id"
-                  inline operator common::strong::file::descriptor::id() const noexcept { return id;}
+                  inline operator common::strong::socket::id() const noexcept { return id;}
 
                   CASUAL_LOG_SERIALIZE( 
                      CASUAL_SERIALIZE( id);
@@ -94,7 +94,7 @@ namespace casual
 
             struct Result
             {
-               common::strong::file::descriptor::id connection;
+               common::strong::socket::id connection;
                bool new_transaction = true;
 
                CASUAL_LOG_SERIALIZE( 
@@ -108,7 +108,7 @@ namespace casual
          struct Lookup
          {
 
-            using descriptor_range = common::range::const_type_t< std::vector< common::strong::file::descriptor::id>>;
+            using descriptor_range = common::range::const_type_t< std::vector< common::strong::socket::id>>;
 
             lookup::Result service( const std::string& service, const common::transaction::ID& trid);
             lookup::Result queue( const std::string& queue, const common::transaction::ID& trid);
@@ -120,19 +120,19 @@ namespace casual
             //! @returns all lookup resources
             lookup::Resources resources() const;
 
-            lookup::Resources add( common::strong::file::descriptor::id descriptor, std::vector< lookup::Resource> services, std::vector< lookup::Resource> queues);
+            lookup::Resources add( common::strong::socket::id descriptor, std::vector< lookup::Resource> services, std::vector< lookup::Resource> queues);
 
             //! removes the connection and @return the resources that should be un-advertised 
-            lookup::Resources remove( common::strong::file::descriptor::id descriptor);
+            lookup::Resources remove( common::strong::socket::id descriptor);
 
             //! remove the connection for the provided services and queues, @returns all that needs to be un-advertised.
-            lookup::Resources remove( common::strong::file::descriptor::id descriptor, std::vector< std::string> services, std::vector< std::string> queues);
+            lookup::Resources remove( common::strong::socket::id descriptor, std::vector< std::string> services, std::vector< std::string> queues);
 
             //! removes the `gtrid` association with the `descriptor`
-            void remove( common::transaction::global::id::range gtrid, common::strong::file::descriptor::id descriptor);
+            void remove( common::transaction::global::id::range gtrid, common::strong::socket::id descriptor);
 
             //! indic
-            std::vector< common::transaction::global::ID> failed( common::strong::file::descriptor::id descriptor);
+            std::vector< common::transaction::global::ID> failed( common::strong::socket::id descriptor);
             
             //! removes the mapping associated with the `gtrid`
             void remove( common::transaction::global::id::range gtrid);
@@ -151,7 +151,7 @@ namespace casual
 
          private:
             std::unordered_map< std::string, std::vector< lookup::resource::Connection>> m_services;
-            std::unordered_map< common::transaction::global::ID, std::vector< common::strong::file::descriptor::id>, common::transaction::global::hash, std::equal_to<>> m_transactions;
+            std::unordered_map< common::transaction::global::ID, std::vector< common::strong::socket::id>, common::transaction::global::hash, std::equal_to<>> m_transactions;
             std::unordered_map< std::string, std::vector< lookup::resource::Connection>> m_queues;
          };
 
@@ -268,13 +268,13 @@ namespace casual
             struct
             {
                template< typename R>
-               using fan_out = common::message::coordinate::fan::Out< R, common::strong::file::descriptor::id>;
+               using fan_out = common::message::coordinate::fan::Out< R, common::strong::socket::id>;
 
                fan_out< casual::common::message::transaction::resource::prepare::Reply> prepare;
                fan_out< casual::common::message::transaction::resource::commit::Reply> commit;
                fan_out< casual::common::message::transaction::resource::rollback::Reply> rollback;
 
-               inline void failed( common::strong::file::descriptor::id descriptor)
+               inline void failed( common::strong::socket::id descriptor)
                {
                   prepare.failed( descriptor);
                   commit.failed( descriptor);
@@ -289,9 +289,9 @@ namespace casual
 
             } transaction;
 
-            common::message::coordinate::fan::Out< casual::domain::message::discovery::Reply, common::strong::file::descriptor::id> discovery;
+            common::message::coordinate::fan::Out< casual::domain::message::discovery::Reply, common::strong::socket::id> discovery;
 
-            inline void failed( common::strong::file::descriptor::id descriptor)
+            inline void failed( common::strong::socket::id descriptor)
             {
                transaction.failed( descriptor);
                discovery.failed( descriptor);
@@ -304,13 +304,13 @@ namespace casual
          } coordinate;
 
          //! holds all connections that has been requested to disconnect.
-         std::vector< common::strong::file::descriptor::id> disconnecting;
+         std::vector< common::strong::socket::id> disconnecting;
 
          std::string alias;
          platform::size::type order{};
 
          //! `descriptor? has failed, @returns "all" extracted state associated with the `descriptor`
-         state::extract::Result failed( common::strong::file::descriptor::id descriptor); 
+         state::extract::Result failed( common::strong::socket::id descriptor); 
 
          bool done() const;
 

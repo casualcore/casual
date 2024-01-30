@@ -19,7 +19,7 @@ namespace casual
       {
          namespace
          {
-            auto fd( int value) { return strong::file::descriptor::id{ value};};
+            auto fd( int value) { return strong::socket::id{ value};};
 
             auto lookup()
             {
@@ -66,7 +66,7 @@ namespace casual
       {
          state::Lookup lookup;
 
-         auto advertise = lookup.add( strong::file::descriptor::id{ 9}, { { "a", 0}, { "b", 0} }, { { "a", 0}, { "b", 0}});
+         auto advertise = lookup.add( strong::socket::id{ 9}, { { "a", 0}, { "b", 0} }, { { "a", 0}, { "b", 0}});
 
          EXPECT_TRUE(( advertise.services == std::vector< std::string>{ "a", "b"})) << CASUAL_NAMED_VALUE( advertise.services);
          EXPECT_TRUE(( advertise.queues == std::vector< std::string>{ "a", "b"})) << CASUAL_NAMED_VALUE( advertise.queues);
@@ -76,10 +76,10 @@ namespace casual
       {
          state::Lookup lookup;
 
-         lookup.add( strong::file::descriptor::id{ 9}, { { "a", 0}}, {});
+         lookup.add( strong::socket::id{ 9}, { { "a", 0}}, {});
          ASSERT_TRUE( lookup.services().size() == 1);
          EXPECT_TRUE( lookup.services().at( "a").size() == 1);
-         lookup.add( strong::file::descriptor::id{ 9}, { { "a", 0}}, {});
+         lookup.add( strong::socket::id{ 9}, { { "a", 0}}, {});
          ASSERT_TRUE( lookup.services().size() == 1);
          EXPECT_TRUE( lookup.services().at( "a").size() == 1);
       }
@@ -88,11 +88,11 @@ namespace casual
       {
          state::Lookup lookup;
 
-         lookup.add( strong::file::descriptor::id{ 9}, { { "a", 2}}, {});
+         lookup.add( strong::socket::id{ 9}, { { "a", 2}}, {});
          ASSERT_TRUE( lookup.services().size() == 1);
          ASSERT_TRUE( lookup.services().at( "a").size() == 1);
          EXPECT_TRUE( lookup.services().at( "a").front().hops == 2);
-         lookup.add( strong::file::descriptor::id{ 9}, { { "a", 1}}, {});
+         lookup.add( strong::socket::id{ 9}, { { "a", 1}}, {});
          ASSERT_TRUE( lookup.services().size() == 1);
          ASSERT_TRUE( lookup.services().at( "a").size() == 1);
          EXPECT_TRUE( lookup.services().at( "a").front().hops == 1);
@@ -172,7 +172,7 @@ namespace casual
 
          auto xids = array::make( transaction::id::create(), transaction::id::create(), transaction::id::create(), transaction::id::create());
 
-         std::vector< strong::file::descriptor::id> connections;
+         std::vector< strong::socket::id> connections;
 
 
          // add 'calls' to a, b, c, d, with all the xids

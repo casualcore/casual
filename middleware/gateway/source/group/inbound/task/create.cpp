@@ -23,7 +23,7 @@ namespace casual
             namespace lookup
             {
                template< typename C>
-               auto context( State& state, common::strong::file::descriptor::id descriptor)
+               auto context( State& state, common::strong::socket::id descriptor)
                {
                   using result_context = std::decay_t< C>;
 
@@ -50,7 +50,7 @@ namespace casual
                }
 
                template< typename M>
-               void service( State& state, common::strong::file::descriptor::id descriptor, const M& message)
+               void service( State& state, common::strong::socket::id descriptor, const M& message)
                {
                   common::message::service::lookup::Request request{ common::process::handle()};
                   request.correlation = message.correlation;
@@ -75,7 +75,7 @@ namespace casual
                }
 
                template< typename M>
-               void queue( State& state, common::strong::file::descriptor::id descriptor, const M& message)
+               void queue( State& state, common::strong::socket::id descriptor, const M& message)
                {
                   casual::queue::ipc::message::lookup::Request request{ common::process::handle()};
                   {
@@ -193,7 +193,7 @@ namespace casual
 
 
             template< typename M>
-            auto handle_service( State& state, common::strong::file::descriptor::id descriptor, M& message)
+            auto handle_service( State& state, common::strong::socket::id descriptor, M& message)
             {
                Trace trace{ "gateway::group::inbound::task::create::local::handle_service"};
 
@@ -201,7 +201,7 @@ namespace casual
 
                struct Shared
                {
-                  common::strong::file::descriptor::id descriptor;
+                  common::strong::socket::id descriptor;
                   common::transaction::ID origin_trid;
                   M message;
                   std::optional< common::message::service::lookup::Reply> lookup;
@@ -310,7 +310,7 @@ namespace casual
 
 
             template< typename M>
-            auto handle_queue( State& state, common::strong::file::descriptor::id descriptor, M& message)
+            auto handle_queue( State& state, common::strong::socket::id descriptor, M& message)
             {
                Trace trace{ "gateway::group::inbound::task::create::local::handle_queue"};
 
@@ -320,7 +320,7 @@ namespace casual
 
                struct Shared
                {
-                  strong::file::descriptor::id descriptor;
+                  strong::socket::id descriptor;
                   M message;
                   bool wait_for_branch = false;
                   std::optional< casual::queue::ipc::message::lookup::Reply> lookup; 
@@ -392,7 +392,7 @@ namespace casual
             }
 
             template< typename M>
-            auto handle_transaction( State& state, common::strong::file::descriptor::id descriptor, M& message)
+            auto handle_transaction( State& state, common::strong::socket::id descriptor, M& message)
             {
                Trace trace{ "gateway::group::inbound::task::create::local::handle_transaction"};
 
@@ -400,7 +400,7 @@ namespace casual
 
                struct Shared
                {
-                  common::strong::file::descriptor::id descriptor;
+                  common::strong::socket::id descriptor;
                   strong::correlation::id correlation;
                   common::transaction::ID origin_trid;
                };
@@ -450,13 +450,13 @@ namespace casual
 
       namespace service
       {
-         casual::task::concurrent::Unit call( State& state, common::strong::file::descriptor::id descriptor, common::message::service::call::callee::Request&& message)
+         casual::task::concurrent::Unit call( State& state, common::strong::socket::id descriptor, common::message::service::call::callee::Request&& message)
          {
             Trace trace{ "gateway::group::inbound::task::create::service::call"};
             return local::handle_service( state, descriptor, message);
          }
 
-         casual::task::concurrent::Unit conversation( State& state, common::strong::file::descriptor::id descriptor, common::message::conversation::connect::callee::Request&& message)
+         casual::task::concurrent::Unit conversation( State& state, common::strong::socket::id descriptor, common::message::conversation::connect::callee::Request&& message)
          {
             Trace trace{ "gateway::group::inbound::task::create::service::conversation"};
             return local::handle_service( state, descriptor, message);
@@ -467,14 +467,14 @@ namespace casual
       namespace queue
       {
          
-         casual::task::concurrent::Unit enqueue( State& state, common::strong::file::descriptor::id descriptor, casual::queue::ipc::message::group::enqueue::Request&& message)
+         casual::task::concurrent::Unit enqueue( State& state, common::strong::socket::id descriptor, casual::queue::ipc::message::group::enqueue::Request&& message)
          {
             Trace trace{ "gateway::group::inbound::task::create::queue::enqueue"};
             return local::handle_queue( state, descriptor, message);
 
          }
 
-         casual::task::concurrent::Unit dequeue( State& state, common::strong::file::descriptor::id descriptor, casual::queue::ipc::message::group::dequeue::Request&& message)
+         casual::task::concurrent::Unit dequeue( State& state, common::strong::socket::id descriptor, casual::queue::ipc::message::group::dequeue::Request&& message)
          {
             Trace trace{ "gateway::group::inbound::task::create::queue::dequeue"};
             return local::handle_queue( state, descriptor, message);
@@ -483,17 +483,17 @@ namespace casual
       } // queue
 
    
-      casual::task::concurrent::Unit transaction( State& state, common::strong::file::descriptor::id descriptor, common::message::transaction::resource::prepare::Request&& message)
+      casual::task::concurrent::Unit transaction( State& state, common::strong::socket::id descriptor, common::message::transaction::resource::prepare::Request&& message)
       {
          return local::handle_transaction( state, descriptor, message);
       }
 
-      casual::task::concurrent::Unit transaction( State& state, common::strong::file::descriptor::id descriptor, common::message::transaction::resource::commit::Request&& message)
+      casual::task::concurrent::Unit transaction( State& state, common::strong::socket::id descriptor, common::message::transaction::resource::commit::Request&& message)
       {
          return local::handle_transaction( state, descriptor, message);
       }
 
-      casual::task::concurrent::Unit transaction( State& state, common::strong::file::descriptor::id descriptor, common::message::transaction::resource::rollback::Request&& message)
+      casual::task::concurrent::Unit transaction( State& state, common::strong::socket::id descriptor, common::message::transaction::resource::rollback::Request&& message)
       {
          return local::handle_transaction( state, descriptor, message);
       }

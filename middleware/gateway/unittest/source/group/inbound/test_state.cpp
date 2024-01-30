@@ -18,7 +18,7 @@ namespace casual
       TEST( gateway_inbound_state, transaction_cache_associate)
       {
          auto trid = transaction::id::create();
-         auto descriptor = strong::file::descriptor::id{ 10};
+         auto descriptor = strong::socket::id{ 10};
 
          state::transaction::Cache cache;
          EXPECT_TRUE( cache.empty());
@@ -36,7 +36,7 @@ namespace casual
       TEST( gateway_inbound_state, transaction_cache_dissociate)
       {
          auto trid = transaction::id::create();
-         auto descriptor = strong::file::descriptor::id{ 10};
+         auto descriptor = strong::socket::id{ 10};
 
          state::transaction::Cache cache;
          EXPECT_TRUE( cache.associate( descriptor, trid) == nullptr);
@@ -50,7 +50,7 @@ namespace casual
       {
          auto trid = transaction::id::create();
          auto branch = transaction::id::branch( trid);
-         auto descriptor = strong::file::descriptor::id{ 10};
+         auto descriptor = strong::socket::id{ 10};
 
          state::transaction::Cache cache;
          EXPECT_TRUE( cache.associate( descriptor, trid) == nullptr);
@@ -72,7 +72,7 @@ namespace casual
       {
          auto trid = transaction::id::create();
          auto branch = transaction::id::branch( trid);
-         auto descriptor = strong::file::descriptor::id{ 10};
+         auto descriptor = strong::socket::id{ 10};
 
          state::transaction::Cache cache;
          EXPECT_TRUE( cache.associate( descriptor, trid) == nullptr);
@@ -92,7 +92,7 @@ namespace casual
          struct Call
          {
             transaction::ID trid;
-            std::array< strong::file::descriptor::id, 2> descriptors;
+            std::array< strong::socket::id, 2> descriptors;
 
             // so we can check it
             transaction::ID branched;
@@ -105,8 +105,8 @@ namespace casual
             static int current = 10; 
             Call result;
             result.trid = transaction::id::create();
-            result.descriptors[ 0] = strong::file::descriptor::id{ current++};
-            result.descriptors[ 1] = strong::file::descriptor::id{ current++};
+            result.descriptors[ 0] = strong::socket::id{ current++};
+            result.descriptors[ 1] = strong::socket::id{ current++};
             return result;
          });
 

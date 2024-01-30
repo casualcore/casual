@@ -29,10 +29,10 @@ namespace casual
       {
          //! send error replies to all pending in-flight messages that is associated with the connection
          //! removes all state associated with the connection.
-         message::outbound::connection::Lost lost( State& state, common::strong::file::descriptor::id descriptor);
+         message::outbound::connection::Lost lost( State& state, common::strong::socket::id descriptor);
 
          //! unadvertise all associated resources to descriptor, mark the connection as 'disconnecting'
-         void disconnect( State& state, common::strong::file::descriptor::id descriptor);
+         void disconnect( State& state, common::strong::socket::id descriptor);
          
       } // connection
 
