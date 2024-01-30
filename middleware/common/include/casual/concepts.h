@@ -64,6 +64,16 @@ namespace casual
          concept like = tuple::size< T> && ! concepts::range< T>; 
       } // tuple
 
+      namespace compare
+      {
+         template< typename T> 
+         concept less = requires( const std::remove_reference_t< T>& lhs, const std::remove_reference_t< T>& rhs) 
+         {
+            { lhs < rhs} -> std::convertible_to< bool>;
+         };
+         
+      } // compare
+
       namespace optional
       {
          template< typename T>
@@ -95,6 +105,20 @@ namespace casual
          concept reserve = concepts::range< T> && 
          requires( T a) { a.reserve( a.size()); };
 
+         template< typename T, typename Iter>
+         concept erase = concepts::range< T> &&
+         requires( T container, Iter iterator) 
+         { 
+            container.erase( iterator);
+         };
+
+         template< typename T, typename R>
+         concept erase_range = concepts::range< T> && concepts::range< R> &&
+         requires( T container, R range) 
+         { 
+            container.erase( std::begin( range), std::end( range));
+         };
+
          template< typename T>
          concept empty = concepts::range< T> && 
          requires( T a) { { a.empty()} -> std::convertible_to< bool>; };
@@ -110,12 +134,10 @@ namespace casual
          concept associative = concepts::range< T> && container::value::insert< T>;
 
          template< typename T>
-         concept array = std::is_array_v< T> || requires 
-         {
-            // TODO: I'm not to sure about this... 
-            concepts::range< T>;
+         concept array = std::is_array_v< T> || ( concepts::range< T> && requires 
+         {            
             std::tuple_size< T>::value;
-         };
+         });
 
          template< typename T>
          concept like = container::sequence< T> || container::associative< T>;

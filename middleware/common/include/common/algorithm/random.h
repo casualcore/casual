@@ -7,6 +7,7 @@
 #pragma once
 
 #include <random>
+#include <algorithm>
 
 namespace casual
 {
@@ -23,6 +24,13 @@ namespace casual
          container.insert( std::begin( container) + distribution( random::generator()), std::forward< V>( value));
 
          return container;
+      }
+
+      template< typename R>
+      auto shuffle( R&& range)
+      {
+         std::ranges::shuffle( range, random::generator());
+         return std::forward< R>( range);
       }
       
    } // common::algorithm::random
