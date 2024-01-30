@@ -52,43 +52,31 @@ namespace casual
          }
       } // emplace
 
-      namespace detail
-      {
-         // take care of iterator
-         template< typename C, typename Iter>
-         auto extract( C& container, Iter where, traits::priority::tag< 1>)
-            -> std::remove_cvref_t< decltype( *container.erase( where))>
-         {
-            auto result = std::move( *where);
-            container.erase( where);
-            return result;
-         }
-
-         // take care of a range
-         template< typename C, typename R>
-         auto extract( C& container, R range, traits::priority::tag< 0>)
-            -> decltype( void( container.erase( std::begin( range), std::end( range))), C{})
-         {
-            C result;
-
-            if constexpr( concepts::container::reserve< C>)
-               result.reserve( range.size());
-            
-            std::move( std::begin( range), std::end( range), std::back_inserter( result));
-            container.erase( std::begin( range), std::end( range));
-            return result;
-         }
-      } // detail
 
       //! extracts `where` from the `container`.
       //! @returns 
       //!   * a value if `where` is an iterator
       //!   * a vector with the extracted values if `where` is a range.
       template< typename C, typename W>
-      [[nodiscard]] auto extract( C& container, W&& where)
-         -> decltype( detail::extract( container, std::forward< W>( where), traits::priority::tag< 1>{}))
+      [[nodiscard]] auto extract( C& container, W where) requires concepts::container::erase< C, W> || concepts::container::erase_range< C, W>
       {
-         return detail::extract( container, std::forward< W>( where), traits::priority::tag< 1>{});
+         if constexpr( concepts::container::erase< C, W>)
+         {
+            auto result = std::move( *where);
+            container.erase( where);
+            return result;
+         }
+         if constexpr( concepts::container::erase_range< C, W>)
+         {
+            C result;
+
+            if constexpr( concepts::container::reserve< C>)
+               result.reserve( where.size());
+            
+            std::move( std::begin( where), std::end( where), std::back_inserter( result));
+            container.erase( std::begin( where), std::end( where));
+            return result;
+         }
       }
 
       //! Trims @p container so it matches @p range
@@ -105,14 +93,14 @@ namespace casual
 
 
       template< typename C, typename Iter>
-      C& erase( C& container, Range< Iter> range)
+      C& erase( C& container, Range< Iter> range) requires concepts::container::erase_range< C, Range< Iter>>
       {
          container.erase( std::begin( range), std::end( range));
          return container;
       }
 
       template< typename C, typename Iter>
-      C& erase( C& container, Iter where) requires std::same_as< std::ranges::iterator_t< C>, Iter>
+      C& erase( C& container, Iter where) requires concepts::container::erase< C, Iter>
       {
          container.erase( where);
          return container;

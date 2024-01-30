@@ -1022,6 +1022,18 @@ namespace casual
 
       namespace lexicographical
       {
+         // Not available yet on OS X. exists in libc++ 17
+         // namespace three::way
+         // {
+         //    template< concepts::range A, concepts::range B> 
+         //    [[nodiscard]] auto compare( A&& a, B&& b)
+         //    {
+         //       return std::lexicographical_compare_three_way(
+         //          std::begin( a), std::end( a),
+         //          std::begin( b), std::end( b));
+         //    }
+         // } // three::way
+
          template< concepts::range A, concepts::range B> 
          [[nodiscard]] auto compare( A&& a, B&& b)
          {
