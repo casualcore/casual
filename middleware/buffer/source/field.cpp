@@ -10,7 +10,6 @@
 #include "casual/buffer/internal/common.h"
 #include "casual/buffer/internal/field/string.h"
 
-#include "common/code/raise.h"
 #include "common/code/xatmi.h"
 
 #include "common/environment.h"
@@ -26,10 +25,6 @@
 #include "common/file.h"
 
 #include "common/serialize/create.h"
-
-
-
-//#include "common/serialize/create.h"
 
 #include <cstring>
 
@@ -97,14 +92,16 @@ namespace casual
                   }
 
                   if( cursor > end)
-                     throw std::invalid_argument{ "buffer is comprised"};
+                     throw std::invalid_argument{ "buffer is invalid"};
                }
 
-               // invoked when a service is invoked with the "buffer from the wire".
+               // Invoked when a service is invoked with the "buffer from the wire"
+               //
                // Since this type of buffer auto expands the memory during add and such, we need
-               // to let the 'buffer::pool::Holder' keep track of the handle to this buffer.
+               // to let the 'buffer::pool::Holder' keep track of the handle to this buffer
+               //
                // This is done through 'm_inbound', which need to be updated everywhere we change 
-               // the address of the buffer (allocate,shrink, and so on).
+               // the address of the buffer (allocate, shrink and so on)
                Buffer( common::buffer::Payload payload, common::buffer::handle::type* inbound)
                   : Buffer{ std::move( payload)}
                {
@@ -170,7 +167,6 @@ namespace casual
                // called on service invocation
                common::buffer::handle::mutate::type adopt( common::buffer::Payload&& payload, common::buffer::handle::type* inbound)
                {
-                  //Trace trace{ "buffer::field::Allocator::adopt"};
                   auto& buffer = allocator_base::emplace_back( std::move( payload), inbound);
                   return buffer.handle();
                }
@@ -247,7 +243,7 @@ namespace casual
                   const auto error = common::exception::capture();
 
                   if( error.code() == common::code::xatmi::argument)
-                     return CASUAL_FIELD_INVALID_HANDLE; 
+                     return CASUAL_FIELD_INVALID_HANDLE;
 
                   common::stream::write( std::cerr, "error: ", error, '\n');
                   
@@ -318,8 +314,6 @@ namespace casual
             template<typename... A>
             int data( char** handle, const item_type id, const int type, A&&... arguments)
             {
-               //Trace trace( "field::add::data");
-
                if( type != (id / CASUAL_FIELD_TYPE_BASE))
                {
 
@@ -389,8 +383,6 @@ namespace casual
             template<typename... A>
             int data( const char* const handle, const item_type id, size_type occurrence, const int type, A&&... arguments)
             {
-               //Trace trace( "field::get::data");
-
                if( type != (id / CASUAL_FIELD_TYPE_BASE))
                   return CASUAL_FIELD_INVALID_ARGUMENT;
 
@@ -455,8 +447,6 @@ namespace casual
 
             int data( const char* const handle, const item_type id, size_type occurrence)
             {
-               //Trace trace( "field::cut::data");
-
                if( ! (id > CASUAL_FIELD_NO_ID))
                   return CASUAL_FIELD_INVALID_ARGUMENT;
 
@@ -477,8 +467,6 @@ namespace casual
 
             int all( const char* const handle)
             {
-               //Trace trace( "field::cut::all");
-
                try
                {
                   auto& buffer = pool_type::pool().get( common::buffer::handle::type{ handle});
@@ -561,8 +549,6 @@ namespace casual
             template<typename... A>
             int data( char** handle, const item_type id, size_type occurrence, const int type, A&&... arguments)
             {
-               //Trace trace( "field::set::data");
-
                if( type != (id / CASUAL_FIELD_TYPE_BASE))
                   return CASUAL_FIELD_INVALID_ARGUMENT;
 
@@ -595,8 +581,6 @@ namespace casual
          {
             int value( const char* const handle, const item_type id, const size_type occurrence, size_type& count)
             {
-               //Trace trace( "field::explore::value");
-
                try
                {
                   const auto& buffer = pool_type::pool().get( common::buffer::handle::type{ handle});
@@ -615,8 +599,6 @@ namespace casual
 
             int buffer( const char* const handle, size_type& size, size_type& used)
             {
-               //Trace trace( "field::explore::buffer");
-
                try
                {
                   //common::log::line( common::verbose::log, "TODO remove - common::buffer::handle::type{ handle}: ",   common::buffer::handle::type{ handle});
@@ -640,8 +622,6 @@ namespace casual
 
             int existence( const char* const handle, const item_type id, const size_type occurrence)
             {
-               //Trace trace( "field::explore::existence");
-
                try
                {
                   const auto& buffer = pool_type::pool().get( common::buffer::handle::type{ handle});
@@ -661,8 +641,6 @@ namespace casual
 
             int count( const char* const handle, const item_type id, size_type& occurrences)
             {
-               //Trace trace( "field::explore::count");
-
                try
                {
                   const auto& buffer = pool_type::pool().get( common::buffer::handle::type{ handle});
@@ -684,8 +662,6 @@ namespace casual
 
             int count( const char* const handle, size_type& occurrences)
             {
-               //Trace trace( "field::explore::count");
-
                try
                {
                   const auto& buffer = pool_type::pool().get( common::buffer::handle::type{ handle});
@@ -710,8 +686,6 @@ namespace casual
          {
             int first( const char* const handle, item_type& id, size_type& index)
             {
-               //Trace trace( "field::iterate::first");
-
                try
                {
                   const auto& buffer = pool_type::pool().get( common::buffer::handle::type{ handle});
@@ -735,8 +709,6 @@ namespace casual
 
             int next( const char* const handle, item_type& id, size_type& index)
             {
-               //Trace trace( "field::iterate::next");
-
                try
                {
                   const auto& buffer = pool_type::pool().get( common::buffer::handle::type{ handle});
@@ -784,9 +756,6 @@ namespace casual
          {
             int buffer( char** target_handle, const char* const source_handle)
             {
-               //Trace trace( "field::copy::buffer");
-
-
                try
                {
                   auto& target = pool_type::pool().get( common::buffer::handle::type{ *target_handle});
@@ -811,8 +780,6 @@ namespace casual
 
             int memory( char** const handle, const void* const source, const platform::binary::size::type count)
             {
-               //Trace trace( "field::copy::data");
-
                try
                {
                   auto& buffer = pool_type::pool().get( common::buffer::handle::type{ *handle});
@@ -1943,8 +1910,6 @@ namespace casual
 
                int stream( const char* const handle, std::ostream& stream)
                {
-                  //Trace trace( "field::transform::stream");
-
                   try
                   {
                      const auto& buffer = pool_type::pool().get( common::buffer::handle::type{ handle});
@@ -2038,7 +2003,7 @@ int casual_field_match( const char* const buffer, const char* const expression, 
 
       if( match)
       {
-         *match = std::regex_search( s.str(), x);
+         *match = std::regex_search( std::move(s).str(), x);
       }
    }
    catch( const std::regex_error&)

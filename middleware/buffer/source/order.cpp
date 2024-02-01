@@ -181,8 +181,6 @@ namespace casual
 
                int buffer( const char* const handle, size_type* const reserved, size_type* const utilized, size_type* const consumed) noexcept
                {
-                  //Trace trace( "order::explore::buffer");
-
                   try
                   {
                      const auto& buffer = pool_type::pool().get( common::buffer::handle::type{ handle});
@@ -207,8 +205,6 @@ namespace casual
 
                int reset( const char* const handle) noexcept
                {
-                  //Trace trace( "order::add::reset");
-
                   try
                   {
                      pool_type::pool().get( common::buffer::handle::type{ handle}).utilized( 0);
@@ -273,8 +269,6 @@ namespace casual
                template<typename... A>
                int data( char** handle, A&&... arguments) noexcept
                {
-                  //Trace trace( "order::add::data");
-
                   try
                   {
                      auto& buffer = pool_type::pool().get( common::buffer::handle::type{ *handle});
@@ -303,8 +297,6 @@ namespace casual
             {
                int reset( const char* const handle) noexcept
                {
-                  //Trace trace( "order::get::reset");
-
                   try
                   {
                      pool_type::pool().get( common::buffer::handle::type{ handle}).consumed( 0);
@@ -345,8 +337,6 @@ namespace casual
                template<typename... A>
                int data( const char* const handle, A&&... arguments) noexcept
                {
-                  //Trace trace( "order::add::data");
-
                   try
                   {
                      auto& buffer = pool_type::pool().get( common::buffer::handle::type{ handle});
@@ -376,7 +366,6 @@ namespace casual
 
 
             } // get
-
 
          } //
 

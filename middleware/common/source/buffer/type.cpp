@@ -32,7 +32,6 @@ namespace casual
                return result;
             }
 
-
          } // type
 
          static_assert( concepts::nothrow::movable< Payload>);
@@ -43,7 +42,7 @@ namespace casual
          Payload::Payload() = default;
 
          Payload::Payload( std::nullptr_t) 
-          : Payload{ std::string{ "NULL"}} 
+          : type{ "NULL"} 
          {}
 
          Payload::Payload( string::Argument type) 

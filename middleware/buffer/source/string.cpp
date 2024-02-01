@@ -153,8 +153,6 @@ namespace casual
 
             int explore( const char* const handle, size_type* const size, size_type* const used)
             {
-               //Trace trace( "string::explore");
-
                try
                {
                   const auto& buffer = pool_type::pool().get( common::buffer::handle::type{ handle});
@@ -173,8 +171,6 @@ namespace casual
 
             int set( char** const handle, const char* const value)
             {
-               //Trace trace( "string::set");
-
                try
                {
                   auto& buffer = pool_type::pool().get( common::buffer::handle::type{ *handle});
@@ -197,8 +193,6 @@ namespace casual
 
             int get( const char* const handle, const char** value)
             {
-               //Trace trace( "string::get");
-
                try
                {
                   const auto& buffer = pool_type::pool().get( common::buffer::handle::type{ handle});
