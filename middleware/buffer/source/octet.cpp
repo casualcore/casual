@@ -114,8 +114,6 @@ namespace casual
 
             int explore( const char* const handle, const char** name, size_type* const size) noexcept
             {
-               //Trace trace( "octet::explore");
-
                try
                {
                   const auto& buffer = pool_type::pool().get( common::buffer::handle::type{ handle});
@@ -138,8 +136,6 @@ namespace casual
 
             int set( char** const handle, const_data_type data, const size_type size) noexcept
             {
-               //Trace trace( "string::set");
-
                try
                {
                   auto& buffer = pool_type::pool().get( common::buffer::handle::type{ *handle});
@@ -160,8 +156,6 @@ namespace casual
 
             int get( const char* const handle, const_data_type& data, size_type& size) noexcept
             {
-               //Trace trace( "octet::get");
-
                try
                {
                   const auto& buffer = pool_type::pool().get( common::buffer::handle::type{ handle});
@@ -184,7 +178,6 @@ namespace casual
       } // octet
 
    } // buffer
-
 
 } // casual
 
