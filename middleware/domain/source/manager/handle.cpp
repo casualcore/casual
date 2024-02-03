@@ -544,6 +544,21 @@ namespace casual
 
                namespace process
                {
+                  auto get_alias( State& state)
+                  {
+                     return [ &state]( strong::process::id pid) -> std::string
+                     {
+                        if( auto server = state.server( pid))
+                           return server->alias;
+                        else if( auto executable = state.executable( pid))
+                           return executable->alias;
+                        else if( auto grandchild = state.grandchild( pid))
+                           return grandchild->alias;
+
+                        return "<unknown>";
+                     };
+                  }
+
                   auto spawn( State& state)
                   {
                      return [&state]( const common::message::event::process::Spawn& message)
@@ -574,19 +589,7 @@ namespace casual
                            // We don't want to handle any signals in this task
                            signal::thread::scope::Block block;
 
-                           auto get_alias = [ &state]( strong::process::id pid) -> std::string
-                           {
-                              if( auto server = state.server( pid))
-                                 return server->alias;
-                              else if( auto executable = state.executable( pid))
-                                 return executable->alias;
-                              else if( auto grandchild = state.grandchild( pid))
-                                 return grandchild->alias;
-
-                              return "<unknown>";
-                           };
-
-                           auto alias =  get_alias( message.state.pid);
+                           auto alias =  get_alias( state)( message.state.pid);
 
                            if( message.state.reason == decltype( message.state.reason)::core)
                               log::line( log::category::error, "process cored, alias: ", alias, ", details: ", message.state);
@@ -644,9 +647,11 @@ namespace casual
                            auto weapon = common::code::signal::kill;
                            if( message.contract == decltype( message.contract)::terminate) 
                               weapon = common::code::signal::terminate;
-                           
+
+                           auto alias =  get_alias( state)( message.target);
+
                            common::signal::send( message.target, weapon);
-                           log::line( log::category::error, code::casual::domain_instance_assassinate, " pid: ", message.target, ", weapon: ", weapon);
+                           log::line( log::category::error, code::casual::domain_instance_assassinate, " pid: ", message.target, ", alias: ", alias, ", weapon: ", weapon, ", announcement: ", message.announcement);
                         }
                         else
                            log::line( log::category::information, code::casual::domain_instance_assassinate, " whitelisted process pardoned, pid: ", message.target);
