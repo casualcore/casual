@@ -161,16 +161,18 @@ namespace casual
 
          auto handle_timeout = [&state]( auto& entry)
          {
-            auto order_assassination = []( auto& target, auto& contract)
+            auto order_assassination = []( auto& target, auto& contract, auto& announcement)
             {
                // send event, at least domain-manager want's to know...
                common::message::event::process::Assassination event{ common::process::handle()};
                event.target = target;
                event.contract = contract;
+               event.announcement = announcement;
                common::event::send( event);
             };
 
             auto contract = entry.service->timeout.contract.value_or( common::service::execution::timeout::contract::Type::linger);
+            auto announcement = common::string::compose( "service ", entry.service->information.name, " timed out");
 
             if( auto caller = entry.service->consume( entry.correlation))
             {
@@ -178,7 +180,7 @@ namespace casual
                // We need to notify TM if this call was in transaction.
                state.timeout_instances.push_back( entry.target);
                local::error::reply( state, caller, common::code::xatmi::timeout);
-               order_assassination( entry.target, contract);
+               order_assassination( entry.target, contract, announcement);
             }
             else
                // This happens during shutdown
@@ -189,7 +191,7 @@ namespace casual
                //   - in this case the reply to the caller is not going to be TPETIME
                //     but rather TPESVCERR, can we redesign that?
                // 
-               order_assassination( entry.target, contract);
+               order_assassination( entry.target, contract, announcement);
 
          };
 

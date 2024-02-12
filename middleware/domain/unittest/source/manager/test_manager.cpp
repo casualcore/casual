@@ -599,6 +599,7 @@ domain:
          message::event::process::Assassination assassination;
          assassination.target = target;
          assassination.contract = Contract::kill;
+         assassination.announcement = "Revenge is a dish that tastes best when it is cold.";
          communication::device::blocking::send( communication::instance::outbound::domain::manager::device(), assassination);
 
          // check if/when hit is performed

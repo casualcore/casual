@@ -355,6 +355,7 @@ domain:
 
          EXPECT_TRUE( event.target == common::process::id());
          EXPECT_TRUE( event.contract == decltype( event.contract)::linger);
+         EXPECT_TRUE( event.announcement == "service a timed out");
       }
 
 
