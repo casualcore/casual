@@ -245,8 +245,8 @@ namespace casual
                   if( error.code() == common::code::xatmi::argument)
                      return CASUAL_FIELD_INVALID_HANDLE;
 
-                  common::stream::write( std::cerr, "error: ", error, '\n');
-                  
+                  common::log::line( common::log::category::error, error);
+
                   return CASUAL_FIELD_INTERNAL_FAILURE;
                }
             }

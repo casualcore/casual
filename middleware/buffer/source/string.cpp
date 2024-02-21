@@ -19,7 +19,6 @@
 
 
 #include <cstring>
-#include <iostream>
 
 namespace casual
 {
@@ -30,18 +29,8 @@ namespace casual
 
          namespace
          {
-
-/*
-            struct trace : common::trace::basic::Scope
-            {
-               template<decltype(sizeof("")) size>
-               explicit trace( const char (&information)[size]) : Scope( information, common::log::internal::buffer) {}
-            };
-*/
-
             using size_type = platform::size::type;
             using data_type = platform::buffer::raw::type;
-
 
             namespace local
             {
@@ -144,7 +133,7 @@ namespace casual
                   if( error.code() == common::code::xatmi::argument)
                      return CASUAL_STRING_INVALID_HANDLE; 
 
-                  common::stream::write( std::cerr, "error: ", error, '\n');
+                  common::log::line( common::log::category::error, error);
 
                   return CASUAL_STRING_INTERNAL_FAILURE;
                }

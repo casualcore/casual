@@ -20,7 +20,6 @@
 
 #include <cstring>
 #include <utility>
-#include <iostream>
 
 namespace casual
 {
@@ -168,7 +167,7 @@ namespace casual
                      if( error.code() == common::code::xatmi::argument)
                         return CASUAL_ORDER_INVALID_HANDLE; 
 
-                     common::stream::write( std::cerr, "error: ", error, '\n');
+                     common::log::line( common::log::category::error, error);
 
                      return CASUAL_ORDER_INTERNAL_FAILURE;
                   }

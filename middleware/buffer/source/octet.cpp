@@ -12,8 +12,6 @@
 #include "casual/platform.h"
 #include "common/exception/capture.h"
 
-#include <iostream>
-
 namespace casual
 {
    namespace buffer
@@ -78,8 +76,8 @@ namespace casual
                   }
                   else
                   {
-                     // TODO What is this? How could this possible make sense?
-                     //m_pool.back().payload.data.reserve( 1);
+                     // If size() is ​0​, data() may or may not return a null pointer
+                     buffer.payload.data.reserve( 1);
                   }
 
                   return buffer.payload.handle();
@@ -105,7 +103,7 @@ namespace casual
                   if( error.code() == common::code::xatmi::argument)
                      return CASUAL_OCTET_INVALID_HANDLE; 
 
-                  common::stream::write( std::cerr, "error: ", error, '\n');
+                  common::log::line( common::log::category::error, error);
 
                   return CASUAL_OCTET_INTERNAL_FAILURE;
                }
