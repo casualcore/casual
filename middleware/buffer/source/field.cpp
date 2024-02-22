@@ -120,19 +120,29 @@ namespace casual
                Buffer& operator = ( Buffer&&) noexcept = default;
 
                void shrink() 
-               { 
+               {
                   payload.data.shrink_to_fit();
+
+                  if( ! payload.data.data())
+                  {
+                     payload.data.reserve( 1);
+                  }
+
                   if( m_inbound)
                      *m_inbound = handle();
                }
+
                size_type capacity() const noexcept { return payload.data.capacity();}
+
                void capacity( platform::size::type value)
                { 
                   payload.data.reserve( value);
                   if( m_inbound)
                      *m_inbound = handle();
                }
+
                size_type utilized() const noexcept { return payload.data.size();}
+
                void utilized( platform::size::type value) { payload.data.resize( value);}
 
                //! Implement Buffer::transport
@@ -175,8 +185,7 @@ namespace casual
                {
                   auto& buffer = allocator_base::emplace_back( type, 0);
 
-                  // If size() is ​0​, data() may or may not return a null pointer
-                  buffer.capacity( size ? size : 1);
+                  buffer.capacity( size);
 
                   common::log::line( common::verbose::log, "allocated buffer: ", buffer);
 
@@ -194,8 +203,7 @@ namespace casual
                   }
                   else
                   {
-                     // If size() is ​0​, data() may or may not return a null pointer
-                     buffer.capacity( size ? size : 1);
+                     buffer.capacity( size);
                   }
 
                   common::log::line( common::verbose::log, "reallocated buffer: ", buffer);

@@ -256,13 +256,7 @@ namespace casual
             
             buffer::handle::mutate::type allocate( string::Argument type, platform::binary::size::type size)
             {
-               auto& payload = m_buffers.emplace_back( std::move( type), size).payload;
-
-               // Make sure we've got a handle
-               if( ! payload.data.data())
-                  payload.data.reserve( 1);
-
-               return payload.handle();
+               return m_buffers.emplace_back( std::move( type), size).handle();
             }
 
             buffer::handle::mutate::type reallocate( buffer::handle::type handle, platform::binary::size::type size)
@@ -272,10 +266,6 @@ namespace casual
                   auto& payload = found->payload;
 
                   payload.data.resize( size);
-
-                  // Make sure we've got a handle
-                  if( ! payload.data.data())
-                     payload.data.reserve( 1);
 
                   return payload.handle();
                }
@@ -295,12 +285,7 @@ namespace casual
 
             buffer::handle::mutate::type insert( Payload payload)
             {
-               auto& buffer = m_buffers.emplace_back( std::move( payload));
-
-               if( ! buffer.payload.data.data())
-                  buffer.payload.data.reserve( 1);
-
-               return buffer.payload.handle();
+               return m_buffers.emplace_back( std::move( payload)).handle();
             }
 
             buffer_type& get( buffer::handle::type handle)
