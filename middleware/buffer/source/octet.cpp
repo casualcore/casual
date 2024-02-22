@@ -55,13 +55,7 @@ namespace casual
 
                common::buffer::handle::mutate::type allocate( std::string_view type, platform::binary::size::type size)
                {
-                  auto& buffer = allocator_base::emplace_back( type, size);
-
-                  // If size() is ​0​, data() may or may not return a null pointer
-                  if( ! std::data( buffer.payload.data))
-                     buffer.payload.data.reserve( 1);
-
-                  return buffer.payload.handle();
+                  return allocator_base::emplace_back( type, size).handle();
                }
 
 
@@ -69,14 +63,13 @@ namespace casual
                {
                   auto& buffer = allocator_base::get( handle);
 
-                  if( size)
+                  buffer.payload.data.resize( size);
+
+                  // Allow user to reduce allocation
+                  buffer.payload.data.shrink_to_fit();
+
+                  if( ! buffer.payload.data.data())
                   {
-                     // Allow user to reduce allocation
-                     buffer.payload.data.shrink_to_fit();
-                  }
-                  else
-                  {
-                     // If size() is ​0​, data() may or may not return a null pointer
                      buffer.payload.data.reserve( 1);
                   }
 

@@ -44,7 +44,12 @@ namespace casual
 
                   void shrink()
                   {
-                     return payload.data.shrink_to_fit();
+                     payload.data.shrink_to_fit();
+
+                     if( ! payload.data.data())
+                     {
+                        payload.data.reserve( 1);
+                     }
                   }
 
                   size_type capacity() const noexcept
@@ -110,8 +115,7 @@ namespace casual
                   {
                      auto& buffer = allocator_base::emplace_back( type, 0);
 
-                     // If size() is ​0​, data() may or may not return a null pointer
-                     buffer.capacity( size ? size : 1);
+                     buffer.capacity( size);
 
                      return buffer.handle();
                   }
@@ -128,8 +132,7 @@ namespace casual
                      }
                      else
                      {
-                        // If size() is ​0​, data() may or may not return a null pointer
-                        buffer.capacity( size ? size : 1);
+                        buffer.capacity( size);
                      }
 
                      return buffer.handle();
