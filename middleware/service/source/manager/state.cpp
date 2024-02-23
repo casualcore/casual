@@ -123,6 +123,14 @@ namespace casual
                   m_service = replacement;
             }
 
+            std::optional< std::string> Sequential::reserved_service() const
+            {
+               if( m_service)
+                  return m_service->information.logical_name();
+
+               return {};
+            }
+
             std::string_view description( Sequential::State value)
             {
                switch( value)
