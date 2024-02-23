@@ -25,6 +25,7 @@
 #include <map>
 #include <list>
 #include <deque>
+#include <optional>
 
 namespace casual
 {
@@ -114,6 +115,9 @@ namespace casual
 
                //! caller of last reserve
                inline const auto& caller() const noexcept { return m_caller;}
+
+               //! @returns the name of the reserved service if a reservation exists
+               std::optional< std::string> reserved_service() const;
 
                friend std::ostream& operator << ( std::ostream& out, State value);
 
