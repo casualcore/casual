@@ -80,7 +80,7 @@ namespace casual
                   return communication::device::blocking::send( communication::instance::outbound::service::manager::device(), lookup);
                }
 
-               auto request( const communication::ipc::inbound::Device& ipc, message::service::lookup::Reply lookup, message::service::call::callee::Request request)
+               void request( const communication::ipc::inbound::Device& ipc, message::service::lookup::Reply lookup, message::service::call::callee::Request request)
                {
                   if( lookup.state == decltype( lookup.state)::absent)
                      common::code::raise::error( common::code::xatmi::no_entry, "failed to lookup service: ", lookup.service.name);
@@ -88,7 +88,9 @@ namespace casual
                   request.process = local::handle( ipc);
                   request.service = lookup.service;
                   request.pending = lookup.pending;
-                  return communication::device::blocking::send( lookup.process.ipc, request);
+                  request.correlation = lookup.correlation;
+
+                  communication::device::blocking::send( lookup.process.ipc, request);
                }
             } // send
             
@@ -113,7 +115,7 @@ namespace casual
                      // lookup request is in flight
                      message::service::lookup::Reply lookup;
                      if( communication::device::non::blocking::receive( ipc, lookup, correlation))
-                        correlation = local::send::request( ipc, std::move( lookup), std::move( std::exchange( request, {}).value()));
+                        local::send::request( ipc, std::move( lookup), std::move( std::exchange( request, {}).value()));
                   }
                   else 
                   {

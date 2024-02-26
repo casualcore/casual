@@ -3,7 +3,6 @@
 # Usage: python install_nginx.py
 #
 
-import urllib.request
 import os
 import tarfile
 import subprocess
