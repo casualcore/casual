@@ -31,18 +31,16 @@ namespace casual
          }
 
          //! remove subscribers with pid or ipc
-         template< typename ID>
-         void remove( ID id)
+         void remove( process::compare_equal_to_handle auto id)
          {
             algorithm::container::erase( m_subscribers, id);
          }
 
          explicit operator bool () const { return ! m_subscribers.empty();}
 
-         template< typename ID>
-         bool exists( ID id) const
+         bool exists( process::compare_equal_to_handle auto id) const
          {
-            return predicate::boolean( algorithm::find( m_subscribers, id));
+            return algorithm::contains( m_subscribers, id);
          }
 
          template< typename M>
@@ -97,9 +95,9 @@ namespace casual
                ( ... , event< Events>().subscription( message) );
             }
 
-            void remove( strong::process::id pid)
+            void remove( process::compare_equal_to_handle auto id)
             {
-               ( ... , event< Events>().remove( pid) );
+               ( ... , event< Events>().remove( id) );
             }
 
             friend std::ostream& operator << ( std::ostream& out, const Collection& value)

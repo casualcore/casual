@@ -178,6 +178,18 @@ namespace casual
 
       template< typename T>
       concept enumerator = std::is_enum_v< T>;
+
+      namespace compare
+      {
+         //! true if `T a` and `U b` can be compared `a == b` 
+         template< typename T, typename U>
+         concept equal_to = requires( T a, U b)
+         {
+            { a == b} -> std::convertible_to< bool>;
+            { a != b} -> std::convertible_to< bool>;
+         };
+         
+      } // compare
       
    } // concepts
 } // casual

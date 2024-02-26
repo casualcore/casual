@@ -857,9 +857,9 @@ namespace casual
       }
 
       template< concepts::range R1, concepts::range R2>
-      [[nodiscard]] auto find_first_of( R1&& target, R2&& source)
+      [[nodiscard]] auto find_first_of( R1&& source, R2&& lookup)
       {
-         return find_first_of( std::forward< R1>( target), std::forward< R2>( source), std::equal_to<>{});
+         return find_first_of( std::forward< R1>( source), std::forward< R2>( lookup), std::equal_to<>{});
       }
 
       //! Divide @p range in two parts [range-first, divider), [divider, range-last).
