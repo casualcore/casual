@@ -625,6 +625,9 @@ namespace casual
          Handle::operator = ( {});
       }
 
+      static_assert( concepts::compare::equal_to< process::Handle, strong::process::id>);
+      static_assert( concepts::compare::equal_to< process::Handle, strong::ipc::id>);
+
 
    } // common
 } // casual

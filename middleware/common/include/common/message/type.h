@@ -382,11 +382,7 @@ namespace casual
          inline friend auto& correlation( const basic_message& value ) noexcept { return value.correlation;}
 
          constexpr friend bool operator == ( const basic_message& lhs, message::Type rhs) { return message::type( lhs) == rhs;}
-         constexpr friend bool operator == ( message::Type lhs, const basic_message& rhs) { return message::type( rhs) == lhs;}
-
          constexpr friend bool operator == ( const basic_message& lhs, const strong::correlation::id& rhs) { return lhs.correlation == rhs;}
-         constexpr friend bool operator == ( const strong::correlation::id& lhs, const basic_message& rhs) { return rhs == lhs;}
-
 
          CASUAL_CONST_CORRECT_SERIALIZE(
             // correlation is part of ipc::message::Complete, and is
@@ -424,8 +420,7 @@ namespace casual
 
          common::process::Handle process;
 
-         friend bool operator == ( const basic_process& lhs, strong::process::id rhs) { return lhs.process == rhs;}
-         friend bool operator == ( strong::process::id lhs, const basic_process& rhs) { return rhs == lhs;}
+         friend bool operator == ( const basic_process& lhs, common::process::compare_equal_to_handle auto rhs) { return lhs.process == rhs;}
 
          CASUAL_CONST_CORRECT_SERIALIZE(
             basic_message< type>::serialize( archive);
