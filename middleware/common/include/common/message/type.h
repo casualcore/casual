@@ -42,7 +42,7 @@ namespace casual
          process_lookup_reply,
 
          // internal message to conclude/remove tasks
-         task_conclude = 700, // not pinned
+         task_failed = 700, // not pinned
 
          // domain
          DOMAIN_BASE = 1000,
