@@ -47,17 +47,25 @@ namespace casual
                   else
                      return false;
                }
+
+               // we're done with this "remote"
+               directive.write.remove( descriptor());
+               return true;
             }
             catch( ...)
             {
                log::line( log, exception::capture(), " failed to send to destination: ", m_destination, " - action: invoke callback (if any) and discard for all pending messages to the destination");
-
-               for( auto& message : m_queue)
-                  message.error( m_destination.ipc());
+               failed( directive);
+               return true;
             }
-            
+         }
+
+         void Remote::failed( select::Directive& directive)
+         {
+            for( auto& message : m_queue)
+               message.error( m_destination.ipc());
+
             directive.write.remove( descriptor());
-            return true;
          }
          
       } // coordinator
@@ -99,6 +107,15 @@ namespace casual
          {
             return count + destination.size();
          });
+      }
+
+      void Coordinator::failed( const strong::ipc::id& ipc)
+      {
+         if( auto found = algorithm::find( m_destinations, ipc))
+         {
+            found->failed( *m_directive);
+            algorithm::container::erase( m_destinations, std::begin( found));
+         }
       }
 
       strong::correlation::id Coordinator::send( const strong::ipc::id& ipc, coordinator::Message&& message)

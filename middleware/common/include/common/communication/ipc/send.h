@@ -76,6 +76,8 @@ namespace casual
                return *this;
             }
 
+            void failed( select::Directive& directive);
+
             inline platform::size::type size() const noexcept { return m_queue.size();}
 
             inline auto& destination() const noexcept { return m_destination;}
@@ -167,7 +169,9 @@ namespace casual
          inline auto& destinations() const noexcept { return m_destinations;}
 
          inline bool empty() const noexcept { return m_destinations.empty();}
-         inline operator bool() const noexcept { return ! empty();}
+         inline explicit operator bool() const noexcept { return ! empty();}
+
+         void failed( const strong::ipc::id& ipc);
 
          CASUAL_LOG_SERIALIZE(
             CASUAL_SERIALIZE_NAME( m_destinations, "destinations");
