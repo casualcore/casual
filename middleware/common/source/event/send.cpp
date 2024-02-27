@@ -16,8 +16,17 @@ namespace casual
 {
    namespace common::event
    {
+      namespace local
+      {
+         namespace
+         {
+            auto& domain_device() { return communication::instance::outbound::domain::manager::device();}
+         } // <unnamed>
+      } // local
+
       namespace detail
       {
+
          void send( communication::ipc::message::Complete&& complete)
          {
             Trace trace{ "common::domain::event::detail::send"};
@@ -25,8 +34,14 @@ namespace casual
             // We block all signals but SIG_INT
             signal::thread::scope::Mask block{ signal::set::filled( code::signal::interrupt)};
 
-            communication::device::blocking::optional::send( communication::instance::outbound::domain::manager::device(), complete);
+            communication::device::blocking::optional::send( local::domain_device(), complete);
          }
+
+         void send( communication::ipc::send::Coordinator& multiplex, communication::ipc::message::Complete&& complete)
+         {
+            Trace trace{ "common::domain::event::detail::send"};
+            multiplex.send( local::domain_device(), std::move( complete));
+         } 
 
          namespace error
          {
