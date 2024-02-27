@@ -159,7 +159,7 @@ namespace casual
                   // TODO maintainence: get metrics for "external" resources
                   // Metrics metrics;
 
-                  friend bool operator == ( const Proxy& lhs, const common::strong::ipc::id& rhs);
+                  inline friend bool operator == ( const Proxy& lhs, const common::strong::ipc::id& rhs) { return lhs.process == rhs;}
                   inline friend bool operator == ( const Proxy& lhs, common::strong::resource::id rhs) { return lhs.id == rhs;}
 
                   CASUAL_LOG_SERIALIZE(
@@ -175,43 +175,6 @@ namespace casual
             } // external
          } // resource
 
-
-         namespace code::priority
-         {
-            //! Used to rank the return codes from the resources, the lower the enum value (higher up),
-            //! the more severe...
-            enum struct xa : int
-            {
-               heuristic_hazard,
-               heuristic_mix,
-               heuristic_commit,
-               heuristic_rollback,
-               resource_fail,
-               resource_error,
-               rollback_integrity,
-               rollback_communication,
-               rollback_unspecified,
-               rollback_other,
-               rollback_deadlock,
-               protocol,
-               rollback_protocoll,
-               rollback_timeout,
-               rollback_transient,
-               argument,
-               no_migrate,
-               outside,
-               outstanding_async,
-               retry,
-               duplicate_xid,
-               invalid_xid,  //! nothing to do?
-               ok,      //! Went as expected
-               read_only,  //! Went "better" than expected
-            };
-
-            common::code::xa convert( xa code);
-            xa convert( common::code::xa code);
-            
-         } // code::priority
 
          namespace transaction
          {
@@ -253,6 +216,8 @@ namespace casual
 
                inline void remove( common::strong::resource::id id) { common::algorithm::container::erase( resources, id);}
 
+               void failed( common::strong::resource::id resource);
+
                common::transaction::ID trid;
                std::vector< branch::Resource> resources;
 
@@ -268,10 +233,11 @@ namespace casual
             {
                involved,
                prepare,
+               post_prepare, // done with prepare. Other domain in charge.
                commit,
                rollback
             };
-            std::string_view description( Stage value);
+            std::string_view description( Stage value) noexcept;
             
          } // transaction
 
@@ -305,6 +271,8 @@ namespace casual
                purge();
             }
 
+            void failed( common::strong::resource::id resource);
+
             common::state::Machine< transaction::Stage> stage;
 
             //! the global part of the distributed transaction id
@@ -317,6 +285,8 @@ namespace casual
 
             platform::time::point::type started;
             platform::time::point::type deadline;
+
+
 
             inline friend bool operator == ( const Transaction& lhs, const common::transaction::global::ID& rhs) { return lhs.global == rhs;}
             inline friend bool operator == ( const Transaction& lhs, common::transaction::id::range::type::global rhs) { return lhs.global == rhs;}
@@ -379,6 +349,8 @@ namespace casual
             // keep track of the requested inbound branches.
             // using transparent hashing to be able to compare with binary::view
             std::unordered_map< common::transaction::global::ID, common::transaction::ID, common::transaction::global::hash, std::equal_to<>> inbound;
+
+            inline void failed( common::strong::resource::id id) { prepare.failed( id); commit.failed( id); rollback.failed( id);}
 
             CASUAL_LOG_SERIALIZE( 
                CASUAL_SERIALIZE( prepare);
@@ -457,6 +429,7 @@ namespace casual
          state::resource::Proxy::Instance* try_reserve( common::strong::resource::id rm);
 
          const state::resource::external::Proxy& get_external( common::strong::resource::id rm) const;
+         const state::resource::external::Proxy* find_external( common::strong::resource::id rm) const noexcept;
 
          common::message::transaction::configuration::alias::Reply configuration(
             const common::message::transaction::configuration::alias::Request& request);
