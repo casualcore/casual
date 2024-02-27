@@ -367,6 +367,8 @@ namespace casual
                      static detail::optional::Device singelton{ identity::gateway::manager};
                      return singelton;
                   }
+
+                  static_assert( device::outbound::is_optional< detail::optional::Device>);
                } // optional
 
             } // manager

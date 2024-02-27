@@ -212,7 +212,17 @@ namespace casual
 
          } // domain::manager
 
+
       } // outbound
 
    } // common::communication::instance
+   
+   namespace common::communication::device::outbound
+   {
+      // make sure other knows that the optional::Device is "optional"
+      template<>
+      struct is_optional_t< communication::instance::outbound::detail::optional::Device> : std::true_type {};
+
+   } // common::communication::device::outbound
+
 } // casual
