@@ -82,9 +82,11 @@ namespace casual
             case Type::event_process_exit: return "event_process_exit";
             case Type::event_process_configured: return "event_process_configured";
             case Type::event_process_assassination_contract: return "event_process_assassination_contract";
+            case Type::event_ipc_destroyed: return "event_ipc_destroyed";
             case Type::event_domain_information: return "event_domain_information";
             case Type::event_service_call: return "event_service_call";
             case Type::event_service_calls: return "event_service_calls";
+            case Type::event_transaction_disassociate: return "event_transaction_disassociate";
             case Type::transaction_client_connect_request: return "transaction_client_connect_request";
             case Type::transaction_client_connect_reply: return "transaction_client_connect_reply";
             case Type::transaction_manager_connect_request: return "transaction_manager_connect_request";
