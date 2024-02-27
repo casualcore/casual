@@ -30,13 +30,22 @@ namespace casual
 
 
       template< typename Code, typename... Args>
-      auto error( Code code, Args&&... args) -> decltype( log::code( log::category::error, code, std::forward< Args>( args)...))
+      auto error( Code code, Args&&... args) requires std::is_error_code_enum_v< Code>
       {
          log::code( log::category::error, code, std::forward< Args>( args)...);
       }
 
+      namespace verbose
+      {
+         template< typename Code, typename... Args>
+         auto error( Code code, Args&&... args) requires std::is_error_code_enum_v< Code>
+         {
+            log::code( log::category::verbose::error, code, std::forward< Args>( args)...);
+         }
+      } // verbose
+
       template< typename Code, typename... Args>
-      auto warning( Code code, Args&&... args) -> decltype( log::code( log::category::warning, code, std::forward< Args>( args)...))
+      auto warning( Code code, Args&&... args) requires std::is_error_code_enum_v< Code>
       {
          log::code( log::category::warning, code, std::forward< Args>( args)...);
       }
