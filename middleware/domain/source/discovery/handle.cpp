@@ -99,7 +99,7 @@ namespace casual
                      result = algorithm::accumulate( providers, std::move( result), [ &state, &message]( auto result, const auto& provider)
                      {
                         if( auto correlation = send::multiplex( state, provider.process.ipc, message))
-                           result.emplace_back( correlation, provider.process.pid);
+                           result.emplace_back( correlation, provider.process);
 
                         return result;
                      });
@@ -712,16 +712,30 @@ namespace casual
                {
                   auto exit( State& state)
                   {
-                     return [&state]( const common::message::event::process::Exit& event)
+                     return [ &state]( const common::message::event::process::Exit& event)
                      {
                         Trace trace{ "discovery::handle::local::event::process::exit"};
                         log::line( verbose::log, "event: ", event);
 
-                        state.providers.remove( event.state.pid);
-                        state.coordinate.failed( event.state.pid);
+                        state.failed( event.state.pid);
                      };
                   }
                } // process
+
+               namespace ipc
+               {
+                  auto destroyed( State& state)
+                  {
+                     return [ &state]( const common::message::event::ipc::Destroyed& event)
+                     {
+                        Trace trace{ "discovery::handle::local::event::process::exit"};
+                        log::line( verbose::log, "event: ", event);
+
+                        state.failed( event.process.ipc);
+                     };
+
+                  }
+               } // ipc
 
             } // event
 
@@ -823,7 +837,9 @@ namespace casual
 
          return dispatch_type{
             common::message::dispatch::handle::defaults( state),
-            common::event::listener( local::event::process::exit( state)),
+            common::event::listener( 
+               local::event::process::exit( state),
+               local::event::ipc::destroyed( state)),
             local::api::provider::registration( state),
             local::api::request( state),
             local::api::rediscovery::request( state),

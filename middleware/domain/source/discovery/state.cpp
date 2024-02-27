@@ -32,7 +32,7 @@ namespace casual
          void Providers::registration( const message::discovery::api::provider::registration::Request& message)
          {
             // we only add 'new' processes
-            if( algorithm::find( m_providers, message.process))
+            if( algorithm::find( m_providers, message.process.ipc))
                return;
 
             m_providers.emplace_back( message.abilities, message.process);
@@ -49,7 +49,12 @@ namespace casual
 
          void Providers::remove( common::strong::process::id pid)
          {
-            common::algorithm::container::trim( m_providers, common::algorithm::remove( m_providers, pid));
+            algorithm::container::erase( m_providers, pid);
+         }
+
+         void Providers::remove( const common::strong::ipc::id& ipc)
+         {
+            algorithm::container::erase( m_providers, ipc);
          }
 
          namespace accumulate
@@ -358,6 +363,18 @@ namespace casual
       {
          // make sure we add the inbound ipc for read.
          directive.read.add( communication::ipc::inbound::device().descriptor());
+      }
+
+      void State::failed( strong::process::id pid)
+      {
+         providers.remove( pid);
+         coordinate.failed( pid);
+      }
+
+      void State::failed( const strong::ipc::id& ipc)
+      {
+         providers.remove( ipc);
+         coordinate.failed( ipc);
       }
       
       bool State::done() const noexcept

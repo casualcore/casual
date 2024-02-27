@@ -13,6 +13,11 @@ namespace casual
 {
    namespace domain::unittest
    {
+      namespace service
+      {
+         std::vector< std::string> discover( std::vector< std::string> services);
+      } // service
+
       void discover( std::vector< std::string> services, std::vector< std::string> queues);
       
    } // domain::unittest
