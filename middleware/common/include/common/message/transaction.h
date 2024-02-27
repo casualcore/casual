@@ -352,13 +352,13 @@ namespace casual
             namespace involved
             {
                template< typename M>
-               Involved create( M&& message)
+               Involved create( M&& message, const common::process::Handle& handle = common::process::handle())
                {
                   Involved involved;
 
                   involved.correlation = message.correlation;
                   involved.execution = message.execution;
-                  involved.process = common::process::handle();
+                  involved.process = handle;
                   involved.trid = message.trid;
 
                   return involved;
@@ -385,6 +385,24 @@ namespace casual
          using Reply = transaction::basic_request< message::Type::transaction_coordinate_inbound_reply>;
 
       } // coordinate::inbound
+
+      namespace active
+      {
+         template< typename Base>
+         struct basic_active : Base
+         {
+            using Base::Base;
+            std::vector< common::transaction::global::ID> gtrids;
+
+            CASUAL_CONST_CORRECT_SERIALIZE(
+               Base::serialize( archive);
+               CASUAL_SERIALIZE( gtrids);
+            )
+         };
+
+         using Request = basic_active< message::basic_request< message::Type::transaction_active_request>>;
+         using Reply = basic_active< message::basic_reply< message::Type::transaction_active_reply>>;         
+      } // active
 
    } // common::message::transaction
 
@@ -413,6 +431,9 @@ namespace casual
 
       template<>
       struct type_traits< transaction::coordinate::inbound::Request> : detail::type< transaction::coordinate::inbound::Reply> {};
+
+      template<>
+      struct type_traits< transaction::active::Request> : detail::type< transaction::active::Reply> {};
 
    } // common::message::reverse
 } // casual

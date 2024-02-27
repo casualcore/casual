@@ -120,6 +120,8 @@ namespace casual
             case Type::transaction_resource_id_reply: return "transaction_resource_id_reply";
             case Type::transaction_coordinate_inbound_request: return "transaction_coordinate_inbound_request";
             case Type::transaction_coordinate_inbound_reply: return "transaction_coordinate_inbound_reply";
+            case Type::transaction_active_request: return "transaction_active_request";
+            case Type::transaction_active_reply: return "transaction_active_reply";
             case Type::queue_manager_queue_advertise: return "queue_manager_queue_advertise";
             case Type::queue_manager_queue_lookup_request: return "queue_manager_queue_lookup_request";
             case Type::queue_manager_queue_lookup_reply: return "queue_manager_queue_lookup_reply";
