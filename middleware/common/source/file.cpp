@@ -133,7 +133,11 @@ namespace casual
 
          void rename( const std::filesystem::path& source, const std::filesystem::path& target)
          {
-            std::filesystem::rename( source, target);
+            std::error_code ec;
+            std::filesystem::rename( source, target, ec);
+            if (ec)
+               code::raise::error( code::casual::invalid_path, "failed to rename file, source: ", source, " -> target: ", target, ", error message: ", ec.message());
+            
             log::line( log::debug, "moved file source: ", source, " -> target: ", target);
          }
 
@@ -141,7 +145,7 @@ namespace casual
          {
             Path::~Path()
             {
-               if( ! empty())
+               if( std::error_code temp_ec; ! empty() && std::filesystem::exists( *this, temp_ec))
                   file::remove( *this);
             }
 
