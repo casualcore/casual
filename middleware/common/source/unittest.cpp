@@ -44,10 +44,11 @@ namespace casual
 
       namespace service
       {
-         strong::correlation::id send( std::string service, platform::binary::type payload)
+         [[nodiscard]] strong::correlation::id send( std::string service, platform::binary::type payload, const transaction::ID& trid)
          {
             {
                common::message::service::lookup::Request request{ process::handle()};
+               request.gtrid = transaction::id::range::global( trid);
                request.requested = std::move( service);
                request.context.semantic = decltype( request.context.semantic)::no_busy_intermediate;
                communication::device::blocking::send( communication::instance::outbound::service::manager::device(), request);
@@ -60,10 +61,17 @@ namespace casual
 
             common::message::service::call::callee::Request message{ process::handle()};
             message.service = std::move( lookup.service);
+            message.trid = trid;
             message.buffer.data = std::move( payload);
             message.buffer.type = common::buffer::type::x_octet;
 
             return communication::device::blocking::send( lookup.process.ipc, message);
+
+         }
+
+         strong::correlation::id send( std::string service, platform::binary::type payload)
+         {
+            return send( std::move( service), std::move( payload), {});
          }
 
          namespace wait::until
