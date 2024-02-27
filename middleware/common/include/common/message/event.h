@@ -197,6 +197,20 @@ namespace casual
 
          } // process
 
+         namespace ipc
+         {
+            using base_destroyed = basic_event< Type::event_ipc_destroyed>;
+            struct Destroyed : base_destroyed
+            {
+               using base_destroyed::base_destroyed;
+
+               CASUAL_CONST_CORRECT_SERIALIZE(
+                  base_destroyed::serialize( archive);
+               )
+            };
+            
+         } // ipc
+
          namespace service
          {
             namespace metric
@@ -280,6 +294,26 @@ namespace casual
       
          } // service
 
+         namespace transaction
+         {
+            using base_disassociate = message::basic_request< message::Type::event_transaction_disassociate>;
+
+            //! used from TM to SM (for now) to let others know that a given gtrid is done (committed/rolled backed)
+            struct Disassociate : base_disassociate
+            {
+               using base_disassociate::base_disassociate;
+
+               common::transaction::global::ID gtrid;
+
+               CASUAL_CONST_CORRECT_SERIALIZE(
+                  base_disassociate::serialize( archive);
+                  CASUAL_SERIALIZE( gtrid);
+               )
+            };
+            
+         } // transaction
+
+
          namespace terminal
          {
             std::ostream& print( std::ostream& out, const Error& event);
@@ -290,28 +324,17 @@ namespace casual
             std::ostream& print( std::ostream& out, const Task& event);
             std::ostream& print( std::ostream& out, const sub::Task& event);
          } // terminal
+
+
+         template< typename M>
+         concept like = message::like< M> && requires( M m)
+         {
+            m.type() >= Type::EVENT_BASE && m.type() < Type::EVENT_BASE_END;
+         };
          
          } // inline v1
       } // event
-
-      namespace is
-      {
-         namespace event
-         {
-            template< typename Message>
-            constexpr bool message()
-            {
-               return Message::type() > Type::EVENT_BASE && Message::type() < Type::EVENT_BASE_END; 
-            }
-
-            template< typename M>
-            constexpr bool message( M&& message)
-            {
-               return is::event::message< std::remove_cvref_t< M>>();
-            }
-         } // event
-      } // is
-
+      
    } // common::message
 } // casual
 

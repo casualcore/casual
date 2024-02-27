@@ -100,13 +100,8 @@ namespace casual
             friend bool operator < ( const ID& lhs, const ID& rhs);
             friend bool operator == ( const ID& lhs, const ID& rhs);
             friend bool operator == ( const ID& lhs, const xid_type& rhs);
-            inline friend bool operator != ( const ID& lhs, const ID& rhs)
-            {
-               return ! ( lhs == rhs);
-            }
 
             friend bool operator == ( const ID& lhs, const global::ID& rhs);
-            friend bool operator == ( const global::ID& lhs, const ID& rhs) { return rhs == lhs;}
 
             CASUAL_CONST_CORRECT_SERIALIZE(
                CASUAL_SERIALIZE_NAME( m_owner, "owner");
