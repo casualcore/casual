@@ -751,6 +751,37 @@ namespace casual
                      };
                   }
                } // task
+
+               namespace ipc
+               {
+                  auto destroyed( State& state)
+                  {
+                     return [ &state]( common::message::event::ipc::Destroyed& message)
+                     {
+                        Trace trace{ "domain::manager::handle::local::event::ipc::destroyed"};
+                        log::line( verbose::log, "message: ", message);
+
+                        manager::task::event::dispatch( state, [ &message](){ return message;});
+                     };
+                  }
+               } // ipc
+
+               namespace transaction
+               {
+                  auto disassociate( State& state)
+                  {
+                     return [ &state]( common::message::event::transaction::Disassociate& message)
+                     {
+                        Trace trace{ "domain::manager::handle::local::event::transaction::disassociate"};
+                        log::line( verbose::log, "message: ", message);
+
+                        manager::task::event::dispatch( state, [ &message](){ return message;});
+                     };
+                  }
+                  
+                  
+               } // transaction
+
             } // event
 
             namespace process
@@ -1116,6 +1147,8 @@ namespace casual
             handle::local::event::notification( state),
             handle::local::event::task( state),
             handle::local::event::sub::task( state),
+            handle::local::event::ipc::destroyed( state),
+            handle::local::event::transaction::disassociate( state),
             handle::local::process::connect( state),
             handle::local::process::lookup( state),
             handle::local::process::information::request( state),

@@ -24,9 +24,7 @@ namespace casual
             auto&& event = event_creator();
 
             common::log::line( verbose::log, "event: ", event);
-
-            if( state.event.active< event_type>())
-               state.event( state.multiplex, event);
+            state.event( state.multiplex, event);
          }
       }
 

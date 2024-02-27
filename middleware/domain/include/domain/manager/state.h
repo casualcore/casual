@@ -429,10 +429,12 @@ namespace casual
             common::message::event::process::Exit,
             common::message::event::process::Configured,
             common::message::event::process::Assassination,
+            common::message::event::ipc::Destroyed,
             common::message::event::Task,
             common::message::event::sub::Task,
             common::message::event::Error,
-            common::message::event::Notification
+            common::message::event::Notification,
+            common::message::event::transaction::Disassociate
          > event;
 
          std::vector< common::strong::process::id> whitelisted;
