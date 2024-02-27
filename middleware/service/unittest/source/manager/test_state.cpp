@@ -249,14 +249,14 @@ namespace casual
 
          // 103 should be prioritized
          {
-            auto process = service->reserve_concurrent();
+            auto process = service->reserve_concurrent( {});
             EXPECT_TRUE( process.pid == common::strong::process::id{ 103});
             
             // expect only 103 to be in the prioritized range
-            EXPECT_TRUE( process == service->reserve_concurrent());
+            EXPECT_TRUE( process == service->reserve_concurrent( {}));
 
             // we remove the instance
-            service->remove( )
+            //service->remove( )
          }
 
       }
