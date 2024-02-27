@@ -718,6 +718,21 @@ domain:
          EXPECT_TRUE( rm2.metrics.resource.count == 2); // 1 prepare, 1 commit
       }
 
+      namespace local
+      {
+         namespace
+         {
+            namespace involved
+            {
+               struct Resource 
+               {
+                  communication::ipc::inbound::Device inbound;
+                  process::Handle process() const { return { common::process::id(), inbound.connector().handle().ipc()};}
+               };
+
+            } // involved
+         } // <unnamed>
+      } // local
 
 
       TEST( transaction_manager, begin_transaction__2_resource_involved__owner_dies__expect_rollback)
@@ -758,6 +773,60 @@ domain:
          EXPECT_TRUE( state.transactions.empty()) << CASUAL_NAMED_VALUE( state.transactions);
 
          EXPECT_TRUE( local::rollback() == common::code::tx::ok);
+      }
+
+      TEST( transaction_manager, two_external_involved__prepare_requests___ipc_destroyed_event___expect__TX_FAIL)
+      {
+         common::unittest::Trace trace;
+
+         local::involved::Resource r1;
+         local::involved::Resource r2;
+
+         auto involve_external = []( auto& resource, auto& trid)
+         {
+            common::message::transaction::resource::external::Involved message{ resource.process()};
+            message.trid = trid;
+            local::send::tm( message);
+         };
+
+         auto reply_to_tm = []< typename M>( auto& resource, M)
+         {
+            auto request = common::communication::device::receive< M>( resource.inbound);
+            auto reply = common::message::reverse::type( request, resource.process());
+            reply.resource = request.resource;
+            reply.trid = request.trid;
+            local::send::tm( reply);
+         };
+
+         auto domain = local::domain();
+
+         auto trid = common::transaction::id::create();
+         
+         involve_external( r1, trid);
+         involve_external( r2, trid);
+
+         // send to TM to start the commit dance
+         { 
+            common::message::transaction::commit::Request message{ common::process::handle()};
+            message.trid = trid;
+            local::send::tm( message);
+         }
+
+         reply_to_tm( r1, common::message::transaction::resource::prepare::Request{});
+
+         // r2 has failed
+         {
+            local::send::tm( common::message::event::ipc::Destroyed{ r2.process()});
+         }
+
+         // we expect rollback to r1
+         reply_to_tm( r1, common::message::transaction::resource::rollback::Request{});
+
+         // we expect commit failed
+         {
+            auto reply = communication::ipc::receive< common::message::transaction::commit::Reply>();
+            EXPECT_TRUE( reply.state == decltype( reply.state)::fail) << CASUAL_NAMED_VALUE( reply);
+         }
       }
 
       TEST( transaction_manager, remote_resource_commit_one_phase__xid_unknown___expect_read_only)
@@ -1069,6 +1138,8 @@ domain:
                   communication::ipc::inbound::Device inbound;
                   process::Handle process{ next(), inbound.connector().handle().ipc()};
                };
+
+
             } // involved
          } // <unnamed>
       } // local

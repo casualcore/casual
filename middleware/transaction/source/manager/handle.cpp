@@ -14,6 +14,7 @@
 
 #include "common/message/dispatch/handle.h"
 #include "common/event/listen.h"
+#include "common/event/send.h"
 #include "common/server/handle/call.h"
 
 #include "common/code/raise.h"
@@ -135,22 +136,56 @@ namespace casual
                   }
                   
                } // send::persist  
+
                namespace accumulate
                {
+                  //! Tries to normalize the xa code based on the accumulated replies, what type the reply is, if any 
+                  //! has failed.
                   template< typename R, typename O>
-                  auto code( R&& range, O&& outcome, common::code::xa code = common::code::xa::read_only)
-                  {  
-                     // if there are 'failed' in outcome we have (??) to classify this as heuristic_hazard,
-                     // since we don't know what could have happend...
-                     auto is_failed = []( auto& outcome){ return outcome.state == decltype( outcome.state)::failed;};
-                     code = common::algorithm::any_of( outcome, is_failed) ? common::code::xa::heuristic_hazard : code;
+                  common::code::xa code( R&& replies, O&& outcome, common::code::xa code = common::code::xa::read_only)
+                  {
+                     using outcome_state = decltype( common::range::front( outcome).state);
 
-                     common::log::line( verbose::log, "code: ", code);
-
-                     return state::code::priority::convert( common::algorithm::accumulate( range, state::code::priority::convert( code), []( auto result, auto& reply)
+                     static constexpr auto normalize_code = []( auto& replies, auto code)
                      {
-                        return std::min( result, state::code::priority::convert( reply.state));
-                     }));
+                        return common::algorithm::accumulate( replies, code, []( auto code, auto& reply)
+                        {
+                           return common::code::severest( code, reply.state);
+                        });
+                     };
+
+                     auto at_least_one_failed = common::algorithm::any_of( outcome, []( auto& outcome){ return outcome.state == outcome_state::failed;});
+
+                     // If there is only one resource involved, it cant result in "hazard".
+                     if( std::size( outcome) == 1 && at_least_one_failed)
+                        return common::code::severest( common::code::xa::resource_fail, code);
+
+                     if constexpr( concepts::range_with_value< R, common::message::transaction::resource::commit::Reply>)
+                     {
+                        // we don't know what the state of the transaction is
+                        if( at_least_one_failed)
+                           return normalize_code( replies, common::code::severest( common::code::xa::heuristic_commit, code));
+
+                        return normalize_code( replies, code);
+                     }
+
+                     if constexpr( concepts::range_with_value< R, common::message::transaction::resource::rollback::Reply>)
+                     {
+                        // we don't know what the state of the transaction is
+                        if( at_least_one_failed)
+                           return normalize_code( replies, common::code::severest( common::code::xa::heuristic_rollback, code));
+
+                        return normalize_code( replies, code);
+                     }
+
+                     if constexpr( concepts::range_with_value< R, common::message::transaction::resource::prepare::Reply>)
+                     {
+                        if( at_least_one_failed)
+                           return normalize_code( replies, common::code::severest( code, common::code::xa::resource_fail));
+
+                        return normalize_code( replies, code);
+                     }
+
                   }
 
                } // accumulate
@@ -188,6 +223,67 @@ namespace casual
 
                } // branch
 
+               namespace push::resource::error
+               {
+                  template< typename R>
+                  auto reply( const R& request)
+                  {
+                     auto reply = common::message::reverse::type( request);
+                     reply.resource = request.resource;
+                     reply.trid = request.trid;
+                     reply.state = common::code::xa::resource_fail;
+
+                     // push it to our inbound
+                     return ipc::device().push( reply);
+                  }
+
+               } // push::resource::error
+
+               namespace create::resource::error
+               {
+
+                  template< typename Request>
+                  auto callback( const Request&)
+                  {
+                     return []( const common::strong::ipc::id& ipc, const common::communication::ipc::message::Complete& complete)
+                     {
+                        // deserialize the request message
+                        auto request = common::serialize::native::complete< Request>( complete);
+
+                        common::log::error( common::code::xa::resource_fail, "failed to send ", request.type(), " to resource: ", request.resource, " ( ipc: ", ipc, "), trid: ", request.trid, " - action: emulate reply with ", common::code::xa::resource_fail);
+                        push::resource::error::reply( request);
+                     };
+                  }
+               } // create::resource::error
+
+               namespace remove
+               {
+                  void coordination( State& state, common::transaction::global::id::range global)
+                  {
+                     if( auto found = common::algorithm::find( state.coordinate.inbound, global))
+                     {
+                        common::algorithm::container::erase( state.coordinate.inbound, std::begin( found));
+                        
+                        // we know that someone has coordinated this `gtrid` before.
+                        // send event that this TM is no longer interested in the gtrid
+                        common::message::event::transaction::Disassociate event{ common::process::handle()};
+                        event.gtrid = global;
+                        common::event::send( state.multiplex, event);
+                     }
+                  }
+
+                  void transaction( State& state, common::transaction::global::id::range global)
+                  {
+                     state.persistent.log.remove( global);
+                     
+                     if( auto found = common::algorithm::find( state.transactions, global))
+                        common::algorithm::container::erase( state.transactions, std::begin( found));
+
+                     remove::coordination( state, global);
+                  }
+                  
+               } // remove
+
                namespace send
                {
                   template< typename M, typename C>
@@ -203,23 +299,30 @@ namespace casual
                   namespace resource
                   {
                      template< typename M>
-                     auto request( State& state, M&& request) 
-                        -> std::enable_if_t< std::is_rvalue_reference_v< decltype( request)>, common::strong::correlation::id>
+                     common::strong::correlation::id request( State& state, M&& request) requires std::is_rvalue_reference_v< decltype( request)>
                      {
-                        casual::assertion( request.resource, "invalid resource id: ", request.resource);
+                        Trace trace{ "transaction::manager::handle::local::detail::send::resource::request"};
+                        common::log::line( verbose::log, "request: ", request);
 
+                        casual::assertion( request.resource, "invalid resource id: ", request.resource);
+                        
                         if( state::resource::id::local( request.resource))
                         {
                            if( auto reserved = state.try_reserve( request.resource))
-                              return state.multiplex.send( reserved->process.ipc, request);
+                              return state.multiplex.send( reserved->process.ipc, request, create::resource::error::callback( request));
 
                            common::log::line( log, "could not send to resource: ", request.resource, " - action: try later");
                            // (we know message is an rvalue, so it's going to be a move)
                            return state.pending.requests.add( request.resource, std::forward< M>( request));
                         }
 
-                        auto& resource = state.get_external( request.resource);
-                        return state.multiplex.send( resource.process.ipc, request);
+                        if( auto resource = state.find_external( request.resource))
+                           return state.multiplex.send( resource->process.ipc, request, create::resource::error::callback( request));
+                        else
+                        {
+                           common::log::error( common::code::xa::resource_fail, "failed to find resource: ", request.resource, " for trid: ", request.trid, " - action: emulate reply with ", common::code::xa::resource_fail);
+                           return push::resource::error::reply( request);
+                        }
                      }
 
                   } // resource
@@ -318,26 +421,12 @@ namespace casual
 
                   } // create
 
-                  namespace remove
-                  {
-                     void transaction( State& state, common::transaction::id::range::type::global global)
-                     {
-                        state.persistent.log.remove( global);
-                        if( auto found = common::algorithm::find( state.transactions, global))
-                           state.transactions.erase( std::begin( found));
-
-                        if( auto found = common::algorithm::find( state.coordinate.inbound, global))
-                           common::algorithm::container::erase( state.coordinate.inbound, std::begin( found));
-                     }
-                     
-                  } // remove
-
 
                   template< typename Reply, typename Pending>
                   auto commit( State& state, Pending pending, const common::transaction::ID& origin, detail::coordinate::Destination destination, common::code::xa code = common::code::xa::read_only)
                   {
                      // note: everything captured needs to by value (besides State if used)
-                     state.coordinate.commit( std::move( pending), [ &state, origin, destination, code]( auto replies, auto outcome)
+                     state.coordinate.commit( std::move( pending), [ &state, origin, destination, code]( auto&& replies, auto&& outcome)
                      {
                         Trace trace{ "transaction::manager::handle::local::detail::coordinate::commit"};
                         common::log::line( verbose::log, "replies: ", replies, ", outcome: ", outcome);
@@ -358,10 +447,10 @@ namespace casual
                   auto rollback( State& state, Pending pending, const common::transaction::ID& origin, detail::coordinate::Destination destination, common::code::xa code = common::code::xa::read_only)
                   {
                      // note: everything captured needs to by value (besides State if used)
-                     state.coordinate.rollback( std::move( pending), [ &state, origin, destination, code]( auto replies, auto outcome)
+                     state.coordinate.rollback( std::move( pending), [ &state, origin, destination, code]( auto&& replies, auto&& outcome)
                      {
                         Trace trace{ "transaction::manager::handle::local::detail::coordinate::rollback"};
-                        common::log::line( verbose::log, "replies: ", replies, ", outcome: ", outcome);
+                        common::log::line( verbose::log, "replies: ", replies, ", outcome: ", outcome, ", code: ", code);
                         
                         auto reply = create::reply< Reply>( origin, destination, detail::accumulate::code( replies, outcome, code));
 
@@ -390,7 +479,7 @@ namespace casual
                   auto prepare( State& state, Pending pending, const common::transaction::ID& origin, detail::coordinate::Destination destination)
                   {
                      // note: everything captured needs to be by value (besides State if used)
-                     state.coordinate.prepare( std::move( pending), [ &state, origin, destination]( auto replies, auto outcome)
+                     state.coordinate.prepare( std::move( pending), [ &state, origin, destination]( auto&& replies, auto&& outcome)
                      {
                         Trace trace{ "transaction::manager::handle::local::detail::coordinate::prepare"};
                         common::log::line( verbose::log, "replies: ", replies, ", outcome: ", outcome);
@@ -400,26 +489,34 @@ namespace casual
                         if( ! transaction)
                         {
                            using namespace common;
-                           log::line( log::category::error, code::casual::invalid_semantics, " prepare callback - failed to find transaction 'context' for: ", origin, " - action: ignore");
-                           log::line( log::category::verbose::error, "replies: ", replies, ", outcome: ", outcome);
+                           common::log::error( common::code::casual::invalid_semantics, " prepare callback - failed to find transaction 'context' for: ", origin, " - action: ignore");
+                           common::log::verbose::error( common::code::casual::invalid_semantics, "replies: ", replies, ", outcome: ", outcome);
 
                            return;
                         }
 
+                        // some sanity checks
+                        {
+                           if( transaction->stage != state::transaction::Stage::prepare)
+                              common::log::error( common::code::casual::invalid_semantics, "transaction is not in prepare phase - actual: ", transaction->stage, " - action: ignore");
+                        }
+
+                        // we're done with the prepare phase
+                        transaction->stage = state::transaction::Stage::post_prepare;
+
+                        const auto code = detail::accumulate::code( replies, outcome);
+                        common::log::line( verbose::log, "code: ", code);
+
                         // filter away all read-only replies
-                        auto [ active, read_only] = common::algorithm::partition( replies, []( auto& reply){ return reply.state != decltype( reply.state)::read_only;});
+                        auto [ active, read_only] = common::algorithm::partition( replies, []( auto& reply){ return reply.state != common::code::xa::read_only;});
                         common::log::line( verbose::log, "read_only: ", read_only);
 
                         // purge/remove all resources that is ead_only for each branch, and if a branch has 0 resources, remove it.
                         transaction->purge( read_only);
                         common::log::line( verbose::log, "transaction: ", *transaction);
 
-                        auto code = detail::accumulate::code( active, outcome);
-
-                        if( code == decltype( code)::read_only)
+                        if( code == common::code::xa::read_only)
                         {
-                           state.transactions.erase( std::begin( transaction));
-
                            // we can send the reply directly
                            auto reply = create::reply< Reply>( origin, destination, code);
                            
@@ -427,8 +524,11 @@ namespace casual
                               reply.stage = decltype( reply.stage)::commit;
                            
                            state.multiplex.send( destination.process.ipc, reply);
+
+                           // we don't need to keep state of this transaction any more
+                           remove::transaction( state, transaction->global.range());
                         }
-                        else if( code == decltype( code)::ok)
+                        else if( code == common::code::xa::ok)
                         {
                            // Prepare has gone ok. Log persistent state
                            state.persistent.log.prepare( *transaction);
@@ -450,6 +550,9 @@ namespace casual
                               detail::send::persist::reply( state, std::move( reply), destination.process);
                            }
 
+                           // we start the commit stage
+                           transaction->stage = state::transaction::Stage::commit;
+
                            // we try to commit all active resources.
                            auto pending = detail::coordinate::pending::replies< common::message::transaction::resource::commit::Request>( 
                               state, active, state.coordinate.commit.empty_pendings());
@@ -465,6 +568,9 @@ namespace casual
                               state.multiplex.send( destination.process.ipc, reply);
                               return;
                            }
+
+                           // we start the rollback stage
+                           transaction->stage = state::transaction::Stage::rollback;
 
                            // we try to rollback all active resources, if any.
                            auto pending = detail::coordinate::pending::replies< common::message::transaction::resource::rollback::Request>( 
@@ -492,7 +598,7 @@ namespace casual
                      auto transaction = detail::branch::involved( state, message);
                      common::log::line( verbose::log, "transaction: ", *transaction);
 
-                     if( transaction->stage > decltype( transaction->stage())::involved)
+                     if( transaction->stage > state::transaction::Stage::involved)
                      {
                         // transaction is not in the correct 'stage'
                         detail::send::reply( state, message, []( auto& reply)
@@ -513,14 +619,14 @@ namespace casual
                         {
                            common::log::line( log, transaction->global, " no resources involved: ");
 
-                           // We can remove this transaction
-                           state.transactions.erase( std::begin( transaction));
-
                            detail::send::reply( state, message, []( auto& reply)
                            { 
                               reply.state = decltype( reply.state)::ok;
                               reply.stage = decltype( reply.stage)::commit;
                            });
+
+                           // we can remove this transaction
+                           detail::remove::transaction( state, transaction->global.range());
 
                            break;
                         }
@@ -528,7 +634,9 @@ namespace casual
                         {
                            // Only one resource involved, we do a one-phase-commit optimization.
                            common::log::line( log, "global: ", transaction->global, " - only one resource involved");
-                           transaction->stage = decltype( transaction->stage())::commit;
+
+                           // start the commit phase directly
+                           transaction->stage = state::transaction::Stage::commit;
 
                            auto pending = detail::coordinate::pending::branches< common::message::transaction::resource::commit::Request>( 
                               state, transaction->branches, state.coordinate.commit.empty_pendings(), common::flag::xa::Flag::one_phase);
@@ -542,7 +650,9 @@ namespace casual
                         {
                            // More than one resource involved, we do the prepare stage
                            common::log::line( log, "global: ", transaction->global, " more than one resource involved");
-                           transaction->stage = decltype( transaction->stage())::commit;
+                           
+                           // start the prepare phase
+                           transaction->stage = state::transaction::Stage::prepare;
 
                            auto pending = detail::coordinate::pending::branches< common::message::transaction::resource::prepare::Request>( 
                               state, transaction->branches, state.coordinate.prepare.empty_pendings());
@@ -571,7 +681,8 @@ namespace casual
                      auto transaction = detail::branch::involved( state, message);
                      common::log::line( verbose::log, "transaction: ", *transaction);
 
-                     transaction->stage = decltype( transaction->stage())::rollback;
+                     // start the rollback phase, directly
+                     transaction->stage = state::transaction::Stage::rollback;
                      transaction->owner = message.process;
 
                      auto pending = detail::coordinate::pending::branches< common::message::transaction::resource::rollback::Request>( 
@@ -781,12 +892,15 @@ namespace casual
                            {
                               common::log::line( log, "failed to find trid: ", message.trid, " - action: reply with read-only");
                               detail::send::read::only::reply( state, message);
+
+                              // We can remove potential other state of this gtrid
+                              local::detail::remove::coordination( state, common::transaction::id::range::global( message.trid));
                               return;
                            }
 
                            common::log::line( log, "transaction: ", *transaction);
 
-                           if( transaction->stage > decltype( transaction->stage())::involved)
+                           if( transaction->stage > state::transaction::Stage::involved)
                            {
                               common::log::line( log, "transaction stage is passed the _involved_ - stage: ", transaction->stage, " - action: reply with read-only");
                               detail::send::read::only::reply( state, message);
@@ -797,16 +911,18 @@ namespace casual
                            {
                               common::log::line( log, transaction->global, " no resources involved: ");
 
-                              // We can remove this transaction
-                              state.transactions.erase( std::begin( transaction));
-
                               detail::send::read::only::reply( state, message);
+
+                              // We can remove this transaction
+                              local::detail::remove::transaction( state, transaction->global.range());
                               return;
                            }
 
                            // we can't do any _one phase commit optimization_, since we're not the on in charge.
                            common::log::line( log, "global: ", transaction->global, " preparing");
-                           transaction->stage = decltype( transaction->stage())::prepare;
+
+                           // Start the prepare phase
+                           transaction->stage = state::transaction::Stage::prepare;
 
                            auto pending = local::detail::coordinate::pending::branches< common::message::transaction::resource::prepare::Request>( 
                               state, transaction->branches, state.coordinate.prepare.empty_pendings());
@@ -833,32 +949,38 @@ namespace casual
                            {
                               common::log::line( log, "failed to find trid: ", message.trid, " - action: reply with read-only");
                               detail::send::read::only::reply( state, message);
+
+                              // We can remove potential other state of this gtrid
+                              local::detail::remove::coordination( state, common::transaction::id::range::global( message.trid));
                               return;
                            }
 
                            common::log::line( log, "transaction: ", *transaction);
-
-                           // Either we're in a prepared stage of the transaction, or we're in involved and the upstream TM 
-                           // request a one-phase optimization.
-
-                           if( transaction->stage == decltype( transaction->stage())::prepare)
+                           
+                           // Three possibilities:
+                           //  * We're in the post_prepare stage of the transaction ->  we start commit.
+                           //  * We're in involved and the upstream TM request a one-phase optimization -> we start prepare.
+                           //  * We're already in an active stage and the commit request is an "artifact" of topology complexity
+                           if( transaction->stage == state::transaction::Stage::post_prepare)
                            {
-                              transaction->stage = decltype( transaction->stage())::commit;
+                              // start the commit phase
+                              transaction->stage = state::transaction::Stage::commit;
 
                               auto pending = local::detail::coordinate::pending::branches< common::message::transaction::resource::commit::Request>( 
-                              state, transaction->branches, state.coordinate.commit.empty_pendings());
+                                 state, transaction->branches, state.coordinate.commit.empty_pendings());
 
                               local::detail::coordinate::commit< common::message::transaction::resource::commit::Reply>( 
                                  state, std::move( pending), message.trid, local::detail::coordinate::destination( message));
                            }
-                           else if( transaction->stage == decltype( transaction->stage())::involved)
+                           else if( transaction->stage == state::transaction::Stage::involved)
                            {
                               // this should be a one-phase optimization, if not, we log error and still commit.
                               // TODO: this should not matter, but does it?
                               if( ! message.flags.exist( common::flag::xa::Flag::one_phase))
-                                 common::log::line( common::log::category::error, common::code::casual::invalid_semantics, " resource commit request without TMONEPHASE, gtrid: ", transaction->global);
+                                 common::log::error( common::code::casual::invalid_semantics, " resource commit request without TMONEPHASE, gtrid: ", transaction->global);
 
-                              transaction->stage = decltype( transaction->stage())::commit;
+                              // start the prepare phase
+                              transaction->stage = state::transaction::Stage::prepare;
 
                               auto pending = local::detail::coordinate::pending::branches< common::message::transaction::resource::prepare::Request>( 
                                  state, transaction->branches, state.coordinate.prepare.empty_pendings());
@@ -893,20 +1015,26 @@ namespace casual
                            {
                               common::log::line( log, "failed to find trid: ", message.trid, " - action: reply with read-only");
                               detail::send::read::only::reply( state, message);
+
+                              // We can remove potential other state of this gtrid
+                              local::detail::remove::coordination( state, common::transaction::id::range::global( message.trid));
                               return;
                            }
 
-                           if( transaction->stage == decltype( transaction->stage())::rollback)
+                           common::log::line( verbose::log, "transaction: ", *transaction);
+
+                           if( ! common::algorithm::compare::any( transaction->stage, state::transaction::Stage::involved, state::transaction::Stage::post_prepare))
                            {
-                              common::log::line( verbose::log, " transaction already in rollback: ", transaction->global, " - action: reply with read-only");
+                              common::log::line( verbose::log, "transaction is not in involved or post_prepare phase: ", *transaction, " - action: reply with read-only");
                               detail::send::read::only::reply( state, message);
                               return;
                            }
                            
-                           transaction->stage = decltype( transaction->stage())::rollback;   
-
                            transaction->owner = message.process;
-
+                           
+                           // start the rollback phase
+                           transaction->stage = state::transaction::Stage::rollback; 
+                           
                            auto pending = local::detail::coordinate::pending::branches< common::message::transaction::resource::rollback::Request>( 
                               state, transaction->branches, state.coordinate.rollback.empty_pendings());
 
@@ -990,11 +1118,11 @@ namespace casual
                
             } // coordinate::inbound
 
-            namespace process
+            namespace event::process
             {
                auto exit( State& state)
                {
-                  return [ &state]( common::message::event::process::Exit& message)
+                  return [ &state]( const common::message::event::process::Exit& message)
                   {
                      Trace trace{ "transaction::manager::handle::local::process::exit"};
                      common::log::line( verbose::log, "message: ", message);
@@ -1006,9 +1134,23 @@ namespace casual
                         return;
                      }
 
-                     auto trids = common::algorithm::accumulate( state.transactions, std::vector< common::transaction::ID>{}, [ &message]( auto result, auto& transaction)
+                     // check external
+                     common::algorithm::container::erase_if( state.externals, [ &state, pid = message.state.pid]( auto& resource)
                      {
-                        if( ! transaction.branches.empty() && transaction.branches.back().trid.owner().pid == message.state.pid)
+                        if( resource.process.pid != pid)
+                           return false;
+
+                        common::log::line( verbose::log, "found external process exit: ", resource);
+                        
+                        state.coordinate.failed( resource.id);
+                        state.multiplex.failed( resource.process.ipc);
+
+                        return true;
+                     });
+
+                     auto trids = common::algorithm::accumulate( state.transactions, std::vector< common::transaction::ID>{}, [ pid = message.state.pid]( auto result, auto& transaction)
+                     {
+                        if( ! transaction.branches.empty() && transaction.branches.back().trid.owner().pid == pid)
                            result.push_back( transaction.branches.back().trid);
 
                         return result;
@@ -1025,10 +1167,43 @@ namespace casual
                         // This could change the state, that's why we don't do it directly in the loop above.
                         local::rollback::request( state)( request);
                      }
+
+
                   };
                }
 
-            } // process
+            } // event::process
+
+            namespace event::ipc
+            {
+               auto destroyed( State& state)
+               {
+                  return [ &state]( const common::message::event::ipc::Destroyed& message)
+                  {
+                     Trace trace{ "transaction::manager::handle::local::event::ipc::destroyed"};
+                     common::log::line( verbose::log, "message: ", message);
+                     
+                     // this can't come from our own resource proxies, only external
+
+                     if( auto found = common::algorithm::find( state.externals, message.process.ipc))
+                     {
+                        common::log::line( verbose::log, "failed: ", *found);
+
+                        // fail associated transaction resource state, if any
+                        for( auto& transaction : state.transactions)
+                           transaction.failed( found->id);
+
+                        // fail ongoing fan-outs for the rm, if any.
+                        state.coordinate.failed( found->id);
+
+                        common::algorithm::container::erase( state.externals, std::begin( found));
+                     }
+
+                     // fail pending sends to the destroyed destination
+                     state.multiplex.failed( message.process.ipc);
+                  };
+               }
+            } // event::ipc
 
             namespace configuration
             {
@@ -1063,6 +1238,35 @@ namespace casual
                }
 
             } // configuration
+
+            namespace active 
+            {
+               auto request( State& state)
+               {
+                  return [ &state]( common::message::transaction::active::Request& message)
+                  {
+                     Trace trace{ "transaction::manager::handle::local::active::request"};
+                     common::log::line( verbose::log, "message: ", message);
+
+                     auto reply = common::message::reverse::type( message);
+                     reply.gtrids = std::move( message.gtrids);
+
+                     // Keep all that is found/is active
+                     common::algorithm::container::erase_if( reply.gtrids, [ &state]( auto& gtrid)
+                     {
+                        return ! common::algorithm::contains( state.transactions, gtrid);
+                     });
+
+                     common::log::line( verbose::log, "reply: ", reply);
+                     if( ! std::empty( reply.gtrids))
+                        common::log::line( verbose::log, "state.transactions: ", state.transactions);
+
+
+                     state.multiplex.send( message.process.ipc, reply);
+                  };
+               }
+            } // active
+
          } // <unnamed>
       } // local
 
@@ -1097,7 +1301,7 @@ namespace casual
          {
             return common::message::dispatch::handler( ipc::device(),
                common::message::dispatch::handle::defaults(),
-               local::process::exit( state),
+               local::event::process::exit( state),
                local::resource::configuration::request( state),
                local::resource::ready( state)
                );
@@ -1109,7 +1313,9 @@ namespace casual
       {
          return common::message::dispatch::handler( ipc::device(),
             common::message::dispatch::handle::defaults( state),
-            common::event::listener( local::process::exit( state)),
+            common::event::listener( 
+               local::event::process::exit( state),
+               local::event::ipc::destroyed( state)),
             local::commit::request( state),
             local::rollback::request( state),
             local::resource::involved::request( state),
@@ -1125,6 +1331,7 @@ namespace casual
             local::resource::external::commit::request( state),
             local::resource::external::rollback::request( state),
             local::coordinate::inbound::request( state),
+            local::active::request( state),
             common::server::handle::admin::Call{
                manager::admin::services( state)}
          );

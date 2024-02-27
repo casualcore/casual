@@ -132,11 +132,6 @@ namespace casual
                {
                }
 
-               bool operator == ( const Proxy& lhs, const common::strong::ipc::id& rhs)
-               {
-                  return lhs.process == rhs;
-               }
-
                namespace proxy
                {
                   common::strong::resource::id id( State& state, const common::process::Handle& process)
@@ -153,90 +148,27 @@ namespace casual
             } // external
          } // resource
 
-         namespace code::priority
-         {
-            common::code::xa convert( xa code)
-            {
-               switch( code)
-               {
-                  case xa::heuristic_hazard: return common::code::xa::heuristic_hazard;
-                  case xa::heuristic_mix: return common::code::xa::heuristic_mix;
-                  case xa::heuristic_commit: return common::code::xa::heuristic_commit;
-                  case xa::heuristic_rollback: return common::code::xa::heuristic_rollback;
-                  case xa::resource_fail: return common::code::xa::resource_fail;
-                  case xa::resource_error: return common::code::xa::resource_error;
-                  case xa::rollback_integrity: return common::code::xa::rollback_integrity;
-                  case xa::rollback_communication: return common::code::xa::rollback_communication;
-                  case xa::rollback_unspecified: return common::code::xa::rollback_unspecified;
-                  case xa::rollback_other: return common::code::xa::rollback_other;
-                  case xa::rollback_deadlock: return common::code::xa::rollback_deadlock;
-                  case xa::protocol: return common::code::xa::protocol;
-                  case xa::rollback_protocoll: return common::code::xa::rollback_protocoll;
-                  case xa::rollback_timeout: return common::code::xa::rollback_timeout;
-                  case xa::rollback_transient: return common::code::xa::rollback_transient;
-                  case xa::argument: return common::code::xa::argument;
-                  case xa::no_migrate: return common::code::xa::no_migrate;
-                  case xa::outside: return common::code::xa::outside;
-                  case xa::invalid_xid: return common::code::xa::invalid_xid;
-                  case xa::outstanding_async: return common::code::xa::outstanding_async;
-                  case xa::retry: return common::code::xa::retry;
-                  case xa::duplicate_xid: return common::code::xa::duplicate_xid;
-                  case xa::ok: return common::code::xa::ok;
-                  case xa::read_only: return common::code::xa::read_only;
-               }
-
-               casual::terminate( "invalid value for code::priority::xa: ", std::to_underlying( code));
-
-            }
-
-            xa convert( common::code::xa code)
-            {
-               switch( code)
-               {
-                  case common::code::xa::heuristic_hazard: return xa::heuristic_hazard;
-                  case common::code::xa::heuristic_mix: return xa::heuristic_mix;
-                  case common::code::xa::heuristic_commit: return xa::heuristic_commit;
-                  case common::code::xa::heuristic_rollback: return xa::heuristic_rollback;
-                  case common::code::xa::resource_fail: return xa::resource_fail;
-                  case common::code::xa::resource_error: return xa::resource_error;
-                  case common::code::xa::rollback_integrity: return xa::rollback_integrity;
-                  case common::code::xa::rollback_communication: return xa::rollback_communication;
-                  case common::code::xa::rollback_unspecified: return xa::rollback_unspecified;
-                  case common::code::xa::rollback_other: return xa::rollback_other;
-                  case common::code::xa::rollback_deadlock: return xa::rollback_deadlock;
-                  case common::code::xa::protocol: return xa::protocol;
-                  case common::code::xa::rollback_protocoll: return xa::rollback_protocoll;
-                  case common::code::xa::rollback_timeout: return xa::rollback_timeout;
-                  case common::code::xa::rollback_transient: return xa::rollback_transient;
-                  case common::code::xa::argument: return xa::argument;
-                  case common::code::xa::no_migrate: return xa::no_migrate;
-                  case common::code::xa::outside: return xa::outside;
-                  case common::code::xa::invalid_xid: return xa::invalid_xid;
-                  case common::code::xa::outstanding_async: return xa::outstanding_async;
-                  case common::code::xa::retry: return xa::retry;
-                  case common::code::xa::duplicate_xid: return xa::duplicate_xid;
-                  case common::code::xa::ok: return xa::ok;
-                  case common::code::xa::read_only: return xa::read_only;
-               }
-
-               casual::terminate( "invalid value for common::code::xa: ", std::to_underlying( code));
-            }
-            
-         } // code::priority
-
          namespace transaction
          {
-            std::string_view description( Stage value)
+            std::string_view description( Stage value) noexcept
             {
                switch( value)
                {
                   case Stage::involved: return "involved";
                   case Stage::prepare: return "prepare";
+                  case Stage::post_prepare: return "post_prepare";
                   case Stage::commit: return "commit";
                   case Stage::rollback: return "rollback";
                }
                return "<unknown>";
             }
+
+            void Branch::failed( common::strong::resource::id resource)
+            {
+               if( auto found = common::algorithm::find( resources, resource))
+                  found->code = common::code::xa::resource_fail;
+            }
+
          } // transaction
 
          platform::size::type Transaction::resource_count() const noexcept
@@ -253,6 +185,12 @@ namespace casual
 
             auto erase = std::get< 1>( algorithm::partition( branches, has_resources));
             branches.erase( std::begin( erase), std::end( erase));
+         }
+
+         void Transaction::failed( common::strong::resource::id resource)
+         {
+            for( auto& branch : branches)
+               branch.failed( resource);
          }
 
       } // state
@@ -335,7 +273,7 @@ namespace casual
          return ! common::algorithm::find_if( resources, [pid]( auto& r){
             return r.remove_instance( pid);
          }).empty();
-      }
+      }  
 
       state::resource::Proxy::Instance* State::try_reserve( common::strong::resource::id rm)
       {
@@ -351,9 +289,16 @@ namespace casual
          return nullptr;
       }
 
-      const state::resource::external::Proxy& State::get_external( common::strong::resource::id rm) const
+      const state::resource::external::Proxy* State::find_external( common::strong::resource::id rm) const noexcept
       {
          if( auto found = common::algorithm::find( externals, rm))
+            return found.data();
+         return nullptr;
+      }
+
+      const state::resource::external::Proxy& State::get_external( common::strong::resource::id rm) const
+      {
+         if( auto found = find_external( rm))
             return *found;
 
          code::raise::error( code::casual::invalid_argument, "failed to find external resource proxy: ", rm);

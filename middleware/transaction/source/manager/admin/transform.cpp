@@ -123,6 +123,7 @@ namespace casual
                      switch( stage)
                      {
                         case state::transaction::Stage::involved: return admin::model::transaction::Stage::involved;
+                        case state::transaction::Stage::post_prepare:
                         case state::transaction::Stage::prepare: return admin::model::transaction::Stage::prepare;
                         case state::transaction::Stage::commit: return admin::model::transaction::Stage::commit;
                         case state::transaction::Stage::rollback: return admin::model::transaction::Stage::rollback;
