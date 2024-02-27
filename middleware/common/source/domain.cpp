@@ -12,6 +12,7 @@
 
 #include "common/code/raise.h"
 #include "common/code/casual.h"
+#include "common/code/system.h"
 
 #include "common/serialize/json.h"
 
@@ -129,10 +130,16 @@ namespace casual
 
             file::scoped::Path temp_file{ file::name::unique( path.string(), ".tmp")};
             {
-               std::ofstream output( temp_file);   
+               std::ofstream output( temp_file);
+               if ( ! output)
+                  code::raise::error( code::casual::invalid_file, "cannot create domain lock file: ", temp_file.string(), ", errno: ", code::system::last::error());
+
                auto archive = serialize::json::writer();
                archive << model;
                archive.consume( output);
+
+               if ( ! output)
+                  code::raise::error( code::casual::invalid_file, "cannot write to domain lock file: ", temp_file.string(), ", errno: ", code::system::last::error());
             }
 
             log::line( log::debug, "domain singleton model: ", model);
