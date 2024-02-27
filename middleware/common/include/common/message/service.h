@@ -272,6 +272,8 @@ namespace casual
                //! the alias of the server 'instance'
                std::string alias;
                platform::size::type order = 0;
+               //! remove all previous associated services for the 'device'
+               bool reset = false;
 
                struct
                {
@@ -288,6 +290,7 @@ namespace casual
                   basic_advertise::serialize( archive);
                   CASUAL_SERIALIZE( alias);
                   CASUAL_SERIALIZE( order);
+                  CASUAL_SERIALIZE( reset);
                   CASUAL_SERIALIZE( services);
                )
             };
