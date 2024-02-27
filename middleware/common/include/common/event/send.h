@@ -9,6 +9,7 @@
 
 #include "common/message/event.h"
 #include "common/communication/ipc/message.h"
+#include "common/communication/ipc/send.h"
 #include "common/serialize/native/complete.h"
 #include "common/exception/capture.h"
 #include "common/code/raise.h"
@@ -24,6 +25,7 @@ namespace casual
       {
          
          void send( communication::ipc::message::Complete&& message);
+         void send( communication::ipc::send::Coordinator& multiplex, communication::ipc::message::Complete&& message);
 
          namespace error
          {
@@ -32,12 +34,15 @@ namespace casual
          } // error
 
       } // detail
-
-      template< typename Event>
-      constexpr void send( Event&& event)
+      
+      constexpr void send( message::event::like auto&& event)
       {
-         static_assert( message::is::event::message< std::decay_t< Event>>(), "only events can be sent");
-         detail::send( serialize::native::complete< communication::ipc::message::Complete>( std::forward< Event>( event)));
+         detail::send( serialize::native::complete< communication::ipc::message::Complete>( event));
+      }
+
+      constexpr void send( communication::ipc::send::Coordinator& multiplex, message::event::like auto&& event)
+      {
+         detail::send( serialize::native::complete< communication::ipc::message::Complete>( event));
       }
 
       namespace notification
