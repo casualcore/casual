@@ -23,7 +23,7 @@ namespace casual
             case Type::counter_reply: return "counter_reply";
             case Type::process_lookup_request: return "process_lookup_request";
             case Type::process_lookup_reply: return "process_lookup_reply";
-            case Type::task_conclude: return "task_conclude";
+            case Type::task_failed: return "task_failed";
             case Type::domain_process_connect_request: return "domain_process_connect_request";
             case Type::domain_process_connect_reply: return "domain_process_connect_reply";
             case Type::domain_process_prepare_shutdown_request: return "domain_process_prepare_shutdown_request";
