@@ -37,6 +37,8 @@ namespace casual::common
          inline friend bool operator == ( const ID& lhs, id::range rhs) { return algorithm::equal( lhs.range(), rhs);}
          inline friend bool operator == ( id::range lhs, const ID& rhs) { return rhs == lhs;}
          inline friend bool operator == ( const ID& lhs, const ID& rhs) { return lhs == rhs.range();}
+
+         explicit operator bool () const noexcept { return m_size != 0;}
          
          CASUAL_CONST_CORRECT_SERIALIZE(
             CASUAL_SERIALIZE_NAME( m_size, "size");

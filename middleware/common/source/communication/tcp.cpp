@@ -245,10 +245,10 @@ namespace casual
 
                      auto error = code::system::last::error();
 
-                     log::line( verbose::log, "error: ", error);
-
                      if( error == std::errc::operation_in_progress)
                         return non::blocking::Pending{ std::move( socket)};
+
+                     log::line( verbose::log, "error: ", error);
 
                      if( non::blocking::error::recoverable( error))
                         return Socket{};
