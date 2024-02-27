@@ -146,16 +146,14 @@ namespace casual
             reply.code.user = result.code;
             reply.buffer = std::move( result.payload);
 
-            if( result.transaction == common::service::invoke::Result::Transaction::commit)
-            {
-               reply.code.result = code::xatmi::ok;  
-            }
-            else
-            {
-               reply.code.result = code::xatmi::service_fail;
-            }
+            // we terminate the conversation -> we're doing a service return.
+            reply.duplex = decltype( reply.duplex)::terminated;
 
-            
+            if( result.transaction == common::service::invoke::Result::Transaction::commit)
+               reply.code.result = code::xatmi::ok;  
+            else
+               reply.code.result = code::xatmi::service_fail;
+
 
             log::line( log::debug, "reply: ", reply);
          }
