@@ -56,9 +56,11 @@ namespace casual
          template< typename... Ts>
          static void line( Ts&&... ts)
          {
-            auto test_info = ::testing::UnitTest::GetInstance()->current_test_info();
-            log::line( unittest::log, test_info->test_case_name(), ".", test_info->name(), " - ", std::forward< Ts>( ts)...);
+            log::line( unittest::log, "TEST - ", std::forward< Ts>( ts)...);
          }
+
+         template< typename S>
+         static auto scope( S&& string) { return common::Trace{ std::forward< S>( string)};}
 
          template< typename... Ts>
          static auto compose( Ts&&... ts)
