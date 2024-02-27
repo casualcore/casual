@@ -10,6 +10,7 @@
 
 #include "common/process.h"
 #include "common/communication/ipc/send.h"
+#include "common/communication/ipc.h"
 
 namespace casual
 {
@@ -33,7 +34,7 @@ namespace casual
       {
          using Ability = message::discovery::api::provider::registration::Ability;
          void registration( common::Flags< Ability> abilities);
-         void registration( const common::process::Handle& process, common::Flags< Ability> abilities);
+         void registration( common::communication::ipc::inbound::Device& device, common::Flags< Ability> abilities);
       } // provider
 
       common::strong::correlation::id request(

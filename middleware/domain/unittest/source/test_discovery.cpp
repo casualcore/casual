@@ -32,6 +32,18 @@ namespace casual
                static communication::instance::outbound::detail::optional::Device device{ discovery::instance::identity};
                return device;
             }
+
+            struct Provider
+            {
+               Provider( strong::process::id pid) : pid{ pid} {}
+
+               process::Handle handle() const { return { pid, device.connector().handle().ipc()};}
+
+               strong::process::id pid;
+               communication::ipc::inbound::Device device;
+            };
+
+
          } // <unnamed>
       } // local
 
@@ -193,24 +205,25 @@ namespace casual
 
          auto domain = unittest::manager();
 
-         // we register our self
-         discovery::provider::registration( discovery::provider::Ability::discover);
+         communication::ipc::inbound::Device provider1;
+         communication::ipc::inbound::Device provider2;
 
-         // we fake our next registration...
-         discovery::provider::registration( process::Handle{ strong::process::id{ process::id().value() + 1}, process::handle().ipc}, discovery::provider::Ability::discover);
+         // we register the two providers
+         discovery::provider::registration( provider1, discovery::provider::Ability::discover);
+         discovery::provider::registration( provider2, discovery::provider::Ability::discover);
 
          auto correlation = discovery::request( { "a"}, {});
 
-         auto handle_request = []()
+         auto handle_request = []( auto& device)
          {
-            auto request = communication::ipc::receive< message::discovery::Request>();
+            auto request = communication::device::receive< message::discovery::Request>( device);
             auto reply = common::message::reverse::type( request);
             communication::device::blocking::send( request.process.ipc, reply);
          };
 
          // handle both request
-         handle_request();
-         handle_request();
+         handle_request( provider1);
+         handle_request( provider2);
 
          // wait for the reply
          {
@@ -226,10 +239,13 @@ namespace casual
 
          auto domain = unittest::manager();
 
-         // we register our self
-         discovery::provider::registration( discovery::provider::Ability::discover);
-         discovery::provider::registration( { strong::process::id{ process::id().underlying() + 1}, process::handle().ipc}, discovery::provider::Ability::lookup);
+         communication::ipc::inbound::Device provider1;
+         communication::ipc::inbound::Device provider2;
 
+         discovery::provider::registration( provider1, discovery::provider::Ability::discover);
+         discovery::provider::registration( provider2, discovery::provider::Ability::lookup);
+
+         // send the request
          auto correlation = discovery::request( [](){
             message::discovery::Request request{ process::handle()};
             request.directive = decltype( request.directive)::forward;
@@ -239,7 +255,7 @@ namespace casual
 
          {
             // expect lookup
-            auto request = communication::ipc::receive< message::discovery::lookup::Request>();
+            auto request = communication::device::receive< message::discovery::lookup::Request>( provider2);
             auto reply = common::message::reverse::type( request);
             reply.content.queues = { { "a"}};
             reply.absent.queues = { "b"};
@@ -248,7 +264,7 @@ namespace casual
 
          {
             // expect a discovery
-            auto request = communication::ipc::receive< message::discovery::Request>();
+            auto request = communication::device::receive< message::discovery::Request>( provider1);
             EXPECT_TRUE( request.content.queues.size() == 1);
             EXPECT_TRUE( request.content.queues.at( 0) == "b");
             

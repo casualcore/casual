@@ -141,7 +141,7 @@ namespace casual
             provider::Abilities abilities{};
             common::process::Handle process;
 
-            inline friend bool operator == ( const Provider& lhs, const common::process::Handle& rhs) { return lhs.process == rhs;}
+            inline friend bool operator == ( const Provider& lhs, const common::strong::ipc::id& rhs) { return lhs.process.ipc == rhs;}
             inline friend bool operator == ( const Provider& lhs, common::strong::process::id rhs) { return lhs.process.pid == rhs;}
 
             CASUAL_LOG_SERIALIZE(
@@ -161,6 +161,7 @@ namespace casual
 
             inline auto& all() const noexcept { return m_providers;}
 
+            void remove( const common::strong::ipc::id& ipc);
             void remove( common::strong::process::id pid);
 
             CASUAL_LOG_SERIALIZE(
@@ -436,11 +437,13 @@ namespace casual
          
          struct  
          {
-            common::message::coordinate::fan::Out< message::discovery::Reply, common::strong::process::id> discovery;
-            common::message::coordinate::fan::Out< message::discovery::lookup::Reply, common::strong::process::id> lookup;
-            common::message::coordinate::fan::Out< message::discovery::fetch::known::Reply, common::strong::process::id> known;
+            common::message::coordinate::fan::Out< message::discovery::Reply, common::process::Handle> discovery;
+            common::message::coordinate::fan::Out< message::discovery::lookup::Reply, common::process::Handle> lookup;
+            common::message::coordinate::fan::Out< message::discovery::fetch::known::Reply, common::process::Handle> known;
 
-            inline void failed( common::strong::process::id pid) { discovery.failed( pid); lookup.failed( pid); known.failed( pid);}
+            template< typename ID>
+            inline void failed( ID&& id) { discovery.failed( id); lookup.failed( id); known.failed( id);}
+            
             inline bool empty() const noexcept { return discovery.empty() && lookup.empty() && known.empty();}
 
             CASUAL_LOG_SERIALIZE(
@@ -467,6 +470,9 @@ namespace casual
          state::Accumulate accumulate;
          
          state::Providers providers;
+
+         void failed( common::strong::process::id pid);
+         void failed( const common::strong::ipc::id& ipc);
 
          bool done() const noexcept;
 

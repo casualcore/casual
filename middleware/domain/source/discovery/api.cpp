@@ -33,14 +33,14 @@ namespace casual
             namespace flush
             {
                template< typename M>
-               void call( M&& request)
+               void call( common::communication::ipc::inbound::Device& device, M&& request)
                {
                   log::line( verbose::log, "request: ", request);
 
-                  if( auto correlation = communication::ipc::flush::optional::send( local::instance::device(), request))
+                  if( auto correlation = communication::ipc::flush::optional::send( device, local::instance::device(), request))
                   {
                      auto reply = common::message::reverse::type( request);
-                     communication::device::blocking::receive( communication::ipc::inbound::device(), reply, correlation);
+                     communication::device::blocking::receive( device, reply, correlation);
                   }
                }
             } // flush
@@ -57,19 +57,21 @@ namespace casual
 
       namespace provider
       {
-         void registration( const common::process::Handle& process, common::Flags< Ability> abilities)
+         void registration( common::communication::ipc::inbound::Device& device, common::Flags< Ability> abilities)
          {
             Trace trace{ "domain::discovery::provider::registration"};
 
-            message::discovery::api::provider::registration::Request message{ process};
+            message::discovery::api::provider::registration::Request message;
+            message.process.ipc = device.connector().handle().ipc();
+            message.process.pid = process::id();
             message.abilities = abilities;
 
-            local::flush::call( message);
+            local::flush::call( device, message);
          }
 
          void registration( common::Flags< Ability> abilities)
          {
-            registration( process::handle(), abilities);
+            registration( communication::ipc::inbound::device(), abilities);
          }
 
       } // provider
