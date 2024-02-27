@@ -271,7 +271,7 @@ namespace casual
 
          //! push a message (or complete) to the cache
          template< typename M>
-         correlation_type push( M&& message) requires std::is_rvalue_reference_v< decltype( message)>
+         correlation_type push( M&& message) requires message::like< M> || ( std::same_as< M, complete_type> && std::is_rvalue_reference_v< decltype( message)>)
          {
             // Make sure we consume up to one messages from the real device first.
             // So progress can be made.
@@ -529,6 +529,16 @@ namespace casual
             }
          }
       };
+
+      namespace outbound
+      {
+         template< typename D>
+         struct is_optional_t : std::false_type {};
+
+         //! indicate that an outbound device is "optional", it's ok to fail
+         template< typename D>
+         inline constexpr bool is_optional = is_optional_t< std::decay_t< D>>::value;
+      } // outbound
 
       //! duplex device - inbound and outbound
       template< typename Connector>

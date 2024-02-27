@@ -187,6 +187,14 @@ namespace casual
 
             auto result = message.complete.correlation();
 
+            // check if device is an "optional" outbound device. If so, it's ok for
+            // it to fail
+            if constexpr( communication::device::outbound::is_optional< D>)
+            {
+               if( ! device.connector().process())
+                  return {};
+            }
+
             if( auto found = algorithm::find( m_destinations, device.connector().process().ipc))
             {
                if( found->push( std::move( message)).send( *m_directive))
