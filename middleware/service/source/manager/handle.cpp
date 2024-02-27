@@ -270,6 +270,23 @@ namespace casual
                   }
                } // process
 
+               namespace transaction
+               {
+                  auto disassociate( State& state)
+                  {
+                     return [ &state]( const common::message::event::transaction::Disassociate& message)
+                     {
+                        Trace trace{ "service::manager::handle::local::event::transaction::disassociate"};
+                        log::line( verbose::log, "message: ", message);
+
+                        auto instances = state.disassociate( message.gtrid.range());
+
+                        log::line( verbose::log, "disassociated instances: ", instances);
+                     };
+                  }
+                  
+               } // transaction
+
                namespace subscription
                {
                   auto begin( State& state)
@@ -520,12 +537,41 @@ namespace casual
                         if( dispatch::lookup::internal_only( state, service, message, pending))
                            return true;
 
-                        if( auto destination = service.reserve_concurrent())
+                        if( ! message.gtrid)
                         {
-                           dispatch::lookup::reply( state, service, destination, message, pending);
+                           if( auto handle = service.reserve_concurrent( {}))
+                           {
+                              dispatch::lookup::reply( state, service, handle, message, pending);
+                              return true;
+                           }
+                           return false;
+                        }
+
+                        // check if the gtrid has associations before
+                        if( auto found = algorithm::find( state.transaction.associations, message.gtrid))
+                        {
+                           if( auto handle = service.reserve_concurrent( range::make( found->second)))
+                           {
+                              // if the "instance" is not associated before, add it.
+                              if( ! algorithm::contains( found->second, handle.ipc))
+                                 found->second.push_back( handle.ipc);
+                              
+                              dispatch::lookup::reply( state, service, handle, message, pending);
+                              return true;
+                           }
+                           return false;
+                        }
+
+                        // the gtrid is not associated before
+                        if( auto handle = service.reserve_concurrent( {}))
+                        {
+                           state.transaction.associations.emplace( message.gtrid, std::vector< strong::ipc::id>{ handle.ipc});
+
+                           dispatch::lookup::reply( state, service, handle, message, pending);
                            return true;
                         }
 
+                        // instance not found
                         return false;
                      }
                      
@@ -830,6 +876,8 @@ namespace casual
                            }
                         }
 
+                        common::log::line( verbose::log, "reply: ", reply);
+
                         local::optional::send( state, message.process.ipc, reply);
                      };
                   }
@@ -1075,11 +1123,11 @@ namespace casual
 
                }
             } // shutdown
-
+            
 
             //! service-manager needs to have it's own policy for callee::handle::basic_call, since
-            //! we can't communicate with blocking to the same queue (with read, who is
-            //! going to write? with write, what if the queue is full?)
+            //! we can't communicate with blocking to the same ipc-device (with read, who is
+            //! going to write? with write, what if the ipc-device is full?)
             struct Policy
             {
 
@@ -1141,7 +1189,8 @@ namespace casual
          return dispatch_type{
             common::message::dispatch::handle::defaults( state),
             common::event::listener( 
-               handle::local::event::process::exit( state)
+               handle::local::event::process::exit( state),
+               handle::local::event::transaction::disassociate( state)
             ),
             handle::local::process::prepare::shutdown( state),
             handle::local::service::advertise( state),

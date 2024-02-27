@@ -98,7 +98,7 @@ namespace casual
             {
                return algorithm::accumulate( std::exchange( m_services, {}), std::vector< std::string>{}, [&]( auto result, auto service)
                {
-                  service->remove( process.pid);
+                  service->remove( process.ipc);
                   if( service->instances.empty())
                      result.push_back( service->information.name);
 
@@ -159,15 +159,15 @@ namespace casual
                prioritize();
             }
 
-            void Instances::remove( common::strong::process::id pid, const std::string& service)
+            void Instances::remove( const common::strong::ipc::id& ipc, const std::string& service)
             {
-               if( auto found = algorithm::find( m_sequential, pid))
+               if( auto found = algorithm::find( m_sequential, ipc))
                {
                   found->get().remove( service);
                   m_sequential.erase( std::begin( found));
                }
 
-               algorithm::container::erase( m_concurrent, pid);
+               algorithm::container::erase( m_concurrent, ipc);
                prioritize();
             }
 
@@ -186,10 +186,13 @@ namespace casual
                return {};
             }
 
-            state::service::instance::Concurrent* Instances::next_concurrent() noexcept
+            state::service::instance::Concurrent* Instances::next_concurrent( ipc_range_type preferred) noexcept
             {
                if( std::empty( m_prioritized_concurrent))
                   return nullptr;
+
+               if( auto found = algorithm::find_first_of( m_prioritized_concurrent, preferred))
+                  return std::data( found);
 
                return std::data( std::ranges::rotate( m_prioritized_concurrent, std::next( std::begin( m_prioritized_concurrent))));
             }
@@ -295,17 +298,9 @@ namespace casual
             } // pending
          } // service
 
-         void Service::remove( common::strong::process::id pid)
+         void Service::remove( const common::strong::ipc::id& ipc)
          {
-            instances.remove( pid, information.name);
-         }
-
-         state::instance::Sequential& Service::sequential( common::strong::process::id instance)
-         {
-            if( auto found = algorithm::find( instances.m_sequential, instance))
-               return *found;
-
-            code::raise::error( code::casual::domain_instance_unavailable, "missing id: ", instance);
+            instances.remove( ipc, information.name);
          }
 
          void Service::add( state::instance::Sequential& instance)
@@ -336,9 +331,9 @@ namespace casual
             return {};
          }
 
-         common::process::Handle Service::reserve_concurrent()
+         common::process::Handle Service::reserve_concurrent( ipc_range_type preferred)
          {
-            if( auto concurrent = instances.next_concurrent())
+            if( auto concurrent = instances.next_concurrent( preferred))
             {
                ++metric.remote;
                return concurrent->process();
@@ -412,22 +407,22 @@ namespace casual
       {
          namespace
          {
-            template< typename I, typename S>
-            void remove_process( I& instances, S& services, common::strong::process::id pid)
+            template< typename I, typename S, typename ID>
+            void remove_process( I& instances, S& services, const ID& id)
             {
                Trace trace{ "service::manager::local::remove_process"};
+               log::line( verbose::log, "id: ", id);
 
-               log::line( verbose::log, "pid: ", pid);
-
-               auto has_pid = [ pid]( auto& pair){ return pair.second.process == pid;};
-
-               if( auto found = common::algorithm::find_if( instances, has_pid))
+               algorithm::container::erase_if( instances, [ &id, &services]( auto& pair)
                {
-                  for( auto& s : services)
-                     s.second.remove( pid);
+                  if( pair.second.process != id)
+                     return false;
+                  
+                  for( auto& service : services)
+                     service.second.remove( pair.second.process.ipc);
 
-                  instances.erase( std::begin( found));
-               }
+                  return true;
+               });
             }
 
 
@@ -521,7 +516,7 @@ namespace casual
                // unadvertise only comes with origin service names.
                for( auto& pair : state.services)
                   if( algorithm::find( services, pair.second.information.name))
-                     pair.second.remove( instance.process.pid);
+                     pair.second.remove( instance.process.ipc);
             }
 
             template< typename M>
@@ -561,6 +556,17 @@ namespace casual
          local::remove_process( instances.sequential, services, pid);
          local::remove_process( instances.concurrent, services, pid);
       }
+
+      void State::remove( common::strong::ipc::id ipc)
+      {
+         Trace trace{ "service::manager::State::remove"};
+         log::line( verbose::log, "ipc: ", ipc);
+
+         events.remove( ipc);
+
+         local::remove_process( instances.sequential, services, ipc);
+         local::remove_process( instances.concurrent, services, ipc);
+      }
       
       State::prepare_shutdown_result State::prepare_shutdown( std::vector< common::process::Handle> processes)
       {
@@ -575,7 +581,7 @@ namespace casual
                return true;
             }
             else if( common::algorithm::find( instances.concurrent, process.ipc))
-               local::remove_process( instances.concurrent, services, process.pid);
+               local::remove_process( instances.concurrent, services, process.ipc);
 
             return false;
          }));
@@ -651,11 +657,23 @@ namespace casual
             return {};
          }
 
+         if( message.reset)
+         {
+            // remove the instance and it's associations
+            remove( message.process.ipc);
+
+            // we're removing stuff, no new services can be available.
+            return {};
+         }
+
+
          // honour possible restriction for the alias
          local::restrict_add_services( *this, message);
 
          auto& instance = local::find_or_add( instances.concurrent, message.process);
          instance.order = message.order;
+
+
 
          // add
          {
@@ -687,13 +705,24 @@ namespace casual
                return service.second.has_concurrent() && ! service.second.has_sequential() && service.first == pending.request.requested;
             };
 
-            if( auto found = algorithm::find_if( services, std::move( is_requested_concurrent_service)))
+            if( auto found = algorithm::find_if( services, is_requested_concurrent_service))
                return found->second.instances.empty(); // false/remove if not empty, hence what we 'want' to return
 
             return true; // keep
          });
 
          return algorithm::container::extract( pending.lookups, remove);
+      }
+
+      std::vector< common::strong::ipc::id> State::disassociate( common::transaction::global::id::range gtrid)
+      {
+         Trace trace{ "service::manager::State::disassociate"};
+         log::line( verbose::log, "gtrid: ", gtrid);
+
+         if( auto found = algorithm::find( transaction.associations, gtrid))
+            return algorithm::container::extract( transaction.associations, std::begin( found)).second;
+
+         return {};
       }
 
       std::vector< std::string> State::metric_reset( std::vector< std::string> lookup)
@@ -714,8 +743,7 @@ namespace casual
          {
             for( auto& name : lookup)
             {
-               auto service = State::service( name);
-               if( service)
+               if( auto service = State::service( name))
                {
                   service->metric.reset();
                   result.push_back( std::move( name));

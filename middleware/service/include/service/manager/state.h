@@ -32,6 +32,10 @@ namespace casual
    {
       namespace state
       {
+         template< typename T>
+         concept compare_equal_to_process = concepts::compare::equal_to< common::process::Handle, T>;
+
+         using ipc_range_type = common::range::const_type_t< std::vector< common::strong::ipc::id>>;
 
          struct Service;
 
@@ -58,8 +62,7 @@ namespace casual
 
                common::process::Handle process;
 
-               inline friend bool operator == ( const base_instance& lhs, common::strong::process::id rhs) { return lhs.process.pid == rhs;}
-               inline friend bool operator == ( const base_instance& lhs, common::strong::ipc::id rhs) { return lhs.process == rhs;}
+               inline friend bool operator == ( const base_instance& lhs, compare_equal_to_process auto rhs) { return lhs.process == rhs;}
 
                CASUAL_LOG_SERIALIZE(
                   CASUAL_SERIALIZE( process);
@@ -142,6 +145,7 @@ namespace casual
                   base_instance::serialize( archive);
                   CASUAL_SERIALIZE( order);
                )
+
             };
 
          } // instance
@@ -243,8 +247,7 @@ namespace casual
                   inline const common::process::Handle& process() const { return get().process;}
                   inline auto state() const { return get().state();}
 
-                  inline friend bool operator == ( const Sequential& lhs, common::strong::process::id rhs) { return lhs.process().pid == rhs;}
-                  inline friend bool operator == ( const Sequential& lhs, const common::process::Handle& rhs) { return lhs.process() == rhs;}
+                  inline friend bool operator == ( const Sequential& lhs, compare_equal_to_process auto rhs) { return lhs.process() == rhs;}
 
                   CASUAL_LOG_SERIALIZE(
                      get().serialize( archive);
@@ -262,8 +265,7 @@ namespace casual
 
                   inline const common::process::Handle& process() const { return get().process;}
 
-                  inline friend bool operator == ( const Concurrent& lhs, common::strong::process::id rhs) { return lhs.process().pid == rhs;}
-                  inline friend bool operator == ( const Concurrent& lhs, common::strong::ipc::id rhs) { return lhs.process() == rhs;}
+                  inline friend bool operator == ( const Concurrent& lhs, compare_equal_to_process auto rhs) { return lhs.process() == rhs;}
                   
                   //! for common::Compare. The configured services are 'worth more' than not configured. 
                   inline auto tie() const { return std::tie( property.type, get().order, property.hops);}
@@ -283,7 +285,7 @@ namespace casual
             {
                void add( state::instance::Concurrent& instance, state::service::instance::Concurrent::Property property);
 
-               void remove( common::strong::process::id pid, const std::string& service);
+               void remove( const common::strong::ipc::id& ipc, const std::string& service);
                void remove( const common::strong::ipc::id& ipc);
 
                //! removes service from associated 
@@ -298,7 +300,9 @@ namespace casual
                //! @returns and consumes associated caller to the correlation. 'empty' caller if not found.
                state::instance::Caller consume( const common::strong::correlation::id& correlation);
 
-               state::service::instance::Concurrent* next_concurrent() noexcept;
+               //! @returns the first concurrent instance that in the preferred range
+               //!   Otherwise, the first instance, and rotate.
+               state::service::instance::Concurrent* next_concurrent( ipc_range_type preferred) noexcept;
 
                inline const auto& sequential() const noexcept { return m_sequential;}
                inline const auto& concurrent() const noexcept { return m_concurrent;}
@@ -355,8 +359,7 @@ namespace casual
             service::Metric metric;
             std::optional< common::service::visibility::Type> visibility;
 
-            void remove( common::strong::process::id instance);
-            state::instance::Sequential& sequential( common::strong::process::id instance);
+            void remove( const common::strong::ipc::id& ipc);
 
             void add( state::instance::Sequential& instance);
             void add( state::instance::Concurrent& instance, state::service::instance::Concurrent::Property property);
@@ -366,7 +369,7 @@ namespace casual
                const common::strong::correlation::id& correlation);
             
             //! @return a reserved instance or 'null-handle' if no one is found.
-            common::process::Handle reserve_concurrent();
+            common::process::Handle reserve_concurrent( ipc_range_type preferred);
 
             inline bool has_sequential() const noexcept { return instances.has_sequential();}
             inline bool has_concurrent() const noexcept { return instances.has_concurrent();}
@@ -442,6 +445,16 @@ namespace casual
             )
          } pending;
 
+         struct
+         {
+            std::unordered_map< common::transaction::global::ID, std::vector< common::strong::ipc::id>> associations;
+
+            CASUAL_LOG_SERIALIZE(
+               CASUAL_SERIALIZE( associations);
+            )
+         
+         } transaction;
+
          common::event::dispatch::Collection< common::message::event::service::Calls> events;  
 
          struct Metric 
@@ -475,12 +488,9 @@ namespace casual
          //! the same as above from the route to actual service.
          std::map< std::string, std::string> reverse_routes;
 
-
-
          //! holds all alias restrictions.
          casual::configuration::model::service::Restriction restriction;
 
-         
 
          //! @returns true if we're ready to shutdown
          bool done() const noexcept;
@@ -501,6 +511,7 @@ namespace casual
          
          //! removes the instance (deduced from `pid`) and remove the instance from all services 
          void remove( common::strong::process::id pid);
+         void remove( common::strong::ipc::id ipc);
 
 
          using prepare_shutdown_result = std::tuple< std::vector< std::string>, std::vector< state::instance::Sequential>, std::vector< common::process::Handle>>;
@@ -515,13 +526,16 @@ namespace casual
          [[nodiscard]] std::vector< state::service::pending::Lookup> update( common::message::service::concurrent::Advertise&& message);
          //! @}
 
+         //! @returns the previously associated "instances" to the `gtrid`, if any.
+         std::vector< common::strong::ipc::id> disassociate( common::transaction::global::id::range gtrid);
+
          //! Resets metrics for the provided services, if empty all metrics are reset.
          //! @param services
          //!
          //! @return the services that was reset.
          std::vector< std::string> metric_reset( std::vector< std::string> services);
 
-         //! @returns a sequential (local) instances that has the `pid`, or nullptr if absent.
+         //! @returns a sequential (local) instances that has the `ipc`, or nullptr if absent.
          [[nodiscard]] state::instance::Sequential* sequential( common::strong::ipc::id ipc);
 
          void connect_manager( std::vector< common::server::Service> services);
@@ -532,6 +546,7 @@ namespace casual
             CASUAL_SERIALIZE( multiplex);
             CASUAL_SERIALIZE( services);
             CASUAL_SERIALIZE( pending);
+            CASUAL_SERIALIZE( transaction);
             CASUAL_SERIALIZE( events);
             CASUAL_SERIALIZE( metric);
             CASUAL_SERIALIZE( forward);
