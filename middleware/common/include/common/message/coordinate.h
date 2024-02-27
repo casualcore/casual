@@ -65,7 +65,7 @@ namespace casual
                inline friend bool operator == ( const Pending& lhs, const strong::correlation::id& rhs) { return lhs.correlation == rhs;}
 
                template< typename I>
-               friend auto operator == ( const Pending& lhs, I&& rhs) noexcept -> decltype( std::declval< const id_type&>() == rhs) { return lhs.id == rhs;}
+               friend auto operator == ( const Pending& lhs, I&& rhs) noexcept requires std::equality_comparable_with< id_type, I>{ return lhs.id == rhs;}
                inline friend bool operator == ( const Pending& lhs, State rhs) { return lhs.state == rhs;}
 
                CASUAL_LOG_SERIALIZE(
