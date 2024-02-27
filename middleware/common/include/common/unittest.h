@@ -17,6 +17,7 @@
 #include "common/code/raise.h"
 #include "common/compare.h"
 #include "common/communication/ipc.h"
+#include "common/transaction/id.h"
 
 #include <array>
 #include <iostream>
@@ -55,6 +56,7 @@ namespace casual
 
       namespace service
       {
+         [[nodiscard]] strong::correlation::id send( std::string service, platform::binary::type payload, const transaction::ID& trid);
          [[nodiscard]] strong::correlation::id send( std::string service, platform::binary::type payload);
 
          //! @returns the received message of type `R`
