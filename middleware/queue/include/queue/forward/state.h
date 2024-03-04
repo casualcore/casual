@@ -50,7 +50,7 @@ namespace casual
                   inline static int generate() 
                   {
                      static int value{};
-                     return value++;
+                     return ++value;
                   }
                };
             } // detail
@@ -71,7 +71,7 @@ namespace casual
                }
 
                friend inline bool operator == ( const Source& lhs, common::strong::queue::id id) { return lhs.id == id;}
-               friend inline bool operator == ( const Source& lhs, common::strong::process::id pid) { return lhs.process.pid == pid;}
+               friend inline bool operator == ( const Source& lhs, common::process::compare_equal_to_handle auto rhs) { return lhs.process == rhs;}
 
                CASUAL_LOG_SERIALIZE(
                   CASUAL_SERIALIZE( id);
@@ -179,7 +179,7 @@ namespace casual
 
                void invalidate() noexcept;
 
-               inline bool valid_queues() const { return source && ( ! reply || *reply);}
+               inline bool valid_queues() const noexcept { return source && ( ! reply || *reply);}
                inline void invalidate_queues() noexcept
                { 
                   source.invalidate();
@@ -187,8 +187,10 @@ namespace casual
                      reply->invalidate();
                }
 
+               inline bool valid() const noexcept { return valid_queues();}
+
                inline friend bool operator == ( const Service& lhs, forward::id rhs) { return lhs.id == rhs;}
-               inline friend bool operator == ( const Service& lhs, common::strong::process::id rhs) { return lhs.source.process == rhs || lhs.reply == rhs;}
+               inline friend bool operator == ( const Service& lhs, common::process::compare_equal_to_handle auto rhs) { return lhs.source.process == rhs || lhs.reply == rhs;}
 
                CASUAL_LOG_SERIALIZE(
                   CASUAL_SERIALIZE( id);
@@ -229,10 +231,11 @@ namespace casual
                   target.invalidate();
                }
 
-               inline bool valid_queues() const { return source && target;}
+               inline bool valid_queues() const noexcept { return source && target;}
+               inline bool valid() const noexcept { return valid_queues();}
 
                inline friend bool operator == ( const Queue& lhs, forward::id rhs) { return lhs.id == rhs;}
-               inline friend bool operator == ( const Queue& lhs, common::strong::process::id  rhs) { return lhs.source.process == rhs || lhs.target.process == rhs;}
+               inline friend bool operator == ( const Queue& lhs, common::process::compare_equal_to_handle auto rhs) { return lhs.source.process == rhs || lhs.target.process == rhs;}
 
                CASUAL_LOG_SERIALIZE(
                   CASUAL_SERIALIZE( id);
@@ -313,16 +316,16 @@ namespace casual
                struct Call : transaction_base
                {
                   Call() = default;
-                  Call( const transaction_base& other, common::strong::process::id pid)
-                     : transaction_base{ other}, pid{ pid} {}
+                  Call( const transaction_base& other, common::process::Handle target)
+                     : transaction_base{ other}, target{ target} {}
 
-                  common::strong::process::id pid{};
+                  common::process::Handle target{};
 
-                  inline friend bool operator == ( const Call& lhs, common::strong::process::id rhs) { return lhs.pid == rhs;}
+                  inline friend bool operator == ( const Call& lhs, common::process::compare_equal_to_handle auto rhs) { return lhs.target == rhs;}
 
                   CASUAL_LOG_SERIALIZE(
                      transaction_base::serialize( archive);
-                     CASUAL_SERIALIZE( pid);
+                     CASUAL_SERIALIZE( target);
                   )
                };
 
@@ -420,9 +423,6 @@ namespace casual
          {
             std::vector< state::forward::Service> services;
             std::vector< state::forward::Queue> queues;
-
-            //! accumulate all id's for a given process
-            std::vector< forward::id> ids( common::strong::process::id pid) const noexcept;
 
             CASUAL_LOG_SERIALIZE(
                CASUAL_SERIALIZE( services);
