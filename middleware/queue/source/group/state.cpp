@@ -87,9 +87,17 @@ namespace casual
             queue::Trace trace{ "queue::group::state::Pending::remove"};
             log::line( verbose::log, "pid: ", pid);
 
-            algorithm::container::trim( dequeues, algorithm::remove( dequeues, pid));
-
+            algorithm::container::erase( dequeues, pid);
             replies.remove( pid);
+         }
+
+         void Pending::remove( common::strong::ipc::id ipc)
+         {
+            queue::Trace trace{ "queue::group::state::Pending::remove"};
+            log::line( verbose::log, "ipc: ", ipc);
+
+            algorithm::container::erase( dequeues, ipc);
+            replies.remove( ipc);
          }
       } // state
 
