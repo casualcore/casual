@@ -293,7 +293,32 @@ namespace casual
 
                   state.multiplex.send( ipc::service::manager(), request);
                }
+
+               template< typename F>
+               void request( State& state, const F& forward, const state::pending::queue::Lookup& pending)
+               {
+                  ipc::message::lookup::discard::Request request{ process::handle()};
+                  request.correlation = pending.correlation;
+
+                  state.multiplex.send( ipc::queue::manager(), request);
+               }
+
             } // detail::send::discard
+
+            namespace detail::machine
+            {
+               // if the queues are _not invalidated_ we try to dequeue again.
+               //! Otherwise we lookup the queues, unless we have pending lookups for
+               //! the queues
+               template< typename F>
+               void next( State& state, F& forward)
+               {
+                  if( forward.valid_queues())
+                     local::send::dequeue::request( state, forward);
+                  else if( ! algorithm::find( state.pending.queue.lookups, forward.id))
+                     local::queue::lookup::detail::request( state, forward);
+               }
+            } // detail::machine
 
             namespace comply::to
             {
@@ -609,7 +634,7 @@ namespace casual
                                  common::log::line( verbose::log, "forward: ", forward);
 
                                  // We try to restart the flow
-                                 send::dequeue::request( state, forward);
+                                 local::detail::machine::next( state, forward);
                               });
                            }
 
@@ -662,7 +687,7 @@ namespace casual
                            request.service = std::move( message.service);
 
                            state.multiplex.send( message.process.ipc, request);
-                           state.pending.service.calls.emplace_back( std::move( *pending), message.process.pid);
+                           state.pending.service.calls.emplace_back( std::move( *pending), message.process);
                         };
                      }
 
@@ -703,15 +728,15 @@ namespace casual
                            if( ! call)
                               return;
 
+                           // we know that this is a service forward
+                           auto forward = state.forward_service( call->id);
+                           assert( forward);
+
                            if( message.code.result != code::xatmi::ok)
                            {
                               send::transaction::rollback::request( state, std::move( *call));
                               return;
                            }
-
-                           // we know that this is a service forward
-                           auto forward = state.forward_service( call->id);
-                           assert( forward);
 
                            if( forward->reply)
                            {
@@ -759,7 +784,6 @@ namespace casual
                         if( ! pending)
                            return;
 
-
                         if( message.id)
                         {
                            send::transaction::commit::request( state, std::move( *pending));
@@ -782,25 +806,6 @@ namespace casual
                {
                   namespace rollback
                   {
-                     namespace detail
-                     {
-                        // if the queues are _not invalidated_ we try to dequeue again.
-                        //! Otherwise we lookup the queues, unless we have pending lookups for
-                        //! the queues
-                        template< typename F>
-                        void next( State& state, F& forward)
-                        {
-                           if( forward.valid_queues())
-                           {
-                              send::dequeue::request( state, forward);
-                           }
-                           else if( ! algorithm::find( state.pending.queue.lookups, forward.id))
-                           {
-                              local::queue::lookup::detail::request( state, forward);
-                           }
-                        }
-                     } // detail
-
                      // Possible final state of the casual-forward "state-machine"
                      auto reply( State& state)
                      {
@@ -815,7 +820,7 @@ namespace casual
                               return;
 
                            if( message.stage != decltype( message.stage)::rollback)
-                              common::log::line( common::log::category::error, message.state, "failed to rollback - trid: ", message.trid);
+                              common::log::error( message.state, "failed to rollback - trid: ", message.trid);
 
                            state.forward_apply( pending->id, [&state]( auto& forward)
                            {
@@ -823,7 +828,7 @@ namespace casual
                               ++forward.metric.rollback.count;
                               forward.metric.rollback.last = platform::time::clock::type::now();
 
-                              detail::next( state, forward);
+                              detail::machine::next( state, forward);
                            });
                         };
                      }
@@ -858,8 +863,8 @@ namespace casual
                               ++forward.metric.commit.count;
                               forward.metric.commit.last = platform::time::clock::type::now();
 
-                              // we try to dequeue again... 
-                              send::dequeue::request( state, forward);
+                              // we restart the "state machine"
+                              detail::machine::next(  state, forward);
                            });
                         };
                      }
@@ -926,25 +931,93 @@ namespace casual
                   }
                } // state
 
+
                namespace dead
                {
-                  namespace detail::transform
+                  namespace detail::push::faked
                   {
-                     auto dequeue( forward::state::pending::Dequeue& pending)
+                     void reply( const forward::state::pending::Enqueue& pending)
                      {
-                        ipc::message::group::dequeue::forget::Request message{ common::process::handle()};
-                        message.correlation = pending.correlation;
-                        return message;
-                     }
+                        Trace trace{ "queue::forward::service::local::handle::dead::detail::push::faked::reply"};
+                        log::line( verbose::log, "pending: ", pending);
 
-                     auto enqueue( forward::state::pending::Enqueue& pending)
-                     {
                         ipc::message::group::enqueue::Reply message;
                         message.correlation = pending.correlation;
-                        return message;
+
+                        log::line( verbose::log, "message: ", message);
+                        
+                        ipc::device().push( message);
+                     }
+                     
+                  } // detail::push::faked
+
+                  namespace detail
+                  {
+                     void dead_event( State& state, common::process::compare_equal_to_handle auto handle)
+                     {
+                        // Note: We rely on others to send us "error replies" for the following 
+                        //  * pending.service.calls : service-manager, gateway::outbound
+                        //  * pending.transaction.(commit|rollback) : transaction-manager
+
+                        log::line( verbose::log, "state.pending: ", state.pending);
+
+                        static constexpr auto is_forward = []( auto id) { return [ id]( auto& forward){ return forward == id;};};
+
+
+                        auto invalidate_queue_forward = [ &state, handle]( auto& forward)
+                        {
+                           log::line( verbose::log, "forward: ", forward);
+
+                           if( forward != handle)
+                              return;
+
+                           for( auto& pending : algorithm::filter( state.pending.queue.lookups, is_forward( forward.id)))
+                              local::detail::send::discard::request( state, forward, pending);
+
+                           for( auto& pending : algorithm::filter( state.pending.dequeues, is_forward( forward.id)))
+                              local::detail::send::discard::request( state, forward, pending);
+
+                           if( forward.target != handle)
+                              return;
+
+                           forward.target.invalidate();
+
+                           // if we've got pending enqueues to lost target we need to fake a reply
+                           // to keep the "state-machine" going
+                           for( auto& pending : algorithm::filter( state.pending.enqueues, is_forward( forward.id)))
+                              detail::push::faked::reply( pending);
+                             
+                        };
+
+                        algorithm::for_each( state.forward.queues, invalidate_queue_forward);
+
+
+                        auto invalidate_service_forward = [ &state, handle]( auto& forward)
+                        {
+                           if( forward != handle)
+                              return;
+
+                           for( auto& pending : algorithm::filter( state.pending.queue.lookups, is_forward( forward.id)))
+                              local::detail::send::discard::request( state, forward, pending);
+
+                           for( auto& pending : algorithm::filter( state.pending.dequeues, is_forward( forward.id)))
+                              local::detail::send::discard::request( state, forward, pending);
+
+                           if( forward.reply != handle)
+                              return;
+
+                           forward.reply->invalidate();
+
+                           // if we've got pending enqueues to lost reply we need to fake a reply
+                           // to keep the "state-machine" going
+                           for( auto& pending : algorithm::filter( state.pending.enqueues, is_forward( forward.id)))
+                              detail::push::faked::reply( pending);
+                        };
+
+                        algorithm::for_each( state.forward.services, invalidate_service_forward);
                      }
 
-                  } // detail::transform
+                  } // detail
 
                   auto process( State& state)
                   {
@@ -953,30 +1026,20 @@ namespace casual
                         Trace trace{ "queue::forward::service::local::handle::dead::process"};
                         log::line( verbose::log, "message: ", message);
 
-                        // Note: We rely on others to send us "error replies" for the following 
-                        //  * pending.service.calls : service-manager
-                        //  * pending.transaction.(commit|rollback) : transaction-manager
-
-                        // ids of all logical instances that interact with the `pid` in some
-                        // way ( enqueue, dequeue, _target enqueue_, _reply enqueue_).
-                        auto ids = state.forward.ids( message.state.pid);
-                        log::line( verbose::log, "ids: ", ids);
-
-                        // emulates the messages/replies, and let the _normal flow_ take care of business.
-                        auto emulate_error_reply = []( auto& pendings, auto& ids, auto transformer)
-                        {
-                           auto invalid = std::get< 0>( algorithm::intersection( pendings, ids));
-                           log::line( verbose::log, "invalid: ", invalid);
-
-                           algorithm::for_each( algorithm::transform( invalid, transformer), []( auto& message)
-                           {
-                              ipc::device().push( std::move( message));
-                           });
-                        };
-
-                        emulate_error_reply( state.pending.dequeues, ids, &detail::transform::dequeue);
-                        emulate_error_reply( state.pending.enqueues, ids, &detail::transform::enqueue);
+                        detail::dead_event( state, message.state.pid);
                      };                     
+                  }
+
+
+                  auto ipc( State& state)
+                  {
+                     return [ &state]( const common::message::event::ipc::Destroyed& message)
+                     {
+                        Trace trace{ "queue::forward::service::local::handle::dead::ipc"};
+                        common::log::line( verbose::log, "message: ", message);
+
+                        detail::dead_event( state, message.process.ipc);
+                     };
                   }
 
                } // dead
@@ -1019,8 +1082,9 @@ namespace casual
                   handle::enqueue::reply( state),
                   handle::transaction::commit::reply( state),
                   handle::transaction::rollback::reply( state),
-
-                  common::event::listener( handle::dead::process( state)),
+                  common::event::listener( 
+                     handle::dead::process( state),
+                     handle::dead::ipc( state)),
                   handle::shutdown( state)
                );
             }

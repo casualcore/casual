@@ -92,18 +92,6 @@ namespace casual
             }
 
          } // forward
-
-         std::vector< forward::id> Forward::ids( common::strong::process::id pid) const noexcept
-         {
-            auto transform_id = []( auto& forward){ return forward.id;};
-            auto has_pid = [ pid]( auto& forward){ return forward == pid;};
-
-            auto ids = algorithm::transform_if( queues, transform_id, has_pid);
-            algorithm::transform_if( services, std::back_inserter( ids), transform_id, has_pid);
-
-            return ids;
-         }
-
       } // state
 
       bool State::done() const noexcept
