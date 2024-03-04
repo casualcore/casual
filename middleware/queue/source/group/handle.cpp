@@ -100,14 +100,29 @@ namespace casual
                {
                   auto process( State& state)
                   {
-                     return [&state]( const common::message::event::process::Exit& message)
+                     return [ &state]( const common::message::event::process::Exit& message)
                      {
                         Trace trace{ "queue::handle::local::dead::process"};
+                        log::line( verbose::log, "message", message);
 
                         // we clear up our own pending state, TM will send us rollback if the
                         // process owned any transactions we have as pending enqueue/dequeue (this 
                         // could have taken place already)
                         state.pending.remove( message.state.pid);
+                     };
+                  }
+
+                  auto ipc( State& state)
+                  {
+                     return [ &state]( const common::message::event::ipc::Destroyed& message)
+                     {
+                        Trace trace{ "queue::handle::local::dead::ipc"};
+                        log::line( verbose::log, "message", message);
+
+                        // we clear up our own pending state, TM will send us rollback if the
+                        // process owned any transactions we have as pending enqueue/dequeue (this 
+                        // could have taken place already)
+                        state.pending.remove( message.process.ipc);
                      };
                   }
 
@@ -876,9 +891,10 @@ namespace casual
       handle::dispatch_type handlers( State& state)
       {
          return handle::dispatch_type{
-            common::event::listener( handle::local::dead::process( state)),
+            common::event::listener( 
+               handle::local::dead::process( state),
+               handle::local::dead::ipc( state)),
             common::message::dispatch::handle::defaults( state),
-
             handle::local::configuration::update::request( state),
             handle::local::enqueue::request( state),
             handle::local::dequeue::request( state),

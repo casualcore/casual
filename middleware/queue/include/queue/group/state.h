@@ -45,6 +45,7 @@ namespace casual
             std::vector< ipc::message::group::dequeue::Request> extract( std::vector< common::strong::queue::id> queues);
 
             void remove( common::strong::process::id pid);
+            void remove( common::strong::ipc::id ipc);
 
             inline auto empty() const noexcept { return replies.empty() && dequeues.empty();}
 
