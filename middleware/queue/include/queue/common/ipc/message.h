@@ -53,6 +53,8 @@ namespace casual
          using base_advertise::base_advertise;
 
          platform::size::type order = 0;
+         //! remove all previous associated queues for the 'device'
+         bool reset = false;
 
          struct
          {
@@ -68,6 +70,7 @@ namespace casual
          CASUAL_CONST_CORRECT_SERIALIZE(
             base_advertise::serialize( archive);
             CASUAL_SERIALIZE( order);
+            CASUAL_SERIALIZE( reset);
             CASUAL_SERIALIZE( queues);
          )
       };

@@ -94,21 +94,33 @@ namespace casual
 
             namespace event
             {
-               namespace process
+               
+               namespace dead
                {
-                  auto exit( State& state)
+                  auto process( State& state)
                   {
                      return [ &state]( const common::message::event::process::Exit& event)
                      {
-                        Trace trace{ "queue::manager::handle::local::event::process::exit"};
+                        Trace trace{ "queue::manager::handle::local::event::dead::process"};
                         common::log::line( verbose::log, "event: ", event);
 
                         state.task.coordinator( event);
                      };
                   }
+
+                  auto ipc( State& state)
+                  {
+                     return [ &state]( const common::message::event::ipc::Destroyed& event)
+                     {
+                        Trace trace{ "queue::manager::handle::local::event::dead::process"};
+                        common::log::line( verbose::log, "event: ", event);
+
+                        state.remove_queues( event.process.ipc);
+                     };
+                  }
                } // process
                
-            } // event
+            } // dead
 
             namespace shutdown
             {
@@ -652,7 +664,9 @@ namespace casual
             handle::local::domain::discover::fetch::known::request( state),
 
             handle::local::shutdown::request( state),
-            common::event::listener( handle::local::event::process::exit( state)),
+            common::event::listener( 
+               handle::local::event::dead::process( state),
+               handle::local::event::dead::ipc( state)),
 
             common::server::handle::admin::Call{
                manager::admin::services( state)}
