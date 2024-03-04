@@ -15,7 +15,6 @@ namespace casual
 {
    namespace gateway::group::ipc
    {
-      
       namespace manager
       {
          inline auto& service() { return common::communication::instance::outbound::service::manager::device();}
@@ -36,6 +35,36 @@ namespace casual
 
       } // flush
 
+
+      namespace handle::dispatch
+      {
+         template< typename Policy, typename State, typename Handler>
+         auto create( State& state, Handler handler)
+         {
+            return [ &state, handler = std::move( handler)]( common::strong::file::descriptor::id fd, common::communication::select::tag::read) mutable
+            {
+               auto descriptor = common::strong::ipc::descriptor::id{ fd};
+
+               if( auto inbound = state.external.find_internal( descriptor))
+               {
+                  try
+                  {
+                     auto count = Policy::next::tcp();
+
+                     while( count-- > 0 && handler( common::communication::device::non::blocking::next( *inbound), descriptor))
+                        ; // no-op
+                  }
+                  catch( ...)
+                  {
+                     // TODO What do we do here? We just let i propagate for now...
+                     throw;
+                  }
+                  return true;
+               }
+               return false;
+            };
+         }
+      } // handle::dispatch
 
    } // gateway::group::ipc
 } // casual

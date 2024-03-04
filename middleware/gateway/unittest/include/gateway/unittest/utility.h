@@ -132,23 +132,14 @@ namespace casual
                   };
                };
 
-               inline auto routing( std::vector< std::string_view> services, std::vector< std::string_view> queues)
-               {
-                  return [services = std::move( services), queues = std::move( queues)]( auto& state)
-                  {
-                     return common::algorithm::includes( state.services, services)
-                        && common::algorithm::includes( state.queues, queues);
-                  };
-               }
-
-               //! keep trying until the sum of all groups pending messages is >= count
+               //! keep trying until the sum of all groups pending tasks is >= count
                inline auto pending( platform::size::type count)
                {
                   return [ count]( auto& state)
                   {
                      return common::algorithm::accumulate( state.outbound.groups, platform::size::type{}, []( auto result, auto& group)
                      {
-                        return result + group.pending.messages.size();
+                        return result + group.pending.tasks.size();
                      }) >= count;
                   };
                }

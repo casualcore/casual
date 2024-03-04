@@ -168,6 +168,7 @@ namespace casual
             common::strong::file::descriptor::id descriptor;
             common::domain::Identity domain;
             Configuration configuration;
+            common::strong::ipc::id ipc;
             platform::time::point::type created{};
 
             struct
@@ -199,6 +200,7 @@ namespace casual
                CASUAL_SERIALIZE( descriptor);
                CASUAL_SERIALIZE( domain);
                CASUAL_SERIALIZE( configuration);
+               CASUAL_SERIALIZE( ipc);
                CASUAL_SERIALIZE( metric);
                CASUAL_SERIALIZE( created);
             )
@@ -345,16 +347,16 @@ namespace casual
 
             namespace pending
             {
-               struct Message
+               struct Task
                {
                   common::strong::correlation::id correlation;
-                  common::strong::ipc::id target;
                   common::strong::file::descriptor::id connection;
+                  std::vector< common::message::Type> message_types;
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
                      CASUAL_SERIALIZE( correlation);
-                     CASUAL_SERIALIZE( target);
                      CASUAL_SERIALIZE( connection);
+                     CASUAL_SERIALIZE( message_types);
                   )
                };
 
@@ -373,11 +375,11 @@ namespace casual
 
             struct Pending
             {
-               std::vector< pending::Message> messages;
+               std::vector< pending::Task> tasks;
                std::vector< pending::Transaction> transactions;
 
                CASUAL_CONST_CORRECT_SERIALIZE(
-                  CASUAL_SERIALIZE( messages);
+                  CASUAL_SERIALIZE( tasks);
                   CASUAL_SERIALIZE( transactions);
                )
             };

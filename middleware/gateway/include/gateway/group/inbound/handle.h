@@ -16,11 +16,14 @@ namespace casual
 {
    namespace gateway::group::inbound::handle
    {
-      using internal_handler = decltype( common::message::dispatch::handler( ipc::inbound()));
+      using internal_handler = common::message::dispatch::basic_handler< common::communication::ipc::message::Complete, common::strong::ipc::descriptor::id>;
       internal_handler internal( State& state);
 
       using external_handler = common::message::dispatch::basic_handler< common::communication::tcp::message::Complete, common::strong::socket::id>;
       external_handler external( State& state);
+
+      using management_handler = common::message::dispatch::basic_handler< common::communication::ipc::message::Complete>;
+      management_handler management( State& state);
 
       namespace connection
       {

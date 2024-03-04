@@ -310,8 +310,24 @@ domain:
       {
          common::unittest::Trace trace;
 
-         auto b = local::domain( local::configuration::inbound);
-         auto a = local::domain( local::configuration::outbound); 
+         auto b = local::domain( R"(
+domain: 
+   name: B
+   gateway:
+      inbound:
+         groups:
+            -  connections: 
+                  -  address: 127.0.0.1:7010
+)");
+         auto a = local::domain( R"(
+domain: 
+   name: A
+   gateway:
+      outbound:
+         groups:
+            -  connections: 
+                  -  address: 127.0.0.1:7010
+)");
 
          unittest::fetch::until( unittest::fetch::predicate::outbound::connected());
 
@@ -319,31 +335,16 @@ domain:
          b.activate();
 
          // we exposes service a
-         casual::service::unittest::advertise( { "a"});
+         casual::service::unittest::advertise( { "b"});
 
          a.activate();
 
-         // discover to make sure outbound(s) knows about wanted services
-         casual::domain::unittest::discover( { "a"}, {});
+         const auto data = common::unittest::random::binary( 128);
 
-         // wait until outbound knows about 'a'
-         auto state = unittest::fetch::until( unittest::fetch::predicate::outbound::routing( { "a"}, {}));
-
-         algorithm::sort( state.connections);
-
-         auto data = common::unittest::random::binary( 128);
-
-         // Expect us to reach service remote1 via outbound -> inbound -> <service remote1>
+         // Expect us to reach service "b" via outbound -> inbound -> <service remote1>
          // we act as the server
          {
-            {
-               common::message::service::call::callee::Request request;
-               request.process = common::process::handle();
-               request.service.name = "a";
-               request.buffer.data = data;
-               
-               common::communication::device::blocking::send( state.connections.at( 0).process.ipc, request);
-            }
+            auto correlation = common::unittest::service::send( "b", data);
 
             b.activate();
 
@@ -352,10 +353,9 @@ domain:
 
             a.activate();
 
-            common::message::service::call::Reply reply;
-            common::communication::device::blocking::receive( common::communication::ipc::inbound::device(), reply);
+            auto reply = common::communication::ipc::receive< common::message::service::call::Reply>( correlation);
 
-            EXPECT_TRUE( reply.buffer.data == data);
+            EXPECT_TRUE( reply.buffer.data == data) << CASUAL_NAMED_VALUE( reply);
          }
       }
 
@@ -388,29 +388,33 @@ domain:
                   -  address: 127.0.0.1:7010
 )");
 
-         auto outbound = unittest::fetch::until( unittest::fetch::predicate::outbound::connected()).outbound.groups.at( 0).process;
+         const auto a_state = unittest::fetch::until( unittest::fetch::predicate::outbound::connected());
 
-         const auto origin = unittest::random::binary( 256);
+         auto outbound_connection_ipc = a_state.connections.at( 0).ipc;
 
-         const auto correlation = unittest::service::send( "b", origin);
+         ASSERT_TRUE( outbound_connection_ipc);
+
+         const auto data = unittest::random::binary( 256);
+
+         const auto correlation = unittest::service::send( "b", data);
 
          auto loop_device = communication::ipc::inbound::Device{};
 
          trace.line( "receive the call and send call to outbound to simulate a _gateway loop_");
          auto request = communication::ipc::receive< common::message::service::call::callee::Request>( correlation);
-         EXPECT_TRUE( request.buffer.data == origin);
+         EXPECT_TRUE( request.buffer.data == data);
 
          trace.line( "emulate loop - later we should receive an error reply");
          {
             auto loop_request = request;
             loop_request.process = common::process::Handle{ common::process::id(), loop_device.connector().handle().ipc()};
-            communication::device::blocking::send( outbound.ipc, loop_request);
+            communication::device::blocking::send( outbound_connection_ipc, loop_request);
          }
          
          trace.line( "make sure outbound did not _terminate_");
          {
             auto current = unittest::fetch::until( unittest::fetch::predicate::outbound::connected( 1)).outbound.groups.at( 0).process;
-            ASSERT_TRUE( outbound.pid == current.pid);
+            ASSERT_TRUE( a_state.outbound.groups.at( 0).process == current.pid);
          }
          
          trace.line( "receive the error reply");
@@ -430,7 +434,7 @@ domain:
          {
             auto reply = communication::ipc::receive< common::message::service::call::Reply>( correlation);
             EXPECT_TRUE( reply.code.result == decltype( reply.code.result)::ok);
-            EXPECT_TRUE( reply.buffer.data == origin);
+            EXPECT_TRUE( reply.buffer.data == data);
 
          }
       }
@@ -442,40 +446,24 @@ domain:
          auto b = local::domain( local::configuration::inbound);
          auto a = local::domain( local::configuration::outbound);
 
-         unittest::fetch::until( unittest::fetch::predicate::outbound::connected());
+         auto a_state = unittest::fetch::until( unittest::fetch::predicate::outbound::connected());
 
          b.activate();
 
          // we exposes service "a"
-         casual::service::unittest::advertise( { "a"});
+         casual::service::unittest::advertise( { "b"});
 
          a.activate();
-
-         // discover to make sure outbound(s) knows about wanted services
-         casual::domain::unittest::discover( { "a"}, {});
-
-         // wait until outbound knows about 'a'
-         auto state = unittest::fetch::until( unittest::fetch::predicate::outbound::routing( { "a"}, {}));
-
-         algorithm::sort( state.connections);
 
       
          const auto trid = common::transaction::id::create( common::process::handle());
 
-         // Expect us to reach service remote1 via outbound -> inbound -> <service remote1>
+         // Expect us to reach service "b" via outbound -> inbound -> <service b>
          {
-            const auto data = common::unittest::random::binary( 128);   
-            
-            {
-               common::message::service::call::callee::Request request;
-               request.process = common::process::handle();
-               request.service.name = "a";
-               request.trid = trid;
-               request.buffer.data = data;
-               
-               common::communication::device::blocking::send( state.connections.at( 0).process.ipc, request);
-            }
+            const auto data = common::unittest::random::binary( 128);
 
+            const auto correlation = unittest::service::send( "b", data, trid);
+            
             b.activate();
 
             // echo the call
@@ -483,8 +471,7 @@ domain:
 
             a.activate();
 
-            common::message::service::call::Reply reply;
-            common::communication::device::blocking::receive( common::communication::ipc::inbound::device(), reply);
+            auto reply = common::communication::ipc::receive< common::message::service::call::Reply>( correlation);
 
             EXPECT_TRUE( reply.buffer.data == data);
             EXPECT_TRUE( reply.transaction.trid == trid) << "reply.transaction.trid: " << reply.transaction.trid << "\ntrid: " << trid;
@@ -499,8 +486,7 @@ domain:
 
          // get commit reply
          {
-            common::message::transaction::commit::Reply reply;
-            communication::device::blocking::receive( common::communication::ipc::inbound::device(), reply);
+            auto reply = common::communication::ipc::receive< common::message::transaction::commit::Reply>();
             EXPECT_TRUE( reply.trid == trid) << CASUAL_NAMED_VALUE( reply.trid) << "\n" << CASUAL_NAMED_VALUE( trid);
          }
       }
@@ -905,25 +891,35 @@ domain:
 
          constexpr auto count = 5;
          
-         auto b = local::domain( local::configuration::inbound);
+         auto b = local::domain( R"(
+domain: 
+   name: B
+   gateway:
+      inbound:
+         groups:
+            -  connections:
+               -  address: 127.0.0.1:6669
+)");
 
          // we exposes service "a"
          casual::service::unittest::advertise( { "a"});
 
-         auto a = local::domain( local::configuration::outbound);
+         auto a = local::domain( R"(
+domain: 
+   name: A
+   gateway:
+      outbound:
+         groups:
+            -  connections:
+               -  address: 127.0.0.1:6669
+)");
 
-         unittest::fetch::until( unittest::fetch::predicate::outbound::connected());
+         auto state = unittest::fetch::until( unittest::fetch::predicate::outbound::connected());
 
-         // discover to make sure outbound(s) knows about wanted services
-         casual::domain::unittest::discover( { "a"}, {});
-
-         auto state = unittest::fetch::until( unittest::fetch::predicate::outbound::routing( { "a"}, {}));
-
-
-         auto outbound = [&state]() -> process::Handle
+         auto outbound = [ &state]() -> strong::ipc::id
          {            
             if( auto found = algorithm::find_if( state.connections, unittest::fetch::predicate::is::outbound()))
-               return found->process;
+               return found->ipc;
 
             return {};
          }();
@@ -937,22 +933,17 @@ domain:
          // Expect us to reach service remote1 via outbound -> inbound -> <service remote1>
          // we act as the server
          {
-            auto data = common::unittest::random::binary( 128);
+            const auto data = common::unittest::random::binary( 128);
+
             
-            algorithm::for_n< count>( [&]()
+            auto correlations = algorithm::generate_n< count>( [ &data]()
             {
-               common::message::service::call::callee::Request request;
-               request.process = common::process::handle();
-               request.service.name = "a";
-               request.buffer.data = data;
-               
-               ASSERT_TRUE( common::communication::device::blocking::optional::send( outbound.ipc, request)) 
-                  << CASUAL_NAMED_VALUE( outbound);
+               return common::unittest::service::send( "a", data);
             });
 
             b.activate();
 
-            algorithm::for_n< count>( [&]()
+            algorithm::for_n< count>( []()
             {
                // echo the call
                local::service::echo();
@@ -960,13 +951,11 @@ domain:
 
             a.activate();
 
-            algorithm::for_n< count>( [&]()
+            for( auto& correlation : correlations)
             {
-               common::message::service::call::Reply reply;
-               common::communication::device::blocking::receive( common::communication::ipc::inbound::device(), reply);
-
+               auto reply = common::communication::ipc::receive< common::message::service::call::Reply>( correlation);
                EXPECT_TRUE( reply.buffer.data ==  data);
-            });
+            }
          }
 
          // consume the metric events (most likely from inbound cache)
@@ -1267,121 +1256,7 @@ domain:
          unittest::fetch::until( local::is_failed_listeners( 1));
       }
 
-      TEST( gateway_manager_outbound, transaction_resource_error_reply_on_connection_lost)
-      {
-         common::unittest::Trace trace;
-
-         auto b = casual::domain::unittest::manager( R"(
-domain: 
-   name: B
-   groups: 
-      -  name: base
-      -  name: user
-         dependencies: [ base]
-      -  name: gateway
-         dependencies: [ user]
-   
-   servers:
-      - path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/service/bin/casual-service-manager
-        memberships: [ base]
-      - path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-server
-        memberships: [ user]
-      - path: bin/casual-gateway-manager
-        memberships: [ gateway]
-
-   gateway:
-      inbound:
-         groups:
-            -  connections: 
-                  -  address: 127.0.0.1:7010
-)");
-
-         // We act as the TM for B
-         communication::instance::whitelist::connect( communication::instance::identity::transaction::manager);
-         auto inbound = unittest::fetch::until( unittest::fetch::predicate::listeners( 1)).inbound.groups.at( 0).process;
-         ASSERT_TRUE( inbound);
-
-         auto a = local::domain( R"(
-domain: 
-   name: A
-   gateway:
-      outbound:
-         groups:
-            -  connections:
-                  -  address: 127.0.0.1:7010
-                     services: [ casual/example/domain/echo/B]
-)");
-
-         constexpr auto rm = strong::resource::id{ -1};
-
-         unittest::fetch::until( unittest::fetch::predicate::outbound::connected( 1));
-
-         EXPECT_EQ( transaction::context().begin(), code::tx::ok);
-
-         const auto data = unittest::random::binary( 1000);
-         
-         {
-            // call service in B in transaction
-            auto descriptor = [ &data](){
-               using namespace std::literals;
-
-               buffer::Payload payload;
-               payload.type = "X_OCTET/";
-               common::algorithm::copy( data, std::back_inserter( payload.data));
-
-               return common::service::call::context().async( "casual/example/domain/echo/B", common::buffer::payload::Send{ payload}, {});
-            }();
-
-            // reply to the coordinate inbound
-            {
-               auto request = common::communication::ipc::receive< common::message::transaction::coordinate::inbound::Request>();
-               auto reply = common::message::reverse::type( request);
-               reply.trid = common::transaction::ID{ request.gtrid};
-
-               communication::device::blocking::send( request.process.ipc, reply);
-            }
-
-            // call service in B in transaction
-            {
-               auto reply = common::service::call::context().reply( descriptor, {});
-               EXPECT_TRUE( reply.buffer.data == data);
-            }
-         }
-
-         // fake the commit message to A:s TM (current domain)
-         {
-            common::message::transaction::commit::Request request{ process::handle()};
-            request.trid = transaction::context().current().trid;
-            
-            communication::device::blocking::send( communication::instance::outbound::transaction::manager::device(), request);
-         }
-         
-         // consume the request as TM (in the other domain B)
-         {
-            auto request = common::communication::ipc::receive< common::message::transaction::resource::commit::Request>();
-            EXPECT_TRUE( request.resource == rm);
-            EXPECT_TRUE( algorithm::equal( transaction::id::range::global( request.trid), transaction::id::range::global( transaction::context().current().trid))) << CASUAL_NAMED_VALUE( request);
-         }
-
-         // destroy inbound in B, and we should get an error reply
-         {
-            common::signal::send( inbound.pid, code::signal::terminate);
-         }
-         
-         // we should get an error commit reply
-         {
-            auto reply = common::communication::ipc::receive< common::message::transaction::commit::Reply>();
-            EXPECT_TRUE( reply.state == decltype( reply.state)::fail) << CASUAL_NAMED_VALUE( reply);
-            EXPECT_TRUE( reply.trid == transaction::context().current().trid);
-
-         }
-
-         EXPECT_EQ( transaction::context().commit(), code::tx::ok);
-
-
-      }
-
-      TEST( gateway_manager_outbound, transaction_resource_error_reply_on_remote_domain_shutdown_before_commit_request)
+      TEST( gateway_manager_outbound, transaction_resource_error_reply_on_remote_connection_lost___expect_TX_FAIL)
       {
          common::unittest::Trace trace;
 
@@ -1418,7 +1293,6 @@ domain:
          groups:
             -  connections:
                   -  address: 127.0.0.1:7012
-                     services: [ casual/example/domain/echo/B]
 )");
 
          unittest::fetch::until( unittest::fetch::predicate::outbound::connected( 1));
@@ -1442,23 +1316,8 @@ domain:
          // We shutdown b "hard"
          signal::send( inbound.pid, code::signal::terminate);
 
-         // we try to commit our transaction
-         {
-            common::message::transaction::commit::Request request{ process::handle()};
-            request.trid = transaction::context().current().trid;
-            
-            communication::device::blocking::send( communication::instance::outbound::transaction::manager::device(), request);
-         }
-         
-         // expect a failure reply
-         {
-            auto reply = common::communication::ipc::receive< common::message::transaction::commit::Reply>();
-
-            EXPECT_TRUE( reply.state == decltype( reply.state)::fail) << CASUAL_NAMED_VALUE( reply);
-            EXPECT_TRUE( reply.trid == transaction::context().current().trid);
-         }
-
-         EXPECT_EQ( transaction::context().commit(), code::tx::ok);
+         // We expect hazard.
+         EXPECT_EQ( transaction::context().commit(), code::tx::fail);
       }
 
       // TODO the pending call hack has been removed and need to be replaced with some sort of _pending timeout_

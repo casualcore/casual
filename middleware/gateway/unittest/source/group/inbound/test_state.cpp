@@ -23,14 +23,13 @@ namespace casual
          state::transaction::Cache cache;
          EXPECT_TRUE( cache.empty());
 
-         EXPECT_TRUE( cache.associate( descriptor, trid) == nullptr);
-         EXPECT_TRUE( ! cache.empty());
+         EXPECT_TRUE( cache.associate( trid, descriptor) == nullptr);
 
-         auto extracted = cache.extract( descriptor);
-         EXPECT_EQ( std::ssize( extracted), 1);
-         EXPECT_TRUE( algorithm::find( extracted, trid));
-
+         // still empty
          EXPECT_TRUE( cache.empty());
+
+         auto extracted = cache.failed( descriptor);
+         EXPECT_TRUE( std::empty( extracted));
       }
 
       TEST( gateway_inbound_state, transaction_cache_dissociate)
@@ -39,9 +38,9 @@ namespace casual
          auto descriptor = strong::socket::id{ 10};
 
          state::transaction::Cache cache;
-         EXPECT_TRUE( cache.associate( descriptor, trid) == nullptr);
+         EXPECT_TRUE( cache.associate( trid, descriptor) == nullptr);
 
-         cache.dissociate( descriptor, trid);
+         cache.remove( transaction::id::range::global( trid));
 
          EXPECT_TRUE( cache.empty());
       }
@@ -53,9 +52,9 @@ namespace casual
          auto descriptor = strong::socket::id{ 10};
 
          state::transaction::Cache cache;
-         EXPECT_TRUE( cache.associate( descriptor, trid) == nullptr);
+         EXPECT_TRUE( cache.associate( trid, descriptor) == nullptr);
 
-         cache.add_branch( descriptor, branch);
+         cache.add( branch, descriptor);
 
          {
             auto found = cache.find( transaction::id::range::global( trid));
@@ -63,7 +62,7 @@ namespace casual
             EXPECT_TRUE( *found == branch);
          }
 
-         cache.dissociate( descriptor, trid);
+         cache.remove( transaction::id::range::global( trid));
 
          EXPECT_TRUE( cache.empty());
       }
@@ -75,13 +74,13 @@ namespace casual
          auto descriptor = strong::socket::id{ 10};
 
          state::transaction::Cache cache;
-         EXPECT_TRUE( cache.associate( descriptor, trid) == nullptr);
+         EXPECT_TRUE( cache.associate( trid, descriptor) == nullptr);
 
-         cache.add_branch( descriptor, branch);
+         cache.add( branch, descriptor);
          
-         auto extracted = cache.extract( descriptor);
+         auto extracted = cache.failed( descriptor);
          EXPECT_EQ( std::ssize( extracted), 1);
-         EXPECT_TRUE( algorithm::find( extracted, trid));
+         EXPECT_TRUE( algorithm::find( extracted, branch));
 
          EXPECT_TRUE( cache.empty());
       }
@@ -115,13 +114,13 @@ namespace casual
          // associate first descriptor
          algorithm::for_each( calls, [ &cache]( auto& call)
          {
-            cache.associate( call.descriptors[ 0], call.trid);
+            cache.associate( call.trid, call.descriptors[ 0]);
          });
          
          algorithm::for_each( calls, [ &cache]( auto& call)
          {
             call.branched = transaction::id::branch( call.trid);
-            cache.add_branch( call.descriptors[ 0], call.branched );
+            cache.add( call.branched, call.descriptors[ 0]);
          });
 
          // check that only first descriptor is associated
@@ -134,7 +133,7 @@ namespace casual
          // associate second descriptor
          algorithm::for_each( calls, [ &cache]( auto& call)
          {
-            cache.associate( call.descriptors[ 1], call.trid);
+            cache.associate( call.trid, call.descriptors[ 1]);
          });
 
          // check that both descriptor is associated
@@ -150,21 +149,15 @@ namespace casual
             auto trid = cache.find( transaction::id::range::global( call.trid));
             ASSERT_TRUE( trid);
             EXPECT_TRUE( *trid == call.branched);
-         });
-
-         // dissociate first descriptor, check that second still associated and branched still in cache
-         algorithm::for_each( calls, [ &cache]( auto& call)
-         {
-            cache.dissociate( call.descriptors[ 0], call.trid);
-            EXPECT_TRUE( ! cache.associated( call.descriptors[ 0]));
+            EXPECT_TRUE( cache.associated( call.descriptors[ 0]));
             EXPECT_TRUE( cache.associated( call.descriptors[ 1]));
-            EXPECT_TRUE( cache.find( transaction::id::range::global( call.trid)));
          });
 
-         // dissociate second descriptor, check that branched is removed from cache
+         // remove the trid
          algorithm::for_each( calls, [ &cache]( auto& call)
          {
-            cache.dissociate( call.descriptors[ 1], call.trid);
+            cache.remove( transaction::id::range::global( call.trid));
+            EXPECT_TRUE( ! cache.associated( call.descriptors[ 0]));
             EXPECT_TRUE( ! cache.associated( call.descriptors[ 1]));
             EXPECT_TRUE( ! cache.find( transaction::id::range::global( call.trid)));
          });

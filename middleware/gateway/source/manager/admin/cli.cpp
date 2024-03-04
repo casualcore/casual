@@ -218,49 +218,6 @@ namespace casual
                   }
                }
 
-               namespace resource
-               {
-                  using Formatter = terminal::format::formatter< format::Resource>;
-                  auto format_domain_name = []( auto& value)
-                  { 
-                     return dash_if_empty( value.name);
-                  };
-                  auto format_domain_id = []( auto& value) -> std::string
-                  {
-                     if( value.id) 
-                        return uuid::string( value.id.value());
-                     return "-";
-                  };
-                  auto format_resource_name = []( auto& value)
-                  { 
-                     return dash_if_empty( value.resource);
-                  };
-                  auto format_peer_address = []( auto& value)
-                  {
-                     return dash_if_empty( value.peer);
-                  };
-
-                  auto services()
-                  {
-                     return Formatter::construct( 
-                        terminal::format::column( "service", format_resource_name, terminal::color::yellow),
-                        terminal::format::column( "name", format_domain_name, terminal::color::blue),
-                        terminal::format::column( "id", format_domain_id, terminal::color::no_color),
-                        terminal::format::column( "peer", format_peer_address, terminal::color::white)
-                     );
-                  }
-
-                  auto queues()
-                  {
-                     return Formatter::construct( 
-                        terminal::format::column( "queue", format_resource_name, terminal::color::yellow),
-                        terminal::format::column( "name", format_domain_name, terminal::color::blue),
-                        terminal::format::column( "id", format_domain_id, terminal::color::no_color),
-                        terminal::format::column( "peer", format_peer_address, terminal::color::white)
-                     );
-                  }
-               }
-
                auto listeners() 
                {
                   using Formatter = terminal::format::formatter<  manager::admin::model::Listener>;
@@ -503,72 +460,30 @@ created
 
                   namespace resource
                   {
-                     auto process( std::vector< format::Resource>& resource_table, const manager::admin::model::State& state)
-                     {
-                        return [ &resource_table, &state]( const auto& resource_entry)
-                        {
-                           auto find_connection = [ &state]( const auto& resource)
-                           {
-                              return [ &state, &resource]( auto& connection)
-                              {
-                                 auto found = common::algorithm::find_if( state.connections, [&connection]( auto& item)
-                                 {
-                                    return item.process.pid == connection.pid && item.descriptor == connection.descriptor;
-                                 });
-
-                                 if( found)
-                                    return format::Resource{ resource, found->remote.name, found->remote.id, found->address.peer};
-                                 else
-                                    return format::Resource{ resource, {}, {}, {}};
-                              };
-                           };
-
-                           auto& resource = resource_entry.name;
-                           auto& connections = resource_entry.connections;
-
-                           common::algorithm::transform( connections, std::back_inserter( resource_table), find_connection( resource));
-
-                        };
-                     }
-
                      auto services()
                      {
                         auto invoke = []()
                         {
-                           auto state = call::state();
-
-                           std::vector< format::Resource> service_table;
-
-                           common::algorithm::for_each( state.services, process( service_table, state));
-
-                           format::resource::services().print( std::cout, algorithm::sort( service_table));
+                           code::raise::error( code::casual::invalid_argument, "--list-services is removed - use casual service --list-TODO");
                         };
 
                         return argument::Option{ 
                            std::move( invoke), 
-                           { "-ls", "--list-services"}, 
-                           "list all services and connections"};
+                           argument::option::keys( {}, { "-ls", "--list-services"}), 
+                           "removed - use casual service --list-TODO"};
                      }
 
                      auto queues()
                      {
                         auto invoke = []()
                         {
-                           auto state = call::state();
-
-                           log::line( log::debug, "state: ", state);
-
-                           std::vector< format::Resource> queue_table;
-
-                           common::algorithm::for_each( state.queues, process( queue_table, state));
-
-                           format::resource::queues().print( std::cout, algorithm::sort( queue_table));
+                           code::raise::error( code::casual::invalid_argument, "--list-queues is removed - use casual queue --list-TODO");
                         };
 
                         return argument::Option{ 
                            std::move( invoke), 
-                           { "-lq", "--list-queues"}, 
-                           "list all queues and connections"};
+                           argument::option::keys( {}, { "-ls", "--list-services"}), 
+                           "removed - use casual queue --list-TODO"};
                      }
                   }
                } // list

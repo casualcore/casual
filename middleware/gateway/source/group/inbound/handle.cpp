@@ -19,6 +19,7 @@
 #include "common/message/dispatch/handle.h"
 #include "common/message/internal.h"
 #include "common/event/listen.h"
+#include "common/event/send.h"
 
 #include "casual/assert.h"
 
@@ -37,12 +38,13 @@ namespace casual
                template< typename Message>
                auto basic_forward( State& state)
                {
-                  return [&state]( Message& message)
+                  return [ &state]( Message& message, strong::ipc::descriptor::id descriptor)
                   {
                      Trace trace{ "gateway::group::inbound::handle::local::basic_forward"};
                      common::log::line( verbose::log, "forward message: ", message);
+                     common::log::line( verbose::log, "descriptor: ", descriptor);
 
-                     tcp::send( state, message);
+                     tcp::send( state, state.external.partner( descriptor), message);
                   };
                }
 
@@ -79,29 +81,22 @@ namespace casual
                {
                   namespace connect
                   {
-                     auto reply = internal::basic_task< common::message::conversation::connect::Reply>;
+                     auto reply = internal::basic_forward< common::message::conversation::connect::Reply>;
                      
                   } // connect
 
                   auto send( State& state)
                   {
-                     return [&state]( common::message::conversation::callee::Send& message)
+                     return [ &state]( common::message::conversation::callee::Send& message, strong::ipc::descriptor::id descriptor)
                      {
-                        Trace trace{ "gateway::group::inbound::handle::local::internal::conversation::send"};
+                        Trace trace{ "gateway::group::inbound::handle::conversation::send"};
                         common::log::line( verbose::log, "message: ", message);
 
-                        if( auto found = algorithm::find( state.conversations, message.correlation))
-                        {
-                           inbound::tcp::send( state, found->descriptor, message);
-                           
-                           // if the `send` has event that indicate that it will end the conversation - we remove our "route" state
-                           // for the connection
-                           if( message.code.result != decltype( message.code.result)::absent)
-                              state.conversations.erase( std::begin( found));
-                        }
-                        else
-                           common::log::line( common::log::category::error, "(internal) failed to correlate conversation: ", message.correlation);
+                        tcp::send( state, state.external.partner( descriptor), message);
 
+                        // if the sender has terminated the conversation we need to clean the task
+                        if( message.duplex == decltype( message.duplex)::terminated)
+                           state.tasks.remove( message.correlation);
                      };
                   }
                   
@@ -116,31 +111,17 @@ namespace casual
 
                   namespace dequeue
                   {
-                     auto reply = internal::basic_task< casual::queue::ipc::message::group::dequeue::Reply>;
+                     auto reply = internal::basic_forward< casual::queue::ipc::message::group::dequeue::Reply>;
                   } // dequeue
 
                   namespace enqueue
                   {
-                     auto reply = internal::basic_task< casual::queue::ipc::message::group::enqueue::Reply>;
+                     auto reply = internal::basic_forward< casual::queue::ipc::message::group::enqueue::Reply>;
                   } // enqueue
                } // queue
 
                namespace domain
                {
-                  auto connected( State& state)
-                  {
-                     return [&state]( const gateway::message::domain::Connected& message)
-                     {
-                        Trace trace{ "gateway::group::inbound::handle::local::internal::domain::connected"};
-                        common::log::line( verbose::log, "message: ", message);
-
-                        state.external.connected( state.directive, message);
-
-                        common::log::line( verbose::log, "state.external: ", state.external);
-       
-                     };
-                  }
-
                   namespace discovery
                   {
                      auto reply = basic_forward< casual::domain::message::discovery::Reply>;
@@ -149,34 +130,14 @@ namespace casual
                      {
                         auto update( State& state)
                         {
-                           return [&state]( const casual::domain::message::discovery::topology::implicit::Update& message)
+                           return [&state]( const casual::domain::message::discovery::topology::implicit::Update& message, strong::ipc::descriptor::id descriptor)
                            {
                               Trace trace{ "gateway::group::inbound::handle::local::internal::domain::discovery::topology::implicit::update"};
                               common::log::line( verbose::log, "message: ", message);
 
-                              auto send_if_compatible = [ &state, &message]( auto descriptor)
-                              {
-                                 auto connection = state.external.find_external( descriptor);
-                                 CASUAL_ASSERT( connection);
+                              auto tcp = state.external.partner( descriptor);
 
-                                 if( ! message::protocol::compatible( message, connection->protocol()))
-                                    return;
-
-                                 auto information = casual::assertion( state.external.information( descriptor), 
-                                    "failed to find information for descriptor: ", descriptor);
-
-                                 if( information->configuration.discovery != decltype( information->configuration.discovery)::forward)
-                                    return;
-
-                                 // check if domain has seen this message before...
-                                 if( algorithm::find( message.domains, information->domain))
-                                    return;
-
-                                 inbound::tcp::send( state, descriptor, message);
-                              };
-
-                              algorithm::for_each( state.external.external_descriptors(), send_if_compatible);
-
+                              inbound::tcp::send( state, tcp, message);
                            };
                         }
 
@@ -228,14 +189,7 @@ namespace casual
                         common::log::line( verbose::log, "message: ", message);
                         common::log::line( verbose::log, "descriptor: ", descriptor);
 
-                        if( algorithm::find( state.correlations, descriptor) || state.transaction_cache.associated( descriptor))
-                        {
-                           common::log::line( verbose::log, "state.correlations: ", state.correlations, ", state.transaction_cache: ", state.transaction_cache);
-
-                           // connection still got pending stuff to do, we keep track until its 'idle'.
-                           state.pending.disconnects.push_back( descriptor);
-                        }
-                        else 
+                        if( state.disconnectable( descriptor))
                         {
                            // connection is 'idle', we just 'loose' the connection
                            handle::connection::lost( state, descriptor);
@@ -243,6 +197,13 @@ namespace casual
                            // we return false to tell the dispatch not to try consume any more messages on
                            // this connection
                            return false;
+                        }
+                        else
+                        {
+                           common::log::line( verbose::log, "state.transaction_cache: ", state.transaction_cache);
+
+                           // connection still got pending stuff to do, we keep track until its 'idle'.
+                           state.pending.disconnects.push_back( descriptor);
                         }
 
                         return true;
@@ -262,7 +223,6 @@ namespace casual
                            Trace trace{ "gateway::group::inbound::handle::local::external::service::call::request"};
                            log::line( verbose::log, "message: ", message);
                            
-                           state.correlations.emplace_back( message.correlation, descriptor);
                            state.tasks.add( task::create::service::call( state, descriptor, std::move( message)));
                         };
                      }
@@ -280,7 +240,6 @@ namespace casual
                            Trace trace{ "gateway::group::inbound::handle::local::external::conversation::connect::request"};
                            log::line( verbose::log, "message: ", message);
 
-                           state.correlations.emplace_back( message.correlation, descriptor);
                            state.tasks.add( task::create::service::conversation( state, descriptor, std::move( message)));
                         };
                      }
@@ -293,13 +252,8 @@ namespace casual
                         Trace trace{ "gateway::group::inbound::handle::local::external::conversation::disconnect"};
                         common::log::line( verbose::log, "message: ", message);
 
-                        if( auto found = algorithm::find( state.conversations, message.correlation))
-                        {
-                           state.multiplex.send( found->process.ipc, message);
-
-                           // we're done with this connection, regardless of what callee thinks...
-                           state.conversations.erase( std::begin( found));
-                        }
+                        // will end/remove the task
+                        state.tasks( message);
                      };
                   }
 
@@ -310,10 +264,8 @@ namespace casual
                         Trace trace{ "gateway::group::inbound::handle::local::external::conversation::send"};
                         common::log::line( verbose::log, "message: ", message);
 
-                        if( auto found = algorithm::find( state.conversations, message.correlation))
-                           state.multiplex.send( found->process.ipc, message);
-                        else
-                           common::log::error( code::casual::invalid_semantics, "(external) failed to correlate conversation: ", message.correlation);
+                        // uses the previous lookup address to pass through the send message.
+                        state.tasks( message);
                      };
                   }
                   
@@ -331,7 +283,6 @@ namespace casual
                            Trace trace{ "gateway::group::inbound::handle::local::external::queue::enqueue::Request"};
                            common::log::line( verbose::log, "message: ", message);
 
-                           state.correlations.emplace_back( message.correlation, descriptor);
                            state.tasks.add( task::create::queue::enqueue( state, descriptor, std::move( message)));
                         };
                      }
@@ -346,7 +297,6 @@ namespace casual
                            Trace trace{ "gateway::group::inbound::handle::local::external::queue::dequeue::Request"};
                            common::log::line( verbose::log, "message: ", message);
 
-                           state.correlations.emplace_back( message.correlation, descriptor);
                            state.tasks.add( task::create::queue::dequeue( state, descriptor, std::move( message)));
                         };
                      }
@@ -359,15 +309,13 @@ namespace casual
                   {
                      auto request( State& state)
                      {
-                        return [&state]( casual::domain::message::discovery::Request& message, strong::socket::id descriptor)
+                        return [ &state]( casual::domain::message::discovery::Request& message, strong::socket::id descriptor)
                         {
                            Trace trace{ "gateway::inbound::handle::local::external::domain::discovery::request"};
                            common::log::line( verbose::log, "message: ", message);
 
-                           state.correlations.emplace_back( message.correlation, descriptor);
-
                            // Set 'sender' so we get the reply
-                           message.process = common::process::handle();
+                           message.process = state.external.process_handle( descriptor);
 
                            {
                               auto information = casual::assertion( state.external.information( descriptor), "invalid descriptor: ", descriptor);
@@ -394,7 +342,6 @@ namespace casual
                            Trace trace{ "gateway::inbound::handle::local::external::transaction::basic_request"};
                            common::log::line( verbose::log, "message: ", message);
 
-                           state.correlations.emplace_back( message.correlation, descriptor);
                            state.tasks.add( task::create::transaction( state, descriptor, std::move( message)));
                         };
                      }
@@ -415,13 +362,79 @@ namespace casual
                } // transaction
             } // external
 
+            namespace management
+            {
+               namespace domain
+               {
+                  auto connected( State& state)
+                  {
+                     return [&state]( const gateway::message::domain::Connected& message)
+                     {
+                        Trace trace{ "gateway::inbound::handle:::management::domain::connected"};
+                        common::log::line( verbose::log, "message: ", message);
+
+                        auto descriptors = state.external.connected( state.directive, message);
+
+                        auto connection = state.external.find_external( descriptors.tcp);
+                        CASUAL_ASSERT( connection);
+
+                        // If the connection is not compatible with implicit::Update, we don't need to register to discovery
+                        if( ! message::protocol::compatible< casual::domain::message::discovery::topology::implicit::Update>( connection->protocol()))
+                           return;
+
+                        auto information = state.external.information( descriptors.tcp);
+                        CASUAL_ASSERT( information);
+
+                        // if the connection is not configured with _forward_, there's no need to register to discovery
+                        if( information->configuration.discovery != decltype( information->configuration.discovery)::forward)
+                           return;
+
+                        auto internal = state.external.find_internal( descriptors.ipc);
+                        CASUAL_ASSERT( internal);
+
+                        // a new connection has been established, we need to register this with discovery.
+                        casual::domain::discovery::provider::registration( *internal, casual::domain::discovery::provider::Ability::topology);
+
+                        common::log::line( verbose::log, "state.external: ", state.external);
+      
+                     };
+                  }
+                  
+               } // domain
+
+               namespace event::transaction
+               {
+                  auto disassociate( State& state)
+                  {
+                     return [ &state]( const common::message::event::transaction::Disassociate& message)
+                     {
+                        Trace trace{ "gateway::inbound::handle:::event::transaction::disassociate"};
+                        log::line( verbose::log, "message: ", message);
+
+                        state.transaction_cache.remove(  message.gtrid.range());
+                     };
+                  }
+                  
+               } // event::transaction
+
+            } // management
+
          } // <unnamed>
       } // local
 
+      management_handler management( State& state)
+      {
+         return management_handler{
+            common::event::listener( 
+               handle::local::management::event::transaction::disassociate( state)
+            ),
+            local::management::domain::connected( state)
+         };
+
+      }
+
       internal_handler internal( State& state)
       {
-         casual::domain::discovery::provider::registration( casual::domain::discovery::provider::Ability::topology);
-
          return internal_handler{
 
             // lookup
@@ -448,8 +461,6 @@ namespace casual
             local::internal::transaction::resource::commit::reply( state),
             local::internal::transaction::resource::rollback::reply( state),
             local::internal::transaction::coordinate::inbound::reply( state),
-
-            local::internal::domain::connected( state),
          };
       }
 
@@ -489,23 +500,48 @@ namespace casual
             Trace trace{ "gateway::group::inbound::handle::connection::lost"};
             log::line( verbose::log, "descriptor: ", descriptor);
 
+            static constexpr auto filter_active_trids = []( auto& state, auto trids)
+            {
+               if( std::empty( trids))
+                  return trids;
+
+               common::message::transaction::active::Request request{ process::handle()};
+               request.gtrids = algorithm::transform( trids, []( auto& trid){ return transaction::global::ID{ transaction::id::range::global( trid)};});
+               auto reply = communication::ipc::call( ipc::manager::transaction(), request);
+
+               algorithm::container::erase_if( trids, [ &reply]( auto& trid)
+               {
+                  return ! algorithm::contains( reply.gtrids, trid);
+               });
+
+               return trids;
+            };
+
+            // we need to send an ipc-destroyed event, so other can disassociate stuff with the ipc
+            if( auto handle = state.external.process_handle( descriptor))
+               common::event::send( common::message::event::ipc::Destroyed{ handle});
+
             auto extracted = state.extract( descriptor);
 
+            // potentially filter only active trids according to TM.
+            // We could have inactive trids still in our state due to we haven't got the
+            // event::transaction::Disassociate yet, unlikely but could happen.
+            extracted.trids = filter_active_trids( state, std::move( extracted.trids));
+            
+            // this is only to check if need to log some errors. 
             if( ! extracted.empty())
             {
-               log::line( log::category::error, code::casual::communication_unavailable, " lost connection - address: ", extracted.information.configuration.address, ", domain: ", extracted.information.domain);
+               if( ! std::empty( extracted.trids))
+                  log::error( code::casual::communication_unavailable, "lost connection - address: ", extracted.information.configuration.address, ", domain: ", extracted.information.domain, ", trids: ", extracted.trids);
+               else
+                  log::error( code::casual::communication_unavailable, "lost connection - address: ", extracted.information.configuration.address, ", domain: ", extracted.information.domain);
+               
                log::line( log::category::verbose::error, "extracted: ", extracted);
-
-               // Let ongoing task associated with the connections conclude their work.
-               // Mostly to cancel service lookups and such.
-               algorithm::for_each( extracted.correlations, [ &state]( auto& correlations)
-               {
-                  casual::task::concurrent::message::Conclude message;
-                  message.correlation = correlations;
-
-                  state.tasks( message);
-               });          
             }
+
+            // if there are ongoing tasks, let them "fail" their work.
+            // Mostly to cancel service lookups and such.
+            state.tasks.failed( descriptor);
 
             return { std::move( extracted.information.configuration), std::move( extracted.information.domain)};
          }

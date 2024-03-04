@@ -88,7 +88,7 @@ namespace casual
 
             } // external
 
-            namespace internal
+            namespace management
             {
                // handles that are specific to the outbound
                namespace handle
@@ -202,7 +202,7 @@ namespace casual
 
                auto handler( State& state)
                {
-                  return outbound::handle::internal( state) + common::message::dispatch::handler( ipc::inbound(),
+                  return outbound::handle::management( state) + common::message::dispatch::handler( ipc::inbound(),
                      common::message::dispatch::handle::defaults( state),
                      handle::configuration::update::request( state),
                      handle::state::request( state),
@@ -212,7 +212,7 @@ namespace casual
                      handle::connection::lost( state));
                }
 
-            } // internal
+            } // management
 
             namespace signal::callback
             {
@@ -259,7 +259,8 @@ namespace casual
                   state.directive,
                   tcp::handle::dispatch::create< outbound::Policy>( state, outbound::handle::external( state), &handle::connection::lost),
                   tcp::pending::send::dispatch::create( state, &handle::connection::lost),
-                  communication::select::ipc::dispatch::create< outbound::Policy>( state, &internal::handler),
+                  ipc::handle::dispatch::create< outbound::Policy>( state, outbound::handle::internal( state)),
+                  communication::select::ipc::dispatch::create< outbound::Policy>( state, &management::handler),
                   // takes care of multiplexing connects
                   tcp::connect::dispatch::create( state, tcp::logical::connect::Bound::out),
                   state.multiplex

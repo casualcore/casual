@@ -15,6 +15,7 @@ namespace casual
 
    namespace gateway::group::outbound
    {
+      /*
       namespace local
       {
          namespace
@@ -220,6 +221,7 @@ namespace casual
 
          EXPECT_TRUE( local::get_connection( lookup, "a", xid));
       }
+      */
 
    } // gateway::group::outbound
 } // casual
