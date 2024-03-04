@@ -34,8 +34,10 @@ namespace casual
 domain: 
    groups: 
       -  name: base
-      -  name: user
+      -  name: queue
          dependencies: [ base]
+      -  name: user
+         dependencies: [ queue]
       -  name: end
          dependencies: [ user]
    
@@ -45,7 +47,7 @@ domain:
       -  path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/transaction/bin/casual-transaction-manager"
          memberships: [ base]
       -  path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/queue/bin/casual-queue-manager"
-         memberships: [ base]
+         memberships: [ queue]
       -  path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/gateway/bin/casual-gateway-manager"
          memberships: [ end]
    
@@ -206,7 +208,7 @@ domain:
                -  name: a1
       forward:
          groups:
-            -  alias: A
+            -  alias: FA
                queues:
                -  source: a1
                   instances: 2
@@ -233,35 +235,31 @@ domain:
          // wait until we've lost the connection
          gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected( 0));
 
-         {
-            // to local forward. The forward will fail, since b1 is not online
-            // anymore. Rollback -> a1.error
-            queue::enqueue( "a1", origin);
-
-            auto message = local::dequeue::until( "a1.error");
-
-            ASSERT_TRUE( ! message.empty());
-            EXPECT_TRUE( message.front().payload.data == origin.payload.data);
-            
+         {            
             // should fail, of course...
             EXPECT_ANY_THROW( queue::enqueue( "b1", origin));
          }
+
+         // Add a few for the forward, they will block
+         algorithm::for_n< 5>( [ &origin]()
+         {
+            queue::enqueue( "a1", origin);
+         });
 
          // boot b again...
          b = boot_domain_b();
          a.activate();
          gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected( 1));
 
-         // we block until 'b1' is known
-         queue::unittest::wait::until::advertised( "b1");
 
-         // the forward should "self heal" and work.
+         // the forward should have "self heal" and work. We add a few more
          algorithm::for_n< 5>( [ &origin]()
          {
             queue::enqueue( "a1", origin);
          });
 
-         algorithm::for_n< 5>( [ &origin]()
+         // we should get the 5 from before the boot, and the 5 from after.
+         algorithm::for_n< 10>( [ &origin]()
          {
             auto message = local::dequeue::until( "b1");
 
