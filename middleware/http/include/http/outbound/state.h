@@ -16,6 +16,7 @@
 #include "common/pimpl.h"
 #include "common/message/service.h"
 #include "common/domain.h"
+#include "common/predicate.h"
 
 #include <string>
 #include <memory>
@@ -74,7 +75,7 @@ namespace casual
                         void add( const std::string& value);
                         
                         inline auto native() { return m_header.get();}
-                        inline explicit operator bool () const { return static_cast< bool>( m_header);}
+                        inline explicit operator bool () const { return common::predicate::boolean( m_header);}
                      private:
                         curl::type::header_list m_header{ nullptr};
                      } request;

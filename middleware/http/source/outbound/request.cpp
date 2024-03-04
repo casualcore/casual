@@ -18,6 +18,7 @@
 #include "common/communication/ipc.h"
 #include "common/message/dispatch/handle.h"
 #include "common/stream.h"
+#include "common/uuid.h"
 
 
 #include <curl/curl.h>
@@ -251,6 +252,7 @@ namespace casual
          common::log::line( http::verbose::log, "request: ", request);
 
          request.state().header.request.add( *node.headers);
+         request.state().header.request.add( { { http::header::name::execution::id, common::uuid::string( message.execution.value())}});
 
          request.state().destination = message.process;
          request.state().correlation = message.correlation;
@@ -284,7 +286,7 @@ namespace casual
             request.state().header.request.add( "connection: close");
          }
 
-         
+
          // always POST? probably...
          curl::easy::set::option( easy, CURLOPT_POST, 1L);
 
@@ -372,7 +374,7 @@ namespace casual
             {
                common::message::service::Code result;
                result.result = http::header::value::result::code( *value);
-;
+
                if( auto value = header.find( http::header::name::result::user::code))
                   result.user = http::header::value::result::user::code( *value);
 

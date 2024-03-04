@@ -10,6 +10,7 @@
 
 #include "common/cast.h"
 #include "common/algorithm.h"
+#include "common/execution.h"
 #include "casual/assert.h"
 
 
@@ -47,7 +48,8 @@ namespace casual::http::inbound
                }
                casual_http_inbound_headers_t headers;
             };
-         }
+         } // header
+
          namespace context
          {
             struct Holder
@@ -71,7 +73,8 @@ namespace casual::http::inbound
                handle->context_holder = nullptr;
             }
 
-         }
+         } // context
+
          namespace memory
          {
             char* copy( std::string_view value)
@@ -81,12 +84,35 @@ namespace casual::http::inbound
                result[ value.size()] = '\0';
                return result;
             }
-         }
+         } // memory
+
+         namespace execution::id
+         {
+            namespace validation
+            {
+               static const std::regex& format()
+               {
+                  static const auto format = std::regex{ "[a-f0-9]{32}"};
+                  return format;
+               }
+            }
+
+            void set( const std::vector< http::inbound::call::header::Field>& headers)
+            {
+               auto found = common::algorithm::find( headers, http::header::name::execution::id);
+               if( found && std::regex_match( found->value, validation::format()))
+                  common::execution::id( strong::execution::id::emplace( found->value));
+               else
+                  common::execution::id( strong::execution::id::generate());
+            }
+         } // execution::id
 
          void call( casual_http_inbound_handle_t* handle, enum Directive directive)
          {
             Trace trace{ "casual::http::inbound::local::call"};
             auto context_holder = context::cast( handle->context_holder);
+
+            execution::id::set( context_holder->request.payload.header);
 
             log::line( verbose::log, "request: ", context_holder->request);
 
@@ -187,7 +213,7 @@ namespace casual::http::inbound
                reply->payload.data = context_holder->reply.payload.body.data();
                reply->payload.size = context_holder->reply.payload.body.size();
             }
-         }
+         } // reply
 
          namespace payload
          {
@@ -201,7 +227,7 @@ namespace casual::http::inbound
 
                context_holder->request.payload.body.insert( std::end( context_holder->request.payload.body), data, data + size);
             }
-         }
+         } // payload
 
       }
    }
