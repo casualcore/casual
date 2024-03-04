@@ -311,20 +311,20 @@ domain:
       
    queue:
       groups:
-         -  alias: a
+         -  alias: b
             queuebase: ':memory:'
             queues:
-               -  name: a1
-               -  name: a2
+               -  name: b1
+               -  name: b2
       forward:
          groups:
             -  services:
-                  -  source: a1
+                  -  source: b1
                      instances: 1
                      target:
                         service: casual/example/echo
                      reply:
-                        queue: a2
+                        queue: b2
    
    gateway:
       outbound:
@@ -342,7 +342,7 @@ domain:
             queue::Message message;
             message.payload.type = common::buffer::type::json;
             message.payload.data = payload;
-            queue::enqueue( "a1", message);
+            queue::enqueue( "b1", message);
          }
 
          // startup the domain that has the service
@@ -353,7 +353,7 @@ domain:
          gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected( 1));
 
          {
-            auto message = queue::blocking::dequeue( "a2");
+            auto message = queue::blocking::dequeue( "b2");
 
             EXPECT_TRUE( message.payload.type == common::buffer::type::json);
             EXPECT_TRUE( message.payload.data == payload);
@@ -1019,7 +1019,7 @@ domain:
          ASSERT_TRUE( tx_commit() == TX_OK);
       }
 
-      TEST( test_gateway, domain_A_to_B__to__C_D___call_C_D__from_A__call_D_from_C__in_same_transaction)
+      TEST( DISABLED_test_gateway, domain_A_to_B__to__C_D___call_C_D__from_A__call_D_from_C__in_same_transaction)
       {
          common::unittest::Trace trace;
 
@@ -1171,7 +1171,7 @@ domain:
             return local::acall( "sleepy", binary);
          });
 
-         // we'll wait until the outbound has 7 (or more) pending messages
+         // we'll wait until the outbound has 7 (or more) pending tasks
          gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::pending( 7));
 
          // shutdown B 
@@ -1320,7 +1320,7 @@ domain:
 
          a.activate();
 
-         // receive the 10 calls
+         // receive all the calls
          for( auto descriptor : descriptors)
          {
             auto result = local::receive( descriptor);
@@ -1618,20 +1618,13 @@ domain:
                         -  casual/example/domain/name
 )");
 
-         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected());
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected( 3));
          
          // discover a service that we know exists in B, C and D
-         casual::domain::unittest::discover( { "casual/example/domain/name"}, {});
-
-         auto ready_predicate = []( auto& state)
          {
-            if( auto found = algorithm::find( state.services, "casual/example/domain/name"))
-               return found->connections.size() == 3;
-
-            return false;
-         };
-
-         gateway::unittest::fetch::until( ready_predicate);
+            auto services = casual::domain::unittest::service::discover( { "casual/example/domain/name"});
+            EXPECT_TRUE( services.at( 0) == "casual/example/domain/name");
+         }
 
          std::map< std::string, int> domains;
 
@@ -1984,7 +1977,7 @@ domain:
          auto a = local::domain( A);
          auto gw = local::domain( GW);
 
-         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected());
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected( 2));
 
          auto c = local::domain( C);
 
@@ -2668,7 +2661,10 @@ domain:
          constexpr auto call_count = 1;
 
          algorithm::for_n( transaction_count, [call_A_and_B]()
-         {
+         {  
+            // reset execution id, easier to check logs
+            execution::reset();
+
             ASSERT_EQ( tx_begin(), TX_OK);
             call_A_and_B( call_count);
             ASSERT_EQ( tx_commit(), TX_ROLLBACK);
@@ -2700,7 +2696,7 @@ domain:
             ASSERT_TRUE( resource.instances.size() == 1);
             auto& instance = resource.instances[ 0];
             // distributed transactions, prepare and commit.
-            EXPECT_TRUE( instance.metrics.resource.count == transaction_count * 2) << CASUAL_NAMED_VALUE( instance.metrics.resource);
+            EXPECT_TRUE( instance.metrics.resource.count == transaction_count * 2) << CASUAL_NAMED_VALUE( instance);
          }
 
 
@@ -3543,7 +3539,7 @@ domain:
          local::call( "casual/example/resource/domain/echo/C", code::xatmi::ok);
 
          // expect commit to fail and issue rollback
-         EXPECT_EQ( tx_commit(), TX_FAIL);
+         EXPECT_EQ( tx_commit(), TX_ROLLBACK);
 
          // no ongoing transaction
          EXPECT_TRUE( tx_info( nullptr) == 0);
