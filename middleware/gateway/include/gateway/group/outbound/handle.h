@@ -16,14 +16,15 @@ namespace casual
 {
    namespace gateway::group::outbound::handle
    {
-      using internal_handler = decltype( common::message::dispatch::handler( common::communication::ipc::inbound::device()));
+      using internal_handler = common::message::dispatch::basic_handler< common::communication::ipc::message::Complete, common::strong::ipc::descriptor::id>;
       internal_handler internal( State& state);
 
       using external_handler = common::message::dispatch::basic_handler< common::communication::tcp::message::Complete, common::strong::socket::id>;
       external_handler external( State& state);
-      
 
-      void unadvertise( State& state, state::lookup::Resources keys);
+      using management_handler = common::message::dispatch::basic_handler< common::communication::ipc::message::Complete>;
+      management_handler management( State& state);
+      
 
       namespace connection
       {
@@ -44,6 +45,11 @@ namespace casual
 
       //! hard shutdown - try to cancel stuff directly with best effort.
       void abort( State& state);
+
+      namespace metric
+      {
+         void send( State& state, const common::message::event::service::Calls& metric);
+      } // metric
 
 
    

@@ -27,22 +27,24 @@ namespace casual
          
       } // lookup
 
+      using task_unit = casual::task::concurrent::Unit< common::strong::socket::id>;
+
       namespace service
       {
-         [[nodiscard]] casual::task::concurrent::Unit call( State& state, common::strong::socket::id descriptor, common::message::service::call::callee::Request&& message);
-         [[nodiscard]] casual::task::concurrent::Unit conversation( State& state, common::strong::socket::id descriptor, common::message::conversation::connect::callee::Request&& message);
+         [[nodiscard]] task_unit call( State& state, common::strong::socket::id descriptor, common::message::service::call::callee::Request&& message);
+         [[nodiscard]] task_unit conversation( State& state, common::strong::socket::id descriptor, common::message::conversation::connect::callee::Request&& message);
          
       } // service
 
       namespace queue
       {
-         [[nodiscard]] casual::task::concurrent::Unit enqueue( State& state, common::strong::socket::id descriptor, casual::queue::ipc::message::group::enqueue::Request&& message);
-         [[nodiscard]] casual::task::concurrent::Unit dequeue( State& state, common::strong::socket::id descriptor, casual::queue::ipc::message::group::dequeue::Request&& message);
+         [[nodiscard]] task_unit enqueue( State& state, common::strong::socket::id descriptor, casual::queue::ipc::message::group::enqueue::Request&& message);
+         [[nodiscard]] task_unit dequeue( State& state, common::strong::socket::id descriptor, casual::queue::ipc::message::group::dequeue::Request&& message);
       } // queue
 
-      [[nodiscard]] casual::task::concurrent::Unit transaction( State& state, common::strong::socket::id descriptor, common::message::transaction::resource::prepare::Request&& message);
-      [[nodiscard]] casual::task::concurrent::Unit transaction( State& state, common::strong::socket::id descriptor, common::message::transaction::resource::commit::Request&& message);
-      [[nodiscard]] casual::task::concurrent::Unit transaction( State& state, common::strong::socket::id descriptor, common::message::transaction::resource::rollback::Request&& message);
+      [[nodiscard]] task_unit transaction( State& state, common::strong::socket::id descriptor, common::message::transaction::resource::prepare::Request&& message);
+      [[nodiscard]] task_unit transaction( State& state, common::strong::socket::id descriptor, common::message::transaction::resource::commit::Request&& message);
+      [[nodiscard]] task_unit transaction( State& state, common::strong::socket::id descriptor, common::message::transaction::resource::rollback::Request&& message);
 
    
       

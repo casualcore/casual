@@ -89,7 +89,7 @@ namespace casual
 
             } // external
 
-            namespace internal
+            namespace management
             {
                // handles that are specific to the reverse-inbound
                namespace handle
@@ -198,8 +198,8 @@ namespace casual
 
                auto handler( State& state)
                {
-                  // we add the common/general inbound handlers
-                  return inbound::handle::internal( state) + common::message::dispatch::handler( ipc::inbound(),
+                  // we add the common/general management handlers
+                  return inbound::handle::management( state) + inbound::handle::management_handler{
                      common::message::dispatch::handle::defaults( state),
                      handle::configuration::update::request( state),
                      handle::state::request( state),
@@ -207,10 +207,10 @@ namespace casual
                      handle::shutdown::request( state),
                      handle::timeout( state),
                      handle::connection::lost( state)
-                  );
+                  };
                }
 
-            } // internal
+            } // management
 
             namespace signal::callback
             {
@@ -256,10 +256,11 @@ namespace casual
                   local::condition( state),
                   state.directive,
                   tcp::pending::send::dispatch::create( state, &handle::connection::lost),
-                  communication::select::ipc::dispatch::create< inbound::Policy>( state, &internal::handler),
+                  ipc::handle::dispatch::create< inbound::Policy>( state, inbound::handle::internal( state)),
                   tcp::handle::dispatch::create< inbound::Policy>( state, inbound::handle::external( state), &handle::connection::lost),
                   // takes care of multiplexing connects
                   tcp::connect::dispatch::create( state, tcp::logical::connect::Bound::in),
+                  communication::select::ipc::dispatch::create< inbound::Policy>( state, &management::handler),
                   state.multiplex
                );
 

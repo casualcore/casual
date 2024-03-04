@@ -63,7 +63,7 @@ namespace casual
                return state;
             }
 
-            namespace internal
+            namespace management
             {
                // handles that are specific to the inbound
                namespace handle
@@ -161,17 +161,17 @@ namespace casual
                auto handler( State& state)
                {
                   // we add the common/general inbound logic
-                  return inbound::handle::internal( state) + common::message::dispatch::handler( ipc::inbound(),
+                  return inbound::handle::management( state) + inbound::handle::management_handler{
                      common::message::dispatch::handle::defaults( state),
                      handle::configuration::update::request( state),
                      handle::state::request( state),
                      handle::event::process::exit( state),
                      handle::shutdown::request( state),
                      handle::connection::lost()
-                  );
+                  };
                }
 
-            } // internal
+            } // management
 
 
             auto condition( State& state)
@@ -203,9 +203,10 @@ namespace casual
                      local::condition( state),
                      state.directive,
                      tcp::pending::send::dispatch::create( state, &handle::connection::lost),
-                     communication::select::ipc::dispatch::create< inbound::Policy>( state, &internal::handler),
+                     ipc::handle::dispatch::create< inbound::Policy>( state, inbound::handle::internal( state)),
                      tcp::handle::dispatch::create< inbound::Policy>( state, inbound::handle::external( state), &handle::connection::lost),
                      tcp::listen::dispatch::create( state, tcp::logical::connect::Bound::in),
+                     communication::select::ipc::dispatch::create< inbound::Policy>( state, &management::handler),
                      state.multiplex
                   );
                }

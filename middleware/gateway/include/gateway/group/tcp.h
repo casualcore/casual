@@ -227,11 +227,11 @@ namespace casual
          inline tcp::Connection* find_external( common::strong::ipc::descriptor::id ipc) noexcept
          {
             if( auto mapped = common::algorithm::find( m_mapping, ipc))
-               if( auto found = common::algorithm::find( m_external, mapped->tcp))
-                  return &found->second;
+               return find_external( mapped->tcp);
 
             return nullptr;
          }
+         
 
          const Information* information( common::strong::socket::id descriptor) const noexcept
          {
@@ -246,6 +246,39 @@ namespace casual
                return found.data();
             return nullptr;
          }
+
+         inline common::communication::ipc::inbound::Device* find_internal( common::strong::ipc::descriptor::id ipc) noexcept
+         {
+            if( auto found = common::algorithm::find( m_internal, ipc))
+               return &found->second;
+
+            return nullptr;
+         }
+
+         inline common::communication::ipc::inbound::Device* find_internal( common::strong::socket::id tcp) noexcept
+         {
+            if( auto mapped = common::algorithm::find( m_mapping, tcp))
+               return find_internal( mapped->ipc);
+
+            return nullptr;
+         }
+
+         inline common::process::Handle process_handle( common::strong::ipc::descriptor::id ipc) const noexcept
+         {
+            if( auto found = common::algorithm::find( m_internal, ipc))
+               return common::process::Handle{ common::process::id(), found->second.connector().handle().ipc()};
+
+            common::log::error( common::code::casual::internal_correlation, "failed to find  ", ipc);
+            return {};
+         }
+
+         inline common::process::Handle process_handle( common::strong::socket::id tcp) const noexcept
+         {
+            if( auto found = common::algorithm::find( m_mapping, tcp))
+               return process_handle( found->ipc);
+            return {};
+         }
+
          // TODO should be named extract.
          Information remove( 
             common::communication::select::Directive& directive, 
@@ -256,12 +289,14 @@ namespace casual
             // make sure we remove the ipc partner.
             auto ipc = partner( descriptor);
             common::algorithm::container::erase( m_internal, ipc);
+            // make sure we remove from read directive (ipc only reads)
+            directive.read.remove( ipc);
 
             // make sure we remove from read and write
             directive.remove( descriptor);
             common::algorithm::container::erase( m_external, descriptor);
 
-
+            common::algorithm::container::erase( m_mapping, descriptor);
             
             auto found = common::algorithm::find( m_information, descriptor);
             casual::assertion( found, "fail to find information for descriptor: ", descriptor);
@@ -302,8 +337,12 @@ namespace casual
                result.descriptor = descriptor;
                result.address.local = common::communication::tcp::socket::address::host( descriptor);
                result.address.peer = common::communication::tcp::socket::address::peer( descriptor);
+               
+               if( auto descriptors = common::algorithm::find( m_mapping, descriptor))
+                  if( auto pair = common::algorithm::find( m_internal, descriptors->ipc))
+                     result.ipc = pair->second.connector().handle().ipc();
 
-               if( auto found = common::algorithm::find( m_information, descriptor))
+               if( auto found = information( descriptor))
                {
                   result.domain = found->domain;
                   result.configuration = found->configuration;
@@ -388,6 +427,7 @@ namespace casual
          {
             return [ &state, handler = std::move( handler), lost = std::move( lost)]( common::strong::file::descriptor::id fd, common::communication::select::tag::read) mutable
             {
+               // we know the descriptor is a socket descriptor, we convert.
                auto descriptor = common::strong::socket::id{ fd};
 
                if( auto connection = state.external.find_external( descriptor))
@@ -396,7 +436,7 @@ namespace casual
                   {
                      auto count = Policy::next::tcp();
 
-                     // we know the descriptor is a socket descriptor, we convert.
+                     
                      while( count-- > 0 && handler( connection->next(), descriptor))
                         ; // no-op
                   }

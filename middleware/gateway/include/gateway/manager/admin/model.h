@@ -106,7 +106,9 @@ namespace casual
             common::strong::file::descriptor::id descriptor{};
             common::domain::Identity remote;
             connection::Address address;
+            common::strong::ipc::id ipc;
             platform::time::point::type created{};
+            
             
             inline friend bool operator == ( const Connection& lhs, std::string_view rhs) { return lhs.remote == rhs;}
 
@@ -121,6 +123,7 @@ namespace casual
                CASUAL_SERIALIZE( descriptor);
                CASUAL_SERIALIZE( remote);
                CASUAL_SERIALIZE( address);
+               CASUAL_SERIALIZE( ipc);
                CASUAL_SERIALIZE( created);
             
                //! @deprecated remove in 2.0
@@ -188,16 +191,16 @@ namespace casual
          {
             namespace pending
             {
-               struct Message
+               struct Task
                {
                   common::strong::correlation::id correlation;
-                  common::strong::ipc::id target;
                   common::strong::file::descriptor::id connection;
+                  std::vector< common::message::Type> message_types;
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
                      CASUAL_SERIALIZE( correlation);
-                     CASUAL_SERIALIZE( target);
                      CASUAL_SERIALIZE( connection);
+                     CASUAL_SERIALIZE( message_types);
                   )
                };
 
@@ -215,11 +218,11 @@ namespace casual
 
             struct Pending
             {
-               std::vector< pending::Message> messages;
+               std::vector< pending::Task> tasks;
                std::vector< pending::Transaction> transactions;
 
                CASUAL_CONST_CORRECT_SERIALIZE(
-                  CASUAL_SERIALIZE( messages);
+                  CASUAL_SERIALIZE( tasks);
                   CASUAL_SERIALIZE( transactions);
                )
             };
@@ -370,16 +373,11 @@ namespace casual
             std::vector< Connection> connections;
             std::vector< Listener> listeners;
 
-            std::vector< Routing> services;
-            std::vector< Routing> queues;
-
             CASUAL_CONST_CORRECT_SERIALIZE(
                CASUAL_SERIALIZE( inbound);
                CASUAL_SERIALIZE( outbound);
                CASUAL_SERIALIZE( connections);
                CASUAL_SERIALIZE( listeners);
-               CASUAL_SERIALIZE( services);
-               CASUAL_SERIALIZE( queues);
             )
          };
 

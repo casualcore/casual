@@ -23,7 +23,7 @@ namespace casual
             namespace lookup
             {
                template< typename C>
-               auto context( State& state, common::strong::socket::id descriptor)
+               auto context( State& state, strong::socket::id descriptor)
                {
                   using result_context = std::decay_t< C>;
 
@@ -37,11 +37,11 @@ namespace casual
 
 
                template< typename M>
-               void branch( State& state, const M& message)
+               void branch( State& state, strong::socket::id descriptor, const M& message)
                {
                   auto gtrid = transaction::id::range::global( message.trid);
 
-                  common::message::transaction::coordinate::inbound::Request request{ common::process::handle()};
+                  common::message::transaction::coordinate::inbound::Request request{ state.external.process_handle( descriptor)};
                   request.correlation = message.correlation;
                   request.execution = message.execution;
                   request.gtrid = gtrid;
@@ -50,9 +50,9 @@ namespace casual
                }
 
                template< typename M>
-               void service( State& state, common::strong::socket::id descriptor, const M& message)
+               void service( State& state, strong::socket::id descriptor, const M& message)
                {
-                  common::message::service::lookup::Request request{ common::process::handle()};
+                  common::message::service::lookup::Request request{ state.external.process_handle( descriptor)};
                   request.correlation = message.correlation;
                   request.execution = message.execution;
                   request.requested = message.service.name;
@@ -75,9 +75,9 @@ namespace casual
                }
 
                template< typename M>
-               void queue( State& state, common::strong::socket::id descriptor, const M& message)
+               void queue( State& state, strong::socket::id descriptor, const M& message)
                {
-                  casual::queue::ipc::message::lookup::Request request{ common::process::handle()};
+                  casual::queue::ipc::message::lookup::Request request{ state.external.process_handle( descriptor)};
                   {
                      request.correlation = message.correlation;
                      request.execution = message.execution;
@@ -96,94 +96,97 @@ namespace casual
 
             } // lookup
 
+            // tries to send to the "partner ipc", if it's full/busy we try later via state.multiplex.send abstraction
+            template< typename M>
+            void send_to_partner_ipc( State& state, strong::socket::id descriptor, M&& message)
+            {
+               if( auto found = state.external.find_internal( descriptor))
+                  state.multiplex.send( found->connector().handle().ipc(), std::forward< M>( message));
+               else
+                  log::error( code::casual::internal_correlation, "failed to correlate the ipc partner for tcp descriptor:  ", descriptor);
+            }
+         
 
             template< typename M>
-            void push_service_error_reply( strong::correlation::id correlation, strong::execution::id execution , common::code::xatmi code)
+            void fake_service_error_reply( State& state, strong::socket::id descriptor, M&& request, common::code::xatmi code)
             {
-               M reply;
-               reply.correlation = correlation;
-               reply.execution = execution;
+               auto reply = common::message::reverse::type( request);
                reply.code.result = code;
-               ipc::inbound().push( std::move( reply));
+               local::send_to_partner_ipc( state, descriptor, std::move( reply));
             }
 
             template< typename M>
-            void push_queue_error_reply( strong::correlation::id correlation, strong::execution::id execution)
+            void fake_queue_error_reply( State& state, strong::socket::id descriptor, M&& request)
             {
-               M reply;
-               reply.correlation = correlation;
-               reply.execution = execution;
-               ipc::inbound().push( std::move( reply));
+               local::send_to_partner_ipc( state, descriptor, common::message::reverse::type( request));
             }
 
             template< typename M>
-            void push_transaction_error_reply( strong::correlation::id correlation, strong::execution::id execution, strong::resource::id resource, common::code::xa code)
+            void fake_transaction_error_reply( State& state, strong::socket::id descriptor, const M& message, common::code::xa code)
             {
-               M reply;
-               reply.correlation = correlation;
-               reply.execution = execution;
+               auto reply = common::message::reverse::type( message);
                reply.state = code;
-               reply.resource = resource;
-               ipc::inbound().push( std::move( reply));
+               reply.trid = message.trid;
+               reply.resource = message.resource;
+
+               local::send_to_partner_ipc( state, descriptor, std::move( reply));
             }
 
 
             namespace send
             {
                template< typename M> 
-               void service_request( State& state, const common::message::service::lookup::Reply& lookup, M&& message)
+               void service_request( State& state, strong::socket::id descriptor, const common::message::service::lookup::Reply& lookup, M&& message)
                {
-                  using reply_type = common::message::reverse::type_t< M>;
-
                   // take care of "route mapping"
                   if( message.service.name != lookup.service.name)
                      message.service.requested = std::exchange( message.service.name, lookup.service.name);
 
                   switch( lookup.state)
                   {
+                     using message_type = std::decay_t< M>;
+
                      using Enum = decltype( lookup.state);
                      case Enum::idle:
                      {
-                        state.multiplex.send( lookup.process.ipc, message, []( auto& destination, auto& complete)
+                        state.multiplex.send( lookup.process.ipc, message, [ &state, descriptor]( auto& destination, auto& complete)
                         {
                            log::error( code::xatmi::service_error, "destination: ", destination, " is unreachable - action: reply with: ", code::xatmi::service_error);
 
-                           // add a reply to our inbound to emulate a real reply
-                           local::push_service_error_reply< reply_type>( complete.correlation(), complete.execution(), code::xatmi::service_error);
+                           // deserialize the request add a reply to our inbound to emulate a real reply
+                           local::fake_service_error_reply( state, descriptor, serialize::native::complete< message_type>( complete), code::xatmi::service_error);
                         });
                         break;
                      }
                      case Enum::absent:
                      {
-                        log::error( code::xatmi::no_entry, "service: ", lookup.service, " is not handled by this domain (any more) - action: reply with: ", code::xatmi::no_entry);
+                        log::error( code::xatmi::no_entry, "service: ", lookup.service.name, " is not handled by this domain (any more) - action: reply with: ", code::xatmi::no_entry);
                         // add a reply to our inbound to emulate a real reply
-                        local::push_service_error_reply< reply_type>( message.correlation, message.execution, code::xatmi::no_entry);
+                        local::fake_service_error_reply( state, descriptor, message, code::xatmi::no_entry);
                         break;
                      }
                      default: 
                      {
                         log::error( code::casual::internal_unexpected_value, "unexpected state on lookup reply: ", lookup, " - action: reply with: ", code::xatmi::service_error);
                         // add a reply to our inbound to emulate a real reply
-                        local::push_service_error_reply< reply_type>( message.correlation, message.execution, code::xatmi::system);
+                        local::fake_service_error_reply( state, descriptor, message, code::xatmi::system);
                         break;
                      }
                   }
                }
 
                template< typename M> 
-               void queue_request( State& state, const casual::queue::ipc::message::lookup::Reply& lookup, M& message)
+               void queue_request( State& state, strong::socket::id descriptor, const casual::queue::ipc::message::lookup::Reply& lookup, M& message)
                {
-                  using reply_type = common::message::reverse::type_t< M>;
-
                   if( ! lookup.process.ipc)
-                     return local::push_queue_error_reply< reply_type>( message.correlation, message.execution);
+                     return local::fake_queue_error_reply( state, descriptor, message);
 
-                  state.multiplex.send( lookup.process.ipc, message, []( auto& destination, auto& complete)
+                  state.multiplex.send( lookup.process.ipc, message, [ &state, descriptor]( auto& destination, auto& complete)
                   {
                      log::error( code::xatmi::service_error, "destination: ", destination, " is unreachable - action: reply with empty reply");
 
-                     // add a reply to our inbound to emulate a real reply
-                     local::push_queue_error_reply< reply_type>( complete.correlation(), complete.execution());
+                     // Deserialize the request and add the reply inbound to emulate a real reply
+                     local::fake_queue_error_reply( state, descriptor, serialize::native::complete< M>( complete));
                   });
                }
 
@@ -191,19 +194,14 @@ namespace casual
             } // send
 
 
-
-            template< typename M>
-            auto handle_service( State& state, common::strong::socket::id descriptor, M& message)
+            auto handle_service( State& state, strong::socket::id descriptor, common::message::service::call::callee::Request&& message)
             {
                Trace trace{ "gateway::group::inbound::task::create::local::handle_service"};
 
-               using reply_type = common::message::reverse::type_t< M>;
-
                struct Shared
                {
-                  common::strong::socket::id descriptor;
                   common::transaction::ID origin_trid;
-                  M message;
+                  common::message::service::call::callee::Request message;
                   std::optional< common::message::service::lookup::Reply> lookup;
                };
 
@@ -215,82 +213,57 @@ namespace casual
                {
                   shared->origin_trid = message.trid;
 
-                  if( auto found = state.transaction_cache.associate( descriptor, message.trid))
+                  if( auto found = state.transaction_cache.associate( message.trid, descriptor))
                      message.trid = *found;
                   else
-                     local::lookup::branch( state, message);
+                     local::lookup::branch( state, descriptor, message);
                }
                
                shared->message = std::move( message);
-               shared->descriptor = descriptor;
-               // make sure we get the reply
-               shared->message.process = process::handle();
+               // make sure the ipc partner to the tcp socket gets the reply
+               shared->message.process = state.external.process_handle( descriptor);
 
-               return casual::task::concurrent::Unit{
-                  [ &state, shared]( common::message::service::lookup::Reply& reply) mutable
+               return task_unit{ descriptor, message.correlation,
+                  [ &state, shared]( common::message::service::lookup::Reply& reply, strong::socket::id descriptor) mutable
                   {
                      Trace trace{ "gateway::group::inbound::task::create::service::call lookup::Reply"};
 
-                     if( reply.correlation != shared->message.correlation)
-                        return casual::task::concurrent::unit::Dispatch::pending;
-
                      shared->lookup = std::move( reply);
 
-                     // if the call wasn't in transaction, or we've branched the trid already
+                     // If the call wasn't in transaction, or we've branched the trid already.
+                     // If the call failed, we've "sent" the reply, 
                      if( ! shared->origin_trid || shared->origin_trid != shared->message.trid)
-                        local::send::service_request( state, *shared->lookup, shared->message);
+                        local::send::service_request( state, descriptor, *shared->lookup, shared->message);
                      
                      return casual::task::concurrent::unit::Dispatch::pending;
 
                   },
-                  [ &state, shared]( common::message::transaction::coordinate::inbound::Reply& reply) mutable
+                  [ &state, shared]( common::message::transaction::coordinate::inbound::Reply& reply, strong::socket::id descriptor) mutable
                   {
                      Trace trace{ "gateway::group::inbound::task::create::service::call transaction::coordinate::inbound::Reply"};
 
-                     if( reply.correlation != shared->message.correlation)
-                        return casual::task::concurrent::unit::Dispatch::pending;
-
-                     state.transaction_cache.add_branch( shared->descriptor, reply.trid);
+                     state.transaction_cache.add( reply.trid, descriptor);
 
                      shared->message.trid = std::move( reply.trid);
 
                      if( shared->lookup)
-                        local::send::service_request( state, *shared->lookup, shared->message);
+                        local::send::service_request( state, descriptor, *shared->lookup, shared->message);
 
                   
                      return casual::task::concurrent::unit::Dispatch::pending;
                   },
-                  [ &state, shared]( reply_type& reply)
+                  [ &state, shared]( common::message::service::call::Reply& reply, strong::socket::id descriptor)
                   {
                      Trace trace{ "gateway::group::inbound::task::create::local reply_type"};
 
-                     if( reply.correlation != shared->message.correlation)
-                        return casual::task::concurrent::unit::Dispatch::pending;
-
-                     if constexpr( concepts::same_as< reply_type, common::message::service::call::Reply>)
-                     {
-                        reply.transaction.trid = std::move( shared->origin_trid);
-                        inbound::tcp::send( state, reply);
-                     }
-
-                     if constexpr( concepts::same_as< reply_type, common::message::conversation::connect::Reply>)
-                     {
-                        // we consume the correlation to connection, and add a conversation specific "route"
-                        if( auto descriptor = inbound::tcp::send( state, reply))
-                        {
-                           state.conversations.push_back( state::Conversation{ reply.correlation, descriptor, reply.process});
-                           common::log::line( verbose::log, "state.conversations: ", state.conversations);
-                        }
-                     }
+                     reply.transaction.trid = std::move( shared->origin_trid);
+                     inbound::tcp::send( state, descriptor, reply);
                      
-                     // regardless we're done.
+                     // We're done
                      return casual::task::concurrent::unit::Dispatch::done;
                   },
-                  [ &state, shared]( const casual::task::concurrent::message::Conclude& message)
+                  [ &state, shared]( const casual::task::concurrent::message::task::Failed& message, strong::socket::id descriptor)
                   {
-                     if( message.correlation != shared->message.correlation)
-                        return casual::task::concurrent::unit::Dispatch::pending;
-
                      if( ! shared->lookup)
                      {
                         // we have a pending lookup, discard.
@@ -309,18 +282,120 @@ namespace casual
             }
 
 
+            auto handle_conversation( State& state, strong::socket::id descriptor, common::message::conversation::connect::callee::Request&& message)
+            {
+               Trace trace{ "gateway::group::inbound::task::create::local::handle_conversation"};
+
+               // connect::Reply and Send from internal we just forward to the corresponding tcp socket, 
+               // no need to handle them in this task (we don't need any information from those messages)
+
+               struct Shared
+               {
+                  common::transaction::ID origin_trid;
+                  common::message::conversation::connect::callee::Request message;
+                  std::optional< common::message::service::lookup::Reply> lookup;
+               };
+
+               local::lookup::service( state, descriptor, message);
+
+               auto shared = std::make_shared< Shared>();
+
+               if( message.trid)
+               {
+                  shared->origin_trid = message.trid;
+
+                  if( auto found = state.transaction_cache.associate( message.trid, descriptor))
+                     message.trid = *found;
+                  else
+                     local::lookup::branch( state, descriptor, message);
+               }
+               
+               shared->message = std::move( message);
+               // make sure the ipc partner to the tcp socket gets the reply
+               shared->message.process = state.external.process_handle( descriptor);
+
+               return task_unit{ descriptor, message.correlation,
+                  [ &state, shared]( common::message::service::lookup::Reply& reply, strong::socket::id descriptor) mutable
+                  {
+                     Trace trace{ "gateway::group::inbound::task::create::local::handle_conversation lookup::Reply"};
+
+                     shared->lookup = std::move( reply);
+
+                     // if the call wasn't in transaction, or we've branched the trid already
+                     if( ! shared->origin_trid || shared->origin_trid != shared->message.trid)
+                        local::send::service_request( state, descriptor, *shared->lookup, shared->message);
+                     
+                     return casual::task::concurrent::unit::Dispatch::pending;
+
+                  },
+                  [ &state, shared]( common::message::transaction::coordinate::inbound::Reply& reply, strong::socket::id descriptor) mutable
+                  {
+                     Trace trace{ "gateway::group::inbound::task::create::local::handle_conversation transaction::coordinate::inbound::Reply"};
+
+                     state.transaction_cache.add( reply.trid, descriptor);
+
+                     shared->message.trid = std::move( reply.trid);
+
+                     if( shared->lookup)
+                        local::send::service_request( state, descriptor, *shared->lookup, shared->message);
+
+                  
+                     return casual::task::concurrent::unit::Dispatch::pending;
+                  },
+                  [ &state, shared]( common::message::conversation::callee::Send& message, strong::socket::id descriptor)
+                  {
+                     Trace trace{ "gateway::group::inbound::task::create::local::handle_conversation Send"};
+
+                     CASUAL_ASSERT( shared->lookup);
+
+                     // we send the message to the looked up destination
+                     state.multiplex.send( shared->lookup->process.ipc, message);
+                     
+                     // we're not done with the conversation
+                     return casual::task::concurrent::unit::Dispatch::pending;
+                  },
+                  [ &state, shared]( common::message::conversation::Disconnect& message, strong::socket::id descriptor)
+                  {
+                     Trace trace{ "gateway::group::inbound::task::create::local::handle_conversation Disconnect"};
+
+                     CASUAL_ASSERT( shared->lookup);
+
+                     // we send the message to the looked up destination
+                     state.multiplex.send( shared->lookup->process.ipc, message);
+                     
+                     // Now we're done.
+                     return casual::task::concurrent::unit::Dispatch::done;
+                  },
+                  [ &state, shared]( const casual::task::concurrent::message::task::Failed& message, strong::socket::id descriptor)
+                  {
+                     if( ! shared->lookup)
+                     {
+                        // we have a pending lookup, discard.
+                        common::message::service::lookup::discard::Request request;
+                        request.correlation = message.correlation;
+                        request.execution = message.execution;
+                        request.reply = false;
+                        request.requested = shared->message.service.name;
+
+                        state.multiplex.send( ipc::manager::service(), request);
+                     }
+
+                     return casual::task::concurrent::unit::Dispatch::done;
+                  }
+               };
+            }
+
             template< typename M>
-            auto handle_queue( State& state, common::strong::socket::id descriptor, M& message)
+            auto handle_queue( State& state, strong::socket::id descriptor, M& message)
             {
                Trace trace{ "gateway::group::inbound::task::create::local::handle_queue"};
 
-               using reply_type = common::message::reverse::type_t< M>;
+               // The enqueue/dequeue Reply we just forward to the corresponding tcp socket
 
                local::lookup::queue( state, descriptor, message);
 
                struct Shared
                {
-                  strong::socket::id descriptor;
                   M message;
                   bool wait_for_branch = false;
                   std::optional< casual::queue::ipc::message::lookup::Reply> lookup; 
@@ -330,115 +405,83 @@ namespace casual
 
                if( message.trid)
                {
-                  if( auto found = state.transaction_cache.associate( descriptor, message.trid))
+                  if( auto found = state.transaction_cache.associate( message.trid, descriptor))
+                  {
                      message.trid = *found;
+                  }
                   else
                   {
                      shared->wait_for_branch = true;
-                     local::lookup::branch( state, message);
+                     local::lookup::branch( state, descriptor,  message);
                   }
                }
 
                shared->message = std::move( message);
-               shared->descriptor = descriptor;
-               shared->message.process = process::handle();
+               shared->message.process = state.external.process_handle( descriptor);
 
-               return casual::task::concurrent::Unit{
-                  [ &state, shared]( casual::queue::ipc::message::lookup::Reply& reply) mutable
+               return task_unit{ descriptor, message.correlation,
+                  [ &state, shared]( casual::queue::ipc::message::lookup::Reply& reply, strong::socket::id descriptor) mutable
                   {
                      Trace trace{ "gateway::group::inbound::task::create::local::handle_queue lookup::Reply"};
-
-                     if( reply.correlation != shared->message.correlation)
-                        return casual::task::concurrent::unit::Dispatch::pending;
 
                      shared->lookup = std::move( reply);
 
                      // We wait for the trid if we've not got it yet.
-                     if( ! shared->wait_for_branch)
-                        local::send::queue_request( state, *shared->lookup, shared->message);
-
-                     return casual::task::concurrent::unit::Dispatch::pending;
-                  },
-                  [ &state, shared]( common::message::transaction::coordinate::inbound::Reply& reply) mutable
-                  {
-                     Trace trace{ "gateway::group::inbound::task::create::local::handle_queue transaction::lookup::Reply"};
-                     
-                     if( reply.correlation != shared->message.correlation)
+                     if( shared->wait_for_branch)
                         return casual::task::concurrent::unit::Dispatch::pending;
 
-                     state.transaction_cache.add_branch( shared->descriptor, reply.trid);
+                     local::send::queue_request( state, descriptor, *shared->lookup, shared->message);
+                     return casual::task::concurrent::unit::Dispatch::done;
+                  },
+                  [ &state, shared]( common::message::transaction::coordinate::inbound::Reply& reply, strong::socket::id descriptor) mutable
+                  {
+                     Trace trace{ "gateway::group::inbound::task::create::local::handle_queue transaction::lookup::Reply"};
+
+                     state.transaction_cache.add( reply.trid, descriptor);
 
                      shared->message.trid = std::move( reply.trid);
                      shared->wait_for_branch = false;
 
-                     if( shared->lookup)
-                        local::send::queue_request( state, *shared->lookup, shared->message);
-
-                     return casual::task::concurrent::unit::Dispatch::pending;
-                  },
-                  [ &state, shared]( reply_type& reply)
-                  {
-                     Trace trace{ "gateway::group::inbound::task::create::local::handle_queue reply_type"};
-
-                     if( reply.correlation != shared->message.correlation)
+                     if( ! shared->lookup)
                         return casual::task::concurrent::unit::Dispatch::pending;
                      
-                     inbound::tcp::send( state, reply);
-
-                     // regardless we're done.
+                     local::send::queue_request( state, descriptor, *shared->lookup, shared->message);
                      return casual::task::concurrent::unit::Dispatch::done;
-                  },
+                  }
                };
             }
 
             template< typename M>
-            auto handle_transaction( State& state, common::strong::socket::id descriptor, M& message)
+            auto handle_transaction( State& state, strong::socket::id descriptor, M&& message)
             {
                Trace trace{ "gateway::group::inbound::task::create::local::handle_transaction"};
 
                using reply_type = common::message::reverse::type_t< M>;
 
-               struct Shared
-               {
-                  common::strong::socket::id descriptor;
-                  strong::correlation::id correlation;
-                  common::transaction::ID origin_trid;
-               };
-
-               auto shared = Shared{ descriptor, message.correlation, message.trid};
-
                // map to the internal trid, we expect to find this in cache
                if( auto found = state.transaction_cache.find( common::transaction::id::range::global( message.trid)))
                {
                   message.trid = *found;
-                  message.process = process::handle();
+                  message.process = state.external.process_handle( descriptor);
                   state.multiplex.send( ipc::manager::transaction(), message);
                }
                else
                {
                   log::error( code::casual::invalid_semantics, "failed map to internal trid: ", message, " - action: reply with: ", code::xa::protocol);
-                  local::push_transaction_error_reply< reply_type>( message.correlation, message.execution, message.resource, code::xa::protocol);
+                  local::fake_transaction_error_reply( state, descriptor, message, code::xa::protocol);
                }
 
-               return casual::task::concurrent::Unit{
-                  [ &state, shared = std::move( shared)]( reply_type& reply)
+               return task_unit{ descriptor, message.correlation,
+                  [ &state, origin_trid = message.trid]( reply_type& reply, strong::socket::id descriptor)
                   {
-                     if( reply.correlation != shared.correlation)
-                        return casual::task::concurrent::unit::Dispatch::pending;
+                     Trace trace{ "gateway::group::inbound::task::create::local::handle_transaction task"};
 
                      // map back to the external trid.
-                     reply.trid = shared.origin_trid;
+                     reply.trid = origin_trid;
 
-                     // clean up cache, with the external trid
-                     if constexpr( concepts::same_as< reply_type, common::message::transaction::resource::prepare::Reply>)
-                     {
-                        if( reply.state == code::xa::read_only)
-                           state.transaction_cache.dissociate( shared.descriptor, reply.trid);
-                     }
-                     else
-                        state.transaction_cache.dissociate( shared.descriptor, reply.trid);
+                     // we don't clean transaction_cache, TM will tell us when it's done
 
-                     inbound::tcp::send( state, reply);
+                     inbound::tcp::send( state, descriptor, reply);
                      
                      // we're done regardless
                      return casual::task::concurrent::unit::Dispatch::done;
@@ -450,16 +493,16 @@ namespace casual
 
       namespace service
       {
-         casual::task::concurrent::Unit call( State& state, common::strong::socket::id descriptor, common::message::service::call::callee::Request&& message)
+         task_unit call( State& state, strong::socket::id descriptor, common::message::service::call::callee::Request&& message)
          {
             Trace trace{ "gateway::group::inbound::task::create::service::call"};
-            return local::handle_service( state, descriptor, message);
+            return local::handle_service( state, descriptor, std::move( message));
          }
 
-         casual::task::concurrent::Unit conversation( State& state, common::strong::socket::id descriptor, common::message::conversation::connect::callee::Request&& message)
+         task_unit conversation( State& state, strong::socket::id descriptor, common::message::conversation::connect::callee::Request&& message)
          {
             Trace trace{ "gateway::group::inbound::task::create::service::conversation"};
-            return local::handle_service( state, descriptor, message);
+            return local::handle_conversation( state, descriptor, std::move( message));
          }
          
       } // service
@@ -467,14 +510,14 @@ namespace casual
       namespace queue
       {
          
-         casual::task::concurrent::Unit enqueue( State& state, common::strong::socket::id descriptor, casual::queue::ipc::message::group::enqueue::Request&& message)
+         task_unit enqueue( State& state, strong::socket::id descriptor, casual::queue::ipc::message::group::enqueue::Request&& message)
          {
             Trace trace{ "gateway::group::inbound::task::create::queue::enqueue"};
             return local::handle_queue( state, descriptor, message);
 
          }
 
-         casual::task::concurrent::Unit dequeue( State& state, common::strong::socket::id descriptor, casual::queue::ipc::message::group::dequeue::Request&& message)
+         task_unit dequeue( State& state, strong::socket::id descriptor, casual::queue::ipc::message::group::dequeue::Request&& message)
          {
             Trace trace{ "gateway::group::inbound::task::create::queue::dequeue"};
             return local::handle_queue( state, descriptor, message);
@@ -483,17 +526,17 @@ namespace casual
       } // queue
 
    
-      casual::task::concurrent::Unit transaction( State& state, common::strong::socket::id descriptor, common::message::transaction::resource::prepare::Request&& message)
+      task_unit transaction( State& state, strong::socket::id descriptor, common::message::transaction::resource::prepare::Request&& message)
       {
          return local::handle_transaction( state, descriptor, message);
       }
 
-      casual::task::concurrent::Unit transaction( State& state, common::strong::socket::id descriptor, common::message::transaction::resource::commit::Request&& message)
+      task_unit transaction( State& state, strong::socket::id descriptor, common::message::transaction::resource::commit::Request&& message)
       {
          return local::handle_transaction( state, descriptor, message);
       }
 
-      casual::task::concurrent::Unit transaction( State& state, common::strong::socket::id descriptor, common::message::transaction::resource::rollback::Request&& message)
+      task_unit transaction( State& state, strong::socket::id descriptor, common::message::transaction::resource::rollback::Request&& message)
       {
          return local::handle_transaction( state, descriptor, message);
       }
