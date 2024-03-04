@@ -90,15 +90,37 @@ namespace casual
          }
       }
 
+      namespace local
+      {
+         namespace
+         {
+            void remove_queues( State& state, common::process::compare_equal_to_handle auto id)
+            {
+               common::algorithm::container::erase_if( state.queues, [ id]( auto& pair)
+               {
+                  return common::algorithm::container::erase( pair.second, id).empty();
+               });
+
+               log::line( log, "state.queues: ", state.queues);
+            }
+
+         } // <unnamed>
+      } // local
+
       void State::remove_queues( common::strong::process::id pid)
       {
          Trace trace{ "queue::manager::State::remove_queues"};
+         log::line( log, "pid: ", pid);
 
-         common::algorithm::container::erase_if( queues, common::predicate::adapter::second( [pid]( auto& instances){
-            return common::algorithm::container::trim( instances, common::algorithm::remove( instances, pid)).empty();
-         }));
+         local::remove_queues( *this, pid);
+      }
 
-         log::line( log, "queues: ", queues);
+      void State::remove_queues( common::strong::ipc::id ipc)
+      {
+         Trace trace{ "queue::manager::State::remove_queues"};
+         log::line( log, "ipc: ", ipc);
+
+         local::remove_queues( *this, ipc);
       }
 
       void State::remove( common::strong::process::id pid)
@@ -121,6 +143,10 @@ namespace casual
          // from this domains queue-groups. Hence, the advertised queues are
          // remote queues.
          
+         if( message.reset)         
+            return remove_queues( message.process.ipc);
+
+
          // outbound order is zero-based, we add 1 to give it lower prio.
          auto order = message.order + 1;
 

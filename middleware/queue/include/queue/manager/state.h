@@ -204,6 +204,7 @@ namespace casual
          //!
          //! @param pid process id
          void remove_queues( common::strong::process::id pid);
+         void remove_queues( common::strong::ipc::id ipc);
 
          //! Removes the process (group/gateway) and all queues associated with the process
          //!
