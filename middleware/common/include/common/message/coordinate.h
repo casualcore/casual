@@ -63,9 +63,6 @@ namespace casual
                strong::correlation::id correlation;
                
                inline friend bool operator == ( const Pending& lhs, const strong::correlation::id& rhs) { return lhs.correlation == rhs;}
-
-               template< typename I>
-               friend auto operator == ( const Pending& lhs, I&& rhs) noexcept requires std::equality_comparable_with< id_type, I>{ return lhs.id == rhs;}
                inline friend bool operator == ( const Pending& lhs, State rhs) { return lhs.state == rhs;}
 
                CASUAL_LOG_SERIALIZE(
@@ -74,6 +71,9 @@ namespace casual
                   CASUAL_SERIALIZE( correlation);
                )
             };
+
+            template< typename I>
+            friend auto operator == ( const Pending& lhs, I&& rhs) noexcept -> decltype( lhs.id == rhs) { return lhs.id == rhs;}
 
             struct Entry
             {

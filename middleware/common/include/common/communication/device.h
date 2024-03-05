@@ -80,10 +80,15 @@ namespace casual
 
          ~Inbound()
          {
+            /* We cant use log here, since it could be destructed already...
+               We might want to secure that log is instansiated first, at least
+               before the 'inbound' 
+
             if( ! m_cache.empty() && log::category::warning)
                log::line( log::category::warning, "pending messages in cache - ", *this);
             else if( verbose::log)
                log::line( verbose::log, "device: ", *this);
+            */
          }
 
          Inbound( Inbound&&) = default;

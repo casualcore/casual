@@ -32,9 +32,6 @@ namespace casual
    {
       namespace state
       {
-         template< typename T>
-         concept compare_equal_to_process = concepts::compare::equal_to< common::process::Handle, T>;
-
          using ipc_range_type = common::range::const_type_t< std::vector< common::strong::ipc::id>>;
 
          struct Service;
@@ -62,7 +59,7 @@ namespace casual
 
                common::process::Handle process;
 
-               inline friend bool operator == ( const base_instance& lhs, compare_equal_to_process auto rhs) { return lhs.process == rhs;}
+               inline friend bool operator == ( const base_instance& lhs, common::process::compare_equal_to_handle auto rhs) { return lhs.process == rhs;}
 
                CASUAL_LOG_SERIALIZE(
                   CASUAL_SERIALIZE( process);
@@ -247,7 +244,7 @@ namespace casual
                   inline const common::process::Handle& process() const { return get().process;}
                   inline auto state() const { return get().state();}
 
-                  inline friend bool operator == ( const Sequential& lhs, compare_equal_to_process auto rhs) { return lhs.process() == rhs;}
+                  inline friend bool operator == ( const Sequential& lhs, common::process::compare_equal_to_handle auto rhs) { return lhs.process() == rhs;}
 
                   CASUAL_LOG_SERIALIZE(
                      get().serialize( archive);
@@ -265,7 +262,7 @@ namespace casual
 
                   inline const common::process::Handle& process() const { return get().process;}
 
-                  inline friend bool operator == ( const Concurrent& lhs, compare_equal_to_process auto rhs) { return lhs.process() == rhs;}
+                  inline friend bool operator == ( const Concurrent& lhs, common::process::compare_equal_to_handle auto rhs) { return lhs.process() == rhs;}
                   
                   //! for common::Compare. The configured services are 'worth more' than not configured. 
                   inline auto tie() const { return std::tie( property.type, get().order, property.hops);}
