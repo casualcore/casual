@@ -9,6 +9,7 @@
 #include "common/environment/variable.h"
 
 #include <string>
+#include <vector>
 
 namespace casual
 {

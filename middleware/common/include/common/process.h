@@ -63,7 +63,11 @@ namespace casual
 
          //! concept to help define equality compare with ipc and pid
          template< typename T>
-         concept compare_equal_to_handle = concepts::compare::equal_to< common::process::Handle, T>;
+         concept compare_equal_to_handle = concepts::any_of< T, strong::ipc::id, strong::process::id, Handle> &&  requires( const Handle& a, const T& b) 
+         {
+            { a == b} -> std::convertible_to< bool>;
+            { a != b} -> std::convertible_to< bool>;
+         };
 
          //! @return the process handle for current process
          const Handle& handle();

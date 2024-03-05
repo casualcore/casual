@@ -69,6 +69,11 @@ namespace casual
       static_assert( concepts::binary::iterator< std::vector< char>::iterator>, "concepts not work...");
       static_assert( ! concepts::binary::iterator< std::vector< int>::iterator>, "concepts not work...");
 
+      static_assert( concepts::compare::equal_to< long, int>);
+      static_assert( process::compare_equal_to_handle< strong::process::id>);
+      static_assert( process::compare_equal_to_handle< strong::ipc::id>);
+      static_assert( ! process::compare_equal_to_handle< long>);
+
       namespace detail 
       {
          template< typename T>
