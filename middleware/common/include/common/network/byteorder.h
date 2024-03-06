@@ -9,6 +9,7 @@
 
 
 #include "casual/platform.h"
+#include "casual/concepts.h"
 
 #include <cstddef>
 #include <cstdint>
@@ -29,18 +30,12 @@ namespace casual
                template<typename type>
                struct transcode;
 
-               template<>
-               struct transcode<bool>
+               // just passthrough 
+               template< typename T> requires concepts::any_of< T, bool, char, signed char, unsigned char>
+               struct transcode< T> 
                {
-                  static std::uint8_t encode( bool value) noexcept;
-                  static bool decode( std::uint8_t value) noexcept;
-               };
-
-               template<>
-               struct transcode<char>
-               {
-                  static std::uint8_t encode( char value) noexcept;
-                  static char decode( std::uint8_t value) noexcept;
+                  static constexpr std::uint8_t encode( T value) noexcept { return value;}
+                  static constexpr T decode( std::uint8_t value) noexcept { return value;}
                };
 
 
