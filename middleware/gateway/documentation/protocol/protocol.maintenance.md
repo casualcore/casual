@@ -190,7 +190,7 @@ Reply to call request
 role name                    | network type   | network size | description                                                                   
 ---------------------------- | -------------- | ------------ | ------------------------------------------------------------------------------
 execution                    | (fixed) binary |           16 | uuid of the current execution context (breadcrumb)                            
-code.result                  | uint64         |            8 | XATMI result/error code, 0 represent OK                                       
+code.result                  | uint32         |            4 | XATMI result/error code, 0 represent OK                                       
 code.user                    | uint64         |            8 | XATMI user supplied code                                                      
 transaction.xid.formatID     | uint64         |            8 | xid format type. if 0 no more information of the xid is transported           
 transaction.xid.gtrid_length | uint64         |            8 | length of the transaction gtrid part                                          
@@ -214,7 +214,7 @@ xid.formatID     | uint64         |            8 | xid format type. if 0 no more
 xid.gtrid_length | uint64         |            8 | length of the transaction gtrid part                               
 xid.bqual_length | uint64         |            8 | length of the transaction branch part                              
 xid.data         | (fixed) binary |           32 | byte array with the size of gtrid_length + bqual_length (max 128)  
-resource         | uint64         |            8 | RM id of the resource - has to correlate with the reply            
+resource         | uint32         |            4 | RM id of the resource - has to correlate with the reply            
 flags            | uint64         |            8 | XA flags to be forward to the resource                             
 
 
@@ -229,8 +229,8 @@ xid.formatID     | uint64         |            8 | xid format type. if 0 no more
 xid.gtrid_length | uint64         |            8 | length of the transaction gtrid part                               
 xid.bqual_length | uint64         |            8 | length of the transaction branch part                              
 xid.data         | (fixed) binary |           32 | byte array with the size of gtrid_length + bqual_length (max 128)  
-resource         | uint64         |            8 | RM id of the resource - has to correlate with the request          
-state            | uint64         |            8 | The state of the operation - If successful XA_OK ( 0)              
+resource         | uint32         |            4 | RM id of the resource - has to correlate with the request          
+state            | uint32         |            4 | The state of the operation - If successful XA_OK ( 0)              
 
 ### Resource commit
 
@@ -247,7 +247,7 @@ xid.formatID     | uint64         |            8 | xid format type. if 0 no more
 xid.gtrid_length | uint64         |            8 | length of the transaction gtrid part                               
 xid.bqual_length | uint64         |            8 | length of the transaction branch part                              
 xid.data         | (fixed) binary |           32 | byte array with the size of gtrid_length + bqual_length (max 128)  
-resource         | uint64         |            8 | RM id of the resource - has to correlate with the reply            
+resource         | uint32         |            4 | RM id of the resource - has to correlate with the reply            
 flags            | uint64         |            8 | XA flags to be forward to the resource                             
 
 
@@ -262,8 +262,8 @@ xid.formatID     | uint64         |            8 | xid format type. if 0 no more
 xid.gtrid_length | uint64         |            8 | length of the transaction gtrid part                               
 xid.bqual_length | uint64         |            8 | length of the transaction branch part                              
 xid.data         | (fixed) binary |           32 | byte array with the size of gtrid_length + bqual_length (max 128)  
-resource         | uint64         |            8 | RM id of the resource - has to correlate with the request          
-state            | uint64         |            8 | The state of the operation - If successful XA_OK ( 0)              
+resource         | uint32         |            4 | RM id of the resource - has to correlate with the request          
+state            | uint32         |            4 | The state of the operation - If successful XA_OK ( 0)              
 
 
 ## transaction_resource_rollback_request - **#5205** - _[1.0, 1.1, 1.2]_
@@ -278,7 +278,7 @@ xid.formatID     | uint64         |            8 | xid format type. if 0 no more
 xid.gtrid_length | uint64         |            8 | length of the transaction gtrid part                               
 xid.bqual_length | uint64         |            8 | length of the transaction branch part                              
 xid.data         | (fixed) binary |           32 | byte array with the size of gtrid_length + bqual_length (max 128)  
-resource         | uint64         |            8 | RM id of the resource - has to correlate with the reply            
+resource         | uint32         |            4 | RM id of the resource - has to correlate with the reply            
 flags            | uint64         |            8 | XA flags to be forward to the resource                             
 
 
@@ -293,8 +293,8 @@ xid.formatID     | uint64         |            8 | xid format type. if 0 no more
 xid.gtrid_length | uint64         |            8 | length of the transaction gtrid part                               
 xid.bqual_length | uint64         |            8 | length of the transaction branch part                              
 xid.data         | (fixed) binary |           32 | byte array with the size of gtrid_length + bqual_length (max 128)  
-resource         | uint64         |            8 | RM id of the resource - has to correlate with the request          
-state            | uint64         |            8 | The state of the operation - If successful XA_OK ( 0)              
+resource         | uint32         |            4 | RM id of the resource - has to correlate with the request          
+state            | uint32         |            4 | The state of the operation - If successful XA_OK ( 0)              
 
 
 ## queue_group_enqueue_request - **#6100** - _[1.0, 1.1, 1.2]_
@@ -403,7 +403,7 @@ Reply for a conversation
 role name   | network type   | network size | description                                       
 ----------- | -------------- | ------------ | --------------------------------------------------
 execution   | (fixed) binary |           16 | uuid of the current execution context (breadcrumb)
-code.result | uint64         |            8 | result code of the connection attempt             
+code.result | uint32         |            4 | result code of the connection attempt             
 
 
 ## conversation_send - **#3212** - _[1.0, 1.1, 1.2]_
@@ -414,7 +414,7 @@ role name        | network type   | network size | description
 ---------------- | -------------- | ------------ | ----------------------------------------------------------
 execution        | (fixed) binary |           16 | uuid of the current execution context (breadcrumb)        
 duplex           | uint16         |            2 | in what duplex the callee shall enter (receive:1, send:0) 
-code.result      | uint64         |            8 | status of the connection                                  
+code.result      | uint32         |            4 | status of the connection                                  
 code.user        | uint64         |            8 | user code, if callee did a tpreturn and supplied user-code
 buffer.type.size | uint64         |            8 | buffer type name size                                     
 buffer.type.data | dynamic string |       [0..*] | byte array with buffer type in the form 'type/subtype'    
