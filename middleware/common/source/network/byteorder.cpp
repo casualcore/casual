@@ -136,18 +136,6 @@ namespace casual
          {
             namespace detail
             {
-               std::uint8_t transcode<bool>::encode( const bool value) noexcept
-               { return value;}
-
-               bool transcode<bool>::decode( const std::uint8_t value) noexcept
-               { return value;}
-
-               std::uint8_t transcode<char>::encode( const char value) noexcept
-               { return value;}
-
-               char transcode<char>::decode( const std::uint8_t value) noexcept
-               { return value;}
-
                std::uint16_t transcode<short>::encode( const short value) noexcept
                { return HTOBE16( value);}
 
