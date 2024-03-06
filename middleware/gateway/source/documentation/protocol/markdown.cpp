@@ -138,7 +138,8 @@ namespace casual
 
             } // type
 
-
+            template< typename T>
+            constexpr bool is_network_native_serializable_v = common::serialize::traits::is::archive::native::type_v< T> || std::is_arithmetic_v< T>;
 
             struct Printer
             {
@@ -180,7 +181,7 @@ namespace casual
 
                template< typename T> 
                auto write( T&& value, const char* name)
-                  -> std::enable_if_t< common::serialize::traits::is::archive::native::type_v< common::traits::remove_cvref_t< T>>>
+                  -> std::enable_if_t< is_network_native_serializable_v< common::traits::remove_cvref_t< T>>>
                { 
                   canonical.push( name);
                   write( std::forward< T>( value));
