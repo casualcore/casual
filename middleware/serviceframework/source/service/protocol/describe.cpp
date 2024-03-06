@@ -40,7 +40,7 @@ namespace casual
 
                               current.emplace_back( name, serviceframework::service::model::type::Category::container);
 
-                              m_stack.push_back( &current.back().attribues);
+                              m_stack.push_back( &current.back().attributes);
 
                               return 1;
                            }
@@ -56,7 +56,7 @@ namespace casual
 
                               current.emplace_back( name, serviceframework::service::model::type::Category::composite);
 
-                              m_stack.push_back( &current.back().attribues);
+                              m_stack.push_back( &current.back().attributes);
                            }
 
                            void composite_end( const char*)
