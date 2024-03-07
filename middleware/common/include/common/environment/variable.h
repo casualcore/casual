@@ -45,6 +45,20 @@ namespace casual
 
          static_assert( traits::is::string::like_v< Variable>, "environment::Variable should be string-like");
 
+         namespace variable::predicate
+         {
+            inline auto is_name( std::string_view name)
+            {
+               return [ name]( const Variable& value){ return value.name() == name;};
+            }
+
+            inline auto equal_name()
+            {
+               return []( const Variable& lhs, const Variable& rhs){ return lhs.name() == rhs.name();};
+            }
+
+         } // variable::predicate
+
       } // environment
    } // common
 } // casual

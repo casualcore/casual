@@ -21,18 +21,11 @@ namespace casual
          {
             namespace
             {
-               constexpr auto environment = "CASUAL_EXECUTION_ID";
-
-               auto reset()
-               {
-                  auto id = uuid::make();
-                  environment::variable::set( environment, uuid::string( id));
-                  return id;
-               }
-
                auto initialize()
                {
-                  return environment::variable::get( environment, &reset);
+                  if( environment::variable::exists( environment::variable::name::execution::id))
+                     return Uuid{ environment::variable::get( environment::variable::name::execution::id)};
+                  return uuid::make();
                }
 
                execution::type& id()
@@ -50,7 +43,7 @@ namespace casual
 
          void reset()
          {
-            local::id() = execution::type{ local::reset()};
+            local::id() = execution::type{ uuid::make()};
          }
 
          const type& id()
