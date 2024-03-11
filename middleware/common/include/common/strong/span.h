@@ -20,11 +20,6 @@ namespace casual
       {
          using base_type = std::span< T>;
          using base_type::base_type;
-
-         //template< std::contiguous_iterator Iter>
-         //Span( Iter first, Iter last)
-         //   : base_type{ &*first, last - first} 
-         //{}
       };
 
       template< concepts::binary::value_type T, typename Tag>
