@@ -41,7 +41,7 @@ namespace casual
                {
                   auto gtrid = transaction::id::range::global( message.trid);
 
-                  common::message::transaction::coordinate::inbound::Request request{ state.external.process_handle( descriptor)};
+                  common::message::transaction::inbound::branch::Request request{ state.external.process_handle( descriptor)};
                   request.correlation = message.correlation;
                   request.execution = message.execution;
                   request.gtrid = gtrid;
@@ -238,9 +238,9 @@ namespace casual
                      return casual::task::concurrent::unit::Dispatch::pending;
 
                   },
-                  [ &state, shared]( common::message::transaction::coordinate::inbound::Reply& reply, strong::socket::id descriptor) mutable
+                  [ &state, shared]( common::message::transaction::inbound::branch::Reply& reply, strong::socket::id descriptor) mutable
                   {
-                     Trace trace{ "gateway::group::inbound::task::create::service::call transaction::coordinate::inbound::Reply"};
+                     Trace trace{ "gateway::group::inbound::task::create::service::call transaction::inbound::branch::Reply"};
 
                      state.transaction_cache.add( reply.trid, descriptor);
 
@@ -328,9 +328,9 @@ namespace casual
                      return casual::task::concurrent::unit::Dispatch::pending;
 
                   },
-                  [ &state, shared]( common::message::transaction::coordinate::inbound::Reply& reply, strong::socket::id descriptor) mutable
+                  [ &state, shared]( common::message::transaction::inbound::branch::Reply& reply, strong::socket::id descriptor) mutable
                   {
-                     Trace trace{ "gateway::group::inbound::task::create::local::handle_conversation transaction::coordinate::inbound::Reply"};
+                     Trace trace{ "gateway::group::inbound::task::create::local::handle_conversation transaction::inbound::branch::Reply"};
 
                      state.transaction_cache.add( reply.trid, descriptor);
 
@@ -433,7 +433,7 @@ namespace casual
                      local::send::queue_request( state, descriptor, *shared->lookup, shared->message);
                      return casual::task::concurrent::unit::Dispatch::done;
                   },
-                  [ &state, shared]( common::message::transaction::coordinate::inbound::Reply& reply, strong::socket::id descriptor) mutable
+                  [ &state, shared]( common::message::transaction::inbound::branch::Reply& reply, strong::socket::id descriptor) mutable
                   {
                      Trace trace{ "gateway::group::inbound::task::create::local::handle_queue transaction::lookup::Reply"};
 

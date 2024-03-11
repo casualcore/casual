@@ -367,9 +367,9 @@ namespace casual
          } // external
       } // resource
 
-      namespace coordinate::inbound
+      namespace inbound::branch
       {
-         using base_request = message::basic_request< message::Type::transaction_coordinate_inbound_request>;
+         using base_request = message::basic_request< message::Type::transaction_inbound_branch_request>;
          struct Request : base_request
          {
             using base_request::base_request;
@@ -382,9 +382,9 @@ namespace casual
             )
          };
 
-         using Reply = transaction::basic_request< message::Type::transaction_coordinate_inbound_reply>;
+         using Reply = transaction::basic_request< message::Type::transaction_inbound_branch_reply>;
 
-      } // coordinate::inbound
+      } // inbound::branch
 
       namespace active
       {
@@ -430,7 +430,7 @@ namespace casual
       struct type_traits< transaction::resource::configuration::Request> : detail::type< transaction::resource::configuration::Reply> {};
 
       template<>
-      struct type_traits< transaction::coordinate::inbound::Request> : detail::type< transaction::coordinate::inbound::Reply> {};
+      struct type_traits< transaction::inbound::branch::Request> : detail::type< transaction::inbound::branch::Reply> {};
 
       template<>
       struct type_traits< transaction::active::Request> : detail::type< transaction::active::Reply> {};
