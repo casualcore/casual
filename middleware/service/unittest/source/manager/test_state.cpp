@@ -254,13 +254,8 @@ namespace casual
             
             // expect only 103 to be in the prioritized range
             EXPECT_TRUE( process == service->reserve_concurrent( {}));
-
-            // we remove the instance
-            //service->remove( )
          }
-
       }
-
 
    } // service::manager
 } // casual

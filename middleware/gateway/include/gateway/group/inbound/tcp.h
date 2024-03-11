@@ -21,22 +21,5 @@ namespace casual
          return group::tcp::send( state, &handle::connection::lost, descriptor, std::forward< M>( message));
       }
 
-/*
-      template< typename M>
-      common::strong::socket::id send( State& state, M&& message)
-      {
-         if( auto descriptor = state.consume( correlation( message)))
-         {
-            if( tcp::send( state, descriptor, std::forward< M>( message)))
-               return descriptor;
-         }
-      
-         common::log::error( common::code::casual::communication_unavailable, "connection absent when trying to send reply - ", message.type());
-         common::log::line( common::log::category::verbose::error, "state: ", state);
-      
-         return {};
-      }
-      */
-
    } // gateway::group::inbound::tcp
 } // casual

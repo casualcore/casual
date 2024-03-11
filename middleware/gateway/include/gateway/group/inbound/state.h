@@ -171,7 +171,6 @@ namespace casual
             std::vector< common::strong::socket::id> disconnects;
             
             CASUAL_LOG_SERIALIZE( 
-               //CASUAL_SERIALIZE( requests);
                CASUAL_SERIALIZE( disconnects);
             )
          } pending;
@@ -212,8 +211,6 @@ namespace casual
             CASUAL_SERIALIZE( directive);
             CASUAL_SERIALIZE( external);
             CASUAL_SERIALIZE( pending);
-            //CASUAL_SERIALIZE( correlations);
-            //CASUAL_SERIALIZE( conversations);
             CASUAL_SERIALIZE( transaction_cache);
             CASUAL_SERIALIZE( limit);
             CASUAL_SERIALIZE( alias);
