@@ -170,7 +170,7 @@ namespace casual
 
                   namespace coordinate::inbound
                   {
-                     auto reply = internal::basic_task< common::message::transaction::coordinate::inbound::Reply>;
+                     auto reply = internal::basic_task< common::message::transaction::inbound::branch::Reply>;
                   } // coordinate::inbound   
 
                } // transaction

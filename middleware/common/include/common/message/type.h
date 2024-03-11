@@ -206,8 +206,8 @@ namespace casual
          transaction_resource_id_request = TRANSACTION_BASE + 500,
          transaction_resource_id_reply,
 
-         transaction_coordinate_inbound_request = TRANSACTION_BASE + 600,
-         transaction_coordinate_inbound_reply,
+         transaction_inbound_branch_request = TRANSACTION_BASE + 600,
+         transaction_inbound_branch_reply,
 
          transaction_active_request,
          transaction_active_reply,

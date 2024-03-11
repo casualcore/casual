@@ -1092,9 +1092,9 @@ namespace casual
             {
                auto request( State& state)
                {
-                  return [ &state]( const common::message::transaction::coordinate::inbound::Request& message)
+                  return [ &state]( const common::message::transaction::inbound::branch::Request& message)
                   {
-                     Trace trace{ "transaction::manager::handle::local::coordinate::inbound::request"};
+                     Trace trace{ "transaction::manager::handle::local::inbound::branch::request"};
                      common::log::line( log, "message: ", message);
 
                      auto reply = common::message::reverse::type( message);
