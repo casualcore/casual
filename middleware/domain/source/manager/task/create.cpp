@@ -515,7 +515,9 @@ namespace casual
          {
             Trace trace{ "domain::manager::task::create::scale::shutdown"};
 
-            return manager::Task{ "shutdown domain", local::group::task( std::move( groups)),
+            auto description = string::compose( "shutdown domain ", common::domain::identity().name);
+
+            return manager::Task{ std::move( description), local::group::task( std::move( groups)),
             {
                Task::Property::Execution::sequential,
                Task::Property::Completion::mandatory
