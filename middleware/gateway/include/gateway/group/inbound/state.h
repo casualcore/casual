@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include "gateway/group/connection.h"
 #include "gateway/group/tcp.h"
 #include "gateway/message.h"
 
@@ -90,7 +91,7 @@ namespace casual
          {
             struct Result
             {
-               group::tcp::External< configuration::model::gateway::inbound::Connection>::Information information;
+               group::tcp::connection::Information< configuration::model::gateway::inbound::Connection> information;
                std::vector< common::strong::correlation::id> correlations; 
                std::vector< common::transaction::ID> trids;
 
@@ -162,7 +163,7 @@ namespace casual
          common::communication::select::Directive directive;
          common::communication::ipc::send::Coordinator multiplex{ directive};
 
-         group::tcp::External< configuration::model::gateway::inbound::Connection> external;
+         group::connection::Holder< configuration::model::gateway::inbound::Connection> connections;
 
          casual::task::concurrent::Coordinator< common::strong::socket::id> tasks;
 
@@ -197,7 +198,7 @@ namespace casual
          template< typename M>
          auto reply( M&& request) const noexcept
          {
-            auto reply = external.reply( request);
+            auto reply = connections.reply( request);
 
             reply.state.alias = alias;
             reply.state.note = note;
@@ -209,7 +210,7 @@ namespace casual
          CASUAL_LOG_SERIALIZE( 
             CASUAL_SERIALIZE( runlevel);
             CASUAL_SERIALIZE( directive);
-            CASUAL_SERIALIZE( external);
+            CASUAL_SERIALIZE( connections);
             CASUAL_SERIALIZE( pending);
             CASUAL_SERIALIZE( transaction_cache);
             CASUAL_SERIALIZE( limit);

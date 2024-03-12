@@ -165,7 +165,7 @@ namespace casual
 
                   auto connector = logical::connect::spawn( bound, socket);
 
-                  state.external.pending().add( 
+                  state.connections.pending().add( 
                      std::move( connector),
                      std::move( socket),
                      prospect.configuration);
@@ -238,7 +238,7 @@ namespace casual
 
                   auto connector = logical::connect::spawn( bound, pending.socket);
 
-                  state.external.pending().add( 
+                  state.connections.pending().add( 
                      std::move( connector),
                      std::move( pending.socket),
                      std::move( pending.prospect.configuration));

@@ -122,7 +122,7 @@ namespace casual
          algorithm::container::erase( disconnecting, descriptor);
 
          return {
-            external.remove( directive, descriptor),
+            connections.extract( directive, descriptor),
             reply_destination.extract( descriptor),
             pending.transactions.extract( descriptor)
          };

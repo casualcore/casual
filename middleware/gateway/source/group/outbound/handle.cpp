@@ -78,7 +78,7 @@ namespace casual
                         // We can't really get rid of this (now), We need to make sure TM get's the involve message
                         // before we do anything else. Otherwise the transaction might get committed and TM does not know
                         // about this _involved external resource_.
-                        if( auto handle = state.external.process_handle( descriptor))
+                        if( auto handle = state.connections.process_handle( descriptor))
                         {
                            ipc::flush::send( 
                               ipc::manager::transaction(),
@@ -101,7 +101,7 @@ namespace casual
                               Trace trace{ "gateway::group::outbound::handle::local::internal::transaction::resource::basic_request"};
                               log::line( verbose::log, "message: ", message);
 
-                              auto tcp = state.external.partner( descriptor);
+                              auto tcp = state.connections.partner( descriptor);
 
                               // sanity check
                               if( ! state.pending.transactions.is_associated( message.trid, tcp))
@@ -136,7 +136,7 @@ namespace casual
                {
                   void unadvertise( State& state, strong::socket::id descriptor, std::vector< std::string> services)
                   {
-                     if( auto handle = state.external.process_handle( descriptor))
+                     if( auto handle = state.connections.process_handle( descriptor))
                      {
                         common::message::service::Advertise unadvertise{ handle};
                         unadvertise.alias = instance::alias();
@@ -248,7 +248,7 @@ namespace casual
                            Trace trace{ "gateway::group::outbound::handle::local::internal::service::call::request"};
                            log::line( verbose::log, "message: ", message);
 
-                           auto tcp = state.external.partner( descriptor);
+                           auto tcp = state.connections.partner( descriptor);
 
 
                            // Check if we've has been called with the same correlation id before, 
@@ -344,7 +344,7 @@ namespace casual
                            Trace trace{ "gateway::group::outbound::handle::local::internal::conversation::connect::request"};
                            log::line( verbose::log, "message: ", message);
 
-                           auto tcp = state.external.partner( descriptor);
+                           auto tcp = state.connections.partner( descriptor);
 
                            state.tasks.add( detail::create::task( state, message, tcp));
 
@@ -376,7 +376,7 @@ namespace casual
                         Trace trace{ "gateway::group::outbound::handle::local::internal::conversation::send"};
                         log::line( verbose::log, "message: ", message);
 
-                        auto tcp = state.external.partner( descriptor);
+                        auto tcp = state.connections.partner( descriptor);
                         tcp::send( state, tcp, message);
                      };
                   }
@@ -396,7 +396,7 @@ namespace casual
 
                            auto default_reply = []( auto& message){ return common::message::reverse::type( message);};
 
-                           auto tcp = state.external.partner( descriptor);
+                           auto tcp = state.connections.partner( descriptor);
 
                            if( internal::precondition::reply( state, tcp, message, default_reply))
                               return;
@@ -421,7 +421,7 @@ namespace casual
                               Trace trace{ "gateway::group::outbound::handle::local::internal::domain::discover::topology::direct::explore"};
                               log::line( verbose::log, "message: ", message);
 
-                              auto tcp = state.external.partner( descriptor);
+                              auto tcp = state.connections.partner( descriptor);
 
                               if( state.runlevel > decltype( state.runlevel())::running)
                                  return;
@@ -430,7 +430,7 @@ namespace casual
                                  return;
 
                               // check if we're going to discover
-                              if( auto information = state.external.information( tcp); information && algorithm::find( message.domains, information->domain.id))
+                              if( auto information = state.connections.information( tcp); information && algorithm::find( message.domains, information->domain.id))
                               {
                                  casual::domain::message::discovery::Request request;
                                  request.content = std::move( message.content);
@@ -487,7 +487,7 @@ namespace casual
                            Trace trace{ "gateway::outbound::local::handle::internal::queue::basic::request"};
                            log::line( verbose::log, "message: ", message);
 
-                           auto tcp = state.external.partner( descriptor);
+                           auto tcp = state.connections.partner( descriptor);
 
                            tcp::send( state, tcp, message);
                            state.tasks.add( detail::create::task( state, message, tcp));
@@ -633,7 +633,7 @@ namespace casual
                         Trace trace{ "gateway::group::outbound::handle::local::external::domain::discover::reply"};
                         log::line( verbose::log, "message: ", message);
 
-                        auto handle = state.external.process_handle( descriptor);
+                        auto handle = state.connections.process_handle( descriptor);
                         CASUAL_ASSERT( handle);
 
                         // increase hops for all services.
@@ -686,7 +686,7 @@ namespace casual
                               return;
 
                            // make sure to set who actually is updated.
-                           if( auto information = state.external.information( descriptor))
+                           if( auto information = state.connections.information( descriptor))
                               message.origin = information->domain;
 
                            casual::domain::discovery::topology::implicit::update( state.multiplex, message);
@@ -706,22 +706,22 @@ namespace casual
                      Trace trace{ "gateway::group::outbound::handle::local::internal::domain::connected"};
                      common::log::line( verbose::log, "message: ", message);
 
-                     auto descriptors = state.external.connected( state.directive, message);
+                     auto descriptors = state.connections.connected( state.directive, message);
 
-                     auto inbound = state.external.find_internal( descriptors.ipc);
+                     auto inbound = state.connections.find_internal( descriptors.ipc);
                      CASUAL_ASSERT( inbound);
 
                      // a new connection has been established, we need to register this with discovery.
                      casual::domain::discovery::provider::registration( *inbound, casual::domain::discovery::provider::Ability::discover);
 
 
-                     auto handle = state.external.process_handle( descriptors.ipc);
+                     auto handle = state.connections.process_handle( descriptors.ipc);
 
                      casual::domain::message::discovery::topology::direct::Update update{ handle};
                      {
                         update.origin = message.domain;
 
-                        const auto information = casual::assertion( algorithm::find( state.external.information(), descriptors.tcp), "failed to find information for descriptor: ", descriptors.tcp);
+                        const auto information = casual::assertion( algorithm::find( state.connections.information(), descriptors.tcp), "failed to find information for descriptor: ", descriptors.tcp);
                         
                         // should we add content
                         if( information->configuration)
@@ -811,7 +811,7 @@ namespace casual
          Trace trace{ "gateway::group::outbound::handle::unadvertise"};
          log::line( verbose::log, "descriptor: ", descriptor);
 
-         auto handle = state.external.process_handle( descriptor);
+         auto handle = state.connections.process_handle( descriptor);
 
          if( ! handle)
          {
@@ -845,7 +845,7 @@ namespace casual
             handle::unadvertise( state, descriptor);
 
             // we need to send an ipc-destroyed event, so other can disassociate stuff with the ipc
-            if( auto handle = state.external.process_handle( descriptor))
+            if( auto handle = state.connections.process_handle( descriptor))
                common::event::send( common::message::event::ipc::Destroyed{ handle});
 
             state.tasks.failed( descriptor);
@@ -884,7 +884,7 @@ namespace casual
 
          state.runlevel = state::Runlevel::shutdown;
 
-         for( auto descriptor : state.external.external_descriptors())
+         for( auto descriptor : state.connections.external_descriptors())
             handle::connection::disconnect( state, descriptor);
 
          // send metric for good measure
@@ -900,10 +900,10 @@ namespace casual
 
          state.runlevel = state::Runlevel::error;
 
-         for( auto descriptor : state.external.external_descriptors())
+         for( auto descriptor : state.connections.external_descriptors())
             handle::unadvertise( state, descriptor);
 
-         state.external.clear( state.directive);
+         state.connections.clear( state.directive);
       }
 
       namespace metric

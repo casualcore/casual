@@ -82,11 +82,6 @@ target = make.LinkLibrary( 'bin/casual-gateway-admin-cli',
 
 install_lib.append( target)
 
-group_archive = make.LinkArchive( 'bin/casual-gateway-group-archive',
-    [
-        make.Compile( 'source/group/connection.cpp'),
-    ]
-)
 
 # Outbound
 
@@ -104,7 +99,6 @@ target = make.LinkExecutable( 'bin/casual-gateway-outbound-group',
         make.Compile( 'source/group/outbound/main.cpp'),
     ],
     [
-        group_archive,
         outbound_archive,
         common_archive,
         'casual-domain-discovery',
@@ -119,7 +113,6 @@ target = make.LinkExecutable( 'bin/casual-gateway-outbound-reverse-group',
         make.Compile( 'source/group/outbound/reverse/main.cpp'),
     ],
     [
-        group_archive,
         outbound_archive,
         common_archive,
         'casual-domain-discovery',
@@ -144,7 +137,6 @@ target = make.LinkExecutable( 'bin/casual-gateway-inbound-group',
     make.Compile( 'source/group/inbound/main.cpp'),
 ],
 [
-    group_archive,
     inbound_archive,
     common_archive, 
     'casual-domain-discovery',
@@ -159,7 +151,6 @@ target = make.LinkExecutable( 'bin/casual-gateway-inbound-reverse-group',
         make.Compile( 'source/group/inbound/reverse/main.cpp'),
     ],
     [
-        group_archive,
         inbound_archive,
         common_archive, 
         'casual-domain-discovery',

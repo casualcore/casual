@@ -119,7 +119,7 @@ namespace casual
                               common::log::line( verbose::log, "message: ", message);
 
                               // the process might be from our spawned connector
-                              state.external.pending().exit( message.state);
+                              state.connections.pending().exit( message.state);
                            };
                         }
                      } // process
