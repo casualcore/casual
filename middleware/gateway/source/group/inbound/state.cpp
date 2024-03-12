@@ -115,7 +115,7 @@ namespace casual
 
       bool State::done() const noexcept
       {
-         return runlevel > state::Runlevel::running && external.empty();
+         return runlevel > state::Runlevel::running && connections.empty();
       }
 
       state::extract::Result State::extract( common::strong::socket::id descriptor)
@@ -130,7 +130,7 @@ namespace casual
          algorithm::container::erase( pending.disconnects, descriptor);
 
          return state::extract::Result{ 
-            external.remove( directive, descriptor),
+            connections.extract( directive, descriptor),
             std::move( lost),
             transaction_cache.failed( descriptor)
          };

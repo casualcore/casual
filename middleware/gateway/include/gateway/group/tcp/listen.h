@@ -171,7 +171,7 @@ namespace casual
                      auto connector = logical::connect::spawn( bound, socket);
                      common::log::line( verbose::log, "connector: ", connector);
 
-                     state.external.pending().add(
+                     state.connections.pending().add(
                         std::move( connector),
                         std::move( socket),
                         found->configuration);

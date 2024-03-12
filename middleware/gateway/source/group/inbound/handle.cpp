@@ -44,7 +44,7 @@ namespace casual
                      common::log::line( verbose::log, "forward message: ", message);
                      common::log::line( verbose::log, "descriptor: ", descriptor);
 
-                     tcp::send( state, state.external.partner( descriptor), message);
+                     tcp::send( state, state.connections.partner( descriptor), message);
                   };
                }
 
@@ -92,7 +92,7 @@ namespace casual
                         Trace trace{ "gateway::group::inbound::handle::conversation::send"};
                         common::log::line( verbose::log, "message: ", message);
 
-                        tcp::send( state, state.external.partner( descriptor), message);
+                        tcp::send( state, state.connections.partner( descriptor), message);
 
                         // if the sender has terminated the conversation we need to clean the task
                         if( message.duplex == decltype( message.duplex)::terminated)
@@ -135,7 +135,7 @@ namespace casual
                               Trace trace{ "gateway::group::inbound::handle::local::internal::domain::discovery::topology::implicit::update"};
                               common::log::line( verbose::log, "message: ", message);
 
-                              auto tcp = state.external.partner( descriptor);
+                              auto tcp = state.connections.partner( descriptor);
 
                               inbound::tcp::send( state, tcp, message);
                            };
@@ -315,10 +315,10 @@ namespace casual
                            common::log::line( verbose::log, "message: ", message);
 
                            // Set 'sender' so we get the reply
-                           message.process = state.external.process_handle( descriptor);
+                           message.process = state.connections.process_handle( descriptor);
 
                            {
-                              auto information = casual::assertion( state.external.information( descriptor), "invalid descriptor: ", descriptor);
+                              auto information = casual::assertion( state.connections.information( descriptor), "invalid descriptor: ", descriptor);
 
                               if( information->configuration.discovery == decltype( information->configuration.discovery)::forward)
                                  message.directive = decltype( message.directive)::forward;
@@ -373,29 +373,29 @@ namespace casual
                         Trace trace{ "gateway::inbound::handle:::management::domain::connected"};
                         common::log::line( verbose::log, "message: ", message);
 
-                        auto descriptors = state.external.connected( state.directive, message);
+                        auto descriptors = state.connections.connected( state.directive, message);
 
-                        auto connection = state.external.find_external( descriptors.tcp);
+                        auto connection = state.connections.find_external( descriptors.tcp);
                         CASUAL_ASSERT( connection);
 
                         // If the connection is not compatible with implicit::Update, we don't need to register to discovery
                         if( ! message::protocol::compatible< casual::domain::message::discovery::topology::implicit::Update>( connection->protocol()))
                            return;
 
-                        auto information = state.external.information( descriptors.tcp);
+                        auto information = state.connections.information( descriptors.tcp);
                         CASUAL_ASSERT( information);
 
                         // if the connection is not configured with _forward_, there's no need to register to discovery
                         if( information->configuration.discovery != decltype( information->configuration.discovery)::forward)
                            return;
 
-                        auto internal = state.external.find_internal( descriptors.ipc);
+                        auto internal = state.connections.find_internal( descriptors.ipc);
                         CASUAL_ASSERT( internal);
 
                         // a new connection has been established, we need to register this with discovery.
                         casual::domain::discovery::provider::registration( *internal, casual::domain::discovery::provider::Ability::topology);
 
-                        common::log::line( verbose::log, "state.external: ", state.external);
+                        common::log::line( verbose::log, "state.connections: ", state.connections);
       
                      };
                   }
@@ -518,7 +518,7 @@ namespace casual
             };
 
             // we need to send an ipc-destroyed event, so other can disassociate stuff with the ipc
-            if( auto handle = state.external.process_handle( descriptor))
+            if( auto handle = state.connections.process_handle( descriptor))
                common::event::send( common::message::event::ipc::Destroyed{ handle});
 
             auto extracted = state.extract( descriptor);
@@ -551,7 +551,7 @@ namespace casual
             Trace trace{ "gateway::group::inbound::handle::connection::disconnect"};
             log::line( verbose::log, "descriptor: ", descriptor);
 
-            if( auto connection = state.external.find_external( descriptor))
+            if( auto connection = state.connections.find_external( descriptor))
             {
                log::line( verbose::log, "connection: ", *connection);
 
@@ -591,7 +591,7 @@ namespace casual
          state.runlevel = decltype( state.runlevel())::shutdown;
 
          // try to do a 'soft' disconnect. copy - connection::disconnect mutates external
-         for( auto descriptor : state.external.external_descriptors())
+         for( auto descriptor : state.connections.external_descriptors())
             handle::connection::disconnect( state, descriptor);
       }
 
@@ -602,7 +602,7 @@ namespace casual
          state.runlevel = decltype( state.runlevel())::error;
 
          // 'kill' all sockets, and try to take care of pending stuff. copy - connection::lost mutates external
-         for( auto descriptor : state.external.external_descriptors())
+         for( auto descriptor : state.connections.external_descriptors())
             handle::connection::lost( state, descriptor);
       }
       

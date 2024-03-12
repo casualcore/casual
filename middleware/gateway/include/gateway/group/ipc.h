@@ -45,7 +45,7 @@ namespace casual
             {
                auto descriptor = common::strong::ipc::descriptor::id{ fd};
 
-               if( auto inbound = state.external.find_internal( descriptor))
+               if( auto inbound = state.connections.find_internal( descriptor))
                {
                   try
                   {

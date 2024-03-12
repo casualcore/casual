@@ -146,7 +146,7 @@ namespace casual
                               common::log::line( verbose::log, "message: ", message);
 
                               // the process might be from our spawned connector
-                              if( auto configuration = state.external.pending().exit( message.state))
+                              if( auto configuration = state.connections.pending().exit( message.state))
                                  external::reconnect( state, std::move( configuration.value()));
                               
                            };

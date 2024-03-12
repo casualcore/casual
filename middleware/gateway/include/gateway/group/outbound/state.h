@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include "gateway/group/connection.h"
 #include "gateway/group/tcp.h"
 #include "gateway/message.h"
 
@@ -202,7 +203,7 @@ namespace casual
          {
             struct Result
             {
-               group::tcp::External< configuration::model::gateway::outbound::Connection>::Information information;
+               group::tcp::connection::Information< configuration::model::gateway::outbound::Connection> information;
                std::vector< reply::destination::Entry> destinations;
                std::vector< common::transaction::global::ID> gtrids;
 
@@ -222,7 +223,7 @@ namespace casual
       {
          common::state::Machine< state::Runlevel, state::Runlevel::running> runlevel;
          common::communication::select::Directive directive;
-         group::tcp::External< configuration::model::gateway::outbound::Connection> external;
+         group::connection::Holder< configuration::model::gateway::outbound::Connection> connections;
 
          state::task_coordinator_type tasks;
          
@@ -261,7 +262,7 @@ namespace casual
          template< typename M>
          auto reply( M&& request) const noexcept
          {
-            auto reply = external.reply( request);
+            auto reply = connections.reply( request);
 
             reply.state.alias = alias;
             reply.state.order = order;
@@ -290,7 +291,7 @@ namespace casual
          CASUAL_LOG_SERIALIZE( 
             CASUAL_SERIALIZE( runlevel);
             CASUAL_SERIALIZE( directive);
-            CASUAL_SERIALIZE( external);
+            CASUAL_SERIALIZE( connections);
             CASUAL_SERIALIZE( reply_destination);
             CASUAL_SERIALIZE( tasks);
             CASUAL_SERIALIZE( pending);

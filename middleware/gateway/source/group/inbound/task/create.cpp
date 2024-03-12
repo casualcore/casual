@@ -27,7 +27,7 @@ namespace casual
                {
                   using result_context = std::decay_t< C>;
 
-                  auto information = casual::assertion( state.external.information( descriptor), "invalid descriptor: ", descriptor);
+                  auto information = casual::assertion( state.connections.information( descriptor), "invalid descriptor: ", descriptor);
 
                   if( information->configuration.discovery == decltype( information->configuration.discovery)::forward)
                      return result_context::external_discovery;
@@ -41,7 +41,7 @@ namespace casual
                {
                   auto gtrid = transaction::id::range::global( message.trid);
 
-                  common::message::transaction::inbound::branch::Request request{ state.external.process_handle( descriptor)};
+                  common::message::transaction::inbound::branch::Request request{ state.connections.process_handle( descriptor)};
                   request.correlation = message.correlation;
                   request.execution = message.execution;
                   request.gtrid = gtrid;
@@ -52,7 +52,7 @@ namespace casual
                template< typename M>
                void service( State& state, strong::socket::id descriptor, const M& message)
                {
-                  common::message::service::lookup::Request request{ state.external.process_handle( descriptor)};
+                  common::message::service::lookup::Request request{ state.connections.process_handle( descriptor)};
                   request.correlation = message.correlation;
                   request.execution = message.execution;
                   request.requested = message.service.name;
@@ -77,7 +77,7 @@ namespace casual
                template< typename M>
                void queue( State& state, strong::socket::id descriptor, const M& message)
                {
-                  casual::queue::ipc::message::lookup::Request request{ state.external.process_handle( descriptor)};
+                  casual::queue::ipc::message::lookup::Request request{ state.connections.process_handle( descriptor)};
                   {
                      request.correlation = message.correlation;
                      request.execution = message.execution;
@@ -100,7 +100,7 @@ namespace casual
             template< typename M>
             void send_to_partner_ipc( State& state, strong::socket::id descriptor, M&& message)
             {
-               if( auto found = state.external.find_internal( descriptor))
+               if( auto found = state.connections.find_internal( descriptor))
                   state.multiplex.send( found->connector().handle().ipc(), std::forward< M>( message));
                else
                   log::error( code::casual::internal_correlation, "failed to correlate the ipc partner for tcp descriptor:  ", descriptor);
@@ -221,7 +221,7 @@ namespace casual
                
                shared->message = std::move( message);
                // make sure the ipc partner to the tcp socket gets the reply
-               shared->message.process = state.external.process_handle( descriptor);
+               shared->message.process = state.connections.process_handle( descriptor);
 
                return task_unit{ descriptor, message.correlation,
                   [ &state, shared]( common::message::service::lookup::Reply& reply, strong::socket::id descriptor) mutable
@@ -312,7 +312,7 @@ namespace casual
                
                shared->message = std::move( message);
                // make sure the ipc partner to the tcp socket gets the reply
-               shared->message.process = state.external.process_handle( descriptor);
+               shared->message.process = state.connections.process_handle( descriptor);
 
                return task_unit{ descriptor, message.correlation,
                   [ &state, shared]( common::message::service::lookup::Reply& reply, strong::socket::id descriptor) mutable
@@ -417,7 +417,7 @@ namespace casual
                }
 
                shared->message = std::move( message);
-               shared->message.process = state.external.process_handle( descriptor);
+               shared->message.process = state.connections.process_handle( descriptor);
 
                return task_unit{ descriptor, message.correlation,
                   [ &state, shared]( casual::queue::ipc::message::lookup::Reply& reply, strong::socket::id descriptor) mutable
@@ -462,7 +462,7 @@ namespace casual
                if( auto found = state.transaction_cache.find( common::transaction::id::range::global( message.trid)))
                {
                   message.trid = *found;
-                  message.process = state.external.process_handle( descriptor);
+                  message.process = state.connections.process_handle( descriptor);
                   state.multiplex.send( ipc::manager::transaction(), message);
                }
                else
