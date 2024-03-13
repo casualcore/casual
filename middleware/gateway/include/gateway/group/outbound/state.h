@@ -99,6 +99,7 @@ namespace casual
             {
                bool associate( const common::transaction::ID& trid, common::strong::socket::id descriptor);
                void remove( const common::transaction::ID& trid, common::strong::socket::id descriptor);
+               void remove( common::transaction::global::id::range gtrid);
 
                bool is_associated( const common::transaction::ID& trid, common::strong::socket::id descriptor);
 
