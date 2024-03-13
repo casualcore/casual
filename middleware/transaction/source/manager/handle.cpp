@@ -258,28 +258,23 @@ namespace casual
 
                namespace remove
                {
-                  void coordination( State& state, common::transaction::global::id::range global)
+                  void transaction( State& state, common::transaction::global::id::range global)
                   {
-                     if( auto found = common::algorithm::find( state.coordinate.inbound, global))
+                     Trace trace{ "transaction::manager::handle::local::detail::remove::transaction"};
+
+                     state.persistent.log.remove( global);
+                     
+                     if( auto found = common::algorithm::find( state.transactions, global))
                      {
-                        common::algorithm::container::erase( state.coordinate.inbound, std::begin( found));
-                        
-                        // we know that someone has coordinated this `gtrid` before.
-                        // send event that this TM is no longer interested in the gtrid
+                        common::log::line( verbose::log, "remove: ", *found);
+                        common::algorithm::container::erase( state.transactions, std::begin( found));
+
+                        // other "managers" might have state associated with the transaction, send an event
+                        // to help them get rid of it.
                         common::message::event::transaction::Disassociate event{ common::process::handle()};
                         event.gtrid = global;
                         common::event::send( state.multiplex, event);
                      }
-                  }
-
-                  void transaction( State& state, common::transaction::global::id::range global)
-                  {
-                     state.persistent.log.remove( global);
-                     
-                     if( auto found = common::algorithm::find( state.transactions, global))
-                        common::algorithm::container::erase( state.transactions, std::begin( found));
-
-                     remove::coordination( state, global);
                   }
                   
                } // remove
@@ -511,7 +506,7 @@ namespace casual
                         auto [ active, read_only] = common::algorithm::partition( replies, []( auto& reply){ return reply.state != common::code::xa::read_only;});
                         common::log::line( verbose::log, "read_only: ", read_only);
 
-                        // purge/remove all resources that is ead_only for each branch, and if a branch has 0 resources, remove it.
+                        // purge/remove all resources that is read_only for each branch, and if a branch has 0 resources, remove it.
                         transaction->purge( read_only);
                         common::log::line( verbose::log, "transaction: ", *transaction);
 
@@ -892,9 +887,6 @@ namespace casual
                            {
                               common::log::line( log, "failed to find trid: ", message.trid, " - action: reply with read-only");
                               detail::send::read::only::reply( state, message);
-
-                              // We can remove potential other state of this gtrid
-                              local::detail::remove::coordination( state, common::transaction::id::range::global( message.trid));
                               return;
                            }
 
@@ -949,9 +941,6 @@ namespace casual
                            {
                               common::log::line( log, "failed to find trid: ", message.trid, " - action: reply with read-only");
                               detail::send::read::only::reply( state, message);
-
-                              // We can remove potential other state of this gtrid
-                              local::detail::remove::coordination( state, common::transaction::id::range::global( message.trid));
                               return;
                            }
 
@@ -1015,9 +1004,6 @@ namespace casual
                            {
                               common::log::line( log, "failed to find trid: ", message.trid, " - action: reply with read-only");
                               detail::send::read::only::reply( state, message);
-
-                              // We can remove potential other state of this gtrid
-                              local::detail::remove::coordination( state, common::transaction::id::range::global( message.trid));
                               return;
                            }
 
@@ -1088,7 +1074,7 @@ namespace casual
 
             } // resource
 
-            namespace coordinate::inbound
+            namespace inbound::branch
             {
                auto request( State& state)
                {
@@ -1099,24 +1085,26 @@ namespace casual
 
                      auto reply = common::message::reverse::type( message);
 
-                     if( auto found = common::algorithm::find( state.coordinate.inbound, message.gtrid))
+                     if( auto found = common::algorithm::find( state.transactions, message.gtrid))
                      {
                         common::log::line( log, "found: ", *found);
-                        reply.trid = found->second;
+
+                        CASUAL_ASSERT( ! found->branches.empty());
+                        reply.trid = common::range::front( found->branches).trid;
                      }
                      else
-                     {  
+                     {
                         reply.trid = common::transaction::ID{ message.gtrid};
-                        common::log::line( log, "created: ", reply.trid);
+                        auto& transaction = state.transactions.emplace_back( reply.trid);
 
-                        state.coordinate.inbound.emplace( message.gtrid, reply.trid);                        
+                        common::log::line( log, "added: ", transaction);
                      }
 
                      state.multiplex.send( message.process.ipc, reply);
                   };
                }
                
-            } // coordinate::inbound
+            } // inbound::branch
 
             namespace event::process
             {
@@ -1330,7 +1318,7 @@ namespace casual
             local::resource::external::prepare::request( state),
             local::resource::external::commit::request( state),
             local::resource::external::rollback::request( state),
-            local::coordinate::inbound::request( state),
+            local::inbound::branch::request( state),
             local::active::request( state),
             common::server::handle::admin::Call{
                manager::admin::services( state)}
