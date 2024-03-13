@@ -70,6 +70,11 @@ namespace casual
                      algorithm::container::erase( m_transactions, std::begin( found));
             }
 
+            void Transactions::remove( common::transaction::global::id::range gtrid)
+            {
+               algorithm::container::erase( m_transactions, gtrid);
+            }
+
             bool Transactions::is_associated( const common::transaction::ID& trid, common::strong::socket::id descriptor)
             {
                auto gtrid = transaction::id::range::global( trid);

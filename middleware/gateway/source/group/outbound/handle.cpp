@@ -17,6 +17,7 @@
 #include "common/message/dispatch/handle.h"
 #include "common/message/internal.h"
 #include "common/event/send.h"
+#include "common/event/listen.h"
 #include "common/instance.h"
 
 namespace casual
@@ -588,15 +589,6 @@ namespace casual
                            Trace trace{ "gateway::group::outbound::handle::local::external::transaction::resource::detail::basic_reply"};
                            log::line( verbose::log, "message: ", message);
 
-                           if constexpr( std::same_as< Message, common::message::transaction::resource::prepare::Reply>)
-                           {
-                              // if the prepare is a _read-only_, the transaction is done for the connection
-                              if( message.state == decltype( message.state)::read_only)
-                                 state.pending.transactions.remove( message.trid, descriptor);
-                           }
-                           else
-                              state.pending.transactions.remove( message.trid, descriptor);
-
                            auto destination = state.reply_destination.extract( message.correlation);
                            state.multiplex.send( destination.ipc, message);
                         };
@@ -697,47 +689,64 @@ namespace casual
                } // domain::discovery
             } // external
 
-            namespace management::domain
+            namespace management
             {
-               auto connected( State& state)
+               namespace event::transaction
                {
-                  return [ &state]( const gateway::message::domain::Connected& message)
+                  auto disassociate( State& state)
                   {
-                     Trace trace{ "gateway::group::outbound::handle::local::internal::domain::connected"};
-                     common::log::line( verbose::log, "message: ", message);
-
-                     auto descriptors = state.connections.connected( state.directive, message);
-
-                     auto inbound = state.connections.find_internal( descriptors.ipc);
-                     CASUAL_ASSERT( inbound);
-
-                     // a new connection has been established, we need to register this with discovery.
-                     casual::domain::discovery::provider::registration( *inbound, casual::domain::discovery::provider::Ability::discover);
-
-
-                     auto handle = state.connections.process_handle( descriptors.ipc);
-
-                     casual::domain::message::discovery::topology::direct::Update update{ handle};
+                     return [ &state]( const common::message::event::transaction::Disassociate& message)
                      {
-                        update.origin = message.domain;
+                        Trace trace{ "gateway::outbound::handle:::event::transaction::disassociate"};
+                        log::line( verbose::log, "message: ", message);
 
-                        const auto information = casual::assertion( algorithm::find( state.connections.information(), descriptors.tcp), "failed to find information for descriptor: ", descriptors.tcp);
-                        
-                        // should we add content
-                        if( information->configuration)
+                        state.pending.transactions.remove( message.gtrid.range());
+                     };
+                  }
+               } // event::transaction
+
+               namespace domain
+               {
+                  auto connected( State& state)
+                  {
+                     return [ &state]( const gateway::message::domain::Connected& message)
+                     {
+                        Trace trace{ "gateway::group::outbound::handle::local::internal::domain::connected"};
+                        common::log::line( verbose::log, "message: ", message);
+
+                        auto descriptors = state.connections.connected( state.directive, message);
+
+                        auto inbound = state.connections.find_internal( descriptors.ipc);
+                        CASUAL_ASSERT( inbound);
+
+                        // a new connection has been established, we need to register this with discovery.
+                        casual::domain::discovery::provider::registration( *inbound, casual::domain::discovery::provider::Ability::discover);
+
+
+                        auto handle = state.connections.process_handle( descriptors.ipc);
+
+                        casual::domain::message::discovery::topology::direct::Update update{ handle};
                         {
-                           update.configured.services = information->configuration.services;
-                           update.configured.queues = information->configuration.queues;
+                           update.origin = message.domain;
+
+                           const auto information = casual::assertion( algorithm::find( state.connections.information(), descriptors.tcp), "failed to find information for descriptor: ", descriptors.tcp);
+                           
+                           // should we add content
+                           if( information->configuration)
+                           {
+                              update.configured.services = information->configuration.services;
+                              update.configured.queues = information->configuration.queues;
+                           }
                         }
-                     }
 
-                     // let the _discovery_ know that the topology has been updated
-                     casual::domain::discovery::topology::direct::update( state.multiplex, update);
-                  };
-               }
+                        // let the _discovery_ know that the topology has been updated
+                        casual::domain::discovery::topology::direct::update( state.multiplex, update);
+                     };
+                  }
+
+               } // domain
                
-            } // management::domain
-
+            } // management
 
          } // <unnamed>
       } // local
@@ -745,6 +754,9 @@ namespace casual
       management_handler management( State& state)
       {
          return management_handler{
+            common::event::listener( 
+               handle::local::management::event::transaction::disassociate( state)
+            ),
             local::management::domain::connected( state)
          };
 
