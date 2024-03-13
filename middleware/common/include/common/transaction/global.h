@@ -35,10 +35,12 @@ namespace casual::common
          inline id::range range() const noexcept { return id::range( m_gtrid.data(), m_gtrid.data() + m_size);}
 
          inline friend bool operator == ( const ID& lhs, id::range rhs) { return algorithm::equal( lhs.range(), rhs);}
-         inline friend bool operator == ( id::range lhs, const ID& rhs) { return rhs == lhs;}
          inline friend bool operator == ( const ID& lhs, const ID& rhs) { return lhs == rhs.range();}
 
-         explicit operator bool () const noexcept { return m_size != 0;}
+         inline explicit operator bool () const noexcept { return m_size != 0;}
+
+         //! implicit conversion to range representation.
+         inline operator id::range() const noexcept { return range();}
          
          CASUAL_CONST_CORRECT_SERIALIZE(
             CASUAL_SERIALIZE_NAME( m_size, "size");

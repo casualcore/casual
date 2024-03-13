@@ -109,10 +109,10 @@ namespace casual
       ID::ID( const xid_type& xid) : xid( xid)
       {}
 
-      ID::ID( const global::ID& gtrid)
+      ID::ID( global::id::range gtrid)
       {
          auto bqual = uuid::make();
-         local::casual_xid( gtrid.range(), bqual.get(), xid);
+         local::casual_xid( gtrid, bqual.get(), xid);
       }
 
       ID::ID( Uuid gtrid, Uuid bqual, const process::Handle& owner) : m_owner( std::move( owner))
@@ -170,9 +170,9 @@ namespace casual
          return lhs.xid == rhs;
       }
 
-      bool operator == ( const ID& lhs, const global::ID& rhs)
+      bool operator == ( const ID& lhs, global::id::range rhs)
       {
-         return rhs == id::range::global( lhs);
+         return algorithm::equal( id::range::global( lhs), rhs);
       }
 
       std::ostream& operator << ( std::ostream& out, const ID& id)

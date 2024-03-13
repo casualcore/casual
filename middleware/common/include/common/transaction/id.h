@@ -71,7 +71,8 @@ namespace casual
 
             explicit ID( const xid_type& xid);
 
-            explicit ID( const global::ID& gtrid);
+            //! creates a new trid from gtrid and a generated bqual.
+            explicit ID( global::id::range gtrid);
 
             //! Initialize with uuid, gtrid and bqual.
             //! Sets the format id to "casual"
@@ -101,7 +102,7 @@ namespace casual
             friend bool operator == ( const ID& lhs, const ID& rhs);
             friend bool operator == ( const ID& lhs, const xid_type& rhs);
 
-            friend bool operator == ( const ID& lhs, const global::ID& rhs);
+            friend bool operator == ( const ID& lhs, global::id::range rhs);
 
             CASUAL_CONST_CORRECT_SERIALIZE(
                CASUAL_SERIALIZE_NAME( m_owner, "owner");
