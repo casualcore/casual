@@ -243,8 +243,6 @@ namespace casual
 
          struct Transaction
          {
-
-            Transaction() = default;
             Transaction( Transaction&&) = default;
             Transaction& operator = ( Transaction&&) = default;
 
@@ -257,7 +255,7 @@ namespace casual
             platform::size::type resource_count() const noexcept;
             
             //! removes all branches that has no resources associated. 
-            //! used only when the prepare/commmit/rollback starts
+            //! used only when the prepare/commit/rollback starts
             void purge();
 
             //! remove all resources associated with branches that is in `replies`
@@ -346,17 +344,12 @@ namespace casual
             Coordinate< common::message::transaction::resource::commit::Reply> commit;
             Coordinate< common::message::transaction::resource::rollback::Reply> rollback;
 
-            // keep track of the requested inbound branches.
-            // using transparent hashing to be able to compare with binary::view
-            std::unordered_map< common::transaction::global::ID, common::transaction::ID, common::transaction::global::hash, std::equal_to<>> inbound;
-
             inline void failed( common::strong::resource::id id) { prepare.failed( id); commit.failed( id); rollback.failed( id);}
 
             CASUAL_LOG_SERIALIZE( 
                CASUAL_SERIALIZE( prepare);
                CASUAL_SERIALIZE( commit);
                CASUAL_SERIALIZE( rollback);
-               CASUAL_SERIALIZE( inbound);
             )
          } coordinate;
 
