@@ -1143,5 +1143,140 @@ domain:
          }
       }
 
+      TEST( service_manager, terminate_service_times_out__callee_acks_before_SIGTERM__expect_busy_before_terminated)
+      {
+         common::unittest::Trace trace;
+
+         constexpr auto configuration = R"(
+domain:
+   services:
+      -  name: "a"
+         execution:
+            timeout:
+               duration: "1ms"
+               contract: "terminate"
+)";
+
+         constexpr auto service = "a";
+
+         auto domain = local::domain( configuration);
+
+         service::unittest::advertise( { service});
+
+         // We reserve our service
+         {
+            auto lookup = common::service::Lookup{ service}();
+            EXPECT_TRUE( lookup.state == decltype( lookup.state)::idle);
+         }
+
+         // We sleep, expecting to be interrupted by the DM trying to murder us
+         // Note that in the scenario being tested here the callee is terminated after it acks, but we have to do it this way since we're both caller and callee
+         try
+         {
+            common::process::sleep( std::chrono::seconds{ 10});
+         }
+         catch( ...)
+         {
+            auto error = common::exception::capture();
+            EXPECT_TRUE( error.code() == common::code::signal::terminate);
+         }
+
+         // since we called ourselves and never replied, the call should have timed out and we should have an error reply
+         {
+            common::message::service::call::Reply reply;
+            common::communication::device::blocking::receive( common::communication::ipc::inbound::device(), reply);
+            EXPECT_TRUE( reply.code.result == common::code::xatmi::timeout) << reply.code.result;
+         }
+
+         // We (as the callee) ack before being terminated
+         {
+            common::message::service::call::ACK ack;
+            ack.metric.process = common::process::handle();
+
+            common::communication::device::blocking::send( common::communication::instance::outbound::service::manager::device(), ack);
+         }
+
+         // We shouldnt be reservable -> expect busy
+         {
+            auto lookup = common::service::Lookup{ service}();
+            EXPECT_TRUE( lookup.state == decltype( lookup.state)::busy);
+         }
+
+         // Confirm our untimely demise to the DM
+         {
+            common::message::event::process::Exit event;
+            event.state.pid = common::process::handle().pid;
+            event.state.reason = decltype( event.state.reason)::exited;
+            common::communication::device::blocking::send( common::communication::instance::outbound::domain::manager::device(), event);
+         }
+
+         // After our death is announced we should get TPENOENT since we were the only instance with the service
+         casual::service::unittest::fetch::until( casual::service::unittest::fetch::predicate::instances( service, 0));
+         EXPECT_THROW(
+         {
+            try
+            {
+               auto lookup = common::service::Lookup{ service}();
+            }
+            catch( ...)
+            {
+               auto error = common::exception::capture();
+               EXPECT_TRUE( error.code() == common::code::xatmi::no_entry);
+               throw error;
+            }
+         }, std::system_error);
+      }
+
+      TEST( service_manager, linger_service_times_out__callee_acks__expect_idle)
+      {
+         common::unittest::Trace trace;
+
+         constexpr auto configuration = R"(
+domain:
+   services:
+      -  name: "a"
+         execution:
+            timeout:
+               duration: "1ms"
+               contract: "linger"
+)";
+
+         constexpr auto service = "a";
+
+         auto domain = local::domain( configuration);
+
+         service::unittest::advertise( { service});
+
+         // We reserve our service
+         {
+            auto lookup = common::service::Lookup{ service}();
+            EXPECT_TRUE( lookup.state == decltype( lookup.state)::idle);
+         }
+
+         // We sleep long enough for the timeout to trigger
+         common::process::sleep( std::chrono::milliseconds{ 10});
+
+         // since we called ourselves and never replied, the call should have timed out and we should have an error reply
+         {
+            common::message::service::call::Reply reply;
+            common::communication::device::blocking::receive( common::communication::ipc::inbound::device(), reply);
+            EXPECT_TRUE( reply.code.result == common::code::xatmi::timeout) << reply.code.result;
+         }
+
+         // We (as the callee) ack
+         {
+            common::message::service::call::ACK ack;
+            ack.metric.process = common::process::handle();
+
+            common::communication::device::blocking::send( common::communication::instance::outbound::service::manager::device(), ack);
+         }
+
+         // We should be idle again
+         {
+            auto lookup = common::service::Lookup{ service}();
+            EXPECT_TRUE( lookup.state == decltype( lookup.state)::idle);
+         }
+      }
+
    } // service
 } // casual

@@ -18,6 +18,7 @@
 #include "common/algorithm.h"
 #include "common/algorithm/is.h"
 #include "common/algorithm/coalesce.h"
+#include "common/algorithm/compare.h"
 #include "common/process.h"
 #include "common/message/dispatch.h"
 #include "common/message/dispatch/handle.h"
@@ -150,6 +151,15 @@ namespace casual
          }
       } // comply
 
+      namespace detail::timeout::contract
+      {
+         using contract_type = common::service::execution::timeout::contract::Type;
+         bool lethal( contract_type contract)
+         {
+            return algorithm::compare::any( contract, contract_type::kill, contract_type::terminate);
+         }
+      }
+
       void timeout( State& state)
       {
          Trace trace{ "service::manager::handle::timeout"};
@@ -159,7 +169,7 @@ namespace casual
          auto expired = state.pending.deadline.expired( now);
          log::line( verbose::log, "expired: ", expired);
 
-         auto handle_timeout = [&state]( auto& entry)
+         auto handle_timeout = [ &state]( auto& entry)
          {
             auto order_assassination = []( auto& target, auto& contract, auto& announcement)
             {
@@ -173,6 +183,10 @@ namespace casual
 
             auto contract = entry.service->timeout.contract.value_or( common::service::execution::timeout::contract::Type::linger);
             auto announcement = common::string::compose( "service ", entry.service->information.name, " timed out");
+
+
+            if( auto callee = state.sequential( entry.target); callee != nullptr && detail::timeout::contract::lethal( contract))
+               callee->condemn();
 
             if( auto caller = entry.service->consume( entry.correlation))
             {
@@ -931,13 +945,13 @@ namespace casual
                void check_timeout_and_notify_TM( State& state, const common::message::service::call::ACK& ack)
                {
                   log::line( verbose::log, "state.timeout_instances: ", state.timeout_instances);
-
-                  if( ! ack.metric.trid)
-                     return;
                   
                   if( auto found = algorithm::find( state.timeout_instances, ack.metric.process.pid))
                   {
                      state.timeout_instances.erase( std::begin( found));
+
+                     if( ! ack.metric.trid)
+                        return;
 
                      // Rollback the transaction (again). If TM got instances involved a rollback will be executed, 
                      // otherwise it will be a "no-op".

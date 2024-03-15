@@ -299,7 +299,12 @@ namespace casual
             const common::process::Handle& caller, 
             const strong::correlation::id& correlation)
          {
-            if( auto found = algorithm::find_if( instances.sequential, []( auto& i){ return i.idle();}))
+            auto reservable = [ &]( auto& instance)
+            {
+               return instance.idle() && ! instance.condemned();
+            };
+
+            if( auto found = algorithm::find_if( instances.sequential, reservable))
                return found->reserve( this, caller, correlation);
 
             return {};

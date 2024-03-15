@@ -119,6 +119,10 @@ namespace casual
                //! @returns the name of the reserved service if a reservation exists
                std::optional< std::string> reserved_service() const;
 
+               //! marks this instance as soon to die and thus ineligible for service reservations
+               inline void condemn() { m_condemned = true;}
+               inline bool condemned() const { return m_condemned;}
+
                friend std::ostream& operator << ( std::ostream& out, State value);
 
                CASUAL_LOG_SERIALIZE(
@@ -126,6 +130,7 @@ namespace casual
                   CASUAL_SERIALIZE_NAME( m_service, "service");
                   CASUAL_SERIALIZE_NAME( m_caller, "caller");
                   CASUAL_SERIALIZE_NAME( m_services, "services");
+                  CASUAL_SERIALIZE_NAME( m_condemned, "condemned");
                )
 
             private:
@@ -133,6 +138,7 @@ namespace casual
                instance::Caller m_caller;
                // all associated services
                std::vector< state::Service*> m_services;
+               bool m_condemned = false;
             };
 
             struct Concurrent : base_instance
@@ -247,6 +253,8 @@ namespace casual
 
                   inline const common::process::Handle& process() const { return get().process;}
                   inline auto state() const { return get().state();}
+
+                  inline bool condemned() const { return get().condemned();}
 
                   inline friend bool operator == ( const Sequential& lhs, common::strong::process::id rhs) { return lhs.process().pid == rhs;}
 
