@@ -25,7 +25,7 @@
 // stream operator for the xa struct
 static std::ostream& operator << ( std::ostream& out, const xa_switch_t& xa)
 {
-   auto flags = casual::common::flag::xa::resource::Flags{ xa.flags};
+   auto flags = casual::common::flag::xa::resource::Flag{ xa.flags};
    return casual::common::stream::write( out,  "{ name: ", xa.name, ", flags: ", flags, ", version: ", xa.version, "}");
 }
 
@@ -84,25 +84,25 @@ namespace casual
       }
 
 
-      code::xa Resource::start( const transaction::ID& transaction, Flags flags) noexcept
+      code::xa Resource::start( const transaction::ID& transaction, Flag flags) noexcept
       {
          log::line( log::category::transaction, "start resource: ", m_id, " transaction: ", transaction, " flags: ", flags);
 
          auto result = reopen_guard( [&]()
          { 
-            return local::convert( m_xa->xa_start_entry( local::non_const_xid( transaction), m_id.value(), flags.underlying()));
+            return local::convert( m_xa->xa_start_entry( local::non_const_xid( transaction), m_id.value(), std::to_underlying( flags)));
          });
 
          // this is an extra fallback/try to mitigate possible race-conditions when 
          // A a-calls B and C ( B, C with same rm) within same transaction and synchronisation is done with TM
          // still the last one to get reply might do xa_start first (depending on OS context switches and so on...) 
-         if( result == code::xa::duplicate_xid && ! flags.exist( Flag::join))
+         if( result == code::xa::duplicate_xid && ! flag::exists( flags, Flag::join))
          {
             // Transaction is already associated with this thread of control, we try to join instead
             log::line( log::category::transaction, result, " - action: try to join instead");
 
             flags |= Flag::join;
-            result = local::convert( m_xa->xa_start_entry( local::non_const_xid( transaction), m_id.value(), flags.underlying()));
+            result = local::convert( m_xa->xa_start_entry( local::non_const_xid( transaction), m_id.value(), std::to_underlying( flags)));
          }
 
          local::log::event( "resource-start|", m_id, '|', transaction, '|', result);
@@ -110,13 +110,13 @@ namespace casual
          return local::log::code( result, m_id, "failed to start trid: ", transaction, ", flags: ", flags);
       }
 
-      code::xa Resource::end( const transaction::ID& transaction, Flags flags) noexcept
+      code::xa Resource::end( const transaction::ID& transaction, Flag flags) noexcept
       {
          log::line( log::category::transaction, "end resource: ", m_id, ", transaction: ", transaction, ", flags: ", flags);
 
          auto result = reopen_guard( [&]()
          {
-            return local::convert( m_xa->xa_end_entry( local::non_const_xid( transaction), m_id.value(), flags.underlying()));
+            return local::convert( m_xa->xa_end_entry( local::non_const_xid( transaction), m_id.value(), std::to_underlying( flags)));
          });
 
          local::log::event( "resource-end|", m_id, '|', transaction, '|', result);
@@ -124,12 +124,12 @@ namespace casual
          return local::log::code( result, m_id, "failed to end trid: ", transaction, ", flags: ", flags);
       }
 
-      code::xa Resource::open( Flags flags) noexcept
+      code::xa Resource::open( Flag flags) noexcept
       {
          auto info = common::environment::expand( m_openinfo);
          log::line( log::category::transaction, "open resource: ", m_id, ", openinfo: ", info, ", flags: ", flags);
 
-         auto result = local::convert( m_xa->xa_open_entry( info.c_str(), m_id.value(), flags.underlying()));
+         auto result = local::convert( m_xa->xa_open_entry( info.c_str(), m_id.value(), std::to_underlying( flags)));
 
          // we send an event if we fail to open resource
          if( result != code::xa::ok)
@@ -140,25 +140,25 @@ namespace casual
          return result;
       }
 
-      code::xa Resource::close( Flags flags) noexcept
+      code::xa Resource::close( Flag flags) noexcept
       {
          auto info = common::environment::expand( m_closeinfo);
          log::line( log::category::transaction, "close resource: ", m_id, ", closeinfo: ", info, ", flags: ", flags);
 
-         auto result = local::convert( m_xa->xa_close_entry( info.c_str(), m_id.value(), flags.underlying()));
+         auto result = local::convert( m_xa->xa_close_entry( info.c_str(), m_id.value(), std::to_underlying( flags)));
 
          local::log::event( "resource-close|", m_id, '|', result);
 
          return local::log::code( result, m_id, "failed to close - flags: ", flags);
       }
 
-      code::xa Resource::prepare( const transaction::ID& transaction, Flags flags) noexcept
+      code::xa Resource::prepare( const transaction::ID& transaction, Flag flags) noexcept
       {
          log::line( log::category::transaction, "prepare resource: ", m_id, " transaction: ", transaction, " flags: ", flags);
 
          auto result = reopen_guard( [&]()
          {
-            return local::convert( m_xa->xa_prepare_entry( local::non_const_xid( transaction), m_id.value(), flags.underlying()));
+            return local::convert( m_xa->xa_prepare_entry( local::non_const_xid( transaction), m_id.value(), std::to_underlying( flags)));
          });
 
          if( result == common::code::xa::protocol)
@@ -180,13 +180,13 @@ namespace casual
          return result;
       }
 
-      code::xa Resource::commit( const transaction::ID& transaction, Flags flags) noexcept
+      code::xa Resource::commit( const transaction::ID& transaction, Flag flags) noexcept
       {
          log::line( log::category::transaction, "commit resource: ", m_id, " transaction: ", transaction, " flags: ", flags);
 
          auto result = reopen_guard( [&]()
          {
-            return local::convert( m_xa->xa_commit_entry( local::non_const_xid( transaction), m_id.value(), flags.underlying()));
+            return local::convert( m_xa->xa_commit_entry( local::non_const_xid( transaction), m_id.value(), std::to_underlying( flags)));
          });
 
          local::log::event( "resource-commit|", m_id, '|', transaction, '|', result);
@@ -194,13 +194,13 @@ namespace casual
          return result;
       }
 
-      code::xa Resource::rollback( const transaction::ID& transaction, Flags flags) noexcept
+      code::xa Resource::rollback( const transaction::ID& transaction, Flag flags) noexcept
       {
          log::line( log::category::transaction, "rollback resource: ", m_id, " transaction: ", transaction, " flags: ", flags);
 
          auto result =  reopen_guard( [&]()
          {
-            return local::convert( m_xa->xa_rollback_entry( local::non_const_xid( transaction), m_id.value(), flags.underlying()));
+            return local::convert( m_xa->xa_rollback_entry( local::non_const_xid( transaction), m_id.value(), std::to_underlying( flags)));
          });
 
          local::log::event( "resource-rollback|", m_id, '|', transaction, '|', result);
@@ -210,12 +210,12 @@ namespace casual
 
       bool Resource::dynamic() const noexcept
       {
-         return static_cast< flag::xa::resource::Flags>( m_xa->flags).exist( flag::xa::resource::Flag::dynamic);
+         return flag::exists( flag::xa::resource::Flag( m_xa->flags), flag::xa::resource::Flag::dynamic);
       }
 
       bool Resource::migrate() const noexcept
       {
-         return ! flag::xa::resource::Flags{ m_xa->flags}.exist( flag::xa::resource::Flag::no_migrate);
+         return flag::exists( flag::xa::resource::Flag( m_xa->flags), flag::xa::resource::Flag::no_migrate);
       }
 
       code::xa Resource::reopen()
@@ -250,11 +250,11 @@ namespace casual
          std::array< XID, platform::batch::transaction::recover> xids;
 
          int count = xids.size();
-         flag::xa::Flags flags = flag::xa::Flag::start_scan;
+         flag::xa::Flag flags = flag::xa::Flag::start_scan;
 
          while(  count == range::size( xids))
          {
-            count = m_xa->xa_recover_entry( xids.data(), xids.size(), m_id.value(), flags.underlying());
+            count = m_xa->xa_recover_entry( xids.data(), xids.size(), m_id.value(), std::to_underlying( flags));
 
             if( count < 0)
             {

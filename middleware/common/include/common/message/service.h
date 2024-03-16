@@ -494,7 +494,9 @@ namespace casual
                   no_reply = std::to_underlying( flag::xatmi::Flag::no_reply),
                   no_time = std::to_underlying( flag::xatmi::Flag::no_time),
                };
-               using Flags = common::Flags< Flag>;
+               
+               // indicate that this enum is used as a flag
+               consteval void casual_enum_as_flag( Flag);
 
             } // request
 
@@ -508,7 +510,7 @@ namespace casual
                std::string parent;
 
                common::transaction::ID trid;
-               request::Flags flags;
+               request::Flag flags{};
 
                common::service::header::Fields header;
 

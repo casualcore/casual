@@ -62,7 +62,7 @@ namespace casual
                   
                   // for service calls, it might be a _no-reply_ request.
                   if constexpr( std::same_as< M, common::message::service::call::callee::Request>)
-                     request.context.semantic = message.flags.exist( common::message::service::call::request::Flag::no_reply) ? 
+                     request.context.semantic = flag::exists( message.flags, common::message::service::call::request::Flag::no_reply) ? 
                         Semantic::no_reply : Semantic::no_busy_intermediate;
                   else
                      request.context.semantic = Semantic::no_busy_intermediate;

@@ -6,176 +6,191 @@
 
 #pragma once
 
-#include "common/serialize/macro.h"
-#include "common/string.h"
-#include "common/traits.h"
+#include "common/algorithm.h"
+#include "common/stream/customization.h"
 
-#include "common/code/raise.h"
-#include "common/code/casual.h"
-
-#include <initializer_list>
-#include <type_traits>
+#include <bitset>
 
 namespace casual
 {
-   namespace common
+   namespace common::flag
    {
+      //! We're using strongly typed enums as flag abstraction. This makes it harder to
+      //! produce bugs.
+      //! 
+      //! To opt in to use an enum as flag declare:
+      //!
+      //! `consteval casual_enum_as_flag( <your enum type>);
+      //!
+      //! You can also opt in and use another flag as superset:
+      //!
+      //! `consteval <the superset type> casual_enum_as_flag_superset( <your enum type>);
+      //!
+      //! This will use the superset enum `description` function when printing your enum type.
+      //! You have to ensure that your enum type is a strict subset of the superset enum.
 
-      namespace has
+      namespace detail
       {
-         template< auto flags, typename T>
-         constexpr inline bool flag( T value)
+         template< typename T>
+         concept enum_as_flag = concepts::enumerator< T> && requires( T e)
          {
-            return ( value & flags) == flags;
-         }
-      } // has
+            casual_enum_as_flag( e);
+         };
 
-
-      template< typename E>
-      struct Flags
-      {
-         using enum_type = E;
-         using underlying_type = std::underlying_type_t< enum_type>;
-
-         static_assert( std::is_enum< enum_type>::value, "E has to be of enum type");
-         
-
-         //! just a helper to easier deduce the enum-type
-         constexpr static auto type() noexcept { return enum_type{};}         
-
-         constexpr Flags() = default;
-
-         template< typename... Enums>
-         constexpr Flags( enum_type e, Enums... enums) noexcept : Flags( bitmask( e, enums...)) {}
- 
-         constexpr explicit Flags( underlying_type flags) noexcept : m_flags( flags) {}
-
-         constexpr Flags convert( underlying_type flags) const
+         template< typename T>
+         concept has_description = enum_as_flag< T> && requires( T e)
          {
-            if( flags & ~underlying())
-               code::raise::error( code::casual::invalid_argument, "flags: ", flags, " limit: ", *this);
+            { description( e)} -> std::same_as< std::string_view>;
+         }; 
 
-            return Flags{ flags};
+         template< typename T>
+         concept enum_as_flag_superset = concepts::enumerator< T> && requires( T e)
+         {
+            { casual_enum_as_flag_superset( e)} -> has_description;
+         };
+
+         template< typename T>
+         concept can_use_description = has_description< T> || enum_as_flag_superset< T>; 
+
+
+         template< can_use_description T>
+         constexpr auto description_type( T flag)
+         {
+            if constexpr( enum_as_flag_superset< T>)
+               return static_cast< decltype( casual_enum_as_flag_superset( T{}))>( flag);
+            else
+               return flag;
          }
 
-         template< typename E2>
-         constexpr Flags convert( Flags< E2> flags) const
-         {
-            return convert( flags.underlying());
-         }
+      } // detail
 
-         constexpr bool empty() const noexcept { return m_flags == underlying_type{};}
-
-         constexpr explicit operator bool() const noexcept { return ! empty();}
-
-         constexpr bool exist( enum_type flag) const noexcept
-         {
-            return ( m_flags & std::to_underlying( flag)) == std::to_underlying( flag);
-         }
-
-         platform::size::type bits() const noexcept
-         {
-            return std::bitset< std::numeric_limits< underlying_type>::digits>{ static_cast< unsigned long long>( m_flags)}.count();
-         }
-
-         constexpr underlying_type underlying() const noexcept { return m_flags;}
-
-
-         constexpr friend Flags& operator |= ( Flags& lhs, Flags rhs) noexcept { lhs.m_flags |= rhs.m_flags; return lhs;}
-         constexpr friend Flags operator | ( Flags lhs, Flags rhs) noexcept { return Flags( lhs.m_flags | rhs.m_flags);}
-         
-         constexpr friend Flags& operator &= ( Flags& lhs, Flags rhs) noexcept { lhs.m_flags &= rhs.m_flags; return lhs;}
-         constexpr friend Flags operator & ( Flags lhs, Flags rhs) noexcept { return Flags( lhs.m_flags & rhs.m_flags);}
-
-         constexpr friend Flags& operator ^= ( Flags& lhs, Flags rhs) noexcept { lhs.m_flags ^= rhs.m_flags; return lhs;}
-         constexpr friend Flags operator ^ ( Flags lhs, Flags rhs) noexcept { return Flags( lhs.m_flags ^ rhs.m_flags);}
-
-         constexpr friend Flags operator ~ ( Flags lhs) noexcept { return Flags{ ~lhs.m_flags};}
-
-         constexpr friend bool operator == ( Flags lhs, Flags rhs) noexcept { return lhs.m_flags == rhs.m_flags;}
-         constexpr friend bool operator != ( Flags lhs, Flags rhs) noexcept { return ! ( lhs == rhs);}
-
-         //! More _easy to reason about_  operators that does what one thinks they do.
-         //! @{
-         constexpr friend Flags operator - ( Flags lhs, Flags rhs) noexcept { return Flags{ lhs.m_flags & ~rhs.m_flags};}
-         constexpr friend Flags& operator -= ( Flags& lhs, Flags rhs) noexcept { lhs.m_flags &= ~rhs.m_flags; return lhs;}
-
-         constexpr friend Flags operator + ( Flags lhs, Flags rhs) noexcept { return lhs | rhs;}
-         constexpr friend Flags& operator += ( Flags lhs, Flags rhs) noexcept { return lhs |= rhs;}
-         //! @}
-
-
-         constexpr friend std::ostream& operator << ( std::ostream& out, Flags flags)
-         {
-            return print( out, flags, traits::priority::tag< 1>{});
-         }
-
-         CASUAL_FORWARD_SERIALIZE( m_flags)
-
-      private:
-
-         template< typename Enum>
-         static auto print( std::ostream& out, Flags< Enum> flags, traits::priority::tag< 1>) -> decltype( out << description( Enum{}))
-         {
-            // TODO maintainence: This can probably be done a lot better...
-            if( ! flags)
-               return out << "[]";
-
-            out << "[ ";
-
-            using unsigned_type = std::make_unsigned_t< underlying_type>;
-            constexpr auto bits = std::numeric_limits< unsigned_type>::digits;
+      template< typename T>
+      concept enum_flag_like = detail::enum_as_flag< T> || detail::enum_as_flag_superset< T>;
+      
+   } // common::flag
    
-            algorithm::for_n< bits>( [ &out, flags]( unsigned_type index)
-            {
-               const unsigned_type flag = unsigned_type( 1) << index;
-               if( ( flags.underlying() & flag) == 0)
-                  return;
-               
-               out << description( Enum( flag));
-
-               const auto next = index + 1;
-
-               if( next == bits)
-                  return;
-
-               constexpr unsigned_type filled = std::numeric_limits< unsigned_type>::max();
-               const unsigned_type mask( filled << next);
-               if( mask & static_cast< unsigned_type>( flags.underlying()))
-                  out << ", ";
-            });
-            return out << ']';
-         }
-
-         template< typename Enum>
-         static std::ostream& print( std::ostream& out, Flags< Enum> flags, traits::priority::tag< 0>)
-         {
-            return out << "0x" << std::hex << flags.underlying() << std::dec;
-         }
-
-
-         template< typename... Enums>
-         static constexpr underlying_type bitmask( Enums... enums) noexcept
-         {
-            static_assert( concepts::same_as< enum_type, Enums...>, "wrong enum type");
-
-            return ( 0 | ... | std::to_underlying( enums) );
-         }
-
-         underlying_type m_flags = underlying_type{};
-      };
-
-      namespace flags
-      {
-         template< typename Enum, typename... Enums>
-         constexpr auto compose( Enum flag, Enums... flags) requires concepts::same_as< Enum, Enums...>
-         {
-            return Flags< Enum>{ flag, flags...};
-         }
-      } // flags
-
-   } // common
 } // casual
 
+template< casual::common::flag::enum_flag_like T>
+constexpr auto operator | ( T lhs, T rhs)
+{
+   return static_cast< T>( std::to_underlying( lhs) | std::to_underlying( rhs));
+}
+
+template< casual::common::flag::enum_flag_like T>
+constexpr auto& operator |= ( T& lhs, T rhs)
+{
+   return lhs = static_cast< T>( std::to_underlying( lhs) | std::to_underlying( rhs));
+}
+
+template< casual::common::flag::enum_flag_like T>
+constexpr auto operator & ( T lhs, T rhs)
+{
+   return static_cast< T>( std::to_underlying( lhs) & std::to_underlying( rhs));
+}
+
+template< casual::common::flag::enum_flag_like T>
+constexpr auto& operator -= ( T& lhs, T rhs)
+{
+   return lhs = static_cast< T>( std::to_underlying( lhs) & ~std::to_underlying( rhs));
+}
+
+
+namespace casual
+{
+   namespace common::flag
+   {
+      constexpr bool empty( casual::common::flag::enum_flag_like auto flags)
+      {
+         return std::to_underlying( flags) == 0;
+      }
+
+      //! @returns true if `flag` exists in `flags`
+      //! @pre `flag` != 0
+      template< casual::common::flag::enum_flag_like T>
+      constexpr bool exists( T flags, T flag)
+      {
+         return ! flag::empty( flag) && ( ( flags & flag) == flag);
+      }
+      
+      //! @returns the number of bits/flags in `flags` set to `1`
+      template< casual::common::flag::enum_flag_like T>
+      constexpr auto count( T flags)
+      {
+         using type = std::underlying_type_t< T>;
+
+         if constexpr( std::is_unsigned_v< type>)
+            return std::popcount( std::to_underlying( flags));
+         else
+            return std::popcount( static_cast< std::make_unsigned_t< type>>( std::to_underlying( flags)));
+      }
+
+      //! @returns true if there are no bits set in `flag` outside the `expected` bits; 
+      template< casual::common::flag::enum_flag_like T>
+      constexpr bool valid( T expected, T flag)
+      {
+         return ( ~std::to_underlying( expected) & std::to_underlying( flag)) == 0;
+      }
+
+      //! @returns a converted flag type from `other` to the same type as `filter` that only has bits sets that
+      //! are set in `filter`
+      template< casual::common::flag::enum_flag_like T, typename U>
+      constexpr auto convert( T filter, U other) -> decltype( static_cast< T>( other))
+      {
+         return filter & static_cast< T>( other);
+      }
+   } // common::flag
+   
+   namespace common::stream::customization::supersede
+   {
+      template< common::flag::enum_flag_like T> 
+      struct point< T>
+      {  
+         //! tries to print the flag in the best representation possible
+         static void stream( std::ostream& out, T value)
+         {
+            // if we can use _description( enum)_ we use it.
+            if constexpr( common::flag::detail::can_use_description< T>)
+            {
+               out << '[';
+
+               auto flag = common::flag::detail::description_type( value);
+               using flag_type = decltype( flag);
+
+               using underlying_type = std::underlying_type_t< flag_type>;
+               using unsigned_type = std::make_unsigned_t< underlying_type>;
+               constexpr auto bit_count = std::numeric_limits< unsigned_type>::digits;
+               std::bitset< bit_count> bits( std::to_underlying( flag));
+
+               algorithm::for_n< bit_count>( [ &out, bits]( unsigned_type index) mutable
+               {
+                  if( ! bits.test( index))
+                     return;
+
+                  // print the flag
+                  out << ' ' << description( static_cast< flag_type>( unsigned_type( 1) << index));
+
+                  // "consume" the bit/flag
+                  bits.reset( index);
+
+                  // prepare next if we've got any left
+                  if( bits.any())
+                     out << ",";
+
+                  // we don't get early-return, we always go through all bits...
+               });
+
+               out << ']';
+            }
+            else
+            {
+               out << "0x" << std::hex << std::to_underlying( value) << std::dec;
+            }
+         }
+      };
+      
+   } // common::stream::customization::supersede
+
+} // casual
 
 

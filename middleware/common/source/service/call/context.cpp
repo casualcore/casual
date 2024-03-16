@@ -57,7 +57,7 @@ namespace casual
                   message::service::call::caller::Request message;
                };
 
-               auto lookup( std::string service, async::Flags flags)
+               auto lookup( std::string service, async::Flag flags)
                {
                   Trace trace( "service::call::local::prepare::lookup");
 
@@ -67,15 +67,15 @@ namespace casual
                      // Hence, it's a fire-and-forget message.
 
                      message::service::lookup::request::Context context;
-                     context.semantic = flags.exist( call::async::Flag::no_reply) ? decltype( context.semantic)::no_reply : decltype( context.semantic)::regular;
+                     context.semantic = flag::exists( flags, call::async::Flag::no_reply) ? decltype( context.semantic)::no_reply : decltype( context.semantic)::regular;
                      return context;
                   };
 
                   if( auto& current = common::transaction::Context::instance().current())
                   {                     
-                     if( ! flags.exist( call::async::Flag::no_transaction))
+                     if( ! flag::exists( flags, call::async::Flag::no_transaction))
                      {
-                        if( flags.exist( call::async::Flag::no_reply))
+                        if( flag::exists( flags, call::async::Flag::no_reply))
                            code::raise::error( code::xatmi::argument, "TPNOREPLY can only be used with TPNOTRAN");
 
                         return service::Lookup{ std::move( service), transform_context( flags), current.deadline};
@@ -90,7 +90,7 @@ namespace casual
                      const platform::time::point::type& start,
                      common::buffer::payload::Send&& buffer,
                      service::header::Fields header,
-                     async::Flags flags,
+                     async::Flag flags,
                      const service::Lookup::Reply& lookup)
                {
                   Trace trace( "service::call::local::prepare::message");
@@ -104,16 +104,16 @@ namespace casual
                   message.process = process::handle();
                   message.parent = common::execution::service::name();
 
-                  constexpr auto request_flags = ~message::service::call::request::Flags{};
-                  message.flags = request_flags.convert( flags);
+                  message.flags = static_cast< message::service::call::request::Flag>( flags);
+
                   message.header = std::move( header);
 
                   auto& transaction = common::transaction::context().current();
 
                   // Check if we should associate descriptor with message-correlation and transaction
-                  if( flags.exist( async::Flag::no_reply))
+                  if( flag::exists( flags, async::Flag::no_reply))
                   {
-                     if( transaction && ! flags.exist( async::Flag::no_transaction))
+                     if( transaction && ! flag::exists( flags, async::Flag::no_transaction))
                         code::raise::error( code::xatmi::argument, "flag ", async::Flag::no_reply, " used within a transaction context without ", async::Flag::no_transaction);
 
                      log::line( log::debug, "no_reply - no descriptor reservation");
@@ -127,7 +127,7 @@ namespace casual
 
                      auto& descriptor = state.pending.reserve( message.correlation);
 
-                     if( ! flags.exist( async::Flag::no_transaction) && transaction)
+                     if( ! flag::exists( flags, async::Flag::no_transaction) && transaction)
                      {
                         message.trid = transaction.trid;
                         transaction.associate( message.correlation);
@@ -141,7 +141,7 @@ namespace casual
          } // <unnamed>
       } // local
       
-      descriptor_type Context::async( service::Lookup&& service, common::buffer::payload::Send buffer, service::header::Fields header, async::Flags flags)
+      descriptor_type Context::async( service::Lookup&& service, common::buffer::payload::Send buffer, service::header::Fields header, async::Flag flags)
       {
          Trace trace( "service::call::Context::async lookup");
 
@@ -186,12 +186,12 @@ namespace casual
          return prepared.descriptor;
       }
 
-      descriptor_type Context::async( service::Lookup&& service, common::buffer::payload::Send buffer, async::Flags flags)
+      descriptor_type Context::async( service::Lookup&& service, common::buffer::payload::Send buffer, async::Flag flags)
       {
          return async( std::move( service), std::move( buffer), service::header::fields(), flags);
       }
 
-      descriptor_type Context::async( const std::string& service, common::buffer::payload::Send buffer, async::Flags flags)
+      descriptor_type Context::async( const std::string& service, common::buffer::payload::Send buffer, async::Flag flags)
       {
          return async( local::prepare::lookup( service, flags), std::move( buffer), flags); 
       }
@@ -201,9 +201,9 @@ namespace casual
          namespace
          {
             template< typename... Args>
-            bool receive( message::service::call::Reply& reply, reply::Flags flags, Args&&... args)
+            bool receive( message::service::call::Reply& reply, reply::Flag flags, Args&&... args)
             {
-               if( flags.exist( reply::Flag::no_block))
+               if( flag::exists( flags, reply::Flag::no_block))
                {
                   return communication::device::non::blocking::receive( 
                      communication::ipc::inbound::device(), 
@@ -221,7 +221,7 @@ namespace casual
          } // <unnamed>
       } // local
 
-      reply::Result Context::reply( descriptor_type descriptor, reply::Flags flags)
+      reply::Result Context::reply( descriptor_type descriptor, reply::Flag flags)
       {
          Trace trace( "calling::Context::reply");
          log::line( log::debug, "descriptor: ", descriptor, " flags: ", flags);
@@ -235,7 +235,7 @@ namespace casual
              
             message::service::call::Reply reply;
 
-            if( flags.exist( reply::Flag::any))
+            if( flag::exists( flags, reply::Flag::any))
             {
                // We fetch any
                if( ! local::receive( reply, flags))
@@ -300,7 +300,7 @@ namespace casual
          {
             namespace suspend
             {
-               auto wrapper( sync::Flags flags)
+               auto wrapper( sync::Flag flags)
                {
                   Trace trace{ "service::call::local::suspend::wrapper"};
                   
@@ -317,7 +317,7 @@ namespace casual
 
                   auto& current = common::transaction::context().current();
                   
-                  if( current && ! flags.exist( sync::Flag::no_transaction))
+                  if( current && ! flag::exists( flags, sync::Flag::no_transaction))
                   {
                      if( ! current.involved().empty())
                      {
@@ -340,7 +340,7 @@ namespace casual
          } // <unnamed>
       } // local
 
-      sync::Result Context::sync( const std::string& service, common::buffer::payload::Send buffer, sync::Flags flags)
+      sync::Result Context::sync( const std::string& service, common::buffer::payload::Send buffer, sync::Flag flags)
       {
          // We can't have no-block when getting the reply
          flags -= sync::Flag::no_block;
@@ -348,12 +348,8 @@ namespace casual
          // Suspend if ongoing transaction and no no_transaction flag.
          auto guard = local::suspend::wrapper( flags);
 
-         constexpr auto async_flags = ~async::Flags{};
-
-         auto descriptor = async( service, buffer, async_flags.convert( flags));
-
-         constexpr auto reply_flags = ~reply::Flags{};
-         auto result = reply( descriptor, reply_flags.convert( flags));
+         auto descriptor = async( service, buffer, flag::convert( async::valid_flags, flags));
+         auto result = reply( descriptor, flag::convert( reply::valid_flags, flags));
 
          return { std::move( result.buffer), result.user};
       }
@@ -381,9 +377,9 @@ namespace casual
 
 
 
-      bool Context::receive( message::service::call::Reply& reply, descriptor_type descriptor, reply::Flags flags)
+      bool Context::receive( message::service::call::Reply& reply, descriptor_type descriptor, reply::Flag flags)
       {
-         if( flags.exist( reply::Flag::any))
+         if( flag::exists( flags, reply::Flag::any))
          {
             // We fetch any
             return local::receive( reply, flags);

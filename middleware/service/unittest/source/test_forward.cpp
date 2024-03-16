@@ -200,7 +200,7 @@ domain:
             common::message::service::call::callee::Request request;
             request.process = common::process::handle();
             using Flag = common::message::service::call::request::Flag;
-            request.flags = common::flags::compose( Flag::no_reply, Flag::no_transaction);
+            request.flags = Flag::no_reply | Flag::no_transaction;
             request.service.name = "a";
 
             EXPECT_TRUE( common::communication::device::blocking::send( sf.ipc, request));

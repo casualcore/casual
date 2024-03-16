@@ -57,7 +57,7 @@ namespace casual
 
       namespace provider
       {
-         void registration( common::communication::ipc::inbound::Device& device, common::Flags< Ability> abilities)
+         void registration( common::communication::ipc::inbound::Device& device, Ability abilities)
          {
             Trace trace{ "domain::discovery::provider::registration"};
 
@@ -69,7 +69,7 @@ namespace casual
             local::flush::call( device, message);
          }
 
-         void registration( common::Flags< Ability> abilities)
+         void registration( Ability abilities)
          {
             registration( communication::ipc::inbound::device(), abilities);
          }

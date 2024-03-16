@@ -22,7 +22,7 @@ namespace casual
       using Reply = message::discovery::Reply;
 
       //! Used by _inbounds_ that get's this message from another domain's outbound.
-      //! Will "ask" all regestrated _internals_, and possible _outbounds_, and accumulate one reply.
+      //! Will "ask" all register _internals_, and possible _outbounds_, and accumulate one reply.
       //! @returns the correlation id.
       //! @attention reply will be sent to the process in the request.
       //! @attention will _flush::send_ using ipc::inbound::device()
@@ -33,8 +33,8 @@ namespace casual
       namespace provider
       {
          using Ability = message::discovery::api::provider::registration::Ability;
-         void registration( common::Flags< Ability> abilities);
-         void registration( common::communication::ipc::inbound::Device& device, common::Flags< Ability> abilities);
+         void registration( Ability abilities);
+         void registration( common::communication::ipc::inbound::Device& device, Ability abilities);
       } // provider
 
       common::strong::correlation::id request(

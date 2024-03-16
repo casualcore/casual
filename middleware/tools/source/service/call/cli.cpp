@@ -85,18 +85,18 @@ namespace casual
                   multiplexing = pipe | ipc,
                };
                
-               constexpr friend auto description( Flag flag)
+               constexpr friend std::string_view description( Flag flag)
                {
                   switch( flag)
                   {
-                     case Flag::done: return std::string_view{ "done"};
-                     case Flag::pipe: return std::string_view{ "pipe"};
-                     case Flag::ipc: return std::string_view{ "ipc"};
-                     default: return std::string_view{ "<unknown>"};
+                     case Flag::done: return "done";
+                     case Flag::pipe: return "pipe";
+                     case Flag::ipc: return "ipc";
+                     default: return "<unknown>";
                   }
                }
 
-               Flags< Flag> machine = Flag::pipe;
+               Flag machine = Flag::pipe;
 
                struct
                {
@@ -122,6 +122,10 @@ namespace casual
                   CASUAL_SERIALIZE( done);
                )
             };
+
+            // to enable Flag to be used as a flag (g++11 force (need to define it)
+            [[maybe_unused]] consteval void casual_enum_as_flag( State::Flag) {};
+
 
             namespace service
             {

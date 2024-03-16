@@ -73,7 +73,7 @@ namespace casual
                // register that we can answer discovery questions.
                {
                   using Ability = casual::domain::discovery::provider::Ability;
-                  casual::domain::discovery::provider::registration( flags::compose( Ability::lookup, Ability::fetch_known));
+                  casual::domain::discovery::provider::registration( Ability::lookup | Ability::fetch_known);
                }
 
                // we can supply configuration

@@ -17,43 +17,37 @@
 
 namespace casual
 {
-   namespace serviceframework
+   namespace serviceframework::service
    {
-      namespace service
+      using payload_type = common::buffer::Payload;
+      using descriptor_type = platform::descriptor::type;
+
+
+      namespace call
       {
-         using payload_type = common::buffer::Payload;
-         using descriptor_type = platform::descriptor::type;
+         using Flag = common::service::call::sync::Flag;
+         using Result = common::service::call::sync::Result;
 
+         Result invoke( std::string service, const payload_type& payload, Flag flags = Flag{});
+      } // call
 
-         namespace call
-         {
-            using Flag = common::service::call::sync::Flag;
-            using Flags = common::service::call::sync::Flags;
-            using Result = common::service::call::sync::Result;
+      namespace send
+      {
+         using Flag = common::service::call::async::Flag;
 
-            Result invoke( std::string service, const payload_type& payload, Flags flags = Flags{});
-         } // call
+         descriptor_type invoke( std::string service, const payload_type& payload, Flag flags = Flag{});
 
-         namespace send
-         {
-            using Flag = common::service::call::async::Flag;
-            using Flags = common::service::call::async::Flags;
+      } // send
 
-            descriptor_type invoke( std::string service, const payload_type& payload, Flags flags = Flags{});
+      namespace receive
+      {
+         using Result = common::service::call::reply::Result;
+         using Flag = common::service::call::reply::Flag;
 
-         } // send
+         Result invoke( descriptor_type descriptor, Flag flags = Flag{});
+      } // receive
 
-         namespace receive
-         {
-            using Result = common::service::call::reply::Result;
-            using Flag = common::service::call::reply::Flag;
-            using Flags = common::service::call::reply::Flags;
-
-            Result invoke( descriptor_type descriptor, Flags flags = Flags{});
-         } // receive
-
-      } // service
-   } // serviceframework
+   } // serviceframework::service
 } // casual
 
 

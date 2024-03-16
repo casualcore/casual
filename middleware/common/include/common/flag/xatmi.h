@@ -12,56 +12,55 @@
 
 namespace casual 
 {
-   namespace common 
+   namespace common::flag::xatmi 
    {
-      namespace flag
+
+      enum class Flag : long
       {
-         namespace xatmi
-         {
-            enum class Flag : long
-            {
-               no_flags = 0,
-               no_block = TPNOBLOCK,
-               signal_restart = TPSIGRSTRT,
-               no_reply = TPNOREPLY,
-               no_transaction = TPNOTRAN,
-               in_transaction = TPTRAN,
-               no_time = TPNOTIME,
-               any = TPGETANY,
-               no_change = TPNOCHANGE,
-               conversation = TPCONV,
-               send_only = TPSENDONLY,
-               receive_only = TPRECVONLY
-            };
-            using Flags = common::Flags< xatmi::Flag>;
+         no_flags = 0,
+         no_block = TPNOBLOCK,
+         signal_restart = TPSIGRSTRT,
+         no_reply = TPNOREPLY,
+         no_transaction = TPNOTRAN,
+         in_transaction = TPTRAN,
+         no_time = TPNOTIME,
+         any = TPGETANY,
+         no_change = TPNOCHANGE,
+         conversation = TPCONV,
+         send_only = TPSENDONLY,
+         receive_only = TPRECVONLY
+      };
 
-            enum class Event : long
-            {
-               absent = 0,
-               disconnect = TPEV_DISCONIMM,
-               send_only = TPEV_SENDONLY,
-               service_error = TPEV_SVCERR,
-               service_fail = TPEV_SVCFAIL,
-               service_success = TPEV_SVCSUCC
-            };
+      std::string_view description( Flag value) noexcept;
 
-            enum class Return : int
-            {
-               fail = TPFAIL,
-               success = TPSUCCESS,
-            };
-            inline std::ostream& operator << ( std::ostream& out, Return value)
-            {
-               switch( value)
-               {
-                  case Return::fail: return out << "fail";
-                  case Return::success: return out << "success";
-               }
-               return out << "<unknown>";
-            }
-         } // xatmi 
-      } // flag
-   } // common 
+      // indicate that this enum is used as a flag
+      consteval void casual_enum_as_flag( Flag);
+      
+
+      enum class Event : long
+      {
+         absent = 0,
+         disconnect = TPEV_DISCONIMM,
+         send_only = TPEV_SENDONLY,
+         service_error = TPEV_SVCERR,
+         service_fail = TPEV_SVCFAIL,
+         service_success = TPEV_SVCSUCC
+      };
+
+      std::string_view description( Event value) noexcept;
+
+      // indicate that this enum is used as a flag
+      consteval void casual_enum_as_flag( Event);
+
+      enum class Return : int
+      {
+         fail = TPFAIL,
+         success = TPSUCCESS,
+      };
+
+      std::string_view description( Return value) noexcept;
+
+   } // common::flag::xatmi 
 } // casual 
 
 //

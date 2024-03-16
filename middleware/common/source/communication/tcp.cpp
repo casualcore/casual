@@ -85,11 +85,14 @@ namespace casual
                   canonical = AI_CANONNAME,
                };
 
+               //! indicate that the enum is used as a flag (g++11 bug (?) force to define it)
+               [[maybe_unused]] consteval void casual_enum_as_flag( Flag) {};
+
                namespace address
                {
                   struct Native 
                   {
-                     explicit Native( const tcp::Address& address, Flags< Flag> flags = {})
+                     explicit Native( const tcp::Address& address, Flag flags = {})
                      {
                         Trace trace( "common::communication::tcp::local::socket::address::Native::Native");
                         log::line( verbose::log, "address: ", address, ", flags: ", flags);
@@ -102,7 +105,7 @@ namespace casual
                         hints.ai_socktype = SOCK_STREAM;
 
                         flags |= Flag::canonical;
-                        hints.ai_flags = flags.underlying();
+                        hints.ai_flags = std::to_underlying( flags);
 
                         std::string host{ address.host()};
                         std::string port{ address.port()};
@@ -192,7 +195,7 @@ namespace casual
                } // address
 
                template< typename F>
-               auto create( const Address& address, F binder, Flags< Flag> flags = {})
+               auto create( const Address& address, F binder, Flag flags = {})
                   -> decltype( binder( Socket{}, std::declval< const addrinfo&>()))
                {
                   Trace trace( "common::communication::tcp::local::socket::create");
@@ -265,7 +268,7 @@ namespace casual
                   // We block all signals while we're trying to set up a listener...
                   //common::signal::thread::scope::Block block;
 
-                  constexpr auto flags = flags::compose( Flag::address_config, Flag::passive);
+                  constexpr auto flags = Flag::address_config | Flag::passive;
 
                   return create( address,[]( Socket socket, const addrinfo& info) -> Socket
                   {

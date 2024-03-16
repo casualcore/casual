@@ -11,63 +11,67 @@
 
 namespace casual 
 {
-   namespace common 
+   namespace common::flag::service::call
    {
-      namespace flag
+
+      namespace async
       {
-         namespace service
+         enum class Flag : long
          {
-            namespace call
-            {
-               namespace async
-               {
-                  enum class Flag : long
-                  {
-                     no_flags = std::to_underlying( xatmi::Flag::no_flags),
-                     no_transaction = std::to_underlying( xatmi::Flag::no_transaction),
-                     no_reply = std::to_underlying( xatmi::Flag::no_reply),
-                     no_block = std::to_underlying( xatmi::Flag::no_block),
-                     no_time = std::to_underlying( xatmi::Flag::no_time),
-                     signal_restart = std::to_underlying( xatmi::Flag::signal_restart)
-                  };
-                  using Flags = common::Flags< async::Flag>;
-               } // async
+            no_flags = std::to_underlying( xatmi::Flag::no_flags),
+            no_transaction = std::to_underlying( xatmi::Flag::no_transaction),
+            no_reply = std::to_underlying( xatmi::Flag::no_reply),
+            no_block = std::to_underlying( xatmi::Flag::no_block),
+            no_time = std::to_underlying( xatmi::Flag::no_time),
+            signal_restart = std::to_underlying( xatmi::Flag::signal_restart)
+         };
 
-               namespace reply
-               {
-                  enum class Flag : long
-                  {
-                     no_flags = std::to_underlying( xatmi::Flag::no_flags),
-                     any = std::to_underlying( xatmi::Flag::any),
-                     no_change = std::to_underlying( xatmi::Flag::no_change),
-                     no_block = std::to_underlying( xatmi::Flag::no_block),
-                     no_time = std::to_underlying( xatmi::Flag::no_time),
-                     signal_restart = std::to_underlying( xatmi::Flag::signal_restart)
-                  };
-                  using Flags = common::Flags< reply::Flag>;
+         //! indicate that this enum is used as a flag and uses xatmi::Flag as superset (for description)
+         consteval xatmi::Flag casual_enum_as_flag_superset( Flag);
+
+         constexpr auto valid_flags = Flag::no_flags | Flag::no_transaction | Flag::no_reply | Flag::no_block | Flag::no_time | Flag::signal_restart;
+
+      } // async
+
+      namespace reply
+      {
+         enum class Flag : long
+         {
+            no_flags = std::to_underlying( xatmi::Flag::no_flags),
+            any = std::to_underlying( xatmi::Flag::any),
+            no_change = std::to_underlying( xatmi::Flag::no_change),
+            no_block = std::to_underlying( xatmi::Flag::no_block),
+            no_time = std::to_underlying( xatmi::Flag::no_time),
+            signal_restart = std::to_underlying( xatmi::Flag::signal_restart)
+         };
+
+         //! indicate that this enum is used as a flag and uses xatmi::Flag as superset (for description)
+         consteval xatmi::Flag casual_enum_as_flag_superset( Flag);
+
+         constexpr auto valid_flags = Flag::no_flags | Flag::any | Flag::no_change | Flag::no_block | Flag::no_time | Flag::signal_restart;
+
+      } // reply
 
 
-               } // reply
+      namespace sync
+      {
+         enum class Flag : long
+         {
+            no_flags = std::to_underlying( xatmi::Flag::no_flags),
+            no_transaction = std::to_underlying( xatmi::Flag::no_transaction),
+            no_change = std::to_underlying( xatmi::Flag::no_change),
+            no_block = std::to_underlying( xatmi::Flag::no_block),
+            no_time = std::to_underlying( xatmi::Flag::no_time),
+            signal_restart = std::to_underlying( xatmi::Flag::signal_restart)
+         };
+         
+         //! indicate that this enum is used as a flag and uses xatmi::Flag as superset (for description)
+         consteval xatmi::Flag casual_enum_as_flag_superset( Flag);
 
+         constexpr auto valid_flags = Flag::no_flags | Flag::no_transaction | Flag::no_change | Flag::no_block | Flag::no_time | Flag::signal_restart;
+      } // sync
 
-               namespace sync
-               {
-                  enum class Flag : long
-                  {
-                     no_flags = std::to_underlying( xatmi::Flag::no_flags),
-                     no_transaction = std::to_underlying( xatmi::Flag::no_transaction),
-                     no_change = std::to_underlying( xatmi::Flag::no_change),
-                     no_block = std::to_underlying( xatmi::Flag::no_block),
-                     no_time = std::to_underlying( xatmi::Flag::no_time),
-                     signal_restart = std::to_underlying( xatmi::Flag::signal_restart)
-                  };
-                  using Flags = common::Flags< sync::Flag>;
-               } // sync
-
-            } // call
-         } // service
-      } // flag
-   } // common
+   } // common::flag::service::call
 } // casual
 
 

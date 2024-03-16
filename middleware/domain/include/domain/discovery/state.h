@@ -128,17 +128,15 @@ namespace casual
          namespace provider
          {
             using Ability = message::discovery::api::provider::registration::Ability;
-            using Abilities = message::discovery::api::provider::registration::Abilities;
-
          } // provider
 
          //! represent an entity that can provide stuff
          struct Provider
          {
-            Provider( provider::Abilities abilities, const common::process::Handle& process)
+            Provider( provider::Ability abilities, const common::process::Handle& process)
                : abilities{ abilities}, process{ process} {}
 
-            provider::Abilities abilities{};
+            provider::Ability abilities{};
             common::process::Handle process;
 
             inline friend bool operator == ( const Provider& lhs, const common::strong::ipc::id& rhs) { return lhs.process.ipc == rhs;}
@@ -157,7 +155,7 @@ namespace casual
             
             void registration( const message::discovery::api::provider::registration::Request& message);
 
-            const_range_type filter( provider::Abilities abilities) noexcept;
+            const_range_type filter( provider::Ability abilities) noexcept;
 
             inline auto& all() const noexcept { return m_providers;}
 

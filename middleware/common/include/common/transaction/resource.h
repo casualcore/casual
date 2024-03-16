@@ -28,20 +28,19 @@ namespace casual
       struct Resource
       {
          using Flag = flag::xa::Flag;
-         using Flags = flag::xa::Flags;
 
          Resource( resource::Link link, strong::resource::id id, std::string openinfo, std::string closeinfo);
          
-         code::xa start( const transaction::ID& transaction, Flags flags) noexcept;
-         code::xa end( const transaction::ID& transaction, Flags flags) noexcept;
+         code::xa start( const transaction::ID& transaction, Flag flags) noexcept;
+         code::xa end( const transaction::ID& transaction, Flag flags) noexcept;
 
-         code::xa open( Flags flags = Flag::no_flags) noexcept;
-         code::xa close( Flags flags = Flag::no_flags) noexcept;
+         code::xa open( Flag flags = Flag::no_flags) noexcept;
+         code::xa close( Flag flags = Flag::no_flags) noexcept;
 
-         code::xa prepare( const transaction::ID& transaction, Flags flags) noexcept;
+         code::xa prepare( const transaction::ID& transaction, Flag flags) noexcept;
 
-         code::xa commit( const transaction::ID& transaction, Flags flags) noexcept;
-         code::xa rollback( const transaction::ID& transaction, Flags flags) noexcept;
+         code::xa commit( const transaction::ID& transaction, Flag flags) noexcept;
+         code::xa rollback( const transaction::ID& transaction, Flag flags) noexcept;
 
          bool dynamic() const noexcept;
 

@@ -302,7 +302,7 @@ namespace casual
                topology = 8,
             };
 
-            using Abilities = common::Flags< registration::Ability>;
+            consteval void casual_enum_as_flag( Ability);
             
             constexpr std::string_view description( Ability value)
             {
@@ -321,7 +321,7 @@ namespace casual
             {
                using base_request::base_request;
 
-               Abilities abilities;
+               Ability abilities;
 
                CASUAL_CONST_CORRECT_SERIALIZE(
                   base_request::serialize( archive);

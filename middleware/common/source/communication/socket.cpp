@@ -112,7 +112,7 @@ namespace casual
          auto flags = ::fcntl( value.m_descriptor.value(), F_GETFL);
 
          return out << "{ descriptor: " << value.m_descriptor
-            << ", blocking: " << std::boolalpha << ! common::has::flag< O_NONBLOCK>( flags)
+            << ", blocking: " << std::boolalpha << ( ( flags & O_NONBLOCK) == 0)
             << ", reuse: " << ( value.get( socket::option::reuse_address<false>{}) != 0)
             << ", keepalive: " << ( value.get( socket::option::keepalive<false>{}) != 0)
             << ", linger: " << value.get( socket::option::linger{})

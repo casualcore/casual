@@ -37,7 +37,7 @@ namespace casual
                {
                   Trace trace{ "service::forward::handle::service::send::error::reply"};
 
-                  if( ! message.flags.exist( common::message::service::call::request::Flag::no_reply))
+                  if( ! flag::exists( message.flags, common::message::service::call::request::Flag::no_reply))
                   {
                      common::message::service::call::Reply reply;
                      reply.correlation = message.correlation;

@@ -5,7 +5,7 @@
 //!
 
 
-#include <gtest/gtest.h>
+#include "common/unittest.h"
 
 #include "common/flag.h"
 #include "common/predicate.h"
@@ -15,162 +15,184 @@ namespace casual
 {
    namespace common
    {
-      enum struct Enum : std::uint16_t
+      namespace detail
       {
-         flag1 = 1,
-         flag2 = 2,
-         flag3 = 4,
-         flag4 = 8,
-         combo3_4 = flag3 | flag4,
-         flag5 = 16,
-         flag_max = 1 << ( std::numeric_limits< std::uint16_t>::digits - 1)
-      };
-      constexpr auto description( Enum flag)
-      {
-         switch( flag)
+         enum struct Flag : std::uint16_t
          {
-            case Enum::flag1: return std::string_view{ "flag1"};
-            case Enum::flag2: return std::string_view{ "flag2"};
-            case Enum::flag3: return std::string_view{ "flag3"};
-            case Enum::flag4: return std::string_view{ "flag4"};
-            case Enum::flag5: return std::string_view{ "flag5"};
-            case Enum::flag_max: return std::string_view{ "flag_max"};
-            default: return std::string_view{ "<unknown>"};
+            a = 0b00000001,
+            b = 0b00000010,
+            c = 0b00000100,
+            d = 0b00001000,
+            e = 0b00010000,
+            a_c_d = ( a | c | d),
+         };
+
+         consteval void casual_enum_as_flag( Flag);
+
+         constexpr std::string_view description( Flag value)
+         {
+            switch( value)
+            {
+               case Flag::a: return "a";
+               case Flag::b: return "b";
+               case Flag::c: return "c";
+               case Flag::d: return "d";
+               case Flag::e: return "e";
+               case Flag::a_c_d: return "a_c_d";
+            }
+            return "<unknown>";
+         }
+      } // detail
+
+      TEST( common_flag, exist)
+      {
+         unittest::Trace trace;
+         using Flag = detail::Flag;
+   
+         auto flags = Flag::a | Flag::b;
+
+         EXPECT_TRUE( flag::exists( flags, Flag::a));
+         EXPECT_TRUE( flag::exists( flags, Flag::b));
+         EXPECT_TRUE( ! flag::exists( flags, Flag::c));
+         EXPECT_TRUE( ! flag::exists( flags, Flag{}));
+      }
+
+      TEST( common_flags, empty)
+      {
+         unittest::Trace trace;
+         using Flag = detail::Flag;
+
+         EXPECT_TRUE( flag::empty( Flag{}));
+         EXPECT_TRUE( ! flag::empty( Flag::b));
+      }
+
+      TEST( common_flags, count)
+      {
+         unittest::Trace trace;
+         using Flag = detail::Flag;
+
+         EXPECT_TRUE( flag::count( Flag{}) == 0);
+         EXPECT_TRUE( flag::count( Flag::a) == 1);
+         EXPECT_TRUE( flag::count( Flag::a | Flag::b | Flag::c) == 3);
+      }
+
+      TEST( common_flags, print)
+      {
+         unittest::Trace trace;
+         using Flag = detail::Flag;
+
+         EXPECT_TRUE( string::compose( Flag{}) == "[]");
+         EXPECT_TRUE( string::compose( Flag::a) == "[ a]");
+         EXPECT_TRUE( string::compose( Flag::a | Flag::b | Flag::d ) == "[ a, b, d]");
+      }
+
+      TEST( common_flag, operator_or)
+      {
+         unittest::Trace trace;
+         using Flag = detail::Flag;
+
+         auto flags = Flag::a | Flag::b;
+
+         EXPECT_TRUE( flag::exists( flags, Flag::a));
+         EXPECT_TRUE( flag::exists( flags, Flag::b));
+         EXPECT_TRUE( ! flag::exists( flags, Flag::c));
+      }
+
+      TEST( common_flag, operator_reference_or)
+      {
+         unittest::Trace trace;
+         using Flag = detail::Flag;
+
+         auto flags = Flag::a;
+
+         EXPECT_TRUE( ( flags |= Flag::b) == ( Flag::a | Flag::b));
+         EXPECT_TRUE( ( flags |= Flag::b) == ( Flag::a | Flag::b));
+         EXPECT_TRUE( ( flags |= Flag::c) == ( Flag::a | Flag::b | Flag::c));
+         EXPECT_TRUE( ( flags |= Flag::d) == ( Flag::a | Flag::b | Flag::c | Flag::d));
+      }
+
+      TEST( common_flag, operator_reference_subtract)
+      {
+         unittest::Trace trace;
+         using Flag = detail::Flag;
+
+         auto flags = Flag::a | Flag::b | Flag::c;
+         
+         // subtract non existent -> expect same
+         EXPECT_TRUE( ( flags -= Flag::d) == ( Flag::a | Flag::b | Flag::c));
+         EXPECT_TRUE( ( flags -= Flag::b) == ( Flag::a | Flag::c));
+         EXPECT_TRUE( ( flags -= Flag::a) == Flag::c);
+         EXPECT_TRUE( flag::empty( flags -= Flag::c));
+      }
+
+      TEST( common_flag, operator_and)
+      {
+         unittest::Trace trace;
+         using Flag = detail::Flag;
+
+         const auto flags = Flag::a | Flag::b | Flag::c | Flag::e;
+
+         {
+            auto result = flags & Flag::a_c_d;
+            EXPECT_TRUE( flag::exists( result, Flag::a));
+            EXPECT_TRUE( ! flag::exists( result, Flag::b));
+            EXPECT_TRUE( flag::exists( result, Flag::c));
+            EXPECT_TRUE( ! flag::exists( result, Flag::d));
+            EXPECT_TRUE( ! flag::exists( result, Flag::e));
          }
       }
 
-      // Test the compile time initialization
-      static_assert( Flags< Enum>{ Enum::flag1, Enum::flag2}.underlying() == ( 1 | 2), "bla");
-      static_assert( Flags< Enum>{ Enum::flag1} == Flags< Enum>{ Enum::flag1}, "bla");
-      static_assert( Flags< Enum>{ Enum::flag1} != Flags< Enum>{ Enum::flag2}, "bla");
-      static_assert( Flags< Enum>{ Enum::flag1}, "bla");
-
-      static_assert( Flags< Enum>{ Enum::flag1} == Enum::flag1, "bla");
-
-      static_assert( Flags< Enum>{ Enum::flag1} & Enum::flag1, "bla");
-      static_assert( ! ( Flags< Enum>{ Enum::flag1} & Enum::flag2), "bla");
-      static_assert( ( Flags< Enum>{ Enum::flag1} | Enum::flag2 | Enum::flag3 ) == Flags< Enum>{ Enum::flag1, Enum::flag2, Enum::flag3} , "bla");
-
-
-      static_assert( ! Flags< Enum>{}, "bla");
-
-
-      TEST( casual_common_flags, empty__expect_false)
+      TEST( common_flags, valid)
       {
-         Flags< Enum> flags;
-         EXPECT_FALSE( predicate::boolean( flags));
+         unittest::Trace trace;
+         using Flag = detail::Flag;
+
+         constexpr auto expected = Flag::a | Flag::c;
+
+         EXPECT_TRUE( flag::valid( expected, Flag::a));
+         EXPECT_TRUE( flag::valid( expected, Flag::a | Flag::c));
+         EXPECT_TRUE( ! flag::valid( expected, Flag::b));
+         EXPECT_TRUE( ! flag::valid( expected, Flag::a | Flag::b | Flag::c));
       }
 
-      TEST( casual_common_flags, initialize_flag1__expect_true)
+      TEST( common_flags, convert)
       {
-         Flags< Enum> flags{ Enum::flag1};
-         EXPECT_TRUE( predicate::boolean( flags));
+         unittest::Trace trace;
+         using Flag = detail::Flag;
+
+         constexpr auto filter = Flag::a | Flag::c;
+
+         EXPECT_TRUE( flag::convert( filter, 0b11111) == filter);
+         EXPECT_TRUE( flag::convert( filter, 0b01) == Flag::a);
+         EXPECT_TRUE( flag::convert( filter, 0) == Flag{});
       }
 
-      TEST( casual_common_flags, initialize_flag1_flag2__expect_true)
+      namespace detail::subset
       {
-         Flags< Enum> flags{ Enum::flag1, Enum::flag2};
-         EXPECT_TRUE( predicate::boolean( flags));
-      }
-
-      TEST( casual_common_flags, initialize_flag1__binary_and__flag1___expect_true)
-      {
-         Flags< Enum> flags{ Enum::flag1};
-         EXPECT_TRUE( predicate::boolean( flags & Enum::flag1));
-      }
-
-      TEST( casual_common_flags, initialize_flag1__binary_and__flag2___expect_false)
-      {
-         Flags< Enum> flags{ Enum::flag1};
-         EXPECT_FALSE( predicate::boolean( flags & Enum::flag2));
-      }
-
-      TEST( casual_common_flags, initialize_flag1_flag2__binary_and__flag2___expect_true)
-      {
-         Flags< Enum> flags{ Enum::flag1, Enum::flag2};
-         EXPECT_TRUE( predicate::boolean( flags & Enum::flag2));
-      }
-
-      TEST( casual_common_flags, initialize_flag1__binary_or_flag2__binary_and__flag2___expect_true)
-      {
-         Flags< Enum> flags{ Enum::flag1};
-         EXPECT_TRUE( predicate::boolean( ( flags | Enum::flag2) & Enum::flag2));
-      }
-
-      TEST( casual_common_flags, one_flag__equality)
-      {
-         EXPECT_TRUE( predicate::boolean( Flags< Enum>{ Enum::flag1} == Flags< Enum>{ Enum::flag1}));
-      }
-
-      TEST( casual_common_flags, three_flag__equality)
-      {
-         EXPECT_TRUE( predicate::boolean(
-               Flags< Enum>{ Enum::flag1, Enum::flag2, Enum::flag3}
-            == Flags< Enum>{ Enum::flag1, Enum::flag2, Enum::flag3}));
-      }
-
-      TEST( casual_common_flags, initialize_flag1_flag2__binary_and__initialize_flag1_flag2___expect_true)
-      {
-         Flags< Enum> flags{ Enum::flag1, Enum::flag2};
-         EXPECT_TRUE( predicate::boolean( flags & flags));
-      }
-
-      TEST( casual_common_flags, initialize_flag1_flag2_flag3__binary_and__initialize_flag1_flag2___expect_true)
-      {
-         EXPECT_TRUE( predicate::boolean(
-               Flags< Enum>{ Enum::flag1, Enum::flag2, Enum::flag3}
-             & Flags< Enum>{ Enum::flag1, Enum::flag2}));
-      }
-
-      TEST( casual_common_flags, initialize_flag1_flag2__binary_and__initialize_flag1_flag2_flag3___expect_true)
-      {
-         EXPECT_TRUE( predicate::boolean(
-               Flags< Enum>{ Enum::flag1, Enum::flag2}
-               & Flags< Enum>{ Enum::flag1, Enum::flag2, Enum::flag3}));
-      }
-
-      TEST( casual_common_flags, init_flag1_flag2__binary_or__init_flag2_flag3__equal_to__init_flag1_flag2_flag3)
-      {
-         EXPECT_TRUE( predicate::boolean(
-               ( Flags< Enum>{ Enum::flag1, Enum::flag2} | Flags< Enum>{ Enum::flag2, Enum::flag3})
-                  ==  Flags< Enum>{ Enum::flag1, Enum::flag2, Enum::flag3}));
-      }
-
-      TEST( casual_common_flags, exist)
-      {
-         Flags< Enum> flags{ Enum::flag1, Enum::flag2};
-         EXPECT_TRUE( flags.exist( Enum::flag2));
-      }
-
-      TEST( casual_common_flags, combo)
-      {
-         Flags< Enum> flags{ Enum::flag3, Enum::flag4};
-         EXPECT_TRUE( flags != Enum::flag1);
-         EXPECT_TRUE( flags != Enum::flag2);
-         EXPECT_TRUE( flags != Enum::flag3);
-         EXPECT_FALSE( flags == Enum::flag3);
-         EXPECT_TRUE( flags != Enum::flag4);
-         EXPECT_FALSE( flags == Enum::flag4);
-         EXPECT_TRUE( flags == Enum::combo3_4);
-      }
-
-      TEST( casual_common_flags, stream)
-      {
+         enum struct Flag : std::uint16_t
          {
-            Flags< Enum> flags{ Enum::flag1, Enum::flag2, Enum::flag5};
-            EXPECT_TRUE( string::compose( flags) == "[ flag1, flag2, flag5]") << "flags: " << string::compose( flags);
-         }
+            b = std::to_underlying( detail::Flag::b),
+            d = std::to_underlying( detail::Flag::d),
+            e = std::to_underlying( detail::Flag::e),
+         };
 
-         {
-            Flags< Enum> flags{ Enum::flag_max};
-            EXPECT_TRUE( string::compose( flags) == "[ flag_max]") << "flags: " << string::compose( flags);
-         }
+         consteval void casual_enum_as_flag( Flag);
 
-         {
-            Flags< Enum> flags{ Enum::combo3_4};
-            EXPECT_TRUE( string::compose( flags) == "[ flag3, flag4]") << "flags: " << string::compose( flags);
-         }
+         // use detail::Flag as a superset -> use it's description
+         consteval detail::Flag casual_enum_as_flag_superset( Flag);
+         
+      } // detail::subset
+
+      TEST( common_flags, superset_print)
+      {
+         unittest::Trace trace;
+         using Flag = detail::subset::Flag;
+
+         EXPECT_TRUE( string::compose( Flag{}) == "[]");
+         EXPECT_TRUE( string::compose( Flag::b) == "[ b]");
+         EXPECT_TRUE( string::compose( Flag::b | Flag::e) == "[ b, e]");
       }
+
 
    } // common
 } // casual

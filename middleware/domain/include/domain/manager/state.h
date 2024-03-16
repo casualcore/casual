@@ -296,12 +296,12 @@ namespace casual
                {
                   constexpr auto predicate( Contract contract) noexcept
                   {
-                     return [ contract]( auto& element){ return ( element.contract & contract) == contract;};
+                     return [ contract]( auto& element){ return common::flag::exists( element.contract, contract);};
                   }
                } // detail
 
-               inline auto supplier() noexcept { return detail::predicate( Contract::enum_type::supply);}
-               inline auto runtime() noexcept { return detail::predicate( Contract::enum_type::runtime_update);}
+               inline auto supplier() noexcept { return detail::predicate( Contract::supply);}
+               inline auto runtime() noexcept { return detail::predicate( Contract::runtime_update);}
                
             } // stakeholder
 

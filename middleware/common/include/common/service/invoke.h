@@ -44,7 +44,10 @@ namespace casual
                   send_only = std::to_underlying( flag::xatmi::Flag::send_only),
                   receive_only = std::to_underlying( flag::xatmi::Flag::receive_only),
                };
-               using Flags = common::Flags< Flag>;
+
+               // indicate that this enum is used as a flag
+               friend consteval void casual_enum_as_flag( Flag);
+               
 
                Parameter() = default;
                Parameter( buffer::Payload&& payload) : payload( std::move( payload)) {}
@@ -52,7 +55,7 @@ namespace casual
                Parameter( Parameter&&) noexcept = default;
                Parameter& operator = (Parameter&&) noexcept = default;
 
-               Flags flags;
+               Flag flags{};
                Service service;
                std::string parent;
                buffer::Payload payload;

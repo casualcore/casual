@@ -18,7 +18,7 @@ namespace casual
       {
          namespace call
          {
-            Result invoke( std::string service, const payload_type& payload, Flags flags)
+            Result invoke( std::string service, const payload_type& payload, Flag flags)
             {
                Trace trace{ "sf::service::call::invoke"};
 
@@ -28,7 +28,7 @@ namespace casual
 
          namespace send
          {
-            descriptor_type invoke( std::string service, const payload_type& payload, Flags flags)
+            descriptor_type invoke( std::string service, const payload_type& payload, Flag flags)
             {
                Trace trace{ "sf::service::call::send"};
 
@@ -39,7 +39,7 @@ namespace casual
 
          namespace receive
          {
-            Result invoke( descriptor_type descriptor, Flags flags)
+            Result invoke( descriptor_type descriptor, Flag flags)
             {
                Trace trace{ "sf::service::receive::send"};
 

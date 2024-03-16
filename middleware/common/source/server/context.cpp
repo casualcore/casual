@@ -36,11 +36,11 @@ namespace casual
          {
             std::ostream& operator << ( std::ostream& out, const Jump& value)
             {
-               return out << "{ value: " << value.state.value
-                     << ", code: " << value.state.code
-                     << ", data: " << value.buffer.data
-                     << ", size: " << value.buffer.size
-                     << ", service: " << value.forward.service << '}';
+               return stream::write( out, "{ value: ", value.state.value,
+                  ", code: ", value.state.code,
+                  ", data: ", value.buffer.data,
+                  ", size: ", value.buffer.size,
+                  ", service: ", value.forward.service, '}');
             }
          } // state
 

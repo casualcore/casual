@@ -263,7 +263,7 @@ namespace casual
             using basic_transaction< type>::basic_transaction;
 
             id::type resource;
-            flag::xa::Flags flags = flag::xa::Flag::no_flags;
+            flag::xa::Flag flags = flag::xa::Flag::no_flags;
 
             CASUAL_CONST_CORRECT_SERIALIZE(
                basic_transaction< type>::serialize( archive);

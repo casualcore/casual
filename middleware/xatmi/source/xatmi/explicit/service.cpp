@@ -29,14 +29,12 @@ namespace local
 {
    namespace
    {
-      template< typename R, typename Flags>
-      void handle_reply_buffer( R&& result, Flags flags, char** odata, long* olen)
+      template< typename R, typename Flag>
+      void handle_reply_buffer( R&& result, Flag flags, char** odata, long* olen)
       {
          auto output = casual::common::buffer::pool::holder().get( casual::common::buffer::handle::type{ *odata});
 
-         using enum_type = typename Flags::enum_type;
-
-         if( flags.exist( enum_type::no_change) && result.buffer.type != output.payload().type)
+         if( casual::common::flag::exists( flags, Flag::no_change) && result.buffer.type != output.payload().type)
             casual::common::code::raise::error( casual::common::code::xatmi::buffer_output);
 
          casual::common::buffer::pool::holder().deallocate( casual::common::buffer::handle::type{ *odata});
@@ -62,16 +60,18 @@ int casual_service_call( const char* const service, char* idata, const long ilen
    {
       using Flag = casual::common::service::call::sync::Flag;
 
-      constexpr casual::common::service::call::sync::Flags valid_flags{
-         Flag::no_transaction,
-         Flag::no_change,
-         Flag::no_block,
-         Flag::no_time,
-         Flag::signal_restart};
+      auto flags = Flag{ bitmap};
+
+      constexpr auto valid_flags = Flag::no_transaction
+         | Flag::no_change
+         | Flag::no_block 
+         | Flag::no_time
+         | Flag::signal_restart;
+
+      if( ! casual::common::flag::valid( valid_flags, flags))
+         casual::common::code::raise::error( casual::common::code::xatmi::argument, "flags: ", flags, " outside of: ", valid_flags);
 
       auto buffer = casual::common::buffer::pool::holder().get( casual::common::buffer::handle::type{ idata}, ilen);
-
-      auto flags = valid_flags.convert( bitmap);
 
       auto maybe_block = casual::xatmi::internal::signal::maybe_block( flags);
 
@@ -114,18 +114,20 @@ int casual_service_asynchronous_send( const char* const service, char* idata, co
 
    try
    {
-      auto buffer = casual::common::buffer::pool::holder().get( casual::common::buffer::handle::type{ idata}, ilen);
-
       using Flag = casual::common::service::call::async::Flag;
 
-      constexpr casual::common::service::call::async::Flags valid_flags{
-         Flag::no_transaction,
-         Flag::no_reply,
-         Flag::no_block,
-         Flag::no_time,
-         Flag::signal_restart};
+      auto flags = Flag{ bitmap};
 
-      auto flags = valid_flags.convert( bitmap);
+      constexpr auto valid_flags = Flag::no_transaction
+         | Flag::no_reply
+         | Flag::no_block
+         | Flag::no_time
+         | Flag::signal_restart;
+
+      if( ! casual::common::flag::valid( valid_flags, flags))
+         casual::common::code::raise::error( casual::common::code::xatmi::argument, "flags: ", flags, " outside of: ", valid_flags);
+
+      auto buffer = casual::common::buffer::pool::holder().get( casual::common::buffer::handle::type{ idata}, ilen);
 
       auto maybe_block = casual::xatmi::internal::signal::maybe_block( flags);
 
@@ -149,14 +151,16 @@ int casual_service_asynchronous_receive( int *const descriptor, char** odata, lo
    {
       using Flag = casual::common::service::call::reply::Flag;
 
-      constexpr casual::common::service::call::reply::Flags valid_flags{
-         Flag::any,
-         Flag::no_change,
-         Flag::no_block,
-         Flag::no_time,
-         Flag::signal_restart};
+      auto flags = Flag{ bitmap};
+      
+      constexpr auto valid_flags = Flag::any
+         | Flag::no_change
+         | Flag::no_block
+         | Flag::no_time
+         | Flag::signal_restart;
 
-      auto flags = valid_flags.convert( bitmap);
+      if( ! casual::common::flag::valid( valid_flags, flags))
+         casual::common::code::raise::error( casual::common::code::xatmi::argument, "flags: ", flags, " outside of: ", valid_flags);
 
       auto maybe_block = casual::xatmi::internal::signal::maybe_block( flags);
 

@@ -74,15 +74,15 @@ namespace casual
             public:
                static Context& instance();
 
-               descriptor_type async( const std::string& service, common::buffer::payload::Send buffer, async::Flags flags);
+               descriptor_type async( const std::string& service, common::buffer::payload::Send buffer, async::Flag flags);
 
-               descriptor_type async( service::Lookup&& lookup, common::buffer::payload::Send buffer, async::Flags flags);
+               descriptor_type async( service::Lookup&& lookup, common::buffer::payload::Send buffer, async::Flag flags);
 
-               descriptor_type async( service::Lookup&& lookup, common::buffer::payload::Send buffer, service::header::Fields header, async::Flags flags);
+               descriptor_type async( service::Lookup&& lookup, common::buffer::payload::Send buffer, service::header::Fields header, async::Flag flags);
 
-               reply::Result reply( descriptor_type descriptor, reply::Flags flags);
+               reply::Result reply( descriptor_type descriptor, reply::Flag flags);
 
-               sync::Result sync( const std::string& service, common::buffer::payload::Send buffer, sync::Flags flags);
+               sync::Result sync( const std::string& service, common::buffer::payload::Send buffer, sync::Flag flags);
 
                void cancel( descriptor_type descriptor);
 
@@ -94,7 +94,7 @@ namespace casual
 
             private:
                Context();
-               bool receive( message::service::call::Reply& reply, descriptor_type descriptor, reply::Flags);
+               bool receive( message::service::call::Reply& reply, descriptor_type descriptor, reply::Flag);
 
                State m_state;
 

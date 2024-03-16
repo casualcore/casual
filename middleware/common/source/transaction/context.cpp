@@ -383,7 +383,7 @@ namespace casual
 
                      //! "helper" for start, branch and resume below
                      template< typename R>
-                     auto start( Transaction& transaction, R& resources, flag::xa::Flags flags)
+                     auto start( Transaction& transaction, R& resources, flag::xa::Flag flags)
                      {
                         // involve the resources
                         transaction.involve( transform::ids( resources));
@@ -446,7 +446,7 @@ namespace casual
                   namespace policy
                   {
                      template< typename R>
-                     auto end( const Transaction& transaction, R& resources, flag::xa::Flags flags)
+                     auto end( const Transaction& transaction, R& resources, flag::xa::Flag flags)
                      {
                         return algorithm::accumulate( transaction.involved(), code::tx::ok, local::accumulate::code( [ &transaction, &resources, flags]( auto& id)
                         {
@@ -1164,7 +1164,7 @@ namespace casual
                "failed to suspend one ore more resource");
          }
 
-         code::tx Context::resource_commit( strong::resource::id rm, const Transaction& transaction, flag::xa::Flags flags)
+         code::tx Context::resource_commit( strong::resource::id rm, const Transaction& transaction, flag::xa::Flag flags)
          {
             Trace trace{ "transaction::Context::resources_commit"};
             log::line( log::category::transaction, "transaction: ", transaction, " - rm: ", rm, " - flags: ", flags);

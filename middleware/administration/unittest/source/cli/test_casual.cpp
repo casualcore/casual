@@ -11,9 +11,9 @@
 #include "common/unittest.h"
 
 #include "domain/unittest/manager.h"
-
 #include "administration/unittest/cli/command.h"
 
+#include "common/string.h"
 
 
 namespace casual

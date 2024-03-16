@@ -26,7 +26,8 @@ namespace casual
          };
          std::string_view description( Flag value);
          
-         using Flags = common::Flags< resource::Flag>;
+         // indicate that this enum is used as a flag
+         consteval void casual_enum_as_flag( Flag);
       } // resource 
 
 
@@ -48,7 +49,7 @@ namespace casual
       };
       std::string_view description( Flag value);
 
-      using Flags = common::Flags< xa::Flag>;
+      consteval void casual_enum_as_flag( Flag);
 
    } // common::flag::xa 
 } // casual 

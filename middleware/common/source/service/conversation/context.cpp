@@ -52,7 +52,7 @@ namespace casual
                      template< typename F>
                      auto convert( F flags)
                      {
-                        if( flags.exist( decltype( flags.type())::receive_only))
+                        if( flag::exists( flags, decltype( flags)::receive_only))
                            return state::descriptor::Value::Duplex::receive;
                         else
                            return state::descriptor::Value::Duplex::send;
@@ -72,11 +72,11 @@ namespace casual
 
                   namespace validate
                   {
-                     void flags( connect::Flags flags)
+                     void flags( connect::Flag flags)
                      {
-                        constexpr connect::Flags duplex{ connect::Flag::send_only, connect::Flag::receive_only};
+                        constexpr auto duplex = connect::Flag::send_only | connect::Flag::receive_only;
 
-                        if( ( flags & duplex) == duplex || ! ( flags & duplex))
+                        if( flag::count( duplex & flags) != 1)
                            code::raise::error( code::xatmi::argument, "send or receive intention must be provided - flags: ", flags);
                      }
 
@@ -187,11 +187,11 @@ namespace casual
                               switch( inp_message.code.result)
                               {
                                  case Result::service_fail:
-                                    result.event = decltype( result.event.type())::service_fail;
+                                    result.event = decltype( result.event)::service_fail;
                                     result.user = inp_message.code.user;
                                     break;
                                  case Result::service_error:
-                                    result.event = decltype( result.event.type())::service_error;
+                                    result.event = decltype( result.event)::service_error;
                                     break;
                                  default:
                                     // Anything else is abnormal in this situation and should not happen.
@@ -201,7 +201,7 @@ namespace casual
                                              " with unexpected code.result: ",
                                              inp_message.code.result,
                                              " handled as service_error");
-                                    result.event = decltype( result.event.type())::service_error;
+                                    result.event = decltype( result.event)::service_error;
                                     break;
                               }
                            break;
@@ -216,7 +216,7 @@ namespace casual
                            // Need to generate TPEV_SVCERR
                            // We do not need the actual message content!
                            // If this occurs it is an unconditional TPEV_SVCERR
-                           result.event = decltype( result.event.type())::service_error;
+                           result.event = decltype( result.event)::service_error;
                            break;
                         default:
                            // should never happen! The next() above only accept
@@ -263,7 +263,7 @@ namespace casual
             strong::conversation::descriptor::id Context::connect(
                   const std::string& service,
                   common::buffer::payload::Send buffer,
-                  connect::Flags flags)
+                  connect::Flag flags)
             {
                Trace trace{ "common::service::conversation::Context::connect"};
 
@@ -307,7 +307,7 @@ namespace casual
 
                   auto& transaction = common::transaction::context().current();
 
-                  if( ! flags.exist( connect::Flag::no_transaction) && transaction)
+                  if( ! flag::exists( flags, connect::Flag::no_transaction) && transaction)
                   {
                      message.trid = transaction.trid;
                      transaction.associate( message.correlation);
@@ -363,7 +363,7 @@ namespace casual
                return descriptor;
             }
 
-            send::Result Context::send( strong::conversation::descriptor::id descriptor, common::buffer::payload::Send&& buffer, common::Flags< send::Flag> flags)
+            send::Result Context::send( strong::conversation::descriptor::id descriptor, common::buffer::payload::Send&& buffer, send::Flag flags)
             {
                Trace trace{ "common::service::conversation::Context::send"};
 
@@ -410,10 +410,10 @@ namespace casual
                // conversation_disconnect is the result of an initiator
                // disconnect.
                // This low level impementation is in check::pending_event()
-               //common::Flags< Event> result_event = local::check::pending_event( value);
+               //common::Flag< Event> result_event = local::check::pending_event( value);
                send::Result result = local::check::pending_event( value);
 
-               if (result.event.empty())
+               if( flag::empty( result.event))
                {
                   // normal case! No pending event so prepare and send data
                   auto message = local::prepare::message< message::conversation::caller::Send>( value, std::move( buffer));
@@ -430,7 +430,7 @@ namespace casual
 
             }
 
-            receive::Result Context::receive( strong::conversation::descriptor::id descriptor, common::Flags< receive::Flag> flags)
+            receive::Result Context::receive( strong::conversation::descriptor::id descriptor, receive::Flag flags)
             {
                Trace trace{ "common::service::conversation::Context::receive"};
 
@@ -489,7 +489,7 @@ namespace casual
 
                   auto receive_complete = []( auto& correlation, auto& flags)
                   {
-                     if( flags.exist( receive::Flag::no_block))
+                     if( flag::exists( flags, receive::Flag::no_block))
                      {  
                         return communication::device::non::blocking::next(
                            communication::ipc::inbound::device(),
@@ -592,16 +592,16 @@ namespace casual
                   switch( message.code.result)
                   {
                      case Result::ok:
-                        result.event = decltype( result.event.type())::service_success;
+                        result.event = decltype( result.event)::service_success;
                         result.user = message.code.user;
                      break;
                      case Result::service_fail:
-                        result.event = decltype( result.event.type())::service_fail;
+                        result.event = decltype( result.event)::service_fail;
                         result.user = message.code.user;
                         break;
                      default:
-                        result.event = decltype( result.event.type())::service_error;
-                        result.user = 0; // a predictable uesr return code...
+                        result.event = decltype( result.event)::service_error;
+                        result.user = 0; // a predictable user return code...
                         break;
                   }
                   
@@ -613,7 +613,7 @@ namespace casual
                if( message.duplex == decltype( message.duplex)::send)
                {
                   value.duplex = message.duplex;
-                  result.event = decltype( result.event.type())::send_only;
+                  result.event = decltype( result.event)::send_only;
                }
 
                log::line( verbose::log, "value: ", value);

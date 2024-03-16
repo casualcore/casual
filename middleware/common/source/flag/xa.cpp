@@ -47,9 +47,6 @@ namespace casual
          return "<unknown>";
       }
 
-
-      using Flags = common::Flags< xa::Flag>;
-
    } // common::flag::xa 
    
 } // casual

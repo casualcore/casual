@@ -289,7 +289,7 @@ namespace casual
          auto domain = unittest::manager();
          using Ability = discovery::provider::Ability;
 
-         discovery::provider::registration( { Ability::discover, Ability::lookup, Ability::fetch_known});
+         discovery::provider::registration( Ability::discover | Ability::lookup | Ability::fetch_known);
 
          auto correlation = discovery::rediscovery::request();
 
@@ -329,7 +329,7 @@ namespace casual
          communication::ipc::send::Coordinator multiplex{ directive};
 
          using Ability = discovery::provider::Ability; 
-         discovery::provider::registration( { Ability::discover, Ability::topology, Ability::fetch_known});
+         discovery::provider::registration( Ability::discover | Ability::topology | Ability::fetch_known);
 
          const auto origin = strong::domain::id{ uuid::make()};
 
@@ -382,7 +382,7 @@ namespace casual
          auto inbound = communication::ipc::inbound::Device{};
 
          using Ability = discovery::provider::Ability;
-         discovery::provider::registration( { Ability::discover, Ability::lookup, Ability::topology, Ability::fetch_known});
+         discovery::provider::registration( Ability::discover | Ability::lookup | Ability::topology | Ability::fetch_known);
 
          {
             message::discovery::topology::implicit::Update message;
@@ -424,7 +424,7 @@ namespace casual
 
 
          using Ability = discovery::provider::Ability; 
-         discovery::provider::registration( { Ability::discover, Ability::lookup});
+         discovery::provider::registration( Ability::discover | Ability::lookup);
 
 
          // send request with forward, will trigger request to our self
@@ -471,7 +471,7 @@ namespace casual
 
 
          using Ability = discovery::provider::Ability; 
-         discovery::provider::registration( { Ability::discover, Ability::lookup});
+         discovery::provider::registration( Ability::discover | Ability::lookup);
 
 
          // send request with forward, will trigger request to our self
@@ -521,7 +521,7 @@ domain:
 
 
          // we register our self
-         discovery::provider::registration( { discovery::provider::Ability::discover, discovery::provider::Ability::lookup});
+         discovery::provider::registration( discovery::provider::Ability::discover | discovery::provider::Ability::lookup);
 
          auto lookup_reply_resources_as_absent = []()
          {
@@ -685,7 +685,7 @@ domain:
          } caller;
 
          // we register our self
-         discovery::provider::registration( { discovery::provider::Ability::discover, discovery::provider::Ability::lookup});
+         discovery::provider::registration( discovery::provider::Ability::discover | discovery::provider::Ability::lookup);
 
 
          constexpr static auto create_service = []( auto name)

@@ -23,13 +23,7 @@ namespace casual
       {
          namespace conversation
          {
-            struct Event
-            {
-               Event( flag::service::conversation::Events event) :
-                  event( event) {}
-
-               flag::service::conversation::Events event;
-            };
+            using Event = flag::service::conversation::Event;
 
          } // conversation
 
@@ -40,21 +34,19 @@ namespace casual
          namespace conversation
          {
             using Event = flag::service::conversation::Event;
-            using Events = flag::service::conversation::Events;
 
             namespace connect
             {
                using Flag = flag::service::conversation::connect::Flag;
-               using Flags = flag::service::conversation::connect::Flags;
             } // connect
 
             namespace send
             {
                using Flag = flag::service::conversation::send::Flag;
-               using Flags = flag::service::conversation::send::Flags;
+
                struct Result
                {
-                  common::Flags< Event> event;
+                  Event event{};
                   long user = 0;
                   CASUAL_LOG_SERIALIZE(
                      CASUAL_SERIALIZE( event);
@@ -66,11 +58,10 @@ namespace casual
             namespace receive
             {
                using Flag = flag::service::conversation::receive::Flag;
-               using Flags = flag::service::conversation::receive::Flags;
 
                struct Result
                {
-                  common::Flags< Event> event;
+                  Event event{};
                   long user = 0;
                   common::buffer::Payload buffer;
 
@@ -88,11 +79,11 @@ namespace casual
                static Context& instance();
                ~Context();
 
-               strong::conversation::descriptor::id connect( const std::string& service, common::buffer::payload::Send buffer, connect::Flags flags);
+               strong::conversation::descriptor::id connect( const std::string& service, common::buffer::payload::Send buffer, connect::Flag flags);
 
-               send::Result send( strong::conversation::descriptor::id descriptor, common::buffer::payload::Send&& buffer, common::Flags< send::Flag> flags);
+               send::Result send( strong::conversation::descriptor::id descriptor, common::buffer::payload::Send&& buffer, send::Flag flags);
 
-               receive::Result receive( strong::conversation::descriptor::id descriptor, common::Flags< receive::Flag> flags);
+               receive::Result receive( strong::conversation::descriptor::id descriptor, receive::Flag flags);
 
                void disconnect( strong::conversation::descriptor::id descriptor);
 

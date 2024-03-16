@@ -99,7 +99,7 @@ namespace casual
                   // we push spawn 'event' and dispatch it to tasks and external listeners 
                   // later on
                   {
-                     common::message::event::process::Spawn message;
+                     common::message::event::process::Spawn message{ common::process::handle()};
                      message.path = entity.path;
                      message.alias = entity.alias;
 
@@ -864,6 +864,8 @@ namespace casual
 
                   void connect( State& state, const common::message::domain::process::connect::Request& message)
                   {
+                     Trace trace{ "domain::manager::handle::local::process::detail::connect"};
+
                      if( auto server = state.server( message.information.handle.pid))
                      {
                         server->connect( message.information.handle);

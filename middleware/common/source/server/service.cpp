@@ -81,7 +81,7 @@ namespace casual
 
                         result.len = argument.payload.data.size();
                         result.cd = argument.descriptor.value();
-                        result.flags = argument.flags.underlying();
+                        result.flags = std::to_underlying( argument.flags);
 
                         // This is the only place where we use adopt
                         result.data = buffer::pool::holder().adopt( std::move( argument.payload)).underlying();

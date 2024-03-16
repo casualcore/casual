@@ -68,7 +68,6 @@ namespace casual
                using result_policy = R;
                using result_type = basic_result< service::call::Result, result_policy>;
                using Flag = service::call::Flag;
-               using Flags = service::call::Flags;
 
                basic_call() : m_payload( input_policy::type())
                {
@@ -122,7 +121,6 @@ namespace casual
                using result_policy = R;
                using result_type = basic_result< service::receive::Result, result_policy>;
                using Flag = service::receive::Flag;
-               using Flags = service::receive::Flags;
 
                basic_receive( descriptor_type descriptor) : m_descriptor( descriptor) {}
 
@@ -131,7 +129,7 @@ namespace casual
                   return { service::receive::invoke( m_descriptor)};
                }
 
-               result_type operator () ( Flags flags) const
+               result_type operator () ( Flag flags) const
                {
                   return { service::receive::invoke( m_descriptor, flags)};
                }
@@ -148,8 +146,6 @@ namespace casual
                using result_policy = R;
                using receive_type = basic_receive< result_policy>;
                using Flag = service::send::Flag;
-               using Flags = service::send::Flags;
-
 
                basic_send() : m_payload( input_policy::type()), m_input( m_payload) {}
 
@@ -165,7 +161,7 @@ namespace casual
                   return { service::send::invoke( service, m_payload)};
                }
 
-               receive_type operator () ( const std::string& service, Flags flags)
+               receive_type operator () ( const std::string& service, Flag flags)
                {
                   return { service::send::invoke( service, m_payload, flags)};
                }

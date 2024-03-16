@@ -49,7 +49,7 @@ namespace casual
                               reply.transaction.state = decltype( reply.transaction.state)::rollback;
                            }
 
-                           if( ! message.flags.exist( message::service::call::request::Flag::no_reply))
+                           if( ! flag::exists( message.flags, message::service::call::request::Flag::no_reply))
                               communication::device::blocking::optional::send( message.process.ipc, std::move( reply));
                         };
 

@@ -113,7 +113,7 @@ namespace casual
 
       struct Provider
       {
-         state::provider::Abilities abilities{};
+         state::provider::Ability abilities{};
          common::process::Handle process;
 
          CASUAL_CONST_CORRECT_SERIALIZE(

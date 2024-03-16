@@ -71,10 +71,10 @@ namespace casual
             
             auto result = local::parameter( message);
 
-            using Flag = decltype( message.flags.type());
+            using Flag = decltype( message.flags);
 
-            if( message.flags.exist( Flag::no_reply))
-               result.flags |= decltype( result.flags.type())::no_reply;
+            if( flag::exists( message.flags, Flag::no_reply))
+               result.flags |= decltype( result.flags)::no_reply;
 
             return result;
          }

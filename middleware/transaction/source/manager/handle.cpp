@@ -329,7 +329,7 @@ namespace casual
                   namespace pending
                   {
                      template< typename Request, typename Branches, typename P>
-                     auto branches( State& state, const Branches& branches, P pending, common::flag::xa::Flags flags = common::flag::xa::Flag::no_flags)
+                     auto branches( State& state, const Branches& branches, P pending, common::flag::xa::Flag flags = common::flag::xa::Flag::no_flags)
                      {
                         return common::algorithm::accumulate( branches, std::move( pending), [ &state, flags]( auto result, const auto& branch)
                         {
@@ -348,7 +348,7 @@ namespace casual
                      }
 
                      template< typename Request, typename Replies, typename P>
-                     auto replies( State& state, Replies&& replies, P pending, common::flag::xa::Flags flags = common::flag::xa::Flag::no_flags)
+                     auto replies( State& state, Replies&& replies, P pending, common::flag::xa::Flag flags = common::flag::xa::Flag::no_flags)
                      {
                         return common::algorithm::accumulate( replies, std::move( pending), [ &state, flags]( auto result, const auto& reply)
                         {
@@ -965,7 +965,7 @@ namespace casual
                            {
                               // this should be a one-phase optimization, if not, we log error and still commit.
                               // TODO: this should not matter, but does it?
-                              if( ! message.flags.exist( common::flag::xa::Flag::one_phase))
+                              if( ! common::flag::exists( message.flags, common::flag::xa::Flag::one_phase))
                                  common::log::error( common::code::casual::invalid_semantics, " resource commit request without TMONEPHASE, gtrid: ", transaction->global);
 
                               // start the prepare phase

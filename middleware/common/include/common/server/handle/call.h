@@ -86,7 +86,7 @@ namespace casual
                   try
                   {
                      using Flag = common::message::service::call::request::Flag;
-                     service::call( m_policy, common::service::call::context(), message, ! message.flags.exist( Flag::no_reply));
+                     service::call( m_policy, common::service::call::context(), message, ! flag::exists( message.flags, Flag::no_reply));
                   }
                   catch( ...)
                   {

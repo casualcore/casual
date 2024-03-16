@@ -57,7 +57,7 @@ namespace casual
                // register so domain-manager can fetch configuration from us, and indicate that we can handle
                // runtime configuration updates.
                using Ability = casual::domain::configuration::registration::Ability;
-               casual::domain::configuration::registration::apply( flags::compose( Ability::supply, Ability::runtime_update));
+               casual::domain::configuration::registration::apply( Ability::supply | Ability::runtime_update);
 
                return state;
             }
@@ -114,7 +114,7 @@ namespace casual
 
                // register that we can answer discovery questions.
                using Ability = casual::domain::discovery::provider::Ability;
-               casual::domain::discovery::provider::registration( flags::compose( Ability::lookup, Ability::fetch_known));
+               casual::domain::discovery::provider::registration( Ability::lookup | Ability::fetch_known);
 
                // Connect to domain
                communication::instance::whitelist::connect( communication::instance::identity::service::manager);

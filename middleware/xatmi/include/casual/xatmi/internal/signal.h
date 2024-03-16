@@ -7,18 +7,17 @@
 #pragma once
 
 #include "common/signal.h"
+#include "common/flag.h"
 
 #include <optional>
 
 
 namespace casual::xatmi::internal::signal
 {
-    template< typename Flags>
-    inline std::optional< casual::common::signal::thread::scope::Block> maybe_block( Flags flags)
+    template< typename Flag>
+    inline std::optional< casual::common::signal::thread::scope::Block> maybe_block( Flag flags)
     {
-        using enum_type = typename Flags::enum_type;
-
-        if( flags.exist( enum_type::signal_restart))
+        if( common::flag::exists( flags, Flag::signal_restart))
             return casual::common::signal::thread::scope::Block{};
 
         return {};

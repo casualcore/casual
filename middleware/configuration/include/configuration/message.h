@@ -41,6 +41,8 @@ namespace casual
             runtime_update = 2,
          };
 
+         consteval void casual_enum_as_flag( Ability);
+
          constexpr std::string_view description( Ability value)
          {
             switch( value)
@@ -51,7 +53,7 @@ namespace casual
             return "<unknown>";
          }
 
-         using Contract = common::Flags< registration::Ability>;
+         using Contract = registration::Ability;
 
          using base_request = common::message::basic_request< common::message::Type::configuration_stakeholder_registration_request>;
          struct Request : base_request

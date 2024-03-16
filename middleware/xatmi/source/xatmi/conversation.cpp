@@ -28,15 +28,17 @@ int tpconnect( const char* svc, const char* idata, long ilen, long bitmap)
 
       using Flag = casual::common::service::conversation::connect::Flag;
 
-      constexpr casual::common::service::conversation::connect::Flags valid_flags{
-         Flag::no_block,
-         Flag::no_time,
-         Flag::no_transaction,
-         Flag::receive_only,
-         Flag::send_only,
-         Flag::signal_restart};
+      auto flags = Flag{ bitmap};
 
-      auto flags = valid_flags.convert( bitmap);
+      constexpr auto valid_flags = Flag::no_block
+         | Flag::no_time
+         | Flag::no_transaction
+         | Flag::receive_only
+         | Flag::send_only
+         | Flag::signal_restart;
+
+      if( ! casual::common::flag::valid( valid_flags, flags))
+         casual::common::code::raise::error( casual::common::code::xatmi::argument, "flags: ", flags, " outside of: ", valid_flags);
 
       auto maybe_block = casual::xatmi::internal::signal::maybe_block( flags);
 
@@ -68,16 +70,16 @@ namespace local
                casual::xatmi::internal::clear();
                auto result = task();
 
-               if( result)
+               if( ! casual::common::flag::empty( result))
                {
-                  event = result.underlying();
+                  event = std::to_underlying( result);
                   casual::xatmi::internal::error::set( casual::common::code::xatmi::event);
                   return -1;
                }
             }
             catch( const casual::common::exception::conversation::Event& exception)
             {
-               event = exception.event.underlying();
+               event = std::to_underlying( exception);
                casual::xatmi::internal::error::set( casual::common::code::xatmi::event);
                return -1;
             }
@@ -101,13 +103,15 @@ int tpsend( int id, const char* idata, long ilen, long bitmap, long* event)
 
       using Flag = casual::common::service::conversation::send::Flag;
 
-      constexpr casual::common::service::conversation::send::Flags valid_flags{
-         Flag::receive_only,
-         Flag::no_block,
-         Flag::no_time,
-         Flag::signal_restart};
+      auto flags = Flag{ bitmap};
 
-      auto flags = valid_flags.convert( bitmap);
+      constexpr auto valid_flags = Flag::receive_only
+         | Flag::no_block
+         | Flag::no_time
+         | Flag::signal_restart;
+
+      if( ! casual::common::flag::valid( valid_flags, flags))
+         casual::common::code::raise::error( casual::common::code::xatmi::argument, "flags: ", flags, " outside of: ", valid_flags);
 
       auto maybe_block = casual::xatmi::internal::signal::maybe_block( flags);
 
@@ -144,7 +148,7 @@ int tpsend( int id, const char* idata, long ilen, long bitmap, long* event)
    });
 }
 
-int tprecv( int id, char ** odata, long *olen, long flags, long* event)
+int tprecv( int id, char ** odata, long *olen, long bitmap, long* event)
 {
    return local::conversation::wrap( *event, [&](){
 
@@ -152,22 +156,23 @@ int tprecv( int id, char ** odata, long *olen, long flags, long* event)
 
       using Flag = casual::common::service::conversation::receive::Flag;
 
-      constexpr casual::common::service::conversation::receive::Flags valid_flags{
-         Flag::no_change,
-         Flag::no_block,
-         Flag::no_time,
-         Flag::signal_restart
-      };
+      auto flags = Flag{ bitmap};
 
-      auto flag = valid_flags.convert( flags);
+      constexpr auto valid_flags = Flag::no_change
+         | Flag::no_block
+         | Flag::no_time
+         | Flag::signal_restart;
 
-      auto maybe_block = casual::xatmi::internal::signal::maybe_block( flag);
+      if( ! casual::common::flag::valid( valid_flags, flags))
+         casual::common::code::raise::error( casual::common::code::xatmi::argument, "flags: ", flags, " outside of: ", valid_flags);
+
+      auto maybe_block = casual::xatmi::internal::signal::maybe_block( flags);
 
       auto result = casual::common::service::conversation::context().receive(
             casual::common::strong::conversation::descriptor::id{ id},
-            flag);
+            flags);
 
-      if( ( flag & Flag::no_change) && buffer.payload().type != result.buffer.type)
+      if( casual::common::flag::exists( flags, Flag::no_change) && buffer.payload().type != result.buffer.type)
          casual::common::code::raise::error( casual::common::code::xatmi::buffer_output);
 
       casual::common::buffer::pool::holder().deallocate( casual::common::buffer::handle::type{ *odata});

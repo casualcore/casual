@@ -42,7 +42,7 @@ namespace casual
                // rig the configuration setup
                {
                   using Ability = casual::domain::configuration::registration::Ability;
-                  casual::domain::configuration::registration::apply( flags::compose( Ability::runtime_update));
+                  casual::domain::configuration::registration::apply( Ability::runtime_update);
 
                   handle::configuration_update( state, casual::domain::configuration::fetch());
                }

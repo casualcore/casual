@@ -39,7 +39,7 @@ namespace casual
 
          }
 
-         Providers::const_range_type Providers::filter( provider::Abilities abilities) noexcept
+         Providers::const_range_type Providers::filter( provider::Ability abilities) noexcept
          {
             return algorithm::filter( m_providers, [abilities]( auto& provider)
             {
