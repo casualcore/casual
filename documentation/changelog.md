@@ -1,6 +1,21 @@
 # Changelog
 This is the changelog for `casual` and all changes are listed in this document.
 
+## [1.6.18] - 2024-03-18
+### Fixes
+- domain: print domain name in shutdown task (#336)
+- common: do not set environment when (re)setting execution-id (#333)
+- http: propagate execution id over http (#326)
+- gateway: fix markdown documentation for interdomain protocol (#319)
+- sf: 'attribues' is misspelled in describe model (#264)
+- domain: improve error messages (#315)       
+- http: use a single correlation for entire service call (#318)
+- ipc: fix discard while message is only partially received (#311)
+- queue: clear available when moving message to error queue (#312)
+- domain: assassinate needs more precise logging (#309)
+- service: handle assassinate during shutdown (#299)
+- gateway: outbound sent discovery to disconnect-mode connections (#297)
+
 ## [1.6.17] - 2023-11-13
 ### Fixes
 - transaction: TM asserts when transaction is not found in prepare-handle (#288)
