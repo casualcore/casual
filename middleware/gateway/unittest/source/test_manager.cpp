@@ -1256,6 +1256,97 @@ domain:
          unittest::fetch::until( local::is_failed_listeners( 1));
       }
 
+      TEST( gateway_manager, A_B__pending_call_A_to_B__shutdown_B__send_implicit_update_to_A_outbound__expect_direct_reply__not_over_to_inbound)
+      {
+         common::unittest::Trace trace;
+         
+         auto b = local::domain( R"(
+domain:
+   name: B
+   gateway:
+      inbound:
+         groups:
+            -  alias: in-b
+               connections:
+                  -  address: 127.0.0.1:7010
+)");
+         
+         // this unittest advertise service b and x
+         casual::service::unittest::advertise( { "b"});
+         casual::service::unittest::advertise( { "x"});
+
+         auto a = local::domain( R"(
+domain:
+   name: A
+   gateway:
+      outbound:
+         groups:
+            -  alias: out-a
+               connections:
+                  -  address: 127.0.0.1:7010
+)");
+
+         const auto outbound = unittest::outbound::group( unittest::fetch::until( unittest::fetch::predicate::outbound::connected()), "out-a").value();
+      
+         const auto payload = common::unittest::random::binary( 128);
+         const auto correlation = common::unittest::service::send( "b", payload);
+
+         b.activate();
+
+         const auto inbound = unittest::inbound::group( unittest::state(), "in-b").value();
+
+         // now we've got a in-flight call to b. We emulate a shutdown in B by sending
+         // shutdown directly to inbound
+         {
+            common::message::shutdown::Request shutdown{ common::process::handle()};
+            common::communication::device::blocking::send( inbound.process.ipc, shutdown);
+         }
+
+         a.activate();
+
+         // send direct::Explore to outbound, outbound should not send discovery to
+         // B since B is in disconnect mode.
+         {
+            casual::domain::message::discovery::topology::direct::Explore request;
+            request.content.services = { "b", "x", "y"};
+            request.domains = algorithm::transform( unittest::state().connections, []( auto& connection)
+            {
+               return connection.remote;
+            });
+
+            EXPECT_TRUE( common::communication::device::non::blocking::send( outbound.process.ipc, request));
+         }
+
+         b.activate();
+
+         // verify that B has not got any (more) discoveries. We need to verify the absent of 
+         // a discovery request. Sadly, we need to loop a while.
+         algorithm::for_n< 5>( [ &inbound]()
+         {
+            common::process::sleep( std::chrono::milliseconds{ 1});
+
+            // we expect the inbound to have received 1 discovery_request for the call to "b", it should not 
+            // get any more.
+            auto reply = communication::ipc::call( inbound.process.ipc, common::message::counter::Request{ common::process::handle()});
+            if( auto found = algorithm::find( reply.entries, common::message::Type::domain_discovery_request))
+            {
+               EXPECT_TRUE( found->received == 1) << CASUAL_NAMED_VALUE( *found);
+            }
+         });
+         
+         // act a server and reply
+         {
+            EXPECT_TRUE( casual::service::unittest::server::echo( correlation));
+         }
+
+         // for good measure, receive the reply
+         {
+            a.activate();
+            EXPECT_TRUE( payload == common::unittest::service::receive( correlation));
+         }
+
+      }
+
       TEST( gateway_manager_outbound, transaction_resource_error_reply_on_remote_connection_lost___expect_TX_FAIL)
       {
          common::unittest::Trace trace;

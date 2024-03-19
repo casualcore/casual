@@ -201,6 +201,21 @@ namespace casual
          )
       };
 
+      struct Reservation
+      {
+         std::string service;
+         common::process::Handle caller;
+         common::process::Handle callee;
+         common::strong::correlation::id correlation;
+
+         CASUAL_CONST_CORRECT_SERIALIZE(
+            CASUAL_SERIALIZE( service);
+            CASUAL_SERIALIZE( caller);
+            CASUAL_SERIALIZE( callee);
+            CASUAL_SERIALIZE( correlation);
+         )
+      };
+
       struct State
       {
          struct
@@ -219,12 +234,14 @@ namespace casual
          std::vector< Service> services;
          std::vector< Pending> pending;
          std::vector< Route> routes;
+         std::vector< Reservation> reservations;
 
          CASUAL_CONST_CORRECT_SERIALIZE(
             CASUAL_SERIALIZE( instances);
             CASUAL_SERIALIZE( services);
             CASUAL_SERIALIZE( pending);
             CASUAL_SERIALIZE( routes);
+            CASUAL_SERIALIZE( reservations);
          )
       };
    

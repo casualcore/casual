@@ -640,6 +640,55 @@ domain:
          EXPECT_TRUE( common::algorithm::equal( message.payload.data, payload));
       }
 
+      TEST( casual_queue, enqueue_1_message___dequeue_rollback___expect_message_on_error_queue_without_delay)
+      {
+         common::unittest::Trace trace;
+
+         auto domain = local::domain( R"(
+domain:
+   name: A
+   queue:
+      groups:
+         -  alias: A
+            queuebase: ":memory:"
+            queues:
+               -  name: a1
+                  retry:
+                     count: 0
+                     delay: 5s
+)");
+
+         const std::string payload{ "some message"};
+
+         constexpr auto name = "a1";
+         constexpr auto error_name = "a1.error";
+
+         // enqueue
+         {
+            queue::Message message;
+            {
+               message.attributes.properties = "poop";
+               message.payload.type = common::buffer::type::binary;
+               message.payload.data.assign( std::begin( payload), std::end( payload));
+            }
+            queue::enqueue( name, message);
+         }
+
+         // dequeue, and rollback
+         {
+            EXPECT_EQ( common::transaction::context().begin(), common::code::tx::ok);
+            ASSERT_TRUE( ! queue::dequeue( name).empty());
+            EXPECT_EQ( common::transaction::context().rollback(), common::code::tx::ok);
+         }  
+
+         // removed from original queue
+         ASSERT_TRUE( queue::dequeue( name).empty());
+         // immediately present on error queue
+         auto messages = queue::dequeue( error_name);
+         ASSERT_TRUE( messages.size() == 1);
+         EXPECT_TRUE( common::algorithm::equal( messages.front().payload.data, payload));
+      }
+
       namespace local
       {
          namespace

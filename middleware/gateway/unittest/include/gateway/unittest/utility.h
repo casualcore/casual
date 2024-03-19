@@ -12,6 +12,7 @@
 
 #include <vector>
 #include <string>
+#include <optional>
 
 namespace casual
 {
@@ -19,8 +20,19 @@ namespace casual
    {
       using namespace common::unittest;
 
-
       manager::admin::model::State state();
+
+      namespace inbound
+      {
+         std::optional< manager::admin::model::inbound::Group> group( const manager::admin::model::State& state, std::string_view alias);
+      } // inbound
+
+      namespace outbound
+      {
+         std::optional< manager::admin::model::outbound::Group> group( const manager::admin::model::State& state, std::string_view alias);
+      } // outbound
+
+      common::process::Handle group( const manager::admin::model::State& state, std::string_view alias);
 
       namespace fetch
       {
@@ -154,7 +166,7 @@ namespace casual
                      return common::algorithm::count_if( state.connections, is::connected::inbound()) == count;
                   };
                }
-               
+                     
             } // inbound
 
             inline auto listeners( platform::size::type count = 1)

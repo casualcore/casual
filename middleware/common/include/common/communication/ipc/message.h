@@ -273,7 +273,9 @@ namespace casual
                m_offset += left();
             }
 
+            inline auto execution() const noexcept { return m_complete.execution();}
             inline const auto& correlation() const noexcept { return m_complete.correlation();}
+            inline auto size() const noexcept { return m_complete.size();}
             inline const auto& complete() const noexcept { return m_complete;}
             inline auto type() const noexcept { return m_complete.type();}
 

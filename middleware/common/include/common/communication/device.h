@@ -260,11 +260,8 @@ namespace casual
 
             auto complete = algorithm::find_if( m_cache, [&]( auto& complete){ return complete.correlation() == correlation;});
 
-            if( complete)
+            if( complete && complete->complete())
             {
-               if( ! complete->complete())
-                  m_discarded.push_back( correlation);
-
                m_cache.erase( complete.begin());
             }
             else
@@ -403,9 +400,13 @@ namespace casual
                      if( discard( *found))
                         m_cache.erase( std::begin( found));
 
-                     // Try to find a massage that matches the predicate
+                     // Try to find a message that matches the predicate
                      found = algorithm::find_if( m_cache, predicate);
                   }
+
+                  if( found)
+                     log::line( log::category::event::message::received, found->type(), '|', found->correlation(), '|', found->execution(), '|', found->size());
+
                   return found;
                }
                catch( ...)
@@ -513,7 +514,10 @@ namespace casual
                   auto result = policy.send( Base::connector(), std::forward< C>( complete));
 
                   if( result)
+                  {
                      message::counter::add::sent( complete.type());
+                     log::line( log::category::event::message::sent, complete.type(), '|', complete.correlation(), '|', complete.execution(), '|', complete.size());
+                  }
 
                   return result;
                }

@@ -68,10 +68,9 @@ namespace casual
 
       bool Complete::complete() const noexcept { return static_cast< platform::size::type>( payload.size()) == m_offset;}
 
-   
       strong::execution::id Complete::execution() const noexcept
       {
-         if( payload.size() > 16)
+         if( payload.size() < 16)
             return {};
 
          Uuid::uuid_type uuid{};

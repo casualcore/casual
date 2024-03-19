@@ -120,6 +120,26 @@ namespace casual
                };
             }
 
+            auto reservation()
+            {
+               return []( auto& pair)
+               {
+                  auto& instance = std::get< 1>( pair);
+
+                  manager::admin::model::Reservation result;
+                  result.service = instance.reserved_service().value_or( result.service);
+                  result.callee = instance.process;
+
+                  if( auto caller = instance.caller())
+                  {
+                     result.caller = caller.process;
+                     result.correlation = caller.correlation;
+                  }
+
+                  return result;
+               };
+            }
+
 
          } // <unnamed>
       } // local
@@ -150,6 +170,10 @@ namespace casual
                return route;
             });
          });
+
+         common::algorithm::transform_if(
+            state.instances.sequential, std::back_inserter( result.reservations), local::reservation(), []( auto& pair){ return ! pair.second.idle();}
+         );
 
          return result;
       }

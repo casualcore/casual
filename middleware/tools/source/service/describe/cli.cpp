@@ -86,7 +86,7 @@ namespace casual
                                  indentation( out, indent) << common::terminal::color::cyan << "container";
                                  out << " " << type.role << '\n';
 
-                                 types( out, type.attribues, indent + 1);
+                                 types( out, type.attributes, indent + 1);
                                  break;
                               }
                               case serviceframework::service::model::type::Category::composite:
@@ -94,7 +94,7 @@ namespace casual
                                  indentation( out, indent) << common::terminal::color::cyan << "composite";
                                  out << " " << type.role << '\n';
 
-                                 types( out, type.attribues, indent + 1);
+                                 types( out, type.attributes, indent + 1);
                                  break;
                               }
                               default:

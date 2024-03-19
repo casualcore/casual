@@ -109,10 +109,11 @@ WHERE queue = :queue AND state = 2 AND properties = :properties AND available < 
                " WHERE gtrid = :gtrid AND state = 3");   
 
             // increment redelivered and "move" messages to error-queue iff we've passed retry_count and the queue has an error-queue.
+            // also clear available iff message is moved to error-queue
             // error-queues themselfs does not have an error-queue, hence the message will stay in the error-queue until it's consumed.
             // We use the fact that error-queues are odd and queues are even.
             result.rollback3 = connection.precompile(
-                  "UPDATE message SET redelivered = 0, queue = queue - 1"
+                  "UPDATE message SET redelivered = 0, queue = queue - 1, available = 0"
                   " WHERE gtrid = :gtrid AND ( queue % 2) = 0 "
                   " AND redelivered > ( SELECT q.retry_count FROM queue q WHERE q.id = message.queue);"
                );

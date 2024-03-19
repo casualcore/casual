@@ -172,6 +172,7 @@ namespace casual
 
                   if( ! error)
                   {
+                     log::line( log::category::event::message::part::sent, transport.type(), '|', transcode::hex::stream::wrapper( transport.correlation()), '|', transport.size(), '|', transport.payload_offset(), '|', transport.complete_size());
                      log::line( verbose::log, "ipc ---> blocking send - socket: ", socket, ", destination: ", destination, ", transport: ", transport);
                      return true;
                   }
@@ -201,6 +202,7 @@ namespace casual
                if( result == -1)
                   return local::check_error();
 
+               log::line( log::category::event::message::part::received, transport.type(), '|', transcode::hex::stream::wrapper( transport.correlation()), '|', result, '|', transport.payload_offset(), '|', transport.complete_size());
                log::line( verbose::log, "ipc <--- blocking receive - handle: ", handle, ", transport: ", transport);
                assert( result == transport.size());
 
@@ -231,6 +233,7 @@ namespace casual
                   if( error)
                      return local::check_error( std::errc{ error.value()});
 
+                  log::line( log::category::event::message::part::sent, transport.type(), '|', transcode::hex::stream::wrapper( transport.correlation()), '|', transport.size(), '|', transport.payload_offset(), '|', transport.complete_size());
                   log::line( verbose::log, "ipc ---> non blocking send - socket: ", socket, ", destination: ", destination, ", transport: ", transport);
                   return true;
                }
@@ -248,6 +251,7 @@ namespace casual
                   if( result == -1)
                      return local::check_error();
 
+                  log::line( log::category::event::message::part::received, transport.type(), '|', transcode::hex::stream::wrapper( transport.correlation()), '|', result, '|', transport.payload_offset(), '|', transport.complete_size());
                   log::line( verbose::log, "ipc <--- non blocking receive - handle: ", handle, ", transport: ", transport);
 
                   assert( result == transport.size());
@@ -405,8 +409,6 @@ namespace casual
             } // blocking
          } // non
 
-
-
       } // policy
 
       namespace inbound
@@ -493,7 +495,10 @@ namespace casual
 
                complete.pop();
             }
+            
             common::message::counter::add::sent( complete.type());
+            log::line( log::category::event::message::sent, complete.type(), '|', complete.correlation(), '|', complete.execution(), '|', complete.size());
+
             return true;
          }
          

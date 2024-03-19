@@ -74,6 +74,12 @@ namespace casual
             return send( std::move( service), std::move( payload), {});
          }
 
+         platform::binary::type receive( const strong::correlation::id& correlation)
+         {
+            auto request = communication::ipc::receive< common::message::service::call::Reply>( correlation);
+            return request.buffer.data;
+         }
+
          namespace wait::until
          {
             void advertised( std::string_view service)

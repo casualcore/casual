@@ -4,24 +4,24 @@
 #
 
 import os
+import tarfile
 import subprocess
 
 from shutil import copyfile
 
-NGNIX_VERSION = "nginx-1.22.1"
+NGINX_VERSION = "1.22.1"
+BASENAME = "nginx-" + NGINX_VERSION
 SOURCE_ROOT = os.getenv( "CASUAL_MAKE_SOURCE_ROOT", os.getenv("CASUAL_BUILD_HOME"))
-NGINX_ROOT = SOURCE_ROOT + '/../casual-thirdparty/nginx/' + NGNIX_VERSION + '/'
+CASUAL_THIRDPARTY = os.getenv("CASUAL_THIRDPARTY")
 
-if not SOURCE_ROOT or not os.getenv("CASUAL_HOME"):
+if not SOURCE_ROOT or not os.getenv("CASUAL_HOME") or not CASUAL_THIRDPARTY:
 	raise SystemError("CASUAL-environment need to be set")
 
-if not os.path.exists(NGINX_ROOT):
-   raise SystemError("NGINX-version " + NGINX_VERSION + " not found!")
+os.chdir(CASUAL_THIRDPARTY + '/nginx/' + BASENAME)
 
 prefix = os.getenv('CASUAL_HOME', '/usr/local/casual') + '/nginx'
 
-os.chdir( NGINX_ROOT)
-print("Start setting up: " + NGINX_ROOT)
+print("Start setting up: " + BASENAME)
 print("Running configure")
 print( subprocess.check_output(['./configure',
 '--with-debug',

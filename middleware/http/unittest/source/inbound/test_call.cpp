@@ -10,8 +10,7 @@
 
 #include "http/inbound/call.h"
 
-
-#include "domain/unittest/manager.h"
+#include "service/unittest/utility.h"
 
 namespace casual
 {
@@ -48,7 +47,7 @@ domain:
 
             auto domain()
             {
-               return domain::unittest::manager( configuration::base);
+               return casual::domain::unittest::manager( configuration::base);
             }
 
 
@@ -176,6 +175,62 @@ domain:
 
       }
 
+      TEST( http_inbound_call, call_service__expect_same_correlation_for_lookup_and_call)
+      {
+         auto domain = local::domain();
+
+         constexpr std::string_view json = R"(
+{
+   "a" : 42
+}
+)";
+
+         constexpr auto service = "steve";
+         casual::service::unittest::advertise( { service});
+
+         auto request = [ &]()
+         {
+            call::Request result;
+            result.service = service;
+            result.payload.header = { call::header::Field{ "content-type:application/json"}};
+            algorithm::copy( json, result.payload.body);
+            return result; 
+         };
+
+         // Triggers a lookup and reservation of the service
+         auto context = call::Context{ call::Directive::service, request()};
+
+         // Get the correlation for the reservation
+         auto state = casual::service::unittest::fetch::until( []( auto& state){ return state.reservations.size() == 2;});    // one reservation is .casual/service/state itself
+         auto found = algorithm::find_if( state.reservations, [ &]( auto& reservation){ return reservation.service == service;});
+         ASSERT_TRUE( found);
+         auto correlation = found->correlation;
+
+         // Advance the call state-machine from lookup to call
+         // TODO: can we guarantee that the lookup reply has been received here?
+         context.receive();
+
+         // Expect the call to have the same correlation as the reservation
+         {
+            message::service::call::callee::Request request;
+            communication::device::blocking::receive( communication::ipc::inbound::device(), request);
+
+            EXPECT_TRUE( request.correlation == correlation);
+
+            communication::device::blocking::send( request.process.ipc, message::reverse::type( request));
+         }
+
+         // Expect the call to complete successfully
+         {
+            auto result = local::wait( std::move( context));
+            ASSERT_TRUE( result);
+
+            auto& reply = result.value();
+            EXPECT_TRUE( reply.code == http::code::ok);
+            EXPECT_TRUE( local::header::value( reply.payload.header, "casual-result-code") == "OK");
+            EXPECT_TRUE( local::header::value( reply.payload.header, "casual-result-user-code") == "0");
+         }
+      }
 
    } // http::inbound
    

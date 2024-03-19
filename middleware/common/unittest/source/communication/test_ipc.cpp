@@ -223,7 +223,6 @@ namespace casual
          EXPECT_TRUE( ( algorithm::equal( receive_message.payload, send_message.payload)));
       }
 
-
       TEST( common_communication_ipc, send_receive__1__2x_transport_size__expect_exactly_2_transport_message)
       {
          common::unittest::Trace trace;
@@ -596,6 +595,51 @@ namespace casual
          common::unittest::Trace trace;
 
          local::test_send( 1024 * 100, 10000);
+      }
+
+      TEST( common_communication_ipc, inbound_device__discard_message_while_partially_received__expect_successfull_discard)
+      {
+         common::unittest::Trace trace;
+
+         ipc::inbound::Device device;
+         ipc::partial::Destination destination{ device.connector().handle().ipc()};
+
+         // A complete that will require 2 transports
+         auto complete = serialize::native::complete< ipc::inbound::Device::complete_type>( unittest::message::transport::size( 2 * ipc::message::transport::max_payload_size()));
+         const auto correlation = complete.correlation();
+
+         auto send_single_transport = [ &destination]( auto& complete, auto part_begin)
+         {
+            message::Transport transport{ complete.type(), complete.size(), complete.correlation()};
+
+            auto part_end = std::distance( part_begin, std::end( complete.payload)) > ipc::message::transport::max_payload_size() ?
+                  part_begin + ipc::message::transport::max_payload_size() : std::end( complete.payload);
+
+            transport.assign( range::make( part_begin, part_end));
+            transport.message.header.offset = std::distance( std::begin( complete.payload), part_begin);
+
+            native::blocking::send( destination.socket(), destination.address(), transport);
+
+            return part_end;
+         };
+
+         EXPECT_NO_THROW({
+            // The sender sends the first half of the complete message
+            auto part_begin = send_single_transport( complete, std::begin( complete.payload));
+
+            // The receiver discards the message by correlation
+            device.discard( correlation);
+
+            // Flush message to cache to ensure that we are able to receive more
+            device.flush();
+
+            // Send the second half
+            send_single_transport( complete, part_begin);
+
+            // There should be no message for us to receive since the receiver has discarded it
+            unittest::Message receive_message;
+            EXPECT_FALSE( device::non::blocking::receive( device, receive_message, correlation));
+         });
       }
 
    } // common::communication::ipc

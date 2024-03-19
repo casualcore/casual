@@ -226,6 +226,11 @@ namespace casual
                   constexpr auto transient = "CASUAL_TRANSIENT_DIRECTORY"sv;
                   constexpr auto persistent = "CASUAL_PERSISTENT_DIRECTORY"sv;
                } // directory
+
+               namespace execution
+               {
+                  constexpr auto id = "CASUAL_EXECUTION_ID"sv;
+               } // execution
                
 
                //! the name of the environment variables that holds ipc queue id:s

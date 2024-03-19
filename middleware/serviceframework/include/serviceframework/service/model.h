@@ -122,13 +122,13 @@ namespace casual
 
                std::string role;
                model::type::Category category = model::type::Category::unknown;
-               std::vector< Type> attribues;
+               std::vector< Type> attributes;
 
                CASUAL_CONST_CORRECT_SERIALIZE(
                {
                   CASUAL_SERIALIZE( role);
                   CASUAL_SERIALIZE( category);
-                  CASUAL_SERIALIZE( attribues);
+                  CASUAL_SERIALIZE( attributes);
                })
             };
 

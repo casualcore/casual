@@ -281,7 +281,7 @@ jobs:
           tag_prefix: ""
 
   publish-version:
-    runs-on: self-hosted
+    runs-on: [self-hosted, casual, publish]
     needs: [build-centos,build-suse,tag-repo]
     if: ${{ success() }}
     steps:

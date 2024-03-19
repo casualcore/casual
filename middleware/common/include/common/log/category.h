@@ -48,6 +48,18 @@ namespace casual
          extern Stream service;
          extern Stream server;
          extern Stream transaction;
+
+         namespace message
+         {
+            namespace part
+            {
+               extern Stream sent;
+               extern Stream received;
+            } // part
+
+            extern Stream sent;
+            extern Stream received;
+         } // message
          
       } // event
       

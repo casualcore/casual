@@ -116,5 +116,21 @@ namespace casual
          }
       } // send
 
+      namespace server
+      {
+         common::strong::correlation::id echo( const common::strong::correlation::id& correlation)
+         {
+            auto request = communication::ipc::receive< common::message::service::call::callee::Request>( correlation);
+
+            send::ack( request);
+
+            auto reply = message::reverse::type( request);
+            reply.buffer = std::move( request.buffer);
+
+            return communication::device::blocking::send( request.process.ipc, reply);
+         }
+         
+      } // server
+
    } // common::unittest
 } // casual

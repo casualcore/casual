@@ -138,8 +138,6 @@ namespace casual
 
             } // type
 
-
-
             struct Printer
             {
                inline constexpr static auto archive_type() { return common::serialize::archive::Type::static_need_named;}

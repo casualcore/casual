@@ -172,11 +172,13 @@ namespace casual
 
                common::strong::process::id target{};
                Contract contract = Contract::linger;
+               std::string announcement;
                   
                CASUAL_CONST_CORRECT_SERIALIZE(
                   base_assassination_contract::serialize( archive);
                   CASUAL_SERIALIZE( target);
                   CASUAL_SERIALIZE( contract);
+                  CASUAL_SERIALIZE( announcement);
                )
             };
 

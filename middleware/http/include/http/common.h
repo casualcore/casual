@@ -37,15 +37,24 @@ namespace casual
 
       namespace header
       {
-         namespace name::result
+         namespace name
          {
-            inline constexpr auto code = "casual-result-code";
- 
-            namespace user
+            namespace result
             {
-               inline constexpr auto code = "casual-result-user-code";
-            } // user
-         } // name::result
+               inline constexpr auto code = "casual-result-code";
+   
+               namespace user
+               {
+                  inline constexpr auto code = "casual-result-user-code";
+               } // user
+            } // result
+
+            namespace execution
+            {
+               inline constexpr auto id = "casual-execution-id";
+            } // execution
+         } // name
+
 
          namespace value::result
          {

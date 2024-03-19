@@ -143,6 +143,23 @@ namespace casual
          {
             namespace
             {
+               namespace add::environment
+               {
+                  //! adds "state" that we wan't to propagate to children. Only add stuff
+                  //! if the variable is not in `variables` already (provided by user)
+                  auto state( std::vector< common::environment::Variable> variables)
+                  {
+                     // execution id. 
+                     if( execution::id() && ! algorithm::find_if( variables, common::environment::variable::predicate::is_name( common::environment::variable::name::execution::id)))
+                     {
+                        variables.emplace_back( string::compose( common::environment::variable::name::execution::id, "=", execution::id()));
+                     }
+
+                     return variables;
+                  }
+
+               } // add::environment
+
                namespace current
                {
                   namespace copy
@@ -153,13 +170,8 @@ namespace casual
                      {
                         auto current = environment::variable::native::current();
 
-                        auto equal_name = []( auto& l, auto& r)
-                        {
-                           return algorithm::equal( l.name(), r.name());
-                        };
-
                         // use the complement of the intersection
-                        auto not_overridden = std::get< 1>( algorithm::intersection( current, variables, equal_name));
+                        auto not_overridden = std::get< 1>( algorithm::intersection( current, variables, environment::variable::predicate::equal_name()));
 
                         // move append the variables
                         algorithm::move( not_overridden, variables);
@@ -257,6 +269,8 @@ namespace casual
                      // but we'll probably get rid of most of the errors (due to bad configuration and such)
                      if( ! file::permission::execution( path))
                         code::raise::error( code::casual::invalid_path, "spawn failed - path: ", path);
+
+                     environment = local::add::environment::state( std::move( environment));
 
                      log::line( log::debug, "process::spawn ", path, ' ', arguments);
                      log::line( verbose::log, "environment: ", environment);

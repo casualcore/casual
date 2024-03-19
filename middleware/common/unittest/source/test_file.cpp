@@ -103,5 +103,27 @@ namespace casual
          EXPECT_TRUE( paths.at( 1) == b.path()) << trace.compose( "paths: ", paths);
       }
 
+      TEST( common_file_rename, rename__success)
+      {
+         common::unittest::Trace trace;
+
+         unittest::directory::temporary::Scoped dir;
+         auto source_path = dir.path() / "source_file";
+         auto dest_path = dir.path() / "dest_file";
+         file::Output source{ source_path};
+         
+         common::file::rename( source_path.string(), dest_path.string());
+      }
+
+      TEST( common_file_rename, rename_non_existing__expect_error)
+      {
+         common::unittest::Trace trace;
+
+         unittest::directory::temporary::Scoped dir;
+         auto nonexisting = dir.path() / "nonexisting";
+
+         EXPECT_THROW( common::file::rename(nonexisting.string(), "destination"), std::system_error);
+      }
+
    } // common
 } // casual
