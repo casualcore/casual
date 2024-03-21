@@ -44,28 +44,10 @@ namespace casual
                {
                   constexpr auto information = "CASUAL_DOMAIN_INFORMATION";
                } // name
-
-               void set( const Identity& identity)
-               {
-                  auto archive = serialize::json::writer();
-                  archive << CASUAL_NAMED_VALUE( identity);
-                  environment::variable::set( variable::name::information, archive.consume< std::string>());
-               }
-
-               Identity get()
-               {
-                  if( ! environment::variable::exists( variable::name::information))
-                     return {};
-                  
-                  Identity identity;
-                  auto archive = serialize::json::relaxed::reader( environment::variable::get( variable::name::information));
-                  archive >> CASUAL_NAMED_VALUE( identity);
-                  return identity;
-               }
                
             } // variable
 
-            Identity identity = variable::get();
+            Identity identity = environment::variable::get< Identity>( variable::name::information).value_or( Identity{});
 
             namespace singleton
             {
@@ -84,10 +66,10 @@ namespace casual
                   auto archive = serialize::json::relaxed::reader( file);
                   archive >> model;
 
-                  
-                  environment::variable::process::set( environment::variable::name::ipc::domain::manager, model.process);
                   common::domain::identity( model.identity);
 
+                  environment::variable::set( environment::variable::name::ipc::domain::manager, model.process);
+                  
                   log::line( log::debug, "domain singleton model: ", model);
 
                   return model; 
@@ -104,8 +86,7 @@ namespace casual
       void identity( Identity value)
       {
          local::identity = std::move( value);
-
-         local::variable::set( local::identity);
+         common::environment::variable::set( local::variable::name::information, local::identity);
       }
 
       namespace singleton

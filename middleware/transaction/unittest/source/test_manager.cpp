@@ -25,12 +25,12 @@
 #include "common/environment.h"
 #include "common/transcode.h"
 #include "common/functional.h"
-#include "common/environment/scoped.h"
 
 #include "common/communication/instance.h"
 
 #include "common/unittest/file.h"
 #include "common/unittest/rm.h"
+#include "common/unittest/environment.h"
 
 
 #include "domain/unittest/manager.h"
@@ -225,7 +225,7 @@ system:
          common::unittest::Trace trace;
 
          // we set unittest environment variable to set "error"
-         auto scope = common::environment::variable::scoped::set( "CASUAL_UNITTEST_OPEN_INFO_RM1", 
+         auto scope = common::unittest::environment::scoped::variable( "CASUAL_UNITTEST_OPEN_INFO_RM1", 
             common::string::compose( "--open ", XAER_RMFAIL));
 
          EXPECT_NO_THROW({
@@ -498,7 +498,7 @@ domain:
 
 
          // we set unittest environment variable to set "error"
-         auto scope = common::environment::variable::scoped::set( "CASUAL_UNITTEST_OPEN_INFO_RM1", 
+         auto scope = common::unittest::environment::scoped::variable( "CASUAL_UNITTEST_OPEN_INFO_RM1", 
             common::string::compose( "--commit ", XA_RBDEADLOCK));
 
          auto domain = local::domain( local::configuration::system, local::configuration::base);
@@ -529,7 +529,7 @@ domain:
          common::unittest::Trace trace;
 
          // we set unittest environment variable to set "error"
-         auto scope = common::environment::variable::scoped::set( "CASUAL_UNITTEST_OPEN_INFO_RM1", 
+         auto scope = common::unittest::environment::scoped::variable( "CASUAL_UNITTEST_OPEN_INFO_RM1", 
             common::string::compose( "--commit ", XAER_NOTA));
 
          auto domain = local::domain( local::configuration::system, local::configuration::base);
@@ -558,7 +558,7 @@ domain:
          common::unittest::Trace trace;
 
          // we set unittest environment variable to set "error"
-         auto scope = common::environment::variable::scoped::set( "CASUAL_UNITTEST_OPEN_INFO_RM1", 
+         auto scope = common::unittest::environment::scoped::variable( "CASUAL_UNITTEST_OPEN_INFO_RM1", 
             common::string::compose( "--commit ", XAER_NOTA));
 
          auto domain = local::domain( local::configuration::system, local::configuration::base);
@@ -1681,7 +1681,7 @@ domain:
          common::unittest::Trace trace;
 
          // we set unittest environment variable to set "error"
-         auto scope = common::environment::variable::scoped::set( "CASUAL_UNITTEST_OPEN_INFO_RM1", 
+         auto scope = common::unittest::environment::scoped::variable( "CASUAL_UNITTEST_OPEN_INFO_RM1", 
             common::string::compose( "--start ", XAER_RMFAIL));
 
          auto domain = local::domain( local::configuration::system, local::configuration::base);

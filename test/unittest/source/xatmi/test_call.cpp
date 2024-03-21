@@ -13,11 +13,11 @@
 
 #include "domain/unittest/manager.h"
 
-#include "common/flag.h"
+#include "common/unittest/environment.h"
 
+#include "common/flag.h"
 #include "common/message/transaction.h"
 #include "common/transaction/id.h"
-#include "common/environment/scoped.h"
 #include "common/execute.h"
 #include "common/unittest/file.h"
 #include "common/signal.h"
@@ -295,7 +295,7 @@ domain:
          common::unittest::Trace trace;
 
          // we set unittest environment variable to set "error"
-         auto scope = common::environment::variable::scoped::set( "CASUAL_UNITTEST_OPEN_INFO", common::string::compose( "--start ", XA_RBROLLBACK));
+         auto scope = common::unittest::environment::scoped::variable( "CASUAL_UNITTEST_OPEN_INFO", common::string::compose( "--start ", XA_RBROLLBACK));
 
          auto domain = local::domain();
 

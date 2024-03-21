@@ -241,12 +241,13 @@ namespace casual
 
                      if( common::environment::variable::exists( identity.environment))
                      {
-                        auto process = environment::variable::process::get( identity.environment);
+                        if( auto process = environment::variable::get< process::Handle>( identity.environment))
+                        {
+                           log::line( verbose::log, "process: ", *process);
 
-                        log::line( verbose::log, "process: ", process);
-
-                        if( ipc::exists( process.ipc))
-                           return process;
+                           if( ipc::exists( process->ipc))
+                              return *process;
+                        }
                      }
 
                      try
@@ -254,7 +255,7 @@ namespace casual
                         auto process = instance::fetch::handle( identity.id, directive);
 
                         if( process && ! identity.environment.empty())
-                           environment::variable::process::set( identity.environment, process);
+                           environment::variable::set( identity.environment, process);
 
                         return process;
                      }
@@ -412,8 +413,8 @@ namespace casual
 
                         auto from_environment = []()
                         {
-                           if( environment::variable::exists( environment::variable::name::ipc::domain::manager))
-                              return environment::variable::process::get( environment::variable::name::ipc::domain::manager);
+                           if( auto process = environment::variable::get< process::Handle>( environment::variable::name::ipc::domain::manager))
+                              return *process;
 
                            return process::Handle{};
                         };

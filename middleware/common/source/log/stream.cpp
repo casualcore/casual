@@ -157,7 +157,9 @@ namespace casual
 
                auto user() noexcept
                {
-                  return expression( common::environment::variable::get( common::environment::variable::name::log::pattern, "error"));
+                  if( auto pattern = common::environment::variable::get( common::environment::variable::name::log::pattern))
+                     return expression( *pattern);
+                  return expression( {});
                }
             } // predicate
 

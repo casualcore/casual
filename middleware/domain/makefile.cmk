@@ -193,7 +193,8 @@ target_simple_server = make.LinkExecutable( 'bin/test-simple-server',
         make.Compile( 'unittest/source/simple_server.cpp'),
     ],
     [
-     'casual-common'
+        'casual-common',
+        'casual-unittest'
     ])
 
 

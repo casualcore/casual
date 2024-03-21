@@ -80,6 +80,9 @@ namespace casual
       template< typename T, typename Policy>
       struct Type 
       {
+         // indicate that we can use this type in "environment context"
+         using environment_variable_enable = void;
+
          using value_type = T;
          using policy_type = Policy;
          using value_traits = common::traits::type< value_type>;

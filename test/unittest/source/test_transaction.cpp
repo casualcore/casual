@@ -13,7 +13,6 @@
 
 #include "common/communication/instance.h"
 #include "common/transaction/context.h"
-#include "common/environment/scoped.h"
 #include "common/unittest/rm.h"
 
 #include "test/unittest/xatmi/buffer.h"

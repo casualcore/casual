@@ -37,7 +37,7 @@ namespace casual
                Trace trace( "queue::manager::local::initialize");
 
                // Set environment variable so children can find us easy
-               common::environment::variable::process::set(
+               common::environment::variable::set(
                   common::environment::variable::name::ipc::queue::manager,
                   common::process::handle());
 

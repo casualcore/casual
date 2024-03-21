@@ -14,7 +14,7 @@
 #include "common/message/domain.h"
 #include "common/message/service.h"
 #include "common/signal/timer.h"
-#include "common/environment/scoped.h"
+#include "common/unittest/environment.h"
 
 #include "common/transaction/context.h"
 #include "common/transaction/resource.h"
@@ -669,7 +669,7 @@ PRAGMA max_page_count = 50;
 PRAGMA page_size = 512;
 )");
 
-         auto scope = common::environment::variable::scoped::set( "CASUAL_UNITTEST_QUEUEBASE", directory.path() / "q.qb");
+         auto guard = common::unittest::environment::scoped::variable( "CASUAL_UNITTEST_QUEUEBASE", ( directory.path() / "q.qb").string());
 
          auto domain = local::domain( R"(
 domain:

@@ -106,7 +106,8 @@ namespace casual
       {
          return local::expand( std::move( value), []( auto& out, auto variable)
          {
-            out << variable::get( variable);
+            if( auto value = variable::get( variable))
+               out << *value;
          });
       }
 
@@ -118,8 +119,8 @@ namespace casual
             // try to find it in local repository first
             if( auto found = algorithm::find_if( local, find_local))
                out << found->value();
-            else
-               out << variable::get( variable);
+            else if( auto value = variable::get( variable))
+               out << *value;
          });
       }
 

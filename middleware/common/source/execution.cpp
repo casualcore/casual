@@ -23,14 +23,14 @@ namespace casual
             {
                auto initialize()
                {
-                  if( environment::variable::exists( environment::variable::name::execution::id))
-                     return Uuid{ environment::variable::get( environment::variable::name::execution::id)};
-                  return uuid::make();
+                  if( auto value = environment::variable::get< execution::type>( environment::variable::name::execution::id))
+                     return *value;
+                  return execution::type::generate();
                }
 
                execution::type& id()
                {
-                  static execution::type id{ initialize()};
+                  static execution::type id = initialize();
                   return id;
                }
             } // <unnamed>
@@ -39,6 +39,7 @@ namespace casual
          void id( const type& id)
          {
             local::id() = id;
+            environment::variable::set( environment::variable::name::execution::id, local::id());
          }
 
          void reset()

@@ -42,8 +42,9 @@ namespace casual
                               //! "expose" configuration to be able to tweak and gain knowledge to find a reasonable fixed one.
                               constexpr std::string_view environment = "CASUAL_QUEUE_PERSISTENCE_WINDOW";
 
-                              if( environment::variable::exists( environment))
-                                 return string::from< platform::size::type>( environment::variable::get( environment));
+                              if( auto value = environment::variable::get< platform::size::type>( environment))
+                                 return *value;
+
                               return platform::size::type{ 20};
                            };
 

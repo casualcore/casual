@@ -366,7 +366,7 @@ namespace casual
          {
             auto reply = communication::ipc::receive< message::discovery::topology::implicit::Update>();
             ASSERT_TRUE( reply.domains.size() == 1) << CASUAL_NAMED_VALUE( reply);
-            EXPECT_TRUE( reply.domains.at( 0) == common::domain::identity()) << CASUAL_NAMED_VALUE( reply);
+            EXPECT_TRUE( reply.domains.at( 0) == common::domain::identity()) << CASUAL_NAMED_VALUE( reply) << '\n' << CASUAL_NAMED_VALUE( common::domain::identity());
          }
       }
 

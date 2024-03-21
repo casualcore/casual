@@ -36,6 +36,8 @@ namespace casual
          //! Holds pid and ipc-queue for a given process
          struct Handle
          {
+            // enable environment variable serialization
+            using environment_variable_enable = void;
 
             Handle() = default;
             inline explicit Handle( strong::process::id pid) : pid{ pid} {}
@@ -60,6 +62,13 @@ namespace casual
                CASUAL_SERIALIZE( ipc);
             )
          };
+
+
+
+         
+
+
+
 
          //! concept to help define equality compare with ipc and pid
          template< typename T>

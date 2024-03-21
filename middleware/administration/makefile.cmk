@@ -94,6 +94,7 @@ unittest_lib = make.LinkLibrary( 'bin/casual-administration-unittest',
    ],
    [ 
       'casual-common',
+      'casual-unittest',
    ])
 
 make.LinkUnittest( 'unittest/bin/test-casual-administration',

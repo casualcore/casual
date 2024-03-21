@@ -13,6 +13,8 @@
 #include "common/buffer/type.h"
 #include "common/buffer/pool.h"
 
+#include "common/unittest/environment.h"
+
 #include "xatmi.h"
 
 
@@ -613,7 +615,7 @@ namespace casual
                //casual::common::environment::variable::set( "CASUAL_FIELD_TABLE", "./sample/field.xml");
                //casual::common::environment::variable::set( "CASUAL_FIELD_TABLE", "./sample/field.json");
                //casual::common::environment::variable::set( "CASUAL_FIELD_TABLE", "./sample/field.ini");
-               casual::common::environment::variable::set( "CASUAL_FIELD_TABLE", "./sample/field.yaml");
+               environment::variable::set( "CASUAL_FIELD_TABLE", "./sample/field.yaml");
             }
 
             void TearDown() override

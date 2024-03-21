@@ -67,7 +67,7 @@ namespace casual
                         auto reply = message::reverse::type( message);
                         reply.process.handle = common::process::handle();
                         reply.process.path = common::process::path();
-                        reply.environment.variables = environment::variable::native::current();
+                        reply.environment.variables = environment::variable::current();
                         if( auto& instance = instance::information())
                         {
                            reply.instance.alias = instance.value().alias;

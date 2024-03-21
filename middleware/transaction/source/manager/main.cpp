@@ -43,7 +43,7 @@ namespace casual
                log::line( verbose::log, "settings: ", settings);
 
                // Set the process variables so children can find us easier.
-               environment::variable::process::set(
+               environment::variable::set(
                   environment::variable::name::ipc::transaction::manager,
                   process::handle());
 

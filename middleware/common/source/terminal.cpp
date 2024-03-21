@@ -27,14 +27,6 @@ namespace casual
             {
                namespace
                {
-                  template< typename V> 
-                  auto get( std::string_view environment, V value)
-                  {
-                     return exception::guard( [&]()
-                     {
-                        return environment::variable::get( environment, value);
-                     }, value);
-                  }
 
                   namespace deduce
                   {
@@ -72,7 +64,7 @@ namespace casual
 
                      auto header_default() 
                      {
-                        return local::get( environment::variable::name::terminal::header, "true");
+                        return environment::variable::get( environment::variable::name::terminal::header).value_or( "true");
                      }
 
                      auto header( std::string& value)
@@ -147,11 +139,11 @@ Hence, column order can differ between `porcelain` and "regular".
             }
 
             Directive::Directive()
-               : m_color{ local::get( environment::variable::name::terminal::color, "true")},
-                  m_porcelain{ local::get( environment::variable::name::terminal::porcelain, false)},
-                  m_block{ local::get( environment::variable::name::terminal::precision, true)},
-                  m_verbose{ local::get( environment::variable::name::terminal::verbose, false)},
-                  m_precision{ local::get( environment::variable::name::terminal::precision, 3)}
+               : m_color{ environment::variable::get( environment::variable::name::terminal::color).value_or( "true")},
+                  m_porcelain{ environment::variable::get< bool>( environment::variable::name::terminal::porcelain).value_or( false)},
+                  m_block{ environment::variable::get< bool>( environment::variable::name::terminal::precision).value_or( true)},
+                  m_verbose{ environment::variable::get< bool>( environment::variable::name::terminal::verbose).value_or( false)},
+                  m_precision{ environment::variable::get< int>( environment::variable::name::terminal::precision).value_or( 3)}
             {
 
             }

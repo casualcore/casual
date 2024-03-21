@@ -134,19 +134,16 @@ namespace casual
             const platform::size::type Heuristic::in_flight_window = []()
             {
                constexpr std::string_view environment = "CASUAL_DISCOVERY_ACCUMULATE_REQUESTS";
-
-               if( environment::variable::exists( environment))
-                  return string::from< platform::size::type>( environment::variable::get( environment));
-
-               return platform::batch::discovery::accumulate::requests;
+               return environment::variable::get< platform::size::type>( environment).value_or( platform::batch::discovery::accumulate::requests);
             }();
+
 
             const platform::time::unit Heuristic::duration = []() -> platform::time::unit
             {
                constexpr std::string_view environment = "CASUAL_DISCOVERY_ACCUMULATE_TIMEOUT";
 
-               if( environment::variable::exists( environment))
-                  return common::chronology::from::string( environment::variable::get( environment));
+               if( auto value = environment::variable::get( environment))
+                  return common::chronology::from::string( *value);
 
                return platform::batch::discovery::accumulate::timeout;
             }();

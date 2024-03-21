@@ -7,6 +7,7 @@
 
 #include "common/unittest.h"
 #include "common/unittest/file.h"
+#include "common/unittest/environment.h"
 
 #include "queue/unittest/utility.h"
 #include "queue/common/queue.h"
@@ -18,6 +19,7 @@
 #include "common/process.h"
 #include "common/file.h"
 #include "common/message/domain.h"
+#include "common/environment.h"
 
 #include "common/transaction/context.h"
 #include "common/transaction/resource.h"
@@ -27,7 +29,6 @@
 #include "common/signal.h"
 #include "common/communication/instance.h"
 #include "common/serialize/macro.h"
-#include "common/environment/scoped.h"
 
 #include "domain/discovery/api.h"
 #include "domain/unittest/manager.h"
@@ -1327,7 +1328,7 @@ PRAGMA max_page_count = 25;
 PRAGMA page_size = 512;
 )");
 
-         auto scope = common::environment::variable::scoped::set( "CASUAL_UNITTEST_QUEUEBASE", directory.path() / "a.qb");
+         auto scope = common::unittest::environment::scoped::variable( "CASUAL_UNITTEST_QUEUEBASE", ( directory.path() / "a.qb").string());
 
          constexpr auto config = R"(
 domain: 

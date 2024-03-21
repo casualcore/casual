@@ -526,15 +526,12 @@ namespace casual
 
                         auto list_environment = []()
                         {
-                           auto current = common::environment::variable::native::current();
-
                            auto transform_name = []( auto& variable)
                            {
-                              auto name = variable.name();
-                              return std::string( std::begin( name), std::end( name));
+                              return std::string{ variable.name()};
                            };
 
-                           return algorithm::transform( current, transform_name);
+                           return algorithm::transform( common::environment::variable::system(), transform_name);
                         };
 
                         switch( values.size())
@@ -990,9 +987,9 @@ depending on what parts are updated.
                      {                        
                         auto get_editor_path = []() -> std::filesystem::path
                         {
-                           return environment::variable::get( environment::variable::name::terminal::editor, 
-                             environment::variable::get( "VISUAL", 
-                                environment::variable::get( "EDITOR", "vi")));
+                           return environment::variable::get( environment::variable::name::terminal::editor).value_or( 
+                              environment::variable::get( "VISUAL").value_or( 
+                                 environment::variable::get( "EDITOR").value_or( "vi")));
                         };
 
                         auto current = call::configuration::get();

@@ -113,9 +113,9 @@ namespace casual
                state.whitelisted.push_back( process::id());
 
                // Set the process variables so children can communicate with us.
-               common::environment::variable::process::set(
-                     common::environment::variable::name::ipc::domain::manager,
-                     common::process::handle());
+               common::environment::variable::set(
+                  common::environment::variable::name::ipc::domain::manager,
+                  common::process::handle());
 
                handle::mandatory::boot::core::prepare( state);
 

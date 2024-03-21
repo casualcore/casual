@@ -32,7 +32,7 @@ namespace casual
                // push to our own ipc
                communication::ipc::inbound::device().push( message::signal::Hangup{});
 
-               common::environment::variable::set( "CASUAL_SIMPLE_SERVER_HANGUP_SIGNAL", "true");
+               environment::variable::set( "CASUAL_SIMPLE_SERVER_HANGUP_SIGNAL", "true");
             });
 
             communication::instance::connect();
@@ -42,7 +42,7 @@ namespace casual
             {
                log::line( log::category::information, "handle_hangup - message ", message);
 
-               common::environment::variable::set( "CASUAL_SIMPLE_SERVER_HANGUP_MESSAGE", "true");
+               environment::variable::set( "CASUAL_SIMPLE_SERVER_HANGUP_MESSAGE", "true");
             };
 
             auto& ipc = communication::ipc::inbound::device();

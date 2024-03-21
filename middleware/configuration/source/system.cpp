@@ -32,8 +32,9 @@ namespace casual
 
          // Try to find configuration file
          auto glob = common::environment::variable::get( 
-            common::environment::variable::name::system::configuration, 
-            common::environment::variable::get( common::environment::variable::name::resource::configuration, default_misplaced_file));
+            common::environment::variable::name::system::configuration).value_or(
+               common::environment::variable::get( 
+                  common::environment::variable::name::resource::configuration).value_or( default_misplaced_file));
 
          return get( glob);
 

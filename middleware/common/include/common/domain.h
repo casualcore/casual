@@ -24,6 +24,9 @@ namespace casual
 
       struct Identity : common::Compare< Identity>
       {
+         // enable environment variable serialization
+         using environment_variable_enable = void;
+
          Identity();
          Identity( const strong::domain::id& id, std::string name);
          explicit Identity( std::string name);

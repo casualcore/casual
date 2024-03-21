@@ -29,7 +29,7 @@ namespace casual
             {
                static struct Configuration
                {
-                  const bool force_binary_base64 = environment::variable::get( "CASUAL_HTTP_FORCE_BINARY_BASE64", false);
+                  const bool force_binary_base64 = environment::variable::get< bool>( "CASUAL_HTTP_FORCE_BINARY_BASE64").value_or( false);
                } result;
 
                return result;

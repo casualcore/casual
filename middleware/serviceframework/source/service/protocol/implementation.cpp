@@ -188,8 +188,7 @@ namespace casual
                   Trace trace{ "protocol::parameter::local::writer"};
 
                   auto parameter_format = common::environment::variable::get( 
-                     common::environment::variable::name::log::parameter::format,
-                     "line");
+                     common::environment::variable::name::log::parameter::format).value_or( "line");
 
                   common::log::line( common::verbose::log, "parameter format: ", parameter_format);
 

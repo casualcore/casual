@@ -11,6 +11,8 @@
 #include "common/environment.h"
 #include "common/environment/expand.h"
 
+#include "common/unittest/environment.h"
+
 
 namespace casual
 {
@@ -20,19 +22,19 @@ namespace casual
       {
          common::unittest::Trace trace;
 
-         EXPECT_TRUE( ! environment::variable::get( "SOME_VARIABLE", false));
-         EXPECT_TRUE( environment::variable::get( "SOME_VARIABLE", true));
+         EXPECT_TRUE( ! environment::variable::get< bool>( "SOME_VARIABLE").value_or( false));
+         EXPECT_TRUE( environment::variable::get< bool>( "SOME_VARIABLE").value_or( true));
       }
 
       TEST( common_environment_variable_type, boolean)
       {
          common::unittest::Trace trace;
 
-         environment::variable::set( "SOME_VARIABLE_5b54338bc2704", true);
-         EXPECT_TRUE( environment::variable::get< bool>( "SOME_VARIABLE_5b54338bc2704"));
+         environment::variable::set( "SOME_VARIABLE_5b54338bc2704", "false");
+         EXPECT_TRUE( ! environment::variable::get< bool>( "SOME_VARIABLE_5b54338bc2704").value());
 
-         environment::variable::set( "SOME_VARIABLE_5b54338bc2704", false);
-         EXPECT_TRUE( ! environment::variable::get< bool>( "SOME_VARIABLE_5b54338bc2704"));
+         environment::variable::set( "SOME_VARIABLE_5b54338bc2704", "true");
+         EXPECT_TRUE( environment::variable::get< bool>( "SOME_VARIABLE_5b54338bc2704").value());
       }
 
       TEST( common_environment, string__no_variable__expect_same)
@@ -47,52 +49,48 @@ namespace casual
       {
          common::unittest::Trace trace;
 
-         ASSERT_TRUE( environment::variable::exists( "HOME"));
-
          auto home = environment::variable::get( "HOME");
+         ASSERT_TRUE( home);
 
          auto result =  environment::expand( "${HOME}/a/b/c");
 
-         EXPECT_TRUE( result == home + "/a/b/c") << "result: " << result;
+         EXPECT_TRUE( result == *home + "/a/b/c") << "result: " << result;
       }
 
       TEST( common_environment, environment_string__variable_in_middle__expect_altered)
       {
          common::unittest::Trace trace;
 
-         ASSERT_TRUE( environment::variable::exists( "HOME"));
-
          auto home = environment::variable::get( "HOME");
+         ASSERT_TRUE( home);
 
          auto result =  environment::expand( "a/b/c/${HOME}/a/b/c");
 
-         EXPECT_TRUE( result == "a/b/c/" + home + "/a/b/c") << "result: " << result;
+         EXPECT_TRUE( result == "a/b/c/" + *home + "/a/b/c") << "result: " << result;
       }
 
       TEST( common_environment, environment_file_path__variable_in_middle__expect_altered)
       {
          common::unittest::Trace trace;
 
-         ASSERT_TRUE( environment::variable::exists( "HOME"));
-
          auto home = environment::variable::get( "HOME");
+         ASSERT_TRUE( home);
 
          auto result =  environment::expand( std::filesystem::path{ "a/b/c/${HOME}/a/b/c"});
 
-         EXPECT_TRUE( result == "a/b/c/" + home + "/a/b/c") << "result: " << result;
+         EXPECT_TRUE( result == "a/b/c/" + *home + "/a/b/c") << "result: " << result;
       }
 
       TEST( common_environment, string_variable__expect_altered)
       {
          common::unittest::Trace trace;
 
-         ASSERT_TRUE( environment::variable::exists( "HOME"));
-
          auto home = environment::variable::get( "HOME");
+         ASSERT_TRUE( home);
 
          auto result =  environment::expand( "${HOME}/a/b/c");
 
-         EXPECT_TRUE( result == home + "/a/b/c") << "result: " << result;
+         EXPECT_TRUE( result == *home + "/a/b/c") << "result: " << result;
       }
 
       TEST( common_environment, string_variable__not_correct_format__expect_no_alteration)
@@ -108,9 +106,8 @@ namespace casual
 
          auto process = common::process::handle();
 
-         environment::variable::process::set( "TEST_PROCESS_VARIABLE", process);
-
-         EXPECT_TRUE( process == environment::variable::process::get( "TEST_PROCESS_VARIABLE"));
+         environment::variable::set( "TEST_PROCESS_VARIABLE", process);
+         EXPECT_TRUE( process == environment::variable::get< process::Handle>( "TEST_PROCESS_VARIABLE"));
 
       }
 

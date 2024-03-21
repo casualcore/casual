@@ -14,8 +14,8 @@
 #include "domain/manager/admin/cli.h"
 #include "domain/unittest/discover.h"
 
+#include "common/unittest/environment.h"
 #include "common/communication/instance.h"
-#include "common/environment/scoped.h"
 #include "common/sink.h"
 #include "common/message/transaction.h"
 
@@ -1970,7 +1970,7 @@ domain:
          signal::callback::registration< code::signal::child>( [](){});
          
          // resources will treat all transactions as _read-only_ (in the prepare phase)
-         auto scope = common::environment::variable::scoped::set( "CASUAL_UNITTEST_OPEN_INFO_RM", 
+         auto scope = common::unittest::environment::scoped::variable( "CASUAL_UNITTEST_OPEN_INFO_RM", 
             common::string::compose( "--prepare ", XA_RDONLY));
 
          auto b = local::domain( B);

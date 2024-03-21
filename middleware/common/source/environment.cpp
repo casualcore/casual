@@ -30,332 +30,347 @@
 
 namespace casual
 {
-   namespace common
+   namespace common::environment
    {
-      namespace environment
+      namespace local
       {
-         namespace local
+         namespace
          {
-            namespace
+            auto system()
             {
-               namespace native
-               {
-                  struct Variable
-                  {
-                     using lock_type = std::lock_guard< std::mutex>;
+               #ifdef __APPLE__
+                  return *::_NSGetEnviron();
+               #else
+                  return ::environ;
+               #endif
+            }
 
-                     static const Variable& instance()
-                     {
-                        static const Variable singleton{};
-                        return singleton;
-                     }
-
-                     bool exists( std::string_view name) const
-                     {
-                        lock_type lock { m_mutex};
-
-                        return getenv( name.data()) != nullptr;
-                     }
-
-                     std::string get( std::string_view name) const
-                     {
-                        lock_type lock { m_mutex};
-
-                        auto result = getenv( name.data());
-
-                        // We need to return by value and copy the variable while
-                        // we have the lock
-                        if( result)
-                           return result;
-
-                        return {};
-                     }
-
-                     void set( std::string_view name, std::string_view value) const
-                     {
-                        lock_type lock { m_mutex};
-
-                        if( setenv( name.data(), value.data(), 1) == -1)
-                           code::raise::error( code::convert::to::casual( code::system::last::error()), "environment::set");
-                     }
-
-                     void unset( std::string_view name) const
-                     {
-                        lock_type lock { m_mutex};
-
-                        if( ::unsetenv( name.data()) == -1)
-                           code::raise::error( code::convert::to::casual( code::system::last::error()), "environment::unset");
-                     }
-
-                     std::mutex& mutex() const
-                     {
-                        return m_mutex;
-                     }
-
-                  private:
-
-                     mutable std::mutex m_mutex;
-                  };
-
-                  auto environment()
-                  {
-                     #ifdef __APPLE__
-                        return *::_NSGetEnviron();
-                     #else
-                        return ::environ;
-                     #endif
-                  }
-
-               } // native
-            } // <unnamed>
-         } // local
-
-         namespace variable
-         {
-            namespace detail
+            struct Coordinator
             {
-               void set( std::string_view name, std::string_view value)
+               using lock_type = std::lock_guard< std::mutex>;
+
+               static const Coordinator& instance()
                {
-                  local::native::Variable::instance().set( name, value);
+                  static const Coordinator singleton{};
+                  return singleton;
                }
-            } // detail
 
-            std::mutex& mutex()
-            {
-               return local::native::Variable::instance().mutex();
-            }
+               bool exists( std::string_view name) const
+               {
+                  lock_type lock { m_mutex};
 
-            bool exists( std::string_view name)
-            {
-               return local::native::Variable::instance().exists( name);
-            }
+                  if( algorithm::find_if( m_prioritized, environment::variable::predicate::is_name( name)))
+                     return true;
 
-            std::string get( std::string_view name)
-            {
-               // make sure we got null terminator
-               assert( *std::end( name) == '\0');
+                  return getenv( name.data()) != nullptr;
+               }
 
-               return local::native::Variable::instance().get( name);
-            }
+               std::optional< std::string> get( std::string_view name) const
+               {
+                  lock_type lock { m_mutex};
 
-            void unset( std::string_view name)
-            {
-               local::native::Variable::instance().unset( name);
-            }
+                  // We need to return by value and copy the variable while
+                  // we have the lock
 
-            namespace native
-            {
-               std::vector< environment::Variable> current()
+                  if( auto found = algorithm::find_if( m_prioritized, environment::variable::predicate::is_name( name)))
+                     return std::string{ found->value()};
+
+                  if( auto result = getenv( name.data()))
+                     return result;
+
+                  return {};
+               }
+
+               void set( std::string_view name, std::string_view value) const
+               {
+                  lock_type lock { m_mutex};
+
+                  if( auto found = algorithm::find_if( m_prioritized, environment::variable::predicate::is_name( name)))
+                     *found = environment::Variable{ string::compose( name, '=', value)};
+                  else
+                     m_prioritized.emplace_back( string::compose( name, '=', value));
+               }
+
+               void unset( std::string_view name) const
+               {
+                  lock_type lock { m_mutex};
+
+                  if( auto found = algorithm::find_if( m_prioritized, environment::variable::predicate::is_name( name)))
+                     m_prioritized.erase( std::begin( found));
+
+                  if( ::unsetenv( name.data()) == -1)
+                     code::raise::error( code::convert::to::casual( code::system::last::error()), "environment::unset");
+               }
+
+               std::vector< environment::Variable> system() const
                {
                   std::vector< environment::Variable> result;
 
                   // take lock
-                  std::lock_guard< std::mutex> lock{ variable::mutex()};
+                  std::lock_guard< std::mutex> lock{ m_mutex};
 
-                  auto variable = local::native::environment();
+                  auto system = local::system();
 
-                  while( *variable)
-                  {
-                     result.emplace_back( *variable);
-                     ++variable;
-                  }
-                  return result;
-               }
-            } // native
-
-
-            namespace process
-            {
-               common::process::Handle get( std::string_view variable)
-               {
-                  auto value = common::environment::variable::get( variable);
-
-                  common::process::Handle result;
-                  {
-                     auto split = algorithm::split(value, '|');
-
-                     auto pid = std::get < 0 > ( split);
-                     if( common::string::integer( pid))
-                        result.pid = strong::process::id{ std::stoi( std::string( std::begin( pid), std::end( pid)))};
-
-                     auto ipc = std::get< 1>( split);
-                     if( ! ipc.empty())
-                        result.ipc = strong::ipc::id{ Uuid( string::view::make( ipc))};
-                  }
+                  while( *system)
+                     result.emplace_back( *system++);
 
                   return result;
                }
 
-               void set( std::string_view variable, const common::process::Handle& process)
+               //! @return the total set of environment variables `prioritized U system`
+               std::vector< environment::Variable> current() const
                {
-                  variable::detail::set( variable, string::compose( process.pid, '|', process.ipc));
+                  auto system = Coordinator::system();
+
+                  // take lock
+                  std::lock_guard< std::mutex> lock{ m_mutex};
+
+                  auto result = m_prioritized;
+
+                  algorithm::append_unique( system, result, environment::variable::predicate::equal_name());
+
+                  return result;
                }
 
-            } // process
-         } // variable
-
-         namespace local
-         {
-            namespace
-            {
-               namespace path
+               std::mutex& mutex() const
                {
-                  namespace detail
-                  {
-                     constexpr std::string_view casual = ".casual";
-
-
-                     template< typename O>
-                     auto value( std::string_view name, O&& optional) -> std::filesystem::path
-                     {
-                        if( variable::exists( name))
-                           return variable::get( name);
-
-                        return optional();
-                     }
-                  } // detail
-
-                  auto domain() -> std::filesystem::path
-                  {
-                     return detail::value( variable::name::directory::domain, [](){ return "./";});
-                  }
-
-                  auto transient() -> std::filesystem::path
-                  {
-                     return detail::value( variable::name::directory::transient, [](){ return environment::directory::temporary() / detail::casual;});
-                  }
-
-                  auto persistent() -> std::filesystem::path
-                  {
-                     return detail::value( variable::name::directory::persistent, [](){ return domain() / detail::casual;});
-                  }
-
-                  auto install() -> std::filesystem::path
-                  {
-                      // TODO: Use some more platform independent solution
-                     return detail::value( variable::name::directory::install, [](){ return "/opt/casual";});
-                  }
-
-                  auto log() -> std::filesystem::path
-                  {
-                     return detail::value( variable::name::log::path, [](){ return domain() / "casual.log";});
-                  }
-
-                  auto ipc() -> std::filesystem::path
-                  {
-                     return detail::value( variable::name::directory::ipc, [](){ return transient() / "ipc";});
-                  }
-
-                  auto queue() -> std::filesystem::path
-                  {
-                     return detail::value( variable::name::directory::queue, [](){ return persistent() / "queue";});
-                  }
-
-                  auto transaction() -> std::filesystem::path
-                  {
-                     return detail::value( variable::name::directory::transaction, [](){ return persistent() / "transaction";});
-                  }
-
-                  auto singleton() -> std::filesystem::path
-                  {
-                     return domain() / detail::casual / "singleton";
-                  }
-                  
-               } // path
-
-
-               //! holds "all" paths based on environment.
-               //! main purpose is to be able to reset when running
-               //! unittests
-               struct Paths 
-               {
-                  std::filesystem::path domain = path::domain();
-                  std::filesystem::path install = path::install();
-                  std::filesystem::path log = path::log();
-                  std::filesystem::path ipc = path::ipc();
-                  std::filesystem::path queue = path::queue();
-                  std::filesystem::path transaction = path::transaction();
-                  std::filesystem::path singleton = path::singleton();
-                  
-                  CASUAL_LOG_SERIALIZE(
-                     CASUAL_SERIALIZE( domain);
-                     CASUAL_SERIALIZE( install);
-                     CASUAL_SERIALIZE( log);
-                     CASUAL_SERIALIZE( ipc);
-                     CASUAL_SERIALIZE( queue);
-                     CASUAL_SERIALIZE( transaction);
-                     CASUAL_SERIALIZE( singleton);
-                  )
-               };
-
-               
-               namespace global
-               {
-                  Paths paths;
-               } // global
-
-            } // <unnamed>
-         } // local
-
-
-         namespace directory
-         {
-            const std::filesystem::path& domain()
-            {
-               return local::global::paths.domain;
-            }
-
-            std::filesystem::path temporary()
-            {
-               return std::filesystem::temp_directory_path();
-            }
-
-            const std::filesystem::path& install()
-            {
-               return local::global::paths.install;
-            }
-
-            const std::filesystem::path& ipc()
-            {
-                return local::global::paths.ipc;
-            }
-
-            const std::filesystem::path& queue()
-            {
-                return local::global::paths.queue;
-            }
-
-            const std::filesystem::path& transaction()
-            {
-                return local::global::paths.transaction;
-            }
-         } // directory
-
-         namespace log
-         {
-            const std::filesystem::path& path()
-            {
-               return local::global::paths.log;
-            }
-         } // log
-
-         namespace domain
-         {
-            namespace singleton
-            {
-               const std::filesystem::path& file()
-               { 
-                  return local::global::paths.singleton;
+                  return m_mutex;
                }
-            } // singleton
-         } // domain
 
+            private:
 
-         void reset()
+               mutable std::mutex m_mutex;
+               mutable std::vector< environment::Variable> m_prioritized;
+            };
+
+            auto& coordinator() { return Coordinator::instance();}
+
+         } // <unnamed>
+      } // local
+
+      namespace variable
+      {
+         std::mutex& mutex()
          {
-            local::global::paths = local::Paths{};
+            return local::coordinator().mutex();
          }
-      } // environment
-   } // common
+
+         bool exists( std::string_view name)
+         {
+            return local::coordinator().exists( name);
+         }
+
+         std::vector< environment::Variable> system()
+         {
+            return local::coordinator().system();
+         }
+
+         std::vector< environment::Variable> current()
+         {
+            return local::coordinator().current();
+         }
+
+         std::optional< std::string> get( std::string_view name)
+         {
+            // make sure we got null terminator
+            assert( *std::end( name) == '\0');
+
+            return local::coordinator().get( name);
+         }
+
+         void set( std::string_view name, std::string_view value)
+         {
+            local::coordinator().set( name, value);
+         }
+
+         std::optional< std::string> consume( std::string_view name)
+         {
+            if( auto result = get( name))
+            {
+               unset( name);
+               return result;
+            }
+            return {};
+         }
+
+         void unset( std::string_view name)
+         {
+            local::coordinator().unset( name);
+         }
+
+         namespace detail
+         {
+            template<>
+            bool invoke_string_deserialize< bool>( std::string value)
+            {
+               // I'm not sure if this is a good thing, but I think
+               // we rely on boolean strings
+
+               if( value == "true") 
+                  return true; 
+               else if( value == "false") 
+                  return false; 
+               else 
+                  return value != "0";
+            }
+            
+            
+         } // detail
+
+      } // variable
+
+      namespace local
+      {
+         namespace
+         {
+            namespace path
+            {
+               namespace detail
+               {
+                  constexpr std::string_view casual = ".casual";
+               } // detail
+
+               auto domain()
+               {
+                  return  variable::get< std::filesystem::path>( variable::name::directory::domain).value_or( "./");
+               }
+
+               auto transient()
+               {
+                  return variable::get< std::filesystem::path>( variable::name::directory::transient).value_or( environment::directory::temporary() / detail::casual);
+               }
+
+               auto persistent()
+               {
+                  return variable::get< std::filesystem::path>( variable::name::directory::persistent).value_or( domain() / detail::casual);
+               }
+
+               auto install()
+               {
+                     // TODO: Use some more platform independent solution
+                  return variable::get< std::filesystem::path>( variable::name::directory::install).value_or( "/opt/casual");
+               }
+
+               auto log()
+               {
+                  return variable::get< std::filesystem::path>( variable::name::log::path).value_or( domain() / "casual.log");
+               }
+
+               auto ipc()
+               {
+                  return variable::get< std::filesystem::path>( variable::name::directory::ipc).value_or( transient() / "ipc");
+               }
+
+               auto queue()
+               {
+                  return variable::get< std::filesystem::path>( variable::name::directory::queue).value_or( persistent() / "queue");
+               }
+
+               auto transaction()
+               {
+                  return variable::get< std::filesystem::path>( variable::name::directory::transaction).value_or( persistent() / "transaction");
+               }
+
+               auto singleton()
+               {
+                  return domain() / detail::casual / "singleton";
+               }
+               
+            } // path
+
+
+            //! holds "all" paths based on environment.
+            //! main purpose is to be able to reset when running
+            //! unittests
+            struct Paths 
+            {
+               std::filesystem::path domain = path::domain();
+               std::filesystem::path install = path::install();
+               std::filesystem::path log = path::log();
+               std::filesystem::path ipc = path::ipc();
+               std::filesystem::path queue = path::queue();
+               std::filesystem::path transaction = path::transaction();
+               std::filesystem::path singleton = path::singleton();
+               
+               CASUAL_LOG_SERIALIZE(
+                  CASUAL_SERIALIZE( domain);
+                  CASUAL_SERIALIZE( install);
+                  CASUAL_SERIALIZE( log);
+                  CASUAL_SERIALIZE( ipc);
+                  CASUAL_SERIALIZE( queue);
+                  CASUAL_SERIALIZE( transaction);
+                  CASUAL_SERIALIZE( singleton);
+               )
+            };
+
+            
+            namespace global
+            {
+               Paths paths;
+            } // global
+
+         } // <unnamed>
+      } // local
+
+
+      namespace directory
+      {
+         const std::filesystem::path& domain()
+         {
+            return local::global::paths.domain;
+         }
+
+         std::filesystem::path temporary()
+         {
+            return std::filesystem::temp_directory_path();
+         }
+
+         const std::filesystem::path& install()
+         {
+            return local::global::paths.install;
+         }
+
+         const std::filesystem::path& ipc()
+         {
+               return local::global::paths.ipc;
+         }
+
+         const std::filesystem::path& queue()
+         {
+               return local::global::paths.queue;
+         }
+
+         const std::filesystem::path& transaction()
+         {
+               return local::global::paths.transaction;
+         }
+      } // directory
+
+      namespace log
+      {
+         const std::filesystem::path& path()
+         {
+            return local::global::paths.log;
+         }
+      } // log
+
+      namespace domain
+      {
+         namespace singleton
+         {
+            const std::filesystem::path& file()
+            { 
+               return local::global::paths.singleton;
+            }
+         } // singleton
+      } // domain
+
+
+      void reset()
+      {
+         local::global::paths = local::Paths{};
+      }
+
+   } // common::environment
 } // casual
 

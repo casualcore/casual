@@ -45,7 +45,7 @@ namespace casual
 
 
                // Set the process variables so children can find us easier.
-               environment::variable::process::set(
+               environment::variable::set(
                   environment::variable::name::ipc::service::manager,
                   process::handle());
 

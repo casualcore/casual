@@ -55,7 +55,7 @@ namespace casual
 
                   return execute::scope( [ update_inclusive]()
                   {
-                     update_inclusive( common::environment::variable::get( common::environment::variable::name::log::pattern, ""));
+                     update_inclusive( common::environment::variable::get( common::environment::variable::name::log::pattern).value_or( ""));
                   });
 
                }

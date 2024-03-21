@@ -7,6 +7,8 @@
 
 #include "common/unittest/log.h"
 
+#include "common/unittest/environment.h"
+
 #include "common/signal.h"
 #include "common/execution.h"
 #include "common/communication/ipc.h"
@@ -26,7 +28,7 @@ namespace casual
          Scope::Scope() 
          { 
             // set that we're in _unittest-context_
-            environment::variable::set( environment::variable::name::unittest::context, "");
+            common::environment::variable::set( common::environment::variable::name::unittest::context, "");
             
             execution::reset();
             signal::clear();
@@ -37,7 +39,7 @@ namespace casual
          Scope::~Scope() 
          { 
             signal::clear();
-            environment::variable::unset( environment::variable::name::unittest::context);
+            common::environment::variable::unset( common::environment::variable::name::unittest::context);
             
             domain::identity( {}); 
          }

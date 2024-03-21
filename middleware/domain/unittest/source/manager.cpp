@@ -23,6 +23,7 @@
 
 #include "common/unittest.h"
 #include "common/unittest/file.h"
+#include "common/unittest/environment.h"
 
 #include "casual/assert.h"
 
@@ -72,7 +73,10 @@ namespace casual
             {
                auto root()
                {
-                  return std::filesystem::path{ environment::variable::get( "CASUAL_MAKE_SOURCE_ROOT")};
+                  if( auto value = environment::variable::get< std::filesystem::path>( "CASUAL_MAKE_SOURCE_ROOT"))
+                     return *value;
+
+                  code::raise::error( code::casual::invalid_argument, "CASUAL_MAKE_SOURCE_ROOT has to be set");
                }
             } // repository
             
@@ -219,7 +223,7 @@ namespace casual
 
                   void activate()
                   {
-                     environment::variable::set( "CASUAL_DOMAIN_HOME", home.string());
+                     common::environment::variable::set( "CASUAL_DOMAIN_HOME", home.string());
 
                      // reset all (hopefully) environment based 'values' 
                      environment::reset();
@@ -249,6 +253,8 @@ namespace casual
             common::domain::identity( {});
 
             local::instance::devices::reset();
+
+            common::environment::variable::unset( common::environment::variable::name::ipc::domain::manager);
 
             auto unsubscribe_scope = execute::scope( [&]()
             {
@@ -285,7 +291,7 @@ namespace casual
 
                      // Set environment variable to make it easier for other processes to
                      // reach domain-manager (should work any way...)
-                     common::environment::variable::process::set(
+                     common::environment::variable::set(
                         common::environment::variable::name::ipc::domain::manager,
                         state.manager.handle());
                   },

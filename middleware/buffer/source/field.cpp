@@ -1321,7 +1321,7 @@ namespace casual
                      auto files()
                      {
                         return common::algorithm::transform( 
-                           common::string::split( common::environment::variable::get( "CASUAL_FIELD_TABLE"), '|'),
+                           common::string::split( common::environment::variable::get( "CASUAL_FIELD_TABLE").value_or( ""), '|'),
                            []( const auto& file) { return std::filesystem::path{ file};});
                      }
 

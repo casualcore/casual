@@ -16,7 +16,6 @@
 #include "common/signal.h"
 #include "common/result.h"
 #include "common/environment.h"
-#include "common/environment/scoped.h"
 
 namespace casual
 {
@@ -62,7 +61,7 @@ domain:
 
          auto log_file = common::unittest::file::temporary::name( ".log");
 
-         auto guard = common::environment::variable::scoped::set( "SERVICE_LOG_FILE", log_file.string());
+         common::environment::variable::set( "SERVICE_LOG_FILE", log_file.string());
 
          auto domain = domain::unittest::manager( local::configuration::base, R"(
 domain:

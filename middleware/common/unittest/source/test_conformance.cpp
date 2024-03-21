@@ -364,7 +364,7 @@ namespace casual
             pid_t pid{};
             std::vector< const char*> arguments{ "sleep", "20", nullptr};
 
-            auto current = environment::variable::native::current();
+            auto current = environment::variable::current();
 
             auto environment = algorithm::transform( current, []( auto& value){ return value.data();});
             environment.push_back( nullptr);

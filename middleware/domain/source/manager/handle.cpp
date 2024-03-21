@@ -958,7 +958,7 @@ namespace casual
 
                         // possible set environment-state so new spawned processes can use it directly
                         if( ! message.singleton.environment.empty())
-                           environment::variable::process::set( message.singleton.environment, message.information.handle);
+                           environment::variable::set( message.singleton.environment, message.information.handle);
 
                         if( message.whitelist)
                            state.whitelisted.push_back( message.information.handle.pid);

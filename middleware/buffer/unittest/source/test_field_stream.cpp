@@ -14,7 +14,8 @@
 #include "common/buffer/type.h"
 #include "common/buffer/pool.h"
 
-#include "common/environment.h"
+#include "common/unittest/environment.h"
+
 
 #include "xatmi.h"
 

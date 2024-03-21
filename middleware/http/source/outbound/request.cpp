@@ -36,9 +36,9 @@ namespace casual
          {
             struct Configuration
             {
-               const bool force_fresh_connect = common::environment::variable::get( "CASUAL_HTTP_CURL_FORCE_FRESH_CONNECT", false);
-               const bool force_binary_base64 = common::environment::variable::get( "CASUAL_HTTP_FORCE_BINARY_BASE64", false);
-               const bool verbose = common::environment::variable::get( "CASUAL_HTTP_CURL_VERBOSE", false);
+               const bool force_fresh_connect = common::environment::variable::get< bool>( "CASUAL_HTTP_CURL_FORCE_FRESH_CONNECT").value_or( false);
+               const bool force_binary_base64 = common::environment::variable::get< bool>( "CASUAL_HTTP_FORCE_BINARY_BASE64").value_or( false);
+               const bool verbose = common::environment::variable::get< bool>( "CASUAL_HTTP_CURL_VERBOSE").value_or( false);
 
                CASUAL_LOG_SERIALIZE(
                   CASUAL_SERIALIZE( force_fresh_connect);

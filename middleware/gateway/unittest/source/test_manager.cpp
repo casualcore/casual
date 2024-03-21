@@ -13,9 +13,7 @@
 #include "gateway/manager/admin/server.h"
 #include "gateway/message.h"
 
-
 #include "common/environment.h"
-#include "common/environment/scoped.h"
 #include "common/service/lookup.h"
 #include "common/communication/instance.h"
 #include "common/event/listen.h"

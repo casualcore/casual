@@ -8,7 +8,7 @@
 
 #include "casual/buffer/internal/field.h"
 
-#include "common/environment.h"
+#include "common/unittest/environment.h"
 #include "common/unittest/file.h"
 
 namespace casual
@@ -135,7 +135,7 @@ groups:
             auto file_1 = local::file_1();
             auto file_2 = local::file_2();
 
-            environment::variable::set( "CASUAL_FIELD_TABLE", string::compose( file_1.string(), '|', file_2.string()));
+            common::environment::variable::set( "CASUAL_FIELD_TABLE", string::compose( file_1.string(), '|', file_2.string()));
 
             {
                auto table = internal::detail::id_to_name();

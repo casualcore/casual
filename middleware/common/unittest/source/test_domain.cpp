@@ -7,6 +7,7 @@
 
 #include "common/unittest.h"
 #include "common/unittest/file.h"
+#include "common/unittest/environment.h"
 #include "common/environment.h"
 #include "common/domain.h"
 #include "common/code/casual.h"
@@ -22,7 +23,7 @@ namespace casual
          unittest::Trace trace;
 
          unittest::directory::temporary::Scoped domain_home;
-         environment::variable::set( "CASUAL_DOMAIN_HOME", domain_home);
+         environment::variable::set( "CASUAL_DOMAIN_HOME", domain_home.string());
          environment::reset();
 
 
@@ -36,7 +37,7 @@ namespace casual
          unittest::Trace trace;
 
          unittest::directory::temporary::Scoped domain_home;
-         environment::variable::set( "CASUAL_DOMAIN_HOME", domain_home);
+         environment::variable::set( "CASUAL_DOMAIN_HOME", domain_home.string());
          environment::reset();
 
          EXPECT_CODE(

@@ -12,8 +12,6 @@
 #include "configuration/unittest/utility.h"
 #include "configuration/model/transform.h"
 
-#include "common/environment.h"
-#include "common/environment/scoped.h"
 
 namespace casual
 {

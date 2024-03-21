@@ -27,22 +27,20 @@ namespace casual
                {
                   constexpr auto name = "CASUAL_INSTANCE_INFORMATION";
 
-                  // always consume the information so it doesn't propagate to children
-                  // (parent has to set this explicitly)
-                  std::string value = common::environment::variable::consume( name, {});
-
                } // variable
 
                std::optional< Information> information()
                {
-                  auto value = std::move( variable::value);
+                  // always consume the information so it doesn't propagate to children
+                  // (parent has to set this explicitly)
+                  auto value = common::environment::variable::consume( variable::name);
 
-                  if( value.empty())
+                  if( ! value)
                      return {};
 
                   Information instance;
                   {
-                     auto archive = serialize::json::relaxed::reader( value); 
+                     auto archive = serialize::json::relaxed::reader( *value); 
                      archive >> CASUAL_NAMED_VALUE( instance);
                   }
 
