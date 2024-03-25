@@ -377,7 +377,7 @@ namespace casual
             }
 
             if( configure.path)
-               local::File::instance().relocate( std::move( *configure.path));
+               local::File::instance().relocate( *configure.path);
          }
 
       } // stream
