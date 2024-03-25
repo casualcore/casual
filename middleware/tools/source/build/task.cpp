@@ -102,8 +102,9 @@ namespace casual
             {
                trace::Exit log( "execute " + directive.compiler, directive.verbose);
                
-               if( common::process::execute( directive.compiler, arguments) != 0)
-                  code::raise::error( code::casual::invalid_argument, "failed to compile");
+               auto capture = common::process::execute( directive.compiler, arguments);
+               if( ! capture)
+                  code::raise::error( code::casual::invalid_argument, "failed to compile - capture: ", capture);
             }
          }
 

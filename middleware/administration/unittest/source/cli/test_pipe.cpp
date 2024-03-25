@@ -54,11 +54,6 @@ domain:
                return casual::domain::unittest::manager( configuration::base, std::forward< C>( configurations)...);
             }
 
-            template< typename... Cs>
-            auto execute( Cs&&... commands)
-            {
-               return administration::unittest::cli::command::execute( std::forward< Cs>( commands)...).consume();
-            }
          } // <unnamed>
       } // local
 
@@ -66,9 +61,10 @@ domain:
       {
          auto domain = local::domain();
 
-          auto output = local::execute( R"(CASUAL_LOG_PATH=/dev/stdout casual service --list-services 2>&1 )");
+         auto capture = administration::unittest::cli::command::execute( R"(CASUAL_LOG_PATH=/dev/stdout casual service --list-services)");
 
-          EXPECT_TRUE( algorithm::search( output, std::string_view( "casual:precondition"))) << output;
+         EXPECT_TRUE( capture.exit != 0) << CASUAL_NAMED_VALUE( capture);
+         EXPECT_TRUE( algorithm::search( capture.standard.error, std::string_view( "casual:precondition"))) << CASUAL_NAMED_VALUE( capture);
 
       }
 
@@ -87,8 +83,8 @@ domain:
                -  name: a1
 )");
 
-         auto output = local::execute( R"(echo "casual" | casual buffer --compose | casual queue --enqueue a1 | casual queue --dequeue a1 | casual call --service casual/example/echo | casual buffer --extract)");
-         EXPECT_TRUE( output == "casual\n") << CASUAL_NAMED_VALUE( output);
+         auto capture = administration::unittest::cli::command::execute( R"(echo "casual" | casual buffer --compose | casual queue --enqueue a1 | casual queue --dequeue a1 | casual call --service casual/example/echo | casual buffer --extract)");
+         EXPECT_TRUE( capture.standard.out == "casual\n") << CASUAL_NAMED_VALUE( capture);
       }
 
       TEST( cli_pipe, trans_begin__enqueue__trans_commit__dequeue__expect_message)
@@ -107,8 +103,8 @@ domain:
 
 )");
 
-         auto output = local::execute( R"(echo "casual" | casual buffer --compose | casual transaction --begin | casual queue --enqueue a1 | casual transaction --commit | casual queue --dequeue a1 | casual buffer --extract)");
-         EXPECT_TRUE( output == "casual\n") << CASUAL_NAMED_VALUE( output);
+         auto capture = administration::unittest::cli::command::execute( R"(echo "casual" | casual buffer --compose | casual transaction --begin | casual queue --enqueue a1 | casual transaction --commit | casual queue --dequeue a1 | casual buffer --extract)");
+         EXPECT_TRUE( capture.standard.out == "casual\n") << CASUAL_NAMED_VALUE( capture);
       }
 
       TEST( cli_pipe, trans_begin__enqueue___dequeue__expect_NO_message)
@@ -127,8 +123,8 @@ domain:
 )");
 
          // note that we do commit after the dequeue, otherwise the queue-group will resist to shutdown. 
-         auto output = local::execute( R"(echo "casual" | casual buffer --compose | casual transaction --begin | casual queue --enqueue a1 | casual queue --dequeue a1 | casual transaction --commit | casual buffer --extract)");
-         EXPECT_TRUE( output.empty()) << CASUAL_NAMED_VALUE( output);
+         auto capture = administration::unittest::cli::command::execute( R"(echo "casual" | casual buffer --compose | casual transaction --begin | casual queue --enqueue a1 | casual queue --dequeue a1 | casual transaction --commit | casual buffer --extract)");
+         EXPECT_TRUE( capture.standard.out.empty()) << CASUAL_NAMED_VALUE( capture);
       }
 
       TEST( cli_pipe, trans_begin__enqueue__trans_rollback___dequeue__expect_NO_message)
@@ -147,8 +143,8 @@ domain:
 )");
 
          // note that we do commit after the dequeue, otherwise the queue-group will resist to shutdown. 
-         auto output = local::execute( R"(echo "casual" | casual buffer --compose | casual transaction --begin | casual queue --enqueue a1 |  casual transaction --rollback | casual queue --dequeue a1 | casual buffer --extract)");
-         EXPECT_TRUE( output.empty()) << CASUAL_NAMED_VALUE( output);
+         auto capture = administration::unittest::cli::command::execute( R"(echo "casual" | casual buffer --compose | casual transaction --begin | casual queue --enqueue a1 |  casual transaction --rollback | casual queue --dequeue a1 | casual buffer --extract)");
+         EXPECT_TRUE( capture.standard.out.empty()) << CASUAL_NAMED_VALUE( capture);
       }
 
 
@@ -175,8 +171,8 @@ domain:
 
 
          // note that we do commit after the dequeue, otherwise the queue-group will resist to shutdown. 
-         auto output = local::execute( R"(echo "casual" | casual buffer --compose | casual queue --enqueue a1 | casual transaction --begin | casual queue --dequeue a1 | casual call --service casual/example/error/TPESVCFAIL | casual queue --enqueue a2 | casual transaction --rollback | casual queue --dequeue a1 | casual buffer --extract)");
-         EXPECT_TRUE( output == "casual\n") << CASUAL_NAMED_VALUE( output);
+         auto capture = administration::unittest::cli::command::execute( R"(echo "casual" | casual buffer --compose | casual queue --enqueue a1 | casual transaction --begin | casual queue --dequeue a1 | casual call --service casual/example/error/TPESVCFAIL | casual queue --enqueue a2 | casual transaction --rollback | casual queue --dequeue a1 | casual buffer --extract)");
+         EXPECT_TRUE( capture.standard.out == "casual\n") << CASUAL_NAMED_VALUE( capture);
 
       }
 
@@ -208,8 +204,8 @@ domain:
 | casual queue --dequeue a3 | casual buffer --extract \
 )";
 
-         auto output = local::execute( command);
-         EXPECT_TRUE( output == "stacked transactions\n") << CASUAL_NAMED_VALUE( output);
+         auto capture = administration::unittest::cli::command::execute( command);
+         EXPECT_TRUE( capture.standard.out == "stacked transactions\n") << CASUAL_NAMED_VALUE( capture);
       }
 
    

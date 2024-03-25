@@ -146,42 +146,16 @@ namespace casual
             {
                namespace add::environment
                {
-                  //! adds "state" that we wan't to propagate to children. Only add stuff
-                  //! if the variable is not in `variables` already (provided by user)
-                  auto state( std::vector< common::environment::Variable> variables)
+                  //! Appends from current process environment, if not exists in `variables`
+                  auto current( std::vector< common::environment::Variable> variables)
                   {
-                     // execution id. 
-                     if( execution::id() && ! algorithm::find_if( variables, common::environment::variable::predicate::is_name( common::environment::variable::name::execution::id)))
-                     {
-                        variables.emplace_back( string::compose( common::environment::variable::name::execution::id, "=", execution::id()));
-                     }
+                     auto result = common::environment::variable::current();
+                     algorithm::append_replace( variables, result, common::environment::variable::predicate::equal_name());
 
-                     return variables;
+                     return result;
                   }
 
                } // add::environment
-
-               namespace current
-               {
-                  namespace copy
-                  {
-                     // Appends from current process environment, if it's not
-                     // already overridden.
-                     auto environment( std::vector< environment::Variable> variables)
-                     {
-                        auto current = environment::variable::native::current();
-
-                        // use the complement of the intersection
-                        auto not_overridden = std::get< 1>( algorithm::intersection( current, variables, environment::variable::predicate::equal_name()));
-
-                        // move append the variables
-                        algorithm::move( not_overridden, variables);
-
-                        return variables;
-                     }
-                  } // copy
-
-               } // current
 
                namespace C
                {
@@ -215,19 +189,28 @@ namespace casual
 
                namespace spawn
                {
-                  struct Attributes : traits::uncopyable
+                  namespace detail
+                  {
+                     void check_error( int result, std::string_view message)
+                     {
+                        if( result != 0)
+                           code::raise::error( std::errc{ result} , message);
+                     };
+                  } // detail
+
+                  struct Attributes : traits::unrelocatable
                   {
                      Attributes( short flags)
                      {
                         Trace trace{ "process::local::spawn::Attributes::Attributes"};
 
-                        check_error( posix_spawnattr_init( &m_attributes), "posix_spawnattr_init");
+                        detail::check_error( posix_spawnattr_init( &m_attributes), "posix_spawnattr_init");
 
-                        check_error( posix_spawnattr_setflags( &m_attributes, flags | POSIX_SPAWN_SETSIGMASK), "posix_spawnattr_setflags");
+                        detail::check_error( posix_spawnattr_setflags( &m_attributes, flags | POSIX_SPAWN_SETSIGMASK), "posix_spawnattr_setflags");
 
                         // we never want (?) any signal to be masked in the child
                         const auto unmask = signal::Set{};
-                        check_error( posix_spawnattr_setsigmask( &m_attributes, &unmask.set), "posix_spawnattr_setsigmask");
+                        detail::check_error( posix_spawnattr_setsigmask( &m_attributes, &unmask.set), "posix_spawnattr_setsigmask");
 
                      }
 
@@ -239,24 +222,46 @@ namespace casual
                      const posix_spawnattr_t* get() const noexcept { return &m_attributes;}
 
                   private:
-
-                     void check_error( int result, const char* message) const
-                     {
-                        if( result == 0)
-                           return;
-
-                        auto code = static_cast< std::errc>( result);
-                        code::raise::error( code::convert::to::casual( code), message);
-                     };
-
-                     posix_spawnattr_t m_attributes;
+                     ::posix_spawnattr_t m_attributes;
                   };
+
+                  namespace file
+                  {
+                     struct Actions : traits::unrelocatable
+                     {
+                        Actions()
+                        {
+                           detail::check_error( posix_spawn_file_actions_init( &m_actions), "posix_spawn_file_actions_init");
+                        }
+
+                        ~Actions()
+                        {
+                           posix_spawn_file_actions_destroy( &m_actions);
+                        }
+
+                        void add_close( int fd)
+                        {
+                           detail::check_error( posix_spawn_file_actions_addclose( &m_actions, fd), "posix_spawn_file_actions_addclose");
+                        }
+
+                        void add_dup2( int fd1, int fd2)
+                        {
+                           detail::check_error( posix_spawn_file_actions_adddup2( &m_actions, fd1, fd2), "posix_spawn_file_actions_adddup2");
+                        }
+
+                        const ::posix_spawn_file_actions_t* get() const noexcept { return &m_actions;}
+                     
+                     private:
+                        ::posix_spawn_file_actions_t m_actions{};
+                     };
+                  } // file
 
                   strong::process::id invoke(
                      std::filesystem::path path,
                      const Attributes& attributes,
                      std::vector< std::string> arguments,
-                     std::vector< environment::Variable> environment)
+                     std::vector< environment::Variable> environment,
+                     const ::posix_spawn_file_actions_t* actions = nullptr)
                   {
                      Trace trace{ "process::local::spawn::invoke"};
 
@@ -268,16 +273,14 @@ namespace casual
                      // check if path exist and process has permission to execute it.
                      // could still go wrong, since we don't know if the path will actually execute,
                      // but we'll probably get rid of most of the errors (due to bad configuration and such)
-                     if( ! file::permission::execution( path))
+                     if( ! common::file::permission::execution( path))
                         code::raise::error( code::casual::invalid_path, "spawn failed - path: ", path);
-
-                     environment = local::add::environment::state( std::move( environment));
 
                      log::line( log::debug, "process::spawn ", path, ' ', arguments);
                      log::line( verbose::log, "environment: ", environment);
 
-                     // Append current, if not "overridden"
-                     environment = local::current::copy::environment( std::move( environment));
+                     // add current environment, provided `environment` will have precedence
+                     environment = local::add::environment::current( std::move( environment));
 
                      auto pid = [&]()
                      {
@@ -285,12 +288,12 @@ namespace casual
                         auto c_arguments = local::C::arguments( path, arguments);
                         auto c_environment = local::C::environment( environment);
 
-                        platform::process::native::type native_pid{};
+                        strong::process::id pid;
 
                         auto status = posix_spawnp(
-                           &native_pid,
+                           &pid.underlying(),
                            path.c_str(),
-                           nullptr,
+                           actions,
                            attributes.get(),
                            const_cast< char* const*>( c_arguments.data()),
                            const_cast< char* const*>( c_environment.data()));
@@ -298,7 +301,7 @@ namespace casual
                         if( status != 0)
                            code::raise::error( code::casual::invalid_path, "spawn failed - path: ", path, " system: ", static_cast< std::errc>( status));
                      
-                        return strong::process::id{ native_pid};
+                        return pid;
                      }();
                      
                      // we sleep without handling signals
@@ -308,6 +311,32 @@ namespace casual
 
                      return pid;
                   }
+
+                   std::string read_from_pipe( int pipe)
+                  {
+                     std::string result;
+                     
+                     std::array< char, 1024> buffer{};
+                     while( true)
+                     {
+                        auto count = ::read( pipe, buffer.data(), buffer.size());
+
+                        if( count == 0)
+                           return result;
+                        else if( count > 0)
+                           result.append( buffer.data(), buffer.data() + count);
+                        else
+                        {
+                           switch( auto code = code::system::last::error())
+                           {
+                              case std::errc::interrupted: break;
+                              default: 
+                                 code::raise::error( code, "read failed for pipe: ", pipe);
+                           }
+                        }
+                     }
+                  }
+
                } // spawn
             } // <unnamed>
          } // local
@@ -333,11 +362,56 @@ namespace casual
             return spawn( std::move( path), std::move( arguments), {});
          }
 
-         int execute( std::filesystem::path path, std::vector< std::string> arguments)
-         {
-            return wait( spawn( std::move( path), std::move( arguments)));
-         }
 
+         Capture execute( std::filesystem::path path, std::vector< std::string> arguments, std::vector< environment::Variable> environment)
+         {
+            // We try to eliminate signals to propagate to children by it self...
+            // we don't need to set groupid with posix_spawnattr_setpgroup since the default is 0.
+            const local::spawn::Attributes attributes{ POSIX_SPAWN_SETPGROUP};
+            
+            // We're going to capture stdout and stderr from the spawned process.
+            // A lot of C-posix juggling...
+            local::spawn::file::Actions actions;
+            
+            // we don't use pipe anywhere else, I don't think it's worth it to abstract the thing...
+            int cout_pipe[ 2];
+            int cerr_pipe[ 2];
+
+            {
+               posix::result( ::pipe( cout_pipe), "pipe");
+               posix::result( ::pipe( cerr_pipe), "pipe");
+            }
+
+            // add file actions that posix_spawn applies between fork and exec
+            {
+               actions.add_close( cout_pipe[ 0]);
+               actions.add_close( cerr_pipe[ 0]);
+
+               actions.add_dup2( cout_pipe[ 1], 1);
+               actions.add_dup2( cerr_pipe[ 1], 2);
+
+               actions.add_close( cout_pipe[ 1]);
+               actions.add_close( cerr_pipe[ 1]);
+            }
+
+            auto pid = local::spawn::invoke( path, attributes, arguments, environment, actions.get());
+
+            // close the unused write end
+            ::close( cout_pipe[ 1]);
+            ::close( cerr_pipe[ 1]);
+
+            Capture capture;
+
+            capture.standard.out = local::spawn::read_from_pipe( cout_pipe[ 0]);
+            capture.standard.error = local::spawn::read_from_pipe( cerr_pipe[ 0]);
+            capture.exit = process::wait( pid);
+
+            // Make sure we've closed all open file descriptors
+            ::close( cout_pipe[ 0]);
+            ::close( cerr_pipe[ 0]);
+            
+            return capture;
+         }
 
          namespace local
          {

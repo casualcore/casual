@@ -98,7 +98,7 @@ domain:
 )");
 
 
-         auto output = administration::unittest::cli::command::execute( R"(echo "casual" | casual buffer --compose | casual call --service casual/example/echo | casual buffer --extract)").consume();
+         auto output = administration::unittest::cli::command::execute( R"(echo "casual" | casual buffer --compose | casual call --service casual/example/echo | casual buffer --extract)").standard.out;
          EXPECT_TRUE( output == "casual\n") << output;
       }
 
@@ -115,7 +115,7 @@ domain:
 )");
 
 
-         auto output = administration::unittest::cli::command::execute( R"(echo "casual" | casual buffer --compose | casual call --iterations 10 --service casual/example/echo | casual buffer --extract)").consume();
+         auto output = administration::unittest::cli::command::execute( R"(echo "casual" | casual buffer --compose | casual call --iterations 10 --service casual/example/echo | casual buffer --extract)").standard.out;
          constexpr auto expected = R"(casual
 casual
 casual
@@ -143,8 +143,8 @@ domain:
         arguments: [ --sleep, 10ms]
 )");
 
-         auto output = administration::unittest::cli::command::execute( R"(echo "casual" | casual buffer --compose | casual call --service non.existent 2>&1 )").consume();
-         EXPECT_TRUE( local::check::format( output, code::xatmi::no_entry)) << "output: '" << output;
+         auto capture = administration::unittest::cli::command::execute( R"(echo "casual" | casual buffer --compose | casual call --service non.existent)");
+         EXPECT_TRUE( local::check::format( capture.standard.error, code::xatmi::no_entry)) << CASUAL_NAMED_VALUE( capture);
       }
 
       TEST( cli_call, synchronous_call_system)
@@ -159,8 +159,8 @@ domain:
         arguments: [ --sleep, 10ms]
 )");
 
-         auto output = administration::unittest::cli::command::execute( R"(echo "casual" | casual buffer --compose | casual call --service casual/example/error/TPESYSTEM 2>&1 )").consume();
-         EXPECT_TRUE( local::check::format( output, code::xatmi::system)) << "output: '" << output << "'";
+         auto capture = administration::unittest::cli::command::execute( R"(echo "casual" | casual buffer --compose | casual call --service casual/example/error/TPESYSTEM)");
+         EXPECT_TRUE( local::check::format( capture.standard.error, code::xatmi::system)) << CASUAL_NAMED_VALUE( capture);
       }
 
       TEST( cli_call, show_examples)
@@ -169,7 +169,7 @@ domain:
          
          auto domain = local::domain();
 
-         auto output = unittest::cli::command::execute( R"(casual call --examples)").consume();
+         auto output = unittest::cli::command::execute( R"(casual call --examples)").standard.out;
 
          // don't really know how to test stuff like this. 
          EXPECT_TRUE( algorithm::search( output, std::string_view( "examples:"))) << output;

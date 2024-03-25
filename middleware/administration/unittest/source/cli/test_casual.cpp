@@ -53,14 +53,15 @@ domain:
          } // <unnamed>
       } // local
 
+
       TEST( cli_casual, porcelain_help)
       {
          common::unittest::Trace trace;
 
-         auto output = administration::unittest::cli::command::execute( R"(casual --help --porcelain )").consume();
+         auto capture = administration::unittest::cli::command::execute( R"(casual --help --porcelain)");
 
          // Arbitrary check that help talks about --header true to help user...
-         EXPECT_TRUE( algorithm::search( output, "--header true"sv)) << output;
+         EXPECT_TRUE( algorithm::search( capture.standard.out, "--header true"sv)) << CASUAL_NAMED_VALUE( capture);
       }
 
       TEST( cli_casual, porcelain_explicit_header)
@@ -73,13 +74,13 @@ domain:
 )");
 
          {
-            auto header = string::split( administration::unittest::cli::command::execute( R"(casual service --list-services --porcelain true --header true | head -n 1 )").consume(), '|');
+            auto header = string::split( administration::unittest::cli::command::execute( R"(casual service --list-services --porcelain true --header true | head -n 1 )").standard.out, '|');
             EXPECT_TRUE( algorithm::equal( header, array::make(  "name", "category", "mode", "timeout", "I", "C", "AT", "min", "max", "P", "PAT", "RI", "RC", "last", "contract", "V\n" ))) << CASUAL_NAMED_VALUE( header);
          }
 
          // if we don't explicit set --header true we don't get porcelain header
          {
-            auto header = string::split( administration::unittest::cli::command::execute( R"(casual service --list-services --porcelain true | head -n 1 )").consume(), '|');
+            auto header = string::split( administration::unittest::cli::command::execute( R"(casual service --list-services --porcelain true | head -n 1 )").standard.out, '|');
             EXPECT_TRUE( header.empty()) << CASUAL_NAMED_VALUE( header);
          }
 

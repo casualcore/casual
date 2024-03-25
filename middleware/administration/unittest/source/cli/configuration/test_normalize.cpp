@@ -200,16 +200,16 @@ domain:
 
 
       // Normalize
-      auto normalize_output = administration::unittest::cli::command::execute( "casual configuration --normalize " + file_base.string()).string();
+      auto normalize_output = administration::unittest::cli::command::execute( "casual configuration --normalize " + file_base.string()).standard.out;
       EXPECT_NE( normalize_output, "") << "normalize_output: \"" << normalize_output << ", expected some content";
 
 
       // Validate
       auto file_normalized = common::unittest::file::temporary::content( ".yaml", normalize_output);
-      testing::internal::CaptureStderr();
-      administration::unittest::cli::command::execute("casual configuration --validate " + file_normalized.string());
-      auto errors = testing::internal::GetCapturedStderr();
-      ASSERT_TRUE(errors.empty()) << "Errors were printed on validation: " << errors << "\nfor normalized config: \n" << normalize_output;
+      
+      auto capture = administration::unittest::cli::command::execute("casual configuration --validate " + file_normalized.string());
+      
+      ASSERT_TRUE( capture.standard.error.empty()) << CASUAL_NAMED_VALUE( capture);
    }
 
    TEST( cli_configuration_normalize, multiple_files)
@@ -247,15 +247,15 @@ domain:
                      + ' ' + file_config_gateway_inbound.string()
                      + ' ' + file_config_gateway_outbound.string()
                      + ' ' + file_config_forwards.string();
-      auto normalize_output = administration::unittest::cli::command::execute( command).string();
-      EXPECT_NE( normalize_output, "") << "normalize_output: \"" << normalize_output << ", expected some content";
+
+      auto capture = administration::unittest::cli::command::execute( command);
+      EXPECT_NE( capture.standard.out, "") << CASUAL_NAMED_VALUE( capture);
 
 
       // Validate
-      auto file_normalized = common::unittest::file::temporary::content( ".yaml", normalize_output);
-      testing::internal::CaptureStderr();
-      administration::unittest::cli::command::execute("casual configuration --validate " + file_normalized.string());
-      auto errors = testing::internal::GetCapturedStderr();
-      ASSERT_TRUE(errors.empty()) << "Errors were printed on validation: " << errors << "\nfor normalized config: \n" << normalize_output;
+      auto file_normalized = common::unittest::file::temporary::content( ".yaml", capture.standard.out);
+      capture = administration::unittest::cli::command::execute("casual configuration --validate " + file_normalized.string());
+      
+      ASSERT_TRUE( capture.standard.error.empty()) << CASUAL_NAMED_VALUE( capture);
    }
 }

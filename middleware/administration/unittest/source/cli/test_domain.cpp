@@ -79,19 +79,19 @@ domain:
 )");
 
          {
-            auto output = administration::unittest::cli::command::execute( "casual domain -ls --porcelain true | grep example-server | cut -d '|' -f 2").string();
+            auto capture = administration::unittest::cli::command::execute( "casual domain -ls --porcelain true | grep example-server | cut -d '|' -f 2");
             constexpr auto expected = R"(1
 )";
-            EXPECT_TRUE( output == expected) << "output:  " << output << "expected: " << expected;
+            EXPECT_TRUE( capture.standard.out == expected) << CASUAL_NAMED_VALUE( capture) << "\nexpected: " << expected;
          }
 
          administration::unittest::cli::command::execute( "casual domain -sa example-server 5");
-         auto output = administration::unittest::cli::command::execute( "casual domain -ls --porcelain true | grep example-server | cut -d '|' -f 2").string();
+         auto capture = administration::unittest::cli::command::execute( "casual domain -ls --porcelain true | grep example-server | cut -d '|' -f 2");
          
          constexpr auto expected = R"(5
 )";
 
-         EXPECT_TRUE( output == expected) << "output:  " << output << "expected: " << expected;
+         EXPECT_TRUE( capture.standard.out == expected) << CASUAL_NAMED_VALUE( capture) << "\nexpected: " << expected;
       }
 
       TEST( cli_domain, 5_scale_in_to_1__expected_configured_instances_1)
@@ -108,19 +108,19 @@ domain:
 )");
 
          {
-            auto output = administration::unittest::cli::command::execute( "casual domain -ls --porcelain true | grep example-server | cut -d '|' -f 2").string();
+            auto capture = administration::unittest::cli::command::execute( "casual domain -ls --porcelain true | grep example-server | cut -d '|' -f 2");
             constexpr auto expected = R"(5
 )";
-            EXPECT_TRUE( output == expected) << "output:  " << output << "expected: " << expected;
+            EXPECT_TRUE( capture.standard.out == expected) << CASUAL_NAMED_VALUE( capture) << "\nexpected: " << expected;
          }
 
          administration::unittest::cli::command::execute( "casual domain -sa example-server 1");
-         auto output = administration::unittest::cli::command::execute( "casual domain -ls --porcelain true | grep example-server | cut -d '|' -f 2").string();
+         auto capture = administration::unittest::cli::command::execute( "casual domain -ls --porcelain true | grep example-server | cut -d '|' -f 2");
          
          constexpr auto expected = R"(1
 )";
 
-         EXPECT_TRUE( output == expected) << "output:  " << output << "expected: " << expected;
+         EXPECT_TRUE( capture.standard.out == expected) << CASUAL_NAMED_VALUE( capture) << "\nexpected: " << expected;
       }
 
       TEST( cli_domain, failed_instances__scale_out_to_5__expected_configured_instances_5)
@@ -135,12 +135,12 @@ domain:
 )");
 
          administration::unittest::cli::command::execute( "casual domain -sa non-existent-path 5");
-         auto output = administration::unittest::cli::command::execute( "casual domain -ls --porcelain true | grep non-existent-path | cut -d '|' -f 2").string();
+         auto capture = administration::unittest::cli::command::execute( "casual domain -ls --porcelain true | grep non-existent-path | cut -d '|' -f 2");
          
          constexpr auto expected = R"(5
 )";
 
-         EXPECT_TRUE( output == expected) << "output:  " << output << "expected: " << expected;
+         EXPECT_TRUE( capture.standard.out == expected) << CASUAL_NAMED_VALUE( capture) << "\nexpected: " << expected;
       }
 
       TEST( cli_domain, failed_instances__scale_in_to_1__expected_configured_instances_1)
@@ -155,19 +155,19 @@ domain:
 )");
 
          {
-            auto output = administration::unittest::cli::command::execute( "casual domain -ls --porcelain true | grep non-existent-path | cut -d '|' -f 2").string();
+            auto capture = administration::unittest::cli::command::execute( "casual domain -ls --porcelain true | grep non-existent-path | cut -d '|' -f 2");
             constexpr auto expected = R"(5
 )";
-            EXPECT_TRUE( output == expected) << "output:  " << output << "expected: " << expected;
+            EXPECT_TRUE( capture.standard.out == expected) << CASUAL_NAMED_VALUE( capture) << "\nexpected: " << expected;
          }
 
          administration::unittest::cli::command::execute( "casual domain -sa non-existent-path 1");
-         auto output = administration::unittest::cli::command::execute( "casual domain -ls --porcelain true | grep non-existent-path | cut -d '|' -f 2").string();
+         auto capture = administration::unittest::cli::command::execute( "casual domain -ls --porcelain true | grep non-existent-path | cut -d '|' -f 2");
          
          constexpr auto expected = R"(1
 )";
 
-         EXPECT_TRUE( output == expected) << "output:  " << output << "expected: " << expected;
+         EXPECT_TRUE( capture.standard.out == expected) << CASUAL_NAMED_VALUE( capture) << "\nexpected: " << expected;
       }
 
       TEST( cli_domain, running_instances__scale_out_to_5__expected_configured_instances_5)
@@ -184,12 +184,12 @@ domain:
 )");
 
          administration::unittest::cli::command::execute( "casual domain -sa echo-server 5");
-         auto output = administration::unittest::cli::command::execute( "casual domain -ls --porcelain true | grep echo-server | cut -d '|' -f 2").string();
+         auto capture = administration::unittest::cli::command::execute( "casual domain -ls --porcelain true | grep echo-server | cut -d '|' -f 2");
          
          constexpr auto expected = R"(5
 )";
 
-         EXPECT_TRUE( output == expected) << output;
+         EXPECT_TRUE( capture.standard.out == expected) << CASUAL_NAMED_VALUE( capture);
       }
 
       TEST( cli_domain, running_instances__scale_in_to_1__expected_configured_instances_1)
@@ -206,12 +206,12 @@ domain:
 )");
 
          administration::unittest::cli::command::execute( "casual domain -sa echo-server 1");
-         auto output = administration::unittest::cli::command::execute( "casual domain -ls --porcelain true | grep echo-server | cut -d '|' -f 2").string();
+         auto capture = administration::unittest::cli::command::execute( "casual domain -ls --porcelain true | grep echo-server | cut -d '|' -f 2");
          
          constexpr auto expected = R"(1
 )";
 
-         EXPECT_TRUE( output == expected) << "output:  " << output << "expected: " << expected;
+         EXPECT_TRUE( capture.standard.out == expected) << CASUAL_NAMED_VALUE( capture) << "\nexpected: " << expected;
       }
 
       TEST( cli_domain, information__created_exists_and_contains_current_date)
@@ -227,9 +227,9 @@ domain:
         instances: 1
 )");
 
-         auto output = administration::unittest::cli::command::execute( "casual domain --information --porcelain true | grep domain.manager.created | cut -d '|' -f 2 | grep $(date +%Y-%m-%d)").string();
+         auto capture = administration::unittest::cli::command::execute( "casual domain --information --porcelain true | grep domain.manager.created | cut -d '|' -f 2 | grep $(date +%Y-%m-%d)");
 
-         EXPECT_TRUE( ! output.empty()) << "output:  " << output;
+         EXPECT_TRUE( ! capture.standard.out.empty()) << CASUAL_NAMED_VALUE( capture);
       }
 
      

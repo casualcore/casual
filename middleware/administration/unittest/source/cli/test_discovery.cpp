@@ -89,12 +89,12 @@ domain:
 
          gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected());
 
-         auto output = administration::unittest::cli::command::execute( "casual discovery --services casual/example/domain/echo/B --porcelain true").string();
+         auto capture = administration::unittest::cli::command::execute( "casual discovery --services casual/example/domain/echo/B --porcelain true");
 
          constexpr auto expected = R"(casual/example/domain/echo/B|1
 )";
 
-         EXPECT_TRUE( output == expected) << "output:  " << output << "expected: " << expected;
+         EXPECT_TRUE( capture.standard.out == expected) << "expected: " << expected << "\n" << CASUAL_NAMED_VALUE( capture);
       }
 
       TEST( cli_discovery, domain_A_B__discover_queue_b1_in_B__expect_found)
@@ -131,12 +131,12 @@ domain:
 
          gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected());
 
-         auto output = administration::unittest::cli::command::execute( "casual discovery --queues b1 --porcelain true").string();
+         auto capture = administration::unittest::cli::command::execute( "casual discovery --queues b1 --porcelain true");
 
          constexpr auto expected = R"(b1
 )";
 
-         EXPECT_TRUE( output == expected) << "output:  " << output << "expected: " << expected;
+         EXPECT_TRUE( capture.standard.out == expected) << "expected: " << expected << "\n" << CASUAL_NAMED_VALUE( capture);
       }
 
 

@@ -13,32 +13,17 @@ namespace casual
 {
    namespace administration::unittest::cli::command
    {
+      using Capture = common::process::Capture;
+
       namespace detail
-      {      
-         struct Pipe
-         {
-            explicit Pipe( std::string command);
-            ~Pipe();
-
-            //! @returns the output of the command
-            std::string consume() &&;
-
-            //! @deprecated use consume instead
-            std::string string() &&;
-
-         private:
-            struct Implementation;
-            common::move::Pimpl< Implementation> m_implementation;
-         };
-
-         static_assert( ! std::is_copy_constructible_v< Pipe> && ! std::is_copy_assignable_v< Pipe>);
-
+      { 
+         Capture execute( std::string command);
       } // detail
 
       template< typename... Cs>
-      auto execute( Cs&&... commands)
+      Capture execute( Cs&&... commands)
       {
-         return detail::Pipe{ common::string::compose( std::forward< Cs>( commands)...)};
+         return detail::execute( common::string::compose( std::forward< Cs>( commands)...));
       }
    
    } // administration::unittest::cli::command

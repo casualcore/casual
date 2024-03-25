@@ -65,23 +65,23 @@ domain:
 
          // name
          {
-            const auto output = administration::unittest::cli::command::execute( R"(casual service --list-services --porcelain true | awk -F'|' '{printf $1}')").string();
+            const auto capture = administration::unittest::cli::command::execute( R"(casual service --list-services --porcelain true | awk -F'|' '{printf $1}')");
             constexpr auto expected = "some-service";
-            EXPECT_EQ( output, expected);
+            EXPECT_EQ( capture.standard.out, expected);
          }
 
          // timeout duration
          {
-            const auto output = administration::unittest::cli::command::execute( R"(casual service --list-services --porcelain true | awk -F'|' '{printf $4}')").string();
+            const auto capture = administration::unittest::cli::command::execute( R"(casual service --list-services --porcelain true | awk -F'|' '{printf $4}')");
             constexpr auto expected = "90.000";
-            EXPECT_EQ( output, expected);
+            EXPECT_EQ( capture.standard.out, expected);
          }
 
          // timeout contract
          {
-            const auto output = administration::unittest::cli::command::execute( R"(casual service --list-services --porcelain true | awk -F'|' '{printf $15}')").string();
+            const auto capture = administration::unittest::cli::command::execute( R"(casual service --list-services --porcelain true | awk -F'|' '{printf $15}')");
             constexpr auto expected = "terminate";
-            EXPECT_EQ( output, expected);
+            EXPECT_EQ( capture.standard.out, expected);
          }
       }
 
@@ -106,23 +106,23 @@ domain:
 
          // name
          {
-            const auto output = administration::unittest::cli::command::execute( R"(casual service --list-services --porcelain true | awk -F'|' '{printf $1}')").string();
+            const auto capture = administration::unittest::cli::command::execute( R"(casual service --list-services --porcelain true | awk -F'|' '{printf $1}')");
             constexpr auto expected = "some-service";
-            EXPECT_EQ( output, expected);
+            EXPECT_EQ( capture.standard.out, expected);
          }
 
          // timeout duration
          {
-            const auto output = administration::unittest::cli::command::execute( R"(casual service --list-services --porcelain true | awk -F'|' '{printf $4}')").string();
+            const auto capture = administration::unittest::cli::command::execute( R"(casual service --list-services --porcelain true | awk -F'|' '{printf $4}')");
             constexpr auto expected = "30.000";
-            EXPECT_EQ( output, expected);
+            EXPECT_EQ( capture.standard.out, expected);
          }
 
          // timeout contract
          {
-            const auto output = administration::unittest::cli::command::execute( R"(casual service --list-services --porcelain true | awk -F'|' '{printf $15}')").string();
+            const auto capture = administration::unittest::cli::command::execute( R"(casual service --list-services --porcelain true | awk -F'|' '{printf $15}')");
             constexpr auto expected = "kill";
-            EXPECT_EQ( output, expected);
+            EXPECT_EQ( capture.standard.out, expected);
          }
       }
 
@@ -150,23 +150,23 @@ domain:
 
          // name
          {
-            const auto output = administration::unittest::cli::command::execute( R"(casual service --list-services --porcelain true | awk -F'|' '{printf $1}')").string();
+            const auto capture = administration::unittest::cli::command::execute( R"(casual service --list-services --porcelain true | awk -F'|' '{printf $1}')");
             constexpr auto expected = "some-service";
-            EXPECT_EQ( output, expected);
+            EXPECT_EQ( capture.standard.out, expected);
          }
 
          // timeout duration
          {
-            const auto output = administration::unittest::cli::command::execute( R"(casual service --list-services --porcelain true | awk -F'|' '{printf $4}')").string();
+            const auto capture = administration::unittest::cli::command::execute( R"(casual service --list-services --porcelain true | awk -F'|' '{printf $4}')");
             constexpr auto expected = "90.000";
-            EXPECT_EQ( output, expected);
+            EXPECT_EQ( capture.standard.out, expected);
          }
 
          // timeout contract
          {
-            const auto output = administration::unittest::cli::command::execute( R"(casual service --list-services --porcelain true | awk -F'|' '{printf $15}')").string();
+            const auto capture = administration::unittest::cli::command::execute( R"(casual service --list-services --porcelain true | awk -F'|' '{printf $15}')");
             constexpr auto expected = "kill";
-            EXPECT_EQ( output, expected);
+            EXPECT_EQ( capture.standard.out, expected);
          }
       }
 
@@ -185,15 +185,15 @@ domain:
 )");
 
          {  
-            const auto output = administration::unittest::cli::command::execute( R"(casual --color false service --list-services | grep with-contract | awk '{ print $6}' )").consume();
-            EXPECT_EQ( output, "kill\n");
+            const auto capture = administration::unittest::cli::command::execute( R"(casual --color false service --list-services | grep with-contract | awk '{ print $6}' )");
+            EXPECT_EQ( capture.standard.out, "kill\n");
          }
 
          {  
             // list admin services to check oputput in contract column for a service
             // without contract. Admin services do not have contract specified. 
-            const auto output = administration::unittest::cli::command::execute( R"(casual --color false service --list-admin-services | grep configuration/get | awk '{ print $6}' )").consume();
-            EXPECT_EQ( output, "-\n");
+            const auto capture = administration::unittest::cli::command::execute( R"(casual --color false service --list-admin-services | grep configuration/get | awk '{ print $6}' )");
+            EXPECT_EQ( capture.standard.out, "-\n");
          }
       }
 

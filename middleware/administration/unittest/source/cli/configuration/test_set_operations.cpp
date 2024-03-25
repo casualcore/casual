@@ -77,12 +77,12 @@ domain:
 
       auto command = "casual domain --configuration-get | casual configuration --union " + rhs.string();
 
-      auto union_output = administration::unittest::cli::command::execute( command).string();
+      auto capture = administration::unittest::cli::command::execute( command);
 
       // Expect to find all 3 servers
-      EXPECT_TRUE( union_output.find("Server1") != std::string::npos) <<  union_output;
-      EXPECT_TRUE( union_output.find("Server2") != std::string::npos) <<  union_output;
-      EXPECT_TRUE( union_output.find("Server3") != std::string::npos) <<  union_output;
+      EXPECT_TRUE( capture.standard.out.find("Server1") != std::string::npos) << CASUAL_NAMED_VALUE( capture);
+      EXPECT_TRUE( capture.standard.out.find("Server2") != std::string::npos) << CASUAL_NAMED_VALUE( capture);
+      EXPECT_TRUE( capture.standard.out.find("Server3") != std::string::npos) << CASUAL_NAMED_VALUE( capture);
    }
 
    TEST( cli_configuration_set_operations, intersection)
@@ -105,13 +105,12 @@ domain:
 
       auto command = "casual domain --configuration-get | casual configuration --intersection " + rhs.string();
 
-      auto intersection_output = administration::unittest::cli::command::execute( command).string();
+      auto capture = administration::unittest::cli::command::execute( command);
 
       // Expect to only find Server2
-      EXPECT_TRUE( intersection_output.find("Server2") != std::string::npos) <<  intersection_output;
-
-      EXPECT_TRUE( intersection_output.find("Server1") == std::string::npos) <<  intersection_output;
-      EXPECT_TRUE( intersection_output.find("Server3") == std::string::npos) <<  intersection_output;
+      EXPECT_TRUE( capture.standard.out.find("Server2") != std::string::npos) << CASUAL_NAMED_VALUE( capture);
+      EXPECT_TRUE( capture.standard.out.find("Server1") == std::string::npos) << CASUAL_NAMED_VALUE( capture);
+      EXPECT_TRUE( capture.standard.out.find("Server3") == std::string::npos) << CASUAL_NAMED_VALUE( capture);
    }
 
    TEST( cli_configuration_set_operations, difference)
@@ -134,13 +133,12 @@ domain:
 
       auto command = "casual domain --configuration-get | casual configuration --difference " + rhs.string();
 
-      auto difference_output = administration::unittest::cli::command::execute( command).string();
+      auto capture = administration::unittest::cli::command::execute( command);
 
       // Expect to only find Server1
-      EXPECT_TRUE( difference_output.find("Server1") != std::string::npos) <<  difference_output;
-
-      EXPECT_TRUE( difference_output.find("Server2") == std::string::npos) <<  difference_output;
-      EXPECT_TRUE( difference_output.find("Server3") == std::string::npos) <<  difference_output;
+      EXPECT_TRUE( capture.standard.out.find("Server1") != std::string::npos) << CASUAL_NAMED_VALUE( capture);
+      EXPECT_TRUE( capture.standard.out.find("Server2") == std::string::npos) << CASUAL_NAMED_VALUE( capture);
+      EXPECT_TRUE( capture.standard.out.find("Server3") == std::string::npos) << CASUAL_NAMED_VALUE( capture);
    }
 
    TEST( cli_configuration_set_operations, union__xml_from_lhs__yaml_from_rhs)
@@ -163,11 +161,11 @@ domain:
 
       auto command = "casual domain --configuration-get xml | casual configuration --format xml --union " + rhs.string();
 
-      auto union_output = administration::unittest::cli::command::execute( command).string();
+      auto capture = administration::unittest::cli::command::execute( command);
 
       // Expect to find all 3 servers
-      EXPECT_TRUE( union_output.find("Server1") != std::string::npos) <<  union_output;
-      EXPECT_TRUE( union_output.find("Server2") != std::string::npos) <<  union_output;
-      EXPECT_TRUE( union_output.find("Server3") != std::string::npos) <<  union_output;
+      EXPECT_TRUE( capture.standard.out.find("Server1") != std::string::npos) << CASUAL_NAMED_VALUE( capture);
+      EXPECT_TRUE( capture.standard.out.find("Server2") != std::string::npos) << CASUAL_NAMED_VALUE( capture);
+      EXPECT_TRUE( capture.standard.out.find("Server3") != std::string::npos) << CASUAL_NAMED_VALUE( capture);
    }
 }

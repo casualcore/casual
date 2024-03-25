@@ -56,9 +56,9 @@ domain:
       {
          common::unittest::Trace trace;
          
-         auto output = administration::unittest::cli::command::execute( "casual gateway --legend list-connections" ).string();
+         auto capture = administration::unittest::cli::command::execute( "casual gateway --legend list-connections");
 
-         EXPECT_TRUE( output.size() > 30) << "output: " << output;
+         EXPECT_TRUE( capture.standard.out.size() > 30) << CASUAL_NAMED_VALUE( capture);
       }
 
       TEST( cli_gateway, inbound_discovery_forward__expect_state_with_connection_bound__in_star)
@@ -98,13 +98,13 @@ domain:
          b.activate();
 
          // extract only the bounds, and sort it for determinism.
-         auto output = administration::unittest::cli::command::execute( "casual gateway --list-connections --porcelain true | cut -d '|' -f 3 | sort" ).string();
+         auto capture = administration::unittest::cli::command::execute( "casual gateway --list-connections --porcelain true | cut -d '|' -f 3 | sort" );
 
          constexpr auto expected = R"(in
 in*
 )";
 
-         EXPECT_TRUE( output == expected) << "output:  " << output << "expected: " << expected;
+         EXPECT_TRUE( capture.standard.out == expected) << CASUAL_NAMED_VALUE( capture) << "\nexpected: " << expected;
       }
 
    

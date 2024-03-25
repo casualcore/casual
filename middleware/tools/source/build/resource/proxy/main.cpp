@@ -136,7 +136,7 @@ int main( int argc, char** argv)
 
 
 
-                     int build( const std::filesystem::path& file, const configuration::model::system::Resource& resource, const Settings& settings)
+                     void build( const std::filesystem::path& file, const configuration::model::system::Resource& resource, const Settings& settings)
                      {
                         trace::Exit log( "build resource proxy", settings.verbose);
 
@@ -148,39 +148,35 @@ int main( int argc, char** argv)
 
 
                         for( auto& include_path : resource.paths.include)
-                        {
                            arguments.emplace_back( "-I" + common::environment::expand( include_path));
-                        }
+
                         // Add casual-paths, that we know will be needed
                         arguments.emplace_back( common::environment::expand( "-I${CASUAL_HOME}/include"));
 
                         for( auto& lib_path : resource.paths.library)
-                        {
                            arguments.emplace_back( "-L" + common::environment::expand( lib_path));
-                        }
+
                         // Add casual-paths, that we know will be needed
                         arguments.emplace_back( common::environment::expand( "-L${CASUAL_HOME}/lib"));
 
 
                         for( auto& lib : resource.libraries)
-                        {
                            arguments.emplace_back( "-l" + lib);
-                        }
+
                         // Add casual-lib, that we know will be needed
                         arguments.emplace_back( "-lcasual-resource-proxy-server");
 
 
                         if( settings.verbose)
-                        {
                            std::clog << settings.compiler << " " << common::string::join( arguments, " ") << '\n';
-                        }
 
                         {
                            trace::Exit log( "execute " + settings.compiler, settings.verbose);
-                           return common::process::execute( settings.compiler, arguments);
+                           auto capture = common::process::execute( settings.compiler, arguments);
 
+                           if( ! capture)
+                              common::code::raise::error( common::code::casual::invalid_argument, "failed to build proxy - capture: ", capture);
                         }
-
                      }
 
 

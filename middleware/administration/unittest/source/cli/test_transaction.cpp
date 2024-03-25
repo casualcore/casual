@@ -101,18 +101,18 @@ domain:
 )");
          gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected());
 
-         EXPECT_TRUE( administration::unittest::cli::command::execute( R"(casual transaction --list-external-resources --porcelain true)").string().empty());
+         EXPECT_TRUE( administration::unittest::cli::command::execute( R"(casual transaction --list-external-resources --porcelain true)").standard.out.empty());
 
          // Call B in transaction to 'discover' outbound as external resource
          ASSERT_TRUE( tx_begin() == TX_OK);
          local::cli::call( "casual/example/domain/echo/B");
          ASSERT_TRUE( tx_commit() == TX_OK);
 
-         std::string output = administration::unittest::cli::command::execute( R"(casual transaction --list-external-resources --porcelain true | cut -d '|' -f 2)").string();
+         auto capture = administration::unittest::cli::command::execute( R"(casual transaction --list-external-resources --porcelain true | cut -d '|' -f 2)");
 
          constexpr auto expected = R"(outbound_B
 )";
-         EXPECT_TRUE( output == expected) << "output:  " << output << "expected: " << expected;
+         EXPECT_TRUE( capture.standard.out == expected) << CASUAL_NAMED_VALUE( capture) << "\nexpected: " << expected;
       }
 
       TEST( cli_transaction, list_transactions)
@@ -141,7 +141,7 @@ domain:
       -  path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-resource-server
          memberships: [ user]
 )");
-         EXPECT_TRUE( administration::unittest::cli::command::execute( R"(casual transaction --list-transactions --porcelain true)").string().empty());
+         EXPECT_TRUE( administration::unittest::cli::command::execute( R"(casual transaction --list-transactions --porcelain true)").standard.out.empty());
 
          ASSERT_TRUE( tx_begin() == TX_OK);
 
@@ -152,37 +152,37 @@ domain:
 
          // gtrid
          {
-            const auto output = administration::unittest::cli::command::execute( R"(casual transaction --list-transactions --porcelain true | awk -F'|' '{printf $1}')").string();
+            const auto capture = administration::unittest::cli::command::execute( R"(casual transaction --list-transactions --porcelain true | awk -F'|' '{printf $1}')");
             auto& trid = common::transaction::context().current().trid;
-            EXPECT_EQ( output, common::string::compose( common::transaction::id::range::global( trid))) << "output: " << output << "expected: " << trid;
+            EXPECT_EQ( capture.standard.out, common::string::compose( common::transaction::id::range::global( trid))) << CASUAL_NAMED_VALUE( capture) << "\nexpected: " << trid;
          }
 
          // branches
          {
-            const auto output = administration::unittest::cli::command::execute( R"(casual transaction --list-transactions --porcelain true | awk -F'|' '{printf $2}')").string();
+            const auto capture = administration::unittest::cli::command::execute( R"(casual transaction --list-transactions --porcelain true | awk -F'|' '{printf $2}')");
             constexpr auto expected = R"(3)";
-            EXPECT_EQ( output, expected) << "output: " << output << "expected: " << expected;
+            EXPECT_EQ( capture.standard.out, expected) << CASUAL_NAMED_VALUE( capture) << "\nexpected: " << expected;
          }
 
          // owner
          {
-            const auto output = administration::unittest::cli::command::execute( R"(casual transaction --list-transactions --porcelain true | awk -F'|' '{printf $3}')").string();
+            const auto capture = administration::unittest::cli::command::execute( R"(casual transaction --list-transactions --porcelain true | awk -F'|' '{printf $3}')");
             constexpr auto expected = R"(-)";
-            EXPECT_EQ( output, expected) << "output: " << output << "expected: " << expected;
+            EXPECT_EQ( capture.standard.out, expected) << CASUAL_NAMED_VALUE( capture) << "\nexpected: " << expected;
          }
 
          // stage
          {
-            const auto output = administration::unittest::cli::command::execute( R"(casual transaction --list-transactions --porcelain true | awk -F'|' '{printf $4}')").string();
+            const auto capture = administration::unittest::cli::command::execute( R"(casual transaction --list-transactions --porcelain true | awk -F'|' '{printf $4}')");
             constexpr auto expected = R"(involved)";
-            EXPECT_EQ( output, expected) << "output: " << output << "expected: " << expected;
+            EXPECT_EQ( capture.standard.out, expected) << CASUAL_NAMED_VALUE( capture) << "\nexpected: " << expected;
          }
 
          // resources
          {
-            const auto output = administration::unittest::cli::command::execute( R"(casual transaction --list-transactions --porcelain true | awk -F'|' '{printf $5}')").string();
+            const auto capture = administration::unittest::cli::command::execute( R"(casual transaction --list-transactions --porcelain true | awk -F'|' '{printf $5}')");
             constexpr auto expected = R"([L-1])";
-            EXPECT_EQ( output, expected) << "output: " << output << "expected: " << expected;
+            EXPECT_EQ( capture.standard.out, expected) << CASUAL_NAMED_VALUE( capture) << "\nexpected: " << expected;
          }
 
          ASSERT_TRUE( tx_commit() == TX_OK);
@@ -192,15 +192,15 @@ domain:
       {
          auto a = local::cli::domain();
 
-         const auto output = administration::unittest::cli::command::execute( R"(casual transaction --legend list-resources)").consume();
+         const auto capture = administration::unittest::cli::command::execute( R"(casual transaction --legend list-resources)");
 
          using namespace std::literals;
 
          // check some legend specific strings
-         EXPECT_TRUE( algorithm::search( output, "min:"sv));
-         EXPECT_TRUE( algorithm::search( output, "openinfo:"sv));
-         EXPECT_TRUE( algorithm::search( output, "P:"sv)) << CASUAL_NAMED_VALUE( output);
-         EXPECT_TRUE( algorithm::search( output, "PAT:"sv));
+         EXPECT_TRUE( algorithm::search( capture.standard.out, "min:"sv));
+         EXPECT_TRUE( algorithm::search( capture.standard.out, "openinfo:"sv));
+         EXPECT_TRUE( algorithm::search( capture.standard.out, "P:"sv)) << CASUAL_NAMED_VALUE( capture);
+         EXPECT_TRUE( algorithm::search( capture.standard.out, "PAT:"sv));
       }
 
       TEST( cli_transaction, pending_resource_proxies)
@@ -259,7 +259,7 @@ domain:
          // P:
          // PAT:
 
-         auto output = string::split( administration::unittest::cli::command::execute( R"(casual --porcelain true transaction --list-resources)").consume(), '|');
+         auto output = string::split( administration::unittest::cli::command::execute( R"(casual --porcelain true transaction --list-resources)").standard.out, '|');
          ASSERT_TRUE( output.size() == 12);
          EXPECT_TRUE( output[ 0] == "example-resource-server");
          EXPECT_TRUE( output[ 1] == "L-1");
