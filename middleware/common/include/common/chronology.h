@@ -92,14 +92,17 @@ namespace casual
          }
       };
 
-      template<>
-      struct point< platform::time::point::type>
+      namespace supersede
       {
-         static void stream( std::ostream& out, const platform::time::point::type& time)
+         template<>
+         struct point< platform::time::point::type>
          {
-            chronology::utc::offset( out, time);
-         }
-      };
+            static void stream( std::ostream& out, const platform::time::point::type& time)
+            {
+               chronology::utc::offset( out, time);
+            }
+         };
+      } // supersede
 
    } // common::stream::customization::supersede
 
