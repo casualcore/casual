@@ -303,6 +303,21 @@ namespace casual
             };
             
          } // set
+
+         namespace unset
+         {
+            struct Environment
+            {
+               std::vector< std::string> variables;
+               std::vector< std::string> aliases;
+
+               CASUAL_CONST_CORRECT_SERIALIZE(
+                  CASUAL_SERIALIZE( variables);
+                  CASUAL_SERIALIZE( aliases);
+               )
+            };
+            
+         } // unset
          
       } // v1
    } // domain::manager::admin::model

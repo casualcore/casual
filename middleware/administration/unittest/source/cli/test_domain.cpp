@@ -232,7 +232,30 @@ domain:
          EXPECT_TRUE( ! capture.standard.out.empty()) << CASUAL_NAMED_VALUE( capture);
       }
 
-     
+      TEST( cli_domain, environment__set_and_unset)
+      {
+         common::unittest::Trace trace;
+
+         auto domain = local::domain( R"(
+domain:
+   servers:
+      - alias: echo-server
+        path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-server"
+        memberships: [ user]
+        instances: 1
+)");
+
+         administration::unittest::cli::command::execute( "casual domain --set-environment test 123");
+         auto capture = administration::unittest::cli::command::execute( "casual domain --state");
+
+         EXPECT_TRUE( capture.standard.out.find("test=123") != std::string::npos);
+
+         administration::unittest::cli::command::execute( "casual domain --unset-environment test");
+
+         capture = administration::unittest::cli::command::execute( "casual domain --state");
+
+         EXPECT_TRUE( capture.standard.out.find("test=123") == std::string::npos);
+      }
 
    } // administration
 } // casual

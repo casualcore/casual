@@ -44,6 +44,7 @@ namespace casual
          namespace environment
          {
             constexpr auto set = ".casual/domain/environment/set";
+            constexpr auto unset = ".casual/domain/environment/unset";
          } // environment
 
       } // service::name

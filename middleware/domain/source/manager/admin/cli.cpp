@@ -194,6 +194,12 @@ namespace casual
                      serviceframework::service::protocol::binary::Call call;
                      return call( admin::service::name::environment::set, environment).extract< std::vector< std::string>>();
                   }
+
+                  auto unset( const admin::model::unset::Environment& environment)
+                  {
+                     serviceframework::service::protocol::binary::Call call;
+                     return call( admin::service::name::environment::unset, environment).extract< std::vector< std::string>>();
+                  }
                } // environment
 
                namespace configuration
@@ -549,6 +555,46 @@ for all servers and executables
                      )";
 
                   } // set
+
+                  namespace unset
+                  {
+                     void call( const std::string& name, std::vector< std::string> aliases)
+                     {
+                        admin::model::unset::Environment environment;
+                        environment.variables.emplace_back( name);
+                        environment.aliases = std::move( aliases);
+
+                        call::environment::unset( environment);
+                     }
+
+                     auto complete = []( auto values, bool help) -> std::vector< std::string>
+                     {
+                        if( help)
+                           return { "<variable>", "[<alias>*]"};
+
+                        auto list_environment = []()
+                        {
+                           auto transform_name = []( auto& variable)
+                           {
+                              return std::string{ variable.name()};
+                           };
+
+                           return algorithm::transform( common::environment::variable::system(), transform_name);
+                        };
+
+                        switch( values.size())
+                        {
+                           case 0: return list_environment();
+                           default: return fetch::aliases();
+                        }
+                     };
+
+                     constexpr auto description = R"(unset an environment variable for explicit aliases
+                     
+if 0 aliases are provided, the environment variable will be unset 
+for all servers and executables 
+                     )";
+                  }
                } // environment 
                
                namespace ping
@@ -1158,6 +1204,7 @@ The semantics are similar to http PUT:
                local::option::boot(),
                local::option::shutdown(),
                argument::Option( &local::action::environment::set::call, local::action::environment::set::complete, { "--set-environment"}, local::action::environment::set::description)( argument::cardinality::any{}),
+               argument::Option( &local::action::environment::unset::call, local::action::environment::unset::complete, { "--unset-environment"}, local::action::environment::unset::description)( argument::cardinality::any{}),
                local::option::configuration::get(),
                local::option::configuration::post(),
                local::option::configuration::edit(),

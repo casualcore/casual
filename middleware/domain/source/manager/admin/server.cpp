@@ -99,6 +99,54 @@ namespace casual
                };
             } // set
 
+            namespace unset
+            {
+               auto environment( manager::State& state, const model::unset::Environment& environment)
+               {
+                  auto update_environment = [&variables = environment.variables]( auto& entity)
+                  {
+                     auto update_variable = [&entity]( const auto& variable)
+                     {
+                        auto is_name = [&variable]( auto& value)
+                        {
+                           return variable == value.name();
+                        };
+
+                        algorithm::container::trim( entity.environment.variables, algorithm::remove_if( entity.environment.variables, is_name));
+                     };
+
+                     algorithm::for_each( variables, update_variable);
+
+                     return entity.alias;
+                  };
+
+                  // if empty, we update all 'entities'
+                  if( environment.aliases.empty())
+                  {
+                     auto result = algorithm::transform( state.servers, update_environment);
+                     algorithm::transform( state.executables, result, update_environment);
+                     return result;
+                  }
+
+                  // else, we correlate aliases
+
+                  std::vector< std::string> result;
+
+                  auto find_and_update = [&]( auto& entity)
+                  {
+                     auto is_alias = [&entity]( auto& alias){ return alias == entity.alias;};
+
+                     if( auto found = algorithm::find_if( environment.aliases, is_alias))
+                        result.push_back( update_environment( entity));
+                  };
+
+                  algorithm::for_each( state.servers, find_and_update);
+                  algorithm::for_each( state.executables, find_and_update);
+
+                  return result;
+               };
+            }
+
             namespace service
             {
                auto state( const manager::State& state)
@@ -178,6 +226,23 @@ namespace casual
                         return serviceframework::service::user(
                            std::move( protocol),
                            &local::set::environment,
+                           state, 
+                           environment);
+                     };
+                  }
+
+                  auto unset( manager::State& state)
+                  {
+                     return [&state]( common::service::invoke::Parameter&& parameter)
+                     {
+                        auto protocol = serviceframework::service::protocol::deduce( std::move( parameter));
+
+                        model::unset::Environment environment;
+                        protocol >> CASUAL_NAMED_VALUE( environment);
+
+                        return serviceframework::service::user(
+                           std::move( protocol),
+                           &local::unset::environment,
                            state, 
                            environment);
                      };
@@ -302,6 +367,12 @@ namespace casual
                },
                { service::name::environment::set,
                      local::service::environment::set( state),
+                     common::service::transaction::Type::none,
+                     common::service::visibility::Type::undiscoverable,
+                     common::service::category::admin
+               },
+               { service::name::environment::unset,
+                     local::service::environment::unset( state),
                      common::service::transaction::Type::none,
                      common::service::visibility::Type::undiscoverable,
                      common::service::category::admin
