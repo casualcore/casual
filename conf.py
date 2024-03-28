@@ -35,7 +35,9 @@ author = u'casualcore'
 # ones.
 extensions = [
     "sphinx_multiversion",
-    "myst_parser"
+    "myst_parser",
+    "sphinx.ext.githubpages",
+    "sphinxcontrib.jquery"
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -65,7 +67,7 @@ exclude_patterns = ['**google**']
 pygments_style = "sphinx"
 
 smv_tag_whitelist = None
-smv_branch_whitelist = r'^(release/[0-9]\.[0-9]+|patch/1\.6/main|patch/1\.6/main)$'
+smv_branch_whitelist = r'^(release/[0-9]\.[0-9]+|patch/1\.6/main|patch/1\.6/main|feature/1\.7/main)$'
 smv_remote_whitelist = None 
 # -- Options for HTML output -------------------------------------------------
 
@@ -91,6 +93,7 @@ html_theme_options = {
 }
 
 html_logo = "resources/casual.png"
+html_favicon = "resources/casual-32x32.png"
 
 html_use_index = True
 
