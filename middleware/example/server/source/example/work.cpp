@@ -102,7 +102,7 @@ namespace casual
          {
             auto deadline = platform::time::clock::type::now() + local::global.work;
 
-            while( deadline < platform::time::clock::type::now())
+            while( deadline > platform::time::clock::type::now())
             {
                ; // no-op
             }
