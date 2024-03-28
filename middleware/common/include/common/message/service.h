@@ -240,7 +240,6 @@ namespace casual
                      )
                   };
 
-
                } // service
 
                //! Represent service information in a 'advertise context'
@@ -271,6 +270,8 @@ namespace casual
 
                //! the alias of the server 'instance'
                std::string alias;
+               //! A human readable description of the "instance"
+               std::string description;
                platform::size::type order = 0;
                //! remove all previous associated services for the 'device'
                bool reset = false;
@@ -289,6 +290,7 @@ namespace casual
                CASUAL_CONST_CORRECT_SERIALIZE(
                   basic_advertise::serialize( archive);
                   CASUAL_SERIALIZE( alias);
+                  CASUAL_SERIALIZE( description);
                   CASUAL_SERIALIZE( order);
                   CASUAL_SERIALIZE( reset);
                   CASUAL_SERIALIZE( services);

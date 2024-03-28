@@ -57,118 +57,118 @@ namespace casual
 
                   } // metric
 
-
-                  struct State
-                  {
-                     admin::model::State service;
-                     casual::domain::manager::admin::model::State domain;
-                  };
-
-                  State instances()
-                  {
-                     State state;
-
-                     serviceframework::service::protocol::binary::Call call;
-                     state.domain = call( casual::domain::manager::admin::service::name::state).extract< casual::domain::manager::admin::model::State>();
-                     state.service = admin::api::state();
-
-                     return state;
-                  }
-
                } // call
 
                namespace normalized
                {
-                  namespace service
+                  namespace instance
                   {
-
-                     struct Instance
+                     enum class State : short
                      {
-                        enum class State : short
-                        {
-                           idle,
-                           busy,
-                           remote,
-                           exiting,
-                        };
-
-                        Instance( const admin::model::Service& service) : service{ service} {}
-
-                        common::process::Handle process;
-                        std::size_t hops = 0;
-                        std::string description;
-
-                        std::reference_wrapper< const admin::model::Service> service;
-                        const casual::domain::manager::admin::model::Server* server = nullptr;
-
-                        State state = State::remote;
+                        idle,
+                        busy,
+                        remote,
                      };
 
-                     namespace local
+                     constexpr std::string_view description( State value) noexcept
                      {
-                        namespace
+                        switch( value)
                         {
-                           namespace lookup
-                           {
-                              const casual::domain::manager::admin::model::Server* server( const call::State& state, strong::process::id pid)
-                              {
-                                 auto found = algorithm::find_if( state.domain.servers, [pid]( auto& e){
-                                    return algorithm::find( e.instances, pid);
-                                 });
-
-                                 if( found)
-                                    return &(*found);
-
-                                 return nullptr;
-                              }
-
-                           } // lookup
-                        } // <unnamed>
-                     } // local
-
-                     std::vector< Instance> instances( const call::State& state)
-                     {
-                        std::vector< Instance> result;
-
-                        for( auto& service : state.service.services)
-                        {
-                           for( auto& i : service.instances.sequential)
-                           {
-                              auto local = algorithm::find( state.service.instances.sequential, i.pid);
-                              Instance instance{ service};
-                              instance.state = local->state == admin::model::instance::Sequential::State::idle ? Instance::State::idle : Instance::State::busy;
-                              instance.process.pid = i.pid;
-                              instance.server = local::lookup::server( state, i.pid);
-                              result.push_back( std::move( instance));
-                           }
-
-                           for( auto& i : service.instances.concurrent)
-                           {
-                              Instance instance{ service};
-                              instance.process.pid = i.pid;
-                              instance.hops = i.hops;
-                              instance.server = local::lookup::server( state, i.pid);
-                              result.push_back( std::move( instance));
-                           }
+                           case State::idle: return "idle";
+                           case State::busy: return "busy";
+                           case State::remote: return "remote";
                         }
-
-                        return result;
+                        return "<unknown>";
                      }
 
-                  } // service
+                  } // instance
+
+                  struct Instance : compare::Order< Instance>
+                  {
+                     std::string service;
+                     instance::State state{};
+                     common::process::Handle process;
+                     std::string alias;
+                     std::string description;
+                     platform::size::type hops{};
+
+                     auto tie() const noexcept { return std::tie( service, hops, alias, description);}                     
+                  };
+
+                  std::vector< Instance> instances( const admin::model::State& state)
+                  {
+                     // maybe_unused to silence g++ bug
+                     [[maybe_unused]] static auto transform_sequential = []( const admin::model::State& state, const std::string& service)
+                     {
+                        return [ &state, &service]( const admin::model::service::instance::Sequential& instance)
+                        {
+                           if( auto found = algorithm::find( state.instances.sequential, instance.process))
+                           {
+                              Instance result;
+                              result.service = service;
+                              result.alias = found->alias;
+                              result.process = instance.process;
+                              result.state = found->state == decltype( found->state)::idle ? instance::State::idle : instance::State::busy;
+                              return result;
+                           }
+                           code::raise::error( code::casual::internal_unexpected_value, "failed to find instance: ", instance.process);
+                        };
+                     };
+
+                     // maybe_unused to silence g++ bug
+                     [[maybe_unused]] static auto transform_concurrent = []( const admin::model::State& state, const std::string& service)
+                     {
+                        return [ &state, &service]( const admin::model::service::instance::Concurrent& instance)
+                        {
+                           if( auto found = algorithm::find( state.instances.concurrent, instance.process))
+                           {
+                              Instance result;
+                              result.service = service;
+                              result.alias = found->alias;
+                              result.description = found->description;
+                              result.process = instance.process;
+                              result.state = instance::State::remote;
+                              return result;
+                           }
+                           code::raise::error( code::casual::internal_unexpected_value, "failed to find instance: ", instance.process);
+                        };
+                     };
+
+                     return algorithm::accumulate( state.services, std::vector< Instance>{}, [ &state]( auto result, auto& service)
+                     {
+                        algorithm::transform( service.instances.sequential, result, transform_sequential( state, service.name));
+                        algorithm::transform( service.instances.concurrent, result, transform_concurrent( state, service.name));
+                        return result;
+                     });
+                  }                  
 
                } // normalized
 
-
                namespace format
                {
+                  auto empty_representation()
+                  {
+                     if( ! terminal::output::directive().porcelain())
+                        return "-";
+
+                     return "";
+                  }
+                  
+                  // this kind of stuff should maybe be in the terminal abstraction?
+                  auto hyphen_if_empty( std::string_view value) -> std::string_view 
+                  {
+                     if( value.empty())
+                        return empty_representation();
+                     return value;
+                  }
+
                   auto services()
                   {
 
                      auto format_timeout_duration_string = []( const auto& value) -> std::string
                      {
                         if( ! value.execution.timeout.duration || *value.execution.timeout.duration == platform::time::unit::zero())
-                           return "-";
+                           return empty_representation(); 
                         using second_t = std::chrono::duration< double>;
                         return std::to_string( std::chrono::duration_cast< second_t>( value.execution.timeout.duration.value()).count());
                      };
@@ -184,8 +184,8 @@ namespace casual
 
                      auto format_timeout_contract = []( const auto& value) -> std::string_view
                      {
-                        if( ! value.execution.timeout.contract)
-                           return "-";
+                         if( ! value.execution.timeout.contract)
+                           return empty_representation();
                         return description( *value.execution.timeout.contract);
                      };
 
@@ -204,7 +204,7 @@ namespace casual
                      auto format_category = []( const admin::model::Service& value) -> std::string_view
                      {
                         if( value.category.empty())
-                           return "-";
+                           return empty_representation();
                         return value.category;
                      };
 
@@ -261,7 +261,7 @@ namespace casual
                      auto format_last = []( const admin::model::Service& value) -> std::string
                      {
                         if( value.metric.last == platform::time::point::limit::zero())
-                           return "-";
+                           return empty_representation();
 
                         return common::chronology::utc::offset( value.metric.last);
                      };
@@ -323,99 +323,76 @@ namespace casual
 
                   auto instances()
                   {
-                     using value_type = normalized::service::Instance;
+                     auto format_pid = []( auto& instance){ return instance.process.pid;};
 
-                     auto format_pid = []( auto& v){ return v.process.pid;};
-
-                     auto format_service_name = []( const value_type& v)
+                     auto format_service_name = []( auto& instance) -> std::string_view
                      {
-                        return v.service.get().name;
+                        return instance.service;
                      };
 
-                     auto format_process_alias = []( const value_type& v) -> const std::string&
+                     auto format_alias = []( auto& instance) ->  std::string_view
                      {
-                        if( v.server) 
-                           return v.server->alias;
+                        return hyphen_if_empty( instance.alias);
+                     };
 
-                        static std::string empty;
-                        return empty;
+                     auto format_description = []( auto& instance) ->  std::string_view
+                     {
+                        return hyphen_if_empty( instance.description);
                      };
 
                      struct format_state
                      {
-                        std::size_t width( const value_type& value, const std::ostream&) const
+                        std::size_t width( const normalized::Instance& instance, const std::ostream&) const
                         {
-                           using Enum = value_type::State;
-                           switch( value.state)
-                           {
-                              case Enum::idle: return 4;
-                              case Enum::busy: return 4;
-                              case Enum::remote: return 6;
-                              case Enum::exiting: return 7;
-                           }
-                           return 0;
+                           return description( instance.state).size();
                         }
 
-                        void print( std::ostream& out, const value_type& value, std::size_t width) const
+                        void print( std::ostream& out, const normalized::Instance& instance, std::size_t width) const
                         {
                            out << std::setfill( ' ');
 
-                           using Enum = value_type::State;
-                           switch( value.state)
+                           using State = decltype( instance.state);
+                           switch( instance.state)
                            {
-                              case Enum::idle: out << std::left << std::setw( width) << terminal::color::green << "idle"; break;
-                              case Enum::busy: out << std::left << std::setw( width) << terminal::color::yellow << "busy"; break;
-                              case Enum::remote: out << std::left << std::setw( width) << terminal::color::cyan << "remote"; break;
-                              case Enum::exiting: out << std::left << std::setw( width) << terminal::color::magenta << "exiting"; break;
+                              case State::idle: out << std::left << std::setw( width) << terminal::color::green << "idle"; break;
+                              case State::busy: out << std::left << std::setw( width) << terminal::color::yellow << "busy"; break;
+                              case State::remote: out << std::left << std::setw( width) << terminal::color::cyan << "remote"; break;
                            }
                         }
                      };
 
-                     auto format_hops = []( const value_type& value)
+                     auto format_hops = []( auto& instance)
                      {
-                        return value.hops;
+                        return instance.hops;
                      };
 
-                     return terminal::format::formatter< normalized::service::Instance>::construct(
-                        terminal::format::column( "service", format_service_name, terminal::color::yellow),
-                        terminal::format::column( "pid", format_pid, terminal::color::white, terminal::format::Align::right),
-                        terminal::format::custom::column( "state", format_state{}),
-                        terminal::format::column( "hops", format_hops, terminal::color::no_color, terminal::format::Align::right),
-                        terminal::format::column( "alias", format_process_alias, terminal::color::blue, terminal::format::Align::left)
-                     );
+                     if( ! terminal::output::directive().porcelain())
+                     {
+                        return terminal::format::formatter< normalized::Instance>::construct(
+                           terminal::format::column( "service", format_service_name, terminal::color::yellow),
+                           terminal::format::custom::column( "state", format_state{}),
+                           terminal::format::column( "hops", format_hops, terminal::color::no_color, terminal::format::Align::right),
+                           terminal::format::column( "pid", format_pid, terminal::color::white, terminal::format::Align::right),
+                           terminal::format::column( "alias", format_alias, terminal::color::blue, terminal::format::Align::left),
+                           terminal::format::column( "description", format_description, terminal::color::yellow, terminal::format::Align::left)
+                        );
+                     }
+                     else
+                     {
+                        return terminal::format::formatter< normalized::Instance>::construct(
+                           terminal::format::column( "service", format_service_name),
+                           terminal::format::column( "pid", format_pid),
+                           terminal::format::custom::column( "state", format_state{}),
+                           terminal::format::column( "hops", format_hops),
+                           terminal::format::column( "alias", format_alias),
+                           terminal::format::column( "description", format_description)
+                        );
+
+                     }
                   }
 
                } // format
 
-
-               namespace print
-               {
-
-                  template< typename IR>
-                  void instances( std::ostream& out, IR instances)
-                  {
-                     auto formatter = format::instances();
-
-                     formatter.print( out, instances);
-                  }
-
-                  void instances( std::ostream& out, call::State& state)
-                  {
-                     auto instances = normalized::service::instances( state);
-
-                     auto sort_predicate = []( auto& l, auto& r)
-                     {
-                        auto tie = []( auto& value){ return std::tie( value.service.get().name, value.server);};
-
-                        return tie( l) < tie( r);
-                     };
-
-                     algorithm::stable_sort( instances, sort_predicate);
-
-                     print::instances( out, instances);
-                  }
-
-               } // print
 
                namespace list
                {
@@ -511,9 +488,13 @@ namespace casual
                      {
                         auto invoke = []()
                         {
-                           auto state = call::instances();
+                           auto state = admin::api::state();
+                           auto instances = normalized::instances( state);
 
-                           print::instances( std::cout, state);
+                           algorithm::sort( instances);
+
+                           auto formatter = format::instances();
+                           formatter.print( std::cout, instances);
                         };
                         
                         return common::argument::Option{ 

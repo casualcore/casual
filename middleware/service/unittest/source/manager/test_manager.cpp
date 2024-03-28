@@ -279,13 +279,13 @@ domain:
             auto service = local::service::find( state, "service1");
             ASSERT_TRUE( service);
             ASSERT_TRUE( service->instances.sequential.size() == 1);
-            EXPECT_TRUE( service->instances.sequential.at( 0).pid == common::process::id());
+            EXPECT_TRUE( service->instances.sequential.at( 0).process == common::process::handle());
          }
          {
             auto service = local::service::find( state, "service2");
             ASSERT_TRUE( service);
             ASSERT_TRUE( service->instances.sequential.size() == 1);
-            EXPECT_TRUE( service->instances.sequential.at( 0).pid == common::process::id());
+            EXPECT_TRUE( service->instances.sequential.at( 0).process == common::process::handle());
          }
       }
 
@@ -504,7 +504,7 @@ domain:
             auto state = local::call::state();
             auto service = local::service::find( state, "service1");
             ASSERT_TRUE( service);
-            EXPECT_TRUE( service->instances.sequential.at( 0).pid == common::process::id());
+            EXPECT_TRUE( service->instances.sequential.at( 0).process == common::process::handle());
          }
 
          {
@@ -972,7 +972,7 @@ domain:
          ASSERT_TRUE( service);
          auto& instances = service->instances.concurrent;
          ASSERT_TRUE( instances.size() == 1) << CASUAL_NAMED_VALUE( instances);
-         EXPECT_TRUE( instances.at( 0).pid == common::process::id());
+         EXPECT_TRUE( instances.at( 0).process == common::process::handle());
   
       }
 

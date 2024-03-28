@@ -27,15 +27,15 @@ namespace casual
          struct Base
          {
             common::process::Handle process;
+            std::string alias;
 
             CASUAL_CONST_CORRECT_SERIALIZE(
                CASUAL_SERIALIZE( process);
+               CASUAL_SERIALIZE( alias);
             )
 
-            inline friend bool operator < ( const Base& lhs, const Base& rhs) { return lhs.process.pid < rhs.process.pid;}
-            inline friend bool operator == ( const Base& lhs, const Base& rhs) { return lhs.process.pid == rhs.process.pid;}
-            inline friend bool operator == ( const Base& lhs, common::strong::process::id rhs) { return lhs.process.pid == rhs;}
-
+            inline friend bool operator < ( const Base& lhs, const Base& rhs) { return lhs.process < rhs.process;}
+            inline friend bool operator == ( const Base& lhs, common::process::compare_equal_to_handle auto rhs) { return lhs.process == rhs;}
          };
 
          struct Sequential : Base
@@ -56,6 +56,12 @@ namespace casual
 
          struct Concurrent : Base
          {
+            std::string description;
+
+            CASUAL_CONST_CORRECT_SERIALIZE(
+               Base::serialize( archive);
+               CASUAL_SERIALIZE( description);
+            )
          };
 
       } // instance
@@ -105,21 +111,21 @@ namespace casual
          {
             struct Sequential
             {
-               common::strong::process::id pid;
+               common::process::Handle process;
 
                CASUAL_CONST_CORRECT_SERIALIZE(
-                  CASUAL_SERIALIZE( pid);
+                  CASUAL_SERIALIZE( process);
                )
             };
 
             struct Concurrent
             {
-               common::strong::process::id pid;
+               common::process::Handle process;
                platform::size::type hops{};
                platform::size::type order{};
 
                CASUAL_CONST_CORRECT_SERIALIZE(
-                  CASUAL_SERIALIZE( pid);
+                  CASUAL_SERIALIZE( process);
                   CASUAL_SERIALIZE( hops);
                   CASUAL_SERIALIZE( order);
                )
@@ -164,6 +170,7 @@ namespace casual
          } instances;
 
          inline friend bool operator == ( const Service& lhs, std::string_view rhs) { return lhs.name == rhs;}
+         inline friend auto operator <=> ( const Service& lhs, const Service& rhs) { return lhs.name <=> rhs.name;}
 
          CASUAL_CONST_CORRECT_SERIALIZE(
             CASUAL_SERIALIZE( name);

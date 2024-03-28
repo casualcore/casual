@@ -55,10 +55,10 @@ namespace casual
 
             struct base_instance
             {
-               base_instance() = default;
-               base_instance( common::process::Handle process) : process( std::move( process)) {}
+               base_instance( const common::process::Handle& process) : process( process) {}
 
                common::process::Handle process;
+               std::string alias;
 
                inline friend bool operator == ( const base_instance& lhs, common::process::compare_equal_to_handle auto rhs) { return lhs.process == rhs;}
 
@@ -67,16 +67,20 @@ namespace casual
                )
             };
 
-
-            struct Sequential : base_instance
+            namespace sequential
             {
                enum class State : short
                {
                   idle,
                   busy,
                };
-               std::string_view description( State value);
+               std::string_view description( State value) noexcept;
+               
+            } // sequential
 
+
+            struct Sequential : base_instance
+            {
                using base_instance::base_instance;
 
                void reserve( 
@@ -89,7 +93,7 @@ namespace casual
                //! discards the reservation
                void discard();
 
-               State state() const;
+               sequential::State state() const;
                inline bool idle() const { return m_service == nullptr;}
 
                //! Return true if this instance exposes the service
@@ -118,8 +122,6 @@ namespace casual
                //! @returns the name of the reserved service if a reservation exists
                std::optional< std::string> reserved_service() const;
 
-               friend std::ostream& operator << ( std::ostream& out, State value);
-
                CASUAL_LOG_SERIALIZE(
                   base_instance::serialize( archive);   
                   CASUAL_SERIALIZE_NAME( m_service, "service");
@@ -135,16 +137,18 @@ namespace casual
             };
 
             struct Concurrent : base_instance
-            {
+            {      
                using base_instance::base_instance;
-               
+
                platform::size::type order{};
+               std::string description;
                
                friend bool operator < ( const Concurrent& lhs, const Concurrent& rhs);
 
                CASUAL_LOG_SERIALIZE(
                   base_instance::serialize( archive);
                   CASUAL_SERIALIZE( order);
+                  CASUAL_SERIALIZE( description);
                )
 
             };

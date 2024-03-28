@@ -21,41 +21,6 @@ namespace casual
       {
          namespace
          {
-            struct Instance
-            {
-               auto operator() ( const manager::state::instance::Sequential& instance) const
-               {
-                  manager::admin::model::instance::Sequential result;
-
-                  result.process = instance.process;
-
-                  auto transform_state = []( auto state)
-                  {
-                     using Enum = manager::state::instance::Sequential::State;
-                     switch( state)
-                     {
-                        case Enum::idle: return manager::admin::model::instance::Sequential::State::idle;
-                        case Enum::busy: return manager::admin::model::instance::Sequential::State::busy;
-                     }
-                     assert( ! "mismatch in enum transformation");
-                  };
-
-                  result.state = transform_state( instance.state());
-
-                  return result;
-               }
-
-               auto operator() ( const manager::state::instance::Concurrent& instance) const
-               {
-                  manager::admin::model::instance::Concurrent result;
-
-                  result.process = instance.process;
-                  
-
-                  return result;
-               }
-            };
-
             auto pending()
             {
                return []( auto& value)
@@ -99,7 +64,7 @@ namespace casual
                   auto transform_concurrent = []( const auto& value)
                   {
                      return manager::admin::model::service::instance::Concurrent{
-                        value.process().pid,
+                        value.process(),
                         value.property.hops,
                         value.get().order
                      };
@@ -109,7 +74,7 @@ namespace casual
                   auto transform_sequential = [&]( const auto& value)
                   {
                      return manager::admin::model::service::instance::Sequential{
-                        value.process().pid,
+                        value.process(),
                      };
                   };
 
@@ -140,6 +105,37 @@ namespace casual
                };
             }
 
+            namespace transform::instance
+            {
+               auto sequential()
+               {
+                  return []( const manager::state::instance::Sequential& instance)
+                  {
+                     admin::model::instance::Sequential result;
+                     result.process = instance.process;
+                     result.alias = instance.alias;
+                     
+                     using State = decltype( result.state);
+                     result.state = instance.state() == decltype( instance.state())::busy ? State::busy : State::idle;
+
+                     return result;
+                  };
+               }
+
+               auto concurrent()
+               {
+                  return []( const manager::state::instance::Concurrent& instance)
+                  {
+                     admin::model::instance::Concurrent result;
+                     result.process = instance.process;
+                     result.alias = instance.alias;
+                     result.description = instance.description;
+                     return result;
+                  };
+               }
+               
+            } // transform::instance
+
 
          } // <unnamed>
       } // local
@@ -150,10 +146,10 @@ namespace casual
          manager::admin::model::State result;
 
          common::algorithm::transform( state.instances.sequential, result.instances.sequential,
-            common::predicate::composition( local::Instance{}, common::predicate::adapter::second()));
+            common::predicate::composition( local::transform::instance::sequential(), common::predicate::adapter::second()));
 
          common::algorithm::transform( state.instances.concurrent, result.instances.concurrent,
-            common::predicate::composition( local::Instance{}, common::predicate::adapter::second()));
+            common::predicate::composition( local::transform::instance::concurrent(), common::predicate::adapter::second()));
 
          common::algorithm::transform( state.pending.lookups, result.pending, local::pending());
 

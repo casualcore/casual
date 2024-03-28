@@ -423,7 +423,7 @@ namespace casual
                   {
                      auto socket = native::detail::create::domain::socket();
 
-                     strong::ipc::id ipc{ uuid::make()};
+                     auto ipc = strong::ipc::id::generate();
 
                      Address address{ ipc};
 

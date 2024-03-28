@@ -15,6 +15,7 @@
 #include "common/environment/normalize.h"
 #include "common/process.h"
 #include "common/service/type.h"
+#include "common/instance.h"
 
 #include "common/code/raise.h"
 #include "common/code/casual.h"
@@ -53,6 +54,19 @@ namespace casual
       {
          namespace instance
          {
+            namespace sequential
+            {
+               std::string_view description( State value) noexcept
+               {
+                  switch( value)
+                  {
+                     case State::busy: return "busy";
+                     case State::idle: return "idle";
+                  }
+                  return "<unknown>";
+               }
+            } // sequential
+
             void Sequential::reserve(
                state::Service* service,
                const common::process::Handle& caller,
@@ -84,9 +98,9 @@ namespace casual
                m_caller = {};
             }
 
-            Sequential::State Sequential::state() const
+            sequential::State Sequential::state() const
             {
-               return m_service == nullptr ? State::idle : State::busy;
+               return m_service == nullptr ? sequential::State::idle : sequential::State::busy;
             }
 
             bool Sequential::service( const std::string& name) const
@@ -130,16 +144,6 @@ namespace casual
                   return m_service->information.logical_name();
 
                return {};
-            }
-
-            std::string_view description( Sequential::State value)
-            {
-               switch( value)
-               {
-                  case Sequential::State::busy: return "busy";
-                  case Sequential::State::idle: return "idle";
-               }
-               return "<unknown>";
             }
 
             bool operator < ( const Concurrent& lhs, const Concurrent& rhs)
@@ -621,6 +625,7 @@ namespace casual
          local::restrict_add_services( *this, message);
 
          auto& instance = local::find_or_add( instances.sequential, message.process);
+         instance.alias = message.alias;
 
          // add
          {
@@ -680,8 +685,8 @@ namespace casual
 
          auto& instance = local::find_or_add( instances.concurrent, message.process);
          instance.order = message.order;
-
-
+         instance.alias = message.alias;
+         instance.description = std::move( message.description);
 
          // add
          {
@@ -784,6 +789,7 @@ namespace casual
          };
 
          auto& instance = local::find_or_add( instances.sequential, process::handle());
+         instance.alias = instance::alias();
 
          for( auto service : algorithm::transform( services, transform_service))
          {

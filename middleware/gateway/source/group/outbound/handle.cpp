@@ -628,23 +628,28 @@ namespace casual
                         auto handle = state.connections.process_handle( descriptor);
                         CASUAL_ASSERT( handle);
 
-                        // increase hops for all services.
-                        for( auto& service : message.content.services)
-                           ++service.property.hops;
+                        auto information = state.connections.information( descriptor);
+                        CASUAL_ASSERT( information);
 
                         if( ! message.content.services.empty())
                         {
+                           // increase hops for all services.
+                           for( auto& service : message.content.services)
+                              ++service.property.hops;
+
                            common::message::service::concurrent::Advertise request{ handle};
                            request.alias = instance::alias();
+                           request.description = information->domain.name;
                            request.order = state.order;
                            request.services.add = message.content.services;
-
+                           
                            state.multiplex.send( ipc::manager::service(), request);
                         }
 
                         if( ! message.content.queues.empty())
                         {
                            casual::queue::ipc::message::Advertise request{ handle};
+                           request.description = information->domain.name;
                            request.order = state.order;
                            request.queues.add = algorithm::transform( message.content.queues, []( auto& queue)
                            {

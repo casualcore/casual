@@ -120,7 +120,7 @@ namespace casual
             template< typename T>
             friend bool operator == ( const Instance& lhs, T&& rhs) 
             { 
-               return common::process::id( lhs.handle) == common::process::id( rhs);
+               return lhs.handle == rhs;
             }
 
             inline explicit operator bool() const noexcept { return common::predicate::boolean( handle);}

@@ -81,7 +81,7 @@ namespace casual
                         auto tranform_sequential = []( auto& instance)
                         {
                            model::service::instance::Sequential result;
-                           result.pid = instance.pid.value();
+                           result.pid = instance.process.pid.value();
                            return result;
                         };
                         algorithm::transform( service.instances.sequential, result.instances.sequential, tranform_sequential);
@@ -89,7 +89,7 @@ namespace casual
                         auto tranform_concurrent = []( auto& instance)
                         {
                            model::service::instance::Concurrent result;
-                           result.pid = instance.pid.value();
+                           result.pid = instance.process.pid.value();
                            result.hops = instance.hops;
                            return result;
                         };
