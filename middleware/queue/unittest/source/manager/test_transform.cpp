@@ -110,7 +110,7 @@ alias: A
 
          constexpr auto expected_model = R"(
 groups:
-   -  name: A
+   -  alias: A
       process:
          pid: 42
       queuebase: ':memory:'

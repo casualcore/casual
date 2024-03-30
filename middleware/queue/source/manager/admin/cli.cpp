@@ -53,6 +53,9 @@ namespace casual
                } state;
 
             } // global
+
+
+
             namespace normalize
             {
                std::string timestamp( const platform::time::point::type& time)
@@ -63,6 +66,74 @@ namespace casual
                   return "-";;
                }
 
+               namespace instance
+               {
+                  enum struct State : std::uint16_t
+                  {
+                     internal,
+                     external,
+                  };
+                  constexpr std::string_view description( State value) noexcept
+                  {
+                     switch( value)
+                     {
+                        case State::internal: return "internal";
+                        case State::external: return "external";
+                     }
+                     return "<unknown>";
+                  }
+               } // instance
+
+               struct Instance : compare::Order< Instance>
+               {
+                  instance::State state = instance::State::internal;
+                  std::string queue;
+                  process::Handle process;
+                  std::string alias;
+                  std::string description;
+                  platform::size::type order{};
+
+                  auto tie() const noexcept { return std::tie( queue, state, alias, description);}
+
+               };
+
+               auto instances( const manager::admin::model::State& state)
+               {
+                  auto result = algorithm::transform( state.queues, [ &state]( auto& queue)
+                  {
+                     if( auto found = algorithm::find( state.groups, queue.group))
+                     {
+                        Instance result; 
+                        result.state = instance::State::internal;
+                        result.queue = queue.name;
+                        result.process = found->process;
+                        result.alias = found->alias;
+                        return result;
+                     }
+                     code::raise::error( code::casual::internal_unexpected_value, "cli model - failed to find group for: ", queue);
+                  });
+
+                  algorithm::transform( state.remote.queues, result, [ &state]( auto& queue)
+                  {
+                     if( auto found = algorithm::find( state.remote.domains, queue.process.ipc))
+                     {
+                        Instance result; 
+                        result.state = instance::State::external;
+                        result.queue = queue.name;
+                        result.process = found->process;
+                        result.alias = found->alias;
+                        result.order = found->order;
+                        result.description = found->description;
+                        return result;
+                     }
+                     code::raise::error( code::casual::internal_unexpected_value, "cli model - failed to find group for: ", queue);
+                  });
+
+                  algorithm::sort( result);
+
+                  return result;
+               }
+
             } // normalize
 
             namespace call
@@ -70,24 +141,13 @@ namespace casual
                manager::admin::model::State state()
                {
                   serviceframework::service::protocol::binary::Call call;
-                  auto reply = call( manager::admin::service::name::state);
-
-                  manager::admin::model::State result;
-                  reply >> CASUAL_NAMED_VALUE( result);
-
-                  return result;
+                  return call( manager::admin::service::name::state).extract< manager::admin::model::State>();
                }
 
                std::vector< manager::admin::model::Message> messages( const std::string& queue)
                {
                   serviceframework::service::protocol::binary::Call call;
-                  call << CASUAL_NAMED_VALUE( queue);
-                  auto reply = call( manager::admin::service::name::messages::list);
-
-                  std::vector< manager::admin::model::Message> result;
-                  reply >> CASUAL_NAMED_VALUE( result);
-
-                  return result;
+                  return call( manager::admin::service::name::messages::list, queue).extract< std::vector< manager::admin::model::Message>>();
                }
 
                std::vector< common::transaction::global::ID> recover( const std::vector< common::transaction::global::ID>& gtrids,
@@ -103,6 +163,22 @@ namespace casual
 
             namespace format
             {
+               auto empty_representation()
+               {
+                  if( ! terminal::output::directive().porcelain())
+                     return "-";
+
+                  return "";
+               }
+               
+               // this kind of stuff should maybe be in the terminal abstraction?
+               auto hyphen_if_empty( std::string_view value) -> std::string_view 
+               {
+                  if( value.empty())
+                     return empty_representation();
+                  return value;
+               }
+
                auto messages()
                {
                   auto format_state = []( auto& message)
@@ -137,14 +213,16 @@ namespace casual
 
                auto groups()
                {
+                  auto format_alias = []( auto& group) { return hyphen_if_empty( group.alias);};
                   auto format_pid = []( auto& group) { return group.process.pid;};
                   auto format_ipc = []( auto& group) { return group.process.ipc;};
+                  auto format_queuebase = []( auto& group) { return hyphen_if_empty( group.queuebase);};
 
                   return terminal::format::formatter< manager::admin::model::Group>::construct(
-                     terminal::format::column( "name", []( auto& group){ return group.name;}, terminal::color::yellow),
+                     terminal::format::column( "alias", format_alias, terminal::color::yellow),
                      terminal::format::column( "pid", format_pid, terminal::color::white, terminal::format::Align::right),
                      terminal::format::column( "ipc", format_ipc, terminal::color::no_color, terminal::format::Align::right),
-                     terminal::format::column( "queuebase", []( auto& group){ return group.queuebase;}, terminal::color::cyan)
+                     terminal::format::column( "queuebase", format_queuebase, terminal::color::cyan)
                   );
                }
 
@@ -170,7 +248,7 @@ namespace casual
                   
                   auto format_group = [&]( auto& queue)
                   {
-                     return algorithm::find_if( state.groups, [&]( auto& group){ return queue.group == group.process.pid;}).at( 0).name;
+                     return algorithm::find( state.groups, queue.group).at( 0).alias;
                   };
 
                   auto avg_size = []( auto& queue)
@@ -195,20 +273,64 @@ namespace casual
 
                namespace remote
                {
+                  //! @deprecated
                   auto queues( const manager::admin::model::State& state)
                   {
-                     auto format_pid = [&]( const auto& q){
-                        return q.pid;
-                     };
+                     auto format_pid = [&]( auto& queue){ return queue.process.pid;};
+
+                     auto format_name = []( auto& queue){ return queue.name;};
          
          
                      return terminal::format::formatter< manager::admin::model::remote::Queue>::construct(
-                        terminal::format::column( "name", std::mem_fn( &manager::admin::model::remote::Queue::name), terminal::color::yellow),
+                        terminal::format::column( "name", format_name, terminal::color::yellow),
                         terminal::format::column( "pid", format_pid, common::terminal::color::blue)
                      );
                   }
                   
                } // remote
+
+               namespace queue
+               {
+                  auto instances()
+                  {
+                     struct format_state
+                     {
+                        std::size_t width( const normalize::Instance& instance, const std::ostream&) const
+                        {
+                           return description( instance.state).size();
+                        }
+
+                        void print( std::ostream& out, const normalize::Instance& instance, std::size_t width) const
+                        {
+                           out << std::setfill( ' ');
+
+                           using State = decltype( instance.state);
+                           switch( instance.state)
+                           {
+                              case State::internal: out << std::left << std::setw( width) << terminal::color::green << "internal"; break;
+                              case State::external: out << std::left << std::setw( width) << terminal::color::cyan << "external"; break;
+                           }
+                        }
+                     };
+
+                     auto format_queue = []( auto& instance){ return instance.queue;};
+
+                     auto format_pid = []( auto& instance){ return instance.process.pid;};
+
+                     auto format_alias = []( auto& instance){ return instance.alias;};
+                     
+                     auto format_description = []( auto& instance){ return hyphen_if_empty( instance.description);};
+         
+                     return terminal::format::formatter< local::normalize::Instance>::construct(
+                        terminal::format::column( "queue", format_queue, terminal::color::yellow),
+                        terminal::format::custom::column( "state", format_state{}),
+                        terminal::format::column( "pid", format_pid, terminal::color::white, terminal::format::Align::right),
+                        terminal::format::column( "alias", format_alias, terminal::color::blue, terminal::format::Align::left),
+                        terminal::format::column( "description", format_description, terminal::color::yellow, terminal::format::Align::left)
+                     );
+                  }
+                  
+               } // queue
 
                namespace forward
                {
@@ -818,12 +940,33 @@ use auto-complete to help which options has legends)"
                         
                         return argument::Option{
                            std::move( invoke),
-                           { "-r", "--list-remote"},
-                           R"(list all remote discovered queues)"
+                           argument::option::keys( {}, { "-r", "--list-remote"}),
+                           R"(deprecated - use --list-instances)"
                         };
                      }
                   } // queues
                } // remote
+
+               namespace queue::instances
+               {
+                  auto option()
+                  {
+                     auto invoke = []()
+                     {
+                        auto state = call::state();
+                        auto instances = normalize::instances( state);
+                        auto formatter = format::queue::instances();
+                        formatter.print( std::cout, instances);
+                     };
+                     
+                     return argument::Option{
+                        std::move( invoke),
+                        { "-lqi", "--list-queue-instances"},
+                        R"(list instances for all queues, including external instances)"
+                     };
+                  }
+                  
+               } // queue::instances
 
                namespace groups
                {
@@ -1625,7 +1768,7 @@ casual queue --metric-reset a b)"
                   return argument::Group{ [](){}, { "queue"}, "queue related administration",
                      local::list::queues::option(),
                      local::list::zombies::option(),
-                     local::list::remote::queues::option(),
+                     local::list::queue::instances::option(),
                      local::list::groups::option(),
                      local::list::messages::option(),
                      local::list::forward::services::option(),
@@ -1646,6 +1789,7 @@ casual queue --metric-reset a b)"
                      local::legend::option(),
                      local::information::option(),
                      casual::cli::state::option( &local::call::state),
+                     local::list::remote::queues::option(),
                   };
                }
             };

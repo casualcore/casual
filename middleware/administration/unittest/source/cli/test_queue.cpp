@@ -9,6 +9,11 @@
 #include "administration/unittest/cli/command.h"
 
 #include "domain/unittest/manager.h"
+#include "domain/unittest/discover.h"
+
+#include "gateway/unittest/utility.h"
+
+#include "common/string.h"
 
 #include <regex>
 
@@ -320,6 +325,99 @@ domain:
          {
             auto capture = local::execute( R"(casual queue --list-forward-services --porcelain true | awk -F'|' '{printf $12}')");
             EXPECT_EQ( capture.standard.out, "D") << CASUAL_NAMED_VALUE( capture);
+         }
+      }
+
+      namespace local
+      {
+         namespace
+         {
+            constexpr auto gateway = R"(
+domain:
+   groups: 
+      -  name: gateway
+         dependencies: [ user]
+   
+   servers:
+      - path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/gateway/bin/casual-gateway-manager"
+        memberships: [ gateway]
+)";
+         } // <unnamed>
+      } // local
+
+      TEST( cli_queue, list_queue_instances)
+      {
+         common::unittest::Trace trace;
+
+         auto b = local::domain( local::gateway, R"(
+domain:
+   name: B
+   queue:
+      groups:
+         -  alias: GB
+            queues:
+               -  name: b1
+               -  name: b2
+   gateway:
+      inbound:
+         groups:
+            -  connections:
+               -  address: 127.0.0.1:7001
+)");
+
+         auto a = local::domain( local::gateway, R"(
+domain:
+   name: A
+   queue:
+      groups:
+         -  alias: GA
+            queues:
+               -  name: a1
+               -  name: a2
+   gateway:
+      outbound:
+         groups:
+            -  alias: out
+               connections:
+               -  address: 127.0.0.1:7001
+)");
+
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected());
+         
+         casual::domain::unittest::discover( {}, { "b1", "b2"});
+
+/*
+
+Terminal output
+
+queue     state     pid    alias  description
+--------  --------  -----  -----  -----------
+a1        internal  50231  GA     -          
+a1.error  internal  50231  GA     -          
+a2        internal  50231  GA     -          
+a2.error  internal  50231  GA     -          
+b1        external  50233  out    B          
+b2        external  50233  out    B 
+
+*/
+
+         {
+            auto capture = local::execute( R"(casual --porcelain true queue --list-queue-instances | grep 'internal')");
+            auto rows = string::split( capture.standard.out, '\n');
+
+            EXPECT_TRUE( std::regex_match( rows.at( 0), std::regex{ R"(a1\|internal\|[0-9]+\|GA\|)"})) << rows.at( 0);
+            EXPECT_TRUE( std::regex_match( rows.at( 1), std::regex{ R"(a1.error\|internal\|[0-9]+\|GA\|)"}));
+
+         }
+
+         {
+            auto capture = local::execute( R"(casual --porcelain true queue --list-queue-instances | grep 'external')");
+            auto rows = string::split( capture.standard.out, '\n');
+
+            EXPECT_TRUE( std::regex_match( rows.at( 0), std::regex{ R"(b1\|external\|[0-9]+\|out\|B)"})) << rows.at( 0);
+            EXPECT_TRUE( std::regex_match( rows.at( 1), std::regex{ R"(b2\|external\|[0-9]+\|out\|B)"}));
+
+
          }
       }
 

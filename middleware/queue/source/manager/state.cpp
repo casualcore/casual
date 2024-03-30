@@ -77,7 +77,10 @@ namespace casual
          remove_queues( reply.process.pid);
 
          if( auto found = algorithm::find( groups, reply.process.pid))
+         {
+            found->alias = reply.alias;
             found->state = decltype( found->state())::running;
+         }
          else
             log::line( log::category::error, "failed to correlate group", reply.process, " - action: discard");
             
@@ -152,7 +155,7 @@ namespace casual
 
          // make sure we've got the instance
          if( ! common::algorithm::find( remotes, message.process))
-            remotes.push_back( state::Remote{ message.process, order});
+            remotes.push_back( state::Remote{ message.process, order, message.alias, message.description});
 
          auto add_queue = [&]( auto& queue)
          {
@@ -165,7 +168,6 @@ namespace casual
          };
 
          algorithm::for_each( message.queues.add, add_queue);
-
 
          auto remove_queue = [&]( auto& name)
          {

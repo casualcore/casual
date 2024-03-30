@@ -649,6 +649,7 @@ namespace casual
                         if( ! message.content.queues.empty())
                         {
                            casual::queue::ipc::message::Advertise request{ handle};
+                           request.alias = instance::alias();
                            request.description = information->domain.name;
                            request.order = state.order;
                            request.queues.add = algorithm::transform( message.content.queues, []( auto& queue)

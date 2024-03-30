@@ -1019,7 +1019,7 @@ domain:
 
          ASSERT_TRUE( state.groups.size() == 1) << CASUAL_NAMED_VALUE( state);
          auto& group = state.groups.at( 0);
-         EXPECT_TRUE( group.name == "group.A") << CASUAL_NAMED_VALUE( group);
+         EXPECT_TRUE( group.alias == "group.A") << CASUAL_NAMED_VALUE( group);
          EXPECT_TRUE( group.queuebase == ":memory:");
          
          auto order_queue = []( auto& l, auto& r){ return l.name < r.name;};

@@ -23,14 +23,16 @@ namespace casual
       
       struct Group
       {
-         std::string name;
+         std::string alias;
          common::process::Handle process;
          std::string queuebase;
          std::string note;
 
+         friend bool operator == ( const Group& lhs, common::process::compare_equal_to_handle auto rhs) { return lhs.process == rhs;}
+
          CASUAL_CONST_CORRECT_SERIALIZE(
             CASUAL_SERIALIZE( process);
-            CASUAL_SERIALIZE( name);
+            CASUAL_SERIALIZE( alias);
             CASUAL_SERIALIZE( queuebase);
             CASUAL_SERIALIZE( note);
          )
@@ -40,29 +42,34 @@ namespace casual
       {
          struct Domain
          {
+            std::string alias;
             common::process::Handle process;
             platform::size::type order = 0;
+            std::string description;
+
+            friend bool operator == ( const Domain& lhs, common::process::compare_equal_to_handle auto rhs) { return lhs.process == rhs;}
 
             CASUAL_CONST_CORRECT_SERIALIZE(
+               CASUAL_SERIALIZE( alias);
                CASUAL_SERIALIZE( process);
                CASUAL_SERIALIZE( order);
+               CASUAL_SERIALIZE( description);
             )
          };
 
          struct Queue
          {
             std::string name;
-            common::strong::process::id pid;
+            common::process::Handle process;
 
             CASUAL_CONST_CORRECT_SERIALIZE(
                CASUAL_SERIALIZE( name);
-               CASUAL_SERIALIZE( pid);
+               CASUAL_SERIALIZE( process);
             )
 
             inline friend bool operator < ( const Queue& lhs, const Queue& rhs)
             {
-               return std::tie( lhs.name, lhs.pid) 
-                  < std::tie( rhs.name, rhs.pid);
+               return std::tie( lhs.name, lhs.process) < std::tie( rhs.name, rhs.process);
             }
          };
          

@@ -53,15 +53,17 @@ namespace casual
 
             common::state::Machine< entity::Lifetime> state;
             common::process::Handle process;
+            std::string alias;
             C configuration;
 
-            inline friend bool operator == ( const Entity& lhs, common::strong::process::id pid) { return lhs.process.pid == pid;}
+            inline friend bool operator == ( const Entity& lhs, common::process::compare_equal_to_handle auto rhs) { return lhs.process.pid == rhs;}
 
             auto tie() const { return std::tie( configuration);}
 
             CASUAL_LOG_SERIALIZE(
                CASUAL_SERIALIZE( state);
                CASUAL_SERIALIZE( process);
+               CASUAL_SERIALIZE( alias);
                CASUAL_SERIALIZE( configuration);
             )
          };
@@ -84,13 +86,16 @@ namespace casual
          {
             common::process::Handle process;
             platform::size::type order{};
+            std::string alias;
+            std::string description;
 
-            inline friend bool operator == ( const Remote& lhs, const common::process::Handle& rhs) { return lhs.process == rhs;}
-            inline friend bool operator == ( const Remote& lhs, common::strong::process::id pid) { return lhs.process == pid;}
+            inline friend bool operator == ( const Remote& lhs, common::process::compare_equal_to_handle auto rhs) { return lhs.process == rhs;}
 
             CASUAL_LOG_SERIALIZE(
                CASUAL_SERIALIZE( process);
                CASUAL_SERIALIZE( order);
+               CASUAL_SERIALIZE( alias);
+               CASUAL_SERIALIZE( description);
             )
          };
 
@@ -109,8 +114,7 @@ namespace casual
             inline auto local() const { return order == 0;}
 
             inline friend bool operator < ( const Queue& lhs, const Queue& rhs) { return lhs.order < rhs.order;};
-            inline friend bool operator == ( const Queue& lhs, common::strong::process::id rhs) { return lhs.process == rhs;}
-            inline friend bool operator == ( const Queue& lhs, const common::strong::ipc::id& rhs) { return lhs.process == rhs;}
+            inline friend bool operator == ( const Queue& lhs, common::process::compare_equal_to_handle auto rhs) { return lhs.process == rhs;}
 
             CASUAL_LOG_SERIALIZE(
                CASUAL_SERIALIZE( process);

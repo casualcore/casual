@@ -67,7 +67,7 @@ namespace casual
                      {
                         idle,
                         busy,
-                        remote,
+                        external,
                      };
 
                      constexpr std::string_view description( State value) noexcept
@@ -76,7 +76,7 @@ namespace casual
                         {
                            case State::idle: return "idle";
                            case State::busy: return "busy";
-                           case State::remote: return "remote";
+                           case State::external: return "external";
                         }
                         return "<unknown>";
                      }
@@ -127,7 +127,7 @@ namespace casual
                               result.alias = found->alias;
                               result.description = found->description;
                               result.process = instance.process;
-                              result.state = instance::State::remote;
+                              result.state = instance::State::external;
                               return result;
                            }
                            code::raise::error( code::casual::internal_unexpected_value, "failed to find instance: ", instance.process);
@@ -356,7 +356,7 @@ namespace casual
                            {
                               case State::idle: out << std::left << std::setw( width) << terminal::color::green << "idle"; break;
                               case State::busy: out << std::left << std::setw( width) << terminal::color::yellow << "busy"; break;
-                              case State::remote: out << std::left << std::setw( width) << terminal::color::cyan << "remote"; break;
+                              case State::external: out << std::left << std::setw( width) << terminal::color::cyan << "external"; break;
                            }
                         }
                      };

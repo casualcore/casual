@@ -227,7 +227,7 @@ domain:
          } // <unnamed>
       } // local
 
-      TEST( cli_service, list_instances_one_remote)
+      TEST( cli_service, list_instances_one_external)
       {
          common::unittest::Trace trace;
 
@@ -237,14 +237,14 @@ domain:
          local::advertise_concurrent( { "d", "b", "c", "a"}, process::handle(), "test", "domain-X");
          
          {  
-            const auto capture = administration::unittest::cli::command::execute( R"(casual --color false service --list-instances | grep remote )");
+            const auto capture = administration::unittest::cli::command::execute( R"(casual --color false service --list-instances | grep external )");
             auto rows = string::split( capture.standard.out, '\n');
             ASSERT_TRUE( rows.size() == 4);
 
-            EXPECT_TRUE( std::regex_match( rows.at( 0), std::regex{ R"(^a .* remote .* test .* domain-X.*)"})) << CASUAL_NAMED_VALUE( rows);
-            EXPECT_TRUE( std::regex_match( rows.at( 1), std::regex{ R"(^b .* remote .* test .* domain-X.*)"})) << CASUAL_NAMED_VALUE( rows);
-            EXPECT_TRUE( std::regex_match( rows.at( 2), std::regex{ R"(^c .* remote .* test .* domain-X.*)"})) << CASUAL_NAMED_VALUE( rows);
-            EXPECT_TRUE( std::regex_match( rows.at( 3), std::regex{ R"(^d .* remote .* test .* domain-X.*)"})) << CASUAL_NAMED_VALUE( rows);
+            EXPECT_TRUE( std::regex_match( rows.at( 0), std::regex{ R"(^a .* external .* test .* domain-X.*)"})) << CASUAL_NAMED_VALUE( rows);
+            EXPECT_TRUE( std::regex_match( rows.at( 1), std::regex{ R"(^b .* external .* test .* domain-X.*)"})) << CASUAL_NAMED_VALUE( rows);
+            EXPECT_TRUE( std::regex_match( rows.at( 2), std::regex{ R"(^c .* external .* test .* domain-X.*)"})) << CASUAL_NAMED_VALUE( rows);
+            EXPECT_TRUE( std::regex_match( rows.at( 3), std::regex{ R"(^d .* external .* test .* domain-X.*)"})) << CASUAL_NAMED_VALUE( rows);
          }
       }
 
@@ -259,14 +259,14 @@ domain:
          local::advertise_concurrent( { "c", "b", "a", "d"}, process::handle(), "test", "domain-X");
          
          {  
-            const auto capture = administration::unittest::cli::command::execute( R"(casual --porcelain true service --list-instances | grep '|remote|')");
+            const auto capture = administration::unittest::cli::command::execute( R"(casual --porcelain true service --list-instances | grep '|external|')");
             auto rows = string::split( capture.standard.out, '\n');
             ASSERT_TRUE( rows.size() == 4);
 
-            EXPECT_TRUE( std::regex_match( rows.at( 0), std::regex{ R"(a\|[0-9]+\|remote\|[0-9]+\|test\|domain-X)"}));
-            EXPECT_TRUE( std::regex_match( rows.at( 1), std::regex{ R"(b\|[0-9]+\|remote\|[0-9]+\|test\|domain-X)"}));
-            EXPECT_TRUE( std::regex_match( rows.at( 2), std::regex{ R"(c\|[0-9]+\|remote\|[0-9]+\|test\|domain-X)"}));
-            EXPECT_TRUE( std::regex_match( rows.at( 3), std::regex{ R"(d\|[0-9]+\|remote\|[0-9]+\|test\|domain-X)"}));
+            EXPECT_TRUE( std::regex_match( rows.at( 0), std::regex{ R"(a\|[0-9]+\|external\|[0-9]+\|test\|domain-X)"}));
+            EXPECT_TRUE( std::regex_match( rows.at( 1), std::regex{ R"(b\|[0-9]+\|external\|[0-9]+\|test\|domain-X)"}));
+            EXPECT_TRUE( std::regex_match( rows.at( 2), std::regex{ R"(c\|[0-9]+\|external\|[0-9]+\|test\|domain-X)"}));
+            EXPECT_TRUE( std::regex_match( rows.at( 3), std::regex{ R"(d\|[0-9]+\|external\|[0-9]+\|test\|domain-X)"}));
          }
       }
 
@@ -295,7 +295,7 @@ domain:
             return std::distance( begin, std::sregex_iterator());
          };
          
-         const auto capture = administration::unittest::cli::command::execute( R"(casual --porcelain true service --list-instances | grep 'remote')");
+         const auto capture = administration::unittest::cli::command::execute( R"(casual --porcelain true service --list-instances | grep 'external')");
 
          EXPECT_TRUE( count_matches( capture.standard.out, std::regex{ "s1"}) == 5);
          EXPECT_TRUE( count_matches( capture.standard.out, std::regex{ "s2"}) == 4);
@@ -346,12 +346,41 @@ domain:
 
          casual::domain::unittest::service::discover( { "a", "b", "c"});
 
-         const auto capture = administration::unittest::cli::command::execute( R"(casual --porcelain true service --list-instances | grep 'remote')");
+/*
+
+Terminal output
+
+service                              state     hops  pid    alias                       description
+-----------------------------------  --------  ----  -----  --------------------------  -----------
+.casual/discovery/state              idle         0  53334  casual-domain-discovery     -          
+.casual/domain/configuration/get     idle         0  53333  casual-domain-manager       -          
+.casual/domain/configuration/post    idle         0  53333  casual-domain-manager       -          
+.casual/domain/configuration/put     idle         0  53333  casual-domain-manager       -          
+.casual/domain/environment/set       idle         0  53333  casual-domain-manager       -          
+.casual/domain/restart/aliases       idle         0  53333  casual-domain-manager       -          
+.casual/domain/restart/groups        idle         0  53333  casual-domain-manager       -          
+.casual/domain/restart/instances     idle         0  53333  casual-domain-manager       -          
+.casual/domain/scale/aliases         idle         0  53333  casual-domain-manager       -          
+.casual/domain/scale/instances       idle         0  53333  casual-domain-manager       -          
+.casual/domain/shutdown              idle         0  53333  casual-domain-manager       -          
+.casual/domain/state                 idle         0  53333  casual-domain-manager       -          
+.casual/gateway/state                idle         0  53338  casual-gateway-manager      -          
+.casual/service/metric/reset         busy         0  53335  casual-service-manager      -          
+.casual/service/state                busy         0  53335  casual-service-manager      -          
+.casual/transaction/scale/instances  idle         0  53336  casual-transaction-manager  -          
+.casual/transaction/state            idle         0  53336  casual-transaction-manager  -          
+a                                    external     0  53339  out                         B          
+b                                    external     0  53339  out                         B          
+c                                    external     0  53339  out                         B 
+*/
+
+
+         const auto capture = administration::unittest::cli::command::execute( R"(casual --porcelain true service --list-instances | grep 'external')");
          auto rows = string::split( capture.standard.out, '\n');
 
-         EXPECT_TRUE( std::regex_match( rows.at( 0), std::regex{ R"(a\|[0-9]+\|remote\|[0-9]+\|out\|B)"}));
-         EXPECT_TRUE( std::regex_match( rows.at( 1), std::regex{ R"(b\|[0-9]+\|remote\|[0-9]+\|out\|B)"}));
-         EXPECT_TRUE( std::regex_match( rows.at( 2), std::regex{ R"(c\|[0-9]+\|remote\|[0-9]+\|out\|B)"}));
+         EXPECT_TRUE( std::regex_match( rows.at( 0), std::regex{ R"(a\|[0-9]+\|external\|[0-9]+\|out\|B)"}));
+         EXPECT_TRUE( std::regex_match( rows.at( 1), std::regex{ R"(b\|[0-9]+\|external\|[0-9]+\|out\|B)"}));
+         EXPECT_TRUE( std::regex_match( rows.at( 2), std::regex{ R"(c\|[0-9]+\|external\|[0-9]+\|out\|B)"}));
       }
 
 

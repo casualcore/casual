@@ -131,7 +131,7 @@ namespace casual
             {
                algorithm::transform_if( queue.second, std::back_inserter( result.remote.queues), [ &queue]( auto& instance)
                {
-                  return admin::model::remote::Queue{ queue.first, instance.process.pid};
+                  return admin::model::remote::Queue{ queue.first, instance.process};
                },
                []( auto& instance)
                {
@@ -141,7 +141,7 @@ namespace casual
 
             auto transform_remote_domains = []( const auto& remote)
             {
-               return admin::model::remote::Domain{ remote.process, remote.order};
+               return admin::model::remote::Domain{ remote.alias, remote.process, remote.order, remote.description};
             };
 
             algorithm::transform( state.remotes, std::back_inserter( result.remote.domains), transform_remote_domains);
