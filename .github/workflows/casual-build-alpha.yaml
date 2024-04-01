@@ -107,167 +107,190 @@ jobs:
           name: frontend
           path: './**/casual-webapp.zip'
   
-  build-centos:
-    runs-on: self-hosted
+  # build-centos:
+  #   runs-on: self-hosted
+  #   if: ${{ success() }}
+  #   needs: [calculate-version,build-frontend]
+  #   env:
+  #     DISTRIBUTION: 'centos'
+  #   steps:
+  #     - name: check out repository casual
+  #       uses: actions/checkout@v3
+  #       with:
+  #         path: 'casual'
+  #         fetch-depth: 0
+
+  #     - name: check out casual-thirdparty 
+  #       uses: actions/checkout@v3
+  #       with:
+  #         repository: 'casualcore/casual-thirdparty'
+  #         ref: ${{ needs.calculate-version.outputs.major_minor }}
+  #         path: 'casual-thirdparty'
+
+  #     - name: check out casual-make 
+  #       uses: actions/checkout@v3
+  #       with:
+  #         repository: 'casualcore/casual-make'
+  #         ref: 'master'
+  #         path: 'casual-make'
+
+  #     - name: download frontend
+  #       uses: actions/download-artifact@v3
+  #       with:
+  #         name: frontend
+
+  #     - name: prepare build-script
+  #       run: |
+  #         cat << EOD > builder.sh
+  #         #! /bin/bash
+
+  #         set -e
+
+  #         source /git/casual/casual/pipeline/script/pipeline.env
+
+  #         bash /git/casual/casual/pipeline/script/pre/cleanup
+          
+  #         touch /git/casual/casual.log
+  #         chmod 777 /git/casual/casual.log
+
+  #         bash /git/casual/casual/pipeline/script/backend/$DISTRIBUTION/build ${{ needs.calculate-version.outputs.build_version }}
+  #         bash /git/casual/casual/pipeline/script/package ${{ needs.calculate-version.outputs.casual_version }} ${{ needs.calculate-version.outputs.casual_release }} $DISTRIBUTION
+
+  #         bash /git/casual/casual/pipeline/script/post/cleanup
+
+  #         EOD
+
+  #         chmod +x builder.sh
+
+  #     - name: Build
+  #       run: |
+  #         docker run --rm -v ${{ github.workspace }}:/git/casual:Z -i ${{ env.centos_image}}:${{ needs.calculate-version.outputs.major_minor }}
+
+  #     - name: Logpublisher
+  #       if: ${{ failure() || cancelled() }}
+  #       run: |
+  #         ${{ github.workspace }}/casual/pipeline/script/post/logpublisher ${{ github.workspace }}/casual.log ${DISTRIBUTION}-${{ needs.calculate-version.outputs.build_version }}
+
+  #     - name: Test Report
+  #       uses: dorny/test-reporter@v1
+  #       if: ${{ success() || failure() }}    # run this step even if previous step failed
+  #       with:
+  #         name: Google Tests - Centos # Name of the check run which will be created
+  #         path: ./**/report.xml       # Path to test results
+  #         reporter: java-junit        # Format of test result
+  #         working-directory: casual
+
+  #     - name: Save artifact
+  #       uses: actions/upload-artifact@v3
+  #       with:
+  #         name: centos_rpm
+  #         path: ./**/casual-middleware*.rpm
+
+  # build-suse:
+  #   runs-on: self-hosted
+  #   if: ${{ success() }}
+  #   needs: [calculate-version,build-frontend]
+  #   env:
+  #     DISTRIBUTION: 'suse'
+  #   steps:
+  #     - name: check out repository casual
+  #       uses: actions/checkout@v3
+  #       with:
+  #         path: 'casual'
+  #         fetch-depth: 0
+
+  #     - name: check out casual-thirdparty 
+  #       uses: actions/checkout@v3
+  #       with:
+  #         repository: 'casualcore/casual-thirdparty'
+  #         ref: ${{ needs.calculate-version.outputs.major_minor }}
+  #         path: 'casual-thirdparty'
+
+  #     - name: check out casual-make 
+  #       uses: actions/checkout@v3
+  #       with:
+  #         repository: 'casualcore/casual-make'
+  #         ref: 'master'
+  #         path: 'casual-make'
+
+  #     - name: download frontend
+  #       uses: actions/download-artifact@v3
+  #       with:
+  #         name: frontend
+
+  #     - name: prepare build-script
+  #       run: |
+  #         cat << EOD > builder.sh
+  #         #! /bin/bash
+
+  #         set -e
+
+  #         source /git/casual/casual/pipeline/script/pipeline.env
+
+  #         bash /git/casual/casual/pipeline/script/pre/cleanup
+          
+  #         touch /git/casual/casual.log
+  #         chmod 777 /git/casual/casual.log
+
+  #         bash /git/casual/casual/pipeline/script/backend/$DISTRIBUTION/build ${{ needs.calculate-version.outputs.build_version }}
+  #         bash /git/casual/casual/pipeline/script/package ${{ needs.calculate-version.outputs.casual_version }} ${{ needs.calculate-version.outputs.casual_release }} $DISTRIBUTION
+
+  #         bash /git/casual/casual/pipeline/script/post/cleanup
+
+  #         EOD
+
+  #         chmod +x builder.sh
+
+  #     - name: Build
+  #       run: |
+  #         docker run --rm -v ${{ github.workspace }}:/git/casual:Z -i ${{ env.suse_image}}:${{ needs.calculate-version.outputs.major_minor }}
+
+  #     - name: Logpublisher
+  #       if: ${{ failure() || cancelled() }}
+  #       run: |
+  #         ${{ github.workspace }}/casual/pipeline/script/post/logpublisher ${{ github.workspace }}/casual.log ${DISTRIBUTION}-${{ needs.calculate-version.outputs.build_version }}
+
+  #     - name: Test Report
+  #       uses: dorny/test-reporter@v1
+  #       if: ${{ success() || failure() }}  # run this step even if previous step failed
+  #       with:
+  #         name: Google Tests - Suse  # Name of the check run which will be created
+  #         path: ./**/report.xml      # Path to test results
+  #         reporter: java-junit       # Format of test result
+  #         working-directory: casual
+
+  #     - name: Save artifact
+  #       uses: actions/upload-artifact@v3
+  #       with:
+  #         name: suse_rpm
+  #         path: ./**/casual-middleware*.rpm
+
+
+  build-documentation:
+    runs-on: [self-hosted, publish]
     if: ${{ success() }}
     needs: [calculate-version,build-frontend]
-    env:
-      DISTRIBUTION: 'centos'
     steps:
       - name: check out repository casual
         uses: actions/checkout@v3
         with:
           path: 'casual'
-          fetch-depth: 0
 
-      - name: check out casual-thirdparty 
+      - name: check out casualcore.github.io 
         uses: actions/checkout@v3
         with:
-          repository: 'casualcore/casual-thirdparty'
-          ref: ${{ needs.calculate-version.outputs.major_minor }}
-          path: 'casual-thirdparty'
+          repository: 'casualcore/casualcore.github.io'
+          ref: main
+          path: 'casualcore.github.io'
 
-      - name: check out casual-make 
-        uses: actions/checkout@v3
-        with:
-          repository: 'casualcore/casual-make'
-          ref: 'master'
-          path: 'casual-make'
-
-      - name: download frontend
-        uses: actions/download-artifact@v3
-        with:
-          name: frontend
-
-      - name: prepare build-script
+      - name: DocumentationGenerator
         run: |
-          cat << EOD > builder.sh
-          #! /bin/bash
+          ${{ github.workspace }}/casual/pipeline/script/generate_documentation.sh ${{ github.workspace }}/casual
 
-          set -e
-
-          source /git/casual/casual/pipeline/script/pipeline.env
-
-          bash /git/casual/casual/pipeline/script/pre/cleanup
-          
-          touch /git/casual/casual.log
-          chmod 777 /git/casual/casual.log
-
-          bash /git/casual/casual/pipeline/script/backend/$DISTRIBUTION/build ${{ needs.calculate-version.outputs.build_version }}
-          bash /git/casual/casual/pipeline/script/package ${{ needs.calculate-version.outputs.casual_version }} ${{ needs.calculate-version.outputs.casual_release }} $DISTRIBUTION
-
-          bash /git/casual/casual/pipeline/script/post/cleanup
-
-          EOD
-
-          chmod +x builder.sh
-
-      - name: Build
-        run: |
-          docker run --rm -v ${{ github.workspace }}:/git/casual:Z -i ${{ env.centos_image}}:${{ needs.calculate-version.outputs.major_minor }}
-
-      - name: Logpublisher
-        if: ${{ failure() || cancelled() }}
-        run: |
-          ${{ github.workspace }}/casual/pipeline/script/post/logpublisher ${{ github.workspace }}/casual.log ${DISTRIBUTION}-${{ needs.calculate-version.outputs.build_version }}
-
-      - name: Test Report
-        uses: dorny/test-reporter@v1
-        if: ${{ success() || failure() }}    # run this step even if previous step failed
-        with:
-          name: Google Tests - Centos # Name of the check run which will be created
-          path: ./**/report.xml       # Path to test results
-          reporter: java-junit        # Format of test result
-          working-directory: casual
-
-      - name: Save artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: centos_rpm
-          path: ./**/casual-middleware*.rpm
-
-  build-suse:
-    runs-on: self-hosted
-    if: ${{ success() }}
-    needs: [calculate-version,build-frontend]
-    env:
-      DISTRIBUTION: 'suse'
-    steps:
-      - name: check out repository casual
-        uses: actions/checkout@v3
-        with:
-          path: 'casual'
-          fetch-depth: 0
-
-      - name: check out casual-thirdparty 
-        uses: actions/checkout@v3
-        with:
-          repository: 'casualcore/casual-thirdparty'
-          ref: ${{ needs.calculate-version.outputs.major_minor }}
-          path: 'casual-thirdparty'
-
-      - name: check out casual-make 
-        uses: actions/checkout@v3
-        with:
-          repository: 'casualcore/casual-make'
-          ref: 'master'
-          path: 'casual-make'
-
-      - name: download frontend
-        uses: actions/download-artifact@v3
-        with:
-          name: frontend
-
-      - name: prepare build-script
-        run: |
-          cat << EOD > builder.sh
-          #! /bin/bash
-
-          set -e
-
-          source /git/casual/casual/pipeline/script/pipeline.env
-
-          bash /git/casual/casual/pipeline/script/pre/cleanup
-          
-          touch /git/casual/casual.log
-          chmod 777 /git/casual/casual.log
-
-          bash /git/casual/casual/pipeline/script/backend/$DISTRIBUTION/build ${{ needs.calculate-version.outputs.build_version }}
-          bash /git/casual/casual/pipeline/script/package ${{ needs.calculate-version.outputs.casual_version }} ${{ needs.calculate-version.outputs.casual_release }} $DISTRIBUTION
-
-          bash /git/casual/casual/pipeline/script/post/cleanup
-
-          EOD
-
-          chmod +x builder.sh
-
-      - name: Build
-        run: |
-          docker run --rm -v ${{ github.workspace }}:/git/casual:Z -i ${{ env.suse_image}}:${{ needs.calculate-version.outputs.major_minor }}
-
-      - name: Logpublisher
-        if: ${{ failure() || cancelled() }}
-        run: |
-          ${{ github.workspace }}/casual/pipeline/script/post/logpublisher ${{ github.workspace }}/casual.log ${DISTRIBUTION}-${{ needs.calculate-version.outputs.build_version }}
-
-      - name: Test Report
-        uses: dorny/test-reporter@v1
-        if: ${{ success() || failure() }}  # run this step even if previous step failed
-        with:
-          name: Google Tests - Suse  # Name of the check run which will be created
-          path: ./**/report.xml      # Path to test results
-          reporter: java-junit       # Format of test result
-          working-directory: casual
-
-      - name: Save artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: suse_rpm
-          path: ./**/casual-middleware*.rpm
 
   notification-end:
     runs-on: ubuntu-latest
-    needs: [calculate-version,build-centos,build-suse]
+    needs: [build-documentation]
     if: ${{ always() }}
     steps: 
       - uses: martialonline/workflow-status@v4
