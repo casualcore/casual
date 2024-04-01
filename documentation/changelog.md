@@ -1,6 +1,18 @@
 # Changelog
 This is the changelog for `casual` and all changes are listed in this document.
 
+## [1.7.0]
+
+### Potentially breaking changes
+### CLI
+- `service --list-instances` column `state`, value `remote` has changed to `external` 
+   to be consistent with other CLI values. We use _internal_ and _external_, where 
+   _internal_ is stuff that is known locally to the "manager", and _external_ is stuff
+   that is not known locally (could still be _external_ within a domain).
+- `transaction --list-instances` in the `1.6` form has changed name to `transaction --list-internal-instances`.
+   `transaction --list-instances` now lists all instances of all resources, _internal_
+   and _external_. This makes it consistent with _service --list-instances_. 
+
 ## [1.6.19] - 2024-04-25
 ### Fixes
 - http: improved error logging in http-outbound (#367)
