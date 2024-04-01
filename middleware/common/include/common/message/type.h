@@ -201,6 +201,7 @@ namespace casual
 
          transaction_resource_involved_request = TRANSACTION_BASE + 400,
          transaction_resource_involved_reply,
+         transaction_external_resource_instance,
          transaction_external_resource_involved,
 
          transaction_resource_id_request = TRANSACTION_BASE + 500,

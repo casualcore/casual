@@ -17,9 +17,9 @@ namespace casual
    {
       manager::admin::model::State state()
       {
-         common::unittest::service::wait::until::advertised( manager::admin::service::name::state());
+         common::unittest::service::wait::until::advertised( manager::admin::service::name::state);
          serviceframework::service::protocol::binary::Call call;
-         return call( manager::admin::service::name::state()).extract< manager::admin::model::State>( "result");
+         return call( manager::admin::service::name::state).extract< manager::admin::model::State>();
       }
       
    } // transaction::unittest

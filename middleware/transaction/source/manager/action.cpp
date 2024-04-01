@@ -52,7 +52,7 @@ namespace casual
                      if( ! found)
                         return;
 
-                     state::resource::Proxy::Instance instance;
+                     state::resource::proxy::Instance instance;
                      instance.id = proxy.id;
 
                      try
@@ -65,7 +65,7 @@ namespace casual
                            { common::instance::variable( { proxy.configuration.name, proxy.id.value()})}
                         );
 
-                        instance.state( state::resource::Proxy::Instance::State::started);
+                        instance.state( state::resource::proxy::instance::State::started);
 
                         proxy.instances.push_back( std::move( instance));
                      }

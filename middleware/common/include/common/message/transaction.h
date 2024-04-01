@@ -346,6 +346,27 @@ namespace casual
          //! the context, and can act accordingly
          namespace external
          {
+            using base_instance = message::basic_process< Type::transaction_external_resource_instance>;
+
+            //! Message that is sent by external resources to register
+            //! them self to TM. This allows extra information valuable to 
+            //! users. 
+            struct Instance : base_instance
+            {
+               using base_instance::base_instance;
+
+               // the alias of the executable
+               std::string alias;
+               // human readable information (ex. domain-name)
+               std::string description;
+
+               CASUAL_CONST_CORRECT_SERIALIZE(
+                  base_instance::serialize( archive);
+                  CASUAL_SERIALIZE( alias);
+                  CASUAL_SERIALIZE( description);
+               )
+
+            };
 
             using Involved = basic_transaction< Type::transaction_external_resource_involved>;
 
@@ -364,6 +385,7 @@ namespace casual
                   return involved;
                }
             } // involved
+
          } // external
       } // resource
 

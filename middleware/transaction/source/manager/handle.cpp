@@ -696,7 +696,7 @@ namespace casual
                {
                   namespace instance
                   {
-                     void ready( State& state, state::resource::Proxy::Instance& instance)
+                     void ready( State& state, state::resource::proxy::Instance& instance)
                      {
                         Trace trace{ "transaction::manager::handle::local::resource::detail::instance::done"};
 
@@ -855,22 +855,32 @@ namespace casual
                      } // send
                   } // detail
 
-                  namespace involved
+
+                  auto instance( State& state)
                   {
-                     auto request( State& state)
+                     return [ &state]( common::message::transaction::resource::external::Instance& message)
                      {
-                        return [ &state]( common::message::transaction::resource::external::Involved& message)
-                        {
-                           Trace trace{ "transaction::manager::handle::local::resource::external::involved::request"};
-                           common::log::line( log, "message: ", message);
+                        Trace trace{ "transaction::manager::handle::local::resource::external::instance"};
+                        common::log::line( log, "message: ", message);
 
-                           auto id = state::resource::external::proxy::id( state, message.process);
+                        state::resource::external::instance::add( state, std::move( message));
+                     };
+                  }
 
-                           auto& transaction = *local::detail::transaction::find_or_add_and_involve( state, message, id);
-                           common::log::line( verbose::log, "transaction: ", transaction);
-                        };
-                     }
-                  } // involved
+
+                  auto involved( State& state)
+                  {
+                     return [ &state]( common::message::transaction::resource::external::Involved& message)
+                     {
+                        Trace trace{ "transaction::manager::handle::local::resource::external::involved"};
+                        common::log::line( log, "message: ", message);
+
+                        auto id = state::resource::external::instance::id( state, message.process);
+
+                        auto& transaction = *local::detail::transaction::find_or_add_and_involve( state, message, id);
+                        common::log::line( verbose::log, "transaction: ", transaction);
+                     };
+                  }
 
                   namespace prepare
                   {
@@ -1067,7 +1077,7 @@ namespace casual
 
                      auto& instance = state.get_instance( message.id, message.process.pid);
                      instance.process = message.process;
-                     instance.state( state::resource::Proxy::Instance::State::idle);
+                     instance.state( state::resource::proxy::instance::State::idle);
                      detail::instance::ready( state, instance);
                   };
                }
@@ -1314,7 +1324,8 @@ namespace casual
             local::resource::prepare::reply( state),
             local::resource::commit::reply( state),
             local::resource::rollback::reply( state),
-            local::resource::external::involved::request( state),
+            local::resource::external::instance( state),
+            local::resource::external::involved( state),
             local::resource::external::prepare::request( state),
             local::resource::external::commit::request( state),
             local::resource::external::rollback::request( state),

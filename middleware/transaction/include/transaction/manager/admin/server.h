@@ -10,30 +10,25 @@
 
 namespace casual
 {
-   namespace transaction
+   namespace transaction::manager
    {
-      namespace manager
+      struct State;
+      namespace admin
       {
-         struct State;
-         namespace admin
+         namespace service::name
          {
-            namespace service
+            constexpr std::string_view state = ".casual/transaction/state";
+
+            namespace scale
             {
-               namespace name
-               {
-                  constexpr auto state() { return ".casual/transaction/state";}
+               constexpr std::string_view instances = ".casual/transaction/scale/instances";
+            } // update
 
-                  namespace scale
-                  {
-                     constexpr auto instances() { return ".casual/transaction/scale/instances";}
-                  } // update
-               } // name
-            } // service
+         } // service::name
 
-            common::server::Arguments services( manager::State& state);
-
-         } // manager
+         common::server::Arguments services( manager::State& state);
       } // admin
-   } // transaction
+
+   } // transaction::manager
 } // casual
 

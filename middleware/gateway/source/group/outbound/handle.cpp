@@ -728,25 +728,32 @@ namespace casual
                         // a new connection has been established, we need to register this with discovery.
                         casual::domain::discovery::provider::registration( *inbound, casual::domain::discovery::provider::Ability::discover);
 
+                        auto information = state.connections.information( descriptors.tcp);
+                        CASUAL_ASSERT( information);
 
                         auto handle = state.connections.process_handle( descriptors.ipc);
 
-                        casual::domain::message::discovery::topology::direct::Update update{ handle};
+                        // We let TM know about the new external resource, that might be used in the future
                         {
-                           update.origin = message.domain;
+                           common::message::transaction::resource::external::Instance instance{ handle};
+                           instance.alias = instance::alias();
+                           instance.description = information->domain.name;
+                           state.multiplex.send( ipc::manager::transaction(), instance);
+                        }
 
-                           const auto information = casual::assertion( algorithm::find( state.connections.information(), descriptors.tcp), "failed to find information for descriptor: ", descriptors.tcp);
+                        // let the _discovery_ know that the topology has been updated
+                        {
+                           casual::domain::message::discovery::topology::direct::Update update{ handle};
+                           update.origin = message.domain;
                            
-                           // should we add content
+                           // should we supply the configured stuff.
                            if( information->configuration)
                            {
                               update.configured.services = information->configuration.services;
                               update.configured.queues = information->configuration.queues;
                            }
+                           casual::domain::discovery::topology::direct::update( state.multiplex, update);
                         }
-
-                        // let the _discovery_ know that the topology has been updated
-                        casual::domain::discovery::topology::direct::update( state.multiplex, update);
                      };
                   }
 

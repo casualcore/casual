@@ -115,6 +115,7 @@ namespace casual
             case Type::transaction_resource_lookup_reply: return "transaction_resource_lookup_reply";
             case Type::transaction_resource_involved_request: return "transaction_resource_involved_request";
             case Type::transaction_resource_involved_reply: return "transaction_resource_involved_reply";
+            case Type::transaction_external_resource_instance: return "transaction_external_resource_instance";
             case Type::transaction_external_resource_involved: return "transaction_external_resource_involved";
             case Type::transaction_resource_id_request: return "transaction_resource_id_request";
             case Type::transaction_resource_id_reply: return "transaction_resource_id_reply";

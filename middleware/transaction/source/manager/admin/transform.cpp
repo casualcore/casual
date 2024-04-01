@@ -48,13 +48,28 @@ namespace casual
 
             namespace resource
             {
-               admin::model::resource::Instance instance( const state::resource::Proxy::Instance& value)
+               admin::model::resource::Instance instance( const state::resource::proxy::Instance& value)
                {
+                  auto transform_state = []( auto state)
+                  {
+                     using From = decltype( state);
+                     using To = admin::model::resource::instance::State;
+                     switch( state)
+                     {
+                        case From::absent: return To::absent;
+                        case From::idle: return To::idle;
+                        case From::busy: return To::busy;
+                        case From::started: return To::started;
+                        case From::shutdown: return To::shutdown;
+                     }
+                     return To::absent;
+                  };
+
                   admin::model::resource::Instance result;
 
                   result.id = value.id;
                   result.process = value.process;
-                  result.state = static_cast< admin::model::resource::Instance::State>( value.state());
+                  result.state = transform_state( value.state());
                   result.metrics = local::metrics< admin::model::Metrics>( value.metrics());
                   result.pending = local::metric< admin::model::Metric>( value.pending());
 
@@ -63,14 +78,16 @@ namespace casual
 
                namespace external
                {
-                  auto proxy()
+                  auto instance()
                   {
-                     return []( const state::resource::external::Proxy& value)
+                     return []( const state::resource::external::Instance& value)
                      {
-                        admin::model::resource::external::Proxy result;
+                        admin::model::resource::external::Instance result;
 
                         result.id = value.id;
                         result.process = value.process;
+                        result.alias = value.alias;
+                        result.description = value.description;
 
                         return result;
                      };
@@ -219,7 +236,7 @@ namespace casual
          admin::model::State result;
 
          common::algorithm::transform( state.resources, result.resources, &transform::resource::proxy);
-         common::algorithm::transform( state.externals, result.externals, local::resource::external::proxy());
+         common::algorithm::transform( state.externals, result.externals, local::resource::external::instance());
          common::algorithm::transform( state.transactions, result.transactions, local::transaction());
 
          common::algorithm::transform( state.pending.requests, result.pending.requests, local::pending::request());

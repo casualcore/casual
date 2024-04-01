@@ -55,7 +55,7 @@ namespace casual
 
       namespace resource
       {
-         struct Instance
+         namespace instance
          {
             enum class State : long
             {
@@ -63,17 +63,33 @@ namespace casual
                started,
                idle,
                busy,
-               startupError,
                shutdown
             };
 
+            constexpr std::string_view description( State value)
+            {
+               switch( value)
+               {
+                  case State::absent: return "absent";
+                  case State::started: return "started";
+                  case State::idle: return "idle";
+                  case State::busy: return "busy";
+                  case State::shutdown: return "shutdown";
+               }
+               return "<unknown>";
+            }
+            
+         } // instance
+
+         struct Instance
+         {
             common::strong::resource::id id;
             common::process::Handle process;
 
             Metrics metrics;
             Metric pending;
 
-            State state = State::absent;
+            instance::State state{};
 
             CASUAL_CONST_CORRECT_SERIALIZE(
                CASUAL_SERIALIZE( id);
@@ -125,19 +141,22 @@ namespace casual
 
          namespace external
          {
-            struct Proxy
+            struct Instance
             {
                common::strong::resource::id id;
                common::process::Handle process;
+               std::string alias;
+               std::string description;
 
                CASUAL_CONST_CORRECT_SERIALIZE(
                   CASUAL_SERIALIZE( id);
                   CASUAL_SERIALIZE( process);
+                  CASUAL_SERIALIZE( alias);
+                  CASUAL_SERIALIZE( description);
                )
 
-               inline friend bool operator == ( const Proxy& lhs, common::strong::resource::id rhs) { return lhs.id == rhs;}
-
-               inline friend bool operator < ( const Proxy& lhs,  const Proxy& rhs) { return lhs.id < rhs.id;}
+               inline friend bool operator == ( const Instance& lhs, common::strong::resource::id rhs) { return lhs.id == rhs;}
+               inline friend bool operator < ( const Instance& lhs,  const Proxy& rhs) { return lhs.id < rhs.id;}
             };
          } // external
       } // resource
@@ -292,7 +311,7 @@ namespace casual
       struct State
       {
          std::vector< admin::model::resource::Proxy> resources;
-         std::vector< admin::model::resource::external::Proxy> externals;
+         std::vector< admin::model::resource::external::Instance> externals;
          std::vector< admin::model::Transaction> transactions;
 
          struct

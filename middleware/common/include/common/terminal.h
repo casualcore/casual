@@ -484,7 +484,16 @@ namespace casual
             }
          } // custom
 
-      } // format
+
+         inline std::string guard_empty( std::string value)
+         {
+            if( value.empty() && ! terminal::output::directive().porcelain())
+               return "-";
+
+            return value;
+         }
+
+      } // format      
 
       namespace formatter
       {

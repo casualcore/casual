@@ -62,9 +62,9 @@ namespace casual
 
             } // id
 
-            struct Proxy
+            namespace proxy
             {
-               struct Instance
+               namespace instance
                {
                   enum class State : short
                   {
@@ -72,12 +72,14 @@ namespace casual
                      started,
                      idle,
                      busy,
-                     error,
                      shutdown
                   };
-                  friend std::string_view description( State value) noexcept;
-
+                  std::string_view description( State value) noexcept;
                   
+               } // instance
+
+               struct Instance
+               {
                   void reserve();
                   //! used when requests has been pending.
                   void reserve( platform::time::point::type requested);
@@ -86,14 +88,14 @@ namespace casual
                   common::strong::resource::id id;
                   common::process::Handle process;
 
-                  void state( State state);
-                  State state() const;
+                  void state( instance::State state);
+                  instance::State state() const;
 
                   inline const Metrics& metrics() const noexcept { return m_metrics;}
                   inline const common::Metric& pending() const noexcept { return m_pending;}
 
                   inline friend bool operator == ( const Instance& lhs, common::strong::process::id rhs) { return lhs.process.pid == rhs;}
-                  inline friend bool operator == ( const Instance& lhs, State rhs) { return lhs.state() == rhs;}
+                  inline friend bool operator == ( const Instance& lhs, instance::State rhs) { return lhs.state() == rhs;}
 
                   CASUAL_LOG_SERIALIZE(
                      CASUAL_SERIALIZE( id);
@@ -107,18 +109,22 @@ namespace casual
                private:
                   void general_reserve( platform::time::point::type now);
 
-                  State m_state = State::absent;
+                  instance::State m_state = instance::State::absent;
                   platform::time::point::type m_reserved{};
                   Metrics m_metrics;
                   common::Metric m_pending;
                };
+               
+            } // proxy
 
+            struct Proxy
+            {
                inline Proxy( configuration::model::transaction::Resource configuration)
                   : configuration{ std::move( configuration)} {}
 
                common::strong::resource::id id = common::strong::resource::id::generate();
 
-               std::vector< Instance> instances;
+               std::vector< proxy::Instance> instances;
                configuration::model::transaction::Resource configuration;
 
                //! This 'counters' keep track of metrics for removed
@@ -147,31 +153,35 @@ namespace casual
 
             namespace external
             {
-               struct Proxy
+               struct Instance
                {
-                  Proxy( common::process::Handle process, common::strong::resource::id id);
-
                   common::process::Handle process;
-
                   //! RM id
                   common::strong::resource::id id;
+                  std::string alias;
+                  std::string description;
 
                   // TODO maintainence: get metrics for "external" resources
                   // Metrics metrics;
 
-                  inline friend bool operator == ( const Proxy& lhs, const common::strong::ipc::id& rhs) { return lhs.process == rhs;}
-                  inline friend bool operator == ( const Proxy& lhs, common::strong::resource::id rhs) { return lhs.id == rhs;}
+                  inline friend bool operator == ( const Instance& lhs, common::process::compare_equal_to_handle auto rhs) { return lhs.process == rhs;}
+                  inline friend bool operator == ( const Instance& lhs, common::strong::resource::id rhs) { return lhs.id == rhs;}
 
                   CASUAL_LOG_SERIALIZE(
                      CASUAL_SERIALIZE( process);
                      CASUAL_SERIALIZE( id);
+                     CASUAL_SERIALIZE( alias);
+                     CASUAL_SERIALIZE( description);
                   )
                };
 
-               namespace proxy
+               namespace instance
                {
+                  void add( State& state, common::message::transaction::resource::external::Instance&& message);
+
+                  //! @returns the id of the external resource instance.
                   common::strong::resource::id id( State& state, const common::process::Handle& process);
-               } // proxy
+               } // instance
             } // external
          } // resource
 
@@ -333,7 +343,7 @@ namespace casual
 
          std::vector< state::Transaction> transactions;
          std::vector< state::resource::Proxy> resources;
-         std::vector< state::resource::external::Proxy> externals;
+         std::vector< state::resource::external::Instance> externals;
 
          struct
          {
@@ -414,20 +424,22 @@ namespace casual
          const state::resource::Proxy& get_resource( const std::string& name) const;
          state::resource::Proxy* find_resource( common::strong::resource::id rm);
          state::resource::Proxy* find_resource( const std::string& name);
-         state::resource::Proxy::Instance& get_instance( common::strong::resource::id rm, common::strong::process::id pid);
+         state::resource::proxy::Instance& get_instance( common::strong::resource::id rm, common::strong::process::id pid);
 
          bool remove_instance( common::strong::process::id pid);
 
          //! @return a reserved instance, nullptr if all are busy.
-         state::resource::Proxy::Instance* try_reserve( common::strong::resource::id rm);
+         state::resource::proxy::Instance* try_reserve( common::strong::resource::id rm);
 
-         const state::resource::external::Proxy& get_external( common::strong::resource::id rm) const;
-         const state::resource::external::Proxy* find_external( common::strong::resource::id rm) const noexcept;
+         const state::resource::external::Instance& get_external( common::strong::resource::id rm) const;
+         const state::resource::external::Instance* find_external( common::strong::resource::id rm) const noexcept;
 
          common::message::transaction::configuration::alias::Reply configuration(
             const common::message::transaction::configuration::alias::Request& request);
 
          configuration::model::transaction::Model configuration() const;
+
+
 
          CASUAL_LOG_SERIALIZE(
             CASUAL_SERIALIZE( transactions);

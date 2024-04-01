@@ -17,7 +17,9 @@
 #include "common/communication/instance.h"
 #include "common/communication/select/ipc.h"
 #include "common/message/signal.h"
+#include "common/message/transaction.h"
 #include "common/environment.h"
+#include "common/instance.h"
 
 namespace casual
 {
@@ -63,6 +65,26 @@ namespace casual
                   CASUAL_LOG_SERIALIZE()
                };
 
+               void connect_with_QM()
+               {
+                  // connect to queue-manager - it will send configuration::update::Request that we'll handle
+                  // in the main message pump
+                  communication::device::blocking::send( 
+                     communication::instance::outbound::queue::manager::device(),
+                     ipc::message::group::Connect{ process::handle()});
+               }
+
+               void connect_with_TM()
+               {
+                  common::message::transaction::resource::external::Instance message{ process::handle()};
+                  message.alias = instance::alias();
+                  message.description = "queue-group";
+                  
+                  communication::device::blocking::send( 
+                     communication::instance::outbound::transaction::manager::device(),
+                     message);
+               }
+
                State initialize( Settings settings)
                {
                   Trace trace{ "queue::group::local::initialize"};
@@ -75,11 +97,9 @@ namespace casual
                      ipc::device().push( common::message::signal::Timeout{});
                   });
 
-                  // connect to queue-manager - it will send configuration::update::Request that we'll handle
-                  // in the main message pump
-                  communication::device::blocking::send( 
-                     communication::instance::outbound::queue::manager::device(),
-                     ipc::message::group::Connect{ process::handle()});
+                  connect_with_QM();
+
+                  connect_with_TM();
 
                   // 'connect' to our local domain
                   common::communication::instance::whitelist::connect();
