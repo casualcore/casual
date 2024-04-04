@@ -13,31 +13,45 @@ course be used as a mean to help document actual production configuration.
 
 
 
-## transaction
+## domain.transaction
 
 Defines transaction related configuration.
 
-### log
+## domain.transaction.default.resource
+
+property                 | description                  | default
+-------------------------|------------------------------|---------
+[key : `string`]         | default key to use           |
+[instances : `integer`]  | default number of instances  | `1`
+
+Note: `key` has to be present in `system.resources.key`
+
+
+### domain.transaction.log : `string`
 
 The path of the distributed transactions log file. When a distributed transaction reaches prepare,
 this state is persistent stored, before the actual commit stage.
 
 if `:memory:` is used, the log is non-persistent. 
 
-### resources
+### domain.transaction.resources _(list)_
 
 Defines all resources that `servers` and `executables` can be associated with, within this configuration.
 
-property       | description
----------------|----------------------------------------------------
-key            | the resource key - correlates to a defined resource in the resource.property (for current _machine_)
-name           | a user defined name, used to correlate this resource within the rest of the configuration. 
-instances      | number of resource-proxy instances transaction-manger should start. To handle distributed transactions
-openinfo       | resources specific _open_ configurations for the particular resource.
-closeinfo      | resources specific _close_ configurations for the particular resource.
+property                | description                                | default
+------------------------|--------------------------------------------|--------------------------------
+name : `string`         | a (unique) name to reference this resource |
+[key : `string`]        | the resource key                           | `domain.transaction.default.resource.key`
+[instances : `integer`] | number of resource-proxy instances         | `domain.transaction.default.resource.instances`
+[openinfo : `string`]   | resource specific _open_ configurations    |
+[closeinfo : `string`]  | resource specific _close_ configurations   |
+
+
+Note: `key` has to be present in `system.resources.key`
+
 ## examples 
 
-Below follows examples in human readable formats that `casual` can handle
+Below follows examples in `yaml` and `json` _(casual can also handle `ini` and `xml`)_
 
 ### yaml
 ```` yaml
@@ -100,73 +114,4 @@ domain:
         }
     }
 }
-````
-### ini
-```` ini
-
-[domain]
-
-[domain.transaction]
-log=/some/fast/disk/domain.A42/transaction.log
-
-[domain.transaction.default]
-
-[domain.transaction.default.resource]
-instances=3
-key=db2_rm
-
-[domain.transaction.resources]
-instances=5
-name=customer-db
-note=this resource is named 'customer-db' - using the default rm-key (db_rm) - overrides the default rm-instances to 5
-openinfo=db=customer,uid=db2,pwd=db2
-
-[domain.transaction.resources]
-name=sales-db
-note=this resource is named 'sales-db' - using the default rm-key (db_rm) - using default rm-instances
-openinfo=db=sales,uid=db2,pwd=db2
-
-[domain.transaction.resources]
-closeinfo=some-mq-specific-stuff
-key=mq_rm
-name=event-queue
-note=this resource is named 'event-queue' - overrides rm-key - using default rm-instances
-openinfo=some-mq-specific-stuff
-
-````
-### xml
-```` xml
-<?xml version="1.0"?>
-<domain>
- <transaction>
-  <default>
-   <resource>
-    <key>db2_rm</key>
-    <instances>3</instances>
-   </resource>
-  </default>
-  <log>/some/fast/disk/domain.A42/transaction.log</log>
-  <resources>
-   <element>
-    <name>customer-db</name>
-    <instances>5</instances>
-    <note>this resource is named 'customer-db' - using the default rm-key (db_rm) - overrides the default rm-instances to 5</note>
-    <openinfo>db=customer,uid=db2,pwd=db2</openinfo>
-   </element>
-   <element>
-    <name>sales-db</name>
-    <note>this resource is named 'sales-db' - using the default rm-key (db_rm) - using default rm-instances</note>
-    <openinfo>db=sales,uid=db2,pwd=db2</openinfo>
-   </element>
-   <element>
-    <name>event-queue</name>
-    <key>mq_rm</key>
-    <note>this resource is named 'event-queue' - overrides rm-key - using default rm-instances</note>
-    <openinfo>some-mq-specific-stuff</openinfo>
-    <closeinfo>some-mq-specific-stuff</closeinfo>
-   </element>
-  </resources>
- </transaction>
-</domain>
-
 ````

@@ -12,31 +12,70 @@ The examples further down uses this to make it easier to understand the examples
 course be used as a mean to help document actual production configuration.  
 
 
+
 ## structures
 
 General "structures" that other parts of the configuration refers to.
 
+### Duration : `string`
 
-### domain::Environment
+A string representation of a _duration_. SI units can be used. Example: `30ms`, `1h`, `3min`, `40s`. if no SI unit `s` is used
 
-#### Variable
+### domain::service::Visibility : `string`
 
-property       | description
----------------|----------------------------------------------------
-key            | environment variable name
-value          | the value to associate with the environment variable
+A string representation that defines the visibility of a service
 
-property       | description
----------------|----------------------------------------------------
-variables      | `0..*` `domain::environment::Variable`, described above.
+value           | description
+----------------|---------------------
+discoverable    | service is discoverable from other domains
+undiscoverable  | service is **not** discoverable from other domains
 
 
-### service::execution::Timeout
+### domain::service::timeout::Contract : `string`
 
-property       | description
----------------|----------------------------------------------------
-duration       | timeout of service, from the _caller_ perspective (example: `30ms`, `1h`, `3min`, `40s`. if no SI unit `s` is used)
-contract       | defines action to take if timeout is passed (linger = just wait, kill = send kill signal, terminate = send terminate signal)
+A string representation that defines the timeout contract. Can be one of the following:
+
+value         | description
+--------------|---------------------
+linger        | no action, let the server be
+kill          | send `kill` signal
+terminate     | `@deprecated` send terminate signal
+
+
+### domain::service::Timeout _(structure)_
+
+property                 | description                          | default
+-------------------------|--------------------------------------|-------------
+[duration : `Duration`]  | timeout duration for a service.      | _no duration_
+[contract : `Contract`]  | action to take if timeout is passed  | `linger`
+
+
+### domain::environment::Variable _(structure)_
+
+property         | description
+-----------------|----------------------------------------------------
+key : `string`   | environment variable name
+value : `string` | the value to associate with the environment variable
+
+### domain::Environment _(structure)_
+
+property                   | description
+---------------------------|----------------------------------------------------
+[variables : `[Variable]`] | environment variables
+[files : `[string]`]       | paths to files that contains `Environment`
+
+Note: a file referred from `files` must contain the structure.
+
+```yaml
+environment:
+  variables:
+    - key: "SOME_VARIABLE"
+      value: "foo"
+  files:
+    - "another-file.json"
+```
+
+And has corresponding extension as the format _(my-environment.json, env.yaml and so on)_.
 
 
 ## domain.global
@@ -47,99 +86,106 @@ Defines _domain global_ configuration.
 
 _domain global_ settings for services. This will effect services that are not otherwise configured explicitly,
 
-property       | description
----------------|----------------------------------------------------
-execution      | `service::execution::Timeout`, described above.
+property                        | description
+--------------------------------|----------------------------------------------------
+[execution.timeout : `Timeout`] | global default timeout
 
 ## domain.default
 
 'default' configuration. Will be used as fallback within a configuration. Will not aggregate 'between' configurations.
 Only used to help user minimize common configuration.
 
+
 ### domain.default.server
 
-property       | description
----------------|----------------------------------------------------
-instances      | number of instances to start of the server.
-memberships    | `0..*` default group memberships.
-environment    | `domain::Environment` described above.
-restart        | if the server should be restarted, if exit.
+property                       | description                  | default
+-------------------------------|------------------------------|---------------------
+[instances : `integer`]        | default number of instances. | `1`
+[memberships : `[string]`]     | default group memberships.   |
+[environment : `Environment`]  | default server environment   |
+[restart : `boolean`]          | default restart directive    | `false`
 
 ### domain.default.executable
 
-property       | description
----------------|----------------------------------------------------
-instances      | number of instances to start of the server.
-memberships    | `0..*` default group memberships.
-environment    | `domain::Environment` described above.
-restart        | if the executable should be restarted, if exit.
+property                       | description                  | default
+-------------------------------|------------------------------|---------------------
+[instances : `integer`]        | default number of instances. | `1`
+[memberships : `[string]`]     | default group memberships.   |
+[environment : `Environment`]  | default server environment   |
+[restart : `boolean`]          | default restart directive    | `false`
 
 ### domain.default.service
 
-property         | description
------------------|----------------------------------------------------
-execution        | `service::execution::Timeout`, described above.
-visibility       | visibility (from other domains). Possible values: [ 'discoverable', 'undiscoverable'] 
-
-## domain.groups
-
-Defines the groups in the configuration. Groups are used to associate `resources` to servers/executables
-and to define the dependency order.
-
-property       | description
----------------|----------------------------------------------------
-name           | the name (unique key) of the group.
-dependencies   | defines which other groups this group has dependency to.
-resources      | defines which resources (name) this group associate with (transient to the members of the group)
+property                        | description                   | default
+--------------------------------|-------------------------------|------------------
+[execution.timeout : `Timeout`] | default service timeout       | `domain.global.service.execution.timeout`
+[visibility : Visibility]       | visibility from other domains | `discoverable`
 
 
-## domain.servers
+## domain.groups _(list)_
+
+Defines the groups in the configuration. Groups are used define dependency order, which is 
+used during boot and shutdown. 
+Groups can be used to associate `resources` to servers/executables.
+
+property                      | description
+------------------------------|----------------------------------------------------
+name : `string`               | the name (unique key) of the group.
+[dependencies : `[string]`]   | name of groups this group has dependency to.
+[resources : `[string]`]      | names of resources this group is associated with (transient to the members of the group)
+
+
+## domain.servers _(list)_
 
 Defines all servers of the configuration (and domain) 
 
-property       | description
----------------|----------------------------------------------------
-path           | the path to the binary, can be relative to `CASUAL_DOMAIN_HOME`, or implicit via `PATH`.
-alias          | the logical (unique) name of the server. If not provided basename of `path` will be used
-arguments      | arguments to `tpsvrinit` during startup.
-instances      | number of instances to start of the server.
-memberships    | which groups are the server member of (dictates order, and possible resource association)
-restrictions   | regex pattern, if provided only the services that matches at least one of the patterns are actually advertised.
-resources      | explicit resource associations (transaction.resources.name)
-restart        | if the server should be restarted, if exit.
+property                       | description                                                | default
+-------------------------------|------------------------------------------------------------|---------------------------
+path : `string`                | the path to the binary (if not absolute, `PATH` is used)   |
+[alias : `string`]             | the logical (unique) name of the server.                   | `basename( path)`
+[arguments : `[string]`]       | arguments to `tpsvrinit` during startup.                   |
+[instances : `integer`]        | number of instances to start of the server.                | `domain.default.server.instances`
+[memberships : `[string]`]     | groups that the server is member of                        | `domain.default.server.memberships`
+[environment : `Environment`]  | explicit environments for instances of this server         | `domain.default.server.environment`
+[restrictions : `[regex]`]     | regex patterns, only services that matches are advertised. |
+[resources : `[string]`]       | explicit resource associations (resource names)            |
+[restart : `boolean`]          | if the server should be restarted, if exit.                | `domain.default.server.restart`
 
 
-## domain.executables
+## domain.executables _(list)_
 
 Defines all _ordinary_ executables of the configuration. Could be any executable with a `main` function
 
-property       | description
----------------|----------------------------------------------------
-path           | the path to the binary, can be relative to `CASUAL_DOMAIN_HOME`, or implicit via `PATH`.
-alias          | the logical (unique) name of the executable. If not provided basename of `path` will be used
-arguments      | arguments to `main` during startup.
-instances      | number of instances to start of the server.
-memberships    | which groups are the server member of (dictates order)
-restart        | if the executable should be restarted, if exit.
+property                       | description                                                | default
+-------------------------------|------------------------------------------------------------|---------------------------
+path : `string`                | the path to the binary (if not absolute, `PATH` is used)   |
+[alias : `string`]             | the logical (unique) name of the executable.               | `basename( path)`
+[arguments : `[string]`]       | arguments to main during startup.                          |
+[instances : `integer`]        | number of instances to start of the server.                | `domain.default.executable.instances`
+[memberships : `[string]`]     | groups that the executable is member of                    | `domain.default.executable.memberships`
+[environment : `Environment`]  | explicit environments for instances of this executable     | `domain.default.executable.environment`
+[restart : `boolean`]          | if the executable should be restarted, if exit.            | `domain.default.executable.restart`
 
 
-## domain.services
+## domain.services _(list)_
 
 Defines service related configuration. 
 
-Note that this configuration is tied to the service, regardless who has advertised the service.
+Note: This configuration is tied to the service, regardless who has advertised the service.
 
-property         | description
------------------|----------------------------------------------------
-name             | name of the service
-routes           | defines what logical names are actually exposed. For _aliases_, it's important to include the original name.
-execution        | `service::execution::Timeout`, described above.
-visibility       | visibility (from other domains). Possible values: [ 'discoverable', 'undiscoverable'] 
+property                        | description                      | default
+--------------------------------|----------------------------------|-----------------
+name : `string`                 | name of the service              |
+[routes : `[string]`]           | names to use instead of `name`.  |
+[execution.timeout : `Timeout`] | timeout of the service           | `domain.default.service.execution.timeout` 
+[visibility : `Visibility`]     | visibility from other domains    | `domain.default.service.visibility`
+
+Note: For _service aliases_, it's important to include the original name in `routes`
 
 
 ## examples 
 
-Below follows examples in human readable formats that `casual` can handle
+Below follows examples in `yaml` and `json` _(casual can also handle `ini` and `xml`)_
 
 ### yaml
 ```` yaml
@@ -416,299 +462,4 @@ domain:
         ]
     }
 }
-````
-### ini
-```` ini
-
-[domain]
-name=domain-name
-
-[domain.default]
-note='default', fallback, configuration. Will only affect 'local' configuration and will not aggregate 'between' configurations
-
-[domain.default.executable]
-instances=1
-restart=false
-
-[domain.default.server]
-instances=1
-memberships=customer-group
-restart=true
-
-[domain.default.server.environment]
-
-[domain.default.server.environment.variables]
-key=SOME_VARIABLE
-value=foo
-
-[domain.default.service]
-visibility=discoverable
-
-[domain.default.service.execution]
-
-[domain.default.service.execution.timeout]
-duration=20s
-
-[domain.environment]
-
-[domain.environment.variables]
-key=SOME_VARIABLE
-value=42
-
-[domain.environment.variables]
-key=SOME_OTHER_VARIABLE
-value=some value
-
-[domain.executables]
-arguments=--configuration
-arguments=/path/to/configuration
-memberships=common-group
-path=/some/path/mq-server
-
-[domain.global]
-note='domain global' config. Aggregates right to left
-
-[domain.global.service]
-note=Will be used for services that are not explicitly configured.
-
-[domain.global.service.execution]
-
-[domain.global.service.execution.timeout]
-contract=linger
-duration=2h
-
-[domain.groups]
-name=common-group
-note=group that logically groups 'common' stuff
-
-[domain.groups]
-dependencies=common-group
-name=customer-group
-note=group that logically groups 'customer' stuff
-resources=customer-db
-
-[domain.groups]
-dependencies=customer-group
-name=sales-group
-note=group that logically groups 'customer' stuff
-resources=sales-db
-resources=event-queue
-
-[domain.servers]
-memberships=customer-group
-path=/some/path/customer-server-1
-
-[domain.servers]
-memberships=customer-group
-path=/some/path/customer-server-2
-
-[domain.servers]
-alias=sales-pre
-instances=10
-memberships=sales-group
-note=the only services that will be advertised are the ones who matches regex "preSales.*"
-path=/some/path/sales-server
-restrictions=preSales.*
-
-[domain.servers]
-alias=sales-post
-memberships=sales-group
-note=he only services that will be advertised are the ones who matches regex "postSales.*"
-path=/some/path/sales-server
-restrictions=postSales.*
-
-[domain.servers]
-memberships=sales-group
-path=/some/path/sales-broker
-resources=event-queue
-
-[domain.servers.environment]
-
-[domain.servers.environment.variables]
-key=SALES_BROKER_VARIABLE
-value=556
-
-[domain.services]
-name=a
-routes=b
-routes=c
-visibility=undiscoverable
-
-[domain.services.execution]
-
-[domain.services.execution.timeout]
-contract=terminate
-duration=64ms
-
-````
-### xml
-```` xml
-<?xml version="1.0"?>
-<domain>
- <name>domain-name</name>
- <global>
-  <note>'domain global' config. Aggregates right to left</note>
-  <service>
-   <note>Will be used for services that are not explicitly configured.</note>
-   <execution>
-    <timeout>
-     <duration>2h</duration>
-     <contract>linger</contract>
-    </timeout>
-   </execution>
-  </service>
- </global>
- <default>
-  <note>'default', fallback, configuration. Will only affect 'local' configuration and will not aggregate 'between' configurations</note>
-  <server>
-   <instances>1</instances>
-   <restart>true</restart>
-   <memberships>
-    <element>customer-group</element>
-   </memberships>
-   <environment>
-    <variables>
-     <element>
-      <key>SOME_VARIABLE</key>
-      <value>foo</value>
-     </element>
-    </variables>
-   </environment>
-  </server>
-  <executable>
-   <instances>1</instances>
-   <restart>false</restart>
-  </executable>
-  <service>
-   <execution>
-    <timeout>
-     <duration>20s</duration>
-    </timeout>
-   </execution>
-   <visibility>discoverable</visibility>
-  </service>
- </default>
- <environment>
-  <variables>
-   <element>
-    <key>SOME_VARIABLE</key>
-    <value>42</value>
-   </element>
-   <element>
-    <key>SOME_OTHER_VARIABLE</key>
-    <value>some value</value>
-   </element>
-  </variables>
- </environment>
- <groups>
-  <element>
-   <name>common-group</name>
-   <note>group that logically groups 'common' stuff</note>
-  </element>
-  <element>
-   <name>customer-group</name>
-   <note>group that logically groups 'customer' stuff</note>
-   <resources>
-    <element>customer-db</element>
-   </resources>
-   <dependencies>
-    <element>common-group</element>
-   </dependencies>
-  </element>
-  <element>
-   <name>sales-group</name>
-   <note>group that logically groups 'customer' stuff</note>
-   <resources>
-    <element>sales-db</element>
-    <element>event-queue</element>
-   </resources>
-   <dependencies>
-    <element>customer-group</element>
-   </dependencies>
-  </element>
- </groups>
- <servers>
-  <element>
-   <path>/some/path/customer-server-1</path>
-   <memberships>
-    <element>customer-group</element>
-   </memberships>
-  </element>
-  <element>
-   <path>/some/path/customer-server-2</path>
-   <memberships>
-    <element>customer-group</element>
-   </memberships>
-  </element>
-  <element>
-   <path>/some/path/sales-server</path>
-   <alias>sales-pre</alias>
-   <note>the only services that will be advertised are the ones who matches regex "preSales.*"</note>
-   <instances>10</instances>
-   <memberships>
-    <element>sales-group</element>
-   </memberships>
-   <restrictions>
-    <element>preSales.*</element>
-   </restrictions>
-  </element>
-  <element>
-   <path>/some/path/sales-server</path>
-   <alias>sales-post</alias>
-   <note>he only services that will be advertised are the ones who matches regex "postSales.*"</note>
-   <memberships>
-    <element>sales-group</element>
-   </memberships>
-   <restrictions>
-    <element>postSales.*</element>
-   </restrictions>
-  </element>
-  <element>
-   <path>/some/path/sales-broker</path>
-   <memberships>
-    <element>sales-group</element>
-   </memberships>
-   <environment>
-    <variables>
-     <element>
-      <key>SALES_BROKER_VARIABLE</key>
-      <value>556</value>
-     </element>
-    </variables>
-   </environment>
-   <resources>
-    <element>event-queue</element>
-   </resources>
-  </element>
- </servers>
- <executables>
-  <element>
-   <path>/some/path/mq-server</path>
-   <arguments>
-    <element>--configuration</element>
-    <element>/path/to/configuration</element>
-   </arguments>
-   <memberships>
-    <element>common-group</element>
-   </memberships>
-  </element>
- </executables>
- <services>
-  <element>
-   <name>a</name>
-   <execution>
-    <timeout>
-     <duration>64ms</duration>
-     <contract>terminate</contract>
-    </timeout>
-   </execution>
-   <routes>
-    <element>b</element>
-    <element>c</element>
-   </routes>
-   <visibility>undiscoverable</visibility>
-  </element>
- </services>
-</domain>
-
 ````

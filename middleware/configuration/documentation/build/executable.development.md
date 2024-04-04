@@ -21,7 +21,7 @@ the `entrypoint` was the `main` function.
 
 ## examples 
 
-Below follows examples in human readable formats that `casual` can handle
+Below follows examples in `yaml` and `json` _(casual can also handle `ini` and `xml`)_
 
 ### yaml
 ```` yaml
@@ -49,31 +49,4 @@ executable:
         "entrypoint": "start"
     }
 }
-````
-### ini
-```` ini
-
-[executable]
-entrypoint=start
-
-[executable.resources]
-key=rm-mockup
-name=resource-1
-note=the runtime configuration for this resource is correlated with the name 'resource-1' - no group is needed for resource configuration
-
-````
-### xml
-```` xml
-<?xml version="1.0"?>
-<executable>
- <resources>
-  <element>
-   <key>rm-mockup</key>
-   <name>resource-1</name>
-   <note>the runtime configuration for this resource is correlated with the name 'resource-1' - no group is needed for resource configuration</note>
-  </element>
- </resources>
- <entrypoint>start</entrypoint>
-</executable>
-
 ````
