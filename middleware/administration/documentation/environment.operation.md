@@ -24,18 +24,18 @@ This often resolve itself if every domain are actual users, with `HOME` director
 care needs to be taken regarding uniqueness of paths.
 
 
-name                                 | default                                       | unique | description  
--------------------------------------|-----------------------------------------------|---|----------------------------------------------
-`CASUAL_HOME`                        | **has to be set**                             | N | where `casual` is installed
-`CASUAL_DOMAIN_HOME`                 | **has to be set**                             |`Y`| points to _home_ of current `casual domain`. 
-`CASUAL_LOG_PATH`                    | `${CASUAL_DOMAIN_HOME}/casual.log`            | N | where to write logs
-`CASUAL_TRANSIENT_DIRECTORY`         | `<temp-dir>/.casual`                          | N | where transient files are stored
-`CASUAL_PERSISTENT_DIRECTORY`        | `${CASUAL_DOMAIN_HOME}/.casual`               |`Y`| where persistent files are stored
-`CASUAL_IPC_DIRECTORY`               | `${CASUAL_TRANSIENT_DIRECTORY}/ipc`           | N | where ipc _files_ are stored
-`CASUAL_TRANSACTION_DIRECTORY`       | `${CASUAL_PERSISTENT_DIRECTORY}/transaction`  |`Y`| where transaction 'database' file is stored (if not stated in configuration).
-`CASUAL_QUEUE_DIRECTORY`             | `${CASUAL_PERSISTENT_DIRECTORY}/queue`        |`Y`| where queue 'database' files are stored (if not stated in configuration).
-`CASUAL_SYSTEM_CONFIGURATION_GLOB`   | `${CASUAL_HOME}/configuration/resources.yaml` | N | glob pattern for system configuration (including resource)
-_`CASUAL_RESOURCE_CONFIGURATION_FILE`_ | _`${CASUAL_HOME}/configuration/resources.yaml`_ | - | **deprecated**
+name                                   | default                                         | unique | description  
+---------------------------------------|-------------------------------------------------|--------|----------------------------------------------
+`CASUAL_HOME`                          | **has to be set**                               | `false`| where `casual` is installed
+`CASUAL_DOMAIN_HOME`                   | **has to be set**                               | `true` | points to _home_ of current `casual domain`. 
+`CASUAL_LOG_PATH`                      | `${CASUAL_DOMAIN_HOME}/casual.log`              | `false`| where to write logs
+`CASUAL_TRANSIENT_DIRECTORY`           | `<temp-dir>/.casual`                            | `false`| where transient files are stored
+`CASUAL_PERSISTENT_DIRECTORY`          | `${CASUAL_DOMAIN_HOME}/.casual`                 | `true` | where persistent files are stored
+`CASUAL_IPC_DIRECTORY`                 | `${CASUAL_TRANSIENT_DIRECTORY}/ipc`             | `false`| where ipc _files_ are stored
+`CASUAL_TRANSACTION_DIRECTORY`         | `${CASUAL_PERSISTENT_DIRECTORY}/transaction`    | `true` | where transaction 'database' file is stored (if not stated in configuration).
+`CASUAL_QUEUE_DIRECTORY`               | `${CASUAL_PERSISTENT_DIRECTORY}/queue`          | `true` | where queue 'database' files are stored (if not stated in configuration).
+`CASUAL_SYSTEM_CONFIGURATION_GLOB`     | `${CASUAL_HOME}/configuration/resources.yaml`   | `false`| glob pattern for system configuration (including resource)
+_`CASUAL_RESOURCE_CONFIGURATION_FILE`_ | _`${CASUAL_HOME}/configuration/resources.yaml`_ | -      | **deprecated**
 
 ## directives
 
