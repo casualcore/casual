@@ -106,7 +106,7 @@ jobs:
           path: './**/casual-webapp.zip'
   
   build-centos:
-    runs-on: self-hosted
+    runs-on: [self-hosted, builder]
     if: ${{ success() }}
     needs: [calculate-version,build-frontend]
     env:
@@ -186,7 +186,7 @@ jobs:
           path: ./**/casual-middleware*.rpm
 
   build-suse:
-    runs-on: self-hosted
+    runs-on: [self-hosted, builder]
     if: ${{ success() }}
     needs: [calculate-version,build-frontend]
     env:
