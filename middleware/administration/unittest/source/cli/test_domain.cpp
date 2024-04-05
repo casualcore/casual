@@ -232,6 +232,48 @@ domain:
          EXPECT_TRUE( ! capture.standard.out.empty()) << CASUAL_NAMED_VALUE( capture);
       }
 
+      TEST( cli_domain, information__missing_instances_server)
+      {
+         common::unittest::Trace trace;
+
+         auto domain = local::domain( R"(
+domain:
+   servers:
+      - alias: unbootable
+        path: "i-do-not-exist"
+        memberships: [ user]
+        instances: 2
+)");
+
+         auto capture = administration::unittest::cli::command::execute( "casual domain --information --porcelain true | grep domain.manager.server.instances.missing | cut -d '|' -f 2");
+
+         constexpr auto expected = R"(2
+)";
+
+         EXPECT_TRUE( capture.standard.out == expected) << CASUAL_NAMED_VALUE( capture) << "\nexpected: " << expected;
+      }
+
+      TEST( cli_domain, information__missing_instances_executable)
+      {
+         common::unittest::Trace trace;
+
+         auto domain = local::domain( R"(
+domain:
+   executables:
+      - alias: unbootable
+        path: "i-do-not-exist"
+        memberships: [ user]
+        instances: 2
+)");
+
+         auto capture = administration::unittest::cli::command::execute( "casual domain --information --porcelain true | grep domain.manager.executable.instances.missing | cut -d '|' -f 2");
+
+         constexpr auto expected = R"(2
+)";
+
+         EXPECT_TRUE( capture.standard.out == expected) << CASUAL_NAMED_VALUE( capture) << "\nexpected: " << expected;
+      }
+
       TEST( cli_domain, environment__set_and_unset)
       {
          common::unittest::Trace trace;
