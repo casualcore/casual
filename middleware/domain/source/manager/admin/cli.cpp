@@ -748,6 +748,11 @@ note: not all options has legend, use 'auto complete' to find out which legends 
                         });
                      };
 
+                     auto instances_difference = [ &instances_count]( auto& range, auto minuend_predicate, auto subtrahend_predicate)
+                     {
+                        return instances_count( range, minuend_predicate) - instances_count( range, subtrahend_predicate);
+                     };
+
                      return {
                         { "version.casual", state.version.casual},
                         { "version.compiler", state.version.compiler},
@@ -761,11 +766,13 @@ note: not all options has legend, use 'auto complete' to find out which legends 
                         { "domain.manager.server.instances.running", string::compose( instances_count( state.servers, running))},
                         { "domain.manager.server.instances.scale.out", string::compose( instances_count( state.servers, scale_out))},
                         { "domain.manager.server.instances.scale.in", string::compose( instances_count( state.servers, scale_in))},
+                        { "domain.manager.server.instances.missing", string::compose( instances_difference( state.servers, all, running))},
                         { "domain.manager.server.restarts", string::compose( restarts( state.servers))},
                         { "domain.manager.executable.instances.configured",string::compose( instances_count( state.executables, all))},
                         { "domain.manager.executable.instances.running",string::compose( instances_count( state.executables, running))},
                         { "domain.manager.executable.instances.scale.out", string::compose( instances_count( state.executables, scale_out))},
                         { "domain.manager.executable.instances.scale.in", string::compose( instances_count( state.executables, scale_in))},
+                        { "domain.manager.executable.instances.missing", string::compose( instances_difference( state.executables, all, running))},
                         { "domain.manager.executable.restarts", string::compose( restarts( state.executables))},
                      };
                   }
