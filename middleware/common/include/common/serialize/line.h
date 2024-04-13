@@ -44,7 +44,7 @@ namespace casual
          void save( view::immutable::Binary value, const char* name);
          void save( const platform::binary::type& value, const char* name);
          void save( const std::string& value, const char* name);
-         void save( const string::immutable::utf8& value, const char* name);
+         void save( const std::u8string& value, const char* name);
 
          std::ostream& maybe_name( const char* name);
 

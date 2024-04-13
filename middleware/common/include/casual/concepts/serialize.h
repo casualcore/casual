@@ -9,7 +9,6 @@
 #include "casual/concepts.h"
 
 #include "common/view/binary.h"
-#include "common/string/utf8.h"
 
 namespace casual
 {
@@ -32,8 +31,8 @@ namespace casual
             //! predicate which types an archive can read/write 'natively'
             template< typename T> 
             concept type = concepts::decayed::any_of< T, bool, char, short, long, long long, float, double, 
-               common::view::immutable::Binary, common::view::Binary, common::string::immutable::utf8, common::string::utf8>
-               || concepts::derived_from< T, std::string, platform::binary::type>;
+               common::view::immutable::Binary, common::view::Binary>
+               || concepts::derived_from< T, std::string, std::u8string, platform::binary::type>;
          } // native
 
       } // archive

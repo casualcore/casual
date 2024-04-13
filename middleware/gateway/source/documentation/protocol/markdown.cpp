@@ -228,9 +228,9 @@ namespace casual
                   canonical.pop();
                }
 
-               void write( const common::string::immutable::utf8& value)
+               void write( const std::u8string& value)
                {
-                  write_size( value.get().size());
+                  write_size( value.size());
                   canonical.push( "data");
                   dynamic( 0, std::numeric_limits< platform::size::type>::max(), "dynamic (unicode) string");
                   canonical.pop();

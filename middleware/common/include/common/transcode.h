@@ -119,7 +119,7 @@ namespace casual
          //! @throw exception::limit::Memory on resource failures
          //! @throw exception::system::invalid::Argument for bad input
          //! @throw exception::Casual on other failures
-         std::string encode( const std::string& value);
+         std::u8string encode( std::string_view value);
 
          //! @param value The UTF-8 encoded string
          //!
@@ -128,7 +128,7 @@ namespace casual
          //! @throw exception::limit::Memory on resource failures
          //! @throw exception::system::invalid::Argument for bad input
          //! @throw exception::Casual on other failures
-         std::string decode( const std::string& value);
+         std::string decode( std::u8string_view value);
 
          //! @param codeset String-encoding
          //!
@@ -146,7 +146,7 @@ namespace casual
          //! @throw exception::limit::Memory on resource failures
          //! @throw exception::system::invalid::Argument for bad input
          //! @throw exception::Casual on other failures
-         std::string encode( const std::string& value, std::string_view codeset);
+         std::u8string encode( std::string_view value, std::string_view codeset);
 
          //! @param value The UTF-8 encoded string
          //! @param codeset Encoding for result
@@ -156,7 +156,23 @@ namespace casual
          //! @throw exception::limit::Memory on resource failures
          //! @throw exception::system::invalid::Argument for bad input
          //! @throw exception::Casual on other failures
-         std::string decode( const std::string& value, std::string_view codeset);
+         std::string decode( std::u8string_view value, std::string_view codeset);
+
+         inline std::u8string_view cast( std::string_view value) { return { reinterpret_cast< decltype( cast( value))::const_pointer>(value.data()), value.size()};}
+         inline std::string_view cast( std::u8string_view value) { return { reinterpret_cast< decltype( cast( value))::const_pointer>(value.data()), value.size()};}
+
+         namespace string
+         {
+            //! @see utf8::encode
+            std::string encode( std::string_view value);
+            //! @see utf8::decode
+            std::string decode( std::string_view value);
+
+            //! @see utf8::encode
+            std::string encode( std::string_view value, std::string_view codeset);
+            //! @see utf8::decode
+            std::string decode( std::string_view value, std::string_view codeset);
+         } // string
 
       } // utf8
 

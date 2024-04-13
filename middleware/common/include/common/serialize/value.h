@@ -13,7 +13,6 @@
 #include "common/traits.h"
 #include "common/view/binary.h"
 #include "common/code/serialize.h"
-#include "common/string/utf8.h"
 
 #include "casual/concepts/serialize.h"
 
@@ -714,22 +713,17 @@ namespace casual
       template< typename A>
       struct Value< std::filesystem::path, A>
       {
-         //! @todo: Remove usage of string::utf8 when using C++20
          static auto write( A& archive, const std::filesystem::path& path, const char* name)
          {
-            const auto data = path.string();
-            const string::immutable::utf8 wrapper{ data};
-            value::write( archive, wrapper, name);
+            value::write( archive, path.u8string(), name);
          }
 
-         //! @todo: Remove usage of string::utf8 when using C++20
          static auto read( A& archive, std::filesystem::path& path, const char* name)
          {
-            auto data = path.string();
-            string::utf8 wrapper{ data};
-            if( value::read( archive, wrapper, name))
+            std::u8string data;
+            if( value::read( archive, data, name))
             {
-               path = std::filesystem::path( std::move( data));
+               path = std::move( data);
                return true;
             }
             return false;

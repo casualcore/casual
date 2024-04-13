@@ -101,20 +101,21 @@ namespace casual
                   posix::log::result( iconv_close( m_descriptor), "iconv_close");
                }
 
-               std::string transcode( const std::string& value) const
+               auto transcode( const auto& source, auto& target) const
                {
-                  auto source = const_cast<char*>( value.c_str());
-                  auto size = value.size();
+                  static_assert( sizeof( source.front()) == 1);
+                  static_assert( sizeof( target.front()) == 1);
 
-                  std::string result;
+                  auto data = const_cast< char*>(reinterpret_cast< const char*>( source.data()));
+                  auto size = source.size();
 
                   do
                   {
                      char buffer[32];
                      auto left = sizeof buffer;
-                     char* target = buffer;
+                     char* output = buffer;
 
-                     const auto conversions = iconv( m_descriptor, &source, &size, &target, &left);
+                     const auto conversions = iconv( m_descriptor, &data, &size, &output, &left);
 
                      if( conversions == std::numeric_limits< decltype( conversions)>::max())
                      {
@@ -126,11 +127,11 @@ namespace casual
                         }
                      }
 
-                     result.append( buffer, target);
+                     target.append( 
+                        reinterpret_cast< std::decay_t< decltype( target)>::const_pointer>( buffer), 
+                        reinterpret_cast< std::decay_t< decltype( target)>::const_pointer>( output));
 
                   }while( size);
-
-                  return result;
                }
 
             private:
@@ -139,12 +140,12 @@ namespace casual
 
             namespace locale::name
             {
-               constexpr auto utf8 = std::string_view{ "UTF-8"};
-               constexpr auto current = std::string_view{ ""};
+               constexpr std::string_view utf8{ "UTF-8"};
+               constexpr std::string_view current{ ""};
                
             } // locale::name
 
-         } // <unnamed>
+         } // 
       } // local
 
       namespace utf8
@@ -159,12 +160,12 @@ namespace casual
          //
          [[maybe_unused]] const auto once = std::setlocale( LC_CTYPE, local::locale::name::current.data());
 
-         std::string encode( const std::string& value)
+         std::u8string encode( std::string_view value)
          {
             return encode( value, local::locale::name::current);
          }
 
-         std::string decode( const std::string& value)
+         std::string decode( std::u8string_view value)
          {
             return decode( value, local::locale::name::current);
          }
@@ -186,15 +187,47 @@ namespace casual
             return true;
          }
 
-         std::string encode( const std::string& value, std::string_view codeset)
+         std::u8string encode( std::string_view value, std::string_view codeset)
          {
-            return local::converter( codeset, local::locale::name::utf8).transcode( value);
+            std::u8string result;
+            local::converter( codeset, local::locale::name::utf8).transcode( value, result);
+            return result;
          }
 
-         std::string decode( const std::string& value, std::string_view codeset)
+         std::string decode( std::u8string_view value, std::string_view codeset)
          {
-            return local::converter( local::locale::name::utf8, codeset).transcode( value);
+            std::string result;
+            local::converter( local::locale::name::utf8, codeset).transcode( value, result);
+            return result;
          }
+
+         namespace string
+         {
+            std::string encode( std::string_view value)
+            {
+               return encode(value, local::locale::name::current);
+            }
+
+            std::string decode( std::string_view value)
+            {
+               return decode(value, local::locale::name::current);
+            }
+
+            std::string encode( std::string_view value, std::string_view codeset)
+            {
+               std::string result;
+               local::converter( codeset, local::locale::name::utf8).transcode( value, result);
+               return result;
+            }
+
+            std::string decode( std::string_view value, std::string_view codeset)
+            {
+               std::string result;
+               local::converter( local::locale::name::utf8, codeset).transcode( value, result);
+               return result;
+            }
+
+         } // string
 
       } // utf8
 

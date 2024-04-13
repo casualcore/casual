@@ -308,15 +308,15 @@ namespace casual
                         static void read( const pugi::xml_node& node, char& value)
                         { 
                            // If empty string this should result in '\0'
-                           value = *transcode::utf8::decode( node.text().get()).data(); 
+                           value = *transcode::utf8::string::decode( node.text().get()).data();
                         }
                         static void read( const pugi::xml_node& node, std::string& value)
                         {
-                           value = transcode::utf8::decode( node.text().get());
+                           value = transcode::utf8::string::decode( node.text().get());
                         }
-                        static void read( const pugi::xml_node& node, string::utf8& value)
+                        static void read( const pugi::xml_node& node, std::u8string& value)
                         {
-                           value.get() = node.text().get();
+                           value = transcode::utf8::cast( node.text().get());
                         }
                         static void read( const pugi::xml_node& node, std::vector<char>& value)
                         { 
@@ -426,7 +426,7 @@ namespace casual
                         {
                            std::ostringstream stream;
                            stream << std::boolalpha << value;
-                           m_stack.back().text().set( stream.str().data());
+                           m_stack.back().text().set( std::move( stream).str().data());
                         }
 
                         void write( const char& value)
@@ -436,12 +436,12 @@ namespace casual
 
                         void write( const std::string& value)
                         {
-                           m_stack.back().text().set( transcode::utf8::encode( value).data());
+                           write( transcode::utf8::encode( value));
                         }
 
-                        void write( const string::immutable::utf8& value)
+                        void write( const std::u8string& value)
                         {
-                           m_stack.back().text().set( value.get().data());
+                           m_stack.back().text().set( transcode::utf8::cast( value).data());
                         }
 
                         void write( const platform::binary::type& value)

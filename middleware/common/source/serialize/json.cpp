@@ -303,11 +303,11 @@ namespace casual
                         static void read( const rapidjson::Value* node, double& value)
                         { value = check::read( node, &rapidjson::Value::IsNumber, &rapidjson::Value::GetDouble); }
                         static void read( const rapidjson::Value* node, char& value)
-                        { value = *transcode::utf8::decode( check::read( node, &rapidjson::Value::IsString, &rapidjson::Value::GetString)).c_str(); }
+                        { value = *transcode::utf8::string::decode( check::read( node, &rapidjson::Value::IsString, &rapidjson::Value::GetString)).data(); }
                         static void read( const rapidjson::Value* node, std::string& value)
-                        { value = transcode::utf8::decode( check::read( node, &rapidjson::Value::IsString, &rapidjson::Value::GetString)); }
-                        static void read( const rapidjson::Value* node, string::utf8& value)
-                        { value.get() = check::read( node, &rapidjson::Value::IsString, &rapidjson::Value::GetString); }
+                        { value = transcode::utf8::string::decode( check::read( node, &rapidjson::Value::IsString, &rapidjson::Value::GetString)); }
+                        static void read( const rapidjson::Value* node, std::u8string& value)
+                        { value = transcode::utf8::cast( check::read( node, &rapidjson::Value::IsString, &rapidjson::Value::GetString)); }
                         static void read( const rapidjson::Value* node, platform::binary::type& value)
                         { value = transcode::base64::decode( check::read( node, &rapidjson::Value::IsString, &rapidjson::Value::GetString)); }
 
@@ -423,8 +423,8 @@ namespace casual
                         void write( const long long value) { m_stack.back()->SetInt64( value); }
                         void write( const float value) { m_stack.back()->SetDouble( value); }
                         void write( const double value) { m_stack.back()->SetDouble( value); }
-                        void write( const std::string& value) { m_stack.back()->SetString( transcode::utf8::encode( value), *m_allocator);}
-                        void write( const string::immutable::utf8& value) { m_stack.back()->SetString( value.get(), *m_allocator);}
+                        void write( const std::string& value) { m_stack.back()->SetString( transcode::utf8::string::encode( value), *m_allocator);}
+                        void write( const std::u8string& value) { m_stack.back()->SetString( transcode::utf8::cast( value).data(), value.size(), *m_allocator);}
                         void write( const platform::binary::type& value) { m_stack.back()->SetString( transcode::base64::encode( value), *m_allocator);}
                         void write( view::immutable::Binary value) { m_stack.back()->SetString( transcode::base64::encode( value), *m_allocator);}
 

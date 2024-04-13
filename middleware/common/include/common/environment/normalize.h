@@ -58,9 +58,9 @@ namespace casual
                return true;
             }
 
-            bool read( string::utf8& value)
+            bool read( std::u8string& value)
             {
-               m_policy( value.get());
+               m_policy( value);
                return true;
             }
 
@@ -79,6 +79,11 @@ namespace casual
                void operator () ( std::string& value) const 
                {
                   value = environment::expand( std::move( value));
+               }
+
+               void operator () ( std::u8string& value) const 
+               {
+                  // TODO: Somehow fix this
                }
             };
 
