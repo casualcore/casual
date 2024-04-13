@@ -54,10 +54,19 @@ namespace casual
                      {
                         // This is a help to check some to avoid terminate (via assert)
                         template<typename C, typename F>
-                        auto read( const rapidjson::Value* const value, C&& checker, F&& fetcher)
+                        auto trivial( const rapidjson::Value* const value, C&& checker, F&& fetcher)
                         {
                            if( invoke( checker, value))
                               return invoke( fetcher, value);
+
+                           // TODO operations: more information about what type and so on...
+                           code::raise::error( code::casual::invalid_node, "unexpected type");
+                        }
+
+                        auto string( const rapidjson::Value* const value)
+                        {
+                           if( invoke( &rapidjson::Value::IsString, value))
+                              return std::string_view{ value->GetString(), value->GetStringLength()};
 
                            // TODO operations: more information about what type and so on...
                            code::raise::error( code::casual::invalid_node, "unexpected type");
@@ -291,30 +300,29 @@ namespace casual
                         }
 
                         static void read( const rapidjson::Value* node, bool& value)
-                        { value = check::read( node, &rapidjson::Value::IsBool, &rapidjson::Value::GetBool); }
+                        { value = check::trivial( node, &rapidjson::Value::IsBool, &rapidjson::Value::GetBool); }
                         static void read( const rapidjson::Value* node, short& value)
-                        { value = check::read( node, &rapidjson::Value::IsInt, &rapidjson::Value::GetInt); }
+                        { value = check::trivial( node, &rapidjson::Value::IsInt, &rapidjson::Value::GetInt); }
                         static void read( const rapidjson::Value* node, long& value)
-                        { value = check::read( node, &rapidjson::Value::IsInt64, &rapidjson::Value::GetInt64); }
+                        { value = check::trivial( node, &rapidjson::Value::IsInt64, &rapidjson::Value::GetInt64); }
                         static void read( const rapidjson::Value* node, long long& value)
-                        { value = check::read( node, &rapidjson::Value::IsInt64, &rapidjson::Value::GetInt64); }
+                        { value = check::trivial( node, &rapidjson::Value::IsInt64, &rapidjson::Value::GetInt64); }
                         static void read( const rapidjson::Value* node, float& value)
-                        { value = check::read( node, &rapidjson::Value::IsNumber, &rapidjson::Value::GetDouble); }
+                        { value = check::trivial( node, &rapidjson::Value::IsNumber, &rapidjson::Value::GetDouble); }
                         static void read( const rapidjson::Value* node, double& value)
-                        { value = check::read( node, &rapidjson::Value::IsNumber, &rapidjson::Value::GetDouble); }
+                        { value = check::trivial( node, &rapidjson::Value::IsNumber, &rapidjson::Value::GetDouble); }
                         static void read( const rapidjson::Value* node, char& value)
-                        { value = *transcode::utf8::string::decode( check::read( node, &rapidjson::Value::IsString, &rapidjson::Value::GetString)).data(); }
+                        { value = *transcode::utf8::string::decode( check::string( node)).data(); }
                         static void read( const rapidjson::Value* node, std::string& value)
-                        { value = transcode::utf8::string::decode( check::read( node, &rapidjson::Value::IsString, &rapidjson::Value::GetString)); }
+                        { value = transcode::utf8::string::decode( check::string( node)); }
                         static void read( const rapidjson::Value* node, std::u8string& value)
-                        { value = transcode::utf8::cast( check::read( node, &rapidjson::Value::IsString, &rapidjson::Value::GetString)); }
+                        { value = transcode::utf8::cast( check::string( node)); }
                         static void read( const rapidjson::Value* node, platform::binary::type& value)
-                        { value = transcode::base64::decode( check::read( node, &rapidjson::Value::IsString, &rapidjson::Value::GetString)); }
+                        { value = transcode::base64::decode( check::string( node)); }
 
                         static void read( const rapidjson::Value* node, view::Binary value)
                         { 
-                           auto binary = transcode::base64::decode( 
-                              check::read( node, &rapidjson::Value::IsString, &rapidjson::Value::GetString));
+                           auto binary = transcode::base64::decode( check::string( node));
                            
                            if( range::size( binary) != range::size( value))
                               code::raise::error( code::casual::invalid_node, "binary size mismatch - wanted: ", range::size( value), " got: ", range::size( binary));
@@ -424,7 +432,7 @@ namespace casual
                         void write( const float value) { m_stack.back()->SetDouble( value); }
                         void write( const double value) { m_stack.back()->SetDouble( value); }
                         void write( const std::string& value) { m_stack.back()->SetString( transcode::utf8::string::encode( value), *m_allocator);}
-                        void write( const std::u8string& value) { m_stack.back()->SetString( transcode::utf8::cast( value).data(), value.size(), *m_allocator);}
+                        void write( const std::u8string& value) { const auto data = transcode::utf8::cast( value); m_stack.back()->SetString( data.data(), data.size(), *m_allocator);}
                         void write( const platform::binary::type& value) { m_stack.back()->SetString( transcode::base64::encode( value), *m_allocator);}
                         void write( view::immutable::Binary value) { m_stack.back()->SetString( transcode::base64::encode( value), *m_allocator);}
 
