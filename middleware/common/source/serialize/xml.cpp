@@ -441,7 +441,7 @@ namespace casual
 
                         void write( const std::u8string& value)
                         {
-                           m_stack.back().text().set( transcode::utf8::cast( value).data());
+                           m_stack.back().text().set( reinterpret_cast< const char*>( value.data()));
                         }
 
                         void write( const platform::binary::type& value)

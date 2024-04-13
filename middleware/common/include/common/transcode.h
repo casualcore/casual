@@ -85,7 +85,7 @@ namespace casual
          //! @return Base64-decoded binary data
          //!
          //! @throw exception::Casual on failure
-         platform::binary::type decode( const std::string& value);
+         platform::binary::type decode( const std::string_view& value);
 
          // TODO performance: make it possible to decode to fixed memory
          //  `b64_pton` seems to need additional space during decode, hence it's

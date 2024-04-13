@@ -71,9 +71,9 @@ namespace casual
          } // detail
 
 
-         platform::binary::type decode( const std::string& value)
+         platform::binary::type decode( const std::string_view& value)
          {
-            std::vector<char> result( (value.size() / 4) * 3);
+            platform::binary::type result( (value.size() / 4) * 3);
 
             result.resize( detail::decode( value.data(), value.data() + value.size(), result.data(), result.data() + result.size()));
 

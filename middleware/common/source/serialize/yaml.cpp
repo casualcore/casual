@@ -260,6 +260,22 @@ namespace casual
                         }
                      }
 
+                     static std::string_view scalar( const YAML::Node& node)
+                     {
+                        try
+                        {
+                           if( node.IsNull())
+                              return {};
+                           else
+                              return node.Scalar();
+                        }
+                        catch( const YAML::InvalidScalar& e)
+                        {
+                           code::raise::error( code::casual::invalid_node, e.what());
+                        }
+                     }
+
+
                      static void read( const YAML::Node& node, bool& value) { consume( node, value);}
                      static void read( const YAML::Node& node, short& value) { consume( node, value);}
                      static void read( const YAML::Node& node, long& value) { consume( node, value);}
@@ -268,20 +284,15 @@ namespace casual
                      static void read( const YAML::Node& node, double& value) { consume( node, value);}
                      static void read( const YAML::Node& node, char& value)
                      {
-                        std::string string;
-                        consume( node, string);
-                        value = *transcode::utf8::string::decode( string).data();
+                        value = *transcode::utf8::string::decode( scalar( node)).data();
                      }
                      static void read( const YAML::Node& node, std::string& value)
                      {
-                        consume( node, value);
-                        value = transcode::utf8::string::decode( value);
+                        value = transcode::utf8::string::decode( scalar( node));
                      }
                      static void read( const YAML::Node& node, std::u8string& value)
                      {
-                        std::string string;
-                        consume( node, string);
-                        value = transcode::utf8::encode( string);
+                        value = transcode::utf8::cast( scalar( node));
                      }
                      static void read( const YAML::Node& node, platform::binary::type& value)
                      {
