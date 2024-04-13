@@ -11,7 +11,6 @@
 #include "common/serialize/macro.h"
 #include "casual/platform.h"
 #include "common/view/binary.h"
-#include "common/string/utf8.h"
 
 #include <string>
 #include <vector>
@@ -79,8 +78,7 @@ namespace casual
                   struct traits;
 
                   template<> struct traits< std::string> : base_traits< Category::string>{};
-                  template<> struct traits< common::string::utf8> : base_traits< Category::string>{};
-                  template<> struct traits< common::string::immutable::utf8> : base_traits< Category::string>{};
+                  template<> struct traits< std::u8string> : base_traits< Category::string>{};
                   template<> struct traits< platform::binary::type> : base_traits< Category::binary>{};
                   template<> struct traits< common::view::Binary> : base_traits< Category::fixed_binary>{};
                   template<> struct traits< common::view::immutable::Binary> : base_traits< Category::fixed_binary>{};

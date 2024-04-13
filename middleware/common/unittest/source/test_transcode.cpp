@@ -89,7 +89,7 @@ namespace casual
       {
          common::unittest::Trace trace;
 
-         // this codeset should exist (or if not we're screwed)
+         // this codeset should exist (or we're screwed)
          EXPECT_TRUE( transcode::utf8::exist( "UTF-8") || transcode::utf8::exist( "UTF8"));
       }
 
@@ -101,7 +101,7 @@ namespace casual
          {
             const std::string source = { static_cast<std::string::value_type>(0xA4)};
             const std::string expect( "€");
-            const std::string result = transcode::utf8::encode( source, "ISO-8859-15");
+            const std::string result = transcode::utf8::string::encode( source, "ISO-8859-15");
             EXPECT_TRUE( result == expect);
          }
          else
@@ -118,7 +118,7 @@ namespace casual
          {
             const std::string source( "\u20AC");
             const std::string expect = { static_cast<std::string::value_type>(0xA4)};
-            const std::string result = transcode::utf8::decode( source, "ISO-8859-15");
+            const std::string result = transcode::utf8::string::decode( source, "ISO-8859-15");
             EXPECT_TRUE( result == expect);
          }
          else
@@ -131,9 +131,9 @@ namespace casual
       TEST( casual_common_transcode_utf8, transcode_ws)
       {
          common::unittest::Trace trace;
-         EXPECT_TRUE( transcode::utf8::encode( " ") == " ");
-         EXPECT_TRUE( transcode::utf8::decode( " ") == " ");
-         EXPECT_TRUE( transcode::utf8::decode( transcode::utf8::encode( " ")) == " ");
+         EXPECT_TRUE( transcode::utf8::string::encode( " ") == " ");
+         EXPECT_TRUE( transcode::utf8::string::decode( " ") == " ");
+         EXPECT_TRUE( transcode::utf8::string::decode( transcode::utf8::string::encode( " ")) == " ");
       }
 
       TEST( casual_common_transcode_utf8, UTF8_encode_exotic_characters)
@@ -144,7 +144,7 @@ namespace casual
          {
             const std::string source{ static_cast<std::string::value_type>(0xE5), static_cast<std::string::value_type>(0xE4), static_cast<std::string::value_type>(0xF6)};
             const std::string expect{ "åäö"};
-            const std::string result = transcode::utf8::encode( source, "ISO-8859-1");
+            const std::string result = transcode::utf8::string::encode( source, "ISO-8859-1");
             EXPECT_TRUE( result == expect);
          }
          else

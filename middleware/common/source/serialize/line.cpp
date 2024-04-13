@@ -87,9 +87,9 @@ namespace casual
             maybe_name( name) << value;
          }
 
-         void Writer::save( const string::immutable::utf8& value, const char* name)
+         void Writer::save( const std::u8string& value, const char* name)
          {
-            save( transcode::utf8::decode( value.get()), name);               
+            save( transcode::utf8::decode( value), name);
          }
 
          void Writer::begin_scope()

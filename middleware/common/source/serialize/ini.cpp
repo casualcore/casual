@@ -383,9 +383,9 @@ namespace casual
                            value = *m_data_stack.back();
                         }
 
-                        void read( string::utf8& value)
+                        void read( std::u8string& value)
                         {
-                           value.get() = transcode::utf8::encode(*m_data_stack.back());
+                           value = transcode::utf8::encode(*m_data_stack.back());
                         }
 
                         void read( view::Binary value)
@@ -550,7 +550,7 @@ namespace casual
 
                         std::string encode( const char& value) const
                         {
-                           return std::string{ value};
+                           return { value};
                         }
 
                         std::string encode( view::immutable::Binary value) const
@@ -564,9 +564,9 @@ namespace casual
                            return encode( view::binary::make( value));
                         }
 
-                        std::string encode( const string::immutable::utf8& value) const
+                        std::string encode( const std::u8string& value) const
                         {
-                           return transcode::utf8::decode( value.get());
+                           return transcode::utf8::decode( value);
                         }
 
                         using name = const char;

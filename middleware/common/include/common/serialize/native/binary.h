@@ -92,10 +92,10 @@ namespace casual
                append( value);
             }
 
-            void write( const string::immutable::utf8& value, const char*) 
+            void write( const std::u8string& value, const char*) 
             {
-               write_size(value.get().size());
-               append(value.get());
+               write_size( value.size());
+               append( value);
             }
 
             void write( const platform::binary::type& value, const char*) 
@@ -177,10 +177,10 @@ namespace casual
                return true;
             }
 
-            bool read( string::utf8& value, const char*)
+            bool read( std::u8string& value, const char*)
             {
-               value.get().resize( read_size());
-               consume( value.get());
+               value.resize( read_size());
+               consume( value);
                return true;
             }
 

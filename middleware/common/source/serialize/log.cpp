@@ -84,9 +84,9 @@ namespace casual
                   prefix( name) << std::quoted( value) << '\n';
                }
 
-               void write( const string::immutable::utf8& value, const char* name)
+               void write( const std::u8string& value, const char* name)
                {
-                  write(transcode::utf8::decode( value.get()), name);
+                  write( transcode::utf8::decode( value), name);
                }
 
                void write( view::immutable::Binary value, const char* name)
