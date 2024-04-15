@@ -432,7 +432,7 @@ namespace casual
                         void write( const float value) { m_stack.back()->SetDouble( value); }
                         void write( const double value) { m_stack.back()->SetDouble( value); }
                         void write( const std::string& value) { m_stack.back()->SetString( transcode::utf8::string::encode( value), *m_allocator);}
-                        void write( const std::u8string& value) { const auto data = transcode::utf8::cast( value); m_stack.back()->SetString( data.data(), data.size(), *m_allocator);}
+                        void write( const std::u8string& value) { m_stack.back()->SetString( reinterpret_cast< const char*>( value.data()), value.size(), *m_allocator);}
                         void write( const platform::binary::type& value) { m_stack.back()->SetString( transcode::base64::encode( value), *m_allocator);}
                         void write( view::immutable::Binary value) { m_stack.back()->SetString( transcode::base64::encode( value), *m_allocator);}
 
