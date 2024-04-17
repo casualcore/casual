@@ -257,7 +257,7 @@ namespace casual
          request.state().destination = message.process;
          request.state().correlation = message.correlation;
          request.state().execution = message.execution;
-         request.state().service = std::move( message.service.name);
+         request.state().service = message.service.logical_name();
          request.state().parent = std::move( message.parent);
          request.state().trid = message.trid;
          request.state().start = now;
