@@ -242,12 +242,12 @@ jobs:
     if: ${{ success() }}
     steps:
       - name: Publish suse
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: suse_rpm
           path: /var/www/release/
       - name: Publish centos
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: centos_rpm
           path: /var/www/release/
@@ -258,7 +258,7 @@ jobs:
 
   notification-end:
     runs-on: ubuntu-latest
-    needs: [calculate-version,build-centos,build-suse,tag-repo]
+    needs: [calculate-version,build-centos,build-suse,tag-repo,publish-version]
     if: ${{ always() }}
     steps: 
       - uses: martialonline/workflow-status@v4
