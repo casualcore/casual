@@ -97,6 +97,7 @@ namespace casual
             case casual::domain_running: return "domain-running";
             case casual::domain_instance_unavailable: return "domain-instance-unavailable";
             case casual::domain_instance_assassinate : return "domain-instance-assassinate";
+            case casual::domain_incomplete_boot: return "domain-incomplete-boot";
             
             case casual::buffer_type_duplicate: return "buffer-type-duplicate";
             case casual::internal_out_of_bounds: return "internal-out-of-bounds";
