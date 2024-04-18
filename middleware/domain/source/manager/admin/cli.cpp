@@ -155,7 +155,7 @@ namespace casual
                      std::vector< std::string> arguments;
 
                      if( ! pattern.empty())
-                     {                           
+                     {
                         arguments.emplace_back( "--configuration");
                         algorithm::container::append( pattern, arguments);
                      }
@@ -262,13 +262,15 @@ namespace casual
                      });
                   };
 
-                  auto format_restart = []( const P& e){
+                  auto format_restart = []( const P& e)
+                  {
                      if( e.restart) 
                         return "true";
                      return "false";
                   };
 
-                  auto format_restarts = []( const P& e){
+                  auto format_restarts = []( const P& e)
+                  {
                      return e.restarts;
                   };
 
@@ -863,6 +865,71 @@ With supplied configuration files, in the form of glob patterns.
                   
                } // boot
 
+               auto boot_strict()
+               {
+                  auto invoke = []( const std::vector< std::string>& patterns)
+                  {
+                     std::vector< common::strong::correlation::id> tasks;
+
+                     auto condition = common::event::condition::compose(
+                        common::event::condition::prelude( [ &]
+                        {
+                           tasks = call::boot( patterns);
+                        }),
+                        common::event::condition::error( []( auto& error)
+                        {
+                           call::shutdown();
+                           throw error;
+                        }),
+                        common::event::condition::done( [ &tasks]
+                        { 
+                           return tasks.empty();
+                        })
+                     );
+
+                     auto handler = local::event::handler( tasks);
+
+                     // override handlers for 'error' events
+                     handler.insert( []( const message::event::process::Exit& event)
+                     {
+                        message::event::terminal::print( std::cout, event);
+
+                        if( event.state.status != 0)
+                           code::raise::error( code::casual::domain_incomplete_boot, "process exited with error");
+                     },
+                     []( const message::event::Error& event)
+                     {
+                        message::event::terminal::print( std::cout, event);
+                        code::raise::error( code::casual::domain_incomplete_boot, event.message);
+                     });
+
+                     common::event::only::unsubscribe::listen( 
+                        condition,
+                        std::move( handler));
+                  };
+
+                  auto completion = []( auto values, auto help) -> std::vector< std::string>
+                  {
+                     if( help)
+                        return { "<glob patterns>"};
+
+                     return { "<value>"};
+                  };
+
+                  constexpr auto description = R"(boot domain
+
+With supplied configuration files, in the form of glob patterns.
+
+Fails if any configured server/executable fails to start or exits with an error during the boot sequence.
+)";
+
+                  return argument::Option{
+                     std::move( invoke), 
+                     std::move( completion), 
+                     { "--boot-strict"},
+                     description};
+               }
+
                auto shutdown()
                {
                   auto invoke = []()
@@ -1209,6 +1276,7 @@ The semantics are similar to http PUT:
                argument::Option( &local::action::list::instances::server::invoke, { "-lis", "--list-instances-server"}, local::action::list::instances::server::description),
                argument::Option( &local::action::list::instances::executable::invoke, { "-lie", "--list-instances-executable"}, local::action::list::instances::executable::description),
                local::option::boot(),
+               local::option::boot_strict(),
                local::option::shutdown(),
                argument::Option( &local::action::environment::set::call, local::action::environment::set::complete, { "--set-environment"}, local::action::environment::set::description)( argument::cardinality::any{}),
                argument::Option( &local::action::environment::unset::call, local::action::environment::unset::complete, { "--unset-environment"}, local::action::environment::unset::description)( argument::cardinality::any{}),

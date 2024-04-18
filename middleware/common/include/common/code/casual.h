@@ -48,6 +48,7 @@ namespace casual
             domain_running,
             domain_instance_unavailable,
             domain_instance_assassinate,
+            domain_incomplete_boot,
             
             buffer_type_duplicate,
 
