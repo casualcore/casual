@@ -59,6 +59,7 @@ namespace casual::http::outbound
       EXPECT_TRUE( request.state().service == expected.service.logical_name()) << request.state().service;
       EXPECT_TRUE( request.state().parent == expected.parent) << request.state().parent;
       EXPECT_TRUE( request.state().trid == expected.trid) << request.state().trid;
+      EXPECT_TRUE( request.state().url == local::node().url) << request.state().url;
    }
 
 } // casual::http::outbound
