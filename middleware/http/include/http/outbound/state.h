@@ -65,6 +65,7 @@ namespace casual
                   std::string service;
                   std::string parent;
                   common::transaction::ID trid;
+                  std::string url;
 
                   struct Header
                   {
@@ -107,7 +108,7 @@ namespace casual
                      CASUAL_SERIALIZE( parent);
                      CASUAL_SERIALIZE( trid);
                      CASUAL_SERIALIZE( header);
-                  )                     
+                  )
                };
 
                inline const curl::type::easy& easy() const { return m_easy;}
