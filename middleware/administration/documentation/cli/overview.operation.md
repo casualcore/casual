@@ -5,7 +5,7 @@
 
 ## semantics
 
-In general the semantics of the `casual` `CLI` is:
+In general the semantics of the `casual CLI` is:
 
 ```bash
 $ casual <category group> <group specific options>...
@@ -39,7 +39,7 @@ $ casual --help --help
 
 ### help output
 
-`casual cli` shows the cardinality for the _option_ it self and if the _option_ takes values the
+`casual CLI` shows the cardinality for the _option_ it self and if the _option_ takes values the
 cardinality of the values.
 
 * The cardinality of the _option_ dictates the possible number of usages of that particular 
@@ -67,7 +67,7 @@ notation example  | description
 
 `casual` provides _bash-auto-completion_ on the command `casual`. Hence, it should help 
 users to _tab_ for guidance to appropriate options for their intention. Reducing the amount 
-of options you needs to memorize.  
+of options one needs to memorize.  
 
 ## unix friendly
 
@@ -77,21 +77,30 @@ What do we mean with _unix friendly_?
 
 * Every human readable output to stdout should be parsable line by line, hence no composite information
 * Users should be able to combine other _unix_ tools to achieve their goals (_grep, sort, cut, |, etc..._) 
-* `casual` cli commands should be as composable as possible
+* `casual CLI` commands should be as composable as possible
 
 ### example
 
 * `casual service --list-services | grep foo | less`
-* `casual service --color false --header false --list-services | sort -k6,7 | less`
+* `casual service --list-services | sort -k6,7 | less`
 
-_sort doesn't like terminal color (pre|suf)fixes..._ 
+
+### colors
+
+`casual CLI` uses colors in output default (can be altered with `--color true/false`).
+If `casual CLI` detects that _stdout_ is not bound to a TTY (terminal), no colors will be
+produced. This to make it easier to combine `casual CLI` with other unix tools.
+
 
 ### casual-pipe
 
-To enable true transaction support in a cli context `casual` has its own 'internal' _pipeline-protocol_.
+`casual CLI` has a few _business related_ commands, such as `queue --enqueue/--dequeue`, `call --service`,
+`transaction --begin/--commit`, that could be used to solve real business problems. 
 
-This only applies for cli commands that consumes/invokes buffer/queues/services - hence, business execution.
 These cli commands are annotated with 'casual-pipe' in the help.
+
+These _business related_ commands communicate with a non human readable 'internal' _pipeline-protocol_ (binary) 
+via _stdout -> stdin_, hence it's possible to compose them.
 
 The 'causal-pipe' has to be _terminated_ to be able to consume `stdout` with cli commands that are not part
 of 'casual-pipe'.
@@ -103,41 +112,28 @@ If `casual` detects that `stdout` is tied to a _terminal_ `casual` will try to m
 ```bash
 $ echo "some payload" | casual buffer --compose "X_OCTET/" | casual buffer --duplicate 2 | casual buffer --extract
 ```
-* Creates an `X_OCTET/`  buffer with the payload 'some payload' and send it downstream
-* Duplicates this buffer twice and send it downstream
-* Extracts the payload of the buffer and sends it downstream, which is the terminal in this case.
-   * In ths case the payload is human readable.
-
-
+* `casual buffer --compose "X_OCTET/"` creates an `X_OCTET/` buffer with the payload 'some payload' and send it downstream
+* `casual buffer --duplicate 2` duplicates the buffer twice and send it downstream
+* `casual buffer --extract` extracts the payload of the buffer and sends it downstream, which is the terminal in this case.
+   * If the payload is human readable, the output will be human readable.
 
 ```bash
-host# casual transaction --compound \
- | casual queue --consume b2 \
+host# casual transaction --begin \
+ | casual queue --dequeue b2 \
  | casual call --service casual/example/echo \
  | casual queue --enqueue a2 \
  | casual transaction --commit
 ```
 
-* Starts a _transaction directive_ that will associate all actions with a new transaction, and sends this downstream
-    * Starts waiting on transactions to commit/rollback from downstream
-* Consumes all messages on queue `b2`, each _dequeue_ in a separate transaction according to the _directive_
-    * Each message (payload) will be associated with its transaction and sent downstream  
-* Calls the service `casual/example/echo` with each payload and associated transaction
-    * The reply (payload) will have the original transaction associated with it, and sent downstream
-    * If the service fails (rollback) the individual transaction will be set to _abort only_
-* Enqueue's each payload with associated transaction (which might be in _abort only_)
-    * The message id with associated transaction is sent downstream
-* Commits all _commitable_ transactions (and rollback the _uncomittable_)
-    * Sends notification for each transaction to the owner of the transaction (in this case `casual transaction --compound`)
-        * `casual transaction --compound` is the cli command that actually commits or rollback each transaction (in this example)
-    * Terminates the transaction-directive by sending a _cli-transaction-termination-message_ to `casual transaction --compound`
-        * `casual transaction --compound` knows that it's work is done, and can exit. 
-    * The above is done with internal _ipc communication_ 
-    * Sends message id's downstream, without the associated transaction (since it has been completed)
-    * In this case, `casual` detects that `stdout` is tied to a terminal and 'transform' the id's to be human readable
-
+* `casual transaction --begin` starts a _transaction_ that will associate all actions with the _transaction_ downstream    
+* `casual queue --dequeue b2` dequeues a message from `b2` in _transaction_ and send it downstream
+* `casual call --service casual/example/echo` calls service with payload from `dequeue` in _transaction_, the service 
+    reply is sent downstream.
+* `casual queue --enqueue a2` enqueues the service reply to `a2` in _transaction_
+* `casual transaction --commit` commits the `transaction` 
 
 ##### attention
+
 If a transaction is used in the cli it's paramount to terminate the transaction directive with `casual transaction --commit`
 or `casual transaction --rollback`.
 Otherwise the transaction(s) will never be committed/rolled back, and manually recovery is needed.
@@ -145,7 +141,6 @@ The information/data will be safe and protected by the transaction semantics tho
 be lost.
 
   
-
 ## categories
 
 A complete list of all _categories_ and a brief description
