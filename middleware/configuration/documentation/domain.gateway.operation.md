@@ -13,6 +13,7 @@ course be used as a mean to help document actual production configuration.
 
 
 
+
 ## domain.gateway
 
 Defines configuration for communication with other `casual` domains.
@@ -21,75 +22,96 @@ Defines configuration for communication with other `casual` domains.
 
 Defines all inbound related configuration (from remote domains -> local domain)
 
+#### Limit _(structure)_
+
+property                 | description
+-------------------------|------------------------------------------
+[size : `integer`]       | max size in bytes
+[messages : `integer`]   | max number of messages in flight
+
 #### domain.gateway.inbound.default
 
-property                     | description
------------------------------|----------------------------------------------------
-limit.size                   | default value for limit size 
-limit.messages               | default value for maximum number of messages
-connection.discovery.forward | default value if connections should forward discovery or not
+Will be used as default values for all groups.
 
-#### domain.gateway.inbound.groups
+property                                   | description                                       | default
+-------------------------------------------|---------------------------------------------------|--------
+[limit : `Limit`]                          | default value for limit                           |
+[connection.discovery.forward : `boolean`] | if a discovery is allowed to propagate downstream | `false`
+
+##### domain.gateway.inbound.groups.Connection _(structure)_
+
+Defines a connection that this _inbound group_ should listen to
+
+property                        | description                                       | default 
+--------------------------------|---------------------------------------------------|---------
+address : `string`              | the address to listen on, `host:port`             |         
+[discovery.forward : `boolean`] | if a discovery is allowed to propagate downstream | `domain.gateway.inbound.default.connection.discovery.forward`
+
+#### domain.gateway.inbound.groups _(list)_
 
 Defines a list of all inbound groups
 
-property       | description
----------------|----------------------------------------------------
-alias          | an _identity_ for this group instance (if not set, casual generates one)
-limit.size     | the maximum allowed size of all inflight messages. If reached, _inbound-group_ will stop taking more request until below the limit 
-limit.messages | the maximum allowed number of inflight messages. If reached, _inbound-group_ will stop taking more request until below the limit
-connections    | all the connections for this group
-
-##### domain.gateway.inbound.groups.connection
-
-
-property          | description
-------------------|----------------------------------------------------
-address           | the address to listen on, `host:port`
-discovery.forward | boolean if the connetion should forward discovery request to 'discoverables'
-exclude.services  | `[0..*]` regex patterns. During a discovery, all services that match any pattern are discarded.
-exclude.queues    | `[0..*]` regex patterns. During a discovery, all queues that match any pattern are discarded.
+property                       | description                           | default
+-------------------------------|---------------------------------------|------------
+[alias : `string`]             | an _identity_ for this group instance | _generated unique name_
+[limit : `Limit`]              | upper limits of inflight messages     | `domain.gateway.inbound.default.limit`
+[connections : `[Connection]`] | all the connections for this group    |
 
 
 ### domain.gateway.outbound
 
 Defines all outbound related configuration (from local domain -> remote domains)
 
-#### domain.gateway.outbound.groups
+##### domain.gateway.outbound.groups.Connection _(structure)_
 
-Defines a list of all outbound groups. 
+Defines a connection that this _outbound group_ should try to connect to.
 
-Each group gets an _order_ in the order they are defined. Groups defined lower down will only be used if the higher
-ups does not provide the wanted _service_ or _queue_. Hence, the lower downs can be used as _fallback_.
-
-property       | description
----------------|----------------------------------------------------
-alias          | an _identity_ for this group instance (if not set, casual generates one)
-connections    | all the connections for this group
-
-##### domain.gateway.outbound.groups.connection
-
-Defines all connections that this _outbound group_ should try to connect to.
-
-All connections within a group ar treated equal, and service calls will be load balanced with _round robin_. Allthough,
-`casual` will try to _route_ the same transaction to the previous _associated_ connectino with the specific transaction. 
-This is only done to minimize the amount of _resources_ involved within the prepare and commit/rollback stage.  
-
-
-property       | description
----------------|----------------------------------------------------
-address        | the address to connect to, `host:port` 
-services       | services we're expecting to find on the other side 
-queues         | queues we're expecting to find on the other side 
+property                 | description
+-------------------------|----------------------------------------------------
+address : `string`       | the address to connect to, `host:port` 
+[services : `[string]`]  | services we're expecting to find on the other side 
+[queues : `[string]`]    | queues we're expecting to find on the other side 
 
 `services` and `queues` is used as an _optimization_ to do a _build_ discovery during startup. `casual`
 will find these services later lazily otherwise. It can also be used to do some rudimentary load balancing 
 to make sure lower prioritized connections are used for `services` and `queues` that could be discovered in
 higher prioritized connections.
 
+#### domain.gateway.outbound.groups _(list)_
+
+Each group gets an _order_ in the order they are defined. Groups defined lower down will only be used if the higher
+ups does not provide the wanted _service_ or _queue_. Hence, the lower downs can be used as _fallback_.
+
+property                       | description                           | default
+-------------------------------|---------------------------------------|------------
+[alias : `string`]             | an _identity_ for this group instance | _generated unique name_
+[connections : `[Connection]`] | all the connections for this group
+
+All connections within a group ar treated equal, and service calls will be load balanced with _round robin_. Although,
+`casual` will try to _route_ the same transaction to the previous _associated_ connection with the specific transaction. 
+This is only done to minimize the amount of _resources_ involved within the prepare and commit/rollback stage.  
+
+
+### domain.gateway.reverse
+
+This section defines _reverse_ `inbound` and `outbound`. The connection phase is reversed.
+* `outbound` connection listen to it's' configured address.
+* `inbound` connections tries to connect to it's configured address.
+
+Otherwise, the semantics and configuration are exactly the same.
+
+### domain.gateway.reverse.inbound
+
+Exactly the same as [domain.gateway.inbound](#domaingatewayinbound)
+
+### domain.gateway.reverse.outbound
+
+Exactly the same as [domain.gateway.outbound](#domaingatewayoutbound)
+
+
 ## examples 
 
-Below follows examples in human readable formats that `casual` can handle
+Below follows examples in `yaml` and `json` _(casual can also handle `ini` and `xml`)_
 
 ### yaml
 ```` yaml
@@ -314,263 +336,4 @@ domain:
         }
     }
 }
-````
-### ini
-```` ini
-
-[domain]
-
-[domain.gateway]
-
-[domain.gateway.inbound]
-
-[domain.gateway.inbound.default]
-note=discovery forward is disabled default.
-
-[domain.gateway.inbound.default.connection]
-
-[domain.gateway.inbound.default.connection.discovery]
-forward=false
-
-[domain.gateway.inbound.groups]
-alias=unique-inbound-alias
-note=if threshold of 2MB of total payload 'in flight' is reach inbound will stop consume from socket until we're below
-
-[domain.gateway.inbound.groups.connections]
-address=localhost:7778
-note=can be several listening host:port per inbound instance
-
-[domain.gateway.inbound.groups.connections]
-address=some.host.org:7779
-note=discovery will be forward to 'all' outbounds
-
-[domain.gateway.inbound.groups.connections.discovery]
-forward=true
-
-[domain.gateway.inbound.groups.limit]
-size=2097152
-
-[domain.gateway.inbound.groups]
-note=(generated alias) listeners - threshold of either 10 messages OR 10MB - the first that is reach, inbound will stop consume
-
-[domain.gateway.inbound.groups.connections]
-address=some.host.org:7780
-
-[domain.gateway.inbound.groups.connections]
-address=some.host.org:4242
-
-[domain.gateway.inbound.groups.limit]
-messages=10
-size=10485760
-
-[domain.gateway.inbound.groups]
-note=(generated alias) listeners - no limits
-
-[domain.gateway.inbound.groups.connections]
-address=some.host.org:4242
-
-[domain.gateway.outbound]
-
-[domain.gateway.outbound.groups]
-alias=primary
-note=casual will 'round-robin' between connections within a group for the same service/queue
-
-[domain.gateway.outbound.groups.connections]
-address=a45.domain.host.org:7779
-note=connection to domain 'a45' - we expect to find service 's1' and 's2' there.
-services=s1
-services=s2
-
-[domain.gateway.outbound.groups.connections]
-address=a46.domain.host.org:7779
-note=we expect to find queues 'q1' and 'q2' and service 's1'
-queues=q1
-queues=q2
-services=s1
-
-[domain.gateway.outbound.groups]
-alias=fallback
-
-[domain.gateway.outbound.groups.connections]
-address=a99.domain.host.org:7780
-note=will be chosen if _resources_ are not found at connections in the 'primary' outbound
-
-[domain.gateway.reverse]
-
-[domain.gateway.reverse.inbound]
-
-[domain.gateway.reverse.inbound.groups]
-alias=unique-alias-name
-note=connect to other reverse outbound that is listening on this port - then treat it as a regular inbound
-
-[domain.gateway.reverse.inbound.groups.connections]
-address=localhost:7780
-note=one of possible many addresses to connect to
-
-[domain.gateway.reverse.inbound.groups.limit]
-messages=42
-
-[domain.gateway.reverse.outbound]
-
-[domain.gateway.reverse.outbound.groups]
-alias=primary
-note=listen for connection from reverse inbound - then treat it as a regular outbound
-
-[domain.gateway.reverse.outbound.groups.connections]
-address=localhost:7780
-note=one of possible many listining addresses.
-
-[domain.gateway.reverse.outbound.groups]
-alias=secondary
-note=onther instance (proces) that handles (multiplexed) traffic on it's own
-
-[domain.gateway.reverse.outbound.groups.connections]
-address=localhost:7781
-note=one of possible many listining addresses.
-
-````
-### xml
-```` xml
-<?xml version="1.0"?>
-<domain>
- <gateway>
-  <inbound>
-   <default>
-    <note>discovery forward is disabled default.</note>
-    <connection>
-     <discovery>
-      <forward>false</forward>
-     </discovery>
-    </connection>
-   </default>
-   <groups>
-    <element>
-     <alias>unique-inbound-alias</alias>
-     <note>if threshold of 2MB of total payload 'in flight' is reach inbound will stop consume from socket until we're below</note>
-     <limit>
-      <size>2097152</size>
-     </limit>
-     <connections>
-      <element>
-       <address>localhost:7778</address>
-       <note>can be several listening host:port per inbound instance</note>
-      </element>
-      <element>
-       <address>some.host.org:7779</address>
-       <discovery>
-        <forward>true</forward>
-       </discovery>
-       <note>discovery will be forward to 'all' outbounds</note>
-      </element>
-     </connections>
-    </element>
-    <element>
-     <note>(generated alias) listeners - threshold of either 10 messages OR 10MB - the first that is reach, inbound will stop consume</note>
-     <limit>
-      <size>10485760</size>
-      <messages>10</messages>
-     </limit>
-     <connections>
-      <element>
-       <address>some.host.org:7780</address>
-      </element>
-      <element>
-       <address>some.host.org:4242</address>
-      </element>
-     </connections>
-    </element>
-    <element>
-     <note>(generated alias) listeners - no limits</note>
-     <connections>
-      <element>
-       <address>some.host.org:4242</address>
-      </element>
-     </connections>
-    </element>
-   </groups>
-  </inbound>
-  <outbound>
-   <groups>
-    <element>
-     <alias>primary</alias>
-     <note>casual will 'round-robin' between connections within a group for the same service/queue</note>
-     <connections>
-      <element>
-       <address>a45.domain.host.org:7779</address>
-       <note>connection to domain 'a45' - we expect to find service 's1' and 's2' there.</note>
-       <services>
-        <element>s1</element>
-        <element>s2</element>
-       </services>
-      </element>
-      <element>
-       <address>a46.domain.host.org:7779</address>
-       <note>we expect to find queues 'q1' and 'q2' and service 's1'</note>
-       <services>
-        <element>s1</element>
-       </services>
-       <queues>
-        <element>q1</element>
-        <element>q2</element>
-       </queues>
-      </element>
-     </connections>
-    </element>
-    <element>
-     <alias>fallback</alias>
-     <connections>
-      <element>
-       <address>a99.domain.host.org:7780</address>
-       <note>will be chosen if _resources_ are not found at connections in the 'primary' outbound</note>
-      </element>
-     </connections>
-    </element>
-   </groups>
-  </outbound>
-  <reverse>
-   <inbound>
-    <groups>
-     <element>
-      <alias>unique-alias-name</alias>
-      <note>connect to other reverse outbound that is listening on this port - then treat it as a regular inbound</note>
-      <limit>
-       <messages>42</messages>
-      </limit>
-      <connections>
-       <element>
-        <address>localhost:7780</address>
-        <note>one of possible many addresses to connect to</note>
-       </element>
-      </connections>
-     </element>
-    </groups>
-   </inbound>
-   <outbound>
-    <groups>
-     <element>
-      <alias>primary</alias>
-      <note>listen for connection from reverse inbound - then treat it as a regular outbound</note>
-      <connections>
-       <element>
-        <address>localhost:7780</address>
-        <note>one of possible many listining addresses.</note>
-       </element>
-      </connections>
-     </element>
-     <element>
-      <alias>secondary</alias>
-      <note>onther instance (proces) that handles (multiplexed) traffic on it's own</note>
-      <connections>
-       <element>
-        <address>localhost:7781</address>
-        <note>one of possible many listining addresses.</note>
-       </element>
-      </connections>
-     </element>
-    </groups>
-   </outbound>
-  </reverse>
- </gateway>
-</domain>
-
 ````

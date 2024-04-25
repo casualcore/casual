@@ -21,13 +21,13 @@ jobs:
       casual_release: ${{ steps.casual_release.outputs.value }}
     steps:
       - name: check out repository casual
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           path: 'casual'
           fetch-depth: 0
 
       - name: retrieve major/minor from branch
-        uses: actions-ecosystem/action-regex-match@v2
+        uses: kaisugi/action-regex-match@v1.0.1
         id: regex-match
         with:
           text: ${{ github.ref }}
@@ -72,71 +72,33 @@ jobs:
         uses: Ilshidur/action-discord@0.3.2
         with:
           args: "Starting a new build, Repo: ${{ github.repository }}, Branch: ${{ github.ref_name }}, Version: ${{ needs.calculate-version.outputs.build_version }}, URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"           
-
-  build-frontend:
-    runs-on: self-hosted
-    needs: [calculate-version,notification-start]
-    steps:
-      - name: check out repository casual
-        uses: actions/checkout@v3
-        with:
-          path: 'casual'
-          fetch-depth: 0
-
-      - name: prepare build-script
-        run: |
-          cat << EOD > builder.sh
-          #! /bin/bash
-
-          set -e
-
-          bash /git/casual/casual/pipeline/script/frontend/build
-
-          EOD
-
-          chmod +x builder.sh
-
-      - name: Build
-        run: |
-          docker run --rm -v ${{ github.workspace }}:/git/casual:Z -i casual/frontend-builder:latest
-
-      - name: Save artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: frontend
-          path: './**/casual-webapp.zip'
   
   build-centos:
-    runs-on: self-hosted
+    runs-on: [self-hosted, builder]
     if: ${{ success() }}
-    needs: [calculate-version,build-frontend]
+    needs: [calculate-version,notification-start]
     env:
       DISTRIBUTION: 'centos'
     steps:
       - name: check out repository casual
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           path: 'casual'
           fetch-depth: 0
 
       - name: check out casual-thirdparty 
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           repository: 'casualcore/casual-thirdparty'
           ref: ${{ needs.calculate-version.outputs.major_minor }}
           path: 'casual-thirdparty'
 
       - name: check out casual-make 
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           repository: 'casualcore/casual-make'
           ref: ${{ needs.calculate-version.outputs.major_minor }}
           path: 'casual-make'
-
-      - name: download frontend
-        uses: actions/download-artifact@v3
-        with:
-          name: frontend
 
       - name: prepare build-script
         run: |
@@ -181,42 +143,37 @@ jobs:
           working-directory: casual
 
       - name: Save artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: centos_rpm
           path: ./**/casual-middleware*.rpm
 
   build-suse:
-    runs-on: self-hosted
+    runs-on: [self-hosted, builder]
     if: ${{ success() }}
-    needs: [calculate-version,build-frontend]
+    needs: [calculate-version,notification-start]
     env:
       DISTRIBUTION: 'suse'
     steps:
       - name: check out repository casual
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           path: 'casual'
           fetch-depth: 0
 
       - name: check out casual-thirdparty 
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           repository: 'casualcore/casual-thirdparty'
           ref: ${{ needs.calculate-version.outputs.major_minor }}
           path: 'casual-thirdparty'
 
       - name: check out casual-make 
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           repository: 'casualcore/casual-make'
           ref: ${{ needs.calculate-version.outputs.major_minor }}
           path: 'casual-make'
-
-      - name: download frontend
-        uses: actions/download-artifact@v3
-        with:
-          name: frontend
 
       - name: prepare build-script
         run: |
@@ -241,7 +198,6 @@ jobs:
 
           chmod +x builder.sh
 
-
       - name: Build
         run: |
           docker run --rm -v ${{ github.workspace }}:/git/casual:Z -i ${{ env.suse_image}}:${{ needs.calculate-version.outputs.major_minor }}
@@ -261,7 +217,7 @@ jobs:
           working-directory: casual
 
       - name: Save artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: suse_rpm
           path: ./**/casual-middleware*.rpm
@@ -271,7 +227,7 @@ jobs:
     if: ${{ success() }}
     needs: [calculate-version,build-centos,build-suse]
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: Bump version and push tag
         id: tag_version
         uses: mathieudutour/github-tag-action@v6.0
@@ -286,12 +242,12 @@ jobs:
     if: ${{ success() }}
     steps:
       - name: Publish suse
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: suse_rpm
           path: /var/www/release/
       - name: Publish centos
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: centos_rpm
           path: /var/www/release/
@@ -302,7 +258,7 @@ jobs:
 
   notification-end:
     runs-on: ubuntu-latest
-    needs: [calculate-version,build-centos,build-suse,tag-repo]
+    needs: [calculate-version,build-centos,build-suse,tag-repo,publish-version]
     if: ${{ always() }}
     steps: 
       - uses: martialonline/workflow-status@v4

@@ -26,7 +26,7 @@ given name. This is the preferred way, since it is a lot more explicit.
 
 ## examples 
 
-Below follows examples in human readable formats that `casual` can handle
+Below follows examples in `yaml` and `json` _(casual can also handle `ini` and `xml`)_
 
 ### yaml
 ```` yaml
@@ -91,77 +91,4 @@ server:
         ]
     }
 }
-````
-### ini
-```` ini
-
-[server]
-
-[server.default]
-
-[server.default.service]
-category=some.category
-transaction=join
-
-[server.resources]
-key=rm-mockup
-name=resource-1
-note=the runtime configuration for this resource is correlated with the name 'resource-1' - no group is needed for resource configuration
-
-[server.services]
-name=s1
-
-[server.services]
-name=s2
-transaction=auto
-
-[server.services]
-function=f3
-name=s3
-visibility=undiscoverable
-
-[server.services]
-category=some.other.category
-function=f4
-name=s4
-
-````
-### xml
-```` xml
-<?xml version="1.0"?>
-<server>
- <default>
-  <service>
-   <transaction>join</transaction>
-   <category>some.category</category>
-  </service>
- </default>
- <resources>
-  <element>
-   <key>rm-mockup</key>
-   <name>resource-1</name>
-   <note>the runtime configuration for this resource is correlated with the name 'resource-1' - no group is needed for resource configuration</note>
-  </element>
- </resources>
- <services>
-  <element>
-   <name>s1</name>
-  </element>
-  <element>
-   <name>s2</name>
-   <transaction>auto</transaction>
-  </element>
-  <element>
-   <name>s3</name>
-   <function>f3</function>
-   <visibility>undiscoverable</visibility>
-  </element>
-  <element>
-   <name>s4</name>
-   <function>f4</function>
-   <category>some.other.category</category>
-  </element>
- </services>
-</server>
-
 ````

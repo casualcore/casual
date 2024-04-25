@@ -1,40 +1,49 @@
 
-# API definitions of all the administration services casual has
+# API 
 
-## Describe services
-To describe a casual-sf-service just use the following command:
+`casual` has several administration services that can be called from users.
+If `casual-http-inbound` is started for a domain, users can call these over 
+http. Which makes it possible to create arbitrary administration tools to manage 
+`casual`.
+
+**Attention** `casual` might change administration service API between _minors_.
+This due to the cost to keep compatibility. In the future we aim to lock the 
+compatibility between majors.
+
+## Available services
+
+To list all available administration services use the following command:
 
 ```bash
-$ casual-service-describe --services <services>
+$ casual service --list-admin-services
 ```
 
-## modules
+### `state`
 
-The following modules has an administrative api:
+Every _manager_ has a `state` service, that delivers the manager total state. 
+These state-services are mainly used for listing different CLI views of the 
+manager state.
 
-* [domain](../../domain/documentation/api.development.md)
-* [service](../../service/documentation/api.development.md)
-* [transaction](../../transaction/documentation/api.development.md)
-* [gateway](../../gateway/documentation/api.development.md)
+The `state` services might give a more complete view than other CLI views, and
+might give further insights.
 
+## describe services
 
+### CLI
+To describe a casual-service just use the following command:
 
+```bash
+$ casual describe <service>
+```
 
+### http request
 
-## Services
-The following administrative services are exposed:
-
-
-* [.casual/domain/state](../../domain/documentation/api.development.md)
-* [.casual/domain/scale/instances](../../domain/documentation/api.development.md)
-* [.casual/domain/shutdown](../../domain/documentation/api.development.md)
-* [.casual/service/state](../../service/documentation/api.development.md)
-* [.casual/service/metric/reset](../../service/documentation/api.development.md)
-* [.casual/transaction/state](../../transaction/documentation/api.development.md)
-* [.casual/transaction/update/instances](../../transaction/documentation/api.development.md)
-* [.casual/gateway/state](../../gateway/documentation/api.development.md)
+If the header `casual-service-describe` is set to `true`, the describe mechanism
+will kick in and the payload will be the description (model) of the service.
 
 
-
+Unfortunately, _describe_ does not contain _description/documentation_ about
+what the service does, and how it works. Only what the service takes as input
+and gives as output (this will be added in the future)
 
 

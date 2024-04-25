@@ -159,6 +159,21 @@ forward_server = make.LinkExecutable( 'bin/casual-queue-forward-group',
 install_bin.append( forward_server)
 
 
+# example server
+example_server = make.LinkExecutable( 'bin/casual-queue-example-server',
+[
+    make.Compile( 'source/example/main.cpp'),
+],
+[
+    common,
+    queue_api,
+    queue_c_api,
+    'casual-common',
+    'casual-buffer'
+])
+
+install_bin.append( example_server)
+
 # Client
 target = make.LinkLibrary( 'bin/casual-queue-admin-cli', 
     [
@@ -193,7 +208,8 @@ test_casual_queue = make.LinkUnittest( 'unittest/bin/test-casual-queue',
         make.Compile( 'unittest/source/group/test_queuebase.cpp'),
         make.Compile( 'unittest/source/test_queue.cpp'),
         make.Compile( 'unittest/source/api/test_c.cpp'),
-        make.Compile( 'unittest/source/test_forward.cpp')
+        make.Compile( 'unittest/source/test_forward.cpp'),
+        make.Compile( 'unittest/source/test_example.cpp')
     ],
     [
      group_archive,
@@ -216,7 +232,7 @@ test_casual_queue = make.LinkUnittest( 'unittest/bin/test-casual-queue',
 )
 
 # Make sure the executables is linked before unittest
-make.Dependencies( test_casual_queue, [ queue_manager, queue_group, forward_server])
+make.Dependencies( test_casual_queue, [ queue_manager, queue_group, forward_server, example_server])
 
 # Deprecated Forwards ! 
 

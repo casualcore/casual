@@ -23,6 +23,8 @@
 
 #include <curl/curl.h>
 
+#include <iomanip>
+
 namespace casual
 {
    using namespace common;
@@ -257,10 +259,11 @@ namespace casual
          request.state().destination = message.process;
          request.state().correlation = message.correlation;
          request.state().execution = message.execution;
-         request.state().service = std::move( message.service.name);
+         request.state().service = message.service.logical_name();
          request.state().parent = std::move( message.parent);
          request.state().trid = message.trid;
          request.state().start = now;
+         request.state().url = node.url;
 
          common::log::line( http::verbose::log, "request.state(): ", request.state());
 
@@ -386,7 +389,10 @@ namespace casual
             }
             else
             {
-               common::log::line( common::log::category::error, common::code::xatmi::service_error, " curl error: ", curl_easy_strerror( code));
+               common::log::line(
+                  common::log::category::error,
+                  common::code::xatmi::service_error,
+                  " call to http-outbound service ", std::quoted( request.state().service), " failed - curl error: ", curl_easy_strerror( code), ", url: ", request.state().url);
                common::log::line( common::log::category::verbose::error, CASUAL_NAMED_VALUE( request));
 
                return { common::code::xatmi::service_error, 0};
