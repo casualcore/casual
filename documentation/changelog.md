@@ -1,6 +1,15 @@
 # Changelog
 This is the changelog for `casual` and all changes are listed in this document.
 
+## [1.6.19] - 2024-04-25
+### Fixes
+- http: improved error logging in http-outbound (#367)
+- http: use route name in outbound when ack:ing service calls (#364)
+- queue: add example server with enqueue and dequeue services (#348)
+- documentation: improved configuration documentation
+- documentation: updated and removed invalid api-documentation
+- example: fix casual/example/work (#349)
+
 ## [1.6.18] - 2024-03-18
 ### Fixes
 - domain: print domain name in shutdown task (#336)
