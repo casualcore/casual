@@ -47,6 +47,14 @@ namespace casual
       {
          return local::global_counter;
       }
+
+      Entry entry( message::Type type) noexcept
+      {
+         if( auto found = algorithm::find( local::global_counter, type))
+            return *found;
+
+         return { type};
+      }
       
    } // common::message::counter
 } // casual

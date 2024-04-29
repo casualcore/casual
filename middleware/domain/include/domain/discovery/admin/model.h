@@ -128,12 +128,11 @@ namespace casual
          state::Runlevel runlevel;
          std::vector< Provider> providers;
          Pending pending;
-         Metric metric;
 
          CASUAL_CONST_CORRECT_SERIALIZE(
             CASUAL_SERIALIZE( runlevel);
             CASUAL_SERIALIZE( providers);
-            CASUAL_SERIALIZE( metric);
+            CASUAL_SERIALIZE( pending);
          )
 
       };

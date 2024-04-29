@@ -5,12 +5,15 @@
 //!
 
 #include "common/unittest.h"
+#include "common/string.h"
 
 #include "administration/unittest/cli/command.h"
 
 #include "gateway/unittest/utility.h"
 
 #include "domain/unittest/manager.h"
+
+
 
 namespace casual
 {
@@ -137,6 +140,59 @@ domain:
 )";
 
          EXPECT_TRUE( capture.standard.out == expected) << "expected: " << expected << "\n" << CASUAL_NAMED_VALUE( capture);
+      }
+
+
+      TEST( cli_discovery, metric)
+      {
+         common::unittest::Trace trace;
+         
+         auto b = local::domain( R"(
+domain:
+   name: B
+   servers:
+      -  alias: example-server
+         path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-server"
+         memberships: [ user]
+         instances: 1
+   gateway:
+      inbound:
+         groups:
+            -  connections:
+                  -  address: 127.0.0.1:7001
+)");
+
+
+         auto a = local::domain( R"(
+domain:
+   name: A
+   gateway:
+      outbound:
+         groups:
+            -  connections:
+                  -  address: 127.0.0.1:7001
+)");
+
+
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected());
+
+         {
+            auto capture = administration::unittest::cli::command::execute( "casual discovery --metric --porcelain true | grep discovery-out");
+            auto row = common::string::split( string::split( capture.standard.out, '\n').at( 0), '|');
+            EXPECT_TRUE( row.at( 1) == "0") << CASUAL_NAMED_VALUE( row);
+            EXPECT_TRUE( row.at( 2) == "0") << CASUAL_NAMED_VALUE( row);
+         }
+
+         administration::unittest::cli::command::execute( "casual discovery --services casual/example/echo");
+
+         {  
+            auto capture = administration::unittest::cli::command::execute( "casual discovery --metric --porcelain true | grep discovery-out");
+            auto row = common::string::split( string::split( capture.standard.out, '\n').at( 0), '|');
+            // we expect 1 discovery-out completed
+            EXPECT_TRUE( row.at( 1) == "1") << CASUAL_NAMED_VALUE( row);
+            EXPECT_TRUE( row.at( 2) == "0") << CASUAL_NAMED_VALUE( row);
+         }
+
       }
 
 

@@ -10,11 +10,14 @@
 #include "domain/discovery/common.h"
 #include "domain/discovery/admin/model.h"
 #include "domain/discovery/admin/server.h"
+#include "domain/discovery/instance.h"
 
 #include "common/terminal.h"
 #include "common/communication/ipc.h"
+#include "common/communication/instance.h"
 #include "common/serialize/create.h"
 #include "common/stream.h"
+#include "common/message/counter.h"
 
 #include "casual/cli/state.h"
 #include "casual/assert.h"
@@ -180,30 +183,57 @@ Will try to find provided queues in other domains.
                struct Row
                {
                   std::string_view name;
-                  platform::size::type inbound{};
-                  platform::size::type outbound{};
-                  
-                  auto completed() const noexcept { return inbound;}
-                  auto pending() const noexcept { return outbound - inbound;}
+                  platform::size::type completed{};
+                  platform::size::type pending{};
                };
 
-               auto transform( const discovery::admin::model::State& state) noexcept
+               auto transform( const common::message::counter::Reply& message) noexcept
                {
-                  auto create_row = [ &state]( std::string_view name, common::message::Type sent, common::message::Type received)
+                  std::vector< Row> result;
+
+                  auto get_sent = [ &message]( common::message::Type type) -> platform::size::type
                   {
-                     return metric::Row{
-                        name,
-                        algorithm::find( state.metric.message.count.receive, received)->value,
-                        algorithm::find( state.metric.message.count.send, sent)->value
-                     };
-
+                     if( auto found = algorithm::find( message.entries, type))
+                        return found->sent;
+                     return 0;
                   };
 
-                  return std::vector< Row>{
-                     create_row( "discovery", common::message::Type::domain_discovery_request, common::message::Type::domain_discovery_reply),
-                     create_row( "lookup", common::message::Type::domain_discovery_lookup_request, common::message::Type::domain_discovery_lookup_reply),
-                     create_row( "fetch-known", common::message::Type::domain_discovery_fetch_known_request, common::message::Type::domain_discovery_fetch_known_reply),
+                  auto get_received = [ &message]( common::message::Type type) -> platform::size::type
+                  {
+                     if( auto found = algorithm::find( message.entries, type))
+                        return found->received;
+                     return 0;
                   };
+
+                  {
+                     Row row{ "discovery-out"};
+                     row.completed = get_received( common::message::Type::domain_discovery_reply);
+                     row.pending = get_sent( common::message::Type::domain_discovery_request) - row.completed;                     
+                     result.push_back( row);
+                  }
+
+                  {
+                     Row row{ "discovery-in"};
+                     row.completed = get_sent( common::message::Type::domain_discovery_reply);
+                     row.pending = get_received( common::message::Type::domain_discovery_request) - row.completed;                     
+                     result.push_back( row);
+                  }
+
+                  {
+                     Row row{ "lookup"};
+                     row.completed = get_received( common::message::Type::domain_discovery_lookup_reply);
+                     row.pending = get_sent( common::message::Type::domain_discovery_lookup_request) - row.completed;                     
+                     result.push_back( row);
+                  }
+
+                  {
+                     Row row{ "fetch-known"};
+                     row.completed = get_received( common::message::Type::domain_discovery_fetch_known_reply);
+                     row.pending = get_sent( common::message::Type::domain_discovery_fetch_known_request) - row.completed;                     
+                     result.push_back( row);
+                  }
+
+                  return result;
                }
 
                auto option()
@@ -219,8 +249,9 @@ Will try to find provided queues in other domains.
 
                   auto invoke = []()
                   {
-                     auto state = local::call::state();
-                     create_formatter().print( std::cout, metric::transform( state));
+                     communication::instance::outbound::detail::optional::Device device{ discovery::instance::identity};
+                     auto reply = communication::ipc::call( device, common::message::counter::Request( process::handle()));
+                     create_formatter().print( std::cout, metric::transform( reply));
                   };
 
                   return argument::Option{
@@ -228,16 +259,16 @@ Will try to find provided queues in other domains.
                      { "--metric"},
                      R"(list metrics
 
-List counts of _discovery tasks_ the domain-discovery has (begun) executed.
+List counts of _discovery tasks_ the domain-discovery has in-flight and completed
 
-* external-discovery: 
+* discovery-out: 
    Requests to other domains
-* internal-discovery: 
-   Requests to local providers that supplies _resources_ (service/queues)
-* local-known-request:
-   Requests to local providers about the total set of known _resources_ (service/queues)
-* local-needs-request
-   Requests to local providers about resources that are needed but not known
+* discovery-in: 
+   Requests from other domains
+* lookup: 
+   Requests to local providers that has service/queues
+* fetch-known:
+   Requests to local providers about the total set of known service/queues
 
 @attention INCUBATION - might change during, or in between minor version.
 )"
@@ -246,59 +277,17 @@ List counts of _discovery tasks_ the domain-discovery has (begun) executed.
 
                namespace message::count
                {
-                  struct Row : common::compare::Order< Row>
-                  {
-                     Row( common::message::Type type, std::string_view bound, platform::size::type count)
-                        : type{ type}, bound{ bound}, count{ count} {}
-
-                     common::message::Type type;
-                     std::string_view bound;
-                     platform::size::type count{};
-
-                     inline auto tie() const noexcept { return std::tie( type, bound);}
-                  };
-
-                  auto transform( const admin::model::State& state)
-                  {
-                     auto transform_value = []( std::string_view bound)
-                     {
-                        return [ bound]( auto& count)
-                        {
-                           return count::Row{ count.type, bound, count.value};
-                        };
-                     };
-                     auto result = algorithm::transform( state.metric.message.count.send, transform_value( "sent"));
-                     algorithm::transform( state.metric.message.count.receive, std::back_inserter( result), transform_value( "received"));
-
-                     return algorithm::sort( std::move( result));
-                  }
-
                   auto option()
                   {
-                     static constexpr auto create_formatter = []()
-                     {
-                        return terminal::format::formatter< Row>::construct(
-                           terminal::format::column( "type", std::mem_fn( &Row::type), terminal::color::yellow, terminal::format::Align::left),
-                           terminal::format::column( "count", std::mem_fn( &Row::count), terminal::color::cyan, terminal::format::Align::right),
-                           terminal::format::column( "bound", std::mem_fn( &Row::bound), terminal::color::cyan, terminal::format::Align::left)
-                        );
-                     };
-
                      auto invoke = []()
                      {
-                        auto state = local::call::state();
-                        create_formatter().print( std::cout, count::transform( state));
+                        log::line( std::cerr, "@removed use `casual internal --message-count <pid>` instead");
                      };
 
                      return argument::Option{
                         std::move( invoke),
-                        { "--metric-message-count"},
-                        R"(list message counts
-
-Lists counts of "all" internal messages that has been sent and received. 
-
-@attention These might change over time, and between minor versions.
-)"
+                        argument::option::keys( {}, { "--metric-message-count"}),
+                        R"(@removed use `casual internal --message-count <pid>` instead)"
                      };
                   }
                } // message::count

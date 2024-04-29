@@ -59,47 +59,9 @@ namespace casual
                   
                   return result;
                }
-
-               auto metric( const State& state)
-               {
-                  model::Metric result;
-
-                  auto create_count = []( auto type, auto count)
-                  {
-                     return model::metric::message::Count{ type, count};
-                  };
-
-                  result.message.count.receive = state::metric::message::count::received( create_count, 
-                     message::discovery::api::Request{},
-                     message::discovery::api::rediscovery::Request{},
-                     message::discovery::fetch::known::Reply{},
-                     message::discovery::Request{},
-                     message::discovery::Reply{},
-                     message::discovery::lookup::Reply{},
-                     message::discovery::topology::implicit::Update{},
-                     message::discovery::topology::direct::Update{},
-                     common::message::shutdown::Request{}
-                  );
-
-                  result.message.count.send = state::metric::message::count::sent( create_count, 
-                     message::discovery::Request{},
-                     message::discovery::Reply{},
-                     message::discovery::lookup::Request{},
-                     message::discovery::fetch::known::Request{},
-                     message::discovery::api::Reply{},
-                     message::discovery::api::rediscovery::Reply{},
-                     message::discovery::topology::implicit::Update{},
-                     message::discovery::topology::direct::Explore{}
-                  );
-
-                  return result;
-               }
-
-               
             } // transform
          } // <unnamed>
       } // local
-
 
       model::State transform( const State& state)
       {
@@ -109,9 +71,7 @@ namespace casual
 
          result.runlevel = state.runlevel();
          result.providers = local::transform::providers( state.providers);
-
          result.pending = local::transform::pending( state);
-         result.metric = local::transform::metric( state);
 
          return result;
       }

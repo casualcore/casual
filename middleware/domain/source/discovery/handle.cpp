@@ -43,7 +43,6 @@ namespace casual
                void entry( const M& message)
                {
                   log::line( verbose::log, "message: ", message);
-                  state::metric::message::count::receive( message);
                }
             
             } // handler
@@ -81,7 +80,6 @@ namespace casual
                   template< typename M>
                   auto multiplex( State& state, const strong::ipc::id& destination, const M& message)
                   {
-                     state::metric::message::count::send( message);
                      return state.multiplex.send( destination, message);
                   }
 

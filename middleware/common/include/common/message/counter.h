@@ -41,6 +41,9 @@ namespace casual
       //
       std::vector< Entry> entries() noexcept;
 
+      //! @returns the Entry associated with the `type`
+      Entry entry( message::Type type) noexcept;
+
       
       using Request = basic_request< Type::counter_request>;
       

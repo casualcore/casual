@@ -150,10 +150,10 @@ namespace casual
 
             platform::size::type Heuristic::in_flight() noexcept
             {
-               using discovery_sent = state::metric::message::detail::count::Send< message::discovery::Request::type()>;
-               using discovery_received = state::metric::message::detail::count::Receive< message::discovery::Reply::type()>;
+               auto request = common::message::counter::entry( message::discovery::Request::type());
+               auto reply = common::message::counter::entry( message::discovery::Reply::type());
 
-               return discovery_sent::value() - discovery_received::value();
+               return request.sent - reply.received;
             }
 
 
