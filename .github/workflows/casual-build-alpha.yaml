@@ -98,7 +98,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: 'casualcore/casual-make'
-          ref: ${{ needs.calculate-version.outputs.major_minor }}
+          ref: 'feature/rework-target-name-and-misc'
           path: 'casual-make'
 
       - name: prepare build-script
@@ -172,7 +172,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: 'casualcore/casual-make'
-          ref: ${{ needs.calculate-version.outputs.major_minor }}
+          ref: 'feature/rework-target-name-and-misc'
           path: 'casual-make'
 
       - name: prepare build-script
