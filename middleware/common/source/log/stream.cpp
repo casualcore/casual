@@ -379,7 +379,9 @@ namespace casual
             }
 
             if( configure.path)
-               local::File::instance().relocate( std::move( *configure.path));
+               // gcc-13 gives a warning about redundant std::move on the following
+               // Suggests removing the std::move
+               local::File::instance().relocate( *configure.path); 
          }
 
       } // stream

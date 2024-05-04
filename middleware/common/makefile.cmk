@@ -115,12 +115,12 @@ casual_common_objectfiles = [
     make.Compile( 'source/log.cpp'),
 
     make.Compile( 'source/code/log.cpp'),
-    make.Compile( 'source/code/xatmi.cpp'),
-    make.Compile( 'source/code/tx.cpp'),
-    make.Compile( 'source/code/xa.cpp'),
+    make.Compile( 'source/code/xatmi.cpp', directive = ['-Wno-dangling-reference']),
+    make.Compile( 'source/code/tx.cpp', directive = ['-Wno-dangling-reference']),
+    make.Compile( 'source/code/xa.cpp', directive = ['-Wno-dangling-reference']),
     make.Compile( 'source/code/system.cpp'),
-    make.Compile( 'source/code/casual.cpp'),
-    make.Compile( 'source/code/signal.cpp'),
+    make.Compile( 'source/code/casual.cpp', directive = ['-Wno-dangling-reference']),
+    make.Compile( 'source/code/signal.cpp', directive = ['-Wno-dangling-reference']),
     make.Compile( 'source/code/convert.cpp'),
     make.Compile( 'source/code/serialize.cpp'),
 

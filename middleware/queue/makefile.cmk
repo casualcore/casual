@@ -55,7 +55,7 @@ common = make.LinkLibrary( 'bin/casual-queue-common',
    [
     make.Compile( 'source/common/log.cpp'),
     make.Compile( 'source/common/queue.cpp'),
-    make.Compile( 'source/code.cpp'),
+    make.Compile( 'source/code.cpp', directive = ['-Wno-dangling-reference'])
    ],
    ['casual-common',])
 
@@ -67,7 +67,7 @@ group_archive = make.LinkArchive( 'bin/casual-queue-group-archive',
 [
     make.Compile( 'source/group/state.cpp'),   
     make.Compile( 'source/group/queuebase.cpp'),
-    make.Compile( 'source/group/queuebase/statement.cpp'),
+    make.Compile( 'source/group/queuebase/statement.cpp', directive = ['-Wno-dangling-reference']),
     make.Compile( 'source/group/handle.cpp'),
 ])
 
