@@ -5,7 +5,8 @@ make.IncludePaths([
    'include',
    '../common/include',
    '../xatmi/include',
-   '../serviceframework/include']
+   '../serviceframework/include',
+   '../domain/include'] # to get domain service names
     + make.optional_include_paths()
     + dsl.paths().include.gtest
     )
@@ -52,7 +53,8 @@ target = make.LinkLibrary( 'bin/casual-configuration-cli',
    ],
    [
       lib_configuration,
-      'casual-common'
+      'casual-common',
+      'casual-serviceframework',
    ]
 )
 install_libs.append( target)

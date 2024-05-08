@@ -75,7 +75,7 @@ domain:
       - alias: Server3
 )");
 
-      auto command = "casual domain --configuration-get | casual configuration --union " + rhs.string();
+      auto command = "casual configuration --get | casual configuration --union " + rhs.string();
 
       auto capture = administration::unittest::cli::command::execute( command);
 
@@ -103,7 +103,7 @@ domain:
       - alias: Server3
 )");
 
-      auto command = "casual domain --configuration-get | casual configuration --intersection " + rhs.string();
+      auto command = "casual configuration --get | casual configuration --intersection " + rhs.string();
 
       auto capture = administration::unittest::cli::command::execute( command);
 
@@ -131,7 +131,7 @@ domain:
       - alias: Server3
 )");
 
-      auto command = "casual domain --configuration-get | casual configuration --difference " + rhs.string();
+      auto command = "casual configuration --get | casual configuration --difference " + rhs.string();
 
       auto capture = administration::unittest::cli::command::execute( command);
 
@@ -159,7 +159,7 @@ domain:
       - alias: Server3
 )");
 
-      auto command = "casual domain --configuration-get xml | casual configuration --format xml --union " + rhs.string();
+      auto command = "casual configuration --get xml | casual configuration --format xml --union " + rhs.string();
 
       auto capture = administration::unittest::cli::command::execute( command);
 

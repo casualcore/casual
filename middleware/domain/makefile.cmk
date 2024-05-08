@@ -94,6 +94,7 @@ target = make.LinkLibrary( 'bin/casual-domain-admin-cli',
       common_library,
       'casual-common',
       'casual-configuration',
+      'casual-configuration-cli',
       'casual-serviceframework'
    ]
 )

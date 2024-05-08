@@ -13,6 +13,7 @@
 #include "configuration/model.h"
 #include "configuration/model/load.h"
 #include "configuration/model/transform.h"
+#include "configuration/admin/cli.h"
 
 #include "common/event/listen.h"
 #include "common/message/dispatch/handle.h"
@@ -202,27 +203,6 @@ namespace casual
                   }
                } // environment
 
-               namespace configuration
-               {
-                  auto get()
-                  {
-                     serviceframework::service::protocol::binary::Call call;
-                     return call( admin::service::name::configuration::get).extract< casual::configuration::user::Model>();
-                  }
-
-                  auto post( const casual::configuration::user::Model& model)
-                  {
-                     serviceframework::service::protocol::binary::Call call;
-                     return call( admin::service::name::configuration::post, model).extract< std::vector< common::strong::correlation::id>>();
-                  }
-
-                  auto put( const casual::configuration::user::Model& model)
-                  {
-                     serviceframework::service::protocol::binary::Call call;
-                     return call( admin::service::name::configuration::put, model).extract< std::vector< common::strong::correlation::id>>();
-
-                  }
-               } // configuration
             } // call
 
             namespace instance
@@ -803,8 +783,6 @@ note: not all options has legend, use 'auto complete' to find out which legends 
 
             namespace option
             {
-               auto format_list = []( auto, bool){ return std::vector< std::string>{ "json", "yaml", "xml", "ini"};};
-
                auto boot()
                {
                   auto invoke = []( const std::vector< std::string>& patterns)
@@ -984,146 +962,6 @@ note: some aliases are unrestartable
                   } // restart
                } // restart
 
-               namespace configuration
-               {
-                  auto get()
-                  {
-                     auto invoke = []( const std::optional< std::string>& format)
-                     {
-                        auto archive = common::serialize::create::writer::from( format.value_or( "yaml"));
-                        archive << call::configuration::get();
-                        archive.consume( std::cout);
-                     };
-
-                     return argument::Option{ 
-                        std::move( invoke), 
-                        format_list, 
-                        { "--configuration-get"}, 
-                        "get current configuration"};
-                  }
-
-                  auto post()
-                  {
-                     auto invoke = []( const std::string& format)
-                     {
-                        casual::configuration::user::Model model;
-                        auto archive = common::serialize::create::reader::consumed::from( format, std::cin);
-                        archive >> model;
-
-                        event::invoke( call::configuration::post, model);
-                     };
-
-                     constexpr auto description = R"(reads configuration from stdin and replaces the domain configuration
-
-casual will try to conform to the new configuration as smooth as possible. Although, there could be some "noise"
-depending on what parts are updated.
-)";
-
-                     return argument::Option{ 
-                        std::move( invoke), 
-                        format_list, 
-                        { "--configuration-post"}, 
-                        description};    
-                  }
-
-
-                  auto edit()
-                  {
-                     auto invoke = []( const std::optional< std::string>& format)
-                     {                        
-                        auto get_editor_path = []() -> std::filesystem::path
-                        {
-                           return environment::variable::get( environment::variable::name::terminal::editor).value_or( 
-                              environment::variable::get( "VISUAL").value_or( 
-                                 environment::variable::get( "EDITOR").value_or( "vi")));
-                        };
-
-                        auto current = call::configuration::get();
-
-                        auto get_configuration_file = []( auto& domain, auto format)
-                        {
-                           file::output::Truncate file{ file::temporary( format)};
-                           file::scoped::Path scoped{ file.path()};
-                           
-                           auto archive = common::serialize::create::writer::from( format);
-                           archive << domain;
-                           archive.consume( file);
-
-                           return scoped;
-                        };
-
-                        auto start_editor = []( auto editor, const auto& file)
-                        {
-                           const auto command = string::compose( editor, ' ', file);
-                           common::log::line( verbose::log, "command: ", command);
-                           
-                           posix::result( ::system( command.data()), "::system( ", command, ')');
-                        };
-
-                        // sink child signal from _editor_
-                        signal::callback::registration< code::signal::child>( [](){});
-
-                        auto file = get_configuration_file( current, format.value_or( "yaml"));
-
-                        start_editor( get_editor_path(), file);
-
-                        auto wanted = casual::configuration::model::load( { file});
-
-                        if( wanted == casual::configuration::model::transform( current))
-                        {
-                           common::log::line( std::clog, "no configuration changes detected");
-                           return;
-                        }
-
-                        event::invoke( call::configuration::post, casual::configuration::model::transform( wanted));
-                     };
-
-                     constexpr auto description = R"(get current configuration, starts an editor, on quit the edited configuration is posted.
-
-The editor is deduced from the following environment variables, in this order:
-  * CASUAL_TERMINAL_EDITOR
-  * VISUAL
-  * EDITOR
-
-If none is set, `vi` is used.
-
-If no changes are detected, no update will take place.
-)";
-
-                     return argument::Option{ 
-                        std::move( invoke), 
-                        format_list, 
-                        { "--configuration-edit"}, 
-                        description};    
-                  }
-
-                  auto put()
-                  {
-                     auto invoke = []( const std::string& format)
-                     {
-                        casual::configuration::user::Model model;
-                        auto archive = common::serialize::create::reader::consumed::from( format, std::cin);
-                        archive >> model;
-
-                        event::invoke( call::configuration::put, model);
-                     };
-
-                     constexpr auto description = R"(reads configuration from stdin and adds or updates parts
-
-The semantics are similar to http PUT:
-* every key that is found is treated as an update of that _entity_
-* every key that is NOT found is treated as a new _entity_ and added to the current state 
-)";
-
-                     return argument::Option{ 
-                        std::move( invoke), 
-                        format_list, 
-                        { "--configuration-put"}, 
-                        description};    
-                  }
-
-               } // configuration
-
                namespace log
                {
                   struct Type : common::compare::Order< Type>
@@ -1205,10 +1043,6 @@ The semantics are similar to http PUT:
                local::option::shutdown(),
                argument::Option( &local::action::environment::set::call, local::action::environment::set::complete, { "--set-environment"}, local::action::environment::set::description)( argument::cardinality::any{}),
                argument::Option( &local::action::environment::unset::call, local::action::environment::unset::complete, { "--unset-environment"}, local::action::environment::unset::description)( argument::cardinality::any{}),
-               local::option::configuration::get(),
-               local::option::configuration::post(),
-               local::option::configuration::edit(),
-               local::option::configuration::put(),
             
                argument::Option( argument::option::one::many( &local::action::ping::invoke), local::action::ping::complete(), { "--ping"}, local::action::ping::description),
                argument::Option( &local::action::global::state::invoke, local::action::global::state::complete(), { "--instance-global-state"}, local::action::global::state::description),
@@ -1216,6 +1050,13 @@ The semantics are similar to http PUT:
                argument::Option( &local::action::information::invoke, { "--information"}, local::action::information::description),
                casual::cli::state::option( &local::call::state),
                local::option::log::reopen(),
+
+               // this is only for backward compatibility
+               // TODO remove in 2.0
+               configuration::admin::deprecated::get(),
+               configuration::admin::deprecated::post(),
+               configuration::admin::deprecated::edit(),
+               configuration::admin::deprecated::put(),
             };
          }
       };

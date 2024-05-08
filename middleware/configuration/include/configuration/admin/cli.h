@@ -16,6 +16,18 @@ namespace casual
    {
       namespace admin
       {
+         //! exposed for domain cli, to keep compatibility... 
+         //! @remove in 2.0
+         namespace deprecated
+         {
+            common::argument::Option get();
+            common::argument::Option post();
+            common::argument::Option put();
+            common::argument::Option edit();
+
+         } // deprecated
+
+
          struct CLI 
          {
             CLI();

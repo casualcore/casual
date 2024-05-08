@@ -11,6 +11,16 @@
 #include "common/argument.h"
 #include "common/file.h"
 #include "common/serialize/create.h"
+#include "common/environment.h"
+#include "common/message/dispatch.h"
+#include "common/communication/ipc.h"
+#include "common/result.h"
+#include "common/terminal.h"
+#include "common/event/listen.h"
+
+#include "serviceframework/service/protocol/call.h"
+
+#include "domain/manager/admin/server.h"
 
 namespace casual
 {
@@ -24,6 +34,98 @@ namespace casual
          {
             namespace
             {
+               auto format_list = []( auto, bool){ return std::vector< std::string>{ "json", "yaml", "xml", "ini"};};
+
+               namespace event
+               {
+                  auto handler( std::vector< common::strong::correlation::id>& tasks) 
+                  {
+                     return message::dispatch::handler( communication::ipc::inbound::device(),
+                        []( const message::event::process::Spawn& event)
+                        {
+                           message::event::terminal::print( std::cout, event);
+                        },
+                        []( const message::event::process::Exit& event)
+                        {
+                           message::event::terminal::print( std::cout, event);
+                        },
+                        [&tasks]( message::event::Task& event)
+                        {
+                           message::event::terminal::print( std::cout, event);
+                           if( event.done())
+                              if( algorithm::find( tasks, event.correlation))
+                                 tasks.clear();
+                        },
+                        []( const message::event::sub::Task& event)
+                        {
+                           message::event::terminal::print( std::cout, event);
+                        },
+                        []( const message::event::Error& event)
+                        {
+                           message::event::terminal::print( std::cerr, event);
+                        },
+                        []( const message::event::Notification& event)
+                        {
+                           message::event::terminal::print( std::cout, event);
+                        }
+                     );
+                  };
+
+                  // generalization of the event handling
+                  template< typename I, typename... Args>
+                  void invoke( I&& invocable, Args&&... arguments)
+                  {
+                     // if no-block we don't mess with events
+                     if( ! terminal::output::directive().block())
+                     {
+                        invocable( std::forward< Args>( arguments)...);
+                        return;
+                     }
+
+                     decltype( invocable( std::forward< Args>( arguments)...)) tasks;
+
+                     auto condition = common::event::condition::compose(
+                        common::event::condition::prelude( [&]()
+                        {
+                           tasks = invocable( std::forward< Args>( arguments)...);
+                        }),
+                        common::event::condition::done( [&tasks]()
+                        { 
+                           return tasks.empty();
+                        })
+                     );
+
+                     // listen for events
+                     common::event::listen( 
+                        condition,
+                        local::event::handler( tasks));
+                  }
+                  
+
+               } // event
+
+               namespace call
+               {
+                  auto get()
+                  {
+                     serviceframework::service::protocol::binary::Call call;
+                     return call( casual::domain::manager::admin::service::name::configuration::get).extract< casual::configuration::user::Model>();
+                  }
+
+                  auto post( const casual::configuration::user::Model& model)
+                  {
+                     serviceframework::service::protocol::binary::Call call;
+                     return call( casual::domain::manager::admin::service::name::configuration::post, model).extract< std::vector< common::strong::correlation::id>>();
+                  }
+
+                  auto put( const casual::configuration::user::Model& model)
+                  {
+                     serviceframework::service::protocol::binary::Call call;
+                     return call( casual::domain::manager::admin::service::name::configuration::put, model).extract< std::vector< common::strong::correlation::id>>();
+                  }
+               
+               } // call
+
                struct State
                {
                   std::string format{ "yaml"};
@@ -170,9 +272,203 @@ The format is default yaml, but could be supplied via the --format option)"
                      };
                   }
                } // set_operation
-               
+
+
+               namespace runtime
+               {
+                  namespace detail
+                  {
+                     auto get( auto option_name, auto description)
+                     {
+                        auto invoke = []( const std::optional< std::string>& format)
+                        {
+                           auto archive = common::serialize::create::writer::from( format.value_or( "yaml"));
+                           archive << call::get();
+                           archive.consume( std::cout);
+                        };
+
+                        return argument::Option{ 
+                           std::move( invoke), 
+                           format_list, 
+                           option_name, 
+                           description
+                        };
+                     }
+
+                     auto post( auto option_name, auto description)
+                     {
+                        auto invoke = []( const std::string& format)
+                        {
+                           casual::configuration::user::Model model;
+                           auto archive = common::serialize::create::reader::consumed::from( format, std::cin);
+                           archive >> model;
+
+                           event::invoke( call::post, model);
+                        };
+
+                        return argument::Option{ 
+                           std::move( invoke), 
+                           format_list, 
+                           option_name, 
+                           description
+                        };  
+                     }
+
+
+                     auto edit( auto option_name, auto description)
+                     {
+                        auto invoke = []( const std::optional< std::string>& format)
+                        {                        
+                           auto get_editor_path = []() -> std::filesystem::path
+                           {
+                              return environment::variable::get( environment::variable::name::terminal::editor).value_or( 
+                                 environment::variable::get( "VISUAL").value_or( 
+                                    environment::variable::get( "EDITOR").value_or( "vi")));
+                           };
+
+                           auto current = call::get();
+
+                           auto get_configuration_file = []( auto& domain, auto format)
+                           {
+                              file::output::Truncate file{ file::temporary( format)};
+                              file::scoped::Path scoped{ file.path()};
+                              
+                              auto archive = common::serialize::create::writer::from( format);
+                              archive << domain;
+                              archive.consume( file);
+
+                              return scoped;
+                           };
+
+                           auto start_editor = []( auto editor, const auto& file)
+                           {
+                              const auto command = string::compose( editor, ' ', file);
+                              common::log::line( verbose::log, "command: ", command);
+
+                              posix::result( ::system( command.data()), "::system( ", command, ')');
+                           };
+
+                           // sink child signal from _editor_
+                           signal::callback::registration< code::signal::child>( [](){});
+
+                           auto file = get_configuration_file( current, format.value_or( "yaml"));
+
+                           start_editor( get_editor_path(), file);
+
+                           auto wanted = casual::configuration::model::load( { file});
+
+                           if( wanted == casual::configuration::model::transform( current))
+                           {
+                              common::log::line( std::clog, "no configuration changes detected");
+                              return;
+                           }
+
+                           event::invoke( call::post, casual::configuration::model::transform( wanted));
+                        };
+
+                        return argument::Option{ 
+                           std::move( invoke), 
+                           format_list, 
+                           option_name, 
+                           description
+                        };
+                     }
+
+                     auto put( auto option_name, auto description)
+                     {
+                        auto invoke = []( const std::string& format)
+                        {
+                           casual::configuration::user::Model model;
+                           auto archive = common::serialize::create::reader::consumed::from( format, std::cin);
+                           archive >> model;
+
+                           event::invoke( call::put, model);
+                        };
+
+                        return argument::Option{ 
+                           std::move( invoke), 
+                           format_list, 
+                           option_name, 
+                           description
+                        };
+                     }
+                  } // detail
+
+                  auto get()
+                  {
+                     return detail::get( argument::option::keys( { "--get"}, {}), "get current configuration");
+                  }
+
+                  auto post()
+                  {
+                     constexpr auto description = R"(reads configuration from stdin and replaces the domain configuration
+
+casual will try to conform to the new configuration as smooth as possible. Although, there could be some "noise"
+depending on what parts are updated.
+)";
+
+                     return detail::post( argument::option::keys( { "--post"}, {}), description);  
+                  }
+
+
+                  auto edit()
+                  {
+                     constexpr auto description = R"(get current configuration, starts an editor, on quit the edited configuration is posted.
+
+The editor is deduced from the following environment variables, in this order:
+* CASUAL_TERMINAL_EDITOR
+* VISUAL
+* EDITOR
+
+If none is set, `vi` is used.
+
+If no changes are detected, no update will take place.
+)";
+
+
+                     return detail::edit( argument::option::keys( { "--edit"}, {}), description);  
+                  }
+
+                  auto put()
+                  {
+                     constexpr auto description = R"(reads configuration from stdin and adds or updates parts
+
+The semantics are similar to http PUT:
+* every key that is found is treated as an update of that _entity_
+* every key that is NOT found is treated as a new _entity_ and added to the current state 
+)";
+
+                     return detail::put( argument::option::keys( { "--put"}, {}), description);     
+                  }
+
+               } // runtime
             } // <unnamed>
          } // local
+
+         namespace deprecated
+         {
+            common::argument::Option get() 
+            { 
+               return local::runtime::detail::get( argument::option::keys( {}, { "--configuration-get"}), "@deprecated: use `casual configuration --get`");
+            }
+
+            common::argument::Option post()
+            { 
+               return local::runtime::detail::post( argument::option::keys( {}, { "--configuration-post"}), "@deprecated: use `casual configuration --post`");
+            }
+
+            common::argument::Option put()
+            { 
+               return local::runtime::detail::put( argument::option::keys( {}, { "--configuration-put"}), "@deprecated: use `casual configuration --put`");
+            }
+            
+            common::argument::Option edit()
+            { 
+               return local::runtime::detail::edit( argument::option::keys( {}, { "--configuration-edit"}), "@deprecated: use `casual configuration --edit`");
+            }
+         } // deprecated
+
+
          struct CLI::Implementation
          {
             
@@ -183,6 +479,10 @@ The format is default yaml, but could be supplied via the --format option)"
 Used to check and normalize configuration
 )";
                return argument::Group{ [](){}, { "configuration"}, description,
+                  local::runtime::get(),
+                  local::runtime::post(),
+                  local::runtime::put(),
+                  local::runtime::edit(),
                   local::normalize( state),
                   local::validate(),
                   local::format( state),
