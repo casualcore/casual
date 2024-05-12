@@ -975,7 +975,10 @@ namespace casual
 
                         log::line( verbose::log, "state.pending: ", state.pending);
 
-                        static constexpr auto is_forward = []( auto id) { return [ id]( auto& forward){ return forward == id;};};
+                        // g++13 incorrectly gives a warning "unused-but-set-variable"
+                        // for is_forward. Bug reported
+                        // (https://gcc.gnu.org/bugzilla/show_bug.cgi?id=114450)
+                        [[maybe_unused]] static constexpr auto is_forward = []( auto id) { return [ id]( auto& forward){ return forward == id;};};
 
 
                         auto invalidate_queue_forward = [ &state, handle]( auto& forward)

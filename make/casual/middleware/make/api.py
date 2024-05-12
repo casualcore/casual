@@ -144,13 +144,13 @@ def link_server( input):
    library_paths = input['library_paths']
    include_paths = input['include_paths']
 
-   BUILDSERVER = [ BUILD_SERVER(), "-c"] + selector.build_configuration['executable_linker']
+   BUILDSERVER = [ BUILD_SERVER(), "-c"] + selector.build_configuration.get('executable_linker')
 
    cmd = BUILDSERVER + \
          ['-o', destination.filename()] + directive + ['-f'] + [" ".join( objects)] + \
          selector.library_directive(libraries) +  \
          selector.library_paths_directive( library_paths) + \
-         selector.build_configuration['link_directives_exe'] + \
+         selector.build_configuration.get('link_directives_exe') + \
          common.add_item_to_list( include_paths, '-I')
 
    executor.command( cmd, destination, context_directory)

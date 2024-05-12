@@ -38,19 +38,19 @@ install_headers = []
 manager_archive = make.LinkArchive( 'bin/manager-archive',
     [
         make.Compile( 'source/common.cpp'),
-        make.Compile( 'source/manager/state.cpp', directive = ['-Wno-dangling-reference']),
-        make.Compile( 'source/manager/action.cpp', directive = ['-Wno-dangling-reference']),
-        make.Compile( 'source/manager/transform.cpp', directive = ['-Wno-dangling-reference']),
-        make.Compile( 'source/manager/log.cpp', directive = ['-Wno-dangling-reference']),
+        make.Compile( 'source/manager/state.cpp'),
+        make.Compile( 'source/manager/action.cpp'),
+        make.Compile( 'source/manager/transform.cpp'),
+        make.Compile( 'source/manager/log.cpp'),
         make.Compile( 'source/manager/handle.cpp'),
-        make.Compile( 'source/manager/admin/server.cpp', directive = ['-Wno-dangling-reference']),
-        make.Compile( 'source/manager/admin/transform.cpp', directive = ['-Wno-dangling-reference']),
+        make.Compile( 'source/manager/admin/server.cpp'),
+        make.Compile( 'source/manager/admin/transform.cpp'),
     ])
 
 
 manager = make.LinkExecutable( 'bin/casual-transaction-manager',
     [
-        make.Compile( 'source/manager/main.cpp', directive = ['-Wno-dangling-reference'])
+        make.Compile( 'source/manager/main.cpp')
     ],
     [ 
         manager_archive, 
@@ -119,9 +119,9 @@ unittest_library = make.LinkLibrary( 'bin/casual-transaction-unittest',
 # unittest
 test_transaction = make.LinkUnittest( 'bin/test-casual-transaction',
     [
-        make.Compile( 'unittest/source/manager/test_state.cpp', directive = ['-Wno-dangling-reference']),
-        make.Compile( 'unittest/source/manager/test_log.cpp', directive = ['-Wno-dangling-reference']),
-        make.Compile( 'unittest/source/test_admin.cpp', directive = ['-Wno-dangling-reference']),
+        make.Compile( 'unittest/source/manager/test_state.cpp'),
+        make.Compile( 'unittest/source/manager/test_log.cpp'),
+        make.Compile( 'unittest/source/test_admin.cpp'),
         make.Compile( 'unittest/source/test_manager.cpp'),
         
     ],

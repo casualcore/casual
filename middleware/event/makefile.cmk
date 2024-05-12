@@ -55,7 +55,7 @@ install_header += [
     
 target = make.LinkExecutable( 'bin/casual-event-service-monitor',
 	[
-        make.Compile( 'source/service/monitor/database.cpp', directive = ['-Wno-dangling-reference'])
+        make.Compile( 'source/service/monitor/database.cpp')
 	],
 	[
         common_archive,
@@ -78,7 +78,7 @@ install_bin.append( target)
 
 target = make.LinkExecutable( 'bin/casual-event-service-monitor-server',
 	[
-	    make.Compile( 'source/service/monitor/server.cpp', directive = ['-Wno-dangling-reference'])
+	    make.Compile( 'source/service/monitor/server.cpp')
 	],
 	[
         common_archive,

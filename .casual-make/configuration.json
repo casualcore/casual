@@ -1,0 +1,715 @@
+{
+    "Linux": {
+        "g++": {
+            "normal": {
+                "compiler": [
+                    "g++"
+                ],
+                "header_dependency_command": [
+                    "g++",
+                    "-E",
+                    "-MMD",
+                    "-std=c++2b"
+                ],
+                "library_linker": [
+                    "g++"
+                ],
+                "executable_linker": [
+                    "g++"
+                ],
+                "archive_linker": [
+                    "ar",
+                    "rcs"
+                ],
+                "compile_directives": [
+                    "-DCASUAL_MAKE_COMMIT_HASH=\"e3a18bec8053dcece96343c46ca7d49da0b1371d\"",
+                    "-Wall",
+                    "-Wextra",
+                    "-Werror",
+                    "-Wsign-compare",
+                    "-Wuninitialized",
+                    "-Winit-self",
+                    "-Wno-unused-parameter",
+                    "-Wno-missing-declarations",
+                    "-Wno-noexcept-type",
+                    "-Wno-implicit-fallthrough",
+                    "-Wno-dangling-reference",
+                    "-std=c++2b",
+                    "-fdiagnostics-color=always",
+                    "-c",
+                    "-O3",
+                    "-fPIC",
+                    "-pthread"
+                ],
+                "link_directives_lib": [
+                    "-fPIC",
+                    "-Wall",
+                    "-Wextra",
+                    "-Werror",
+                    "-Wsign-compare",
+                    "-Wuninitialized",
+                    "-Winit-self",
+                    "-Wno-unused-parameter",
+                    "-Wno-missing-declarations",
+                    "-Wno-noexcept-type",
+                    "-Wno-implicit-fallthrough",
+                    "-std=c++2b",
+                    "-pthread",
+                    "-shared",
+                    "-O3",
+                    "-fpic"
+                ],
+                "link_directives_exe": [
+                    "-fPIC",
+                    "-Wall",
+                    "-Wextra",
+                    "-Werror",
+                    "-Wsign-compare",
+                    "-Wuninitialized",
+                    "-Winit-self",
+                    "-Wno-unused-parameter",
+                    "-Wno-missing-declarations",
+                    "-Wno-noexcept-type",
+                    "-Wno-implicit-fallthrough",
+                    "-std=c++2b",
+                    "-pthread",
+                    "-O3",
+                    "-fpic"
+                ],
+                "link_directives_archive": []
+            },
+            "debug": {
+                "compiler": [
+                    "g++"
+                ],
+                "header_dependency_command": [
+                    "g++",
+                    "-E",
+                    "-MMD",
+                    "-std=c++2b"
+                ],
+                "library_linker": [
+                    "g++"
+                ],
+                "executable_linker": [
+                    "g++"
+                ],
+                "archive_linker": [
+                    "ar",
+                    "rcs"
+                ],
+                "compile_directives": [
+                    "-DCASUAL_MAKE_COMMIT_HASH=\"e3a18bec8053dcece96343c46ca7d49da0b1371d\"",
+                    "-Wall",
+                    "-Wextra",
+                    "-Werror",
+                    "-Wsign-compare",
+                    "-Wuninitialized",
+                    "-Winit-self",
+                    "-Wno-unused-parameter",
+                    "-Wno-missing-declarations",
+                    "-Wno-noexcept-type",
+                    "-Wno-implicit-fallthrough",
+                    "-Wno-dangling-reference",
+                    "-std=c++2b",
+                    "-fdiagnostics-color=always",
+                    "-ggdb",
+                    "-c",
+                    "-fPIC"
+                ],
+                "link_directives_lib": [
+                    "-fPIC",
+                    "-Wall",
+                    "-Wextra",
+                    "-Werror",
+                    "-Wsign-compare",
+                    "-Wuninitialized",
+                    "-Winit-self",
+                    "-Wno-unused-parameter",
+                    "-Wno-missing-declarations",
+                    "-Wno-noexcept-type",
+                    "-Wno-implicit-fallthrough",
+                    "-std=c++2b",
+                    "-g",
+                    "-pthread",
+                    "-shared",
+                    "-fpic"
+                ],
+                "link_directives_exe": [
+                    "-fPIC",
+                    "-Wall",
+                    "-Wextra",
+                    "-Werror",
+                    "-Wsign-compare",
+                    "-Wuninitialized",
+                    "-Winit-self",
+                    "-Wno-unused-parameter",
+                    "-Wno-missing-declarations",
+                    "-Wno-noexcept-type",
+                    "-Wno-implicit-fallthrough",
+                    "-std=c++2b",
+                    "-g",
+                    "-pthread",
+                    "-fpic"
+                ],
+                "link_directives_archive": [
+                    "-g"
+                ]
+            },
+            "analyze": {
+                "compiler": [
+                    "g++"
+                ],
+                "header_dependency_command": [
+                    "g++",
+                    "-E",
+                    "-MMD",
+                    "-std=c++2b"
+                ],
+                "library_linker": [
+                    "g++"
+                ],
+                "executable_linker": [
+                    "g++"
+                ],
+                "archive_linker": [
+                    "ar",
+                    "rcs"
+                ],
+                "compile_directives": [
+                    "-DCASUAL_MAKE_COMMIT_HASH=\"e3a18bec8053dcece96343c46ca7d49da0b1371d\"",
+                    "-Wall",
+                    "-Wextra",
+                    "-Werror",
+                    "-Wsign-compare",
+                    "-Wuninitialized",
+                    "-Winit-self",
+                    "-Wno-unused-parameter",
+                    "-Wno-missing-declarations",
+                    "-Wno-noexcept-type",
+                    "-Wno-implicit-fallthrough",
+                    "-Wno-dangling-reference",
+                    "-std=c++2b",
+                    "-fdiagnostics-color=always",
+                    "-ggdb",
+                    "-c",
+                    "-fPIC",
+                    "-fprofile-arcs",
+                    "-ftest-coverage"
+                ],
+                "link_directives_lib": [
+                    "-fPIC",
+                    "-Wall",
+                    "-Wextra",
+                    "-Werror",
+                    "-Wsign-compare",
+                    "-Wuninitialized",
+                    "-Winit-self",
+                    "-Wno-unused-parameter",
+                    "-Wno-missing-declarations",
+                    "-Wno-noexcept-type",
+                    "-Wno-implicit-fallthrough",
+                    "-std=c++2b",
+                    "-g",
+                    "-pthread",
+                    "-shared",
+                    "-fpic",
+                    "-O0",
+                    "-coverage"
+                ],
+                "link_directives_exe": [
+                    "-fPIC",
+                    "-Wall",
+                    "-Wextra",
+                    "-Werror",
+                    "-Wsign-compare",
+                    "-Wuninitialized",
+                    "-Winit-self",
+                    "-Wno-unused-parameter",
+                    "-Wno-missing-declarations",
+                    "-Wno-noexcept-type",
+                    "-Wno-implicit-fallthrough",
+                    "-std=c++2b",
+                    "-g",
+                    "-pthread",
+                    "-fpic",
+                    "-O0",
+                    "-coverage"
+                ],
+                "link_directives_archive": [
+                    "-g"
+                ]
+            }
+        }
+    },
+    "Darwin": {
+        "g++": {
+            "normal": {
+                "compiler": [
+                    "g++"
+                ],
+                "header_dependency_command": [
+                    "g++",
+                    "-E",
+                    "-MMD",
+                    "-std=c++2b"
+                ],
+                "library_linker": [
+                    "g++"
+                ],
+                "executable_linker": [
+                    "g++"
+                ],
+                "archive_linker": [
+                    "ar",
+                    "rcs"
+                ],
+                "compile_directives": [
+                    "-DCASUAL_MAKE_COMMIT_HASH=\"e3a18bec8053dcece96343c46ca7d49da0b1371d\"",
+                    "-Wall",
+                    "-Wextra",
+                    "-Werror",
+                    "-Wsign-compare",
+                    "-Wuninitialized",
+                    "-Winit-self",
+                    "-Wno-unused-parameter",
+                    "-Wno-missing-declarations",
+                    "-Wno-noexcept-type",
+                    "-Wno-implicit-fallthrough",
+                    "-std=c++2b",
+                    "-fdiagnostics-color=always",
+                    "-c",
+                    "-O3",
+                    "-fPIC",
+                    "-pthread"
+                ],
+                "link_directives_lib": [
+                    "-fPIC",
+                    "-Wall",
+                    "-Wextra",
+                    "-Werror",
+                    "-Wsign-compare",
+                    "-Wuninitialized",
+                    "-Winit-self",
+                    "-Wno-unused-parameter",
+                    "-Wno-missing-declarations",
+                    "-Wno-noexcept-type",
+                    "-Wno-implicit-fallthrough",
+                    "-std=c++2b",
+                    "-dynamiclib",
+                    "-O3"
+                ],
+                "link_directives_exe": [
+                    "-fPIC",
+                    "-Wall",
+                    "-Wextra",
+                    "-Werror",
+                    "-Wsign-compare",
+                    "-Wuninitialized",
+                    "-Winit-self",
+                    "-Wno-unused-parameter",
+                    "-Wno-missing-declarations",
+                    "-Wno-noexcept-type",
+                    "-Wno-implicit-fallthrough",
+                    "-std=c++2b",
+                    "-O3"
+                ],
+                "link_directives_archive": [
+                    "-O3",
+                    "-pthread"
+                ]
+            },
+            "debug": {
+                "compiler": [
+                    "g++"
+                ],
+                "header_dependency_command": [
+                    "g++",
+                    "-E",
+                    "-MMD",
+                    "-std=c++2b"
+                ],
+                "library_linker": [
+                    "g++"
+                ],
+                "executable_linker": [
+                    "g++"
+                ],
+                "archive_linker": [
+                    "ar",
+                    "rcs"
+                ],
+                "compile_directives": [
+                    "-DCASUAL_MAKE_COMMIT_HASH=\"e3a18bec8053dcece96343c46ca7d49da0b1371d\"",
+                    "-Wall",
+                    "-Wextra",
+                    "-Werror",
+                    "-Wsign-compare",
+                    "-Wuninitialized",
+                    "-Winit-self",
+                    "-Wno-unused-parameter",
+                    "-Wno-missing-declarations",
+                    "-Wno-noexcept-type",
+                    "-Wno-implicit-fallthrough",
+                    "-std=c++2b",
+                    "-fdiagnostics-color=always",
+                    "-ggdb",
+                    "-c",
+                    "-fPIC"
+                ],
+                "link_directives_lib": [
+                    "-fPIC",
+                    "-Wall",
+                    "-Wextra",
+                    "-Werror",
+                    "-Wsign-compare",
+                    "-Wuninitialized",
+                    "-Winit-self",
+                    "-Wno-unused-parameter",
+                    "-Wno-missing-declarations",
+                    "-Wno-noexcept-type",
+                    "-Wno-implicit-fallthrough",
+                    "-std=c++2b",
+                    "-ggdb",
+                    "-dynamiclib"
+                ],
+                "link_directives_exe": [
+                    "-fPIC",
+                    "-Wall",
+                    "-Wextra",
+                    "-Werror",
+                    "-Wsign-compare",
+                    "-Wuninitialized",
+                    "-Winit-self",
+                    "-Wno-unused-parameter",
+                    "-Wno-missing-declarations",
+                    "-Wno-noexcept-type",
+                    "-Wno-implicit-fallthrough",
+                    "-std=c++2b",
+                    "-ggdb"
+                ],
+                "link_directives_archive": [
+                    "-ggdb"
+                ]
+            },
+            "analyze": {
+                "compiler": [
+                    "g++"
+                ],
+                "header_dependency_command": [
+                    "g++",
+                    "-E",
+                    "-MMD",
+                    "-std=c++2b"
+                ],
+                "library_linker": [
+                    "g++"
+                ],
+                "executable_linker": [
+                    "g++"
+                ],
+                "archive_linker": [
+                    "ar",
+                    "rcs"
+                ],
+                "compile_directives": [
+                    "-DCASUAL_MAKE_COMMIT_HASH=\"e3a18bec8053dcece96343c46ca7d49da0b1371d\"",
+                    "-Wall",
+                    "-Wextra",
+                    "-Werror",
+                    "-Wsign-compare",
+                    "-Wuninitialized",
+                    "-Winit-self",
+                    "-Wno-unused-parameter",
+                    "-Wno-missing-declarations",
+                    "-Wno-noexcept-type",
+                    "-Wno-implicit-fallthrough",
+                    "-std=c++2b",
+                    "-fdiagnostics-color=always",
+                    "-ggdb",
+                    "-c",
+                    "-fPIC",
+                    "-fprofile-arcs",
+                    "-ftest-coverage"
+                ],
+                "link_directives_lib": [
+                    "-fPIC",
+                    "-Wall",
+                    "-Wextra",
+                    "-Werror",
+                    "-Wsign-compare",
+                    "-Wuninitialized",
+                    "-Winit-self",
+                    "-Wno-unused-parameter",
+                    "-Wno-missing-declarations",
+                    "-Wno-noexcept-type",
+                    "-Wno-implicit-fallthrough",
+                    "-std=c++2b",
+                    "-ggdb",
+                    "-dynamiclib",
+                    "-fprofile-arcs"
+                ],
+                "link_directives_exe": [
+                    "-fPIC",
+                    "-Wall",
+                    "-Wextra",
+                    "-Werror",
+                    "-Wsign-compare",
+                    "-Wuninitialized",
+                    "-Winit-self",
+                    "-Wno-unused-parameter",
+                    "-Wno-missing-declarations",
+                    "-Wno-noexcept-type",
+                    "-Wno-implicit-fallthrough",
+                    "-std=c++2b",
+                    "-ggdb",
+                    "-lgcov",
+                    "-fprofile-arcs"
+                ],
+                "link_directives_archive": [
+                    "-ggdb"
+                ]
+            }
+        }
+    },
+    "CYGWIN": {
+        "g++": {
+            "normal": {
+                "compiler": [
+                    "g++"
+                ],
+                "header_dependency_command": [
+                    "g++",
+                    "-E",
+                    "-MMD",
+                    "-std=gnu++23"
+                ],
+                "library_linker": [
+                    "g++"
+                ],
+                "executable_linker": [
+                    "g++"
+                ],
+                "archive_linker": [
+                    "ar",
+                    "rcs"
+                ],
+                "compile_directives": [
+                    "-DCASUAL_MAKE_COMMIT_HASH=\"e3a18bec8053dcece96343c46ca7d49da0b1371d\"",
+                    "-Wall",
+                    "-Wextra",
+                    "-Werror",
+                    "-Wsign-compare",
+                    "-Wuninitialized",
+                    "-Winit-self",
+                    "-Wno-unused-parameter",
+                    "-Wno-missing-declarations",
+                    "-Wno-noexcept-type",
+                    "-Wno-implicit-fallthrough",
+                    "-std=gnu++23",
+                    "-fdiagnostics-color=always",
+                    "-c",
+                    "-O3",
+                    "-fPIC",
+                    "-pthread"
+                ],
+                "link_directives_lib": [
+                    "-fPIC",
+                    "-Wall",
+                    "-Wextra",
+                    "-Werror",
+                    "-Wsign-compare",
+                    "-Wuninitialized",
+                    "-Winit-self",
+                    "-Wno-unused-parameter",
+                    "-Wno-missing-declarations",
+                    "-Wno-noexcept-type",
+                    "-Wno-implicit-fallthrough",
+                    "-std=gnu++23",
+                    "-pthread",
+                    "-shared",
+                    "-O3",
+                    "-fpic"
+                ],
+                "link_directives_exe": [
+                    "-fPIC",
+                    "-Wall",
+                    "-Wextra",
+                    "-Werror",
+                    "-Wsign-compare",
+                    "-Wuninitialized",
+                    "-Winit-self",
+                    "-Wno-unused-parameter",
+                    "-Wno-missing-declarations",
+                    "-Wno-noexcept-type",
+                    "-Wno-implicit-fallthrough",
+                    "-std=gnu++23",
+                    "-pthread",
+                    "-O3",
+                    "-fpic"
+                ],
+                "link_directives_archive": []
+            },
+            "debug": {
+                "compiler": [
+                    "g++"
+                ],
+                "header_dependency_command": [
+                    "g++",
+                    "-E",
+                    "-MMD",
+                    "-std=gnu++23"
+                ],
+                "library_linker": [
+                    "g++"
+                ],
+                "executable_linker": [
+                    "g++"
+                ],
+                "archive_linker": [
+                    "ar",
+                    "rcs"
+                ],
+                "compile_directives": [
+                    "-DCASUAL_MAKE_COMMIT_HASH=\"e3a18bec8053dcece96343c46ca7d49da0b1371d\"",
+                    "-Wall",
+                    "-Wextra",
+                    "-Werror",
+                    "-Wsign-compare",
+                    "-Wuninitialized",
+                    "-Winit-self",
+                    "-Wno-unused-parameter",
+                    "-Wno-missing-declarations",
+                    "-Wno-noexcept-type",
+                    "-Wno-implicit-fallthrough",
+                    "-std=gnu++23",
+                    "-fdiagnostics-color=always",
+                    "-ggdb",
+                    "-c",
+                    "-fPIC"
+                ],
+                "link_directives_lib": [
+                    "-fPIC",
+                    "-Wall",
+                    "-Wextra",
+                    "-Werror",
+                    "-Wsign-compare",
+                    "-Wuninitialized",
+                    "-Winit-self",
+                    "-Wno-unused-parameter",
+                    "-Wno-missing-declarations",
+                    "-Wno-noexcept-type",
+                    "-Wno-implicit-fallthrough",
+                    "-std=gnu++23",
+                    "-g",
+                    "-pthread",
+                    "-shared",
+                    "-fpic"
+                ],
+                "link_directives_exe": [
+                    "-fPIC",
+                    "-Wall",
+                    "-Wextra",
+                    "-Werror",
+                    "-Wsign-compare",
+                    "-Wuninitialized",
+                    "-Winit-self",
+                    "-Wno-unused-parameter",
+                    "-Wno-missing-declarations",
+                    "-Wno-noexcept-type",
+                    "-Wno-implicit-fallthrough",
+                    "-std=gnu++23",
+                    "-g",
+                    "-pthread",
+                    "-fpic"
+                ],
+                "link_directives_archive": [
+                    "-g"
+                ]
+            },
+            "analyze": {
+                "compiler": [
+                    "g++"
+                ],
+                "header_dependency_command": [
+                    "g++",
+                    "-E",
+                    "-MMD",
+                    "-std=gnu++23"
+                ],
+                "library_linker": [
+                    "g++"
+                ],
+                "executable_linker": [
+                    "g++"
+                ],
+                "archive_linker": [
+                    "ar",
+                    "rcs"
+                ],
+                "compile_directives": [
+                    "-DCASUAL_MAKE_COMMIT_HASH=\"e3a18bec8053dcece96343c46ca7d49da0b1371d\"",
+                    "-Wall",
+                    "-Wextra",
+                    "-Werror",
+                    "-Wsign-compare",
+                    "-Wuninitialized",
+                    "-Winit-self",
+                    "-Wno-unused-parameter",
+                    "-Wno-missing-declarations",
+                    "-Wno-noexcept-type",
+                    "-Wno-implicit-fallthrough",
+                    "-std=gnu++23",
+                    "-fdiagnostics-color=always",
+                    "-ggdb",
+                    "-c",
+                    "-fPIC",
+                    "-fprofile-arcs",
+                    "-ftest-coverage"
+                ],
+                "link_directives_lib": [
+                    "-fPIC",
+                    "-Wall",
+                    "-Wextra",
+                    "-Werror",
+                    "-Wsign-compare",
+                    "-Wuninitialized",
+                    "-Winit-self",
+                    "-Wno-unused-parameter",
+                    "-Wno-missing-declarations",
+                    "-Wno-noexcept-type",
+                    "-Wno-implicit-fallthrough",
+                    "-std=gnu++23",
+                    "-g",
+                    "-pthread",
+                    "-shared",
+                    "-fpic",
+                    "-O0",
+                    "-coverage"
+                ],
+                "link_directives_exe": [
+                    "-fPIC",
+                    "-Wall",
+                    "-Wextra",
+                    "-Werror",
+                    "-Wsign-compare",
+                    "-Wuninitialized",
+                    "-Winit-self",
+                    "-Wno-unused-parameter",
+                    "-Wno-missing-declarations",
+                    "-Wno-noexcept-type",
+                    "-Wno-implicit-fallthrough",
+                    "-std=gnu++23",
+                    "-g",
+                    "-pthread",
+                    "-fpic",
+                    "-O0",
+                    "-coverage"
+                ],
+                "link_directives_archive": [
+                    "-g"
+                ]
+            }
+        }
+    }
+}
