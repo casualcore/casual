@@ -120,6 +120,17 @@ namespace casual
                };
             }
 
+            auto route()
+            {
+               return []( auto& pair)
+               {
+                  manager::admin::model::Route result;
+                  result.target = pair.first;
+                  result.services = pair.second;
+                  return result;
+               };
+            }
+
             auto reservation()
             {
                return []( auto& pair)
@@ -159,17 +170,7 @@ namespace casual
 
          common::algorithm::transform( state.services, result.services, local::service());
 
-         common::algorithm::for_each( state.routes, [&result]( auto& pair)
-         {
-            manager::admin::model::Route route;
-            route.target = pair.first;
-
-            common::algorithm::transform( pair.second, result.routes, [&route]( auto& service)
-            {
-               route.service = service;
-               return route;
-            });
-         });
+         common::algorithm::transform( state.routes, result.routes, local::route());
 
          common::algorithm::transform_if(
             state.instances.sequential, std::back_inserter( result.reservations), local::reservation(), []( auto& pair){ return ! pair.second.idle();}

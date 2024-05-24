@@ -153,7 +153,6 @@ namespace casual
                         return name == iterator->first;
                      }));
 
-
                      for( auto& route : add)
                      {
                         // add the route and use an existing service to keep possible instances.
@@ -164,7 +163,7 @@ namespace casual
 
                      if( auto found = algorithm::find( state.routes, configuration.name))
                         algorithm::append( add, found->second);
-                     else 
+                     else if( add)
                         state.routes.emplace( configuration.name, algorithm::container::vector::create( add));
                   }
 

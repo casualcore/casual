@@ -190,13 +190,13 @@ namespace casual
 
       struct Route 
       {
-         //! the exposed service name
-         std::string service;
+         //! the exposed names for the service
+         std::vector< std::string> services;
          //! the actual invoked service
          std::string target;
 
          CASUAL_CONST_CORRECT_SERIALIZE(
-            CASUAL_SERIALIZE( service);
+            CASUAL_SERIALIZE( services);
             CASUAL_SERIALIZE( target);
          )
       };

@@ -10,6 +10,7 @@
 
 #include "domain/unittest/manager.h"
 #include "domain/unittest/utility.h"
+#include "domain/unittest/configuration.h"
 
 #include "service/unittest/utility.h"
 
@@ -21,8 +22,12 @@
 #include "common/service/lookup.h"
 #include "common/communication/ipc/send.h"
 
+#include "configuration/unittest/utility.h"
+#include "configuration/model/transform.h"
 
 #include "casual/xatmi.h"
+
+#include <chrono>
 
 namespace casual
 {
@@ -527,6 +532,44 @@ domain:
          }
       }
 
+      TEST( test_service, runtime_configuration_update)
+      {
+         common::unittest::Trace trace;
+
+         constexpr auto configuration = R"(
+domain:
+   services:
+      -  name: "some_service"
+         execution:
+            timeout:
+               duration: "100s"
+               contract: "linger"
+)";
+
+         auto domain = casual::domain::unittest::manager( local::configuration::base, configuration);
+
+         auto update = casual::configuration::unittest::load( local::configuration::base, R"(
+domain:
+   services:
+      -  name: "some_service"
+         execution:
+            timeout:
+               duration: "42s"
+               contract: "kill"
+)");
+         casual::domain::unittest::configuration::post( casual::configuration::model::transform( update));
+
+         auto state = casual::service::unittest::state();
+
+         EXPECT_TRUE( state.routes.empty());
+
+         auto service = algorithm::find_if( state.services, local::is::service( "some_service"));
+         ASSERT_TRUE( service);
+
+         EXPECT_EQ( service->name, "some_service");
+         EXPECT_EQ( service->execution.timeout.duration, std::chrono::seconds{ 42});
+         EXPECT_EQ( service->execution.timeout.contract, common::service::execution::timeout::contract::Type::kill);
+      }
 
    } // test::domain::service
 

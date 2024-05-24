@@ -182,7 +182,6 @@ namespace casual
                      }
 
                   } // service
-
                } // normalized
 
 
@@ -427,11 +426,20 @@ namespace casual
                      }
                   }
 
-                  auto routes( const admin::model::State& state)
+                  namespace route
                   {
-                     return terminal::format::formatter< admin::model::Route>::construct( 
-                        terminal::format::column( "name", std::mem_fn( &admin::model::Route::service), terminal::color::yellow, terminal::format::Align::left),
-                        terminal::format::column( "target", std::mem_fn( &admin::model::Route::target), terminal::color::no_color, terminal::format::Align::left)
+                     struct Row
+                     {
+                        std::string_view name;
+                        std::string_view target;
+                     };
+                  }
+
+                  auto routes()
+                  {
+                     return terminal::format::formatter< route::Row>::construct( 
+                        terminal::format::column( "name", std::mem_fn( &route::Row::name), terminal::color::yellow, terminal::format::Align::left),
+                        terminal::format::column( "target", std::mem_fn( &route::Row::target), terminal::color::no_color, terminal::format::Align::left)
                      );
                   }
 
@@ -652,12 +660,24 @@ namespace casual
 
                   namespace routes
                   {
-                     void list() 
+                     void list()
                      {
-                        auto state = admin::api::state();
+                        auto transform = []( auto& routes)
+                        {
+                           return algorithm::accumulate( routes, std::vector< format::route::Row>{}, []( auto result, auto& route)
+                           {
+                              algorithm::transform( route.services, std::back_inserter( result), [ &route]( auto& service)
+                              {
+                                 return format::route::Row{ service, route.target};
+                              });
 
-                        auto formatter = format::routes( state);
-                        formatter.print( std::cout, state.routes);
+                              return result;
+                           });
+                        };
+
+                        const auto state = admin::api::state();
+                        auto formatter = format::routes();
+                        formatter.print( std::cout, transform( state.routes));
                      }
                      constexpr auto description = "list service routes";
                   } // routes

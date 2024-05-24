@@ -460,12 +460,13 @@ namespace casual
 
                if( auto found = algorithm::find( state.routes, service.information.name))
                {
+                  log::line( verbose::log, "routes: ", found->second);
+
                   // service has routes, use them instead
                   algorithm::for_each( found->second, add_service);
                }
                else
                   add_service( service.information.name);
-                  
             }
 
 
