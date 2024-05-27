@@ -288,6 +288,17 @@ namespace casual
          return device::receive< R>( inbound::device(), std::forward< Ts>( ts)...);
       }
 
+      namespace non::blocking
+      {
+         //! @returns the received message of type `R`
+         template< typename R, typename... Ts>
+         auto receive( Ts&&... ts) -> decltype( device::non::blocking::receive< R>( inbound::device(), std::forward< Ts>( ts)...))
+         {
+            return device::non::blocking::receive< R>( inbound::device(), std::forward< Ts>( ts)...);
+         }
+
+      } // non::blocking
+
 
       bool remove( strong::ipc::id id);
       bool remove( const process::Handle& owner);

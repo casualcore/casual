@@ -758,6 +758,21 @@ namespace casual
          return reply;
       }
 
+      namespace non::blocking
+      {
+         //! @returns an optional of `R`. 
+         template< typename R, typename D, typename... Ts>
+         auto receive( D&& device, Ts&&... ts)
+            -> decltype( void( blocking::receive( std::forward< D>( device), std::declval< R&>(), std::forward< Ts>( ts)...)), std::optional< R>{})
+         {
+            R reply;
+            if( device::non::blocking::receive( std::forward< D>( device), reply, std::forward< Ts>( ts)...))
+               return reply;
+            return std::nullopt;
+         }
+         
+      } // non::blocking
+
    } // common::communication::device
 } // casual
 
