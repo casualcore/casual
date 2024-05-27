@@ -158,5 +158,12 @@ namespace casual
       Deadline::Deadline( Deadline&&) noexcept = default;
       Deadline& Deadline::operator = ( Deadline&&) noexcept = default;
 
+      std::ostream& operator << ( std::ostream& out, const Deadline& value)
+      {
+         if( value.m_active)
+            return stream::write( out, timer::get());
+         return out;
+      }
+
    } // common::signal::timer
 } // casual

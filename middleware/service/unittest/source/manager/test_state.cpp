@@ -145,7 +145,8 @@ namespace casual
 
             message.process = common::process::handle();
             {
-               message.services.add = { { "s0"}, { "s1"}, { "s2"}, { "s3"}, { "s4"}, { "s5"}, { "s6"}, { "s7"}, { "s8"}, { "s9"}};
+               using Service = common::message::service::advertise::Service;
+               message.services.add = { Service{ "s0"}, Service{ "s1"}, Service{ "s2"}, Service{ "s3"}, Service{ "s4"}, Service{ "s5"}, Service{ "s6"}, Service{ "s7"}, Service{ "s8"}, Service{ "s9"}};
                std::random_device device;
                std::mt19937 generator(device());
                std::shuffle( std::begin( message.services.add), std::end( message.services.add), generator);
@@ -177,7 +178,8 @@ namespace casual
 
             message.process = common::process::handle();
             {
-               message.services.add = { { "s0"}, { "s1"}, { "s2"}, { "s3"}, { "s4"}, { "s5"}, { "s6"}, { "s7"}, { "s8"}, { "s9"}};
+               using Service = common::message::service::advertise::Service;
+               message.services.add = { Service{ "s0"}, Service{ "s1"}, Service{ "s2"}, Service{ "s3"}, Service{ "s4"}, Service{ "s5"}, Service{ "s6"}, Service{ "s7"}, Service{ "s8"}, Service{ "s9"}};
                std::random_device device;
                std::mt19937 generator(device());
                std::shuffle( std::begin( message.services.add), std::end( message.services.add), generator);

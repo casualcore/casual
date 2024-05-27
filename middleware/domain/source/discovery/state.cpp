@@ -57,80 +57,31 @@ namespace casual
             algorithm::container::erase( m_providers, ipc);
          }
 
-         namespace accumulate
+         namespace pending
          {
-
-            void Topology::add( message::discovery::topology::direct::Update&& message)
+            common::strong::correlation::id Content::add( message::discovery::request::Content content)
             {
-               Trace trace{ "domain::discovery::state::accumulate::Topology::add"};
-
-               algorithm::append_unique_value( std::move( message.origin), m_direct.domains);
-               m_direct.configured += std::move( message.configured);
-
+               auto correlation = strong::correlation::id::generate();
+               m_requests.push_back( pending::content::Request{ correlation, std::move( content)});
+               return correlation;
             }
 
-            void Topology::add( message::discovery::topology::implicit::Update&& message)
+            void Content::remove( const common::strong::correlation::id& correlation)
             {
-               Trace trace{ "domain::discovery::state::accumulate::Topology::add"};
-
-               algorithm::append_unique( message.domains, m_implicit_domains);
-
-               // Something is updated at message.origin. We need to include 
-               // the origin (connection), in the set we're going to discover later.
-               algorithm::append_unique_value( std::move( message.origin), m_direct.domains);
+               algorithm::container::erase( m_requests, correlation);
             }
 
-            std::optional< topology::extract::Result> Topology::extract() noexcept
+            message::discovery::request::Content Content::operator() () const
             {
-               Trace trace{ "domain::discovery::state::accumulate::Topology::extract"};
-
-               // We could have zero accumulated
-               if( empty())
-                  return std::nullopt;
-
-               topology::extract::Result result;
+               return algorithm::accumulate( m_requests, message::discovery::request::Content{}, []( auto result, auto& request)
                {
-                  result.direct.domains = std::exchange( m_direct.domains, {});
-                  result.direct.content = std::exchange( m_direct.configured, {});
-
-                  result.implicit_domains = std::exchange( m_implicit_domains, {});
-               }
-
-               log::line( verbose::log, "result: ", result);
-               
-               return result;
+                  return result + request.content;
+               });
             }
+         } // pending
 
-            void Request::add( message::discovery::Request message)
-            {
-               Trace trace{ "domain::discovery::state::accumulate::Request::add discovery"};
-
-               if( message.directive != decltype( message.directive)::forward)
-                  log::line( log::category::error, code::casual::internal_unexpected_value, " unexpected discovery directive: ", message.directive);
-
-               m_result.content += std::move( message.content);
-               m_result.replies.push_back( { request::reply::Type::discovery, message.correlation, message.process.ipc});
-            }
-
-            void Request::add( message::discovery::api::Request message)
-            {
-               Trace trace{ "domain::discovery::state::accumulate::Request::add api"};
-
-               m_result.content += std::move( message.content);
-               m_result.replies.push_back( { request::reply::Type::api, message.correlation, message.process.ipc});
-            }
-
-            std::optional< request::extract::Result> Request::extract() noexcept
-            {
-               Trace trace{ "domain::discovery::state::accumulate::Request::extract"};
-
-               // We could have zero accumulated
-               if( m_result.replies.size() == 0)
-                  return std::nullopt;
-
-               return std::exchange( m_result, {});
-            }
-            
+         namespace accumulate
+         {            
             const platform::size::type Heuristic::in_flight_window = []()
             {
                constexpr std::string_view environment = "CASUAL_DISCOVERY_ACCUMULATE_REQUESTS";
@@ -148,12 +99,17 @@ namespace casual
                return platform::batch::discovery::accumulate::timeout;
             }();
 
-            platform::size::type Heuristic::in_flight() noexcept
+            platform::size::type Heuristic::pending_requests() noexcept
             {
                auto request = common::message::counter::entry( message::discovery::Request::type());
                auto reply = common::message::counter::entry( message::discovery::Reply::type());
 
-               return request.sent - reply.received;
+               return request.received - reply.sent;
+            }
+
+            bool Heuristic::accumulate() const noexcept
+            {
+               return pending_requests() > in_flight_window;
             }
 
 
@@ -161,199 +117,85 @@ namespace casual
             {
                namespace
                {
-                  void potentially_set_timer( state::accumulate::Heuristic& heuristic)
+                  auto create_timer( const state::accumulate::Heuristic& heuristic)
                   {
-                     if( heuristic.deadline)
-                        return;
-
-                     auto in_flight = heuristic.in_flight();
+                     auto pending = heuristic.pending_requests();
 
                      // sanity check. We should never have reach this with low in-flights
-                     if( in_flight <= heuristic.in_flight_window)
+                     if( pending <= heuristic.in_flight_window)
                      {
-                        log::line( log::category::error, code::casual::invalid_semantics, " unexpected inflight: ", heuristic.in_flight());
+                        log::line( log::category::error, code::casual::invalid_semantics, " unexpected inflight: ", pending);
                         log::line( log::category::verbose::error, "heuristic: ", heuristic );
 
-                        heuristic.deadline.emplace( heuristic.duration);
-                        return;
+                        return common::signal::timer::Deadline{ heuristic.duration};
                      }
 
-                     auto load_level = in_flight / heuristic.in_flight_window;
-
+                     auto load_level = pending / heuristic.in_flight_window;
                      log::line( verbose::log, "load_level: ", load_level);
-
-                     heuristic.deadline.emplace( heuristic.duration * load_level);
+                     return common::signal::timer::Deadline{ heuristic.duration * load_level};
                   }
+
+
                } // <unnamed>
             } // local
 
          } // accumulate
 
-         Accumulate::Accumulate()
-         {}
-
          void Accumulate::add( message::discovery::Request message)
          {
-            m_request.add( std::move( message));
-            accumulate::local::potentially_set_timer( m_heuristic);
+            m_requests.discovery.push_back( std::move( message));
+
+            if( ! m_deadline)
+               m_deadline = accumulate::local::create_timer( m_heuristic);
          }
 
          void Accumulate::add( message::discovery::api::Request message)
          {
-            m_request.add( std::move( message));
-            accumulate::local::potentially_set_timer( m_heuristic);
+            m_requests.api.push_back( std::move( message));
+
+            if( ! m_deadline)
+               m_deadline = accumulate::local::create_timer( m_heuristic);
+
          }
 
          void Accumulate::add( message::discovery::topology::direct::Update message)
          {
-            m_topology.add( std::move( message));
-            accumulate::local::potentially_set_timer( m_heuristic);
+            m_requests.direct.push_back( std::move( message));
+
+            if( ! m_deadline)
+               m_deadline = accumulate::local::create_timer( m_heuristic);
 
          }
 
          void Accumulate::add( message::discovery::topology::implicit::Update message)
          {
-            m_topology.add( std::move( message));
-            accumulate::local::potentially_set_timer( m_heuristic);
+            m_requests.implicit.push_back( std::move( message));
+
+            if( ! m_deadline)
+               m_deadline = accumulate::local::create_timer( m_heuristic);
+         }
+
+         void Accumulate::add( message::discovery::reply::Content lookup)
+         {
+            m_requests.lookup += std::move( lookup);
          }
 
 
-         accumulate::extract::Result Accumulate::extract()
+         accumulate::Requests Accumulate::extract()
          {
             Trace trace{ "domain::discovery::state::accumulate::Accumulate::extract"};
-
-            // always invalidate the timeout, if any.
-            m_heuristic.deadline = std::nullopt;
-
-            return { m_topology.extract(), m_request.extract()};
-         }
-
-         bool Accumulate::bypass() const noexcept
-         {
-            // if we have an ongoing deadline we keep accumulation until the deadline kicks in.
-            if( m_heuristic.deadline)
-               return false;
-
-            // bypass if in-flight is within the "window", the lowest/first load level
-            return m_heuristic.in_flight() <= m_heuristic.in_flight_window;
-         }
-
-         namespace in::flight
-         {
-            namespace content
-            {
-               namespace cache
-               {
-                  void Mapping::add( const common::strong::correlation::id& correlation, const std::vector< std::string>& resources)
-                  {
-                     for( auto& resource : resources)
-                     {
-                        m_correlation_to_resource.emplace( correlation, resource);
-                        ++m_resource_count[ resource];
-                     }
-                  }
-
-                  std::vector< std::string> Mapping::extract( const common::strong::correlation::id& correlation)
-                  {
-                     std::vector< std::string> result;
-
-                     auto make_range = []( auto pair) { return range::make( pair.first, pair.second);};
-
-                     auto resources = make_range( m_correlation_to_resource.equal_range( correlation));
-
-                     result.reserve( resources.size());
-
-                     for( auto& pair : resources)
-                     {
-                        // clean upp total "cached" services
-                        if( auto found = algorithm::find( m_resource_count, pair.second); --found->second == 0)
-                           m_resource_count.erase( std::begin( found));
-
-                        result.push_back( std::move( pair.second));
-                     };
-
-                     // clean upp the resources associated with the correlation
-                     m_correlation_to_resource.erase( std::begin( resources), std::end( resources));
-
-                     // make sure we're sorted, since the "hash-mapping" is not.
-                     algorithm::sort( result);
-
-                     return result;
-                  }
-
-                  void Mapping::complement( std::vector< std::string>& resources)
-                  {
-                     // just a premature optimization if we have a lot of services cached...
-                     resources.reserve( m_resource_count.size());
-
-                     algorithm::transform( m_resource_count, std::back_inserter( resources), predicate::adapter::first());
-                     algorithm::container::sort::unique( resources);
-                  }
-
-               } // cache
-
-               void Cache::add( const common::strong::correlation::id& correlation, const request_content& content)
-               {
-                  m_services.add( correlation, content.services);
-                  m_queues.add( correlation, content.queues);
-               }
-
-               void Cache::add_known( const common::strong::correlation::id& correlation, reply_content&& content)
-               {
-                  m_known_content.emplace( correlation, std::move( content));
-               }
-
-               Cache::request_content Cache::complement( request_content&& content)
-               {
-                  m_services.complement( content.services);
-                  m_queues.complement( content.queues);
-                  return std::move( content);
-               }
-               
-
-               Cache::reply_content Cache::filter_reply( const common::strong::correlation::id& correlation, const reply_content& content)
-               {
-                  Trace trace{ "domain::discovery::state::in::flight::content::Cache::filter_reply"};
-                  log::line( verbose::log, "correlation: ", correlation);
-                  log::line( verbose::log, "content: ", content);
-
-                  // trim the content with the intersection of the replied end the associated (requested).
-                  // also `extract` removes the associated state from the state.
-
-                  reply_content result;
-
-                  //! check if we know stuff locally, if so we add this.
-                  if( auto found = algorithm::find( m_known_content, correlation))
-                     result = algorithm::container::extract( m_known_content, std::begin( found)).second;
-
-
-                  auto resource_name_less = []( auto& resource, auto& name){ return resource.name < name;};
-
-                  for( auto& service : m_services.extract( correlation))
-                  {
-                     if( auto found = std::get< 1>( algorithm::sorted::lower_bound( content.services, service, resource_name_less)))
-                        if( found->name == service)
-                           result.services.push_back( *found);
-                  }
-
-                  for( auto& queue : m_queues.extract( correlation))
-                  {
-                     if( auto found = std::get< 1>( algorithm::sorted::lower_bound( content.queues, queue, resource_name_less)))
-                        if( found->name == queue)
-                           result.queues.push_back( *found);
-                  }
-
-                  // make sure we keep the invariants, the 'resources' needs to be sorted.
-                  // TODO: The sorted stuff might be to much hassle, and we don't really know the performance impact...
-                  algorithm::sort( result.services);
-                  algorithm::sort( result.queues);
-
-                  return result;  
-               }
-
-            } // content
             
-         } // in::flight
+            m_deadline = std::nullopt;
+            return std::exchange( m_requests, {});
+         }
+
+         Accumulate::operator bool() const noexcept
+         {
+            if( m_deadline)
+               return true;
+
+            return m_heuristic.accumulate();
+         }
       } // state
 
       State::State()

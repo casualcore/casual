@@ -47,32 +47,6 @@ namespace casual
             
             } // handler
 
-            namespace extract
-            {
-               struct Destination
-               {
-                  strong::ipc::id ipc;
-                  strong::correlation::id correlation;
-
-                  CASUAL_LOG_SERIALIZE( 
-                     CASUAL_SERIALIZE( ipc);
-                     CASUAL_SERIALIZE( correlation);
-                  )
-               };
-
-               //! extracts and replaces process and correlation for the message
-               //! @return the destination
-               template< typename M>
-               Destination destination( M& message)
-               {
-                  if constexpr( std::is_const_v< M>)
-                     return { message.process.ipc, message.correlation};
-                  else
-                     return { std::exchange( message.process, common::process::handle()).ipc, std::exchange( message.correlation, {})};
-               }
-            } // extract
-
-
             namespace detail
             {
                namespace send
@@ -161,95 +135,158 @@ namespace casual
                      return result;
                   }
 
-                  auto reply( const State& state, message::discovery::request::Content content)
-                  {
-                     message::discovery::request::Content result;
-                     result.queues = std::move( content.queues);
-
-                     // we need to translate back from the actual name to possible routes
-                     for( auto& name : content.services)
-                        if( auto found = algorithm::find( state.service_name.to_routes, name))
-                           algorithm::container::append( found->second, result.services);
-                        else
-                           result.services.push_back( std::move( name));
-
-                     // make sure we keep the invariants
-                     algorithm::container::sort::unique( result.services);
-
-                     return result;
-                  }
-
                } // content::normalize
 
-               auto send_external_discovery_request( State& state, message::discovery::request::Content content, std::vector< state::accumulate::request::Reply> reply_destinations)
+               namespace content
                {
-                  Trace trace{ "discovery::handle::local:detail::send_external_discovery_request"};
-                  
+                  bool includes( const message::discovery::request::Content& request, const message::discovery::reply::Content& reply)
+                  {
+                     return algorithm::includes( reply.services, request.services)
+                        && algorithm::includes( reply.queues, request.queues);
+                  };
+
+                  //! @returns the difference between a and b. a - b
+                  message::discovery::request::Content difference( message::discovery::request::Content a, const message::discovery::reply::Content& b)
+                  {
+                     auto erase_if = []( auto& container, auto& lookup)
+                     {
+                        algorithm::container::erase_if( container, [ &lookup]( auto& value)
+                        {
+                           return predicate::boolean( algorithm::find( lookup, value));
+                        });
+                     };
+
+                     erase_if( a.services, b.services);
+                     erase_if( a.queues, b.queues);
+
+                     return a;
+                  }
+
+                  auto send_reply( State& state, const message::discovery::reply::Content& content, auto& request)
+                  {
+                     auto filter_content = []( auto& request_content, auto& reply_content)
+                     {
+                        return algorithm::accumulate( request_content, decltype( reply_content){}, [ &reply_content]( auto result, auto& request)
+                        {
+                           if( auto found = algorithm::find( reply_content, request))
+                              result.push_back( *found);
+                           return result;
+                        });
+                     };
+                     
+                     auto reply = common::message::reverse::type( request);
+                     reply.content.services = filter_content( request.content.services, content.services);
+                     reply.content.queues = filter_content( request.content.queues, content.queues);
+
+                     detail::send::multiplex( state, request.process.ipc, reply);
+                  }
+
+                  auto send_reply_if_included( State& state, const message::discovery::reply::Content& content, auto& request)
+                  { 
+                     if( ! content::includes( request.content, content))
+                        return false;
+
+                     send_reply( state, content, request);
+                     return true;
+                     
+                  };
+
+               } // content
+
+               void send_aggregated_discovery( State& state, 
+                  std::vector< message::discovery::Request> discovery, 
+                  std::vector< message::discovery::api::Request> api,
+                  message::discovery::reply::Content local_content = {})
+               {
+                  Trace trace{ "discovery::handle::local:detail::send_aggregated_discovery"};
+
+                  if( discovery.empty() && api.empty())
+                     return;
+
                   message::discovery::Request request{ common::process::handle()};
                   request.domain = common::domain::identity();
-                  request.content = detail::content::normalize::request( state, std::move( content));
 
-                  log::line( verbose::log, "state.providers: ", state.providers);
-
-                  // send request to all with the discover ability, if any.
-                  auto pending = detail::send::requests( state, state.coordinate.discovery.empty_pendings(), 
-                     state.providers.filter( state::provider::Ability::discover), request);
-
-                  // note: everything captured needs to by value (besides State if used)
-                  state.coordinate.discovery( std::move( pending), [ &state, reply_destinations = std::move( reply_destinations)]( auto replies, auto outcome) mutable
+                  request.content = [ &]()
                   {
-                     Trace trace{ "discovery::handle::local:detail::send_external_discovery_request coordinate.discovery"};
-                     log::line( verbose::log, "reply_destinations: ", reply_destinations);
-                     
-                     auto content = algorithm::accumulate( replies, message::discovery::reply::Content{}, []( auto result, auto& reply)
+                     auto accumulate_content = []( auto result, auto& value)
                      {
-                        return result + std::move( reply.content);
-                     });
+                        return result + value.content;   
+                     };
 
-                     // Normalize to take routes into account
-                     content = content::normalize::reply( state, std::move( content));
-                     auto [ discoveries, api ] = algorithm::partition( reply_destinations, predicate::value::equal( state::accumulate::request::reply::Type::discovery));
+                     auto content = algorithm::accumulate( discovery, message::discovery::request::Content{}, accumulate_content);
+                     return algorithm::accumulate( api, std::move( content), accumulate_content);
+                  }();
 
-                     // handle the different replies
+                  // remove all service/queues that was found locally. We don't want to discover stuff that is
+                  // "local"
+                  request.content = detail::content::difference( std::move( request.content), local_content);
+                  request.content = detail::content::normalize::request( state, std::move( request.content));
 
-                     if( discoveries)
-                     {
-                        message::discovery::Reply reply;
-                        reply.domain = common::domain::identity();
+                  auto pendings = [ &]()
+                  {
+                     // no point of discovery with no content to discover...
+                     if( ! request.content)
+                        return typename decltype( state.coordinate.discovery)::pendings_type{};
 
-                        for( auto& destination : discoveries)
-                        {
-                           // filter based on the requested resources.
-                           reply.content = state.in_flight_cache.filter_reply( destination.correlation, content);
-                           reply.correlation = destination.correlation;
-                           detail::send::multiplex( state, destination.ipc, reply);
-                        };
-                     }
-                     
-                     if( api)
-                     {
-                        message::discovery::api::Reply reply;
+                     return detail::send::requests( state, typename decltype( state.coordinate.discovery)::pendings_type{}, 
+                        state.providers.filter( state::provider::Ability::discover), request);
+                  }();
 
-                        for( auto& destination : api)
-                        {
-                           // filter based on the requested resources.
-                           reply.content = state.in_flight_cache.filter_reply( destination.correlation, content);
-                           reply.correlation = destination.correlation;
-                           detail::send::multiplex( state, destination.ipc, reply);
-                        };
-                     }                     
+
+                  auto remove_guard = execute::scope( [ &state, correlation = state.pending_content.add( std::move( request.content))]()
+                  {
+                     state.pending_content.remove( correlation);
                   });
-               }
 
-               // Just helpers to help use the function above
-               auto send_external_discovery_request( State& state, message::discovery::Request request)
-               {
-                  send_external_discovery_request( state, std::move( request.content), { { state::accumulate::request::reply::Type::discovery, request.correlation, request.process.ipc}});
-               }
+                  struct Shared
+                  {
+                     message::discovery::reply::Content content;
+                     std::vector< message::discovery::Request> discovery;
+                     std::vector< message::discovery::api::Request> api;
+                  };
 
-               auto send_external_discovery_request( State& state, message::discovery::api::Request request)
-               {
-                  send_external_discovery_request( state, std::move( request.content), { { state::accumulate::request::reply::Type::api, request.correlation, request.process.ipc}});
+                  auto shared = std::make_shared< Shared>();
+                  shared->content = std::move( local_content);
+                  shared->discovery = std::move( discovery);
+                  shared->api = std::move( api);
+
+
+                  using Directive = common::message::coordinate::minimal::fan::out::Directive;
+
+                  auto done_callback = [ &state, shared, remove_guard = std::move( remove_guard)]( auto failed)
+                  {
+                     Trace trace{ "discovery::handle::local:detail::send_aggregated_discovery done_callback"};
+
+                     auto send_reply = [ &state, &content = shared->content]( auto& request)
+                     {
+                        content::send_reply( state, content, request);
+                     };
+
+                     algorithm::for_each( shared->api, send_reply);
+                     algorithm::for_each( shared->discovery, send_reply);
+                  };
+
+                  auto message_callback = [ &state, shared]( message::discovery::Reply reply)
+                  {
+                     Trace trace{ "discovery::handle::local:detail::send_aggregated_discovery message_callback"};
+
+                     shared->content += detail::content::normalize::reply( state, std::move( reply.content));
+
+                     auto send_if_included = [ &]( auto& request)
+                     {
+                        return content::send_reply_if_included( state, shared->content, request);
+                     };
+
+                     algorithm::container::erase_if( shared->api, send_if_included);
+                     algorithm::container::erase_if( shared->discovery, send_if_included);
+
+                     if( shared->api.empty() && shared->discovery.empty())
+                        return Directive::done;
+                     else
+                        return Directive::pending;
+                  };
+
+                  state.coordinate.discovery.add( std::move( pendings), std::move( message_callback), std::move( done_callback));
                }
 
             } // detail
@@ -282,19 +319,14 @@ namespace casual
 
                      if( state.runlevel > decltype( state.runlevel())::running || ! message.content)
                      {
-                        // we don't take any more request, or the request is empty
                         detail::send::multiplex( state, message.process.ipc, common::message::reverse::type( message));
                         return;
                      }
 
-                     state.in_flight_cache.add( message);
-
-                     // Should we accumulate the request for later?
-                     if( state.accumulate.bypass())
-                        detail::send_external_discovery_request( state, std::move( message));
-                     else
+                     if( state.accumulate)
                         state.accumulate.add( std::move( message));
-
+                     else
+                        detail::send_aggregated_discovery( state, {}, { std::move( message)});
                      
                   };
                }
@@ -310,52 +342,54 @@ namespace casual
 
                         // fetch known and discover
 
-                        state.coordinate.known( detail::collect::known::requests( state), [ &state, destination = extract::destination( message)]( auto&& replies, auto&& outcome)
+                        state.coordinate.known( detail::collect::known::requests( state), [ &state, message]( auto&& replies, auto&& outcome)
                         {
                            Trace trace{ "discovery::handle::local::api::rediscovery::request known done"};
                            log::line( verbose::log, "replies: ", replies, ", outcome: ", outcome);
 
-                           message::discovery::Request request{ process::handle()};
-                           request.domain = common::domain::identity();
-
-                           for( auto& reply : replies)
-                              request.content += std::move( reply.content);
-
-                           // complement the request with potential in-flight request resources, and normalize to respect routes.
-                           request.content = detail::content::normalize::request( state, state.in_flight_cache.complement( std::move( request.content)));
-
-                           auto send_discoveries = [ &state]( auto& request)
+                           auto pendings = [ &]()
                            {
-                              return detail::send::requests( 
-                                 state, 
-                                 state.coordinate.discovery.empty_pendings(),  
-                                 state.providers.filter( state::provider::Ability::discover), request);
-                           };
-
-                           state.coordinate.discovery( send_discoveries( request), [ &state, destination](  auto&& replies, auto&& outcome)
-                           {
-                              Trace trace{ "discovery::handle::local::api::rediscovery::request discovery done"};
-                              log::line( verbose::log, "replies: ", replies, ", outcome: ", outcome);
-
-                              // accumulate content
-                              decltype( range::front( replies).content) content;
+                              message::discovery::Request request{ process::handle()};
+                              request.domain = common::domain::identity();
 
                               for( auto& reply : replies)
-                                 content += std::move( reply.content);
+                                 request.content += std::move( reply.content);
 
-                              message::discovery::api::rediscovery::Reply message;
-                              message.correlation = destination.correlation;
+                              // normalize to respect routes.
+                              request.content = detail::content::normalize::request( state, std::move( request.content));
 
-                              auto transform_name = []( auto& value){ return value.name;};
+                              // we add the possible in-flight request content for good measure.
+                              request.content += state.pending_content();
 
-                              message.content.queues = algorithm::transform( content.queues, transform_name);
-                              message.content.services = algorithm::transform( content.services, transform_name);
+                              return detail::send::requests( 
+                                 state, 
+                                 typename decltype( state.coordinate.discovery)::pendings_type{},  
+                                 state.providers.filter( state::provider::Ability::discover), request);
 
-                              message.content = detail::content::normalize::reply( state, std::move( message.content));
+                           }();
 
-                              detail::send::multiplex( state, destination.ipc, message);
+                           auto shared = std::make_shared< message::discovery::api::rediscovery::Reply>();
+                           *shared = common::message::reverse::type( message);
 
-                           });
+                           auto message_callback = [ shared]( auto& reply)
+                           {
+                              Trace trace{ "discovery::handle::local::api::rediscovery::request message_callback"};
+
+                              shared->content += std::move( reply.content);
+
+                              // we'll wait for all replies.
+                              return common::message::coordinate::minimal::fan::out::Directive::pending;
+                           };
+
+                           auto done_callback = [ &state, shared, ipc = message.process.ipc]( auto failed)
+                           {
+                               Trace trace{ "discovery::handle::local::api::rediscovery::request done_callback"};
+
+                              detail::send::multiplex( state, ipc, *shared);
+                           };
+
+                           state.coordinate.discovery.add( std::move( pendings), message_callback, done_callback);
+                           
                         });
                      };
                   }
@@ -368,22 +402,21 @@ namespace casual
                {
                   Trace trace{ "discovery::handle::local::detail::handle_internal_lookup"};
 
-                  auto send_requests = []( auto& state, auto& message)
+                  auto pendings = [ &]()
                   {
                      message::discovery::lookup::Request request{ common::process::handle()};
                      request.scope = decltype( request.scope)::internal;
                      request.content = std::move( message.content);
 
                      return detail::send::requests( state, state.coordinate.lookup.empty_pendings(), state.providers.filter( state::provider::Ability::lookup), request);
-                  }; 
+                  }(); 
 
-                  state.coordinate.lookup( send_requests( state, message), [ &state, destination = local::extract::destination( message)]( auto replies, auto outcome)
+                  state.coordinate.lookup( std::move( pendings), [ &state, request = std::move( message)]( auto replies, auto outcome)
                   {
                      Trace trace{ "discovery::handle::local::detail::handle_internal_lookup coordinate lookup"};
                      log::line( verbose::log, "replies: ", replies);
 
-                     message::discovery::Reply message;
-                     message.correlation = destination.correlation;
+                     auto message = common::message::reverse::type( request);
                      message.domain = common::domain::identity();
 
                      for( auto& reply : replies)
@@ -391,73 +424,52 @@ namespace casual
 
                      log::line( verbose::log, "message: ", message);
 
-                     detail::send::multiplex( state, destination.ipc, message);
+                     detail::send::multiplex( state, request.process.ipc, message);
                   });
                }
 
-               void handle_extended_lookup( State& state, message::discovery::Request&& message)
+               void handle_extended_lookup( State& state, message::discovery::Request request)
                {
                   Trace trace{ "discovery::handle::local::detail::handle_extended_lookup"};
 
-                  auto send_requests = []( auto& state, auto& message)
-                  {
-                     message::discovery::lookup::Request request{ common::process::handle()};
-                     request.scope = decltype( request.scope)::extended;
-                     request.content = std::move( message.content);
+                  message::discovery::lookup::Request lookup{ common::process::handle()};
+                  lookup.scope = decltype( lookup.scope)::extended;
+                  // borrow the content 
+                  lookup.content = std::move( request.content);
 
-                     return detail::send::requests( state, state.coordinate.lookup.empty_pendings(), state.providers.filter( state::provider::Ability::lookup), request);
-                  };
+                  auto pendings = detail::send::requests( state, 
+                     state.coordinate.lookup.empty_pendings(), 
+                     state.providers.filter( state::provider::Ability::lookup), 
+                     lookup);
 
-                  state.coordinate.lookup( send_requests( state, message), [ &state, destination = local::extract::destination( message)]( auto replies, auto outcome)
+                  request.content = std::move( lookup.content);
+
+                  state.coordinate.lookup( std::move( pendings), [ &state, request = std::move( request)]( auto replies, auto outcome)
                   {
                      Trace trace{ "discovery::handle::local::detail::handle_extended_lookup coordinate lookup"};
                      log::line( verbose::log, "replies: ", replies);
 
-                     message::discovery::reply::Content known;
-                     message::discovery::request::Content absent;
-
-                     for( auto& reply : replies)
+                     auto lookup_content = algorithm::accumulate( replies, message::discovery::reply::Content{}, []( auto result, auto& reply)
                      {
-                        known += std::move( reply.content);
-                        absent += std::move( reply.absent);
-                     }
+                        return result + reply.content;
+                     });
 
-                     if( ! absent)
+                     if( content::send_reply_if_included( state, lookup_content, request))
+                        return;
+
+                     // should we do the external discovery later
+                     if( state.accumulate)
                      {
-                        // we found everything. Just reply
+                        state.accumulate.add( std::move( request));
 
-                        message::discovery::Reply message;
-                        message.correlation = destination.correlation;
-                        message.domain = common::domain::identity();
-                        message.content = std::move( known);
-
-                        log::line( verbose::log, "message: ", message);
-
-                        detail::send::multiplex( state, destination.ipc, message);
+                        // we keep the lookup-content to get possible local services/queues
+                        state.accumulate.add( std::move( lookup_content));
                         return;
                      }
 
-                     // we need to ask potential other domains for resources. If we've got
-                     // "local" known stuff, we need to cache this to union with the upcoming 
-                     // reply.
-                     if( known)
-                        state.in_flight_cache.add_known( destination.correlation, std::move( known));
+                     // we discover directly
+                     detail::send_aggregated_discovery( state, { std::move( request)}, {}, std::move( lookup_content));
 
-
-                     // "reconstruct" the request to either send directly, or accumulate for later.
-                     message::discovery::Request request;
-                     request.domain = common::domain::identity();
-                     request.directive = decltype( request.directive)::forward;
-                     request.correlation = destination.correlation;
-                     request.process.ipc = destination.ipc;            
-                     request.content = std::move( absent);
-
-                     state.in_flight_cache.add( request);
-
-                     if( state.accumulate.bypass())
-                        detail::send_external_discovery_request( state, std::move( request));
-                     else
-                        state.accumulate.add( std::move( request));
                   });
                }
 
@@ -475,19 +487,9 @@ namespace casual
                   CASUAL_ASSERT( algorithm::is::sorted( message.content.services) && algorithm::is::unique( message.content.services));
                   CASUAL_ASSERT( algorithm::is::sorted( message.content.queues) && algorithm::is::unique( message.content.queues));
 
-                  // We need to coordinate a few things
-                  //  * fetch all internal services/queues along with possible _routes_, from the request
-                  //  * remove services/queues that we have internally, from the "external request"
-                  //  * from the remaining "not found internally", map routes, if any.
-                  //  * from this we fetch all external (with the original names for routes)
-                  //  * aggregate the replies, and map "original names" back to the route names
-                  //  * add this with the internal 
-                  //  * send reply.
-                   
 
                   if( state.runlevel > decltype( state.runlevel())::running)
                   {
-                     // we don't take any more request.
                      detail::send::multiplex( state, message.process.ipc, common::message::reverse::type( message));
                      return;
                   }
@@ -522,8 +524,9 @@ namespace casual
                   Trace trace{ "discovery::handle::local::reply"};
                   local::handler::entry( message);
 
+                  log::line( verbose::log, "state.coordinate.discovery: ", state.coordinate.discovery);
                   state.coordinate.discovery( std::move( message));
-         
+                  
                };
             }
 
@@ -545,78 +548,73 @@ namespace casual
             {
                namespace topology
                { 
-                  void send_direct_explore( State& state, message::discovery::topology::direct::Explore direct, std::vector< common::domain::Identity> implicit_domains)
+                  void send_direct_explore( State& state, 
+                     std::vector< message::discovery::topology::direct::Update> direct, 
+                     std::vector< message::discovery::topology::implicit::Update> implicit)
                   {
-                     Trace trace{ "discovery::handle::local::accumulate::topology::extraction"};
-                     log::line( verbose::log, "direct: ", direct, ", implicit_domains: ", implicit_domains);
+                     Trace trace{ "discovery::handle::local::accumulate::topology::send_direct_explore"};
+                     log::line( verbose::log, "direct: ", direct, ", implicit: ", implicit);
 
-                     state.coordinate.known( detail::collect::known::requests( state), [ &state, direct = std::move( direct), implicit_domains = std::move( implicit_domains)]( auto&& replies, auto&& outcome) mutable
+                     if( direct.empty() && implicit.empty())
+                        return;
+
+                     state.coordinate.known( detail::collect::known::requests( state), [ &state, direct = std::move( direct), implicit = std::move( implicit)]( auto&& replies, auto&& outcome) mutable
                      {
-                        Trace trace{ "discovery::handle::local::topology::direct::update known done"};
+                        Trace trace{ "discovery::handle::local::accumulate::topology::send_direct_explore coordinate"};
                         log::line( verbose::log, "replies: ", replies, ", outcome: ", outcome);
 
+                        message::discovery::topology::direct::Explore explore;
+                        
                         for( auto& reply : replies)
-                           direct.content += std::move( reply.content);
+                           explore.content += std::move( reply.content);
 
-                        // add the possible in-flight requests, that we've not got replies for yet. And normalize to respect routes.
-                        direct.content = detail::content::normalize::request( state, state.in_flight_cache.complement( std::move( direct.content)));
+                        for( auto& message : direct)
+                           explore.content += std::move( message.configured);
 
-                        log::line( verbose::log, "direct: ", direct);
+                        explore.content = detail::content::normalize::request( state, std::move( explore.content));
 
-                        if( direct.content)
+                        // we add content for possible pending discovery request, to make sure we get to know all possible
+                        // services/queues that the new connection might provide
+                        explore.content += state.pending_content();
+
+                        log::line( verbose::log, "explore: ", explore);
+
+                        if( explore.content)
                         {
-                           // send to all external providers, if any
-                           for( auto& provider : state.providers.filter( state::provider::Ability::discover))
-                              detail::send::multiplex( state, provider.process.ipc, direct);
+                           // we only send to the specific ipc that sent the topology update to
+                           // begin with. These we know has topology changes
+                           // We unique them, since it could be several topology updates for a
+                           // given "connection"
+
+                           auto transform_ipc = []( auto& value){ return value.process.ipc;};
+
+                           auto targets = algorithm::transform( direct, transform_ipc);
+                           algorithm::transform( implicit, targets, transform_ipc);
+
+                           for( auto& target : algorithm::unique( algorithm::sort( targets)))
+                              detail::send::multiplex( state, target, explore);
                         }
 
-                        // always send the implicit topology update
-                        message::discovery::topology::implicit::Update implicit;
-                        implicit.domains = std::move( implicit_domains);
-                        algorithm::append_unique_value( common::domain::identity(), implicit.domains);
+                        // always send the implicit topology update upstream
+                        message::discovery::topology::implicit::Update message;
+
+                        // accumulate all downstream domains that has triggered us. This is only used to terminate a 
+                        // a possible "topology ring", that will otherwise run forever...
+                        message.domains = algorithm::accumulate( implicit, message.domains, []( auto result, auto& message)
+                        {
+                           algorithm::append_unique( message.domains, result);
+                           return result;
+                        });
+
+                        algorithm::append_unique_value( common::domain::identity(), message.domains);
 
                         for( auto& provider : state.providers.filter( state::provider::Ability::topology))
-                           detail::send::multiplex( state, provider.process.ipc, implicit);
+                           detail::send::multiplex( state, provider.process.ipc, message);
                      });
 
                   }
 
-                  void extraction( State& state, state::accumulate::topology::extract::Result result)
-                  {
-                     Trace trace{ "discovery::handle::local::accumulate::topology::extraction"};
-
-                     topology::send_direct_explore( state, std::move( result.direct), std::move( result.implicit_domains));
-                  }
-
                 } // topology
-
-                namespace request
-                {
-                  void extraction( State& state, state::accumulate::request::extract::Result result)
-                  {
-                     Trace trace{ "discovery::handle::local::accumulate::request::extraction"};
-
-                     detail::send_external_discovery_request( state, std::move( result.content), std::move( result.replies));
-                  }
-                   
-                } // request
-
-
-
-               void timeout( State& state)
-               {
-                  Trace trace{ "discovery::handle::local::accumulate::timeout"};
-
-                  auto result = state.accumulate.extract();
-                  log::line( verbose::log, "result: ", result);
-
-                  if( result.topology)
-                     accumulate::topology::extraction( state, std::move( *result.topology));
-
-                  if( result.request)
-                     accumulate::request::extraction( state, std::move( *result.request));
-
-               }
                
             } // accumulate
 
@@ -640,19 +638,8 @@ namespace casual
                         if( algorithm::find( message.domains, common::domain::identity()))
                            return;
 
-                        if( ! state.accumulate.bypass())
-                        {
-                           // accumulate for later....
-                           state.accumulate.add( std::move( message));
-                           return;
-                        }
-
-                        // we need to send it directly
-                        message::discovery::topology::direct::Explore direct;
-                        direct.domains.push_back( message.origin);
-
-                        accumulate::topology::send_direct_explore( state, std::move( direct), std::move( message.domains));
-
+                        // we always accumulate topology
+                        state.accumulate.add( std::move( message));
                      };
                   }
                } // implicit
@@ -670,21 +657,9 @@ namespace casual
                         if( state.runlevel > decltype( state.runlevel())::running)
                            return;
 
-                        if( ! state.accumulate.bypass())
-                        {
-                           // accumulate for later....
-                           state.accumulate.add( std::move( message));
-                           return;
-                        }
+                        // we always accumulate topology
+                        state.accumulate.add( std::move( message));
 
-                        // we need to send it directly
-                        message::discovery::topology::direct::Explore direct;
-                        direct.domains.push_back( message.origin);
-                        direct.content = std::move( message.configured);
-
-                        // send_direct_explore will add our self to implicit domains for upstream domains,
-                        // there are no other domains involved yet, since we're the one that got the _direct connection_
-                        accumulate::topology::send_direct_explore( state, std::move( direct), {});
                      };
                   }
                } // direct
@@ -699,7 +674,11 @@ namespace casual
                   Trace trace{ "gateway::group::outbound::local::internal::handle::timeout"};
                   log::line( verbose::log, "message: ", message);
 
-                  accumulate::timeout( state);
+                  auto result = state.accumulate.extract();
+                  log::line( verbose::log, "result: ", result);
+
+                  accumulate::topology::send_direct_explore( state, std::move( result.direct), std::move( result.implicit));
+                  detail::send_aggregated_discovery( state, std::move( result.discovery), std::move( result.api), std::move( result.lookup));
                };
             }
 

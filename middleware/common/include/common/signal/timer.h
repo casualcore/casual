@@ -95,6 +95,8 @@ namespace casual
          Deadline( Deadline&&) noexcept;
          Deadline& operator = ( Deadline&&) noexcept;
 
+         friend std::ostream& operator << ( std::ostream& out, const Deadline& value);
+
       private:
          move::Active m_active;
       };

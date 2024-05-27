@@ -53,7 +53,7 @@ namespace casual
                : name( std::move( name)), category( std::move( category)), transaction( transaction), visibility{ visibility}
             {}
 
-            Base( std::string name)
+            explicit Base( std::string name)
                : name( std::move( name))
             {}
 
@@ -63,8 +63,7 @@ namespace casual
             common::service::visibility::Type visibility = common::service::visibility::Type::discoverable;
             service::Type type = service::Type::sequential;
 
-            inline friend bool operator == ( const Base& lhs, const std::string& rhs) { return lhs.name == rhs;}
-            inline friend bool operator == ( const std::string& lhs, const Base& rhs) { return rhs == lhs;}
+            inline friend bool operator == ( const Base& lhs, std::string_view rhs) { return lhs.name == rhs;}
 
             inline auto tie() const noexcept { return std::tie( name);}
 

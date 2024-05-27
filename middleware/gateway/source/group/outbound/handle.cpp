@@ -430,15 +430,11 @@ namespace casual
                               if( algorithm::find( state.disconnecting, tcp))
                                  return;
 
-                              // check if we're going to discover
-                              if( auto information = state.connections.information( tcp); information && algorithm::find( message.domains, information->domain.id))
-                              {
-                                 casual::domain::message::discovery::Request request;
-                                 request.content = std::move( message.content);
-                                 request.domain = common::domain::identity();
-                                 tcp::send( state, tcp, request);
-                              }
-
+                              casual::domain::message::discovery::Request request;
+                              request.content = std::move( message.content);
+                              request.domain = common::domain::identity();
+                              tcp::send( state, tcp, request);
+                           
                               // note that we don't keep track of any reply destinations, since caller does not expect any.
                            };
 
@@ -683,10 +679,8 @@ namespace casual
                            if( algorithm::find( message.domains, common::domain::identity()))
                               return;
 
-                           // make sure to set who actually is updated.
-                           if( auto information = state.connections.information( descriptor))
-                              message.origin = information->domain;
-
+                           // set the actual correlated process/ipc
+                           message.process = state.connections.process_handle( descriptor);
                            casual::domain::discovery::topology::implicit::update( state.multiplex, message);
                         };
                      }
@@ -744,7 +738,6 @@ namespace casual
                         // let the _discovery_ know that the topology has been updated
                         {
                            casual::domain::message::discovery::topology::direct::Update update{ handle};
-                           update.origin = message.domain;
                            
                            // should we supply the configured stuff.
                            if( information->configuration)

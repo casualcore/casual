@@ -1284,7 +1284,7 @@ domain:
                   -  address: 127.0.0.1:7010
 )");
 
-         const auto outbound = unittest::outbound::group( unittest::fetch::until( unittest::fetch::predicate::outbound::connected()), "out-a").value();
+         unittest::fetch::until( unittest::fetch::predicate::outbound::connected());
       
          const auto payload = common::unittest::random::binary( 128);
          const auto correlation = common::unittest::service::send( "b", payload);
@@ -1302,17 +1302,16 @@ domain:
 
          a.activate();
 
-         // send direct::Explore to outbound, outbound should not send discovery to
+         // send direct::Explore to outbound-connection, outbound should not send discovery to
          // B since B is in disconnect mode.
          {
             casual::domain::message::discovery::topology::direct::Explore request;
             request.content.services = { "b", "x", "y"};
-            request.domains = algorithm::transform( unittest::state().connections, []( auto& connection)
-            {
-               return connection.remote;
-            });
+            auto connections = unittest::state().connections;
+            ASSERT_TRUE( connections.size() == 1);
+            auto ipc = connections.at( 0).ipc;
 
-            EXPECT_TRUE( common::communication::device::non::blocking::send( outbound.process.ipc, request));
+            EXPECT_TRUE( common::communication::device::non::blocking::send( ipc, request));
          }
 
          b.activate();

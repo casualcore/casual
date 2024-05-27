@@ -69,10 +69,12 @@ namespace casual
          {
             Queue() = default;
             inline Queue( std::string name, platform::size::type retries) : name{ std::move( name)}, retries{ retries} {}
-            inline Queue( std::string name) : name{ std::move( name)} {}
+            inline explicit Queue( std::string name) : name{ std::move( name)} {}
 
             std::string name;
             platform::size::type retries{};
+
+            inline friend bool operator == ( const Queue& lhs, std::string_view rhs) { return lhs.name == rhs;}
 
             inline auto tie() const noexcept { return std::tie( name);}
 
@@ -152,21 +154,16 @@ namespace casual
       {
          namespace implicit
          {
-            using base_update = common::message::basic_message< common::message::Type::domain_discovery_topology_implicit_update>;
+            using base_update = common::message::basic_process< common::message::Type::domain_discovery_topology_implicit_update>;
             struct Update : base_update
             {
                using base_update::base_update;
-
-               //! Which domain (connection) sent us the update
-               //! only used internal, and is not serialized over the wire,
-               common::domain::Identity origin;
 
                //! domains that has seen/handled the message.
                std::vector< common::domain::Identity> domains;
 
                CASUAL_CONST_CORRECT_SERIALIZE(
                   base_update::serialize( archive);
-                  CASUAL_SERIALIZE( origin);
                   CASUAL_SERIALIZE( domains);
                )
             };
@@ -179,15 +176,11 @@ namespace casual
             {
                using base_update::base_update;
 
-               //! Which domain the _new connection_ is actually connect to
-               common::domain::Identity origin;
-
                 //! What the _new connection_ is configured with, if any.
                discovery::request::Content configured;
 
                CASUAL_CONST_CORRECT_SERIALIZE(
                   base_update::serialize( archive);
-                  CASUAL_SERIALIZE( origin);
                   CASUAL_SERIALIZE( configured);
                )
             };
@@ -198,14 +191,10 @@ namespace casual
             struct Explore : base_request
             {
                using base_request::base_request;
-
-               //! All actual domains that this domain has "new" connections to, via `direct::Update`
-               std::vector< common::domain::Identity> domains;
                discovery::request::Content content;
                
                CASUAL_CONST_CORRECT_SERIALIZE(
                   base_request::serialize( archive);
-                  CASUAL_SERIALIZE( domains);
                   CASUAL_SERIALIZE( content);
                )
             };
@@ -364,7 +353,7 @@ namespace casual
          {
             using Request = common::message::basic_request< common::message::Type::domain_discovery_api_rediscovery_request>;
 
-            using Content = discovery::request::Content;
+            using Content = discovery::reply::Content;
 
             using base_reply = common::message::basic_message< common::message::Type::domain_discovery_api_rediscovery_reply>;
             struct Reply : base_reply

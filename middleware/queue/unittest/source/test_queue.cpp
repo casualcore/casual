@@ -256,7 +256,7 @@ domain:
             EXPECT_TRUE( common::algorithm::equal( request.content.queues, common::array::make( "a")));
 
             auto reply = common::message::reverse::type( request);
-            reply.content.queues = { { "a"}};
+            reply.content.queues = { domain::message::discovery::reply::Queue{ "a"}};
             common::communication::device::blocking::send( request.process.ipc, reply);
          }
          
