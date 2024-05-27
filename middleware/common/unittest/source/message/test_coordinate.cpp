@@ -12,6 +12,7 @@
 
 #include "common/message/coordinate.h"
 #include "common/communication/ipc.h"
+#include "common/algorithm/random.h"
 
 
 namespace casual
@@ -315,6 +316,146 @@ namespace casual
          EXPECT_TRUE( invoked);
          EXPECT_TRUE( coordinate.empty()) << trace.compose( "coordinate: ", coordinate);
       }
+
+      namespace local
+      {
+         namespace
+         {
+            namespace minimal
+            {
+
+               using Coordinate = coordinate::minimal::fan::Out< message::basic_request< message::Type::domain_discovery_reply>>;
+
+
+               template< platform::size::type N>
+               auto add_n( auto& coordinate, auto handle_message, auto handle_done)
+               {
+                  using message_type = message::basic_request< message::Type::domain_discovery_reply>;
+
+                  auto messages = algorithm::generate_n< N>( []( auto index)
+                  {
+                     message_type message;
+                     message.process.pid = strong::process::id{ index + 10};
+                     message.process.ipc = strong::ipc::id::generate();
+                     message.correlation = strong::correlation::id::generate();
+                     return message;
+                  });
+
+                  
+                  auto pending = algorithm::transform( messages, []( auto& message)
+                  {
+                     return coordinate::minimal::fan::out::Pending{ message.correlation, message.process};
+                  });
+
+                  coordinate.add( std::move( pending), handle_message, handle_done);
+
+                  return messages;
+               };
+               
+            } // minimal
+         } // <unnamed>
+      } // local
+
+      TEST( common_message_coordinate_minimal, add)
+      {
+         local::minimal::Coordinate coordinate;
+
+         bool done = false;
+
+         auto handle_done = [ &done]( auto failed)
+         { 
+            done = true;
+         };
+
+         auto handle_message = []( auto& message){ return coordinate::minimal::fan::out::Directive::done;};
+
+         coordinate.add( {}, handle_message, handle_done);
+
+         EXPECT_TRUE( done);
+
+
+      }
+
+      TEST( common_message_coordinate_minimal, message_dispatch)
+      {
+         local::minimal::Coordinate coordinate;
+
+         auto message_callback = []( auto& message){ return coordinate::minimal::fan::out::Directive::pending;};
+         auto done_callback = []( auto failed){};
+
+         auto messages = local::minimal::add_n< 10>( coordinate, message_callback, done_callback);
+
+         EXPECT_TRUE( coordinate.size() == 1);
+
+         for( auto& message : algorithm::random::shuffle( messages))
+            coordinate( message);
+
+         EXPECT_TRUE( coordinate.empty());
+      }
+
+      TEST( common_message_coordinate_minimal, multiple_message_dispatch)
+      {
+         local::minimal::Coordinate coordinate;
+
+         auto message_callback = []( auto& message){ return coordinate::minimal::fan::out::Directive::pending;};
+         auto done_callback = []( auto failed){};
+
+         using message_type = message::basic_request< message::Type::domain_discovery_reply>;
+
+         std::vector< message_type> messages;
+
+         algorithm::for_n< 10>( [ &]()
+         {
+            algorithm::container::append( local::minimal::add_n< 10>( coordinate, message_callback, done_callback), messages);
+         });
+
+         EXPECT_TRUE( coordinate.size() == 10);
+         EXPECT_TRUE( messages.size() == 100);
+         
+         for( auto& message : algorithm::random::shuffle( messages))
+            coordinate( message);
+
+         EXPECT_TRUE( coordinate.empty());
+      }
+
+      TEST( common_message_coordinate_minimal, failed)
+      {
+         local::minimal::Coordinate coordinate;
+
+         auto message_callback = []( auto& message){ return coordinate::minimal::fan::out::Directive::pending;};
+         auto done_callback = []( auto failed){};
+
+         using message_type = message::basic_request< message::Type::domain_discovery_reply>;
+
+         std::vector< message_type> messages;
+
+         algorithm::for_n< 10>( [ &]()
+         {
+            algorithm::container::append( local::minimal::add_n< 10>( coordinate, message_callback, done_callback), messages);
+         });
+
+         ASSERT_TRUE( messages.size() == 100);
+         algorithm::random::shuffle( messages);
+
+         // split the messages to be used as failed and such
+         auto correlations = range::make( std::begin( messages), 40);
+         auto ipc = range::make( std::end( correlations), 30);
+         auto pid = range::make( std::end( ipc), 30);
+
+         ASSERT_TRUE( std::end( messages) == std::end( pid));
+
+         for( auto& message : correlations)
+            coordinate( message);
+
+         for( auto& message : ipc)
+            coordinate.failed( message.process.ipc);
+
+         for( auto& message : pid)
+            coordinate.failed( message.process.pid);
+
+         EXPECT_TRUE( coordinate.empty()) << CASUAL_NAMED_VALUE( coordinate);
+      }
+
 
    } // common::message
 } // casual

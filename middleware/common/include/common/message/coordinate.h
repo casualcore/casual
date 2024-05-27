@@ -217,5 +217,168 @@ namespace casual
          };            
       } // fan
 
+      namespace minimal::fan
+      {
+         namespace out
+         {
+            enum struct Directive
+            {
+               pending,
+               done,
+            };
+
+            inline constexpr std::string_view description( Directive state) noexcept
+            {
+               switch( state)
+               {
+                  case Directive::pending: return "pending";
+                  case Directive::done: return "done";
+               }
+               return "<unknown>";
+            }
+
+            struct Pending
+            {
+               enum struct State : short
+               {
+                  pending,
+                  failed,
+               };
+
+               inline friend constexpr std::string_view description( State state) noexcept
+               {
+                  switch( state)
+                  {
+                     case State::pending: return "pending";
+                     case State::failed: return "failed";
+                  }
+                  return "<unknown>";
+               }
+
+               Pending( strong::correlation::id correlation, process::Handle process)
+                  : correlation{ correlation}, process{ process}
+               {}
+
+               State state = State::pending;
+               strong::correlation::id correlation;
+               process::Handle process;
+
+               inline friend bool operator == ( const Pending& lhs, const strong::correlation::id& rhs) { return lhs.correlation == rhs;}
+               inline friend bool operator == ( const Pending& lhs, process::compare_equal_to_handle auto rhs) { return lhs.process == rhs;}
+
+               CASUAL_LOG_SERIALIZE(
+                  CASUAL_SERIALIZE( state);
+                  CASUAL_SERIALIZE( correlation);
+                  CASUAL_SERIALIZE( process);
+               )
+
+            };
+
+            template< typename message_type>
+            struct Entry
+            {
+               using pendings_type = std::vector< Pending>;
+               using message_callback_type = common::unique_function< Directive( const message_type&)>;
+               using done_callback_type = common::unique_function< void( pendings_type)>;
+
+               Entry( std::vector< Pending> pending, message_callback_type message_callback, done_callback_type done_callback)
+                  : m_pending{ std::move( pending)}, m_message_callback{ std::move( message_callback)}, m_done_callback{ std::move( done_callback)}
+               {}
+
+               Directive operator() ( const message_type& message)
+               {
+                  auto found = algorithm::find( m_pending, message.correlation);
+                  CASUAL_ASSERT( found);
+                  algorithm::container::erase( m_pending, std::begin( found));
+
+                  if( m_message_callback( message) == Directive::done)
+                     return Directive::done;
+
+                  return is_done() ? Directive::done : Directive::pending;
+               }
+
+               Directive failed( process::compare_equal_to_handle auto process)
+               {
+                  for( auto& pending : m_pending)
+                     if( pending == process)
+                        pending.state = Pending::State::failed;
+
+                  return is_done() ? Directive::done : Directive::pending;
+               }
+
+               bool is_done()
+               {
+                  if( ! algorithm::all_of( m_pending, []( auto& pending){ return pending.state == Pending::State::failed;}))
+                     return false;
+
+                  m_done_callback( std::move( m_pending));
+                  return true;
+               }
+
+
+               inline friend bool operator == ( const Entry& lhs, const strong::correlation::id& rhs) { return algorithm::contains( lhs.m_pending, rhs);}
+
+               CASUAL_LOG_SERIALIZE(
+                  CASUAL_SERIALIZE( m_pending);
+               )
+
+            private:
+               std::vector< Pending> m_pending;
+               message_callback_type m_message_callback;
+               done_callback_type m_done_callback;
+            };
+         } // out
+
+         //! short-circuit fan-out. Entries them self dictates when they're done.
+         //! this enables fan-out to be done before all replies has been received.
+         template< typename message_type>
+         struct Out
+         {
+            using entry_type = out::Entry< message_type>;
+            using pendings_type = typename entry_type::pendings_type;
+
+            void add( entry_type entry)
+            {
+               if( ! entry.is_done())
+                  m_entries.push_back( std::move( entry));
+            } 
+
+            template< typename MC, typename DC>
+            void add( pendings_type pendings, MC message_callback, DC done_callback) requires std::constructible_from< entry_type, pendings_type, MC, DC>
+            {
+               add( entry_type{ std::move( pendings), std::move( message_callback), std::move( done_callback)});
+            } 
+
+            void operator() ( message_type message)
+            {
+               if( auto found = algorithm::find( m_entries, message.correlation))
+                  if( (*found)( std::move( message)) == out::Directive::done)
+                     algorithm::container::erase( m_entries, std::begin( found));
+            }
+
+            void failed( process::compare_equal_to_handle auto process)
+            {
+               algorithm::container::erase_if( m_entries, [ process]( auto& entry)
+               {
+                  return entry.failed( process) == out::Directive::done;
+               });
+            }
+
+
+            CASUAL_LOG_SERIALIZE(
+               CASUAL_SERIALIZE( m_entries);
+            )
+
+            auto empty() const noexcept { return m_entries.empty();}
+            auto size() const noexcept { return m_entries.size();}
+
+         private:
+
+            std::vector< entry_type> m_entries;
+         };
+         
+      } // minimal::fan
+
+
    } //common::message::coordinate
 } // casual
