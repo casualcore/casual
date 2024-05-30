@@ -90,7 +90,7 @@ namespace casual
                   Trace trace{ "queue::group::local::initialize"};
 
                   // make sure we handle "alarms"
-                  signal::callback::registration< code::signal::alarm>( []()
+                  signal::callback::registration< common::code::signal::alarm>( []()
                   {
                      // Timeout has occurred, we push the corresponding 
                      // signal to our own "queue", and handle it "later"

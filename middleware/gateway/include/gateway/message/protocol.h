@@ -10,7 +10,7 @@
 
 #include "common/array.h"
 
-#include <iosfwd>
+#include <string_view>
 
 namespace casual
 {
@@ -22,11 +22,23 @@ namespace casual
          v1_0 = 1000,
          v1_1 = 1001,
          v1_2 = 1002,
+         v1_3 = 1003,
+         current = v1_3,
       };
-      std::ostream& operator << ( std::ostream& out, Version value);
+
+      std::string_view description( Version value) noexcept;
 
       //! an array with all versions ordered by highest to lowest
       constexpr auto versions = common::array::make( Version::v1_2, Version::v1_1, Version::v1_0);
+
+      consteval Version compiled_for_version()
+      {
+         #if CASUAL_PROTOCOL_VERSION == 1002
+            return Version::v1_2;
+         #else
+            return Version::current;
+         #endif
+      }
 
       //! just a helper to make it easier to specialize `version_traits`.
       template< Version value>

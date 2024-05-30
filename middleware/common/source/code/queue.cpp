@@ -1,19 +1,18 @@
 //!
-//! Copyright (c) 2019, The casual project
+//! Copyright (c) 2024, The casual project
 //!
 //! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
 //!
 
-#include "queue/code.h"
+#include "common/code/queue.h"
 
-#include "common/code/serialize.h"
-#include "common/code/category.h"
+#include "common/string.h"
 #include "common/code/log.h"
+#include "common/code/category.h"
 
 namespace casual
 {
-
-   namespace queue
+   namespace common::code
    {
       namespace local
       {
@@ -28,15 +27,7 @@ namespace casual
 
                std::string message( int code) const override
                {
-                  switch( static_cast< queue::code>( code))
-                  {
-                     case code::ok: return "ok";
-                     case code::argument: return "invalid-arguments";
-                     case code::no_message: return "no-message";
-                     case code::no_queue: return "no-queue";
-                     case code::system: return "system";
-                  }
-                  return "unknown";
+                  return std::string{ description( static_cast< code::queue>( code))};
                }
 
                // defines the log condition equivalence, so we can compare for logging
@@ -45,14 +36,14 @@ namespace casual
                   if( ! common::code::is::category< common::code::log>( condition))
                      return false;
 
-                  switch( static_cast< queue::code>( code))
+                  switch( static_cast< code::queue>( code))
                   {
-                     case code::ok:
-                     case code::argument:
-                     case code::no_message: 
+                     case code::queue::ok:
+                     case code::queue::argument:
+                     case code::queue::no_message: 
                         return condition == common::code::log::user;
 
-                     case code::no_queue: 
+                     case code::queue::no_queue: 
                         return condition == common::code::log::warning;
 
                      // rest is error
@@ -66,8 +57,21 @@ namespace casual
          } // <unnamed>
       } // local
 
+      std::string_view description( code::queue value) noexcept
+      {
+         switch( value)
+         {
+            case code::queue::ok: return "ok";
+            case code::queue::no_message: return "no_message";
+            case code::queue::no_queue: return "no_queue";
+            case code::queue::argument: return "argument";
+            case code::queue::system: return "system";
+         }
+         return "<unknown>";
+      }
 
-      std::error_code make_error_code( queue::code code)
+
+      std::error_code make_error_code( code::queue code)
       {
          return { std::to_underlying( code), local::category};
       }

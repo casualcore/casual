@@ -8,8 +8,8 @@
 #include "queue/unittest/utility.h"
 #include "queue/common/queue.h"
 #include "queue/api/queue.h"
-#include "queue/code.h"
 
+#include "common/code/queue.h"
 #include "common/process.h"
 #include "common/message/domain.h"
 #include "common/message/service.h"

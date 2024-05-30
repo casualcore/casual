@@ -276,7 +276,7 @@ namespace casual
                      reply = state.queuebase.dequeue( message, now);
                      reply.correlation = message.correlation;
 
-                     if( ! reply.message.empty())
+                     if( reply.message)
                      {
                         // we notify TM if the dequeue is in a transaction
                         if( message.trid)

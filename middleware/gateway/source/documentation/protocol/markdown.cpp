@@ -957,11 +957,11 @@ Represent dequeue reply.
 )";
                message_type message;
 
-               message.message.resize( 1);
-               message.message.at( 0).attributes.properties = local::string::value( 128);
-               message.message.at( 0).attributes.reply = local::string::value( 128);
-               message.message.at( 0).payload.type = local::string::value( 128);
-               message.message.at( 0).payload.data = local::binary::value( 1024); 
+               message.message.emplace();
+               message.message->attributes.properties = local::string::value( 128);
+               message.message->attributes.reply = local::string::value( 128);
+               message.message->payload.type = local::string::value( 128);
+               message.message->payload.data = local::binary::value( 1024); 
 
                local::format::type( out, message, {
                         { "execution", "uuid of the current execution context (breadcrumb)"},

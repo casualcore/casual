@@ -6,15 +6,14 @@
 
 #pragma once
 
-#include "common/log/category.h"
 
 #include <system_error>
 
 namespace casual
 {
-   namespace queue
+   namespace common::code
    {
-      enum class code : int
+      enum class queue : int
       {
          ok = 0, 
          no_message = 1,
@@ -22,8 +21,9 @@ namespace casual
          argument = 20,
          system = 30,
       };
+      std::string_view description( code::queue value) noexcept;
 
-      std::error_code make_error_code( queue::code code);
+      std::error_code make_error_code( code::queue code);
 
    } // queue
 } // casual
@@ -31,5 +31,5 @@ namespace casual
 namespace std
 {
    template <>
-   struct is_error_code_enum< casual::queue::code> : true_type {};
+   struct is_error_code_enum< casual::common::code::queue> : true_type {};
 }

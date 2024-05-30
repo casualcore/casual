@@ -6,6 +6,7 @@
 
 
 #include "gateway/manager/state.h"
+#include "gateway/message/protocol.h"
 
 #include "gateway/message.h"
 #include "gateway/manager/handle.h"
@@ -36,16 +37,35 @@ namespace casual
             {
                std::filesystem::path path( const outbound::Group& value)
                {
-                  if( value.configuration.connect == decltype( value.configuration.connect)::reversed)
-                     return local::path( "casual-gateway-outbound-reverse-group");
-                  return local::path( "casual-gateway-outbound-group");
+                  if constexpr( message::protocol::compiled_for_version() == message::protocol::Version::v1_2)
+                  {
+                     if( value.configuration.connect == decltype( value.configuration.connect)::reversed)
+                        return local::path( "casual-gateway-outbound-reverse-group.1.2");
+                     return local::path( "casual-gateway-outbound-group.1.2");
+                  }
+                  else
+                  {
+                     if( value.configuration.connect == decltype( value.configuration.connect)::reversed)
+                        return local::path( "casual-gateway-outbound-reverse-group");
+                     return local::path( "casual-gateway-outbound-group");
+                  }
+
                }
 
                std::filesystem::path path( const inbound::Group& value)
                {
-                  if( value.configuration.connect == decltype( value.configuration.connect)::reversed)
-                     return local::path( "casual-gateway-inbound-reverse-group");
-                  return local::path( "casual-gateway-inbound-group");
+                  if constexpr( message::protocol::compiled_for_version() == message::protocol::Version::v1_2)
+                  {
+                     if( value.configuration.connect == decltype( value.configuration.connect)::reversed)
+                        return local::path( "casual-gateway-inbound-reverse-group.1.2");
+                     return local::path( "casual-gateway-inbound-group.1.2");
+                  }
+                  else
+                  {
+                     if( value.configuration.connect == decltype( value.configuration.connect)::reversed)
+                        return local::path( "casual-gateway-inbound-reverse-group");
+                     return local::path( "casual-gateway-inbound-group");
+                  }
                }
             
             } // executable

@@ -12,10 +12,9 @@
 #include "queue/unittest/utility.h"
 #include "queue/common/queue.h"
 #include "queue/api/queue.h"
-#include "queue/code.h"
 
 #include "common/array.h"
-
+#include "common/code/queue.h"
 #include "common/process.h"
 #include "common/file.h"
 #include "common/message/domain.h"
@@ -497,7 +496,7 @@ domain:
 
          EXPECT_CODE({
             (void)queue::peek::information( "remote-queue");
-         }, queue::code::argument);
+         }, common::code::queue::argument);
       }
 
       TEST( casual_queue, enqueue_1_message__dequeue_1_message)
@@ -759,26 +758,26 @@ domain:
 
          {
             auto message = dequeue( ipc1);
-            ASSERT_TRUE( message.message.size() == 1);
-            EXPECT_TRUE( common::algorithm::equal( message.message.at( 0).payload.data, payload));
+            ASSERT_TRUE( message.message);
+            EXPECT_TRUE( common::algorithm::equal( message.message->payload.data, payload));
          }
 
          {
             auto message = dequeue( ipc2);
-            ASSERT_TRUE( message.message.size() == 1);
-            EXPECT_TRUE( common::algorithm::equal( message.message.at( 0).payload.data, payload));
+            ASSERT_TRUE( message.message);
+            EXPECT_TRUE( common::algorithm::equal( message.message->payload.data, payload));
          }
 
          {
             auto message = dequeue( ipc3);
-            ASSERT_TRUE( message.message.size() == 1);
-            EXPECT_TRUE( common::algorithm::equal( message.message.at( 0).payload.data, payload));
+            ASSERT_TRUE( message.message);
+            EXPECT_TRUE( common::algorithm::equal( message.message->payload.data, payload));
          }
 
          {
             auto message = dequeue( ipc4);
-            ASSERT_TRUE( message.message.size() == 1);
-            EXPECT_TRUE( common::algorithm::equal( message.message.at( 0).payload.data, payload));
+            ASSERT_TRUE( message.message);
+            EXPECT_TRUE( common::algorithm::equal( message.message->payload.data, payload));
          }
       }
 
@@ -1076,7 +1075,7 @@ domain:
          EXPECT_CODE( 
          {  
             (void)queue::blocking::dequeue( "a1");
-         }, queue::code::no_message);
+         }, common::code::queue::no_message);
 
          // expect shutdown to 'stay'
          {
@@ -1380,7 +1379,7 @@ domain:
 
          ipc::message::group::dequeue::Reply reply;
          common::communication::device::blocking::receive( common::communication::ipc::inbound::device(), reply);
-         EXPECT_TRUE( reply.message.empty());
+         EXPECT_TRUE( ! reply.message);
       }
 
    } // queue

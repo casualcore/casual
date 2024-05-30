@@ -46,20 +46,24 @@ common_archive = make.LinkArchive( 'bin/casual-gateway-common',
     [
         make.Compile( 'source/environment.cpp'),
         make.Compile( 'source/common.cpp'),
-        make.Compile( 'source/manager/state.cpp'),
         make.Compile( 'source/group/tcp.cpp'),
         make.Compile( 'source/group/tcp/logical/connect.cpp'),
         make.Compile( 'source/message/protocol.cpp'),
     ])
         
 
+manager_object_files = [
+    make.Compile( 'source/manager/main.cpp'),
+    make.Compile( 'source/manager/handle.cpp'),
+    make.Compile( 'source/manager/admin/server.cpp'),
+    make.Compile( 'source/manager/transform.cpp'),
+]
+
 # The gateway-manager
 target = make.LinkExecutable( 'bin/casual-gateway-manager',
+    manager_object_files +
     [
-        make.Compile( 'source/manager/main.cpp'),
-        make.Compile( 'source/manager/handle.cpp'),
-        make.Compile( 'source/manager/admin/server.cpp'),
-        make.Compile( 'source/manager/transform.cpp'),
+        make.Compile( 'source/manager/state.cpp'),
     ],
     [ 
         common_archive,
@@ -69,6 +73,7 @@ target = make.LinkExecutable( 'bin/casual-gateway-manager',
     ])
 
 install_bin.append( target)
+
 
 target = make.LinkLibrary( 'bin/casual-gateway-admin-cli',
     [
@@ -169,6 +174,30 @@ target = make.LinkExecutable( 'bin/casual-gateway-group-tcp-logical-connect',
     ])
 
 install_bin.append( target)
+
+
+#################################
+# Binaries that uses protocol version 1.2 to be used in unittest
+# to verify that we can communicate with 1.2
+# These will only be used for unittest and not part of the install/rpm
+#
+make.LinkExecutable( 'bin/casual-gateway-manager.1.2',
+    manager_object_files + 
+    [
+        make.Compile( 'source/manager/state.cpp', objectfile='obj/1.2/manager.state.o', directive=[ '-DCASUAL_PROTOCOL_VERSION=1002']),
+    ],
+    [ 
+        common_archive,
+        'casual-serviceframework', 
+        'casual-common',
+        'casual-domain-utility',
+    ])
+
+
+
+
+
+#################################
 
 # protocol example
 protocol_objects = [

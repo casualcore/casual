@@ -6,10 +6,12 @@
 
 #pragma once
 
+
 #include "common/message/type.h"
 #include "common/transaction/id.h"
 #include "common/transaction/global.h"
 #include "common/buffer/type.h"
+#include "common/code/queue.h"
 
 #include "configuration/model.h"
 
@@ -399,15 +401,35 @@ namespace casual
             {
                using base_reply::base_reply;
 
-               std::vector< dequeue::Message> message;
+               std::optional< dequeue::Message> message;
+               common::code::queue code{};
 
-               inline explicit operator bool () const noexcept { return ! message.empty();}
+               inline explicit operator bool () const noexcept { return message.has_value();}
 
                CASUAL_CONST_CORRECT_SERIALIZE(
                   base_reply::serialize( archive);
                   CASUAL_SERIALIZE( message);
+                  CASUAL_SERIALIZE( code);
                )
             };
+
+            namespace v1_2
+            {
+               using base_reply = common::message::basic_message< common::message::Type::queue_group_dequeue_reply_v1_2>;
+               struct Reply : base_reply
+               {
+                  using base_reply::base_reply;
+
+                  std::vector< dequeue::Message> message;
+
+                  inline explicit operator bool () const noexcept { return ! message.empty();}
+
+                  CASUAL_CONST_CORRECT_SERIALIZE(
+                     base_reply::serialize( archive);
+                     CASUAL_SERIALIZE( message);
+                  )
+               };
+            } // v1_2
 
             namespace forget
             {
@@ -489,14 +511,32 @@ namespace casual
             {
                using base_reply::base_reply;
 
-               //! A 'nil' id represent that the enqueue failed (for now, assume queue:no_queue)
                common::Uuid id;
+               common::code::queue code{};
 
                CASUAL_CONST_CORRECT_SERIALIZE(
                   base_reply::serialize( archive);
                   CASUAL_SERIALIZE( id);
+                  CASUAL_SERIALIZE( code);
                )
             };
+
+            namespace v1_2
+            {
+               using base_reply = common::message::basic_message< common::message::Type::queue_group_enqueue_reply_v1_2>;
+               struct Reply : base_reply
+               {
+                  using base_reply::base_reply;
+
+                  //! A 'nil' id represent that the enqueue failed (for now, assume queue:no_queue)
+                  common::Uuid id;
+
+                  CASUAL_CONST_CORRECT_SERIALIZE(
+                     base_reply::serialize( archive);
+                     CASUAL_SERIALIZE( id);
+                  )
+               };
+            }
 
          } // enqueue
 

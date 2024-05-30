@@ -224,9 +224,11 @@ namespace casual
 
          // pinned messages
          queue_group_enqueue_request  = 6100,
-         queue_group_enqueue_reply    = 6101,
+         queue_group_enqueue_reply_v1_2 = 6101,
+         queue_group_enqueue_reply      = 6102,
          queue_group_dequeue_request  = 6200,
-         queue_group_dequeue_reply    = 6201,
+         queue_group_dequeue_reply_v1_2  = 6201,
+         queue_group_dequeue_reply       = 6202,
          queue_group_dequeue_forget_request, // might be part of interdomian protocol?
          queue_group_dequeue_forget_reply, // might be part of interdomian protocol?
 

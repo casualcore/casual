@@ -140,7 +140,7 @@ namespace casual
                {
                   common::log::line( common::log::category::verbose::error, "version: ", version);
 
-                  common::event::error::fatal::raise( code::casual::invalid_version,
+                  common::event::error::fatal::raise( common::code::casual::invalid_version,
                      "please remove or convert '", connection.file(), "' using casual-queue-upgrade");
                }
 
@@ -349,7 +349,7 @@ namespace casual
          });
 
          if( ! result)
-            code::raise::error( code::casual::invalid_argument, "requested queue is not hosted by this queue-group - name: ", name);
+            common::code::raise::error( common::code::casual::invalid_argument, "requested queue is not hosted by this queue-group - name: ", name);
 
          return std::move( result.value());
       }
@@ -423,7 +423,7 @@ namespace casual
                m_statement.state.nullxid.execute( result.rowid);
 
             auto reply = common::message::reverse::type( message);
-            reply.message.push_back( std::move( result.message));
+            reply.message = std::move( result.message);
 
             common::log::line( verbose::log, "reply: ", reply);
 
@@ -750,7 +750,7 @@ log_statement( value, #value)
          
          if( ! stream)
          {
-            log::line( log::category::error, code::casual::invalid_path, " quebase metric path: ", path);
+            log::line( log::category::error, common::code::casual::invalid_path, " quebase metric path: ", path);
             return;
          }
 

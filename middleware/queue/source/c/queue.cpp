@@ -8,7 +8,6 @@
 
 #include "queue/api/queue.h"
 #include "queue/common/log.h"
-#include "queue/code.h"
 
 #include "casual/platform.h"
 #include "common/exception/capture.h"
@@ -16,11 +15,13 @@
 #include "common/algorithm.h"
 #include "common/string.h"
 #include "common/log/category.h"
+#include "common/code/queue.h"
 #include "common/code/casual.h"
 #include "common/code/category.h"
 #include "common/buffer/type.h"
 #include "common/buffer/pool.h"
 #include "common/execute.h"
+#include "common/code/queue.h"
 
 namespace casual
 {
@@ -32,7 +33,7 @@ namespace casual
          {
             namespace global
             {
-               queue::code code = queue::code::ok;
+               auto code = common::code::queue::ok;
             } // global
             
             template< typename F, typename T, typename... Ts>
@@ -40,21 +41,21 @@ namespace casual
             {
                try 
                {
-                  global::code = queue::code::ok;
+                  global::code = common::code::queue::ok;
                   return functor( std::forward< Ts>( ts)...);
                }
                catch( ...)
                {
                   auto error = common::exception::capture();
 
-                  if( common::code::is::category< queue::code>( error.code()))
+                  if( common::code::is::category< common::code::queue>( error.code()))
                   {
-                     global::code = static_cast< queue::code>( error.code().value());
+                     global::code = static_cast< common::code::queue>( error.code().value());
                   }
                   else
                   {
                      common::log::line( common::log::category::error, common::code::casual::internal_unexpected_value, " unexpected error: ", error);
-                     global::code = queue::code::system;
+                     global::code = common::code::queue::system;
                   }
                }
 
@@ -84,7 +85,7 @@ namespace casual
                   if( auto found = common::algorithm::find_if( m_cache, is_descriptor))
                      return *found;
 
-                  common::code::raise::error( queue::code::argument);
+                  common::code::raise::error( common::code::queue::argument);
                }
 
                Holder& add( value_type value)
@@ -185,7 +186,7 @@ namespace casual
                      auto get( descriptor::id descriptor, long* ms_since_epoch)
                      {
                         if( ! ms_since_epoch)
-                           common::code::raise::error( queue::code::argument);
+                           common::code::raise::error( common::code::queue::argument);
 
                         *ms_since_epoch = std::chrono::duration_cast< std::chrono::milliseconds>( global::cache.get( descriptor).value.attributes.available.time_since_epoch()).count();
                         return 0;
@@ -216,7 +217,7 @@ namespace casual
                   auto set( descriptor::id descriptor, const uuid_t* id)
                   {
                      if( ! id)
-                        common::code::raise::error( queue::code::argument);
+                        common::code::raise::error( common::code::queue::argument);
 
                      global::cache.get( descriptor).value.id = common::Uuid{ *id};
                      return 0;
@@ -225,7 +226,7 @@ namespace casual
                   auto get( descriptor::id descriptor, uuid_t* id)
                   {
                      if( ! id)
-                        common::code::raise::error( queue::code::argument);
+                        common::code::raise::error( common::code::queue::argument);
                         
                      global::cache.get( descriptor).value.id.copy( *id);
                      return 0;
@@ -306,7 +307,7 @@ namespace casual
                }( queue, selector);
 
                if( message.empty())
-                  common::code::raise::error( queue::code::no_message);
+                  common::code::raise::error( common::code::queue::no_message);
 
                return local::message::global::cache.add( std::move( message.front())).id.value();
             }
@@ -324,11 +325,11 @@ namespace casual
                }( queue, selector);
 
                if( information.empty())
-                  common::code::raise::error( queue::code::no_message);
+                  common::code::raise::error( common::code::queue::no_message);
 
                auto message = peek::messages( queue, { information.front().id});
                if( message.empty())
-                  common::code::raise::error( queue::code::no_message);
+                  common::code::raise::error( common::code::queue::no_message);
 
                xatmi::Message result;
                {

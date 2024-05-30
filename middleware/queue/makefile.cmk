@@ -55,7 +55,6 @@ common = make.LinkLibrary( 'bin/casual-queue-common',
    [
     make.Compile( 'source/common/log.cpp'),
     make.Compile( 'source/common/queue.cpp'),
-    make.Compile( 'source/code.cpp'),
    ],
    ['casual-common',])
 

@@ -91,7 +91,7 @@ namespace casual
                   if( forward.source.queue == message.name)
                   {
                      if( message.remote())
-                        common::event::error::send( code::casual::invalid_configuration, "can't forward from a remote queue: ", message.name);
+                        common::event::error::send( common::code::casual::invalid_configuration, "can't forward from a remote queue: ", message.name);
                      else
                      {
                         forward.source.id = message.queue;
@@ -119,7 +119,7 @@ namespace casual
                   if( forward.source.queue == message.name)
                   {
                      if( message.remote())
-                        common::event::error::send( code::casual::invalid_configuration, "can't forward from a remote queue: ", message.name);
+                        common::event::error::send( common::code::casual::invalid_configuration, "can't forward from a remote queue: ", message.name);
                      else
                      {
                         forward.source.id = message.queue;
@@ -524,7 +524,7 @@ namespace casual
                         if( ! pending)
                            return;
                         
-                        if( message.message.empty())
+                        if( ! message.message)
                         {
                            log::line( log::category::error, "empty dequeued message - action: rollback");
                            send::transaction::rollback::request( state, std::move( *pending));
@@ -550,8 +550,8 @@ namespace casual
                            state.multiplex.send( ipc::service::manager(), request);
 
                            forward::state::pending::service::Lookup lookup{ std::move( *pending)};
-                           lookup.buffer.type = std::move( message.message[ 0].payload.type);
-                           lookup.buffer.data = std::move( message.message[ 0].payload.data);
+                           lookup.buffer.type = std::move( message.message->payload.type);
+                           lookup.buffer.data = std::move( message.message->payload.data);
 
                            state.pending.service.lookups.push_back( std::move( lookup));
 
@@ -564,7 +564,7 @@ namespace casual
                            request.trid = pending->trid;
                            request.queue = forward->target.id;
                            request.name = forward->target.queue;
-                           request.message = std::move( message.message.front());
+                           request.message = std::move( *message.message);
 
                            // make sure we've got a new message-id
                            request.message.id = uuid::make();
@@ -680,7 +680,7 @@ namespace casual
                            {
                               // if we cant find a pending lookup we assume the lookup is discarded and handle it later
                               if( ! algorithm::find( state.pending.service.lookup_discards, message.correlation))
-                                 log::line( log::category::error, code::casual::invalid_semantics, " expected pending service-lookup-discard for correlation: ", message.correlation);
+                                 log::line( log::category::error, common::code::casual::invalid_semantics, " expected pending service-lookup-discard for correlation: ", message.correlation);
 
                               return;
                            }
@@ -744,7 +744,7 @@ namespace casual
                            auto forward = state.forward_service( call->id);
                            assert( forward);
 
-                           if( message.code.result != code::xatmi::ok)
+                           if( message.code.result != common::code::xatmi::ok)
                            {
                               send::transaction::rollback::request( state, std::move( *call));
                               return;

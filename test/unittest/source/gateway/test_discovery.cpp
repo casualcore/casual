@@ -16,7 +16,7 @@
 #include "common/sink.h"
 
 #include "queue/api/queue.h"
-#include "queue/code.h"
+
 
 #include "service/unittest/utility.h"
 #include "gateway/unittest/utility.h"

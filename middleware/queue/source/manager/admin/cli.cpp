@@ -110,7 +110,7 @@ namespace casual
                         result.alias = found->alias;
                         return result;
                      }
-                     code::raise::error( code::casual::internal_unexpected_value, "cli model - failed to find group for: ", queue);
+                     common::code::raise::error( common::code::casual::internal_unexpected_value, "cli model - failed to find group for: ", queue);
                   });
 
                   algorithm::transform( state.remote.queues, result, [ &state]( auto& queue)
@@ -126,7 +126,7 @@ namespace casual
                         result.description = found->description;
                         return result;
                      }
-                     code::raise::error( code::casual::internal_unexpected_value, "cli model - failed to find group for: ", queue);
+                     common::code::raise::error( common::code::casual::internal_unexpected_value, "cli model - failed to find group for: ", queue);
                   });
 
                   algorithm::sort( result);
@@ -1177,7 +1177,11 @@ cat somefile.bin | casual queue --enqueue <queue-name>
                   if( auto reply = communication::ipc::call( state.destination.process.ipc, request))
                   {
                      log::line( verbose::log, "reply: ", reply);
-                     auto result = local::transform::message( std::move( reply.message.front()));
+                     
+                     if( ! reply.message)
+                        return false;
+
+                     auto result = local::transform::message( std::move( *reply.message));
                      cli::pipe::forward::message( result);
 
                      return true;
@@ -1370,7 +1374,7 @@ casual queue --peek <queue-name> <id1> <id2> | <some other part of casual-pipe> 
                            else if( name == "available")
                               message.attributes.available = platform::time::point::type{ chronology::from::string( value)};
                            else
-                              code::raise::error( code::casual::invalid_argument, "'", name, "' is not part of the valid set: ", attributes::names());
+                              common::code::raise::error( common::code::casual::invalid_argument, "'", name, "' is not part of the valid set: ", attributes::names());
                         }
 
                         cli::pipe::forward::message( message);
@@ -1603,7 +1607,7 @@ casual queue --clear a b c)"
                      auto aliases = algorithm::transform( values, []( auto& value)
                      {
                         if( std::get< 1>( value) < 0)
-                           code::raise::error( code::casual::invalid_argument, "number of instances cannot be negative");
+                           common::code::raise::error( common::code::casual::invalid_argument, "number of instances cannot be negative");
                               
                         manager::admin::model::scale::Alias result;
                         result.name = std::move( std::get< 0>( value));

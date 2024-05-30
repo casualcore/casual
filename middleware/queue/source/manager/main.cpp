@@ -64,7 +64,7 @@ namespace casual
                auto abort = execute::scope( [&state](){ manager::handle::abort( state);});
 
                // make sure we handle death of our children
-               signal::callback::registration< code::signal::child>( [ &state]()
+               signal::callback::registration< common::code::signal::child>( [ &state]()
                {
                   for( auto& exit : process::lifetime::ended())
                      manager::handle::process::exit( state, exit);

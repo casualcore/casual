@@ -54,6 +54,10 @@ namespace casual
                return transform::state( casual::domain::configuration::fetch().gateway);
             }
 
+#if CASUAL_PROTOCOL_VERSION == 1002
+
+#endif
+
 
             auto condition( State& state)
             {

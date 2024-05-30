@@ -141,7 +141,7 @@ namespace casual
                            if( entity.process.ipc)
                               state.multiplex.send( entity.process.ipc, common::message::shutdown::Request{ common::process::handle()});
                            else
-                              signal::send( entity.process.pid, code::signal::terminate);
+                              signal::send( entity.process.pid, common::code::signal::terminate);
 
                            return entity.process.pid;
                         });
@@ -633,7 +633,7 @@ namespace casual
 
          auto terminate = [&]( auto& entity)
          {
-            signal::send( entity.process.pid, code::signal::terminate);
+            signal::send( entity.process.pid, common::code::signal::terminate);
          };
 
          algorithm::for_each( state.forward.groups, terminate);
