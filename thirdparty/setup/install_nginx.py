@@ -14,12 +14,12 @@ BASENAME = "nginx-" + NGINX_VERSION
 SOURCE_ROOT = os.getenv( "CASUAL_MAKE_SOURCE_ROOT", os.getenv("CASUAL_BUILD_HOME"))
 CASUAL_THIRDPARTY = os.getenv("CASUAL_THIRDPARTY")
 
-if not SOURCE_ROOT or not os.getenv("CASUAL_HOME") or not CASUAL_THIRDPARTY:
+if not SOURCE_ROOT or not CASUAL_THIRDPARTY:
 	raise SystemError("CASUAL-environment need to be set")
 
 os.chdir(CASUAL_THIRDPARTY + '/nginx/' + BASENAME)
 
-prefix = os.getenv('CASUAL_HOME', '/usr/local/casual') + '/nginx'
+prefix = os.getenv('CASUAL_HOME', '/opt/casual') + '/nginx'
 
 print("Start setting up: " + BASENAME)
 print("Running configure")
