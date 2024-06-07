@@ -14,13 +14,13 @@ namespace casual
    {
 
       template< typename R>
-      bool sorted( R&& range)
+      constexpr bool sorted( R&& range)
       {
          return std::is_sorted( std::begin( range), std::end( range));
       }
 
       template< typename R, typename C>
-      bool sorted( R&& range, C compare)
+      constexpr bool sorted( R&& range, C compare)
       {
          return std::is_sorted( std::begin( range), std::end( range), compare);
       }

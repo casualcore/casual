@@ -147,10 +147,10 @@ namespace casual
          {
             // make sure we go back to base, if the iterator is reverse_iterator already.
             template< typename T>
-            auto make_reverse_iterator( std::reverse_iterator< T> iterator) { return iterator.base();}
+            constexpr auto make_reverse_iterator( std::reverse_iterator< T> iterator) { return iterator.base();}
 
             template< typename Iter>
-            auto make_reverse_iterator( Iter iterator) { return std::make_reverse_iterator( iterator);}
+            constexpr auto make_reverse_iterator( Iter iterator) { return std::make_reverse_iterator( iterator);}
             
          } // detail
 

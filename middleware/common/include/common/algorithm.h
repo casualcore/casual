@@ -629,7 +629,7 @@ namespace casual
          }
          
          template< typename R, typename T>
-         auto contains( R&& range, const T& value, traits::priority::tag< 0>) 
+         constexpr auto contains( R&& range, const T& value, traits::priority::tag< 0>) 
             -> decltype( ! algorithm::find( range, value).empty())
          {
             return ! algorithm::find( range, value).empty();
@@ -638,7 +638,7 @@ namespace casual
 
       //! @returns true if `value` is found in `range` - false otherwise
       template< concepts::range R, typename T>
-      auto contains( R&& range, const T& value)
+      constexpr auto contains( R&& range, const T& value)
          -> decltype( detail::contains( std::forward< R>( range), value, traits::priority::tag< 2>{}))
       {
          return detail::contains( std::forward< R>( range), value, traits::priority::tag< 2>{});
