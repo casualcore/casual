@@ -975,7 +975,7 @@ namespace casual
                            {
                               // this should be a one-phase optimization, if not, we log error and still commit.
                               // TODO: this should not matter, but does it?
-                              if( ! common::flag::exists( message.flags, common::flag::xa::Flag::one_phase))
+                              if( ! common::flag::contains( message.flags, common::flag::xa::Flag::one_phase))
                                  common::log::error( common::code::casual::invalid_semantics, " resource commit request without TMONEPHASE, gtrid: ", transaction->global);
 
                               // start the prepare phase

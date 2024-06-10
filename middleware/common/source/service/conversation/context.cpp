@@ -52,7 +52,7 @@ namespace casual
                      template< typename F>
                      auto convert( F flags)
                      {
-                        if( flag::exists( flags, decltype( flags)::receive_only))
+                        if( flag::contains( flags, decltype( flags)::receive_only))
                            return state::descriptor::Value::Duplex::receive;
                         else
                            return state::descriptor::Value::Duplex::send;
@@ -307,7 +307,7 @@ namespace casual
 
                   auto& transaction = common::transaction::context().current();
 
-                  if( ! flag::exists( flags, connect::Flag::no_transaction) && transaction)
+                  if( ! flag::contains( flags, connect::Flag::no_transaction) && transaction)
                   {
                      message.trid = transaction.trid;
                      transaction.associate( message.correlation);
@@ -489,7 +489,7 @@ namespace casual
 
                   auto receive_complete = []( auto& correlation, auto& flags)
                   {
-                     if( flag::exists( flags, receive::Flag::no_block))
+                     if( flag::contains( flags, receive::Flag::no_block))
                      {  
                         return communication::device::non::blocking::next(
                            communication::ipc::inbound::device(),

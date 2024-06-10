@@ -34,7 +34,7 @@ namespace local
       {
          auto output = casual::common::buffer::pool::holder().get( casual::common::buffer::handle::type{ *odata});
 
-         if( casual::common::flag::exists( flags, Flag::no_change) && result.buffer.type != output.payload().type)
+         if( casual::common::flag::contains( flags, Flag::no_change) && result.buffer.type != output.payload().type)
             casual::common::code::raise::error( casual::common::code::xatmi::buffer_output);
 
          casual::common::buffer::pool::holder().deallocate( casual::common::buffer::handle::type{ *odata});

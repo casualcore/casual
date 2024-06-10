@@ -73,7 +73,7 @@ namespace casual
 
             using Flag = decltype( message.flags);
 
-            if( flag::exists( message.flags, Flag::no_reply))
+            if( flag::contains( message.flags, Flag::no_reply))
                result.flags |= decltype( result.flags)::no_reply;
 
             return result;

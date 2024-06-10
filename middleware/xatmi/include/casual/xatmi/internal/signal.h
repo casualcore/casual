@@ -17,7 +17,7 @@ namespace casual::xatmi::internal::signal
     template< typename Flag>
     inline std::optional< casual::common::signal::thread::scope::Block> maybe_block( Flag flags)
     {
-        if( common::flag::exists( flags, Flag::signal_restart))
+        if( common::flag::contains( flags, Flag::signal_restart))
             return casual::common::signal::thread::scope::Block{};
 
         return {};

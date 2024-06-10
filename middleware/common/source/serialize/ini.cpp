@@ -14,6 +14,8 @@
 #include "common/code/raise.h"
 #include "common/code/casual.h"
 
+#include "common/flag.h"
+
 #include <sstream>
 #include <iterator>
 #include <algorithm>

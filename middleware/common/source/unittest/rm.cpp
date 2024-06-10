@@ -259,7 +259,7 @@ namespace casual
          }
          else
          {
-            if( ! flag::exists( flags, flag::xa::Flag::resume))
+            if( ! flag::contains( flags, flag::xa::Flag::resume))
             {
                log::line( log::category::error, "XAER_PROTO: xa_start_entry - the transaction is suspended, but no TMRESUME in flags - ", state.transactions.current);
                return state.error( code::xa::protocol);
@@ -298,7 +298,7 @@ namespace casual
 
          state.transactions.current = transaction::ID{};
 
-         if( ! flag::exists( flags, flag::xa::Flag::suspend))
+         if( ! flag::contains( flags, flag::xa::Flag::suspend))
          {
             if( auto found = algorithm::find( state.transactions.all, trid))
                state.transactions.all.erase( std::begin( found));

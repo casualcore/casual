@@ -172,7 +172,7 @@ int tprecv( int id, char ** odata, long *olen, long bitmap, long* event)
             casual::common::strong::conversation::descriptor::id{ id},
             flags);
 
-      if( casual::common::flag::exists( flags, Flag::no_change) && buffer.payload().type != result.buffer.type)
+      if( casual::common::flag::contains( flags, Flag::no_change) && buffer.payload().type != result.buffer.type)
          casual::common::code::raise::error( casual::common::code::xatmi::buffer_output);
 
       casual::common::buffer::pool::holder().deallocate( casual::common::buffer::handle::type{ *odata});

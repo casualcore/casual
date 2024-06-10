@@ -13,6 +13,7 @@
 #include "common/traits.h"
 #include "common/view/binary.h"
 #include "common/code/serialize.h"
+#include "common/flag.h"
 
 #include "casual/concepts/serialize.h"
 

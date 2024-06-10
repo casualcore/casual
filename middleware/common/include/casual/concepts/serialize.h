@@ -8,7 +8,9 @@
 
 #include "casual/concepts.h"
 
+#include "common/flag/enum.h"
 #include "common/view/binary.h"
+
 
 namespace casual
 {

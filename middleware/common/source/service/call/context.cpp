@@ -67,15 +67,15 @@ namespace casual
                      // Hence, it's a fire-and-forget message.
 
                      message::service::lookup::request::Context context;
-                     context.semantic = flag::exists( flags, call::async::Flag::no_reply) ? decltype( context.semantic)::no_reply : decltype( context.semantic)::regular;
+                     context.semantic = flag::contains( flags, call::async::Flag::no_reply) ? decltype( context.semantic)::no_reply : decltype( context.semantic)::regular;
                      return context;
                   };
 
                   if( auto& current = common::transaction::Context::instance().current())
                   {                     
-                     if( ! flag::exists( flags, call::async::Flag::no_transaction))
+                     if( ! flag::contains( flags, call::async::Flag::no_transaction))
                      {
-                        if( flag::exists( flags, call::async::Flag::no_reply))
+                        if( flag::contains( flags, call::async::Flag::no_reply))
                            code::raise::error( code::xatmi::argument, "TPNOREPLY can only be used with TPNOTRAN");
 
                         return service::Lookup{ std::move( service), transform_context( flags), current.deadline};
@@ -111,9 +111,9 @@ namespace casual
                   auto& transaction = common::transaction::context().current();
 
                   // Check if we should associate descriptor with message-correlation and transaction
-                  if( flag::exists( flags, async::Flag::no_reply))
+                  if( flag::contains( flags, async::Flag::no_reply))
                   {
-                     if( transaction && ! flag::exists( flags, async::Flag::no_transaction))
+                     if( transaction && ! flag::contains( flags, async::Flag::no_transaction))
                         code::raise::error( code::xatmi::argument, "flag ", async::Flag::no_reply, " used within a transaction context without ", async::Flag::no_transaction);
 
                      log::line( log::debug, "no_reply - no descriptor reservation");
@@ -127,7 +127,7 @@ namespace casual
 
                      auto& descriptor = state.pending.reserve( message.correlation);
 
-                     if( ! flag::exists( flags, async::Flag::no_transaction) && transaction)
+                     if( ! flag::contains( flags, async::Flag::no_transaction) && transaction)
                      {
                         message.trid = transaction.trid;
                         transaction.associate( message.correlation);
@@ -203,7 +203,7 @@ namespace casual
             template< typename... Args>
             bool receive( message::service::call::Reply& reply, reply::Flag flags, Args&&... args)
             {
-               if( flag::exists( flags, reply::Flag::no_block))
+               if( flag::contains( flags, reply::Flag::no_block))
                {
                   return communication::device::non::blocking::receive( 
                      communication::ipc::inbound::device(), 
@@ -235,7 +235,7 @@ namespace casual
              
             message::service::call::Reply reply;
 
-            if( flag::exists( flags, reply::Flag::any))
+            if( flag::contains( flags, reply::Flag::any))
             {
                // We fetch any
                if( ! local::receive( reply, flags))
@@ -317,7 +317,7 @@ namespace casual
 
                   auto& current = common::transaction::context().current();
                   
-                  if( current && ! flag::exists( flags, sync::Flag::no_transaction))
+                  if( current && ! flag::contains( flags, sync::Flag::no_transaction))
                   {
                      if( ! current.involved().empty())
                      {
@@ -379,7 +379,7 @@ namespace casual
 
       bool Context::receive( message::service::call::Reply& reply, descriptor_type descriptor, reply::Flag flags)
       {
-         if( flag::exists( flags, reply::Flag::any))
+         if( flag::contains( flags, reply::Flag::any))
          {
             // We fetch any
             return local::receive( reply, flags);

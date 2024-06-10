@@ -96,7 +96,7 @@ namespace casual
          // this is an extra fallback/try to mitigate possible race-conditions when 
          // A a-calls B and C ( B, C with same rm) within same transaction and synchronisation is done with TM
          // still the last one to get reply might do xa_start first (depending on OS context switches and so on...) 
-         if( result == code::xa::duplicate_xid && ! flag::exists( flags, Flag::join))
+         if( result == code::xa::duplicate_xid && ! flag::contains( flags, Flag::join))
          {
             // Transaction is already associated with this thread of control, we try to join instead
             log::line( log::category::transaction, result, " - action: try to join instead");
@@ -210,12 +210,12 @@ namespace casual
 
       bool Resource::dynamic() const noexcept
       {
-         return flag::exists( flag::xa::resource::Flag( m_xa->flags), flag::xa::resource::Flag::dynamic);
+         return flag::contains( flag::xa::resource::Flag( m_xa->flags), flag::xa::resource::Flag::dynamic);
       }
 
       bool Resource::migrate() const noexcept
       {
-         return flag::exists( flag::xa::resource::Flag( m_xa->flags), flag::xa::resource::Flag::no_migrate);
+         return flag::contains( flag::xa::resource::Flag( m_xa->flags), flag::xa::resource::Flag::no_migrate);
       }
 
       code::xa Resource::reopen()

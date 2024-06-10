@@ -51,10 +51,10 @@ namespace casual
    
          auto flags = Flag::a | Flag::b;
 
-         EXPECT_TRUE( flag::exists( flags, Flag::a));
-         EXPECT_TRUE( flag::exists( flags, Flag::b));
-         EXPECT_TRUE( ! flag::exists( flags, Flag::c));
-         EXPECT_TRUE( ! flag::exists( flags, Flag{}));
+         EXPECT_TRUE( flag::contains( flags, Flag::a));
+         EXPECT_TRUE( flag::contains( flags, Flag::b));
+         EXPECT_TRUE( ! flag::contains( flags, Flag::c));
+         EXPECT_TRUE( ! flag::contains( flags, Flag{}));
       }
 
       TEST( common_flags, empty)
@@ -93,9 +93,9 @@ namespace casual
 
          auto flags = Flag::a | Flag::b;
 
-         EXPECT_TRUE( flag::exists( flags, Flag::a));
-         EXPECT_TRUE( flag::exists( flags, Flag::b));
-         EXPECT_TRUE( ! flag::exists( flags, Flag::c));
+         EXPECT_TRUE( flag::contains( flags, Flag::a));
+         EXPECT_TRUE( flag::contains( flags, Flag::b));
+         EXPECT_TRUE( ! flag::contains( flags, Flag::c));
       }
 
       TEST( common_flag, operator_reference_or)
@@ -134,11 +134,11 @@ namespace casual
 
          {
             auto result = flags & Flag::a_c_d;
-            EXPECT_TRUE( flag::exists( result, Flag::a));
-            EXPECT_TRUE( ! flag::exists( result, Flag::b));
-            EXPECT_TRUE( flag::exists( result, Flag::c));
-            EXPECT_TRUE( ! flag::exists( result, Flag::d));
-            EXPECT_TRUE( ! flag::exists( result, Flag::e));
+            EXPECT_TRUE( flag::contains( result, Flag::a));
+            EXPECT_TRUE( ! flag::contains( result, Flag::b));
+            EXPECT_TRUE( flag::contains( result, Flag::c));
+            EXPECT_TRUE( ! flag::contains( result, Flag::d));
+            EXPECT_TRUE( ! flag::contains( result, Flag::e));
          }
       }
 

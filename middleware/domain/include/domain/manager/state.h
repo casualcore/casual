@@ -296,7 +296,7 @@ namespace casual
                {
                   constexpr auto predicate( Contract contract) noexcept
                   {
-                     return [ contract]( auto& element){ return common::flag::exists( element.contract, contract);};
+                     return [ contract]( auto& element){ return common::flag::contains( element.contract, contract);};
                   }
                } // detail
 
