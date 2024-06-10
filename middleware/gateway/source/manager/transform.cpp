@@ -82,6 +82,7 @@ namespace casual
                      result.group = reply.state.alias;
                      result.connect = connect;
                      result.bound = deduce_bound( connection);
+                     result.protocol = connection.protocol;
                      result.runlevel = runlevel( connection.runlevel);
                      result.descriptor = connection.descriptor;
                      result.address.local = connection.address.local;

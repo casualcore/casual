@@ -176,28 +176,76 @@ target = make.LinkExecutable( 'bin/casual-gateway-group-tcp-logical-connect',
 install_bin.append( target)
 
 
-#################################
-# Binaries that uses protocol version 1.2 to be used in unittest
+# Function to build binaries that uses protocol version 1.2 to be used in unittest
 # to verify that we can communicate with 1.2
 # These will only be used for unittest and not part of the install/rpm
-#
-make.LinkExecutable( 'bin/casual-gateway-manager.1.2',
-    manager_object_files + 
-    [
-        make.Compile( 'source/manager/state.cpp', objectfile='obj/1.2/manager.state.o', directive=[ '-DCASUAL_PROTOCOL_VERSION=1002']),
-    ],
-    [ 
-        common_archive,
-        'casual-serviceframework', 
-        'casual-common',
-        'casual-domain-utility',
-    ])
+# returns build binaries to be used for dependencies
+def build_executables_for_testing_protocol_v1_2():
+
+    # Helper to compile with explicit object file, for 1.2 protocol tests
+    def compile_v1_2( source_file):
+        object_name = 'obj/1.2/' +  source_file.replace( '.cpp', '.o')
+        return make.Compile( source_file, object_name, directive=[ '-DCASUAL_PROTOCOL_VERSION=1002'])
+
+    binaries_v1_2 = []
+
+    # this is the one that actually decides what protocol to use. At most 1.2
+    binaries_v1_2.append( make.LinkExecutable( 'bin/casual-gateway-group-tcp-logical-connect.1.2',
+        [
+            compile_v1_2( 'source/group/tcp/logical/connect/main.cpp')
+        ],
+        [
+            common_archive,
+            'casual-common',
+        ])
+    )
+
+    # Will spawn casual-gateway-(outbound|inbound)-group.1.2
+    binaries_v1_2.append( make.LinkExecutable( 'bin/casual-gateway-manager.1.2',
+        manager_object_files + 
+        [
+            compile_v1_2( 'source/manager/state.cpp'),
+        ],
+        [ 
+            common_archive,
+            'casual-serviceframework', 
+            'casual-common',
+            'casual-domain-utility',
+        ])
+    )
+
+    # will spawn casual-gateway-group-tcp-logical-connect.1.2 when connecting
+    binaries_v1_2.append( make.LinkExecutable( 'bin/casual-gateway-outbound-group.1.2',
+        [
+            compile_v1_2( 'source/group/outbound/main.cpp'),
+            compile_v1_2( 'source/group/tcp/logical/connect.cpp')
+        ],
+        [
+            outbound_archive,
+            common_archive,
+            'casual-domain-discovery',
+            'casual-common',  
+        ])
+    )
+
+    # will spawn casual-gateway-group-tcp-logical-connect.1.2 when connecting
+    binaries_v1_2.append( make.LinkExecutable( 'bin/casual-gateway-inbound-group.1.2',
+        [
+            compile_v1_2( 'source/group/inbound/main.cpp'),
+            compile_v1_2( 'source/group/tcp/logical/connect.cpp'),
+        ],
+        [
+            inbound_archive,
+            common_archive, 
+            'casual-domain-discovery',
+            'casual-common', 
+        ])
+    )
+
+    return binaries_v1_2
 
 
 
-
-
-#################################
 
 # protocol example
 protocol_objects = [
@@ -219,6 +267,7 @@ target_unittest = make.LinkUnittest( 'bin/test-casual-gateway',
         make.Compile( 'unittest/source/group/outbound/test_state.cpp'),
         make.Compile( 'unittest/source/group/inbound/test_state.cpp'),
         make.Compile( 'unittest/source/test_reverse.cpp'),
+        make.Compile( 'unittest/source/protocol/1.2/test_manager.cpp'),
    ] + protocol_objects, 
    [    
         unittest_archive,
@@ -237,6 +286,8 @@ target_unittest = make.LinkUnittest( 'bin/test-casual-gateway',
 
 # Make sure we link the executables before we run the unittest
 make.Dependencies( target_unittest, install_bin)
+# also build the 1.2 binaries and add dependency
+make.Dependencies( target_unittest, build_executables_for_testing_protocol_v1_2())
 
 
 

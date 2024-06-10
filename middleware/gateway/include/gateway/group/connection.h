@@ -223,6 +223,7 @@ namespace casual
                Connection result;
                result.runlevel = decltype( result.runlevel)::connected;
                result.descriptor = descriptor;
+               result.protocol = pair.second.protocol();
                result.address.local = common::communication::tcp::socket::address::host( descriptor);
                result.address.peer = common::communication::tcp::socket::address::peer( descriptor);
                

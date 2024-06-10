@@ -41,9 +41,11 @@ namespace casual
 
                   void fill( casual::queue::ipc::message::group::enqueue::Request& message);
                   void fill( casual::queue::ipc::message::group::enqueue::Reply& message);
+                  void fill( casual::queue::ipc::message::group::enqueue::v1_2::Reply& message);
 
                   void fill( casual::queue::ipc::message::group::dequeue::Request& message);
                   void fill( casual::queue::ipc::message::group::dequeue::Reply& message);
+                  void fill( casual::queue::ipc::message::group::dequeue::v1_2::Reply& message);
 
                   void fill( common::message::transaction::resource::prepare::Request& message);
                   void fill( common::message::transaction::resource::prepare::Reply& message);

@@ -37,7 +37,8 @@ namespace casual
 
                std::filesystem::path information = common::string::compose(
                   common::message::type( message), 
-                  '.', message::protocol::version< M>(),
+                  '.', message::protocol::version< M>().min,
+                  '.', message::protocol::version< M>().max,
                   '.', std::to_underlying( common::message::type( message)),
                   '.', extension);
                

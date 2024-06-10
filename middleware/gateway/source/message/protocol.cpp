@@ -6,7 +6,7 @@
 
 #include "gateway/message/protocol.h"
 
-#include "common/algorithm.h"
+#include "common/algorithm/is.h"
 
 
 #include <ostream>
@@ -15,20 +15,8 @@ namespace casual
 {
    namespace gateway::message::protocol
    {
-
-      
-      std::string_view description( Version value) noexcept
-      {
-         switch( value)
-         {
-            case Version::invalid: return "invalid";
-            case Version::v1_0: return "v1.0";
-            case Version::v1_1: return "v1.1";
-            case Version::v1_2: return "v1.2";
-            case Version::v1_3: return "v1.3";
-         };
-         return "<unknown>";
-      }
+      // make sure the versions are sorted in reverse order.
+      static_assert( common::algorithm::is::sorted( common::range::reverse( protocol::versions)));
 
    } //gateway::message::protocol
 } // casual

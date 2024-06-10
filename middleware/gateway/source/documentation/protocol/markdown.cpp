@@ -177,11 +177,11 @@ namespace casual
                inline void composite_end(  const char*) { canonical.pop();}
 
 
-               template< concepts::serialize::archive::native::type T> 
-               auto write( T&& value, const char* name)
+               template< typename T> 
+               auto write( const T& value, const char* name) requires concepts::serialize::archive::native::type< T> || concepts::arithmetic< T>
                { 
                   canonical.push( name);
-                  write( std::forward< T>( value));
+                  write( value);
                   canonical.pop();
                }
 
@@ -363,7 +363,10 @@ namespace casual
                {
                   auto versions = []()
                   {
-                     return algorithm::find( range::reverse( gateway::message::protocol::versions), gateway::message::protocol::version< Message>());
+                     auto versions = range::reverse( gateway::message::protocol::versions);
+                     auto range = gateway::message::protocol::version< Message>();
+                     auto lowest = algorithm::find( versions, range.min);
+                     return std::get< 0>( algorithm::sorted::upper_bound( lowest, range.max));
                   };
 
                   return common::stream::write( out, "\n\n", bangs, ' ', Message::type(), " - **#", std::to_underlying( Message::type()), "** - _", versions(), '_');
@@ -456,7 +459,7 @@ version | protocol value
 --------|----------------------------
 )";
             for( auto version : common::range::reverse( message::protocol::versions))
-               common::stream::write( out, version, "     | ", std::to_underlying( version), '\n');
+               common::stream::write( out, version, "    | ", std::to_underlying( version), '\n');
 
 
             out << R"(
@@ -900,8 +903,28 @@ Represent enqueue request.
                      });
             }
 
+
+            // v1.3
             {
                using message_type = queue::ipc::message::group::enqueue::Reply;
+
+               local::message::section< message_type>( out, "##") << R"(
+
+Represent enqueue reply.
+
+)";
+               message_type message;
+
+               local::format::type( out, message, {
+                        { "execution", "uuid of the current execution context (breadcrumb)"},
+                        { "id", "id of the enqueued message"},
+                        { "code", "error/result code"},
+                     });
+            }
+
+            // <= v1.2
+            {
+               using message_type = queue::ipc::message::group::enqueue::v1_2::Reply;
 
                local::message::section< message_type>( out, "##") << R"(
 
@@ -963,6 +986,43 @@ Represent dequeue reply.
                message.message->attributes.reply = local::string::value( 128);
                message.message->payload.type = local::string::value( 128);
                message.message->payload.data = local::binary::value( 1024); 
+               message.code = decltype( message.code)::system;
+
+               local::format::type( out, message, {
+                  { "execution", "uuid of the current execution context (breadcrumb)"},
+                  { "has_value", "if 1 message has content, if 0 no more information of the message is transported"},
+                  { "message.id", "id of the message"},
+                  { "message.attributes.properties.size", "length of message properties"},
+                  { "message.attributes.properties.data", "data of message properties"},
+                  { "message.attributes.reply.size", "length of the reply queue"},
+                  { "message.attributes.reply.data", "data of reply queue"},
+                  { "message.attributes.available", "when the message was available for dequeue (us since epoch)"},
+                  { "message.payload.type.size", "length of the type string"},
+                  { "message.payload.type.data", "data of the type string"},
+                  { "message.payload.data.size", "size of the payload"},
+                  { "message.payload.data.data", "data of the payload"},
+                  { "message.redelivered", "how many times the message has been redelivered"},
+                  { "message.timestamp", "when the message was enqueued (us since epoch)"},
+                  { "code", "result/error code"},
+               });
+            }
+
+            // <= v1.2
+            {
+               using message_type = queue::ipc::message::group::dequeue::v1_2::Reply;
+
+               local::message::section< message_type>( out, "##") << R"(
+
+Represent dequeue reply.
+
+)";
+               message_type message;
+
+               auto& actual_message = message.message.emplace_back();
+               actual_message.attributes.properties = local::string::value( 128);
+               actual_message.attributes.reply = local::string::value( 128);
+               actual_message.payload.type = local::string::value( 128);
+               actual_message.payload.data = local::binary::value( 1024); 
 
                local::format::type( out, message, {
                         { "execution", "uuid of the current execution context (breadcrumb)"},
@@ -1088,8 +1148,6 @@ Sent to abruptly disconnect the conversation
 
          void protocol()
          {
-            //static_assert( common::marshal::is_network_normalizing< local::Printer>::value, "not network...");
-
             common::terminal::output::directive().plain();
             
             message_header( std::cout);

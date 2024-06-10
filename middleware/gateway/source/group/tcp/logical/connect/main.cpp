@@ -88,25 +88,29 @@ namespace casual
 
             namespace run
             {
+               //! just an indirection for us to emulate an older protocol version
+               constexpr auto protocol_versions()
+               {
+                  return algorithm::find( message::protocol::versions, message::protocol::compiled_for_version());
+               }
+
                void in( State state)
                {
                   Trace trace{ "gateway::group::tcp::connector::local::run::in"};
 
-                  gateway::message::domain::connect::Request request;
-
-                  communication::device::blocking::receive( state.device, request);
+                  auto request = communication::device::receive< gateway::message::domain::connect::Request>( state.device);
                   log::line( verbose::log, "request: ", request);
 
                   auto reply = common::message::reverse::type( request);
 
-                  if( auto found = algorithm::find_first_of( message::protocol::versions, request.versions))
+                  if( auto found = algorithm::find_first_of( protocol_versions(), request.versions))
                      reply.version = *found;
 
                   reply.domain = common::domain::identity();
 
                   communication::device::blocking::send( state.device, reply);
 
-                  if( algorithm::none_of( gateway::message::protocol::versions, predicate::value::equal( reply.version)))
+                  if( algorithm::none_of( protocol_versions(), predicate::value::equal( reply.version)))
                      code::raise::error( code::casual::invalid_version, "invalid protocol version: ", reply.version);
 
                   gateway::message::domain::Connected connected;
@@ -123,13 +127,11 @@ namespace casual
 
                   gateway::message::domain::connect::Request request;
                   request.domain = common::domain::identity();
-                  request.versions = algorithm::container::vector::create( gateway::message::protocol::versions);
+                  request.versions = algorithm::container::vector::create( protocol_versions());
 
-                  auto reply = common::message::reverse::type( request);
+                  auto reply = communication::device::call( state.device, request, state.device);
                   
-                  communication::device::blocking::receive( state.device, reply, communication::device::blocking::send( state.device, request));
-
-                  if( algorithm::none_of( gateway::message::protocol::versions, predicate::value::equal( reply.version)))
+                  if( algorithm::none_of( protocol_versions(), predicate::value::equal( reply.version)))
                      code::raise::error( code::casual::invalid_version, "invalid protocol version: ", reply.version);
 
                   gateway::message::domain::Connected connected;

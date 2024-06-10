@@ -565,11 +565,54 @@ namespace casual
                   namespace enqueue
                   {
                      auto reply = basic_task< casual::queue::ipc::message::group::enqueue::Reply>;
+
+                     namespace v1_2
+                     {
+                        auto reply( State& state)
+                        {
+                           return [ &state]( casual::queue::ipc::message::group::enqueue::v1_2::Reply& message, strong::socket::id descriptor)
+                           {
+                              Trace trace{ "gateway::group::outbound::handle::local::external::queue::enqueue::v1_2::reply"};
+                              log::line( verbose::log, "message: ", message);
+
+                              casual::queue::ipc::message::group::enqueue::Reply reply;
+                              reply.correlation = message.correlation;
+                              reply.execution = message.execution;
+                              reply.id = message.id;
+
+                              state.tasks( reply);
+                           };
+                        }   
+                     } // v1_2
+
                   } // enqueue
 
                   namespace dequeue
                   {
                      auto reply = basic_task< casual::queue::ipc::message::group::dequeue::Reply>;
+
+                     namespace v1_2
+                     {
+                        auto reply( State& state)
+                        {
+                           return [ &state]( casual::queue::ipc::message::group::dequeue::v1_2::Reply& message, strong::socket::id descriptor)
+                           {
+                              Trace trace{ "gateway::group::outbound::handle::local::external::queue::dequeue::v1_2::reply"};
+                              log::line( verbose::log, "message: ", message);
+
+                              casual::queue::ipc::message::group::dequeue::Reply reply;
+                              reply.correlation = message.correlation;
+                              reply.execution = message.execution;
+                              if( ! message.message.empty())
+                                 reply.message = std::move( range::front( message.message));
+                              else
+                                 reply.code = decltype( reply.code)::no_message;
+
+                              state.tasks( reply);
+                           };
+                        }   
+                     } // v1_2
+
                   } // dequeue
                } // queue
 
@@ -811,7 +854,9 @@ namespace casual
 
             // queue
             local::external::queue::enqueue::reply( state),
+            local::external::queue::enqueue::v1_2::reply( state),
             local::external::queue::dequeue::reply( state),
+            local::external::queue::dequeue::v1_2::reply( state),
 
             // transaction
             local::external::transaction::resource::prepare::reply( state),

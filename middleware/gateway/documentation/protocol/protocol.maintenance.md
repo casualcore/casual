@@ -16,9 +16,10 @@ The full table:
 
 version | protocol value
 --------|----------------------------
-1.0     | 1000
-1.1     | 1001
-1.2     | 1002
+v1.0    | 1000
+v1.1    | 1001
+v1.2    | 1002
+v1.3    | 1003
 
 ## definitions
 
@@ -57,7 +58,7 @@ header.correlation | (fixed) binary |           16 | correlation id of the messa
 header.size        | uint64         |            8 | the size of the payload that follows         
 
 
-## gateway_domain_connect_request - **#7200** - _[1.0, 1.1, 1.2]_
+## gateway_domain_connect_request - **#7200** - _[v1.0, v1.1, v1.2, v1.3]_
 
 Connection requests from another domain that wants to connect
 
@@ -71,7 +72,7 @@ protocol.versions.size    | uint64         |            8 | number of protocol v
 protocol.versions.element | uint64         |            8 | a protocol version                                     
 
 
-## gateway_domain_connect_reply - **#7201** - _[1.0, 1.1, 1.2]_
+## gateway_domain_connect_reply - **#7201** - _[v1.0, v1.1, v1.2, v1.3]_
 
 Connection reply with the chosen _protocol version_
 
@@ -84,7 +85,7 @@ domain.name.data | dynamic string |       [0..*] | dynamic byte array with the i
 protocol.version | uint64         |            8 | the chosen protocol version to use, or invalid (0) if incompatible
 
 
-## gateway_domain_disconnect_request - **#7202** - _[1.1, 1.2]_
+## gateway_domain_disconnect_request - **#7202** - _[v1.1, v1.2, v1.3]_
 
 Sent from inbound to connected outbound to notify that the connection is about to close, and outbound 
 will stop sending new requests. Hence, the inbound can gracefully disconnect.
@@ -94,7 +95,7 @@ role name | network type   | network size | description
 execution | (fixed) binary |           16 | uuid of the current execution context (breadcrumb)
 
 
-## gateway_domain_disconnect_reply - **#7203** - _[1.1, 1.2]_
+## gateway_domain_disconnect_reply - **#7203** - _[v1.1, v1.2, v1.3]_
 
 Confirmation that the outbound has got the disconnect request.
 
@@ -103,7 +104,7 @@ role name | network type   | network size | description
 execution | (fixed) binary |           16 | uuid of the current execution context (breadcrumb)
 
 
-## domain_discovery_request - **#7300** - _[1.0, 1.1, 1.2]_
+## domain_discovery_request - **#7300** - _[v1.0, v1.1, v1.2, v1.3]_
 
 Sent to and received from other domains when one domain wants to discover information abut the other.
 
@@ -121,7 +122,7 @@ content.queues.element.size   | uint64         |            8 | size of the curr
 content.queues.element.data   | dynamic string |       [0..*] | dynamic byte array of the current queue name                 
 
 
-## domain_discovery_reply - **#7301** - _[1.0, 1.1, 1.2]_
+## domain_discovery_reply - **#7301** - _[v1.0, v1.1, v1.2, v1.3]_
 
 Sent to and received from other domains when one domain wants to discover information abut the other.
 
@@ -145,7 +146,7 @@ content.queues.element.name.data          | dynamic string |       [0..*] | dyna
 content.queues.element.retries            | uint64         |            8 | how many 'retries' the queue has                                
 
 
-## domain_discovery_topology_implicit_update - **#7302** - _[1.2]_
+## domain_discovery_topology_implicit_update - **#7302** - _[v1.2, v1.3]_
 
 Sent to all inbound connections from a domain when when it gets a new connection or gets this message from an outbound.
 When the message is passed "upstream" domains will add its id to the domains array, hence it's possible to mitigate endless 
@@ -160,7 +161,7 @@ domains.element.name.size | uint64         |            8 | size of the domain n
 domains.element.name.data | dynamic string |       [0..*] | dynamic byte array with the domain name                           
 
 
-## service_call - **#3100** - _[1.0, 1.1, 1.2]_
+## service_call - **#3100** - _[v1.0, v1.1, v1.2, v1.3]_
 
 Sent to and received from other domains when one domain wants call a service in the other domain
 
@@ -183,7 +184,7 @@ buffer.data.size         | uint64         |            8 | buffer payload size (
 buffer.data.data         | dynamic binary |       [0..*] | buffer payload data (with the size of buffer.payload.size)         
 
 
-## service_reply - **#3101** - _[1.0, 1.1, 1.2]_
+## service_reply - **#3101** - _[v1.0, v1.1, v1.2, v1.3]_
 
 Reply to call request
 
@@ -203,7 +204,7 @@ buffer.data.size             | uint64         |            8 | buffer payload si
 buffer.data.data             | dynamic binary |       [0..*] | buffer payload data (with the size of buffer.payload.size)                    
 
 
-## transaction_resource_prepare_request - **#5201** - _[1.0, 1.1, 1.2]_
+## transaction_resource_prepare_request - **#5201** - _[v1.0, v1.1, v1.2, v1.3]_
 
 Sent to and received from other domains when one domain wants to prepare a transaction. 
 
@@ -218,7 +219,7 @@ resource         | uint32         |            4 | RM id of the resource - has t
 flags            | uint64         |            8 | XA flags to be forward to the resource                             
 
 
-## transaction_resource_prepare_reply - **#5202** - _[1.0, 1.1, 1.2]_
+## transaction_resource_prepare_reply - **#5202** - _[v1.0, v1.1, v1.2, v1.3]_
 
 Sent to and received from other domains when one domain is done preparing a transaction. 
 
@@ -236,7 +237,7 @@ state            | uint32         |            4 | The state of the operation - 
 
 
 
-## transaction_resource_commit_request - **#5203** - _[1.0, 1.1, 1.2]_
+## transaction_resource_commit_request - **#5203** - _[v1.0, v1.1, v1.2, v1.3]_
 
 Sent to and received from other domains when one domain wants to commit an already prepared transaction.
 
@@ -251,7 +252,7 @@ resource         | uint32         |            4 | RM id of the resource - has t
 flags            | uint64         |            8 | XA flags to be forward to the resource                             
 
 
-## transaction_resource_commit_reply - **#5204** - _[1.0, 1.1, 1.2]_
+## transaction_resource_commit_reply - **#5204** - _[v1.0, v1.1, v1.2, v1.3]_
 
 Reply to a commit request. 
 
@@ -266,7 +267,7 @@ resource         | uint32         |            4 | RM id of the resource - has t
 state            | uint32         |            4 | The state of the operation - If successful XA_OK ( 0)              
 
 
-## transaction_resource_rollback_request - **#5205** - _[1.0, 1.1, 1.2]_
+## transaction_resource_rollback_request - **#5205** - _[v1.0, v1.1, v1.2, v1.3]_
 
 Sent to and received from other domains when one domain wants to rollback an already prepared transaction.
 That is, when one or more resources has failed to prepare.
@@ -282,7 +283,7 @@ resource         | uint32         |            4 | RM id of the resource - has t
 flags            | uint64         |            8 | XA flags to be forward to the resource                             
 
 
-## transaction_resource_rollback_reply - **#5206** - _[1.0, 1.1, 1.2]_
+## transaction_resource_rollback_reply - **#5206** - _[v1.0, v1.1, v1.2, v1.3]_
 
 Reply to a rollback request. 
 
@@ -297,7 +298,7 @@ resource         | uint32         |            4 | RM id of the resource - has t
 state            | uint32         |            4 | The state of the operation - If successful XA_OK ( 0)              
 
 
-## queue_group_enqueue_request - **#6100** - _[1.0, 1.1, 1.2]_
+## queue_group_enqueue_request - **#6100** - _[v1.0, v1.1, v1.2, v1.3]_
 
 Represent enqueue request.
 
@@ -322,7 +323,18 @@ message.payload.data.size          | uint64         |            8 | size of the
 message.payload.data.data          | dynamic binary |       [0..*] | data of the payload                                                
 
 
-## queue_group_enqueue_reply - **#6101** - _[1.0, 1.1, 1.2]_
+## queue_group_enqueue_reply - **#6102** - _[v1.3]_
+
+Represent enqueue reply.
+
+role name | network type   | network size | description                                       
+--------- | -------------- | ------------ | --------------------------------------------------
+execution | (fixed) binary |           16 | uuid of the current execution context (breadcrumb)
+id        | (fixed) binary |           16 | id of the enqueued message                        
+code      | uint32         |            4 | error/result code                                 
+
+
+## queue_group_enqueue_reply_v1_2 - **#6101** - _[v1.0, v1.1, v1.2]_
 
 Represent enqueue reply.
 
@@ -332,7 +344,7 @@ execution | (fixed) binary |           16 | uuid of the current execution contex
 id        | (fixed) binary |           16 | id of the enqueued message                        
 
 
-## queue_group_dequeue_request - **#6200** - _[1.0, 1.1, 1.2]_
+## queue_group_dequeue_request - **#6200** - _[v1.0, v1.1, v1.2, v1.3]_
 
 Represent dequeue request.
 
@@ -351,7 +363,30 @@ selector.id              | (fixed) binary |           16 | selector uuid (ignore
 block                    | uint8          |            1 | dictates if this is a blocking call or not                         
 
 
-## queue_group_dequeue_reply - **#6201** - _[1.0, 1.1, 1.2]_
+## queue_group_dequeue_reply - **#6202** - _[v1.3]_
+
+Represent dequeue reply.
+
+role name                          | network type   | network size | description                                                                     
+---------------------------------- | -------------- | ------------ | --------------------------------------------------------------------------------
+execution                          | (fixed) binary |           16 | uuid of the current execution context (breadcrumb)                              
+has_value                          | uint8          |            1 | if 1 message has content, if 0 no more information of the message is transported
+message.id                         | (fixed) binary |           16 | id of the message                                                               
+message.attributes.properties.size | uint64         |            8 | length of message properties                                                    
+message.attributes.properties.data | dynamic string |       [0..*] | data of message properties                                                      
+message.attributes.reply.size      | uint64         |            8 | length of the reply queue                                                       
+message.attributes.reply.data      | dynamic string |       [0..*] | data of reply queue                                                             
+message.attributes.available       | uint64         |            8 | when the message was available for dequeue (us since epoch)                     
+message.payload.type.size          | uint64         |            8 | length of the type string                                                       
+message.payload.type.data          | dynamic string |       [0..*] | data of the type string                                                         
+message.payload.data.size          | uint64         |            8 | size of the payload                                                             
+message.payload.data.data          | dynamic binary |       [0..*] | data of the payload                                                             
+message.redelivered                | uint64         |            8 | how many times the message has been redelivered                                 
+message.timestamp                  | uint64         |            8 | when the message was enqueued (us since epoch)                                  
+code                               | uint32         |            4 | result/error code                                                               
+
+
+## queue_group_dequeue_reply_v1_2 - **#6201** - _[v1.0, v1.1, v1.2]_
 
 Represent dequeue reply.
 
@@ -373,7 +408,7 @@ message.element.redelivered                | uint64         |            8 | how
 message.element.timestamp                  | uint64         |            8 | when the message was enqueued (us since epoch)             
 
 
-## conversation_connect_request - **#3210** - _[1.0, 1.1, 1.2]_
+## conversation_connect_request - **#3210** - _[v1.0, v1.1, v1.2, v1.3]_
 
 Sent to establish a conversation
 
@@ -396,7 +431,7 @@ buffer.data.size         | uint64         |            8 | buffer payload size (
 buffer.data.data         | dynamic binary |       [0..*] | buffer payload data (with the size of buffer.payload.size)         
 
 
-## conversation_connect_reply - **#3211** - _[1.0, 1.1, 1.2]_
+## conversation_connect_reply - **#3211** - _[v1.0, v1.1, v1.2, v1.3]_
 
 Reply for a conversation
 
@@ -406,7 +441,7 @@ execution   | (fixed) binary |           16 | uuid of the current execution cont
 code.result | uint32         |            4 | result code of the connection attempt             
 
 
-## conversation_send - **#3212** - _[1.0, 1.1, 1.2]_
+## conversation_send - **#3212** - _[v1.0, v1.1, v1.2, v1.3]_
 
 Represent a message sent 'over' an established connection
 
@@ -422,7 +457,7 @@ buffer.data.size | uint64         |            8 | buffer payload size (could be
 buffer.data.data | dynamic binary |       [0..*] | buffer payload data (with the size of buffer.payload.size)
 
 
-## conversation_disconnect - **#3213** - _[1.0, 1.1, 1.2]_
+## conversation_disconnect - **#3213** - _[v1.0, v1.1, v1.2, v1.3]_
 
 Sent to abruptly disconnect the conversation
 

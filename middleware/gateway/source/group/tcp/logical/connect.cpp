@@ -5,8 +5,10 @@
 //!
 
 #include "gateway/group/tcp/logical/connect.h"
+#include "gateway/message/protocol.h"
 
 #include "common/string/compose.h"
+
 
 namespace casual
 {
@@ -15,6 +17,20 @@ namespace casual
    //! Holds "all" stuff related to logical connection phase
    namespace gateway::group::tcp::logical::connect
    {
+      namespace local
+      {
+         namespace
+         {
+            auto path()
+            {
+               if constexpr( message::protocol::compiled_for_version() == message::protocol::Version::v1_2)
+                  return process::path().parent_path() / "casual-gateway-group-tcp-logical-connect.1.2";
+               else
+                  return process::path().parent_path() / "casual-gateway-group-tcp-logical-connect";
+
+            }
+         } // <unnamed>
+      } // local
 
       constexpr std::string_view description( Bound value) noexcept
       {
@@ -28,9 +44,7 @@ namespace casual
 
       common::Process spawn( Bound bound, const common::communication::Socket& socket)
       {
-         auto path = process::path().parent_path() / "casual-gateway-group-tcp-logical-connect";
-
-         return Process{ path, {
+         return Process{ local::path(), {
             "--descriptor", std::to_string( socket.descriptor().value()),
             "--ipc", string::compose( process::handle().ipc),
             "--bound", string::compose( bound)

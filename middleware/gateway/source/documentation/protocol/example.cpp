@@ -249,6 +249,14 @@ namespace casual
          {
             local::set_general( message);
 
+            message.id = 0x1c98d94bd29a40619d8a730019dc891f_uuid;
+            message.code = decltype( message.code)::system;
+         }
+
+         void fill( casual::queue::ipc::message::group::enqueue::v1_2::Reply& message)
+         {
+            local::set_general( message);
+
             message.id = 0x315dacc6182e4c12bf9877efa924cb87_uuid;
          }
 
@@ -265,12 +273,11 @@ namespace casual
             message.block = false;
          }
 
-         void fill( casual::queue::ipc::message::group::dequeue::Reply& message)
+         namespace local
          {
-            local::set_general( message);
-
-            message.message = { 
-               []()
+            namespace
+            {
+               auto queue_message()
                {
                   casual::queue::ipc::message::group::dequeue::Message message;
                   message.id =  0x532f8b6c15764dca9fe82a3002de579e_uuid;
@@ -282,8 +289,24 @@ namespace casual
                   message.redelivered = 1;
                   message.timestamp = local::time::point();
                   return message;
-               }()
-            };
+               }
+               
+            } // <unnamed>
+         } // local
+
+
+         void fill( casual::queue::ipc::message::group::dequeue::Reply& message)
+         {
+            local::set_general( message);
+
+            message.message = local::queue_message();
+            message.code = decltype( message.code)::argument;
+         }
+
+         void fill( casual::queue::ipc::message::group::dequeue::v1_2::Reply& message)
+         {
+            local::set_general( message);
+            message.message.push_back( local::queue_message());
          }
 
          namespace local

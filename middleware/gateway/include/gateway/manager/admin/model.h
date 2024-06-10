@@ -7,6 +7,8 @@
 #pragma once
 
 
+#include "gateway/message/protocol.h"
+
 #include "common/serialize/macro.h"
 #include "casual/platform.h"
 #include "common/message/type.h"
@@ -19,7 +21,7 @@ namespace casual
 {
    namespace gateway::manager::admin::model
    {
-      inline namespace v2
+      inline namespace v3
       {
          namespace connection
          {
@@ -103,6 +105,7 @@ namespace casual
             connection::Runlevel runlevel = connection::Runlevel::connecting;
             connection::Phase connect{};
             connection::Bound bound{};
+            gateway::message::protocol::Version protocol{};
             common::strong::file::descriptor::id descriptor{};
             common::domain::Identity remote;
             connection::Address address;
@@ -120,6 +123,7 @@ namespace casual
                CASUAL_SERIALIZE( runlevel);
                CASUAL_SERIALIZE( connect);
                CASUAL_SERIALIZE( bound);
+               CASUAL_SERIALIZE( protocol);
                CASUAL_SERIALIZE( descriptor);
                CASUAL_SERIALIZE( remote);
                CASUAL_SERIALIZE( address);

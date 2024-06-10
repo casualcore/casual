@@ -111,12 +111,65 @@ namespace casual
 
                   namespace dequeue
                   {
-                     auto reply = internal::basic_forward< casual::queue::ipc::message::group::dequeue::Reply>;
+                     auto reply( State& state)
+                     {
+                        return [ &state]( casual::queue::ipc::message::group::dequeue::Reply& message, strong::ipc::descriptor::id descriptor)
+                        {
+                           Trace trace{ "gateway::group::inbound::handle::local::internal::queue::enqueue::reply"};
+                           common::log::line( verbose::log, "message: ", message);
+
+                           auto transform_to_v1_2 = []( auto& message)
+                           {
+                              casual::queue::ipc::message::group::dequeue::v1_2::Reply result;
+                              result.correlation = message.correlation;
+                              result.execution = message.execution;
+
+                              if( message.message)
+                                 result.message.push_back( std::move( *message.message));
+                              return result;
+                           };
+
+                           auto connection = state.connections.find_external( descriptor);
+                           CASUAL_ASSERT( connection);
+
+                           if( message::protocol::compatible< casual::queue::ipc::message::group::dequeue::Reply>( connection->protocol()))
+                              inbound::tcp::send( state, connection->descriptor(), message);
+                           else
+                              inbound::tcp::send( state, connection->descriptor(), transform_to_v1_2( message));
+
+                        };
+                     }
                   } // dequeue
 
                   namespace enqueue
                   {
-                     auto reply = internal::basic_forward< casual::queue::ipc::message::group::enqueue::Reply>;
+                     auto reply( State& state)
+                     {
+                        return [ &state]( casual::queue::ipc::message::group::enqueue::Reply& message, strong::ipc::descriptor::id descriptor)
+                        {
+                           Trace trace{ "gateway::group::inbound::handle::local::internal::queue::enqueue::reply"};
+                           common::log::line( verbose::log, "message: ", message);
+
+                           auto transform_to_v1_2 = []( auto& message)
+                           {
+                              casual::queue::ipc::message::group::enqueue::v1_2::Reply result;
+                              result.correlation = message.correlation;
+                              result.execution = message.execution;
+                              result.id = message.id;
+                              return result;
+                           };
+
+                           auto connection = state.connections.find_external( descriptor);
+                           CASUAL_ASSERT( connection);
+
+                           if( message::protocol::compatible< casual::queue::ipc::message::group::enqueue::Reply>( connection->protocol()))
+                              inbound::tcp::send( state, connection->descriptor(), message);
+                           else
+                              inbound::tcp::send( state, connection->descriptor(), transform_to_v1_2( message));
+
+                        };
+                     }
+
                   } // enqueue
                } // queue
 
@@ -130,7 +183,7 @@ namespace casual
                      {
                         auto update( State& state)
                         {
-                           return [&state]( const casual::domain::message::discovery::topology::implicit::Update& message, strong::ipc::descriptor::id descriptor)
+                           return [ &state]( const casual::domain::message::discovery::topology::implicit::Update& message, strong::ipc::descriptor::id descriptor)
                            {
                               Trace trace{ "gateway::group::inbound::handle::local::internal::domain::discovery::topology::implicit::update"};
                               common::log::line( verbose::log, "message: ", message);

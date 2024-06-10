@@ -9,6 +9,7 @@
 #include "casual/platform.h"
 
 #include "common/array.h"
+#include "common/algorithm.h"
 
 #include <string_view>
 
@@ -26,30 +27,52 @@ namespace casual
          current = v1_3,
       };
 
-      std::string_view description( Version value) noexcept;
+      constexpr std::string_view description( Version value) noexcept
+      {
+         switch( value)
+         {
+            case Version::invalid: return "invalid";
+            case Version::v1_0: return "v1.0";
+            case Version::v1_1: return "v1.1";
+            case Version::v1_2: return "v1.2";
+            case Version::v1_3: return "v1.3";
+         };
+         return "<unknown>";
+      }
 
       //! an array with all versions ordered by highest to lowest
-      constexpr auto versions = common::array::make( Version::v1_2, Version::v1_1, Version::v1_0);
+      constexpr auto versions = common::array::make( Version::v1_3, Version::v1_2, Version::v1_1, Version::v1_0);
 
       consteval Version compiled_for_version()
       {
-         #if CASUAL_PROTOCOL_VERSION == 1002
-            return Version::v1_2;
+         #ifdef CASUAL_PROTOCOL_VERSION
+            constexpr auto version = protocol::Version{ CASUAL_PROTOCOL_VERSION};
+
+            static_assert( common::algorithm::contains( protocol::versions, version));
+
+            return version;
          #else
             return Version::current;
          #endif
       }
 
+
       //! just a helper to make it easier to specialize `version_traits`.
-      template< Version value>
+      template< Version MIN, Version MAX = Version::current>
       struct version_helper
       {
-         constexpr static auto version() { return value;}
+         struct Range
+         {
+            static constexpr Version min = MIN;
+            static constexpr Version max = MAX;
+         };
+
+         constexpr static auto version() { return Range{};}
       };
 
       //! traits to be specialized for other versions than v1.0
       template< typename M>
-      struct version_traits : version_helper< Version::v1_0> {};
+      struct version_traits : version_helper< Version::v1_0, Version::current> {};
 
       
       //! @returns the version the message needs at least
@@ -63,7 +86,8 @@ namespace casual
       template< typename M>
       constexpr auto compatible( Version current)
       {
-         return current >= protocol::version< M>();
+         auto range = protocol::version< M>();
+         return current >= range.min && current <= range.max;
       }
 
       //! @returns true if message is compatible with `current`

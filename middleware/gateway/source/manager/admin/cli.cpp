@@ -137,6 +137,13 @@ namespace casual
                      return dash_if_empty( value.address.peer);
                   };
 
+                  auto format_protocol = []( auto& value) -> std::string_view
+                  {
+                     if( value.protocol == decltype( value.protocol)::invalid)
+                        return "-";
+                     return description( value.protocol);
+                  };
+
                   struct format_runlevel
                   {
                      std::size_t width( const model::Connection& value, const std::ostream&) const
@@ -177,6 +184,7 @@ namespace casual
                         terminal::format::column( "group", format::group, terminal::color::yellow),
                         terminal::format::column( "bound", format_bound, terminal::color::magenta),
                         terminal::format::custom::column( "runlevel", format_runlevel{}),
+                        terminal::format::column( "P", format_protocol, terminal::color::no_color),
                         terminal::format::column( "local", format_local_address, terminal::color::white),
                         terminal::format::column( "peer", format_peer_address, terminal::color::white),
                         terminal::format::column( "created", format::created, terminal::color::blue)
@@ -213,7 +221,8 @@ namespace casual
                         terminal::format::column( "local", format_local_address),
                         terminal::format::column( "peer", format_peer_address),
                         terminal::format::column( "group", format::group),
-                        terminal::format::column( "created", format::created)
+                        terminal::format::column( "created", format::created),
+                        terminal::format::column( "P", format_protocol)
                      );
                   }
                }
@@ -405,6 +414,8 @@ runlevel
      - pending
      - connected
      - failed
+P
+   The protocol version that is used for the connection
 local
    The local address for the connection
 peer

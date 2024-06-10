@@ -167,6 +167,7 @@ namespace casual
             connection::Runlevel runlevel{};
             common::strong::file::descriptor::id descriptor;
             common::domain::Identity domain;
+            message::protocol::Version protocol{};
             Configuration configuration;
             common::strong::ipc::id ipc;
             platform::time::point::type created{};
@@ -199,6 +200,7 @@ namespace casual
                CASUAL_SERIALIZE( runlevel);
                CASUAL_SERIALIZE( descriptor);
                CASUAL_SERIALIZE( domain);
+               CASUAL_SERIALIZE( protocol);
                CASUAL_SERIALIZE( configuration);
                CASUAL_SERIALIZE( ipc);
                CASUAL_SERIALIZE( metric);
@@ -559,6 +561,18 @@ namespace casual
          template<>
          struct version_traits< casual::domain::message::discovery::topology::implicit::Update> : version_helper< Version::v1_2> {};
 
+         template<>
+         struct version_traits< casual::queue::ipc::message::group::enqueue::Reply> : version_helper< Version::v1_3> {};
+
+         template<>
+         struct version_traits< casual::queue::ipc::message::group::enqueue::v1_2::Reply> : version_helper< Version::v1_0, Version::v1_2> {};
+
+         template<>
+         struct version_traits< casual::queue::ipc::message::group::dequeue::Reply> : version_helper< Version::v1_3> {};
+
+         template<>
+         struct version_traits< casual::queue::ipc::message::group::dequeue::v1_2::Reply> : version_helper< Version::v1_0, Version::v1_2> {};
+
       } // protocol
 
    } // gateway::message
@@ -795,6 +809,13 @@ struct Value< type, A>  \
          {
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( execution);
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( id);
+            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( code);
+         })
+
+         CASUAL_CUSTOMIZATION_POINT_NETWORK( queue::ipc::message::group::enqueue::v1_2::Reply,
+         {
+            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( execution);
+            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( id);
          })
       
 
@@ -809,6 +830,13 @@ struct Value< type, A>  \
 
 
          CASUAL_CUSTOMIZATION_POINT_NETWORK( queue::ipc::message::group::dequeue::Reply,
+         {
+            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( execution);
+            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( message);
+            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( code);
+         })
+
+         CASUAL_CUSTOMIZATION_POINT_NETWORK( queue::ipc::message::group::dequeue::v1_2::Reply,
          {
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( execution);
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( message);
