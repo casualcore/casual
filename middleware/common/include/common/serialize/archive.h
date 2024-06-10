@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "common/serialize/archive/type.h"
+#include "common/serialize/archive/property.h"
 #include "common/serialize/archive/consume.h"
 #include "common/serialize/value.h"
 #include "casual/platform.h"
@@ -20,22 +20,10 @@ namespace casual
 {
    namespace common::serialize
    {
-      namespace detail
-      {
-         template< typename A>
-         constexpr archive::dynamic::Type convert_archive_type() noexcept
-         {
-            if constexpr( A::archive_type() == serialize::archive::Type::static_need_named)
-               return serialize::archive::dynamic::Type::named;
-            else if constexpr( A::archive_type() == serialize::archive::Type::static_order_type)
-               return serialize::archive::dynamic::Type::order_type;
-         }
-
-      } // detail
-
       struct Reader
       {
-         inline constexpr static auto archive_type() { return archive::Type::dynamic_type;}
+         //! indicate that this is a 'dynamic' archive
+         using dynamic_archive = void;
 
          ~Reader();
 
@@ -70,7 +58,7 @@ namespace casual
          //! It throws if there are information in the source that is not consumed by the object-model
          inline void validate() { m_protocol->validate();}
 
-         inline auto type() const { return m_type;};
+         inline auto archive_properties() const { return m_properties;};
 
 
          template< typename V>
@@ -155,18 +143,19 @@ namespace casual
 
          template< typename Protocol>
          Reader( std::unique_ptr< model< Protocol>>&& model)
-            : m_protocol( std::move( model)), m_type{ detail::convert_archive_type< Protocol>()} {}
+            : m_protocol( std::move( model)), m_properties{ Protocol::archive_properties()} {}
          
          std::unique_ptr< Concept> m_protocol;
-         archive::dynamic::Type m_type;
+         archive::Property m_properties;
       };
 
-      static_assert( Reader::archive_type() == archive::Type::dynamic_type);
+      static_assert( archive::is::dynamic< Reader>);
 
 
       struct Writer
       {
-         constexpr static auto archive_type() { return archive::Type::dynamic_type;}
+         //! indicate that this is a 'dynamic' archive
+         using dynamic_archive = void;
 
          ~Writer();
 
@@ -206,7 +195,7 @@ namespace casual
          }
          //! @}
 
-         inline auto type() const noexcept { return m_type;};
+         inline auto archive_properties() const { return m_properties;};
 
          template< typename V>
          [[maybe_unused]] Writer& operator << ( V&& value)
@@ -293,13 +282,13 @@ namespace casual
 
          template< typename Protocol>
          Writer( std::unique_ptr< model< Protocol>>&& model) 
-            : m_protocol( std::move( model)), m_type{ detail::convert_archive_type< Protocol>()} {}
+            : m_protocol( std::move( model)), m_properties{ Protocol::archive_properties()} {}
 
          std::unique_ptr< Concept> m_protocol;
-         archive::dynamic::Type m_type;
+         archive::Property m_properties;
       };
 
-      static_assert( Writer::archive_type() == archive::Type::dynamic_type);
+      static_assert( archive::is::dynamic< Writer>);
 
    } // common::serialize
 } // casual

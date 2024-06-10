@@ -104,11 +104,9 @@ namespace casual
                }
 
                template< typename I> 
-               concept valid_implementation = requires 
-               {
-                  I::archive_type();
-                  { I::archive_type() == archive::Type::static_need_named || I::archive_type() == archive::Type::dynamic_type}; 
-               };
+               concept valid_implementation =  archive::is::dynamic<I> 
+                  || archive::has::property< I, archive::Property::named> 
+                  || archive::has::property< I, archive::Property::order>;
 
 
                template< valid_implementation Implementation, typename Range> 

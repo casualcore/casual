@@ -7,8 +7,7 @@
 #pragma once
 
 #include "common/serialize/value/customize.h"
-#include "common/serialize/archive/type.h"
-#include "casual/concepts/serialize.h"
+#include "common/serialize/archive/property.h"
 
 #include "common/traits.h"
 #include "common/view/binary.h"
@@ -16,6 +15,7 @@
 #include "common/flag.h"
 
 #include "casual/concepts/serialize.h"
+
 
 #include <optional>
 #include <system_error>
@@ -38,22 +38,7 @@ namespace casual
          template< typename T, typename A>
          using value_t = serialize::Value< std::remove_cvref_t< T>, std::remove_cvref_t< A>>;
          
-
       } // traits
-
-      namespace composite
-      {
-         //! customization point for serialization
-         template< typename T, typename A, typename Enable = void> 
-         struct Value;
-
-         namespace traits
-         {
-            template< typename T, typename A>
-            using value_t = composite::Value< std::remove_cvref_t< T>, std::remove_cvref_t< A>>;
-         } // traits
-         
-      } // composite
       //! @}
 
       namespace value
@@ -141,13 +126,6 @@ namespace casual
                decltype( customize::composite::traits::value_t<T, A>::serialize( archive, std::forward< T>( value)))
             {
                customize::composite::traits::value_t<T, A>::serialize( archive, std::forward< T>( value));
-            }
-            
-            template< typename A, typename T>
-            auto serialize( A& archive, T&& value, traits::priority::tag< 1>) -> 
-               decltype( composite::traits::value_t<T, A>::serialize( archive, std::forward< T>( value)))
-            {
-               composite::traits::value_t<T, A>::serialize( archive, std::forward< T>( value));
             }
 
             template< typename A, typename T>
@@ -528,7 +506,7 @@ namespace casual
       namespace detail
       {
          namespace optional
-         {
+         {  
             template< typename A, typename V> 
             void write_named( A& archive, V&& value, const char* name)
             {
@@ -537,33 +515,36 @@ namespace casual
             }
 
             template< typename A, typename V> 
-            void write_order_type( A& archive, V&& value)
+            void write_order_type( A& archive, V&& value, const char* name)
             {
                if( value)
                {
-                  archive.write( true, nullptr);
-                  value::write( archive, value.value(), nullptr);
+                  archive.write( true, "has_value");
+                  value::write( archive, value.value(), name);
                }
                else 
                   archive.write( false, nullptr);
             }
 
             template< typename A, typename V> 
-            void write( A& archive, V&& value, [[maybe_unused]] const char* name)
+            void write( A& archive, V&& value, const char* name)
             {
-               if constexpr( A::archive_type() == archive::Type::static_need_named)
-                  write_named( archive, value, name);
-               else if constexpr( A::archive_type() == archive::Type::static_order_type)
-                  write_order_type( archive, value);
-               else if constexpr( A::archive_type() == archive::Type::dynamic_type)
+               if constexpr( archive::is::dynamic< A>)
                {
-                  if( archive.type() == archive::dynamic::Type::named)
+                  if( flag::contains( archive.archive_properties(), archive::Property::named))
                      write_named( archive, value, name);
                   else
-                     write_order_type( archive, value);
+                     write_order_type( archive, value, name);
+               }
+               else
+               {
+                  if constexpr( archive::need::order< A>)
+                     write_order_type( archive, value, name);
+                  else
+                     write_named( archive, value, name);
                }
             }
-
+            
             template< typename A, typename V>
             auto read_named( A& archive, V& value, const char* name)
             {
@@ -578,15 +559,15 @@ namespace casual
             }
 
             template< typename A, typename V>
-            auto read_order_type( A& archive, V& value)
+            auto read_order_type( A& archive, V& value, const char* name)
             {
                bool has_value = false;
-               archive.read( has_value, nullptr);
+               archive.read( has_value, "has_value");
 
                if( has_value)
                {
                   std::remove_cvref_t< decltype( value.value())> contained{};
-                  value::read( archive, contained, nullptr);
+                  value::read( archive, contained, name);
                   value = std::move( contained);
                }
 
@@ -596,18 +577,23 @@ namespace casual
             template< typename A, typename V>
             auto read( A& archive, V& value, [[maybe_unused]] const char* name)
             {
-               if constexpr( A::archive_type() == archive::Type::static_need_named)
-                  return read_named( archive, value, name);
-               else if constexpr( A::archive_type() == archive::Type::static_order_type)
-                  return read_order_type( archive, value);
-               else if constexpr( A::archive_type() == archive::Type::dynamic_type)
+               if constexpr( archive::is::dynamic< A>)
                {
-                  if( archive.type() == archive::dynamic::Type::named)
+                  if( flag::contains( archive.archive_properties(), archive::Property::named))
                      return read_named( archive, value, name);
                   else
-                     return read_order_type( archive, value);
+                     return read_order_type( archive, value, name);
+               }
+               else
+               {
+                  if constexpr( archive::need::order< A>)
+                     return read_order_type( archive, value, name);
+                  else
+                     return read_named( archive, value, name);
                }
             }
+
+
          } // optional
       } // detail
 
@@ -618,14 +604,14 @@ namespace casual
       {
          template< typename V> 
          static void write( A& archive, V&& value, const char* name)
-         {  
+         {               
             // dispatch depending on archive since 'binary archive' need to serialize with different semantics
             detail::optional::write( archive, std::forward< V>( value), name);
          }
 
          template< typename V>
          static bool read( A& archive, V& value, const char* name)
-         {
+         {         
             // dispatch depending on archive since 'binary archive' need to serialize with different semantics
             return detail::optional::read( archive, value, name);
          }

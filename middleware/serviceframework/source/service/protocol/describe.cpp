@@ -28,7 +28,7 @@ namespace casual
                         class Writer
                         {
                         public:
-                           inline constexpr static auto archive_type() { return common::serialize::archive::Type::static_need_named;}
+                           constexpr static auto archive_properties() { return common::serialize::archive::Property::named;}
                            
                            using types_t = std::vector< serviceframework::service::Model::Type>;
 
@@ -78,7 +78,7 @@ namespace casual
 
                         struct Prepare
                         {
-                           inline constexpr static auto archive_type() { return common::serialize::archive::Type::static_order_type;}
+                           constexpr static auto archive_properties() { return common::serialize::archive::Property::order;}
                            bool composite_start( const char*) { return true;}
 
                            std::tuple< platform::size::type, bool> container_start( platform::size::type size, const char*)

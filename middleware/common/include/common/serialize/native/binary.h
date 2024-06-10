@@ -55,7 +55,7 @@ namespace casual
          template< typename P>
          struct basic_writer
          {
-            inline constexpr static auto archive_type() { return archive::Type::static_order_type;}
+            constexpr static auto archive_properties() { return common::serialize::archive::Property::order;}
 
             using policy_type = P;
 
@@ -139,7 +139,7 @@ namespace casual
          template< typename P>
          struct basic_reader
          {
-            inline constexpr static auto archive_type() { return archive::Type::static_order_type;}
+            constexpr static auto archive_properties() { return common::serialize::archive::Property::order;}
             using policy_type = P;
 
             basic_reader( const platform::binary::type& buffer, platform::size::type offset)

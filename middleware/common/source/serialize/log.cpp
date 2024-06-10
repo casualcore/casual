@@ -26,7 +26,7 @@ namespace casual
          {         
             struct Implementation
             {
-               inline constexpr static auto archive_type() { return archive::Type::static_need_named;}
+               constexpr static auto archive_properties() { return common::serialize::archive::Property::named;}
 
                static constexpr auto keys() 
                {

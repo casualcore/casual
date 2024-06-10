@@ -63,7 +63,7 @@ namespace casual
             template< typename Policy>
             struct basic_archive
             {
-               inline constexpr static auto archive_type() { return serialize::archive::Type::static_order_type;}
+               constexpr static auto archive_properties() { return common::serialize::archive::Property::order;}
 
                inline std::tuple< platform::size::type, bool> container_start( platform::size::type size, const char*) 
                {

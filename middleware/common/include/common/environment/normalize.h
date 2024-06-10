@@ -8,7 +8,7 @@
 
 #include "common/environment/expand.h"
 
-#include "common/serialize/archive/type.h"
+#include "common/serialize/archive/property.h"
 #include "common/serialize/value.h"
 #include "common/traits.h"
 
@@ -23,8 +23,7 @@ namespace casual
          struct Traverser 
          {
 
-
-            inline constexpr static auto archive_type() { return serialize::archive::Type::static_order_type;}
+            constexpr static auto archive_properties() { return common::serialize::archive::Property::order;}
 
             template< typename... Ts> 
             Traverser( Ts&&... ts) : m_policy{ std::forward< Ts>( ts)...} {}

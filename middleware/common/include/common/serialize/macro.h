@@ -7,7 +7,8 @@
 #pragma once
 
 #include "common/serialize/named/value.h"
-#include "casual/concepts/serialize.h"
+#include "common/serialize/archive/property.h"
+
 
 namespace casual
 {
@@ -31,7 +32,7 @@ namespace casual
       template< typename A, typename V> 
       auto dispatch( A& archive, V&& value, [[maybe_unused]] const char* name)
       {
-         if constexpr( concepts::serialize::need::named< A>)
+         if constexpr( archive::need::named< A>)
             detail::dispatch( archive, named::value::make( std::forward< V>( value), name));
          else
             detail::dispatch( archive, std::forward< V>( value));

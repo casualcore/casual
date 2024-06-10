@@ -14,8 +14,6 @@
 
 #include "common/serialize/line.h"
 
-#include "casual/concepts/serialize.h"
-
 #include <ostream>
 
 

@@ -39,13 +39,6 @@ namespace casual
 
       } // archive
 
-      namespace need
-      {
-         template< typename T>
-         inline constexpr bool named = T::archive_type() != decltype( T::archive_type())::static_order_type;
-
-      } // need
-
       namespace named
       {
          template< typename T>
@@ -55,14 +48,6 @@ namespace casual
          };
       } // named
 
-      //namespace network
-      //{
-      //   template< typename T>
-      //   concept normalizing = requires
-      //   {
-      //      typename T::is_network_normalizing;  
-      //   };
-      //} // network
       
    } // concepts::serialize
 } // casual

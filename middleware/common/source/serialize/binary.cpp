@@ -34,7 +34,7 @@ namespace casual
                {
                   struct Writer : native::binary::Writer
                   {
-                     constexpr static auto archive_type() { return archive::Type::static_order_type;}
+                     constexpr static auto archive_properties() { return common::serialize::archive::Property::order;}
 
                      constexpr static auto keys() { return local::keys();}
                   };
@@ -42,7 +42,7 @@ namespace casual
 
                   struct Reader : native::binary::Reader
                   {
-                     constexpr static auto archive_type() { return archive::Type::static_order_type;}
+                     constexpr static auto archive_properties() { return common::serialize::archive::Property::order;}
 
                      Reader( const platform::binary::type& buffer) : native::binary::Reader{ buffer} {}
 

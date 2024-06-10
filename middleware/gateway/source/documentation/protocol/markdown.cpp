@@ -140,7 +140,8 @@ namespace casual
 
             struct Printer
             {
-               inline constexpr static auto archive_type() { return common::serialize::archive::Type::static_need_named;}
+               // we need to have the names and serialize in a "order" way.
+               constexpr static auto archive_properties() { return common::serialize::archive::Property::named | common::serialize::archive::Property::order;}
                using is_network_normalizing = void;
 
                Printer() = default;

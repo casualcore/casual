@@ -55,7 +55,7 @@ namespace casual
          {
             using value_type = decltype( std::hash< long>{}( 0l));
           
-            inline constexpr static auto archive_type() { return common::serialize::archive::Type::static_order_type;}
+            constexpr static auto archive_properties() { return common::serialize::archive::Property::order;}
 
             inline platform::size::type container_start( const platform::size::type size, const char* name)
             {

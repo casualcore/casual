@@ -56,20 +56,26 @@ namespace casual
                {
                   struct Named
                   {
-                     inline constexpr static auto archive_type() { return serialize::archive::Type::static_need_named;}
+                     constexpr static auto archive_properties() { return common::serialize::archive::Property::named;}
                   };
+
                   struct Order
                   {
-                     inline constexpr static auto archive_type() { return serialize::archive::Type::static_order_type;}
+                     constexpr static auto archive_properties() { return common::serialize::archive::Property::order;}
                   };
                } // archive
                
             } // <unnamed>
          } // local
 
-         static_assert( concepts::serialize::need::named< local::archive::Named>);
 
-         static_assert( ! concepts::serialize::need::named< local::archive::Order>);
+
+         static_assert( ! archive::is::dynamic< local::archive::Named>);
+         static_assert( archive::need::named< local::archive::Named>);
+
+         static_assert( ! archive::is::dynamic< local::archive::Order>);
+         static_assert( archive::need::order< local::archive::Order>);
+         static_assert( ! archive::need::named< local::archive::Order>);
 
       } // serialize
    } // common

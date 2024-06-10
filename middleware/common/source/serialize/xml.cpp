@@ -174,7 +174,7 @@ namespace casual
                      {
                      public:
 
-                        constexpr static auto archive_type() { return archive::Type::static_need_named;}
+                        constexpr static auto archive_properties() { return common::serialize::archive::Property::named;}
 
                         constexpr static auto keys() { return local::keys();}
 
@@ -347,7 +347,7 @@ namespace casual
                      {
                      public:
 
-                        constexpr static auto archive_type() { return archive::Type::static_need_named;}
+                        constexpr static auto archive_properties() { return common::serialize::archive::Property::named;}
 
                         constexpr static auto keys() { return local::keys();}
 
