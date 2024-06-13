@@ -39,8 +39,8 @@ namespace casual
                {
                   bool describe()
                   {
-                     return common::service::header::fields().exists( "casual-service-describe") &&
-                           common::service::header::fields().at( "casual-service-describe") != "false";
+                     return common::service::header::fields().contains( "casual-service-describe") &&
+                           common::service::header::fields().at( "casual-service-describe").value() != "false";
                   }
 
                } // <unnamed>

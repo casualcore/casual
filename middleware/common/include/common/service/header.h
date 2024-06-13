@@ -22,78 +22,67 @@ namespace casual
    {
       inline namespace v1
       {
-         struct Field
+         struct Field 
          {
             Field() = default;
+            Field( std::string variable);
+            Field( std::string_view name, std::string_view value);
 
-            //! @pre expects the format `<key>[ ]?:[ ]?<value>`
-            explicit Field( std::string_view field);
+            inline std::string_view name() const noexcept
+            { 
+               return { std::begin( m_data), std::find( std::begin( m_data), std::end( m_data), ':')};
+            }
+            inline std::string_view value() const noexcept
+            {  
+               if( auto found = algorithm::find( m_data, ':'))
+                  return { std::begin( found) + 1, std::end( found)};
 
-            inline Field( std::string key, std::string_view value) 
-               : key{ std::move( key)}, value{ std::move( value)} {}
+               return {};
+            }
 
-            std::string key;
-            std::string value;
+            inline friend bool operator == ( const Field& lhs, std::string_view rhs) { return lhs.name() == rhs;}
 
-            //! @returns <key> : <value>  
-            std::string http() const;
+            inline const std::string& string() const noexcept { return m_data;}
 
-            friend bool operator == ( const Field& lhs, const Field& rhs);
+            CASUAL_FORWARD_SERIALIZE( m_data);
 
-            friend bool operator == ( const Field& lhs, std::string_view key);
-            inline friend bool operator == ( std::string_view key, const Field& rhs) { return rhs == key;}
-
-            CASUAL_CONST_CORRECT_SERIALIZE(
-               CASUAL_SERIALIZE( key);
-               CASUAL_SERIALIZE( value);
-            )
+         private:
+            std::string m_data;
          };
 
          
-         struct Fields : std::vector< header::Field>
+         struct Fields
          {
-            using fields_type = std::vector< header::Field>;
-            using fields_type::fields_type;
+            Fields() = default;
+            Fields( std::vector< header::Field> fields);
 
-            //! @param key to find
-            //! @return true if field with @p key exists
-            bool exists( std::string_view key) const; 
+            void add( header::Field field);
+
+            //! @param name to find
+            //! @return true if field with @p name exists
+            bool contains( std::string_view name) const; 
          
-            //! @param key to be found
-            //! @return the value associated with the key
-            //! @throws exception::system::invalid::Argument if key is not found.
-            const std::string& at( std::string_view key) const;
+            //! @param name to be found
+            //! @return the value associated with the name
+            //! @throws exception::system::invalid::Argument if name is not found.
+            const header::Field& at( std::string_view name) const;
 
-            template< typename T>
-            T at( std::string_view key) const
-            {
-               return string::from< T>( at( key));
-            }
-
-            //! @param key to be found
-            //! @return the value associated with the key, if not found, @p optional is returned
-            std::string at( std::string_view key, std::string_view optional) const;
-         
-            template< typename T>
-            T at( std::string_view key, const std::string& optional) const
-            {
-               return string::from< T>( at( key, optional));
-            }
-
-            std::optional< std::string> find( std::string_view key) const;
-
-            //! Same semantics as std::map[]  
-            std::string& operator[] ( std::string_view key);
-
-            //! Same semantics as at
-            const std::string& operator[]( std::string_view key ) const;
-            
-
-            inline fields_type& container() { return *this;}
-            inline const fields_type& container() const { return *this;}
+            const header::Field* find( std::string_view name) const;
 
             friend Fields operator + ( Fields lhs, const Fields& rhs);
             friend Fields& operator += ( Fields& lhs, const Fields& rhs);
+
+            inline void clear() { m_fields.clear();}
+            inline bool empty() const noexcept { return m_fields.empty();}
+            inline platform::size::type size() const noexcept { return m_fields.size();}
+
+            inline auto begin() const noexcept { return std::begin( m_fields);}
+            inline auto end() const noexcept { return std::end( m_fields);}
+
+            CASUAL_FORWARD_SERIALIZE( m_fields);
+
+         private:
+            std::vector< header::Field> m_fields;
          };
 
 

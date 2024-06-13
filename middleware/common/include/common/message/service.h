@@ -497,7 +497,7 @@ namespace casual
                };
                
                // indicate that this enum is used as a flag
-               consteval void casual_enum_as_flag( Flag);
+               consteval flag::xatmi::Flag casual_enum_as_flag_superset( Flag);
 
             } // request
 

@@ -21,13 +21,13 @@ namespace casual
          {
             {
                auto field = header::Field{ "a:b"};
-               EXPECT_TRUE( field.key == "a");
-               EXPECT_TRUE( field.value == "b");
+               EXPECT_TRUE( field.name() == "a");
+               EXPECT_TRUE( field.value() == "b");
             }
             {
                auto field = header::Field{ " a : b "};
-               EXPECT_TRUE( field.key == "a");
-               EXPECT_TRUE( field.value == "b");
+               EXPECT_TRUE( field.name() == "a") << CASUAL_NAMED_VALUE( field);
+               EXPECT_TRUE( field.value() == "b");
             }
 
          }
@@ -41,15 +41,15 @@ namespace casual
             EXPECT_TRUE( header::fields().empty());
          }
 
-         TEST( common_service_header, empty__replace_add__expect_exists)
+         TEST( common_service_header, empty__replace_add__expect_contains)
          {
             common::unittest::Trace trace;
 
             header::Fields fields;
 
-            fields[ "casual.key.test"] = "42";
+            fields.add( header::Field{ "casual.key.test: 42"});
 
-            EXPECT_TRUE( fields.exists( "casual.key.test"));
+            EXPECT_TRUE( fields.contains( "casual.key.test"));
          }
 
          TEST( common_service_header, empty__replace_add__get_value)
@@ -58,43 +58,12 @@ namespace casual
 
             header::Fields fields;
 
-            fields[ "casual.key.test"] = "42";
+            fields.add( header::Field{ "casual.key.test: 42"});
 
-            EXPECT_TRUE( fields.at( "casual.key.test") == "42");
+            EXPECT_TRUE( fields.at( "casual.key.test").value() == "42") << CASUAL_NAMED_VALUE( fields);
          }
 
-         TEST( common_service_header, empty__replace_add__get_int_value)
-         {
-            common::unittest::Trace trace;
 
-            header::Fields fields;
-            
-            fields[ "casual.key.test"] = "42";
-
-            EXPECT_TRUE( fields.at< int>( "casual.key.test") == 42);
-         }
-
-         TEST( common_service_header, empty__replace_add__get_value_with_default__expect_actual_value)
-         {
-            common::unittest::Trace trace;
-
-            header::Fields fields;
-            
-            fields[ "casual.key.test"] = "42";
-
-            EXPECT_TRUE( fields.at( "casual.key.test", "poop") == "42");
-         }
-
-         TEST( common_service_header, empty__replace_add__get_value_with_default__expect_default_value)
-         {
-            common::unittest::Trace trace;
-
-            header::Fields fields;
-            
-            fields[ "casual.key.test"] = "42";
-
-            EXPECT_TRUE( fields.at( "non-existent-key", "poop") == "poop");
-         }
 
          TEST( common_service_header, empty_find__expect_absent)
          {
@@ -102,7 +71,7 @@ namespace casual
 
             header::Fields fields;
 
-            EXPECT_TRUE( ! fields.find( "casual.key.test").has_value());
+            EXPECT_TRUE( fields.find( "casual.key.test") == nullptr);
          }
 
          TEST( common_service_header, one_field___find__expect_found)
@@ -110,10 +79,10 @@ namespace casual
             common::unittest::Trace trace;
 
             header::Fields fields;
-            fields[ "casual.key.test"] = "42";
+            fields.add( header::Field{ "casual.key.test: 42"});
 
-            ASSERT_TRUE( fields.find( "casual.key.test").has_value());
-            EXPECT_TRUE( fields.find( "casual.key.test").value() == "42");
+            ASSERT_TRUE( fields.find( "casual.key.test") != nullptr);
+            EXPECT_TRUE( fields.find( "casual.key.test")->value() == "42");
          }
 
          TEST( common_service_header, add_2_empty___expect_empty)
@@ -129,23 +98,23 @@ namespace casual
          {
             common::unittest::Trace trace;
 
-            auto fields = header::Fields{ { "key1", "42"}} + header::Fields{ { "key2", "43"}};
+            auto fields = header::Fields{ { header::Field{ "key1:42"}}} + header::Fields{ { header::Field{ "key2:43"}}};
 
             ASSERT_TRUE( fields.size() == 2);
-            EXPECT_TRUE( fields.front().key == "key1");
-            EXPECT_TRUE( fields.front().value == "42");
+            EXPECT_TRUE( fields.contains( "key1"));
+            EXPECT_TRUE( fields.contains( "key2"));
          }
 
          TEST( common_service_header, add_assing_fields___expect_appended)
          {
             common::unittest::Trace trace;
 
-            auto fields = header::Fields{ { "key1", "42"}};
-            fields += header::Fields{ { "key2", "43"}};
+            auto fields = header::Fields{ { header::Field{ "key1:42"}}};
+            fields += header::Fields{ { header::Field{ "key2:43"}}};
 
             ASSERT_TRUE( fields.size() == 2);
-            EXPECT_TRUE( fields.front().key == "key1");
-            EXPECT_TRUE( fields.front().value == "42");
+            EXPECT_TRUE( fields.contains( "key1"));
+            EXPECT_TRUE( fields.contains( "key2"));
          }
 
       } // service

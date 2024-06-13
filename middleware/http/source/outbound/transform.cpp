@@ -18,13 +18,14 @@ namespace casual
          {
             auto header( const std::vector< configuration::Header>& model)
             {
-               common::service::header::Fields headers;
+               auto transform_fields = []( auto& model)
+               {
+                  return common::algorithm::transform( model, []( auto& field){
+                     return common::service::header::Field{ field.name, field.value};
+                  });
+               };
 
-               common::algorithm::transform( model, headers.container(), []( auto& h){
-                  return common::service::header::Field{ h.name, h.value};
-               });
-
-               return std::make_shared< const common::service::header::Fields>( std::move( headers));
+               return std::make_shared< const common::service::header::Fields>( transform_fields( model));
             }
          } // <unnamed>
       } // local

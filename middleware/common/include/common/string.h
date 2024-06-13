@@ -117,9 +117,12 @@ namespace casual
       {
          inline void from( std::string_view value, bool& result, traits::priority::tag< 2>)
          { 
-            if( value == "true") result = true; 
-            else if( value == "false") result = false; 
-            else result = ! ( value == "0");
+            if( value == "true") 
+               result = true; 
+            else if( value == "false") 
+               result = false; 
+            else 
+               result = ! ( value == "0");
          }
 
          inline void from( std::string_view value, std::string& result, traits::priority::tag< 2>)
@@ -167,7 +170,7 @@ namespace casual
 
 
       template< typename R>
-      auto from( std::string_view string) 
+      [[nodiscard]] auto from( std::string_view string) 
          -> decltype( void( detail::from( string, std::declval< R&>(), traits::priority::tag< 2>{})), R{})
       {
          R result{};
@@ -177,7 +180,7 @@ namespace casual
 
 
       template< typename T>
-      auto to( T&& value)
+      [[nodiscard]] auto to( T&& value)
          -> decltype( detail::to( std::forward< T>( value)))
       {
          return detail::to( std::forward< T>( value));

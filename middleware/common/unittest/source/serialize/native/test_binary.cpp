@@ -295,15 +295,6 @@ namespace casual
 
                // marshal
                {
-                  // header
-                  {
-                     auto& header = service::header::fields();
-                     header.clear();
-
-                     header[ "casual.header.test.1"] = "42";
-                     header[ "casual.header.test.2"] = "poop";
-                  }
-
 
                   buffer::Payload payload{ type, 128};
                   algorithm::copy( info, std::begin( payload.data));
@@ -312,7 +303,8 @@ namespace casual
                   EXPECT_TRUE( payload.data.data() == info) << "payload.data.data(): " <<  payload.data.data();
 
                   message::service::call::caller::Request message{ buffer::payload::Send{ payload, 100, 100}};
-                  message.header = service::header::fields();
+                  message.header.add( service::header::Field{ "casual.header.test.1: 42"});
+                  message.header.add( service::header::Field{ "casual.header.test.2: poop"});
 
                   output << message;
 
@@ -340,8 +332,8 @@ namespace casual
                   {
                      
                      EXPECT_TRUE( message.header.size() == 2);
-                     EXPECT_TRUE( message.header.at< int>( "casual.header.test.1") == 42);
-                     EXPECT_TRUE( message.header.at( "casual.header.test.2") == "poop");
+                     EXPECT_TRUE( message.header.at( "casual.header.test.1").value() == "42");
+                     EXPECT_TRUE( message.header.at( "casual.header.test.2").value() == "poop");
                   }
 
                }

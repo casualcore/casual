@@ -99,8 +99,8 @@ namespace casual::http::inbound
             void set( const std::vector< http::inbound::call::header::Field>& headers)
             {
                auto found = common::algorithm::find( headers, http::header::name::execution::id);
-               if( found && std::regex_match( found->value, validation::format()))
-                  common::execution::id( strong::execution::id::emplace( found->value));
+               if( found && std::regex_match( found->value().data(), validation::format()))
+                  common::execution::id( strong::execution::id::emplace( found->value()));
                else
                   common::execution::id( strong::execution::id::generate());
             }
@@ -169,7 +169,7 @@ namespace casual::http::inbound
 
                auto user_defined_headers = []( auto& header)
                {
-                  return ( header.key != "content-type") && ( header.key != "content-length");
+                  return ( header.name() != "content-type") && ( header.name() != "content-length");
                };
 
                const auto header_size = common::algorithm::count_if( context_holder->reply.payload.header, user_defined_headers);
@@ -182,8 +182,8 @@ namespace casual::http::inbound
                common::algorithm::for_each_if( context_holder->reply.payload.header, [&header_number, &context_holder]( auto header)
                {
                   auto& item = context_holder->guard.headers.data[header_number];
-                  item.key = memory::copy( header.key);
-                  item.value = memory::copy( header.value);
+                  item.key = memory::copy( header.name());
+                  item.value = memory::copy( header.value());
                   header_number++;
                },
                user_defined_headers
@@ -192,15 +192,11 @@ namespace casual::http::inbound
                reply->headers.data = context_holder->guard.headers.data;
                reply->headers.size = context_holder->guard.headers.size;
 
-               auto content_type = common::algorithm::find_if( context_holder->reply.payload.header, []( auto& header)
+               if( auto content_type = common::algorithm::find( context_holder->reply.payload.header, "content-type"))
                {
-                  return header.key == "content-type";
-               });
-
-               if( content_type)
-               {             
-                  reply->content_type.data = content_type->value.data();
-                  reply->content_type.size = content_type->value.size();
+                  // is this safe?              
+                  reply->content_type.data = const_cast< char*>( content_type->value().data());
+                  reply->content_type.size = content_type->value().size();
                }
                else
                {

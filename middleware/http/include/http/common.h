@@ -63,7 +63,7 @@ namespace casual
 
             namespace user
             {
-               long code( const std::string& value);
+               long code( std::string_view value);
                std::string code( long code);
             } // user
 

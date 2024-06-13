@@ -18,34 +18,27 @@ namespace casual
 {
    using namespace common;
 
-   namespace tools
+   namespace tools::service::describe
    {
-      namespace service
+      std::vector< serviceframework::service::Model> invoke( const std::vector< std::string>& services)
       {
-         namespace describe
-         {
-            std::vector< serviceframework::service::Model> invoke( const std::vector< std::string>& services)
-            {
-               Trace trace{ "tools::service::describe::incoke"};
+         Trace trace{ "tools::service::describe::incoke"};
 
-               //
-               // Set header so we invoke the servcie-describe protocol
-               //
-               common::service::header::fields()[ "casual-service-describe"] = "true";
+         // Set header so we invoke the servcie-describe protocol
+         common::service::header::fields().add( common::service::header::Field{  "casual-service-describe: true"});
 
-               return algorithm::transform( services, []( const std::string& service){
-                  serviceframework::service::protocol::binary::Call call;
-                  auto reply = call( service);
+         return algorithm::transform( services, []( const std::string& service){
+            serviceframework::service::protocol::binary::Call call;
+            auto reply = call( service);
 
-                  serviceframework::service::Model model;
+            serviceframework::service::Model model;
 
-                  reply >> CASUAL_NAMED_VALUE( model);
+            reply >> CASUAL_NAMED_VALUE( model);
 
-                  return model;
-               });
-            }
+            return model;
+         });
+      }
 
-         } // describe
-      } // service
-   } // tools
+
+   } // tools::service::describe
 } // casual

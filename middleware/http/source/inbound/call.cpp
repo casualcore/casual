@@ -44,12 +44,10 @@ namespace casual
             {
                auto type( const std::vector< header::Field>& header)
                {
-                  auto found = algorithm::find( header, "content-type");
+                  if( auto found = algorithm::find( header, "content-type"))
+                      return protocol::convert::to::buffer( found->value());
 
-                  if( ! found)
-                     common::code::raise::error( code::bad_request, "content-type header is manatory");
-
-                  return protocol::convert::to::buffer( found->value);
+                  common::code::raise::error( code::bad_request, "content-type header is manatory");                 
                }
             } // buffer
 
@@ -143,7 +141,7 @@ namespace casual
                      result.parent = request.url;
                      result.buffer.type = buffer::type( request.payload.header);
                      result.buffer.data = std::move( request.payload.body);
-                     result.header.container() = std::move( request.payload.header);
+                     result.header = std::move( request.payload.header);
 
                      if( local::configuration().force_binary_base64)
                         http::buffer::transcode::from::wire( result.buffer);

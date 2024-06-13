@@ -28,9 +28,13 @@ namespace casual
                Trace trace{ "http::outbound::state::pending::Request::header_t::request_t::add Header"};
 
                for( auto& field : header)
-               {
-                  add( field.http());
-               }
+                  add( field);
+
+            }
+
+            void Request::State::Header::Request::add( const common::service::header::Field& field)
+            {
+               add( field.string());
             }
 
             void Request::State::Header::Request::add( const std::string& value)

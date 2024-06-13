@@ -20,98 +20,53 @@ namespace casual
    {
       inline namespace v1
       {
-         namespace local
+         
+         Field::Field( std::string variable)
+            : m_data{ std::move( variable)}
          {
-            namespace
+            algorithm::container::erase_if( m_data, []( auto value)
             {
-               template< typename F>
-               auto find( F& fields, std::string_view key)
-               {
-                  return algorithm::find( fields, key);
-               }
-
-               template< typename F>
-               decltype( auto) find_at( F& fields, std::string_view key)
-               {  
-                  if( auto found = find( fields, key))
-                     return *found;
-                  
-                  code::raise::error( code::casual::invalid_argument, "service header key not found: ", key);
-               }
-
-            } // <unnamed>
-         } // local
-
-         Field::Field( std::string_view field)
-         {
-
-            if( auto found = algorithm::find( field, ':'))
-            {
-               auto key_range = string::trim( range::make( std::begin( field), std::begin( found)));
-               key.assign( std::begin( key_range), std::end( key_range));
-               auto value_range = string::trim( ++found);
-               value.assign( std::begin( value_range), std::end( value_range));
-            }
-            else 
-               code::raise::error( code::casual::invalid_argument, "requires format '<key>[ ]?:[ ]?<value>'");
-         }
-
-         bool operator == (  const Field& lhs, const Field& rhs)
-         {
-            return lhs == rhs.key;
-         }
-
-         bool operator == (  const Field& lhs, std::string_view key)
-         {
-            return algorithm::equal( lhs.key, key, []( auto a, auto b)
-            { 
-               return std::tolower(a) == std::tolower(b);
+               return std::isspace( value);
             });
          }
 
-         std::string Field::http() const
+         Field::Field( std::string_view name, std::string_view value)
+            : Field{ string::compose( name, ':', value)}
+         {}
+
+         Fields::Fields( std::vector< header::Field> fields)
+            : m_fields{ std::move( fields)}
+         {}
+         
+         void Fields::add( header::Field field)
          {
-            return string::compose( key, ": ", value);
+            if( auto found = algorithm::find( m_fields, field.name()))
+               *found = std::move( field);
+            else
+               m_fields.push_back( std::move( field));
          }
 
-         bool Fields::exists( std::string_view key) const
+         bool Fields::contains( std::string_view key) const
          {
-            return ! local::find( *this, key).empty();
+            return algorithm::contains( m_fields, key);
          }
 
-         const std::string& Fields::at( std::string_view key) const
+         const header::Field& Fields::at( std::string_view key) const
          {
-            return local::find_at( *this, key).value;
+            if( auto found = find( key))
+               return *found;
+
+            code::raise::error( code::casual::invalid_argument, "failed to find key in header::Fields: ", key);
          }
 
-         std::string Fields::at( std::string_view key, std::string_view optional) const
+         const header::Field* Fields::find( std::string_view key) const
          {
-            if( auto found = local::find( *this, key))
-               return found->value;
-            
-            return std::string{ optional};
+            if( auto found = algorithm::find( m_fields, key))
+               return found.data();
+
+            return nullptr;
          }
 
-         std::optional< std::string> Fields::find( std::string_view key) const
-         {
-            if( auto found = local::find( *this, key))
-               return { found->value};
-
-            return {};
-         }
-
-         std::string& Fields::operator[] ( std::string_view key )
-         {
-            if( auto found = local::find( *this, key))
-               return found->value;
-
-            return fields_type::emplace_back( std::string{ key}, "").value;
-         }
-
-         const std::string& Fields::operator[]( std::string_view key ) const
-         {
-            return at( key);
-         }
 
          Fields operator + ( Fields lhs, const Fields& rhs)
          {
@@ -121,7 +76,7 @@ namespace casual
 
          Fields& operator += ( Fields& lhs, const Fields& rhs)
          {
-            algorithm::container::append( rhs, lhs);
+            algorithm::container::append( rhs.m_fields, lhs.m_fields);
             return lhs;
          }
 

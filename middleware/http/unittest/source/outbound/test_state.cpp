@@ -43,11 +43,11 @@ namespace casual
 
             {
                state::pending::Request request;
-               request.state().header.request.add( {
-                  { "key-1", "value-1"},
-                  { "key-2", "value-2"},
-                  { "key-3", "value-3"},
-               });
+               request.state().header.request.add( common::service::header::Fields{{
+                  common::service::header::Field{ "key-1", "value-1"},
+                  common::service::header::Field{ "key-2", "value-2"},
+                  common::service::header::Field{ "key-3", "value-3"},
+               }});
 
                EXPECT_TRUE( request.easy());
                EXPECT_TRUE( request.state().header.reply.empty());

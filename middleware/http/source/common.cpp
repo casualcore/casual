@@ -80,12 +80,13 @@ namespace casual
 
                namespace user
                {
-                  long code( const std::string& value) 
+                  long code( std::string_view value) 
                   { 
                      if( value.empty()) 
                         return 0;
-                     return std::stol( value);
+                     return common::string::from< long>( value);
                   }
+                  
                   std::string code( long code) { return std::to_string( code);}
                   
                } // user

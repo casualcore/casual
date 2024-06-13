@@ -69,7 +69,7 @@ domain:
                auto value( const std::vector< call::header::Field>& header, std::string_view key)
                {
                   if( auto found = algorithm::find( header, key))
-                     return found->value;
+                     return found->value();
 
                   common::code::raise::error( common::code::casual::invalid_argument, "unittest - failed to find key: ", key);
                }

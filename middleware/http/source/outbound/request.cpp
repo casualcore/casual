@@ -163,20 +163,9 @@ namespace casual
                      }));
 
 
-                     if( range)
-                     {
-                        auto split = common::algorithm::split( range, ':');
+                     if( range)                        
+                        state.header.reply.add( common::service::header::Field{ std::string{ std::begin( range), std::end( range)}});
 
-                        
-                        auto to_string = []( auto range){
-                           range = common::string::trim( range);
-                           return std::string( std::begin( range), std::end( range));
-                        };
-                        
-                        state.header.reply.emplace_back(
-                           to_string( std::get< 0>( split)),
-                           to_string( std::get< 1>( split)));
-                     }
                      // else:
                      // Think this is an "empty header" that we'll be invoked as the "last header"
                      //  
@@ -213,15 +202,15 @@ namespace casual
 
                if( content)
                {
-                  auto type = protocol::convert::to::buffer( content.value());
+                  auto type = protocol::convert::to::buffer( content->value());
 
                   if( ! type.empty())
                      request.state().payload.type = std::move( type);
                   else
                   {
-                     common::log::line( common::log::category::error, "failed to deduce buffer type for content-type: ", content.value());
+                     common::log::line( common::log::category::error, "failed to deduce buffer type for content-type: ", content->value());
 
-                     if( std::regex_match( content.value(), local::global.loggable_content))
+                     if( std::regex_match( content->value().data(), local::global.loggable_content))
                         common::log::line( common::log::category::verbose::error, "payload: ", string::view::make( request.state().payload.data));
 
                      return {};
@@ -254,7 +243,7 @@ namespace casual
          common::log::line( http::verbose::log, "request: ", request);
 
          request.state().header.request.add( *node.headers);
-         request.state().header.request.add( { { http::header::name::execution::id, common::uuid::string( message.execution.value())}});
+         request.state().header.request.add( common::service::header::Field{ http::header::name::execution::id, common::uuid::string( message.execution.value())});
 
          request.state().destination = message.process;
          request.state().correlation = message.correlation;
@@ -373,13 +362,13 @@ namespace casual
             
             // check if we've got casual header codes, if so that is the "state", regardless of what curl thinks.
 
-            if( auto value = header.find( http::header::name::result::code))
+            if( auto field = header.find( http::header::name::result::code))
             {
                common::message::service::Code result;
-               result.result = http::header::value::result::code( *value);
+               result.result = http::header::value::result::code( field->value());
 
-               if( auto value = header.find( http::header::name::result::user::code))
-                  result.user = http::header::value::result::user::code( *value);
+               if( auto found = header.find( http::header::name::result::user::code))
+                  result.user = http::header::value::result::user::code( found->value());
 
                return result;
             }

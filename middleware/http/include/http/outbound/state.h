@@ -73,6 +73,7 @@ namespace casual
                      struct Request
                      {
                         void add( const common::service::header::Fields& header);
+                        void add( const common::service::header::Field& field);
                         void add( const std::string& value);
                         
                         inline auto native() { return m_header.get();}
