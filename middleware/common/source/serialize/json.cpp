@@ -303,6 +303,8 @@ namespace casual
                         { value = check::trivial( node, &rapidjson::Value::IsBool, &rapidjson::Value::GetBool); }
                         static void read( const rapidjson::Value* node, short& value)
                         { value = check::trivial( node, &rapidjson::Value::IsInt, &rapidjson::Value::GetInt); }
+                        static void read( const rapidjson::Value* node, int& value)
+                        { value = check::trivial( node, &rapidjson::Value::IsInt, &rapidjson::Value::GetInt); }
                         static void read( const rapidjson::Value* node, long& value)
                         { value = check::trivial( node, &rapidjson::Value::IsInt64, &rapidjson::Value::GetInt64); }
                         static void read( const rapidjson::Value* node, long long& value)
@@ -427,6 +429,7 @@ namespace casual
                         void write( const bool value) { m_stack.back()->SetBool( value); }
                         void write( const char value) { write( std::string{ value}); }
                         void write( const short value) { m_stack.back()->SetInt( value); }
+                        void write( const int value) { m_stack.back()->SetInt( value); }
                         void write( const long value) { m_stack.back()->SetInt64( value); }
                         void write( const long long value) { m_stack.back()->SetInt64( value); }
                         void write( const float value) { m_stack.back()->SetDouble( value); }

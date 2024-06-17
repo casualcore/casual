@@ -32,7 +32,7 @@ namespace casual
          {
             //! predicate which types an archive can read/write 'natively'
             template< typename T> 
-            concept type = concepts::decayed::any_of< T, bool, char, short, long, long long, float, double, 
+            concept type = concepts::decayed::any_of< T, bool, char, short, int, long, long long, float, double, 
                common::view::immutable::Binary, common::view::Binary>
                || concepts::derived_from< T, std::string, std::u8string, platform::binary::type>;
          } // native

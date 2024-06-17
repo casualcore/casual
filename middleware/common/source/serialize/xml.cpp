@@ -298,6 +298,8 @@ namespace casual
 
                         static void read( const pugi::xml_node& node, short& value)
                         { value = extract< short>( node); }
+                        static void read( const pugi::xml_node& node, int& value)
+                        { value = extract< int>( node); }
                         static void read( const pugi::xml_node& node, long& value)
                         { value = extract< long>( node); }
                         static void read( const pugi::xml_node& node, long long& value)

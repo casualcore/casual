@@ -278,6 +278,7 @@ namespace casual
 
                      static void read( const YAML::Node& node, bool& value) { consume( node, value);}
                      static void read( const YAML::Node& node, short& value) { consume( node, value);}
+                     static void read( const YAML::Node& node, int& value) { consume( node, value);}
                      static void read( const YAML::Node& node, long& value) { consume( node, value);}
                      static void read( const YAML::Node& node, long long& value) { consume( node, value);}
                      static void read( const YAML::Node& node, float& value) { consume( node, value);}

@@ -39,16 +39,11 @@ namespace casual
          inline bool composite_start( const char* name) { return m_protocol->composite_start( name);}
          inline void composite_end(  const char* name) { m_protocol->composite_end(  name);}
 
-         inline bool read( bool& value, const char* name) { return m_protocol->read( value, name);}
-         inline bool read( char& value, const char* name){ return m_protocol->read( value, name);}
-         inline bool read( short& value, const char* name) { return m_protocol->read( value, name);}
-         inline bool read( long& value, const char* name) { return m_protocol->read( value, name);}
-         inline bool read( long long& value, const char* name) { return m_protocol->read( value, name);}
-         inline bool read( float& value, const char* name) { return m_protocol->read( value, name);}
-         inline bool read( double& value, const char* name) { return m_protocol->read( value, name);}
-         inline bool read( std::string& value, const char* name) { return m_protocol->read( value, name);}
-         inline bool read( std::u8string& value, const char* name) { return m_protocol->read( value, name);}
-         inline bool read( platform::binary::type& value, const char* name) { return m_protocol->read( value, name);}
+         template< concepts::serialize::archive::native::type T>
+         auto read( T& value, const char* name)
+         {
+            return m_protocol->read( value, name);
+         }
 
          //! serialize raw data, no 'size' will be serialized, hence caller has to take care
          //! of this if needed.
@@ -82,6 +77,7 @@ namespace casual
             virtual bool read( bool& value, const char* name) = 0;
             virtual bool read( char& value, const char* name) = 0;
             virtual bool read( short& value, const char* name) = 0;
+            virtual bool read( int& value, const char* name) = 0;
             virtual bool read( long& value, const char* name) = 0;
             virtual bool read( long long& value, const char* name) = 0;
             virtual bool read( float& value, const char* name) = 0;
@@ -112,6 +108,7 @@ namespace casual
             bool read( bool& value, const char* name) override { return m_protocol.read( value, name);}
             bool read( char& value, const char* name) override { return m_protocol.read( value, name);}
             bool read( short& value, const char* name) override { return m_protocol.read( value, name);}
+            bool read( int& value, const char* name) override { return m_protocol.read( value, name);}
             bool read( long& value, const char* name) override { return m_protocol.read( value, name);}
             bool read( long long& value, const char* name) override { return m_protocol.read( value, name);}
             bool read( float& value, const char* name) override { return m_protocol.read( value, name);}
@@ -177,7 +174,7 @@ namespace casual
          template< concepts::serialize::archive::native::type T>
          auto write( const T& value, const char* name)
          {
-            save( value, name);
+            m_protocol->write( value, name);
          }
 
          //! consumes the writer
@@ -206,21 +203,6 @@ namespace casual
 
       private:
 
-         inline void save( bool value, const char* name) { m_protocol->write( value, name);}
-         inline void save( char value, const char* name) { m_protocol->write( value, name);}
-         inline void save( short value, const char* name) { m_protocol->write( value, name);}
-         inline void save( long value, const char* name) { m_protocol->write( value, name);}
-         inline void save( long long value, const char* name) { m_protocol->write( value, name);}
-         inline void save( float value, const char* name) { m_protocol->write( value, name);}
-         inline void save( double value, const char* name) { m_protocol->write( value, name);}
-         inline void save( const std::string& value, const char* name) { m_protocol->write( value, name);}
-         inline void save( const std::u8string& value, const char* name) { m_protocol->write( value, name);}
-         inline void save( const platform::binary::type& value, const char* name) { m_protocol->write( value, name);}
-         
-         //! serialize raw data, no 'size' will be serialized, hence caller has to take care of this if needed
-         //! @todo: Change to std::span with C++20
-         inline void save( view::immutable::Binary value, const char* name) { m_protocol->write( value, name);}
-
          struct Concept
          {
             virtual ~Concept() = default;
@@ -234,6 +216,7 @@ namespace casual
             virtual void write( bool value, const char* name) = 0;
             virtual void write( char value, const char* name) = 0;
             virtual void write( short value, const char* name) = 0;
+            virtual void write( int value, const char* name) = 0;
             virtual void write( long value, const char* name) = 0;
             virtual void write( long long value, const char* name) = 0;
             virtual void write( float value, const char* name) = 0;
@@ -241,6 +224,9 @@ namespace casual
             virtual void write( const std::string& value, const char* name) = 0;
             virtual void write( const std::u8string& value, const char* name) = 0;
             virtual void write( const platform::binary::type& value, const char* name) = 0;
+
+            //! serialize raw data, no 'size' will be serialized, hence caller has to take care of this if needed
+            //! @todo: Change to std::span with C++20
             virtual void write( view::immutable::Binary value, const char* name) = 0;
 
             virtual void consume( platform::binary::type& destination) = 0;
@@ -263,6 +249,7 @@ namespace casual
             void write( bool value, const char* name) override { m_protocol.write( value, name);}
             void write( char value, const char* name) override { m_protocol.write( value, name);}
             void write( short value, const char* name) override { m_protocol.write( value, name);}
+            void write( int value, const char* name) override { m_protocol.write( value, name);}
             void write( long value, const char* name) override { m_protocol.write( value, name);}
             void write( long long value, const char* name) override { m_protocol.write( value, name);}
             void write( float value, const char* name) override { m_protocol.write( value, name);}
