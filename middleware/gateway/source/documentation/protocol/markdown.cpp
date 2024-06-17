@@ -141,9 +141,12 @@ namespace casual
 
             struct Printer
             {
-               // we need to have the names and serialize in a "order" way.
-               constexpr static auto archive_properties() { return common::serialize::archive::Property::named | common::serialize::archive::Property::order;}
-               using is_network_normalizing = void;
+               // we need to have the names and serialize in a "order" way. And of course we're network normalizing...
+               constexpr static auto archive_properties() 
+               {
+                  using Property = common::serialize::archive::Property;
+                  return Property::named | Property::order | Property::network;
+               }
 
                Printer() = default;
 
@@ -653,9 +656,82 @@ Sent to and received from other domains when one domain wants call a service in 
                      });
             }
 
+            {
+               using message_type = common::message::service::call::v1_2::callee::Request;
+
+               local::message::section< message_type>( out, "##") << R"(
+
+Sent to and received from other domains when one domain wants call a service in the other domain
+
+)";
+
+               message_type request;
+               request.trid = common::transaction::id::create();
+               request.service.name = local::string::value( 128);
+               request.parent = local::string::value( 128);
+               request.buffer.type = local::string::value( 8) + '/' + local::string::value( 16);
+               request.buffer.data = local::binary::value( 1024);
+
+               local::format::type( out, request, {
+                        { "execution", "uuid of the current execution context (breadcrumb)"},
+                        { "service.name.size", "service name size"},
+                        { "service.name.data", "byte array with service name"},
+                        { "service.timeout.duration", "timeout of the service in use (ns)"},
+                        { "parent.size", "parent service name size"},
+                        { "parent.data", "byte array with parent service name"},
+
+                        { "xid.formatID", "xid format type. if 0 no more information of the xid is transported"},
+                        { "xid.gtrid_length", "length of the transaction gtrid part"},
+                        { "xid.bqual_length", "length of the transaction branch part"},
+                        { "xid.data", "byte array with the size of gtrid_length + bqual_length (max 128)"},
+
+                        { "flags", "XATMI flags sent to the service"},
+
+                        { "buffer.type.size", "buffer type name size"},
+                        { "buffer.type.data", "byte array with buffer type in the form 'type/subtype'"},
+                        { "buffer.data.size", "buffer payload size (could be very big)"},
+                        { "buffer.data.data", "buffer payload data (with the size of buffer.payload.size)"},
+                     });
+            }
+
 
             {
                using message_type = common::message::service::call::Reply;
+
+               local::message::section< message_type>( out, "##") << R"(
+
+Reply to call request
+
+)";
+               message_type message;
+
+               message.transaction.trid = common::transaction::id::create();
+               message.buffer.type = local::string::value( 8) + '/' + local::string::value( 16);
+               message.buffer.data = local::binary::value( 1024);
+
+               local::format::type( out, message, {
+                        { "execution", "uuid of the current execution context (breadcrumb)"},
+
+                        { "code.result", "XATMI result/error code, 0 represent OK"},
+                        { "code.user", "XATMI user supplied code"},
+
+                        { "transaction.xid.formatID", "xid format type. if 0 no more information of the xid is transported"},
+                        { "transaction.xid.gtrid_length", "length of the transaction gtrid part"},
+                        { "transaction.xid.bqual_length", "length of the transaction branch part"},
+                        { "transaction.xid.data", "byte array with the size of gtrid_length + bqual_length (max 128)"},
+                        { "transaction.state", "state of the transaction TX_ACTIVE, TX_TIMEOUT_ROLLBACK_ONLY, TX_ROLLBACK_ONLY"},
+
+                        { "buffer.type.size", "buffer type name size"},
+                        { "buffer.type.data", "byte array with buffer type in the form 'type/subtype'"},
+                        { "buffer.data.size", "buffer payload size (could be very big)"},
+                        { "buffer.data.data", "buffer payload data (with the size of buffer.payload.size)"},
+
+
+                     });
+            }
+
+            {
+               using message_type = common::message::service::call::v1_2::Reply;
 
                local::message::section< message_type>( out, "##") << R"(
 

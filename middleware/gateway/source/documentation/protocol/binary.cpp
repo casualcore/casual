@@ -64,7 +64,8 @@ namespace casual
                //! properties that are transported over the wire.
                struct Writer : serialize::Writer
                {
-                  using is_network_normalizing = void; // this is what trigger the 'specialization'
+                  constexpr static auto archive_properties() { return common::serialize::archive::Property::network;}
+
                   Writer( serialize::Writer writer) : serialize::Writer{ std::move( writer)} {}
 
                   //! we need to implement operator << so this type is returned, hence, we keep the

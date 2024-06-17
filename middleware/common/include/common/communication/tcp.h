@@ -174,13 +174,6 @@ namespace casual
    } // common::communication::tcp
 
 
-   namespace common::serialize::archive::network
-   {
-      template<>
-      struct normalizing< communication::tcp::Duplex>: std::true_type {};
-      
-   } // common::serialize::archive::network
-
 } // casual
 
 

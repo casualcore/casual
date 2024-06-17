@@ -17,8 +17,9 @@ namespace casual
    {
       enum struct Property
       {
-         named = 1,
-         order = 2,
+         named =   0b0001,
+         order =   0b0010,
+         network = 0b0100,
       };
 
       std::string_view description( Property value) noexcept;
@@ -55,24 +56,12 @@ namespace casual
 
       } // need
 
-      namespace network
+      namespace is::network
       {
-         namespace detail
-         {
-            template< typename A>
-            concept normalizing = requires 
-            {  
-               typename A::is_network_normalizing;
-            };
-         } // detail
+         template< typename T>
+         concept normalizing = has::property< T, Property::network>;
 
-         //! default instance -> all types that has a typedef of `is_network_normalizing`
-         template< typename A>
-         struct normalizing : std::bool_constant< detail::normalizing< A>>{};
-
-         template< typename A>
-         inline constexpr bool normalizing_v = normalizing< A>::value;
-      } // network
+      } // is::network
 
 
 
