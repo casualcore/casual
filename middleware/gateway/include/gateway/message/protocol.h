@@ -6,57 +6,14 @@
 
 #pragma once
 
-#include "casual/platform.h"
-
-#include "common/array.h"
-#include "common/algorithm.h"
-
-#include <string_view>
+#include "gateway/message/protocol/version.h"
+#include "gateway/message.h"
 
 namespace casual
 {
    namespace gateway::message::protocol
    {
-      enum class Version : platform::size::type
-      {
-         invalid = 0,
-         v1_0 = 1000,
-         v1_1 = 1001,
-         v1_2 = 1002,
-         v1_3 = 1003,
-         current = v1_3,
-      };
-
-      constexpr std::string_view description( Version value) noexcept
-      {
-         switch( value)
-         {
-            case Version::invalid: return "invalid";
-            case Version::v1_0: return "v1.0";
-            case Version::v1_1: return "v1.1";
-            case Version::v1_2: return "v1.2";
-            case Version::v1_3: return "v1.3";
-         };
-         return "<unknown>";
-      }
-
-      //! an array with all versions ordered by highest to lowest
-      constexpr auto versions = common::array::make( Version::v1_3, Version::v1_2, Version::v1_1, Version::v1_0);
-
-      consteval Version compiled_for_version()
-      {
-         #ifdef CASUAL_PROTOCOL_VERSION
-            constexpr auto version = protocol::Version{ CASUAL_PROTOCOL_VERSION};
-
-            static_assert( common::algorithm::contains( protocol::versions, version));
-
-            return version;
-         #else
-            return Version::current;
-         #endif
-      }
-
-
+     
       //! just a helper to make it easier to specialize `version_traits`.
       template< Version MIN, Version MAX = Version::current>
       struct version_helper
@@ -96,6 +53,41 @@ namespace casual
       {
          return protocol::compatible< std::decay_t< M>>( current);
       }
+
+
+
+      template<>
+      struct version_traits< domain::disconnect::Request> : version_helper< Version::v1_1> {};
+
+      template<>
+      struct version_traits< domain::disconnect::Reply> : version_helper< Version::v1_1> {};
+
+      template<>
+      struct version_traits< casual::domain::message::discovery::topology::implicit::Update> : version_helper< Version::v1_2> {};
+
+      template<>
+      struct version_traits< casual::queue::ipc::message::group::enqueue::Reply> : version_helper< Version::v1_3> {};
+
+      template<>
+      struct version_traits< casual::queue::ipc::message::group::enqueue::v1_2::Reply> : version_helper< Version::v1_0, Version::v1_2> {};
+
+      template<>
+      struct version_traits< casual::queue::ipc::message::group::dequeue::Reply> : version_helper< Version::v1_3> {};
+
+      template<>
+      struct version_traits< casual::queue::ipc::message::group::dequeue::v1_2::Reply> : version_helper< Version::v1_0, Version::v1_2> {};
+
+      template<>
+      struct version_traits< common::message::service::call::callee::Request> : version_helper< Version::v1_3> {};
+
+      template<>
+      struct version_traits< common::message::service::call::Reply> : version_helper< Version::v1_3> {};
+
+      template<>
+      struct version_traits< common::message::service::call::v1_2::callee::Request> : version_helper< Version::v1_0, Version::v1_2> {};
+
+      template<>
+      struct version_traits< common::message::service::call::v1_2::Reply> : version_helper< Version::v1_0, Version::v1_2> {};
 
    } //gateway::message::protocol
 } // casual

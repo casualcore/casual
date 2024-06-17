@@ -187,7 +187,7 @@ namespace casual
 
 
          template< typename M>
-         void operator() ( M& message)
+         void operator() ( M&& message)
          {
             if( auto found = common::algorithm::find( m_units, message.correlation))
                if( std::invoke( *found, message) == unit::Dispatch::done)

@@ -6,6 +6,7 @@
 
 #include "gateway/documentation/protocol/example.h"
 #include "gateway/message.h"
+#include "gateway/message/protocol.h"
 
 
 #include "common/communication/tcp/message.h"

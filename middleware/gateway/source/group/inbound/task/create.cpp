@@ -6,6 +6,8 @@
 
 #include "gateway/group/inbound/task/create.h"
 #include "gateway/group/inbound/tcp.h"
+#include "gateway/message/protocol/transform.h"
+#include "gateway/message/protocol.h"
 
 #include "gateway/common.h"
 #include "gateway/group/ipc.h"
@@ -257,6 +259,16 @@ namespace casual
                      Trace trace{ "gateway::group::inbound::task::create::local reply_type"};
 
                      reply.transaction.trid = std::move( shared->origin_trid);
+
+                     auto connection = state.connections.find_external( descriptor);
+                     CASUAL_ASSERT( connection);
+
+                     if( message::protocol::compatible< common::message::service::call::Reply>( connection->protocol()))
+                        tcp::send( state, connection->descriptor(), reply);
+                     else
+                        tcp::send( state, connection->descriptor(), message::protocol::transform::to< common::message::service::call::v1_2::Reply>( std::move( reply)));
+
+
                      inbound::tcp::send( state, descriptor, reply);
                      
                      // We're done

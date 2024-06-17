@@ -161,7 +161,7 @@ domains.element.name.size | uint64         |            8 | size of the domain n
 domains.element.name.data | dynamic string |       [0..*] | dynamic byte array with the domain name                           
 
 
-## service_call - **#3100** - _[v1.0, v1.1, v1.2, v1.3]_
+## service_call - **#3102** - _[v1.3]_
 
 Sent to and received from other domains when one domain wants call a service in the other domain
 
@@ -184,7 +184,50 @@ buffer.data.size         | uint64         |            8 | buffer payload size (
 buffer.data.data         | dynamic binary |       [0..*] | buffer payload data (with the size of buffer.payload.size)         
 
 
-## service_reply - **#3101** - _[v1.0, v1.1, v1.2, v1.3]_
+## service_call_v2 - **#3100** - _[v1.0, v1.1, v1.2]_
+
+Sent to and received from other domains when one domain wants call a service in the other domain
+
+role name                | network type   | network size | description                                                        
+------------------------ | -------------- | ------------ | -------------------------------------------------------------------
+execution                | (fixed) binary |           16 | uuid of the current execution context (breadcrumb)                 
+service.name.size        | uint64         |            8 | service name size                                                  
+service.name.data        | dynamic string |       [0..*] | byte array with service name                                       
+service.timeout.duration | uint64         |            8 | timeout of the service in use (ns)                                 
+parent.size              | uint64         |            8 | parent service name size                                           
+parent.data              | dynamic string |       [0..*] | byte array with parent service name                                
+xid.formatID             | uint64         |            8 | xid format type. if 0 no more information of the xid is transported
+xid.gtrid_length         | uint64         |            8 | length of the transaction gtrid part                               
+xid.bqual_length         | uint64         |            8 | length of the transaction branch part                              
+xid.data                 | (fixed) binary |           32 | byte array with the size of gtrid_length + bqual_length (max 128)  
+flags                    | uint64         |            8 | XATMI flags sent to the service                                    
+buffer.type.size         | uint64         |            8 | buffer type name size                                              
+buffer.type.data         | dynamic string |       [0..*] | byte array with buffer type in the form 'type/subtype'             
+buffer.data.size         | uint64         |            8 | buffer payload size (could be very big)                            
+buffer.data.data         | dynamic binary |       [0..*] | buffer payload data (with the size of buffer.payload.size)         
+
+
+## service_reply - **#3103** - _[v1.3]_
+
+Reply to call request
+
+role name                    | network type   | network size | description                                                                   
+---------------------------- | -------------- | ------------ | ------------------------------------------------------------------------------
+execution                    | (fixed) binary |           16 | uuid of the current execution context (breadcrumb)                            
+code.result                  | uint32         |            4 | XATMI result/error code, 0 represent OK                                       
+code.user                    | uint64         |            8 | XATMI user supplied code                                                      
+transaction.xid.formatID     | uint64         |            8 | xid format type. if 0 no more information of the xid is transported           
+transaction.xid.gtrid_length | uint64         |            8 | length of the transaction gtrid part                                          
+transaction.xid.bqual_length | uint64         |            8 | length of the transaction branch part                                         
+transaction.xid.data         | (fixed) binary |           32 | byte array with the size of gtrid_length + bqual_length (max 128)             
+transaction.state            | uint8          |            1 | state of the transaction TX_ACTIVE, TX_TIMEOUT_ROLLBACK_ONLY, TX_ROLLBACK_ONLY
+buffer.type.size             | uint64         |            8 | buffer type name size                                                         
+buffer.type.data             | dynamic string |       [0..*] | byte array with buffer type in the form 'type/subtype'                        
+buffer.data.size             | uint64         |            8 | buffer payload size (could be very big)                                       
+buffer.data.data             | dynamic binary |       [0..*] | buffer payload data (with the size of buffer.payload.size)                    
+
+
+## service_reply_v2 - **#3101** - _[v1.0, v1.1, v1.2]_
 
 Reply to call request
 

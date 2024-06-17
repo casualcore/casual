@@ -7,8 +7,7 @@
 
 #pragma once
 
-#include "gateway/message/protocol.h"
-#include "gateway/manager/admin/model.h"
+#include "gateway/message/protocol/version.h"
 
 #include "domain/message/discovery.h"
 #include "queue/common/ipc/message.h"
@@ -549,32 +548,6 @@ namespace casual
          
       } // outbound
 
-      //! make sure we specialize `protocol::version_traits` for the correct version.
-      namespace protocol
-      {   
-         template<>
-         struct version_traits< domain::disconnect::Request> : version_helper< Version::v1_1> {};
-
-         template<>
-         struct version_traits< domain::disconnect::Reply> : version_helper< Version::v1_1> {};
-
-         template<>
-         struct version_traits< casual::domain::message::discovery::topology::implicit::Update> : version_helper< Version::v1_2> {};
-
-         template<>
-         struct version_traits< casual::queue::ipc::message::group::enqueue::Reply> : version_helper< Version::v1_3> {};
-
-         template<>
-         struct version_traits< casual::queue::ipc::message::group::enqueue::v1_2::Reply> : version_helper< Version::v1_0, Version::v1_2> {};
-
-         template<>
-         struct version_traits< casual::queue::ipc::message::group::dequeue::Reply> : version_helper< Version::v1_3> {};
-
-         template<>
-         struct version_traits< casual::queue::ipc::message::group::dequeue::v1_2::Reply> : version_helper< Version::v1_0, Version::v1_2> {};
-
-      } // protocol
-
    } // gateway::message
 
    namespace common
@@ -689,8 +662,6 @@ struct Value< type, A>  \
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( domains);
          })
 
-
-
          CASUAL_CUSTOMIZATION_POINT_NETWORK( common::message::service::call::callee::Request,
          {
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( execution);
@@ -703,6 +674,28 @@ struct Value< type, A>  \
          })
       
          CASUAL_CUSTOMIZATION_POINT_NETWORK( common::message::service::call::Reply,
+         {
+            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( execution);
+            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( code.result);
+            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( code.user);
+            CASUAL_SERIALIZE_NAME( value.transaction.trid.xid, "transaction.xid");
+            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( transaction.state);
+            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( buffer);
+         })
+
+
+         CASUAL_CUSTOMIZATION_POINT_NETWORK( common::message::service::call::v1_2::callee::Request,
+         {
+            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( execution);
+            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( service.name);
+            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( service.timeout.duration);
+            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( parent);
+            CASUAL_SERIALIZE_NAME( value.trid.xid, "xid");
+            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( flags);
+            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( buffer);
+         })
+      
+         CASUAL_CUSTOMIZATION_POINT_NETWORK( common::message::service::call::v1_2::Reply,
          {
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( execution);
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( code.result);

@@ -7,6 +7,7 @@
 #include "common/unittest.h"
 
 #include "gateway/message.h"
+#include "gateway/message/protocol.h"
 #include "gateway/documentation/protocol/example.h"
 
 #include "common/serialize/native/network.h"

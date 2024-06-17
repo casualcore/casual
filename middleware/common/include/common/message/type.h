@@ -106,8 +106,10 @@ namespace casual
          service_name_lookup_reply,
          service_name_lookup_discard_request,
          service_name_lookup_discard_reply,
-         service_call   = 3100,
-         service_reply  = 3101,
+         service_call_v2   = 3100,
+         service_reply_v2  = 3101,
+         service_call   = 3102,
+         service_reply  = 3103,
          service_acknowledge,
 
          service_concurrent_advertise,

@@ -136,7 +136,7 @@ namespace casual
             //! 'accumulate' State, only more severe
             //! @{
             inline State operator + ( State lhs, State rhs) noexcept { return std::max( lhs, rhs);}
-            inline State& operator += ( State& lhs, State rhs) noexcept { return lhs = lhs + rhs;}
+            inline State& operator += ( State& lhs, State rhs) noexcept { return lhs = lhs + rhs;}   
             //! @}
 
             inline constexpr std::string_view description( State value) noexcept
@@ -501,10 +501,93 @@ namespace casual
 
             } // request
 
-            template< message::Type type>
-            struct common_request : message::basic_request< type>
+            namespace v1_2
             {
-               using base_type = message::basic_request< type>;
+               struct base_request : message::basic_request< message::Type::service_call_v2>
+               {
+                  using base_type = message::basic_request< message::Type::service_call_v2>;
+                  using base_type::base_type;
+
+                  Service service;
+                  std::string parent;
+
+                  common::transaction::ID trid;
+                  request::Flag flags{};
+
+                  common::service::header::Fields header;
+
+                  //! pending time, only to be return in the "ACK", to collect
+                  //! metrics
+                  platform::time::unit pending{};
+
+                  CASUAL_CONST_CORRECT_SERIALIZE(
+                     base_type::serialize( archive);
+                     CASUAL_SERIALIZE( service);
+                     CASUAL_SERIALIZE( parent);
+                     CASUAL_SERIALIZE( trid);
+                     CASUAL_SERIALIZE( flags);
+                     CASUAL_SERIALIZE( header);
+                     CASUAL_SERIALIZE( pending);
+                  )
+               };
+
+               namespace caller
+               {
+                  //! Represents a service call. via tp(a)call, from the callers perspective
+                  struct Request : base_request
+                  {
+                     template< typename... Args>
+                     Request( common::buffer::payload::Send buffer, Args&&... args)
+                        : base_request( std::forward< Args>( args)...), buffer( std::move( buffer))
+                     {}
+                     
+                     common::buffer::payload::Send buffer;
+
+                     CASUAL_CONST_CORRECT_SERIALIZE(
+                        base_request::serialize( archive);
+                        CASUAL_SERIALIZE( buffer);
+                     )
+                  };
+
+               } // caller
+
+               namespace callee
+               {
+                  //! Represents a service call. via tp(a)call, from the callee's perspective
+                  struct Request : base_request
+                  {   
+                     using base_request::base_request;
+
+                     common::buffer::Payload buffer;
+
+                     CASUAL_CONST_CORRECT_SERIALIZE(
+                        base_request::serialize( archive);
+                        CASUAL_SERIALIZE( buffer);
+                     )
+                  };
+               } // callee
+
+
+               //! Represent service reply.
+               using base_reply = basic_message< message::Type::service_reply_v2>;
+               struct Reply : base_reply
+               {
+                  service::Code code;
+                  Transaction transaction;
+                  common::buffer::Payload buffer;
+
+                  CASUAL_CONST_CORRECT_SERIALIZE(
+                     base_reply::serialize( archive);
+                     CASUAL_SERIALIZE( code);
+                     CASUAL_SERIALIZE( transaction);
+                     CASUAL_SERIALIZE( buffer);
+                  )
+               };
+            } // v1_2
+
+            struct base_request : message::basic_request< message::Type::service_call>
+            {
+               using base_type = message::basic_request< message::Type::service_call>;
                using base_type::base_type;
 
                Service service;
@@ -532,8 +615,6 @@ namespace casual
 
             namespace caller
             {
-               using base_request = common_request< message::Type::service_call>;
-
                //! Represents a service call. via tp(a)call, from the callers perspective
                struct Request : base_request
                {
@@ -554,8 +635,6 @@ namespace casual
 
             namespace callee
             {
-               using base_request = common_request< message::Type::service_call>;
-
                //! Represents a service call. via tp(a)call, from the callee's perspective
                struct Request : base_request
                {   
@@ -614,10 +693,16 @@ namespace casual
          struct type_traits< service::lookup::discard::Request> : detail::type< service::lookup::discard::Reply> {};
 
          template<>
-         struct type_traits< service::call::caller::Request> : detail::type<  service::call::Reply> {};
+         struct type_traits< service::call::callee::Request> : detail::type<  service::call::Reply> {};
 
          template<>
-         struct type_traits< service::call::callee::Request> : detail::type<  service::call::Reply> {};
+         struct type_traits< service::call::caller::Request> : detail::type<  service::call::Reply> {};
+
+         //template<>
+         //struct type_traits< service::call::v1_2::caller::Request> : detail::type<  service::call::v1_2::Reply> {};
+
+         template<>
+         struct type_traits< service::call::v1_2::callee::Request> : detail::type<  service::call::v1_2::Reply> {};
 
       } // reverse
 

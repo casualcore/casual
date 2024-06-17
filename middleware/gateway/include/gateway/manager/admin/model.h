@@ -7,7 +7,7 @@
 #pragma once
 
 
-#include "gateway/message/protocol.h"
+#include "gateway/message/protocol/version.h"
 
 #include "common/serialize/macro.h"
 #include "casual/platform.h"

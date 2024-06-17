@@ -202,6 +202,48 @@ domain:
          }
       }
 
+
+      TEST( gateway_protocol_1_2_manager, B_inbound_1_3__A_outbound_1_2__service_call)
+      {
+
+         auto b = local::domain( R"(
+domain: 
+   name: B
+   servers:
+      - path: bin/casual-gateway-manager
+        memberships: [ gateway]
+      - path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-server
+        memberships: [ user]
+   gateway:
+      inbound:
+         groups:
+            -  connections: 
+                  -  address: 127.0.0.1:7010
+         )");
+
+         auto a = local::domain( R"(
+domain: 
+   name: A
+   servers:
+      - path: bin/casual-gateway-manager.1.2
+        memberships: [ gateway]
+   gateway:
+      outbound:
+         groups:
+            -  connections: 
+                  -  address: 127.0.0.1:7010
+         )");
+
+
+         unittest::fetch::until( unittest::fetch::predicate::outbound::connected());
+
+         const auto payload = unittest::random::binary( 1000);
+
+         auto result = common::unittest::service::receive( common::unittest::service::send( "casual/example/domain/echo/B", payload));
+         
+         EXPECT_TRUE( payload == result);
+      }
+
    } // gateway
    
 } // casual

@@ -9,6 +9,8 @@
 #include "gateway/group/ipc.h"
 
 #include "gateway/message.h"
+#include "gateway/message/protocol.h"
+#include "gateway/message/protocol/transform.h"
 #include "gateway/common.h"
 
 #include "domain/discovery/api.h"
@@ -66,7 +68,7 @@ namespace casual
                namespace transaction
                {
                   template< typename M> 
-                  void associate_and_involve( State& state, M&& message, strong::socket::id descriptor)
+                  void associate_and_involve( State& state, const M& message, strong::socket::id descriptor)
                   {
                      Trace trace{ "gateway::group::outbound::handle::local::internal::transaction::associate_and_involve"};
                      log::line( verbose::log, "message: ", message);
@@ -198,7 +200,7 @@ namespace casual
 
                      namespace detail::create
                      {
-                        auto task( State& state, common::message::service::call::callee::Request& message, strong::socket::id descriptor)
+                        auto task( State& state, const common::message::service::call::callee::Request& message, strong::socket::id descriptor)
                         {
                            struct Destination
                            {
@@ -249,9 +251,6 @@ namespace casual
                            Trace trace{ "gateway::group::outbound::handle::local::internal::service::call::request"};
                            log::line( verbose::log, "message: ", message);
 
-                           auto tcp = state.connections.partner( descriptor);
-
-
                            // Check if we've has been called with the same correlation id before, 
                            // hence we are in a loop between gateways.
                            if( state.tasks.contains( message.correlation))
@@ -261,11 +260,25 @@ namespace casual
                               return;
                            }
 
-                           tcp::send( state, tcp, message);
+                           auto connection = state.connections.find_external( descriptor);
+                           CASUAL_ASSERT( connection);
 
-                           state.tasks.add( detail::create::task( state, message, tcp));
+                           if( message::protocol::compatible< common::message::service::call::callee::Request>( connection->protocol()))
+                           {
+                              tcp::send( state, connection->descriptor(), message);
 
-                           transaction::associate_and_involve( state, message, tcp);
+                              state.tasks.add( detail::create::task( state, message, connection->descriptor()));
+                              transaction::associate_and_involve( state, message, connection->descriptor());
+                           }
+                           else
+                           {
+                              // we need to do this first, since we're doing a destructive transform on the message (we cant use after moved)
+                              state.tasks.add( detail::create::task( state, message, connection->descriptor()));
+                              transaction::associate_and_involve( state, message, connection->descriptor());
+
+                              tcp::send( state, connection->descriptor(), message::protocol::transform::to< common::message::service::call::v1_2::callee::Request>( std::move( message)));
+                           }
+
                         };
                      }
 
@@ -544,6 +557,20 @@ namespace casual
                   namespace call
                   {
                      auto reply = basic_task< common::message::service::call::Reply>;
+
+                     namespace v1_2
+                     {
+                        auto reply( State& state)
+                        {
+                           return [ &state]( common::message::service::call::v1_2::Reply message)
+                           {
+                              Trace trace{ "gateway::group::outbound::handle::local::external::service::call::v1_2::reply"};
+                              log::line( verbose::log, "message: ", message);
+
+                              state.tasks( message::protocol::transform::from( std::move( message)));
+                           };
+                        }
+                     } // v1_2
                   } // call
 
                } // service
@@ -575,12 +602,7 @@ namespace casual
                               Trace trace{ "gateway::group::outbound::handle::local::external::queue::enqueue::v1_2::reply"};
                               log::line( verbose::log, "message: ", message);
 
-                              casual::queue::ipc::message::group::enqueue::Reply reply;
-                              reply.correlation = message.correlation;
-                              reply.execution = message.execution;
-                              reply.id = message.id;
-
-                              state.tasks( reply);
+                              state.tasks( message::protocol::transform::from( std::move( message)));
                            };
                         }   
                      } // v1_2
@@ -600,15 +622,7 @@ namespace casual
                               Trace trace{ "gateway::group::outbound::handle::local::external::queue::dequeue::v1_2::reply"};
                               log::line( verbose::log, "message: ", message);
 
-                              casual::queue::ipc::message::group::dequeue::Reply reply;
-                              reply.correlation = message.correlation;
-                              reply.execution = message.execution;
-                              if( ! message.message.empty())
-                                 reply.message = std::move( range::front( message.message));
-                              else
-                                 reply.code = decltype( reply.code)::no_message;
-
-                              state.tasks( reply);
+                              state.tasks( message::protocol::transform::from( std::move( message)));
                            };
                         }   
                      } // v1_2
@@ -847,6 +861,7 @@ namespace casual
             
             // service
             local::external::service::call::reply( state),
+            local::external::service::call::v1_2::reply( state),
 
             // conversation
             local::external::conversation::connect::reply( state),
