@@ -114,10 +114,12 @@ namespace casual
 
                      const rapidjson::Document& parse( rapidjson::Document& document, const platform::binary::type& json)
                      {
-                        if( ! json.empty() && json.back() == '\0')
-                           return parse( document, json.data());
+                        auto span = view::binary::to_string_like( json);
+
+                        if( ! span.empty() && span.back() == '\0')
+                           return parse( document, span.data());
                         else
-                           return parse( document, json.data(), json.size());
+                           return parse( document, span.data(), span.size());
                      }
 
                      namespace canonical
@@ -448,7 +450,8 @@ namespace casual
 
                            if( m_document.Accept( writer))
                            {
-                              destination.assign( buffer.GetString(), buffer.GetString() + buffer.GetSize());
+                              auto span = view::binary::make( buffer.GetString(), buffer.GetSize());
+                              destination.assign( std::begin( span), std::end( span));
                               reset();
                            }
                            else

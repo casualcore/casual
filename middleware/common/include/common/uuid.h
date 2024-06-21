@@ -30,11 +30,13 @@ namespace casual
 
          Uuid() noexcept = default;
 
-         Uuid( const uuid_type& uuid);
+         explicit Uuid( const uuid_type& uuid);
          explicit Uuid( std::string_view string);
 
          inline const uuid_type& get() const { return m_uuid;}
          inline uuid_type& get() { return m_uuid;}
+
+         inline auto range() const noexcept { return  view::binary::make( m_uuid);}
 
          //! Copy to native uuid
          //!
@@ -46,7 +48,7 @@ namespace casual
          bool empty() const;
 
          // forward serialization
-         CASUAL_FORWARD_SERIALIZE( m_uuid)
+         CASUAL_FORWARD_SERIALIZE( view::binary::make( m_uuid))
 
          friend inline bool operator == ( const Uuid& lhs, const Uuid& rhs) noexcept { return algorithm::equal( lhs.m_uuid, rhs.m_uuid);}     
          friend inline bool operator < ( const Uuid& lhs, const Uuid& rhs) noexcept { return algorithm::lexicographical::compare( lhs.m_uuid, rhs.m_uuid);}

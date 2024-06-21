@@ -169,7 +169,7 @@ namespace sql
       template< casual::concepts::enumerator T>
       std::error_code parameter_bind( sqlite3_stmt* statement, int column, T value)
       {
-         return parameter_bind( statement, column, static_cast< std::underlying_type_t< T>>( value));
+         return parameter_bind( statement, column, std::to_underlying( value));
       }
 
       template< std::integral T>
@@ -198,7 +198,7 @@ namespace sql
          return false;
       }
 
-      inline bool column_get( sqlite3_stmt* statement, int column, std::vector< char>& value)
+      inline bool column_get( sqlite3_stmt* statement, int column, std::vector< std::byte>& value)
       {
          if( auto blob = sqlite3_column_blob( statement, column))
          {

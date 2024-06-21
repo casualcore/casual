@@ -23,7 +23,7 @@ namespace casual::common
       {
          struct tag{};
 
-         using range = common::strong::Span< const char, tag>;
+         using range = common::strong::Span< const std::byte, tag>;
       } // id
 
       struct ID 
@@ -39,12 +39,10 @@ namespace casual::common
 
          inline explicit operator bool () const noexcept { return m_size != 0;}
 
-         //! implicit conversion to range representation.
-         inline operator id::range() const noexcept { return range();}
          
          CASUAL_CONST_CORRECT_SERIALIZE(
             CASUAL_SERIALIZE_NAME( m_size, "size");
-            CASUAL_SERIALIZE_NAME( m_gtrid, "gtrid");
+            CASUAL_SERIALIZE_NAME( view::binary::make( std::begin( m_gtrid), m_size), "gtrid");
          )
 
          friend std::ostream& operator << ( std::ostream& out, const global::ID& value);
@@ -52,7 +50,7 @@ namespace casual::common
 
       private:
          std::uint8_t m_size{};
-         std::array< char, 64> m_gtrid{};           
+         std::array< std::byte, 64> m_gtrid{};       
       };
 
       // transparent hasher
@@ -63,7 +61,7 @@ namespace casual::common
          
          inline std::size_t operator()( id::range range) const noexcept
          {
-            return hash_type{}( std::string_view( std::data( range), std::size( range)));
+            return hash_type{}( std::string_view( view::binary::to_string_like( range)));
          }
 
          inline std::size_t operator()( const casual::common::transaction::global::ID& value) const noexcept { return hash{}( value.range());}

@@ -34,7 +34,7 @@ namespace casual
             float v_float = 1 / float( 42);
             double v_double = 1 / double( 42);
             std::string v_string = "casual";
-            platform::binary::type v_binary = { '1', '2', '3', '1', '2', '3', '1', '2', '3', '1', '2', '3'};
+            platform::binary::type v_binary = { std::byte{ '1'}, std::byte{ '2'}, std::byte{ '3'}, std::byte{ '1'}, std::byte{ '2'}, std::byte{ '3'}, std::byte{ '1'}, std::byte{ '2'}, std::byte{ '3'}, std::byte{ '1'}, std::byte{ '2'}, std::byte{ '3'}};
 
             auto net_char() const { return common::network::byteorder::encode( v_char);}
             auto net_short() const { return common::network::byteorder::encode( v_short);}
@@ -69,7 +69,8 @@ namespace casual
             casual_field_add_float( &buffer, FLD_FLOAT, value.v_float);
             casual_field_add_double( &buffer, FLD_DOUBLE, value.v_double);
             casual_field_add_string( &buffer, FLD_STRING, value.v_string.c_str());
-            casual_field_add_binary( &buffer, FLD_BINARY, value.v_binary.data(),  value.v_binary.size());
+            auto string_like = common::view::binary::to_string_like( value.v_binary);
+            casual_field_add_binary( &buffer, FLD_BINARY, string_like.data(),  string_like.size());
 
             long size = 0;
             long used = 0;
@@ -111,17 +112,19 @@ Every field in the buffer has the following parts: `<field-id><size><data>`
 )";
             Value value;
 
+            {
+               out << std::fixed;
+               out << "char    | " << FLD_CHAR       << "  |      " << sizeof( value.v_char)    << " | " << value.v_char << '\n';
+               out << "short   | " << FLD_SHORT      << "  |      " << sizeof( value.v_short)  << " | " << value.v_short << '\n';
+               out << "long    | " << FLD_LONG       << "  |      " << sizeof( value.v_long)  << " | " << value.v_long << '\n';
+               out << "float   | " << FLD_FLOAT      << "  |      " << sizeof( value.v_float) << " | "  << std::setprecision( std::numeric_limits<float>::digits10 + 1) << value.v_float << '\n';
+               out << "double  | " << FLD_DOUBLE     << "  |      " << sizeof( value.v_double) << " | " << std::setprecision( std::numeric_limits<double>::digits10 + 1) << value.v_double << '\n';
+               out << "string  | " << FLD_STRING     << "  |      " << value.v_string.size()  << " | " << value.v_string << '\n';
+               auto string_like = common::view::binary::to_string_like( value.v_binary);
+               out << "binary  | " << FLD_BINARY     << "  |      " << string_like.size()  << " | "; out.write( string_like.data(), string_like.size()) ;out << '\n';
 
-            out << std::fixed;
-            out << "char    | " << FLD_CHAR       << "  |      " << sizeof( value.v_char)    << " | " << value.v_char << '\n';
-            out << "short   | " << FLD_SHORT      << "  |      " << sizeof( value.v_short)  << " | " << value.v_short << '\n';
-            out << "long    | " << FLD_LONG       << "  |      " << sizeof( value.v_long)  << " | " << value.v_long << '\n';
-            out << "float   | " << FLD_FLOAT      << "  |      " << sizeof( value.v_float) << " | "  << std::setprecision( std::numeric_limits<float>::digits10 + 1) << value.v_float << '\n';
-            out << "double  | " << FLD_DOUBLE     << "  |      " << sizeof( value.v_double) << " | " << std::setprecision( std::numeric_limits<double>::digits10 + 1) << value.v_double << '\n';
-            out << "string  | " << FLD_STRING     << "  |      " << value.v_string.size()  << " | " << value.v_string << '\n';
-            out << "binary  | " << FLD_BINARY     << "  |      " << value.v_binary.size()  << " | "; out.write( value.v_binary.data(), value.v_binary.size()) ;out << '\n';
-
-            out << '\n';
+               out << '\n';
+            }
 
             out << R"(
 
@@ -131,17 +134,19 @@ Every field in the buffer has the following parts: `<field-id><size><data>`
 --------|--------------|--------------|-------------
 )";
 
+            {
+               out << std::fixed;
+               out << "char    | " << encode( FLD_CHAR)    << "  |      " << encode( sizeof( value.net_char()))   << " | " << value.net_char()  << '\n';
+               out << "short   | " << encode( FLD_SHORT)   << "  |      " << encode( sizeof( value.net_short()))  << " | " << value.net_short()  << '\n';
+               out << "long    | " << encode( FLD_LONG )   << "  |      " << encode( sizeof( value.net_long()))  << " | " << value.net_long() << '\n';
+               out << "float   | " << encode( FLD_FLOAT)   << "  |      " << encode( sizeof( value.net_float())) << " | " << value.net_float()  << '\n';
+               out << "double  | " << encode( FLD_DOUBLE)  << "  |      " << encode( sizeof( value.net_double())) << " | " << value.net_double() << '\n';
+               out << "string  | " << encode( FLD_STRING)  << "  |      " << encode( value.v_string.size())   << " | " << value.v_string << '\n';
+               auto string_like = common::view::binary::to_string_like( value.v_binary);
+               out << "binary  | " << encode( FLD_BINARY)  << "  |      " << encode( string_like.size())   << " | "; out.write( string_like.data(), string_like.size()); out << '\n';
 
-            out << std::fixed;
-            out << "char    | " << encode( FLD_CHAR)    << "  |      " << encode( sizeof( value.net_char()))   << " | " << value.net_char()  << '\n';
-            out << "short   | " << encode( FLD_SHORT)   << "  |      " << encode( sizeof( value.net_short()))  << " | " << value.net_short()  << '\n';
-            out << "long    | " << encode( FLD_LONG )   << "  |      " << encode( sizeof( value.net_long()))  << " | " << value.net_long() << '\n';
-            out << "float   | " << encode( FLD_FLOAT)   << "  |      " << encode( sizeof( value.net_float())) << " | " << value.net_float()  << '\n';
-            out << "double  | " << encode( FLD_DOUBLE)  << "  |      " << encode( sizeof( value.net_double())) << " | " << value.net_double() << '\n';
-            out << "string  | " << encode( FLD_STRING)  << "  |      " << encode( value.v_string.size())   << " | " << value.v_string << '\n';
-            out << "binary  | " << encode( FLD_BINARY)  << "  |      " << encode( value.v_binary.size())   << " | "; out.write( value.v_binary.data(), value.v_binary.size()); out << '\n';
-
-            out << '\n';
+               out << '\n';
+            }
          }
 
          int main( int argc, char **argv)

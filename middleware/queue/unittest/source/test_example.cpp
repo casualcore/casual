@@ -93,7 +93,7 @@ domain:
 
          auto contents = common::unittest::random::binary( 128);
          auto buffer = tpalloc( X_OCTET, nullptr, contents.size());
-         common::algorithm::copy( contents, buffer);
+         common::algorithm::copy( contents, common::view::binary::make( buffer, contents.size()));
 
          EXPECT_EQ( local::call_enqueue( buffer), -1);
          tpfree( buffer);
@@ -117,7 +117,7 @@ domain:
          // enqueue 1 message
          {
             auto buffer = tpalloc( X_OCTET, nullptr, contents.size());
-            common::algorithm::copy( contents, buffer);
+            common::algorithm::copy( contents, common::view::binary::make( buffer, contents.size()));
 
             EXPECT_EQ( local::call_enqueue( buffer), 0);
             tpfree( buffer);
@@ -153,7 +153,7 @@ domain:
          // enqueue 1 message
          {
             auto buffer = tpalloc( X_OCTET, nullptr, contents.size());
-            common::algorithm::copy( contents, buffer);
+            common::algorithm::copy( contents, common::view::binary::make( buffer, contents.size()));
 
             EXPECT_EQ( local::call_enqueue( buffer), 0);
             tpfree( buffer);
@@ -241,7 +241,7 @@ domain:
 
             tptypes( buffer, buf_type, buf_subtype);
             EXPECT_STREQ( buf_type, X_OCTET);
-            EXPECT_TRUE( common::algorithm::equal( common::range::make(buffer, olen), contents));
+            EXPECT_TRUE( common::algorithm::equal( common::view::binary::make( buffer, olen), contents));
          }
 
          EXPECT_EQ( queue::dequeue( "example.q1").size(), 0UL);

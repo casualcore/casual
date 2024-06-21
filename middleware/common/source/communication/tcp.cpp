@@ -543,7 +543,7 @@ namespace casual
 
                         auto offset = complete.offset - message::header::size;
 
-                        part.iov_base = const_cast< char*>( complete.payload.data()) + offset;
+                        part.iov_base = complete.payload.data() + offset;
                         part.iov_len = complete.payload.size() - offset;
 
                         ::msghdr message{};

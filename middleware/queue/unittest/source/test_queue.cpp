@@ -284,11 +284,10 @@ domain:
 
          auto domain = local::domain();
 
-
-         const std::string payload{ "some message"};
+         const auto payload = common::unittest::random::binary( 64);
          queue::Message message;
          message.payload.type = common::buffer::type::binary;
-         message.payload.data.assign( std::begin( payload), std::end( payload));
+         message.payload.data = payload;
 
          queue::enqueue( "a1", message);
          auto messages = unittest::messages( "a1"); // unittest::messages( "a1");
@@ -320,7 +319,7 @@ domain:
          auto count = 5;
          while( count-- > 0)
          {
-            const std::string payload{ "some message"};
+            const auto payload = common::unittest::random::binary( 64);
             queue::Message message;
             message.payload.data.assign( std::begin( payload), std::end( payload));
 
@@ -351,7 +350,7 @@ domain:
 
          auto now = platform::time::clock::type::now();
 
-         const std::string payload{ "some message"};
+         const auto payload = common::unittest::random::binary( 64);
          queue::Message message;
          {
             message.attributes.available = now;
@@ -392,7 +391,7 @@ domain:
 
          auto now = platform::time::clock::type::now();
 
-         const std::string payload{ "some message"};
+         const auto payload = common::unittest::random::binary( 64);
 
          auto enqueue = [&](){
             queue::Message message;
@@ -505,7 +504,7 @@ domain:
 
          auto domain = local::domain();
 
-         const std::string payload{ "some message"};
+         const auto payload = common::unittest::random::binary( 64);
 
          auto enqueue = [&](){
             queue::Message message;
@@ -533,7 +532,7 @@ domain:
 
          auto domain = local::domain();
 
-         const std::string payload{ "some message"};
+         const auto payload = common::unittest::random::binary( 64);
 
          // message will be available at this absolute time
          auto available = platform::time::clock::type::now() + std::chrono::milliseconds{ 100};
@@ -606,7 +605,7 @@ domain:
 
          auto domain = local::domain();
 
-         const std::string payload{ "some message"};
+         const auto payload = common::unittest::random::binary( 64);
 
          constexpr auto name = "delayed_100ms";
 
@@ -658,7 +657,7 @@ domain:
                      delay: 5s
 )");
 
-         const std::string payload{ "some message"};
+         const auto payload = common::unittest::random::binary( 64);
 
          constexpr auto name = "a1";
          constexpr auto error_name = "a1.error";
@@ -731,7 +730,7 @@ domain:
          local::blocking::dequeue( ipc3, "a1");
          local::blocking::dequeue( ipc4, "a1");
 
-         const std::string payload{ "some message"};
+         const auto payload = common::unittest::random::binary( 64);
 
          auto enqueue = [&](){
             queue::Message message;
@@ -801,7 +800,7 @@ domain:
 
          auto domain = local::domain( local::configuration::queue, configuration);
 
-         const std::string payload{ "some message"};
+         const auto payload = common::unittest::random::binary( 64);
 
          // enqueue
          {
@@ -823,7 +822,7 @@ domain:
 
          auto domain = local::domain();
 
-         const std::string payload{ "some message"};
+         const auto payload = common::unittest::random::binary( 64);
          queue::Message message;
          message.payload.type = common::buffer::type::binary;
          message.payload.data.assign( std::begin( payload), std::end( payload));
@@ -861,7 +860,7 @@ domain:
 
          auto domain = local::domain();
 
-         const std::string payload{ "some message"};
+         const auto payload = common::unittest::random::binary( 64);
          queue::Message message;
          message.payload.type = common::buffer::type::binary;
          message.payload.data.assign( std::begin( payload), std::end( payload));
@@ -906,7 +905,7 @@ domain:
 
          auto domain = local::domain();
 
-         const std::string payload{ "some message"};
+         const auto payload = common::unittest::random::binary( 64);
          queue::Message message;
          message.payload.type = common::buffer::type::binary;
          message.payload.data.assign( std::begin( payload), std::end( payload));
@@ -958,7 +957,7 @@ domain:
 
          auto domain = local::domain();
 
-         const std::string payload{ "some message"};
+         const auto payload = common::unittest::random::binary( 64);
          {
             queue::Message message;
             message.payload.type = common::buffer::type::binary;

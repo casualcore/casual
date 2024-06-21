@@ -97,7 +97,8 @@ namespace casual
          {
             for( auto& value : range)
             {
-               value = byte();
+               using value_type = std::remove_reference_t< decltype( value)>;
+               value = static_cast< value_type>( byte());
             }
             return std::forward< R>( range);
          }

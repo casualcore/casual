@@ -46,8 +46,8 @@ namespace casual
       
       using item_type = long;
       using size_type = platform::binary::size::type;
-      using const_data_type = platform::binary::type::const_pointer;
-      using data_type = platform::binary::type::pointer;
+      using const_data_type = const char*;
+      using data_type = char*;
 
       enum : long
       {
@@ -61,9 +61,9 @@ namespace casual
          namespace
          {
             template<typename T>
-            T decode( const_data_type where) noexcept
+            T decode( platform::binary::immutable::pointer where) noexcept
             {
-               using network_type = common::network::byteorder::type<T>;
+               using network_type = common::network::byteorder::type< T>;
                const auto encoded = *reinterpret_cast< const network_type*>( where);
                return common::network::byteorder::decode<T>( encoded);
             }
@@ -108,12 +108,19 @@ namespace casual
                   m_inbound = inbound;
                }
 
-               template< typename Iter>
+               template< concepts::binary::iterator Iter>
                auto append( Iter first, Iter end)
                {                  
                   payload.data.insert( payload.data.end(), first, end);
                   if( m_inbound)
                      *m_inbound = handle();
+               }
+
+
+               template< concepts::binary::like C>
+               auto append( C binary)
+               {
+                  append( std::begin( binary), std::end( binary));
                }
 
                Buffer( Buffer&&) noexcept = default;
@@ -266,7 +273,7 @@ namespace casual
             template<typename B>
             void append( B& buffer, const_data_type data, platform::size::type size)
             {
-               buffer.append( data, data + size);
+               buffer.append( common::view::binary::make( data, size));
             }
 
 
@@ -274,7 +281,8 @@ namespace casual
             void append( B& buffer, const T value)
             {
                const auto encoded = common::network::byteorder::encode( value);
-               append( buffer, reinterpret_cast<const_data_type>( &encoded), sizeof( encoded));
+               auto span = std::span{ &encoded, 1};
+               buffer.append( std::as_bytes( span));
             }
 
 
@@ -336,7 +344,7 @@ namespace casual
                   // Make sure to update the handle regardless
                   const auto synchronize = common::execute::scope( [ handle, &buffer]() 
                   { 
-                     *handle = buffer.handle().underlying();
+                     *handle = buffer.handle().raw();
                   });
 
                   // Append the data
@@ -366,7 +374,7 @@ namespace casual
             {
                const auto field_offset = offset( buffer.index, id, occurrence);
 
-               data = buffer.handle().underlying() + field_offset + data_offset;
+               data = buffer.handle().raw() + field_offset + data_offset;
 
                size = local::decode< size_type>( buffer.handle().underlying() + field_offset + size_offset);
             }
@@ -376,7 +384,7 @@ namespace casual
             {
                const auto field_offset = offset( buffer.index, id, occurrence);
 
-               data = buffer.handle().underlying() + field_offset + data_offset;
+               data = buffer.handle().raw() + field_offset + data_offset;
             }
 
             template<typename B, typename T>
@@ -384,7 +392,7 @@ namespace casual
             {
                const auto field_offset = offset( buffer.index, id, occurrence);
 
-               data = local::decode< T>( buffer.handle().underlying() + field_offset + data_offset);
+               data = local::decode< T>( buffer.handle().value() + field_offset + data_offset);
             }
 
 
@@ -504,6 +512,8 @@ namespace casual
 
                const auto current = local::decode<size_type>( memory.data() + offset + size_offset);
 
+               auto binary = common::view::binary::make( data, size);
+
                // With equal sizes, stuff could be optimized ... but no
 
                // Erase the old and insert the new ... and yes, it
@@ -514,15 +524,18 @@ namespace casual
                   memory.erase(
                      memory.begin() + offset + data_offset,
                      memory.begin() + offset + data_offset + current),
-                  data, data + size);
+                  std::begin( binary), std::end( binary));
 
                // Write the new size (afterwards since above can throw)
+               {
+                  const auto encoded = common::network::byteorder::encode( size);
+                  auto bytes = std::as_bytes( std::span{ &encoded, 1});
 
-               const auto encoded = common::network::byteorder::encode( size);
-               std::copy(
-                  reinterpret_cast<const_data_type>( &encoded),
-                  reinterpret_cast<const_data_type>( &encoded) + sizeof( encoded),
-                  memory.begin() + offset + size_offset);
+                  std::copy(
+                     std::begin( bytes),
+                     std::end( bytes),
+                     memory.begin() + offset + size_offset);
+               }
 
                // Update offsets beyond this one
                //
@@ -567,7 +580,7 @@ namespace casual
                   // Make sure to update the handle regardless
                   const auto synchronize = common::execute::scope( [ handle, &buffer]() 
                   { 
-                     *handle = buffer.handle().underlying();
+                     *handle = buffer.handle().raw();
                   });
 
                   // Update the data
@@ -771,7 +784,7 @@ namespace casual
 
                   const auto synchronize = common::execute::scope( [ target_handle, &target]()
                   { 
-                     *target_handle = target.handle().underlying();
+                     *target_handle = target.handle().raw();
                   });
 
                   auto index = source.index;
@@ -797,10 +810,10 @@ namespace casual
 
                   const auto synchronize = common::execute::scope( [ handle, &buffer]() 
                   { 
-                     *handle = buffer.handle().underlying();
+                     *handle = buffer.handle().raw();
                   });
 
-                  const auto data = static_cast< const_data_type>( source);
+                  const auto data = static_cast< platform::binary::immutable::pointer>( source);
                   const auto size = count;
 
                   buffer = common::buffer::Payload{ buffer.payload.type, { data, data + size}};
@@ -1403,8 +1416,9 @@ namespace casual
             {
                struct write
                {
-                  const item_type id;
-                  const char* occurrence;
+                  const item_type id{};
+                  const char* occurrence{};
+
                   write( const item_type id, const char* const occurrence) : id( id), occurrence( occurrence) {}
 
                   template<typename A>
@@ -1418,8 +1432,10 @@ namespace casual
 
                      using common::serialize::named::value::make;
 
-                     const auto data = occurrence + data_offset;
-                     const auto size = occurrence + size_offset;
+                     auto where = common::view::binary::make( occurrence, 1);
+
+                     const auto data = where.data() + data_offset;
+                     const auto size = where.data() + size_offset;
 
                      switch( id / CASUAL_FIELD_TYPE_BASE)
                      {
@@ -1439,11 +1455,11 @@ namespace casual
                         archive << make( local::decode<double>( data), value);
                         break;
                      case CASUAL_FIELD_STRING:
-                        archive << make( std::string( data), value);
+                        archive << make( std::string( occurrence + data_offset), value);
                         break;
                      case CASUAL_FIELD_BINARY:
                      default:
-                        archive << make( std::vector<char>( data, data + local::decode<size_type>( size)), value);
+                        archive << make( platform::binary::type( data, data + local::decode<size_type>( size)), value);
                         break;
                      }
                   }
@@ -1523,6 +1539,10 @@ namespace casual
                   template< typename T, typename A>
                   void assign( A& archive)
                   {
+                     T value;
+                     archive >> common::serialize::named::value::make( value, "value");
+                     
+                     
                      m_value.resize( sizeof( T));
                      archive >> common::serialize::named::value::make( *reinterpret_cast< T*>( m_value.data()), "value");
                   }
@@ -1532,7 +1552,7 @@ namespace casual
                   {
                      std::string value;
                      archive >> CASUAL_NAMED_VALUE( value);
-                     common::algorithm::copy( value, m_value);
+                     common::algorithm::copy( common::view::binary::make( value), m_value);
                   }
 
                   template< typename T, typename F>
@@ -1544,12 +1564,13 @@ namespace casual
                   template< typename F>
                   void dispatch_string( F& functor) const
                   {
-                     std::string value( std::begin( m_value), std::end( m_value));
+                     auto span = common::view::binary::to_string_like( m_value);
+                     std::string value( std::begin( span), std::end( span));
                      functor( m_id, value);
                   }
 
                   long m_id = 0;
-                  std::vector< char> m_value;
+                  platform::binary::type m_value;
                };
 
 
@@ -1557,25 +1578,29 @@ namespace casual
                {
                   ~Dispatch()
                   {
-                     pool_type::pool().deallocate( m_buffer);
+                     pool_type::pool().deallocate( common::buffer::handle::type{ m_buffer});
                   }
 
                   auto release()
                   {
-                     return std::move( pool_type::pool().release( std::exchange( m_buffer, {})).payload);
+                     return std::move( pool_type::pool().release( common::buffer::handle::type{ std::exchange( m_buffer, {})}).payload);
                   }
 
-                  void operator() ( long id, char value) { casual_field_add_char( data(), id, value);}
-                  void operator() ( long id, short value) { casual_field_add_short( data(), id, value);}
-                  void operator() ( long id, long value) { casual_field_add_long( data(), id, value);}
-                  void operator() ( long id, float value) { casual_field_add_float( data(), id, value);}
-                  void operator() ( long id, double value) { casual_field_add_double( data(), id, value);}
-                  void operator() ( long id, const std::string& value) { casual_field_add_string( data(), id, value.c_str());}
-                  void operator() ( long id, const std::vector< char>& value) { casual_field_add_binary( data(), id, value.data(), value.size());}
+                  void operator() ( long id, char value) { casual_field_add_char( &m_buffer, id, value);}
+                  void operator() ( long id, short value) { casual_field_add_short( &m_buffer, id, value);}
+                  void operator() ( long id, long value) { casual_field_add_long( &m_buffer, id, value);}
+                  void operator() ( long id, float value) { casual_field_add_float( &m_buffer, id, value);}
+                  void operator() ( long id, double value) { casual_field_add_double( &m_buffer, id, value);}
+                  void operator() ( long id, const std::string& value) { casual_field_add_string( &m_buffer, id, value.c_str());}
+                  void operator() ( long id, const platform::binary::type& value) 
+                  {
+                     auto span = common::view::binary::to_string_like( value);
+                     casual_field_add_binary( &m_buffer, id, span.data(), span.size());
+                  }
 
                private:
-                  char** data() noexcept { return &m_buffer.underlying();}
-                  common::buffer::handle::mutate::type m_buffer = pool_type::pool().allocate( buffer::key, 1024);
+                  //char** data() noexcept { return &m_buffer.underlying();}
+                  char* m_buffer = pool_type::pool().allocate( buffer::key, 1024).raw();
                };
 
 
@@ -1597,7 +1622,7 @@ namespace casual
 
                   for( const auto& field : buffer.index)
                      for( const auto& occurrence : field.second)
-                        fields.emplace_back( field.first, buffer.handle().underlying() + occurrence);
+                        fields.emplace_back( field.first, buffer.handle().raw() + occurrence);
 
                   archive << CASUAL_NAMED_VALUE( fields);
                   archive.consume( stream);
@@ -1633,7 +1658,7 @@ namespace casual
             {
                try
                {
-                  return pool_type::pool().insert( payload::stream( stream, protocol)).underlying();
+                  return pool_type::pool().insert( payload::stream( stream, protocol)).raw();
                }
                catch( ...)
                {
@@ -1647,7 +1672,7 @@ namespace casual
             {
                Trace trace{ "field::internal::add"};
 
-               return pool_type::pool().insert( common::buffer::Payload{ buffer::key, std::move( buffer)}).underlying();
+               return pool_type::pool().insert( common::buffer::Payload{ buffer::key, std::move( buffer)}).raw();
             }
 
          } // internal

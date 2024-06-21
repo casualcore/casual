@@ -49,7 +49,7 @@ namespace casual
                      Reader( std::istream& in) : native::binary::Reader{ m_buffer} 
                      {
                         while( in)
-                           m_buffer.push_back( in.get());
+                           m_buffer.push_back( std::byte( in.get()));
                      }
 
                      constexpr static auto keys() { return local::keys();}
@@ -73,18 +73,7 @@ namespace casual
             return serialize::Writer::emplace< native::binary::Writer>();
          }
 
-         namespace create
-         {
-            namespace reader
-            {
-               //template struct Registration< binary::local::implementation::Reader>;
-            } // writer
-            namespace writer
-            {
-               //template struct Registration< binary::local::implementation::Writer>;
-            } // writer
-         } // create
-
       } // serialize::binary
    } // common
  } // casual
+ 

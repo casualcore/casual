@@ -381,17 +381,15 @@ namespace casual
             {
                auto value( platform::size::type size)
                {
-                  constexpr auto min = std::numeric_limits< platform::binary::value::type>::min();
-                  constexpr auto max = std::numeric_limits< platform::binary::value::type>::max();
+                  constexpr auto min = std::numeric_limits< char>::min();
+                  constexpr auto max = std::numeric_limits< char>::max();
 
                   platform::binary::type result;
                   result.resize( size);
 
-                  auto current = min;
-
-                  common::algorithm::for_each( result, [&current]( auto& c)
+                  common::algorithm::for_each( result, [ current = min]( auto& byte) mutable
                   {
-                     c = current;
+                     byte = static_cast< platform::binary::value::type>( current);
 
                      if( current == max)
                         current = min;
@@ -407,19 +405,17 @@ namespace casual
             {
                auto value( platform::size::type size)
                {
-                  constexpr platform::binary::value::type letters[] = { 'a', 'b', 'c', 'd', 'e', 'f', 'a', 'b', 'c', 'd', 'e', 'f'};
+                  static constexpr std::string_view letters = "abcdefabcdef";
 
                   std::string result;
                   result.resize( size);
 
-                  auto current = std::begin( letters);
-
-                  common::algorithm::for_each( result, [&]( auto& c)
+                  common::algorithm::for_each( result, [ current = std::begin( letters)]( auto& value) mutable
                   {
                      if( current == std::end( letters))
                         current = std::begin( letters);
 
-                     c = *(current++);
+                     value = *(current++);
                   });
 
                   return result;

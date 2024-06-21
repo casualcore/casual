@@ -79,8 +79,9 @@ namespace casual
 
                         friend bool operator == ( const Entry& lhs, const common::buffer::Payload& rhs) 
                         {
+                           auto string = common::view::binary::to_string_like( rhs.data);
                            return lhs.result.payload.type == rhs.type &&
-                              std::regex_match( std::begin( rhs.data), std::end( rhs.data), lhs.match);
+                              std::regex_match( std::begin( string), std::end( string), lhs.match);
                         }
                      };
 
@@ -138,7 +139,8 @@ namespace casual
 
                               result.match = entry.match;
                               result.result.payload.type = entry.type;
-                              common::algorithm::copy( entry.result, std::back_inserter( result.result.payload.data));
+                              auto binary = common::view::binary::make( entry.result);
+                              common::algorithm::container::append( binary, result.result.payload.data);
 
                               return result;
                            };

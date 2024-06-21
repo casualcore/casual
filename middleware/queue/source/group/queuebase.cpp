@@ -368,7 +368,7 @@ namespace casual
          auto state = message.trid ? queuebase::message::State::added : queuebase::message::State::enqueued;
 
          m_statement.enqueue.execute(
-               reply.id.get(),
+               reply.id.range(),
                message.queue.value(),
                message.queue.value(),
                gtrid,
@@ -396,7 +396,7 @@ namespace casual
             auto query = [&]()
             {
                if( message.selector.id)
-                  return m_statement.dequeue.first_id.query( message.selector.id.get(), message.queue.value());
+                  return m_statement.dequeue.first_id.query( message.selector.id.range(), message.queue.value());
                if( ! message.selector.properties.empty())
                   return m_statement.dequeue.first_match.query( message.queue.value(), message.selector.properties, now);
                
@@ -471,7 +471,7 @@ namespace casual
 
          for( auto& id : request.ids)
          {
-            auto query = m_statement.peek.one_message.query( id.get());
+            auto query = m_statement.peek.one_message.query( id.range());
 
             if( query.fetch( row))
             {
@@ -582,7 +582,7 @@ namespace casual
       {
          auto missing_message = [&]( auto& id)
          {
-            m_statement.message.remove.execute( queue.value(), id.get());
+            m_statement.message.remove.execute( queue.value(), id.range());
             return m_connection.affected() == 0;
          };
 

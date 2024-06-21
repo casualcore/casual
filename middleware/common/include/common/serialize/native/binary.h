@@ -14,7 +14,12 @@
 #include "common/memory.h"
 #include "common/execution.h"
 
+#include "casual/assert.h"
+
 #include <cassert>
+
+// temp
+#include <iostream>
 
 
 namespace casual
@@ -89,13 +94,13 @@ namespace casual
             void write( const std::string& value, const char*) 
             { 
                write_size( value.size());
-               append( value);
+               append( view::binary::make( value));
             }
 
             void write( const std::u8string& value, const char*) 
             {
                write_size( value.size());
-               append( value);
+               append( view::binary::make( value));
             }
 
             void write( const platform::binary::type& value, const char*) 
@@ -121,7 +126,7 @@ namespace casual
 
          private:
 
-            template< typename Range>
+            template< concepts::binary::like Range>
             void append( Range&& range)
             {
                m_buffer.insert(
@@ -173,14 +178,14 @@ namespace casual
             bool read( std::string& value, const char*)
             {
                value.resize( read_size());
-               consume( value);
+               consume( view::binary::make( value));
                return true;
             }
 
             bool read( std::u8string& value, const char*)
             {
                value.resize( read_size());
-               consume( value);
+               consume( view::binary::make( value));
                return true;
             }
 
@@ -199,18 +204,18 @@ namespace casual
 
          private:
 
-            template< typename Range>
+            template< concepts::binary::like Range>
             void consume( Range&& range)
             {
                auto source = range::make( std::begin( m_buffer) + m_offset, range.size());
-               assert( m_offset + source.size() <= range::size( m_buffer));
+               casual::assertion( m_offset + source.size() <= range::size( m_buffer), "m_offset: ", m_offset, ", source.size(): ", source.size(), " buffer.size: ", range::size( m_buffer));
+               //assert( m_offset + source.size() <= range::size( m_buffer));
 
                algorithm::copy( source, range);
-
                m_offset += range.size();
             }
 
-            auto read_size()
+            platform::size::type read_size()
             {
                platform::size::type size;
                m_offset = policy_type::read_size( m_buffer, m_offset, size);

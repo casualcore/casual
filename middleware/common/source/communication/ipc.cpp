@@ -13,6 +13,7 @@
 #include "common/signal.h"
 #include "common/environment.h"
 #include "common/file.h"
+#include "common/transcode.h"
 
 #include "common/exception/capture.h"
 #include "common/code/raise.h"
@@ -172,7 +173,7 @@ namespace casual
 
                   if( ! error)
                   {
-                     log::line( log::category::event::message::part::sent, transport.type(), '|', transcode::hex::stream::wrapper( transport.correlation()), '|', transport.size(), '|', transport.payload_offset(), '|', transport.complete_size());
+                     log::line( log::category::event::message::part::sent, transport.type(), '|', transcode::hex::stream::wrapper( view::binary::make( transport.correlation())), '|', transport.size(), '|', transport.payload_offset(), '|', transport.complete_size());
                      log::line( verbose::log, "ipc ---> blocking send - socket: ", socket, ", destination: ", destination, ", transport: ", transport);
                      return true;
                   }
@@ -202,7 +203,7 @@ namespace casual
                if( result == -1)
                   return local::check_error();
 
-               log::line( log::category::event::message::part::received, transport.type(), '|', transcode::hex::stream::wrapper( transport.correlation()), '|', result, '|', transport.payload_offset(), '|', transport.complete_size());
+               log::line( log::category::event::message::part::received, transport.type(), '|', transcode::hex::stream::wrapper( view::binary::make( transport.correlation())), '|', result, '|', transport.payload_offset(), '|', transport.complete_size());
                log::line( verbose::log, "ipc <--- blocking receive - handle: ", handle, ", transport: ", transport);
                assert( result == transport.size());
 
@@ -233,7 +234,7 @@ namespace casual
                   if( error)
                      return local::check_error( std::errc{ error.value()});
 
-                  log::line( log::category::event::message::part::sent, transport.type(), '|', transcode::hex::stream::wrapper( transport.correlation()), '|', transport.size(), '|', transport.payload_offset(), '|', transport.complete_size());
+                  log::line( log::category::event::message::part::sent, transport.type(), '|', transcode::hex::stream::wrapper( view::binary::make( transport.correlation())), '|', transport.size(), '|', transport.payload_offset(), '|', transport.complete_size());
                   log::line( verbose::log, "ipc ---> non blocking send - socket: ", socket, ", destination: ", destination, ", transport: ", transport);
                   return true;
                }
@@ -251,7 +252,7 @@ namespace casual
                   if( result == -1)
                      return local::check_error();
 
-                  log::line( log::category::event::message::part::received, transport.type(), '|', transcode::hex::stream::wrapper( transport.correlation()), '|', result, '|', transport.payload_offset(), '|', transport.complete_size());
+                  log::line( log::category::event::message::part::received, transport.type(), '|', transcode::hex::stream::wrapper( view::binary::make( transport.correlation())), '|', result, '|', transport.payload_offset(), '|', transport.complete_size());
                   log::line( verbose::log, "ipc <--- non blocking receive - handle: ", handle, ", transport: ", transport);
 
                   assert( result == transport.size());

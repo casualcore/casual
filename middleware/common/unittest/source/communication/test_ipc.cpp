@@ -31,15 +31,7 @@ namespace casual
             {
                const platform::binary::type& get()
                {
-                  auto create = [](){
-                     platform::binary::type result( 1000);
-                     algorithm::numeric::iota( result, 0);
-                     std::random_device rd;
-                     std::shuffle( std::begin( result), std::end( result), std::mt19937{ rd()});
-
-                     return result;
-                  };
-                  static auto result = create();
+                  static auto result = unittest::random::binary( 1000);
                   return result;
                }
 

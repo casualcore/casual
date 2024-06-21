@@ -55,17 +55,15 @@ namespace casual
                {
                   auto value( platform::size::type size)
                   {
-                     constexpr auto min = std::numeric_limits< platform::binary::value::type>::min();
-                     constexpr auto max = std::numeric_limits< platform::binary::value::type>::max();
+                     constexpr auto min = std::numeric_limits< char>::min();
+                     constexpr auto max = std::numeric_limits< char>::max();
 
                      platform::binary::type result;
                      result.resize( size);
 
-                     auto current = min;
-
-                     common::algorithm::for_each( result, [&current]( auto& c)
+                     common::algorithm::for_each( result, [ current = min]( auto& byte) mutable
                      {
-                        c = current;
+                        byte = static_cast< platform::binary::value::type>( current);
 
                         if( current == max)
                            current = min;
@@ -285,7 +283,7 @@ namespace casual
                   message.attributes.reply = "queueB";
                   message.attributes.available = local::time::point();
                   message.payload.type = ".json/";
-                  message.payload.data = { '{', '}'};
+                  message.payload.data = { std::byte{ '{'}, std::byte{ '}'}};
                   message.redelivered = 1;
                   message.timestamp = local::time::point();
                   return message;

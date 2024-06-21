@@ -20,6 +20,8 @@ namespace casual
       {
          using base_type = std::span< T>;
          using base_type::base_type;
+
+         explicit Span( std::span< T> value) : base_type( value) {}
       };
 
       template< concepts::binary::value_type T, typename Tag>

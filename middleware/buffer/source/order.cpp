@@ -223,49 +223,37 @@ namespace casual
                void append( M& memory, const T value)
                {
                   const auto encoded = common::network::byteorder::encode( value);
-                  const auto data = reinterpret_cast<const_data_type>( &encoded);
-                  const constexpr auto size = sizeof( encoded);
-
-                  memory.insert( memory.end(), data, data + size);
+                  auto bytes = std::as_bytes( std::span{ &encoded, 1});
+                  memory.insert( memory.end(), std::begin( bytes), std::end( bytes));
                }
 
                template<typename M>
-               void append( M& memory, const_data_type data)
+               void append( M& memory, std::string_view value)
                {
-                  const auto size = std::strlen( data) + 1;
-
-                  memory.insert( memory.end(), data, data + size);
+                  auto binary = common::view::binary::make( value);
+                  common::algorithm::container::append( binary, memory);
+                  memory.push_back( std::byte{ '\0'});
                }
 
 
                template<typename M>
-               void append( M& memory, const_data_type data, const size_type size)
+               void append( M& memory, common::view::immutable::Binary data)
                {
-                  //
                   // Make sure to reset the size in case of exception since
                   // this is not an atomic operation
-                  //
 
-                  //
                   // capture current size
-                  //
                   const auto used = memory.size();
 
-                  //
                   // create potential rollback
-                  //
                   const auto reset = common::execute::scope
                   ( [&](){ if( std::uncaught_exceptions()) memory.resize( used);});
 
-                  //
                   // append first size chunk
-                  //
-                  append( memory, size);
+                  append( memory, std::ssize( data));
 
-                  //
                   // append other data chunk
-                  //
-                  memory.insert( memory.end(), data, data + size);
+                  common::algorithm::container::append( data, memory);
                }
 
                template<typename... A>
@@ -278,7 +266,7 @@ namespace casual
                      // Make sure to update the handle regardless
                      const auto synchronize = common::execute::scope( [ handle, &buffer]() 
                      { 
-                        *handle = buffer.handle().underlying();
+                        *handle = buffer.handle().raw();
                      });
 
                      // Append the data
@@ -322,17 +310,16 @@ namespace casual
                   return sizeof( encoded);
                }
 
-               size_type select( const_data_type where, const_data_type& value) noexcept
+               size_type select( const_data_type where, const char*& value) noexcept
                {
-                  value = where;
-
+                  value = reinterpret_cast< const char*>( where);
                   return std::strlen( value) + 1;
                }
 
-               size_type select( const_data_type where, const_data_type& data, size_type& size) noexcept
+               size_type select( const_data_type where, const char*& data, size_type& size) noexcept
                {
                   const auto read = select( where, size);
-                  data = where + read;
+                  data = reinterpret_cast< const char*>( where + read);
                   return read + size;
                }
 
@@ -444,17 +431,15 @@ int casual_order_add_double( char** buffer, const double value)
 
 int casual_order_add_string( char** buffer, const char* const value)
 {
-   return casual::buffer::order::add::data( buffer, value);
+   return casual::buffer::order::add::data( buffer, std::string_view{ value});
 }
 
 int casual_order_add_binary( char** buffer, const char* const data, const long size)
 {
    if( size < 0)
-   {
       return CASUAL_ORDER_INVALID_ARGUMENT;
-   }
 
-   return casual::buffer::order::add::data( buffer, data, size);
+   return casual::buffer::order::add::data( buffer, casual::common::view::binary::make( data, size));
 }
 
 int casual_order_get_prepare( const char* const buffer)

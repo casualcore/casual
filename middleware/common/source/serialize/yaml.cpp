@@ -65,7 +65,8 @@ namespace casual
 
                      YAML::Node document( const platform::binary::type& yaml)
                      {
-                        return document( std::string( yaml.data(), yaml.size()));
+                        auto span = view::binary::to_string_like( yaml);
+                        return document( std::string( span.data(), span.size()));
                      }
 
                   } // load
@@ -299,13 +300,16 @@ namespace casual
                      {
                         YAML::Binary binary;
                         consume( node, binary);
-                        value.assign( binary.data(), binary.data() + binary.size());
+
+                        auto span = view::binary::make( binary.data(), binary.size());
+                        value.assign( std::begin( span), std::end( span));
                      }
                      static void read( const YAML::Node& node, view::Binary value)
                      {
                         YAML::Binary binary;
                         consume( node, binary);
-                        algorithm::copy( range::make( binary.data(), binary.size()), value);
+                        auto span = view::binary::make( binary.data(), binary.size());
+                        algorithm::copy( span, value);
                      }
 
                   protected:
@@ -375,7 +379,7 @@ namespace casual
 
                      const YAML::Emitter& document() const { return m_output;}
 
-                     auto consume()
+                     std::string consume()
                      {
                         if( std::exchange( m_state, State::empty) == State::implicit_map)
                            m_output << YAML::EndMap;
@@ -387,7 +391,7 @@ namespace casual
 
                         m_output << YAML::BeginDoc;
 
-                        return range::make( m_output.c_str() + offset, size - offset);
+                        return std::string( m_output.c_str() + offset, size - offset);
                      }
 
                   private:

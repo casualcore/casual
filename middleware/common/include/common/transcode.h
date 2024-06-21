@@ -12,6 +12,7 @@
 #include "casual/platform.h"
 #include "common/traits.h"
 #include "common/range.h"
+#include "common/view/binary.h"
 
 #include <string>
 
@@ -37,7 +38,7 @@ namespace casual
 
             platform::size::type encode( const Data source, Data target);
 
-            platform::size::type decode( const char* first, const char* last, char* dest_first, char* dest_last);
+            platform::size::type decode( std::string_view source, view::Binary destination);
          } // detail
 
          namespace capacity
@@ -85,7 +86,7 @@ namespace casual
          //! @return Base64-decoded binary data
          //!
          //! @throw exception::Casual on failure
-         platform::binary::type decode( const std::string_view& value);
+         platform::binary::type decode( std::string_view value);
 
          // TODO performance: make it possible to decode to fixed memory
          //  `b64_pton` seems to need additional space during decode, hence it's
@@ -95,17 +96,12 @@ namespace casual
          //!
          //! decode Base64 to a binary representation
          //! @attention [first, last) needs to be bigger than the [first, result) (by some bytes...)
-         //!
-         template< concepts::binary::iterator Iter>
-         auto decode( std::string_view source, Iter first, Iter last)
+         //! @returns the exact binary view of the decoded target
+         template< concepts::binary::like T>
+         inline auto decode( std::string_view source, T&& target)
          {
-            auto cast_source = []( auto&& i){ return reinterpret_cast< const char*>( &(*i));};
-            auto cast_target = []( auto&& i){ return reinterpret_cast< char*>( &(*i));};
-            auto size = detail::decode(
-               cast_source( std::begin( source)), cast_source( std::end( source)),
-               cast_target( first), cast_target( last));
-
-            return first + size;
+            auto count = detail::decode( source, view::binary::make( target));
+            return range::make( std::begin( target), count);
          }
 
       } // base64
@@ -180,7 +176,7 @@ namespace casual
       {
          namespace detail
          {
-            template< typename Input, typename Out>
+            template< concepts::binary::iterator Input, typename Out>
             void encode( Input first, Input last, Out out)
             {
                auto hex = []( auto value)
@@ -192,15 +188,16 @@ namespace casual
 
                for( ; first != last; ++first)
                {
-                  *out++ = hex( ( 0xf0 & *first) >> 4);
-                  *out++ = hex( 0x0f & *first);
+                  const auto value = std::to_integer< std::int8_t>( *first);
+                  *out++ = hex( ( 0xf0 & value) >> 4);
+                  *out++ = hex( 0x0f & value);
                }
             }
 
-            template< typename Input, typename Out>
+            template< typename Input, concepts::binary::iterator Out>
             void decode( Input first, Input last, Out out)
             {
-               assert( ( last - first) % 2 == 0);
+               assert( std::distance( first, last) % 2 == 0);
 
                auto hex = []( auto value)
                {
@@ -211,8 +208,10 @@ namespace casual
 
                for( ; first != last; ++out)
                {
-                  *out = ( 0x0f & hex( *first++)) << 4;
-                  *out += 0x0f & hex( *first++);
+                  auto value = ( 0x0f & hex( *first++)) << 4;
+                  value += 0x0f & hex( *first++);
+
+                  *out = static_cast< std::byte>( value);
                }
             }
 

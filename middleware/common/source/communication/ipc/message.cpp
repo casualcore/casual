@@ -7,6 +7,7 @@
 #include "common/communication/ipc/message.h"
 
 #include "common/log.h"
+#include "common/transcode.h"
 
 namespace casual
 {
@@ -16,8 +17,14 @@ namespace casual
       {
          std::ostream& operator << ( std::ostream& out, const Header& value)
          {
-            return stream::write( out, "{ type: ", description( value.type), ", correlation: ", transcode::hex::stream::wrapper( value.correlation),
-               ", offset: ", value.offset, ", count: ", value.count, ", size: ", value.size, '}');
+            return stream::write( out, 
+               "{ type: ", description( value.type), 
+               ", correlation: ", view::binary::make( value.correlation),
+               ", offset: ", value.offset, 
+               ", count: ", value.count, 
+               ", size: ", value.size, 
+               ", hex: ", std::as_bytes( std::span{ &value, 1}),
+               '}');
          }
          
          static_assert( max_message_size() <= platform::ipc::transport::size, "ipc message is too big'");
@@ -74,15 +81,20 @@ namespace casual
             return {};
 
          Uuid::uuid_type uuid{};
-         algorithm::copy_max( payload, uuid);
+         algorithm::copy_max( payload, view::binary::make( uuid));
 
          return strong::execution::id{ uuid};
       }
 
       std::ostream& operator << ( std::ostream& out, const Complete& value)
       {
-         return stream::write( out, "{ type: ", value.type(), ", correlation: ", value.correlation(), ", size: ",
-            value.payload.size(), ", offset: ", value.m_offset, ", complete: ", value.complete());
+         return stream::write( out, 
+            "{ type: ", value.type(), 
+            ", correlation: ", value.correlation(), 
+            ", size: ", value.payload.size(), 
+            ", offset: ", value.m_offset, 
+            ", complete: ", value.complete(),
+            '}');
       }
 
       static_assert( concepts::nothrow::movable< Complete>, "not movable");

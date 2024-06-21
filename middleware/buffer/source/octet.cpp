@@ -125,35 +125,34 @@ namespace casual
             }
 
 
-            int set( char** const handle, const_data_type data, const size_type size) noexcept
+            int set( char** const handle, common::view::immutable::Binary data) noexcept
             {
                try
                {
                   auto& buffer = pool_type::pool().get( common::buffer::handle::type{ *handle});
+                  casual::common::algorithm::copy( data, buffer.payload.data);
 
-                  *handle = casual::common::algorithm::copy(
-                     casual::common::range::make( data, size),
-                     buffer.payload.data).data();
-
+                  *handle = common::view::binary::to_string_like( buffer.payload.data).data();
                }
                catch( ...)
                {
                   return error();
                }
-
                return CASUAL_OCTET_SUCCESS;
-
             }
 
-            int get( const char* const handle, const_data_type& data, size_type& size) noexcept
+            common::view::immutable::Binary get( const char* const handle)
+            {
+               const auto& buffer = pool_type::pool().get( common::buffer::handle::type{ handle});
+               return common::view::binary::make( buffer.payload.data);
+            }
+
+            template< typename E, typename... Ts>
+            int wrap( E&& executer,  Ts&&... ts)
             {
                try
                {
-                  const auto& buffer = pool_type::pool().get( common::buffer::handle::type{ handle});
-
-                  data = buffer.payload.data.data();
-                  size = buffer.payload.data.size();
-
+                  executer( std::forward< Ts>( ts)...);
                }
                catch( ...)
                {
@@ -161,7 +160,6 @@ namespace casual
                }
 
                return CASUAL_OCTET_SUCCESS;
-
             }
 
          } //
@@ -206,11 +204,18 @@ int casual_octet_set( char** handle, const char* const data, const long size)
       return CASUAL_OCTET_INVALID_ARGUMENT;
    }
 
-   return casual::buffer::octet::set( handle, data, size);
+   return casual::buffer::octet::set( handle, casual::common::view::binary::make( data, size));
 
 }
 
 int casual_octet_get( const char* const handle, const char** data, long* const size)
 {
-   return casual::buffer::octet::get( handle, *data, *size);
+   return casual::buffer::octet::wrap( []( auto handle, auto data, auto size)
+   {
+      auto binary = casual::buffer::octet::get( handle);
+      auto view = casual::common::view::binary::to_string_like( binary);
+      *data = view.data();
+      *size = view.size();
+
+   }, handle, data, size); 
 }

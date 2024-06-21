@@ -81,21 +81,21 @@ namespace casual
          }
       }
 
-      TEST( common_serialize_json, array)
+      TEST( common_serialize_json, binary_array)
       {
          common::unittest::Trace trace;
          
 
          auto writer = serialize::json::pretty::writer();
 
-         const std::array< char, 4> origin{ '1', '2', '3', '4' };
+         const std::array< std::byte, 4> origin{ std::byte{ '1'}, std::byte{ '2'}, std::byte{ '3'}, std::byte{ '4'} };
 
          {   
             writer << CASUAL_NAMED_VALUE_NAME( origin, "value");
          }
 
          {
-            std::array< char, 4> value;
+            std::array< std::byte, 4> value;
             auto json = writer.consume< platform::binary::type>();
             auto reader = serialize::json::strict::reader( json);
             reader >> CASUAL_NAMED_VALUE( value);

@@ -9,6 +9,7 @@
 
 #include "common/algorithm.h"
 #include "common/algorithm/compare.h"
+#include "common/algorithm/container.h"
 #include "common/buffer/type.h"
 #include "common/string/compose.h"
 #include "common/log/line.h"
@@ -216,12 +217,12 @@ namespace casual
                   auto decode_base64 = []( common::buffer::Payload& payload)
                   {
                      // make sure we've got null termination on payload...
-                     payload.data.push_back( '\0');
+                     payload.data.push_back( std::byte{ '\0'});
 
-                     auto view = string::view::make( payload.data);
+                     auto view = view::binary::to_string_like( payload.data);
 
-                     auto last = common::transcode::base64::decode( view, std::begin( payload.data), std::end( payload.data));
-                     payload.data.erase( last, std::end( payload.data));
+                     auto result = common::transcode::base64::decode( std::string_view{ view.data(), view.size()}, payload.data);
+                     algorithm::container::trim( payload.data, result);
                   };
 
                   static const auto mapping = std::map< std::string_view, common::function< void( common::buffer::Payload&) const>>

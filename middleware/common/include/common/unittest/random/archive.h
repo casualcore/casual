@@ -49,6 +49,12 @@ namespace casual
                   {
                      return detail::Cardinality< std::numeric_limits< T>::min(), std::numeric_limits< T>::max()>{};
                   }
+
+                  template<>
+                  inline auto limit< std::byte> ()
+                  {
+                     return detail::Cardinality< std::numeric_limits< std::uint8_t>::min(), std::numeric_limits< std::uint8_t>::max()>{};
+                  }
                } // cardinality
 
                inline std::mt19937& engine()
@@ -128,8 +134,10 @@ namespace casual
 
                bool read( view::Binary value, const char*)
                {
-                  for( auto& c : value)
-                     c = character( detail::cardinality::limit< platform::binary::value::type>());
+                  static auto distribution = std::uniform_int_distribution< std::uint8_t>( std::numeric_limits< std::uint8_t>::min());
+                  
+                  for( auto& byte : value)
+                     byte = static_cast< std::byte>( distribution( detail::engine()));
                   
                   return true;
                }
@@ -144,7 +152,7 @@ namespace casual
             private:
 
                template< typename C>
-               constexpr static auto size( C cardinality)
+               constexpr static platform::size::type size( C cardinality)
                {
                   if( cardinality.fixed())
                      return cardinality.min();

@@ -1104,7 +1104,7 @@ namespace casual
                      }
                      else
                      {
-                        reply.trid = common::transaction::ID{ message.gtrid};
+                        reply.trid = common::transaction::ID{ message.gtrid.range()};
                         auto& transaction = state.transactions.emplace_back( reply.trid);
 
                         common::log::line( log, "added: ", transaction);

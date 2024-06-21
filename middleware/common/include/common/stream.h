@@ -11,6 +11,7 @@
 #include "common/algorithm.h"
 #include "common/functional.h"
 #include "common/message/type.h"
+#include "common/transcode.h"
 
 #include "common/serialize/line.h"
 
@@ -127,7 +128,7 @@ namespace casual
 
          //! Specialization for iterables, to log ranges
          template< typename C>
-         requires ( concepts::range< C> && ! concepts::string::like< C> && concepts::container::empty< C>)
+         requires ( concepts::range< C> && ! concepts::string::like< C> && ! concepts::binary::like< C>)
          struct point< C>
          {
             template< typename R>
@@ -225,6 +226,26 @@ namespace casual
                archive.consume( out);
                out << "}}";
             }
+         };
+
+         template< concepts::binary::like T>
+         struct point< T>
+         {  
+            template< typename C>
+            static void stream( std::ostream& out, const C& value)
+            {
+               transcode::hex::encode( out, value);
+            };
+         };
+
+         template< concepts::string::like T>
+         struct point< T>
+         {  
+            template< typename C>
+            static void stream( std::ostream& out, const C& value)
+            {
+               out.write( std::data( value), std::size( value));
+            };
          };
 
       } // customization

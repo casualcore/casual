@@ -117,7 +117,7 @@ namespace casual
 
                auto distribution()
                {
-                  using limit_type = std::numeric_limits< platform::binary::type::value_type>;
+                  using limit_type = std::numeric_limits< std::uint8_t>;
 
                   std::uniform_int_distribution<> distribution( limit_type::min(), limit_type::max());
 
@@ -127,11 +127,12 @@ namespace casual
                template< typename C>
                void randomize( C& container)
                {
-                  auto dist = local::distribution();
+                  auto distribution = local::distribution();
 
                   for( auto& value : container)
                   {
-                     value = dist( local::engine());
+                     using value_type = std::remove_cvref_t< decltype( value)>;
+                     value = static_cast< value_type>( distribution( local::engine()));
                   }
                }
 
@@ -151,7 +152,7 @@ namespace casual
          {
             auto distribution = local::distribution();
 
-            return distribution( local::engine());
+            return static_cast< platform::binary::type::value_type>( distribution( local::engine()));
          }
 
          platform::binary::type binary( platform::size::type size)

@@ -103,6 +103,7 @@ namespace casual
             friend bool operator == ( const ID& lhs, const xid_type& rhs);
 
             friend bool operator == ( const ID& lhs, global::id::range rhs);
+            inline friend bool operator == ( const ID& lhs, const global::ID rhs) { return lhs == rhs.range();}
 
             CASUAL_CONST_CORRECT_SERIALIZE(
                CASUAL_SERIALIZE_NAME( m_owner, "owner");
@@ -151,7 +152,7 @@ namespace casual
                   using global = transaction::global::id::range;
 
                   struct branch_tag{};
-                  using branch = strong::Span< const char, branch_tag>;
+                  using branch = strong::Span< const std::byte, branch_tag>;
                } // type
 
                namespace detail
@@ -222,7 +223,7 @@ namespace std
       std::size_t operator()( const casual::common::transaction::ID& value) const noexcept
       {
          auto range = casual::common::transaction::id::range::data( value);
-         return std::hash< std::string_view>{}( std::string_view( range.data(), range.size()));
+         return std::hash< std::string_view>{}( std::string_view( reinterpret_cast< const char*>( range.data()), range.size()));
       }
    };
 }

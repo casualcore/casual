@@ -322,7 +322,7 @@ namespace casual
                         {
                            value = transcode::utf8::cast( node.text().get());
                         }
-                        static void read( const pugi::xml_node& node, std::vector<char>& value)
+                        static void read( const pugi::xml_node& node, platform::binary::type& value)
                         { 
                            value = transcode::base64::decode( node.text().get()); 
                         }

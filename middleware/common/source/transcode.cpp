@@ -51,16 +51,18 @@ namespace casual
                   source.bytes); 
             }
 
-            platform::size::type decode( const char* first, const char* last, char* dest_first, char* dest_last)
+            platform::size::type decode( std::string_view source, view::Binary destination)
             {
                try
                {
+                  auto char_span = view::binary::to_string_like( destination);
+
                   // calls abort() if target size is insufficient
                   return cppcodec::base64_rfc4648::decode(
-                     dest_first,
-                     std::distance( dest_first, dest_last),
-                     first,
-                     std::distance( first, last));
+                     char_span.data(),
+                     char_span.size(),
+                     source.data(),
+                     source.size());
                }
                catch( const std::exception& e)
                {
@@ -71,11 +73,11 @@ namespace casual
          } // detail
 
 
-         platform::binary::type decode( const std::string_view& value)
+         platform::binary::type decode( std::string_view value)
          {
             platform::binary::type result( (value.size() / 4) * 3);
 
-            result.resize( detail::decode( value.data(), value.data() + value.size(), result.data(), result.data() + result.size()));
+            result.resize( detail::decode( value, result));
 
             return result;
          }

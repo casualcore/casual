@@ -57,7 +57,8 @@ namespace casual
                   auto complete = serialize::native::complete< complete_type>( message);
 
                   file.write( complete.header_data(), communication::tcp::message::header::size);
-                  file.write( complete.payload.data(), complete.payload.size());
+                  auto span = view::binary::to_string_like( complete.payload);
+                  file.write( span.data(), span.size());
                };
 
                //! Local 'wrapper' writer to enable _network normalizing_, so we only serialize the

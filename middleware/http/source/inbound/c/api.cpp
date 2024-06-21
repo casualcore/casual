@@ -9,6 +9,7 @@
 #include "http/common.h"
 
 #include "common/algorithm.h"
+#include "common/algorithm/container.h"
 #include "common/execution.h"
 #include "casual/assert.h"
 
@@ -132,7 +133,7 @@ namespace casual::http::inbound
             {
                // This should not happen
                if( reply->payload.body.empty())
-                  reply->payload.body.assign( {'N','U','L','L'});
+                  reply->payload.body.assign( { std::byte{ 'N'}, std::byte{ 'U'}, std::byte{ 'L'}, std::byte{ 'L'}});
 
                context_holder->reply = std::move( reply.value());
                return Cycle::done;
@@ -205,8 +206,9 @@ namespace casual::http::inbound
                }
 
                reply->code = std::to_underlying( context_holder->reply.code);
-               reply->payload.data = context_holder->reply.payload.body.data();
-               reply->payload.size = context_holder->reply.payload.body.size();
+               auto span = view::binary::to_string_like( context_holder->reply.payload.body);
+               reply->payload.data = span.data();
+               reply->payload.size = span.size();
             }
          } // reply
 
@@ -220,7 +222,7 @@ namespace casual::http::inbound
                
                auto context_holder = context::cast( handle->context_holder);
 
-               context_holder->request.payload.body.insert( std::end( context_holder->request.payload.body), data, data + size);
+               algorithm::container::append( view::binary::make( data, size), context_holder->request.payload.body);
             }
          } // payload
 

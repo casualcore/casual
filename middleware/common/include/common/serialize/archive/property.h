@@ -17,9 +17,10 @@ namespace casual
    {
       enum struct Property
       {
-         named =   0b0001,
-         order =   0b0010,
-         network = 0b0100,
+         named =      0b0001,
+         order =      0b0010,
+         network =    0b0100,
+         no_consume = 0b1000, // if the archive is an "adapter" and has no consume semantics
       };
 
       std::string_view description( Property value) noexcept;

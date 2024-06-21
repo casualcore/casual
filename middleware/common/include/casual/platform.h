@@ -350,7 +350,7 @@ namespace casual
 
       namespace binary
       {
-         using type = std::vector< char>;
+         using type = std::vector< std::byte>;
          using pointer = decltype( std::declval< binary::type>().data());
 
          namespace value
@@ -377,7 +377,7 @@ namespace casual
       {
          namespace raw
          {
-            using type = binary::pointer;
+            using type = char*;
 
             namespace size
             {
@@ -387,7 +387,7 @@ namespace casual
 
             namespace immutable
             {
-               using type = binary::immutable::pointer;
+               using type = const char*;
             } // immutable
 
             inline type external( immutable::type buffer)

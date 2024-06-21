@@ -1393,7 +1393,7 @@ domain:
 
             buffer::Payload payload;
             payload.type = "X_OCTET/";
-            common::algorithm::copy( "casual"sv, std::back_inserter( payload.data));
+            common::algorithm::copy( view::binary::make( "casual"sv), std::back_inserter( payload.data));
 
             auto result = common::service::call::context().sync( "casual/example/domain/echo/B", common::buffer::payload::Send{ payload}, {});
 

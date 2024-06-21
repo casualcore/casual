@@ -21,7 +21,7 @@ char* casual_buffer_allocate( const char* type, const char* subtype, long size)
    try
    {
       // TODO: Shall we report size less than zero ?
-      return casual::common::buffer::pool::holder().allocate( type, subtype, size < 0 ? 0 : size).underlying();
+      return casual::common::buffer::pool::holder().allocate( type, subtype, size < 0 ? 0 : size).raw();
    }
    catch( ...)
    {
@@ -37,7 +37,7 @@ char* casual_buffer_reallocate( const char* ptr, long size)
    try
    {
       // TODO: Shall we report size less than zero ?
-      return casual::common::buffer::pool::holder().reallocate( casual::common::buffer::handle::type{ ptr}, size < 0 ? 0 : size).underlying();
+      return casual::common::buffer::pool::holder().reallocate( casual::common::buffer::handle::type{ ptr}, size < 0 ? 0 : size).raw();
    }
    catch( ...)
    {

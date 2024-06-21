@@ -39,7 +39,7 @@ namespace local
 
          casual::common::buffer::pool::holder().deallocate( casual::common::buffer::handle::type{ *odata});
          auto buffer = casual::common::buffer::pool::holder().insert( std::move( result.buffer));
-         *odata = std::get< 0>( buffer).underlying();
+         *odata = std::get< 0>( buffer).raw();
          *olen = std::get< 1>( buffer);
       }
    } // <unnamed>
@@ -92,7 +92,7 @@ int casual_service_call( const char* const service, char* idata, const long ilen
 
       casual::common::buffer::pool::holder().deallocate( casual::common::buffer::handle::type{ *odata});
       auto result = casual::common::buffer::pool::holder().insert( std::move( fail.result.buffer));
-      *odata = std::get< 0>( result).underlying();
+      *odata = std::get< 0>( result).raw();
       *olen = std::get< 1>( result);
    }
    catch( ...)
@@ -181,7 +181,7 @@ int casual_service_asynchronous_receive( int *const descriptor, char** odata, lo
       *descriptor = fail.result.descriptor;
       casual::common::buffer::pool::holder().deallocate( casual::common::buffer::handle::type{ *odata});
       auto result = casual::common::buffer::pool::holder().insert( std::move( fail.result.buffer));
-      *odata = std::get< 0>( result).underlying();
+      *odata = std::get< 0>( result).raw();
       *olen = std::get< 1>( result);  
    }
    catch( ...)

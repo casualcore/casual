@@ -89,12 +89,14 @@ namespace casual
 
          constexpr Type() noexcept = default;
 
-         template< std::convertible_to< T> V> 
-         constexpr explicit Type( V&& value) noexcept( value_traits::nothrow_move_construct)
+         template< typename V> 
+         requires std::constructible_from< value_type, V>
+         constexpr explicit Type( V&& value) noexcept( value_traits::nothrow_move_construct) 
             : m_value( std::forward< V>( value)) {}
 
          //! creates a Type by emplacing on the internal value_type.
          template< typename... Ts>
+         requires std::constructible_from< value_type, Ts...>
          constexpr static auto emplace( Ts&&... ts)
          {
             return Type{ value_type{ std::forward< Ts>( ts)...}};

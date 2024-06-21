@@ -46,7 +46,10 @@ namespace casual
                
                auto result = transcode::base64::encode( writer.consume());
 
-               EXPECT_TRUE( base64 == result) << "base64: " << result << "\n" << CASUAL_NAMED_VALUE( message);
+               EXPECT_TRUE( base64 == result) 
+                  << "result:   " << result << "\n" 
+                  << "expected: " << base64 << '\n' 
+                  << CASUAL_NAMED_VALUE( message);
             }
 
             template< typename M>

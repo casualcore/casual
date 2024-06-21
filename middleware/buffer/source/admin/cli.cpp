@@ -162,7 +162,7 @@ if --verbose is provided the type of the buffer will be sent to stderr.
                message.payload.type = type ? *type : common::buffer::type::x_octet;
 
                while( std::cin.peek() != std::istream::traits_type::eof())
-                  message.payload.data.push_back( std::cin.get());
+                  message.payload.data.push_back( static_cast< std::byte>( std::cin.get()));
 
                communication::stream::outbound::Device out{ std::cout};
                communication::device::blocking::send( out, message);
@@ -216,7 +216,8 @@ if --verbose is provided the type of the buffer will be sent to stderr.
                         if( terminal::output::directive().verbose())
                            std::cerr << message.payload.type << '\n';
 
-                        std::cout.write( message.payload.data.data(), message.payload.data.size());
+                        auto string_like = view::binary::to_string_like( message.payload.data);
+                        std::cout.write(string_like.data(), string_like.size());
                      }),
                   std::ref( done)
                );

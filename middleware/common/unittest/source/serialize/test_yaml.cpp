@@ -115,11 +115,11 @@ value:
 
       }
 
-      TEST( common_serialize_yaml, array)
+      TEST( common_serialize_yaml, binary_array)
       {
          common::unittest::Trace trace;
 
-         const std::array< char, 4> origin{ '1', '2', '3', '4' };
+         const std::array< std::byte, 4> origin{ std::byte{ '1'}, std::byte{ '2'}, std::byte{ '3'}, std::byte{ '4'}};
 
          auto writer = serialize::yaml::writer();
          writer << CASUAL_NAMED_VALUE_NAME( origin, "value");
@@ -128,7 +128,7 @@ value:
             auto yaml = writer.consume< platform::binary::type>();
             ASSERT_TRUE( ! yaml.empty()) << trace.compose( "size: ", yaml.size(), " - ", "data: ", yaml.data());
 
-            std::array< char, 4> value;
+            std::array< std::byte, 4> value;
             auto reader = serialize::yaml::strict::reader( yaml);
             reader >> CASUAL_NAMED_VALUE( value);
 
@@ -180,7 +180,6 @@ value:
 
          std::vector< long> values;
          local::string_to_relaxed_value( yaml, values);
-
 
          ASSERT_TRUE( values.size() == 7) << values.size();
          EXPECT_TRUE( values.at( 0) == 1);
@@ -271,12 +270,14 @@ value:
          common::unittest::Trace trace;
          std::string yaml;
 
+         const auto origin = unittest::random::binary( 24);
+
          {
             test::Binary value;
 
             value.m_long = 23;
             value.m_string = "Charlie";
-            value.m_binary = { 1, 2, 56, 57, 58 };
+            value.m_binary = origin;
 
             local::value_to_string( value, yaml);
          }
@@ -284,14 +285,7 @@ value:
          test::Binary value;
          local::string_to_relaxed_value( yaml, value);
 
-
-
-         ASSERT_TRUE( value.m_binary.size() == 5) << value.m_binary.size();
-         EXPECT_TRUE( value.m_binary.at( 0) == 1);
-         EXPECT_TRUE( value.m_binary.at( 1) == 2);
-         EXPECT_TRUE( value.m_binary.at( 2) == 56) << value.m_binary.at( 2);
-         EXPECT_TRUE( value.m_binary.at( 3) == 57);
-         EXPECT_TRUE( value.m_binary.at( 4) == 58);
+         EXPECT_TRUE( algorithm::equal( value.m_binary, origin));
       }
 
 

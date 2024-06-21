@@ -86,7 +86,7 @@ namespace casual
                   m_connection.execute( "INSERT INTO call VALUES (?,?,?,?,?,?);",
                      metric.service,
                      metric.parent,
-                     metric.execution.underlying().get(),
+                     metric.execution.underlying().range(),
                      common::transaction::id::range::global( metric.trid),
                      metric.start,
                      metric.end);

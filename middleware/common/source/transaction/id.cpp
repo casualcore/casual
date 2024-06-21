@@ -53,9 +53,9 @@ std::ostream& operator << ( std::ostream& out, const XID& xid)
          return out;
       }
 
-      casual::common::transcode::hex::encode( out, xid.data, xid.data + xid.gtrid_length);
+      casual::common::transcode::hex::encode( out, casual::common::transaction::id::range::global( xid));
       out  << ':';
-      casual::common::transcode::hex::encode( out, xid.data + xid.gtrid_length, xid.data + xid.gtrid_length + xid.bqual_length);
+      casual::common::transcode::hex::encode( out, casual::common::transaction::id::range::branch( xid));
       out << ':' << xid.formatID;
 
    }
@@ -94,8 +94,8 @@ namespace casual
                xid.gtrid_length = std::size( gtrid);
                xid.bqual_length = std::size( bqual);
 
-               algorithm::copy( gtrid, xid.data);
-               algorithm::copy( bqual, xid.data + xid.gtrid_length);
+               algorithm::copy( view::binary::to_string_like( gtrid), xid.data);
+               algorithm::copy( view::binary::to_string_like( bqual), xid.data + xid.gtrid_length);
 
                xid.formatID = ID::Format::casual;
             }
@@ -112,12 +112,12 @@ namespace casual
       ID::ID( global::id::range gtrid)
       {
          auto bqual = uuid::make();
-         local::casual_xid( gtrid, bqual.get(), xid);
+         local::casual_xid( gtrid, bqual.range(), xid);
       }
 
       ID::ID( Uuid gtrid, Uuid bqual, const process::Handle& owner) : m_owner( std::move( owner))
       {
-         local::casual_xid( gtrid.get(), bqual.get(), xid);
+         local::casual_xid( gtrid.range(), bqual.range(), xid);
       }
 
       ID::ID( ID&& rhs) noexcept
@@ -222,13 +222,12 @@ namespace casual
          {
             type::global global( const xid_type& xid)
             {
-               return type::global{ xid.data, xid.data + xid.gtrid_length};
+               return type::global{ view::binary::make( xid.data, xid.gtrid_length)};
             }
 
             type::branch branch( const xid_type& xid)
             {
-               return type::branch{ xid.data + xid.gtrid_length,
-                     xid.data + xid.gtrid_length + xid.bqual_length};
+               return type::branch{ view::binary::make( xid.data + xid.gtrid_length, xid.bqual_length)};
             }
 
             type::global global( const ID& id)

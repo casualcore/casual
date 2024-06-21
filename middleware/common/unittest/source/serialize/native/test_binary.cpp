@@ -101,7 +101,7 @@ namespace casual
 
                auto input = input_type{}( buffer);
 
-               std::vector< char> binaryOutput;
+               platform::binary::type binaryOutput;
                input >> binaryOutput;
 
                EXPECT_TRUE( binaryInput == binaryOutput);
@@ -115,7 +115,7 @@ namespace casual
 
                message::service::Advertise advertise;
 
-               const auto ipc = strong::ipc::id{ uuid::make()};
+               const auto ipc = strong::ipc::id::generate();
 
                advertise.process.ipc = ipc;
 
@@ -148,7 +148,7 @@ namespace casual
                using complete_type = typename TestFixture::complete_type;
 
                auto origin = unittest::Message{ 10000};
-               origin.correlation = strong::correlation::id::emplace( uuid::make());
+               origin.correlation = strong::correlation::id::generate();
 
                unittest::Message result;
 
@@ -156,6 +156,7 @@ namespace casual
 
                EXPECT_TRUE( origin == result) << CASUAL_NAMED_VALUE( origin) << '\n' << CASUAL_NAMED_VALUE( result);
             }
+
 
             TYPED_TEST( casual_serialize_native_binary, transaction_id_null)
             {
@@ -281,6 +282,52 @@ namespace casual
                EXPECT_TRUE( target.time_since_epoch().count() == 0);
             }
 
+            TYPED_TEST( casual_serialize_native_binary, gtrid)
+            {
+               common::unittest::Trace trace;
+
+               using input_type = typename TestFixture::input_type;
+               using output_type = typename TestFixture::output_type;
+
+               const transaction::global::ID expected{ "aabbccddeeff0011223344"};
+
+               auto output = output_type{}();
+               output << expected;
+
+               transaction::global::ID target;
+               {
+                  auto buffer = output.consume();
+                  auto input = input_type{}( buffer);
+                  input >> target;
+               }
+
+               EXPECT_TRUE( target == expected);
+            }
+
+
+            TYPED_TEST( casual_serialize_native_binary, complete_message)
+            {
+               common::unittest::Trace trace;
+
+               using complete_type = typename TestFixture::complete_type;
+
+               using message_type = message::service::lookup::Request;
+
+               message_type origin{ process::handle()};
+               {
+                  origin.execution = strong::execution::id::generate();
+                  origin.correlation = strong::correlation::id::generate();
+                  origin.gtrid = transaction::global::ID{ "aabbccddeeff0011223344"};
+                  origin.requested = "some/service";
+               }
+
+               auto complete = native::complete< complete_type>( origin);
+               auto message = native::complete< message_type>( complete);
+
+               EXPECT_TRUE( origin.correlation == message.correlation);
+            }
+
+
             TYPED_TEST( casual_serialize_native_binary, message_call)
             {
                common::unittest::Trace trace;
@@ -297,10 +344,10 @@ namespace casual
                {
 
                   buffer::Payload payload{ type, 128};
-                  algorithm::copy( info, std::begin( payload.data));
+                  algorithm::copy( view::binary::make( info), std::begin( payload.data));
 
                   EXPECT_TRUE( payload.data.size() == 128) << " payload.data.size(): " <<  payload.data.size();
-                  EXPECT_TRUE( payload.data.data() == info) << "payload.data.data(): " <<  payload.data.data();
+                  EXPECT_TRUE( algorithm::equal( view::Binary{ std::begin( payload.data), info.size()}, view::binary::make( info))) << CASUAL_NAMED_VALUE( payload);
 
                   message::service::call::caller::Request message{ buffer::payload::Send{ payload, 100, 100}};
                   message.header.add( service::header::Field{ "casual.header.test.1: 42"});
@@ -326,7 +373,7 @@ namespace casual
 
                   EXPECT_TRUE( message.buffer.type == type);
                   EXPECT_TRUE( message.buffer.data.size() == 100) << "message.buffer.data.size(): " << message.buffer.data.size();
-                  EXPECT_TRUE( message.buffer.data.data() == info)  << " message.buffer.data.data(): " <<  message.buffer.data.data();
+                  EXPECT_TRUE( algorithm::equal( view::Binary{ std::begin( message.buffer.data), info.size()}, view::binary::make( info))) << CASUAL_NAMED_VALUE( message.buffer);
 
                   // header
                   {
@@ -346,7 +393,7 @@ namespace casual
                {
                   namespace only::host
                   {
-                     struct Integrals : common::Compare< Integrals>
+                     struct Integrals 
                      {
                         Integrals() = default;
                         Integrals( std::int8_t int8, std::int16_t int16, std::int32_t int32, std::int64_t int64, std::uint8_t uint8, std::uint16_t uint16, std::uint32_t uint32, std::uint64_t uint64) 
@@ -361,7 +408,7 @@ namespace casual
                         std::uint32_t uint32{};
                         std::uint64_t uint64{};
 
-                        auto tie() const noexcept { return std::tie( int8, int16, int32, int64, uint8, uint16, uint32, uint64);}
+                        friend bool operator == ( const Integrals& lhs, const Integrals& rhs) = default;
 
                         CASUAL_CONST_CORRECT_SERIALIZE(
                            CASUAL_SERIALIZE( int8);

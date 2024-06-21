@@ -160,7 +160,7 @@ namespace casual
       namespace binary
       {
          template< typename T>
-         concept value_type = concepts::any_of< std::remove_cvref_t< T>, char, unsigned char, signed char, std::byte>;
+         concept value_type = concepts::any_of< std::remove_cvref_t< T>, std::byte>;
 
          template< typename T>
          concept iterator = std::contiguous_iterator< T> && binary::value_type< std::iter_value_t< T>>;

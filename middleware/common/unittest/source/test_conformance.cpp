@@ -64,9 +64,9 @@ namespace casual
       static_assert( ! concepts::range_with_value< std::vector< int>, long>, "concepts not work...");
 
 
-      static_assert( concepts::binary::like< std::vector< char>>, "concepts not work...");
+      static_assert( concepts::binary::like< platform::binary::type>, "concepts not work...");
       static_assert( ! concepts::binary::like< std::vector< int>>, "concepts not work...");
-      static_assert( concepts::binary::iterator< std::vector< char>::iterator>, "concepts not work...");
+      static_assert( concepts::binary::iterator< platform::binary::type::iterator>, "concepts not work...");
       static_assert( ! concepts::binary::iterator< std::vector< int>::iterator>, "concepts not work...");
 
       static_assert( concepts::compare::equal_to< long, int>);

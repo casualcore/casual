@@ -36,8 +36,9 @@ namespace casual
             {
                auto validate( const common::buffer::Payload& payload)
                {
-                  const auto size = payload.data.size();
-                  const auto used = std::strlen( payload.data.data()) + 1;
+                  auto string_like = common::view::binary::to_string_like( payload.data);
+                  const auto size = std::size( string_like);
+                  const auto used = std::strlen( string_like.data()) + 1;
 
                   // We do need to check that it is a real null-terminated
                   // string within allocated area
@@ -78,7 +79,7 @@ namespace casual
                {
                   auto& buffer = allocator_base::emplace_back( type, size ? size : 1);
 
-                  buffer.payload.data.front() = '\0';
+                  buffer.payload.data.front() = std::byte{ '\0'};
 
                   return buffer.payload.handle();
                }
@@ -88,7 +89,7 @@ namespace casual
                   auto& buffer = allocator_base::get( handle);
 
                   buffer.payload.data.resize( size ? size : 1);
-                  buffer.payload.data.back() = '\0';
+                  buffer.payload.data.back() = std::byte{ '\0'};
 
                   // Allow user to reduce allocation
                   buffer.payload.data.shrink_to_fit();
@@ -146,8 +147,15 @@ namespace casual
                {
                   const auto& buffer = pool_type::pool().get( common::buffer::handle::type{ handle});
 
-                  if( size) *size = buffer.payload.data.size();
-                  if( used) *used = std::strlen( buffer.payload.data.data()) + 1;
+                  if( size) 
+                     *size = buffer.payload.data.size();
+                  if( used)
+                  {
+                     if( auto found = common::algorithm::find( buffer.payload.data, std::byte{ '\0'}))
+                        *used = std::distance( std::begin( buffer.payload.data), std::begin( found)) + 1;
+                     else
+                        return CASUAL_STRING_INTERNAL_FAILURE;
+                  }
                }
                catch( ...)
                {
@@ -163,13 +171,11 @@ namespace casual
                try
                {
                   auto& buffer = pool_type::pool().get( common::buffer::handle::type{ *handle});
-
                   const auto count = std::strlen( value) + 1;
 
-                  *handle = casual::common::algorithm::copy(
-                     casual::common::range::make( value, count),
-                     buffer.payload.data).data();
-
+                  auto binary = common::view::binary::make( value, count);
+                  buffer.payload.data.assign( std::begin( binary), std::end( binary));
+                  *handle = buffer.payload.handle().raw();
                }
                catch( ...)
                {
@@ -186,7 +192,7 @@ namespace casual
                {
                   const auto& buffer = pool_type::pool().get( common::buffer::handle::type{ handle});
 
-                  const auto used = std::strlen( buffer.payload.data.data()) + 1;
+                  const auto used = std::strlen( buffer.payload.handle().raw()) + 1;
                   const auto size = buffer.payload.data.size();
 
                   if( used > size)
@@ -195,7 +201,8 @@ namespace casual
                      buffer.payload.data.at( used);
                   }
 
-                  if( value) *value = buffer.payload.data.data();
+                  if( value) 
+                     *value = buffer.payload.handle().raw();
 
                }
                catch( ...)

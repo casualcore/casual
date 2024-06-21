@@ -57,9 +57,9 @@ namespace casual
       {
          using correlation_type = Uuid::uuid_type;
 
-         using payload_type = std::array< char, transport::max_payload_size()>;
-         using range_type = range::type_t< payload_type>;
-         using const_range_type = range::const_type_t< payload_type>;
+         using payload_type = std::array< std::byte, transport::max_payload_size()>;
+         using range_type = std::span< std::byte>;
+         using const_range_type = std::span< const std::byte>;
 
          struct message_t
          {

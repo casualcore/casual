@@ -1423,7 +1423,7 @@ namespace casual
          // holder().inbound() keeps track of the _special_ buffer.
          EXPECT_TRUE( common::buffer::pool::holder().inbound() == handle);
 
-         auto buffer = handle.underlying();
+         auto buffer = handle.raw();
 
          
          ASSERT_TRUE( buffer != nullptr);
@@ -1437,19 +1437,19 @@ namespace casual
 
          
          // the above should have expanded the buffer.
-         EXPECT_TRUE( buffer != handle.underlying());
+         EXPECT_TRUE( buffer != handle.raw());
          EXPECT_TRUE( common::buffer::pool::holder().inbound() != handle);
 
          // inbound "tracker" should correlate to the auto expanded buffer
-         EXPECT_TRUE( common::buffer::pool::holder().inbound().underlying() == buffer);
+         EXPECT_TRUE( common::buffer::pool::holder().inbound().raw() == buffer);
 
          buffer = ::tprealloc( buffer, 512);
-         EXPECT_TRUE( common::buffer::pool::holder().inbound().underlying() == buffer);
+         EXPECT_TRUE( common::buffer::pool::holder().inbound().raw() == buffer);
          
          // this should be a 'no-op' according to the spec...
          tpfree( buffer);
 
-         EXPECT_TRUE( common::buffer::pool::holder().inbound().underlying() == buffer);
+         EXPECT_TRUE( common::buffer::pool::holder().inbound().raw() == buffer);
 
          {
             short value{};

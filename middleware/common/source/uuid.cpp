@@ -28,7 +28,7 @@ namespace casual
       {
          std::string string( const platform::uuid::type& uuid)
          {
-            return transcode::hex::encode( uuid);
+            return transcode::hex::encode( view::binary::make( uuid));
          }
 
          std::string string( const Uuid& uuid)
@@ -63,7 +63,8 @@ namespace casual
 
       Uuid::Uuid( std::string_view string)
       {
-         transcode::hex::decode( string, m_uuid);
+         auto span = view::binary::make( m_uuid);
+         transcode::hex::decode( string, span);
       }
 
       void Uuid::copy( uuid_type& uuid) const
@@ -85,7 +86,7 @@ namespace casual
       {
          if( uuid.empty())
             return out << "nil";
-         return transcode::hex::encode( out, uuid.m_uuid);
+         return transcode::hex::encode( out, view::binary::make( uuid.m_uuid));
       }
 
       std::istream& operator >> ( std::istream& in, Uuid& value)
@@ -96,7 +97,7 @@ namespace casual
          if( ! std::regex_match( string, std::regex{ "[a-f0-9]{32}"}))
             code::raise::error( code::casual::invalid_argument, "invalid uuid: ", string);
 
-         transcode::hex::decode( string, value.m_uuid);
+         transcode::hex::decode( string, view::binary::make( value.m_uuid));
          return in;
       }
 

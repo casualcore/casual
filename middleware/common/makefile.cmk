@@ -60,7 +60,7 @@ casual_common_objectfiles = [
     make.Compile( 'source/server/lifetime.cpp'),
     make.Compile( 'source/server/service.cpp'),
     make.Compile( 'source/server/argument.cpp'),
-    make.Compile( 'source/server/start.cpp'),
+    make.Compile( 'source/server/start.cpp', directive=[ '-ftemplate-backtrace-limit=0' ]),
     make.Compile( 'source/server/handle/service.cpp'),
     make.Compile( 'source/server/handle/conversation.cpp'),
     make.Compile( 'source/server/handle/policy.cpp'),
@@ -158,7 +158,7 @@ casual_common_objectfiles = [
     make.Compile( 'source/terminal.cpp'),
 
     make.Compile( 'source/serialize/archive.cpp'),
-    make.Compile( 'source/serialize/line.cpp'),
+    make.Compile( 'source/serialize/line.cpp', directive=[ '-ftemplate-backtrace-limit=0' ]),
     make.Compile( 'source/serialize/log.cpp'),
     make.Compile( 'source/serialize/ini.cpp'),
     make.Compile( 'source/serialize/json.cpp'),

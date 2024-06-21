@@ -53,13 +53,12 @@ namespace casual
          template< detail::binary_copyable T>
          auto append( const T& value, platform::binary::type& destination)
          {
-            auto first = reinterpret_cast< const platform::character::type*>( &value);
-            auto last = first + memory::size( value);
+            auto bytes = std::as_bytes( std::span{ &value, 1});
 
             destination.insert(
                   std::end( destination),
-                  first,
-                  last);
+                  std::begin( bytes),
+                  std::end( bytes));
 
             return destination.size();
          }

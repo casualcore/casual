@@ -8,6 +8,7 @@
 
 #include "common/communication/tcp/message.h"
 #include "common/communication/log.h"
+#include "common/transcode.h"
 
 namespace casual
 {
@@ -36,12 +37,12 @@ namespace casual
 
       std::ostream& operator << ( std::ostream& out, const Header& value)
       {
-         auto binary = range::make( reinterpret_cast< const char*>( &value), sizeof( Header));
+         auto span = std::span{ &value, 1};
 
          return stream::write( out, "{ type: ", local::host::header::type( value),
-            ", correlation: ", transcode::hex::stream::wrapper( value.correlation),
+            ", correlation: ", view::binary::make( value.correlation),
             ", size: ", local::host::header::size( value), 
-            ", hex: ", transcode::hex::stream::wrapper( binary), '}');
+            ", hex: ", std::as_bytes( span), '}');
 
       }
 
@@ -59,7 +60,7 @@ namespace casual
             return {};
 
          Uuid::uuid_type uuid{};
-         algorithm::copy_max( payload, uuid);
+         algorithm::copy_max( payload, view::binary::make( uuid));
 
          return strong::execution::id{ uuid};
       }

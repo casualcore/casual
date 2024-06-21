@@ -128,7 +128,8 @@ domain:
             {
                auto buffer = local::allocate( binary.size());
                assert( buffer);
-               algorithm::copy( binary, buffer);
+               auto view = view::binary::make( buffer, binary.size());
+               algorithm::copy( binary, view);
 
                auto len = tptypes( buffer, nullptr, nullptr);
 
@@ -141,7 +142,8 @@ domain:
             {
                auto buffer = memory::guard( local::allocate( binary.size()), &tpfree);
                assert( buffer);
-               algorithm::copy( binary, buffer.get());
+               auto view = view::binary::make( buffer.get(), binary.size());
+               algorithm::copy( binary, view);
 
                auto len = tptypes( buffer.get(), nullptr, nullptr);
 
@@ -164,7 +166,7 @@ domain:
                common::log::line( verbose::log, "got reply from descriptor: ", descriptor);
 
                platform::binary::type result;
-               algorithm::copy( range::make( buffer, len), std::back_inserter( result));
+               algorithm::copy( view::binary::make( buffer, len), std::back_inserter( result));
                tpfree( buffer);
 
                return result;
@@ -770,7 +772,7 @@ domain:
 
             EXPECT_EQ( size, range::size( binary));
 
-            auto range = range::make( buffer.get(), size);
+            auto range = view::binary::make( buffer.get(), size);
             EXPECT_TRUE( algorithm::equal( range, binary)) 
                << "buffer: " << transcode::hex::encode( range)
                << "\nbinary: " << transcode::hex::encode( binary);

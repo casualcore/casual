@@ -239,7 +239,8 @@ namespace casual
 
                      tree parse_flat( const platform::binary::type& ini)
                      {
-                        return parse_flat( ini.data(), ini.size());
+                        auto span = view::binary::to_string_like( ini);
+                        return parse_flat( span.data(), span.size());
                      }
 
                      struct Implementation

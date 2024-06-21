@@ -69,7 +69,7 @@ namespace casual
          {
             maybe_name( name);
             
-            if( value.size() > 32) 
+            if( value.size() > 64) 
                m_stream << "\"binary size: " << value.size() << '"';
             else
             {
@@ -79,7 +79,7 @@ namespace casual
 
          void Writer::save( const platform::binary::type& value, const char* name)
          {
-            save( view::binary::make( value), name);
+            save( view::immutable::Binary{ value}, name);
          }
 
          void Writer::save( const std::string& value, const char* name)

@@ -9,78 +9,92 @@
 
 #include "common/range.h"
 #include "casual/concepts.h"
-#include "common/transcode.h"
 
+#include <span>
 
 namespace casual
 {
-   namespace common
+   namespace common::view
    {
-      namespace view
+
+      using Binary = std::span< std::byte>;
+
+      namespace immutable
       {
-         template< typename T>
-         struct basic_binary : common::Range< T> 
+         using Binary = std::span< const std::byte>;
+
+      } // mutable
+
+      namespace binary
+      {
+         namespace compatible
          {
-            using common::Range< T>::Range;
+            template< typename T>
+            concept value_type = requires( T value) 
+            { 
+               sizeof( value) == 1;
+            };
 
-            friend std::ostream& operator << ( std::ostream& out, const basic_binary& value)
+            template< typename T>
+            concept iterator = std::contiguous_iterator< T> && value_type< std::iter_value_t< T>>;
+
+            template< typename T>
+            concept range = concepts::range< T> && requires( const T& a)
             {
-               return transcode::hex::encode( out, std::begin( value), std::end( value));
-            }
-         };
-         
-         namespace binary
+               { *std::begin( a)} -> value_type; 
+            };
+
+         } // compatible
+
+
+         //! sort of hack to get the std::byte span to a string like
+         //! span, compatible with platform::binary::type std::vector< char>...
+         //!  The goal is to replace std::vector< char> with std::vector< std::byte>
+         //!  But for now, we need to play nice with platform::binary::type
+         //! @{
+         inline auto to_string_like( immutable::Binary span)
          {
-            namespace detail
-            {
-               template< typename Iter> 
-               auto raw( Iter value) { return &( *value);}
+            return std::span< const char>{ reinterpret_cast< const char*>( std::data( span)), span.size()};
+         }
 
-               template< typename P> 
-               auto convert( P* pointer) { return reinterpret_cast< platform::binary::pointer>( pointer);}
-
-               template< typename P> 
-               auto convert( const P* pointer) { return reinterpret_cast< platform::binary::immutable::pointer>( pointer);}
-
-
-               template< typename Iter> 
-               auto make( Iter first, Iter last)
-               {
-                  auto convert = []( auto p){ return detail::convert( raw( p));};
-                  using value_type = std::remove_reference_t< decltype( convert( first))>;
-
-                  return basic_binary< value_type>{ convert( first), convert( last)};
-               }
-
-            } // detail
-            template< concepts::binary::iterator Iter>
-            auto make( Iter first, Iter last)
-            {
-               return detail::make( first, last);
-            }
-
-            template< concepts::binary::iterator Iter, std::integral Count>
-            auto make( Iter first, Count count)
-            {
-               return make( first, first + count);
-            }
-
-            template< concepts::binary::like C>
-            auto make( C&& container)
-            {
-               return make( std::begin( container), std::end( container));
-            }
-         } // binary
-
-         using Binary = decltype( binary::make( std::declval< platform::binary::type&>()));
-
-         namespace immutable
+         inline auto to_string_like( Binary span)
          {
-            using Binary = decltype( binary::make( std::declval< const platform::binary::type&>()));
+            return std::span< char>{ reinterpret_cast< char*>( std::data( span)), span.size()};
+         }
 
-         } // mutable
+         inline auto to_string_like( platform::binary::type& container)
+         {
+            return to_string_like( Binary{ container});
+         }
+         //! @}
 
-      } // view
-   } // common
+         template< compatible::iterator Iter>
+         auto make( Iter first, Iter last)
+         {
+            using value_type = std::remove_reference_t< decltype( *std::declval< Iter>())>;
+
+            auto span = std::span{ first, last};
+
+            if constexpr( std::is_const_v< value_type>)
+               return std::as_bytes( span);
+            else
+               return std::as_writable_bytes( span);
+         }
+
+         template< compatible::iterator Iter, std::integral Count>
+         auto make( Iter first, Count count)
+         {
+            return make( first, first + count);
+         }
+
+         template< compatible::range C>
+         auto make( C&& container)
+         {
+            return make( std::begin( container), std::end( container));
+         }
+      } // binary
+
+
+   } // common::view
 } // casual
 

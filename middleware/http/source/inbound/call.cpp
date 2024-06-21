@@ -274,7 +274,10 @@ namespace casual
             }
 
             common::buffer::Payload payload{ m_protocol};
-            payload.data.assign( error.what(), error.what() + std::strlen( error.what()));
+            {
+               auto view = view::binary::make( error.what(), std::strlen( error.what()));
+               payload.data.assign( std::begin( view), std::end( view));
+            }
 
             if( local::configuration().force_binary_base64)
                   http::buffer::transcode::to::wire( payload);

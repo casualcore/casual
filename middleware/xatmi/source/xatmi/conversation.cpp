@@ -178,7 +178,7 @@ int tprecv( int id, char ** odata, long *olen, long bitmap, long* event)
       casual::common::buffer::pool::holder().deallocate( casual::common::buffer::handle::type{ *odata});
 
       auto output_buffer = casual::common::buffer::pool::holder().insert( std::move( result.buffer));
-      *odata = std::get< 0>( output_buffer).underlying();
+      *odata = std::get< 0>( output_buffer).raw();
       *olen = std::get< 1>( output_buffer);
 
       // We also need to set any user return code that may be present. Happens when/if

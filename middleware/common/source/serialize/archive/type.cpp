@@ -17,6 +17,7 @@ namespace casual
             case Property::named: return "named";
             case Property::order: return "order";
             case Property::network: return "network";
+            case Property::no_consume: return "no_consume";
          }
          return "unknown";
       }

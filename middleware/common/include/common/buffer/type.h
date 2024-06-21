@@ -42,26 +42,40 @@ namespace casual
                constexpr static bool valid( T value) noexcept { return value != initialize();}
                inline static std::ostream& stream( std::ostream& out, T value) { return stream::write( out, '@', static_cast< const void*>( value));}
             };
-            
+
          } // detail
 
          namespace mutate
          {
-            using type = common::strong::Type< platform::buffer::raw::type, detail::policy< platform::buffer::raw::type>>;
+            using base_type = common::strong::Type< platform::binary::pointer, detail::policy< platform::binary::pointer>>;
+            struct type : base_type
+            {
+               using base_type::base_type;
+               explicit type( platform::buffer::raw::type raw) : base_type{ reinterpret_cast< platform::binary::pointer>( raw) } {}
+
+               inline auto raw() { return reinterpret_cast< platform::buffer::raw::type>( value());}
+
+
+               inline friend bool operator == ( type lhs, mutate::type rhs) { return lhs.value() == rhs.value();}
+            };
+
          } // mutate
 
 
-         using base_type = common::strong::Type< platform::buffer::raw::immutable::type, detail::policy< platform::buffer::raw::immutable::type>>;
+         using base_type = common::strong::Type< platform::binary::immutable::pointer, detail::policy< platform::binary::immutable::pointer>>;
          struct type : base_type
          {
             using base_type::base_type;
             //! implicit conversion from _mutable handle type_
-            type( mutate::type other) : base_type{ other.underlying()} {}
+            type( mutate::type other) : base_type{ other.value()} {}
 
-            inline friend bool operator == ( type lhs, mutate::type rhs) { return lhs.underlying() == rhs.underlying();}
-            inline friend bool operator == ( mutate::type lhs, type rhs) { return lhs.underlying() == rhs.underlying();}
-            inline friend bool operator != ( type lhs, mutate::type rhs) { return ! ( lhs == rhs);}
-            inline friend bool operator != ( mutate::type lhs, type rhs) { return ! ( lhs == rhs);}
+            explicit type( platform::buffer::raw::immutable::type raw) : base_type{ reinterpret_cast< platform::binary::immutable::pointer>( raw) } {}
+
+            auto raw() const { return reinterpret_cast< platform::buffer::raw::immutable::type>( value());}
+
+
+
+            inline friend bool operator == ( type lhs, mutate::type rhs) { return lhs.value() == rhs.value();}
          };
          
          

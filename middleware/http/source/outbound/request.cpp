@@ -71,9 +71,11 @@ namespace casual
 
                      common::log::line( verbose::log, "size: ", size, " - source-size: ", source.size());
 
-                     if( source.size() <= size)
+                     auto output = view::binary::make( buffer, size);
+
+                     if( std::ssize( source) <= std::ssize( output))
                      {
-                        algorithm::copy( source, buffer);
+                        algorithm::copy( source, output);
                         auto count = source.size();
 
                         // we're done and we clear the buffer so we can use it for the reply
@@ -83,9 +85,9 @@ namespace casual
                      }
                      else
                      {
-                        std::copy( std::begin( source), std::begin( source) + size, buffer);
-                        state.offset += size;
-                        return size;
+                        std::copy( std::begin( source), std::begin( source) + output.size(), std::begin( output));
+                        state.offset += output.size();
+                        return output.size();
                      }
                   }
 
@@ -133,7 +135,7 @@ namespace casual
                   {
                      Trace trace{ "http::outbound::request::local::receive::callback::write_payload"};
                      
-                     auto source = range::make( buffer, size);
+                     auto source = view::binary::make( buffer, size);
 
                      algorithm::container::append( source, state.payload.data);
 
@@ -211,7 +213,7 @@ namespace casual
                      common::log::line( common::log::category::error, "failed to deduce buffer type for content-type: ", content->value());
 
                      if( std::regex_match( content->value().data(), local::global.loggable_content))
-                        common::log::line( common::log::category::verbose::error, "payload: ", string::view::make( request.state().payload.data));
+                        common::log::line( common::log::category::verbose::error, "payload: ", view::binary::to_string_like( request.state().payload.data));
 
                      return {};
                   }
