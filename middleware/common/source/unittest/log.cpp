@@ -10,7 +10,7 @@
 #include "common/unittest/environment.h"
 
 #include "common/signal.h"
-#include "common/execution.h"
+#include "common/execution/context.h"
 #include "common/communication/ipc.h"
 #include "common/environment.h"
 #include "common/domain.h"
@@ -30,7 +30,7 @@ namespace casual
             // set that we're in _unittest-context_
             common::environment::variable::set( common::environment::variable::name::unittest::context, "");
             
-            execution::reset();
+            execution::context::reset();
             signal::clear();
 
             communication::ipc::inbound::device().clear();

@@ -12,6 +12,7 @@
 #include "common/flag.h"
 #include "common/service/header.h"
 #include "common/strong/id.h"
+#include "common/execution/context.h"
 
 #include "common/flag/xatmi.h"
 
@@ -57,7 +58,8 @@ namespace casual
 
                Flag flags{};
                Service service;
-               std::string parent;
+
+               common::execution::context::Parent parent;
                buffer::Payload payload;
                strong::conversation::descriptor::id descriptor;
 

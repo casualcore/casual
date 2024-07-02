@@ -1159,7 +1159,7 @@ cat somefile.bin | casual queue --enqueue <queue-name>
                auto dequeue_and_forward = []( const pipe::State& state, const std::optional< Uuid>& id)
                {
                   // we 'start' a new execution 'context'
-                  common::execution::reset();
+                  common::execution::context::reset();
 
                   Trace trace{ "queue::local::dequeue::action"};
                   log::line( verbose::log, "state: ", state);

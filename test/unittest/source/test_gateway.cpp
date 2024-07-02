@@ -2665,7 +2665,7 @@ domain:
          algorithm::for_n( transaction_count, [call_A_and_B]()
          {  
             // reset execution id, easier to check logs
-            execution::reset();
+            execution::context::reset();
 
             ASSERT_EQ( tx_begin(), TX_OK);
             call_A_and_B( call_count);

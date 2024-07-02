@@ -10,7 +10,7 @@
 
 #include "common/algorithm.h"
 #include "common/algorithm/container.h"
-#include "common/execution.h"
+#include "common/execution/context.h"
 #include "casual/assert.h"
 
 
@@ -101,9 +101,9 @@ namespace casual::http::inbound
             {
                auto found = common::algorithm::find( headers, http::header::name::execution::id);
                if( found && std::regex_match( found->value().data(), validation::format()))
-                  common::execution::id( strong::execution::id::emplace( found->value()));
+                  common::execution::context::id::set( strong::execution::id{ found->value()});
                else
-                  common::execution::id( strong::execution::id::generate());
+                  common::execution::context::id::set( strong::execution::id::generate());
             }
          } // execution::id
 

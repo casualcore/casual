@@ -21,6 +21,7 @@
 
 #include <array>
 #include <iostream>
+#include <regex>
 
 namespace casual
 {
@@ -184,6 +185,15 @@ namespace casual
             };
          }
       } // fetch
+
+      namespace regex
+      {
+         inline bool match( const std::string& value, std::string_view expression)
+         {
+            return std::regex_match( value, std::regex( expression.data(), expression.size()));
+         }
+         
+      } // regex
 
       namespace detail
       {

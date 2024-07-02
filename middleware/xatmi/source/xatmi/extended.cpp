@@ -11,7 +11,7 @@
 #include "common/server/context.h"
 #include "common/log/stream.h"
 
-#include "common/execution.h"
+#include "common/execution/context.h"
 #include "common/uuid.h"
 
 #include <array>
@@ -125,29 +125,29 @@ long casual_instance_index()
 
 const char* casual_execution_service_name()
 {
-   return casual::common::execution::service::name().c_str();
+   return casual::common::execution::context::get().service.c_str();
 }
 
 const char* casual_execution_parent_service_name()
 {
-   return casual::common::execution::service::parent::name().c_str();
+   return casual::common::execution::context::get().parent.service.c_str();
 }
 
 
 void casual_execution_id_set( const uuid_t* id)
 {
-   casual::common::execution::id( casual::common::strong::execution::id::emplace( *id));
+   casual::common::execution::context::id::set( casual::common::strong::execution::id( *id));
 }
 
 const uuid_t* casual_execution_id_get()
 {
-   return &casual::common::execution::id().underlying().get();
+   return &casual::common::execution::context::get().id.underlying().get();
 }
 
 const uuid_t* casual_execution_id_reset()
 {
-   casual::common::execution::reset();
-   return &casual::common::execution::id().underlying().get();
+   casual::common::execution::context::id::reset();
+   return casual_execution_id_get();
 }
 
 void casual_instance_browse_services( casual_instance_browse_callback callback, void* context)

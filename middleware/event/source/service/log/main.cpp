@@ -146,7 +146,7 @@ namespace casual
                               log.reopen();
 
                            log.file << metric.service
-                              << log.delimiter << metric.parent
+                              << log.delimiter << metric.parent.service
                               << log.delimiter << metric.process.pid
                               << log.delimiter << metric.execution
                               << log.delimiter << metric.trid
@@ -155,6 +155,8 @@ namespace casual
                               << log.delimiter << std::chrono::duration_cast< std::chrono::microseconds>( metric.pending).count()
                               << log.delimiter << common::code::description( metric.code)
                               << log.delimiter << service_category( metric.type)
+                              << log.delimiter << metric.span
+                              << log.delimiter << metric.parent.span
                               << '\n';
                         };
 

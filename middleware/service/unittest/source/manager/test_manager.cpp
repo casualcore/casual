@@ -918,12 +918,17 @@ domain:
          common::message::event::service::Calls event;
          common::event::subscribe( common::process::handle(), { event.type()});
 
+
+         const auto span = common::strong::execution::span::id::generate();
+         EXPECT_TRUE( span);
+
          // Send Ack
          {
             common::message::service::call::ACK message;
             message.metric.process = common::process::handle();
             message.metric.service = "b";
-            message.metric.parent = "a";
+            message.metric.parent.service = "a";
+            message.metric.parent.span = span;
             message.metric.start = start;
             message.metric.end = end;
             message.metric.code = common::code::xatmi::service_fail;
@@ -942,7 +947,8 @@ domain:
             ASSERT_TRUE( event.metrics.size() == 1);
             auto& metric = event.metrics.at( 0);
             EXPECT_TRUE( metric.service == "b");
-            EXPECT_TRUE( metric.parent == "a");
+            EXPECT_TRUE( metric.parent.service == "a");
+            EXPECT_TRUE( metric.parent.span == span);
             EXPECT_TRUE( metric.process == common::process::handle());
             EXPECT_TRUE( metric.start == start);
             EXPECT_TRUE( metric.end == end);

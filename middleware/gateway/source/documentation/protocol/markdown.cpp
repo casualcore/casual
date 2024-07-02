@@ -422,6 +422,17 @@ namespace casual
                }
             } // string
 
+            namespace span
+            {
+               auto value()
+               {
+                  auto binary = binary::value( 8);
+                  strong::execution::span::id result;
+                  algorithm::copy( binary, result.underlying());
+                  return result;
+               };
+               
+            } // span
          } // <unnamed>
       } // local
 
@@ -626,7 +637,7 @@ Sent to and received from other domains when one domain wants call a service in 
                message_type request;
                request.trid = common::transaction::id::create();
                request.service.name = local::string::value( 128);
-               request.parent = local::string::value( 128);
+               request.parent.service = local::string::value( 128);
                request.buffer.type = local::string::value( 8) + '/' + local::string::value( 16);
                request.buffer.data = local::binary::value( 1024);
 
@@ -1130,7 +1141,8 @@ Sent to establish a conversation
                message_type message;
 
                message.service.name = local::string::value( 128);
-               message.parent = local::string::value( 128);
+               message.parent.service = local::string::value( 128);
+               message.parent.span = local::span::value();
                message.trid = common::transaction::id::create();
                message.buffer.type = local::string::value( 8) + '/' + local::string::value( 16);
                message.buffer.data = local::binary::value( 1024);

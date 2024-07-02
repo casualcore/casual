@@ -83,8 +83,18 @@ namespace casual
                   }
                } // time
 
+               auto span()
+               {
+                  auto binary = binary::value( 8);
+                  strong::execution::span::id result;
+                  algorithm::copy( binary, result.underlying());
+                  return result;
+               };
+
             } // <unnamed>
          } // local
+
+
          void fill( gateway::message::domain::connect::Request& message)
          {
             local::set_general( message);
@@ -161,7 +171,7 @@ namespace casual
             };
          }
 
-         void fill( common::message::service::call::callee::Request& message)
+         void fill( common::message::service::call::v1_2::callee::Request& message)
          {
             local::set_general( message);
 
@@ -172,6 +182,36 @@ namespace casual
             message.trid = local::trid();
 
             message.flags = common::message::service::call::request::Flag::no_reply;
+            message.buffer.type = ".binary/";
+            message.buffer.data = local::binary::value( 128);
+         }
+
+         void fill( common::message::service::call::callee::Request& message)
+         {
+            local::set_general( message);
+
+            message.service.name = "service1";
+            message.service.timeout.duration = std::chrono::seconds{ 42};
+
+            message.parent.service = "parent-service";
+            message.parent.span = local::span();
+            message.trid = local::trid();
+
+            message.flags = common::message::service::call::request::Flag::no_reply;
+            message.buffer.type = ".binary/";
+            message.buffer.data = local::binary::value( 128);
+
+         }
+
+         void fill( common::message::service::call::v1_2::Reply& message)
+         {
+            local::set_general( message);
+
+            message.code.result = common::code::xatmi::service_fail;
+            message.code.user = 42;
+            message.transaction.trid = local::trid();
+            message.transaction.state = decltype( message.transaction.state)::active;
+
             message.buffer.type = ".binary/";
             message.buffer.data = local::binary::value( 128);
          }
@@ -189,7 +229,7 @@ namespace casual
             message.buffer.data = local::binary::value( 128);
          }
 
-         void fill( common::message::conversation::connect::callee::Request& message)
+         void fill( common::message::conversation::connect::v1_2::callee::Request& message)
          {
             local::set_general( message);
 
@@ -197,6 +237,22 @@ namespace casual
             message.service.timeout.duration = std::chrono::seconds{ 42};
 
             message.parent = "parent-service";
+            message.trid = local::trid();
+
+            message.duplex = decltype( message.duplex)::send;
+            message.buffer.type = ".binary/";
+            message.buffer.data = local::binary::value( 128);
+         }
+
+         void fill( common::message::conversation::connect::callee::Request& message)
+         {
+            local::set_general( message);
+
+            message.service.name = "service1";
+            message.service.timeout.duration = std::chrono::seconds{ 42};
+
+            message.parent.service = "parent-service";
+            message.parent.span = local::span();
             message.trid = local::trid();
 
             message.duplex = decltype( message.duplex)::send;

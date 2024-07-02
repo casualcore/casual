@@ -74,7 +74,7 @@ namespace casual
 
             inline auto correlation( const Header& header)
             {
-               return strong::correlation::id::emplace( header.correlation);
+               return strong::correlation::id{ header.correlation};
             }
             
          } // detail

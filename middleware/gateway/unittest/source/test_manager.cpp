@@ -1538,6 +1538,77 @@ domain:
          }
       }
 
+      TEST( gateway_manager, A_B_nested__expect_execution_id_span_to_be_propagated)
+      {
+         common::unittest::Trace trace;
+
+         
+         auto b = local::domain( R"(
+system:
+   resources:
+      -  key: rm-mockup
+         server: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/transaction/bin/rm-proxy-casual-mockup"
+         xa_struct_name: casual_mockup_xa_switch_static
+         libraries:
+            -  casual-mockup-rm
+domain:
+   name: B
+   transaction:
+      resources:
+         -  name: example-resource-server
+            key: rm-mockup
+            instances: 1
+   servers:
+      -  path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-resource-server
+         arguments: [ --nested-calls, x]
+         memberships: [ user]
+   gateway:
+      inbound:
+         groups:
+            -  alias: in-b
+               connections:
+                  -  address: 127.0.0.1:7010
+)");
+         
+
+         casual::service::unittest::advertise( { "x"});
+         
+                  
+
+         auto a = local::domain( R"(
+domain:
+   name: A
+   gateway:
+      outbound:
+         groups:
+            -  alias: out-a
+               connections:
+                  -  address: 127.0.0.1:7010
+)");
+
+         unittest::fetch::until( unittest::fetch::predicate::outbound::connected());
+
+         {
+            buffer::Payload payload;
+            payload.type = "X_OCTET/";
+            payload.data = common::unittest::random::binary( 512);
+            common::service::call::context().async( "casual/example/resource/nested/calls/B", common::buffer::payload::Send{ payload}, {});
+         }
+
+         {
+            auto request = communication::ipc::receive< common::message::service::call::callee::Request>();
+            communication::device::blocking::send( request.process.ipc, common::message::reverse::type( request));
+            casual::service::unittest::send::ack( request);
+
+
+            EXPECT_TRUE( request.parent.service == "casual/example/resource/nested/calls/B");
+            EXPECT_TRUE( request.parent.span) << CASUAL_NAMED_VALUE( request);
+            EXPECT_TRUE( request.parent.span != common::execution::context::get().span);
+
+         }
+
+      }
+
    } // gateway
 
 } // casual

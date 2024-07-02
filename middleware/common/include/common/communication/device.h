@@ -481,7 +481,7 @@ namespace casual
             else
             {
                if( ! message.execution)
-                  message.execution = execution::id();
+                  message.execution = execution::context::get().id;
 
                return apply(
                   std::forward< P>( policy),

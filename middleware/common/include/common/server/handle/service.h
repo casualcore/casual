@@ -13,7 +13,7 @@
 #include "common/service/conversation/context.h"
 
 #include "common/buffer/transport.h"
-#include "common/execution.h"
+#include "common/execution/context.h"
 #include "common/log.h"
 #include "common/execute.h"
 
@@ -53,8 +53,11 @@ namespace casual
       {
          Trace trace{ "server::handle::service::call"};
 
-         execution::service::name( message.service.name);
-         execution::service::parent::name( message.parent);
+         execution::context::service::set( message.service.name);
+         execution::context::span::reset();
+         execution::context::parent::service::set( message.parent.service);
+         execution::context::parent::span::set( message.parent.span);
+
 
          common::service::header::fields() = std::move( message.header);
 
@@ -73,6 +76,7 @@ namespace casual
 
             ack.correlation = message.correlation;
             ack.execution = message.execution;
+            ack.metric.span = execution::context::get().span;
             ack.metric.execution = message.execution;
             ack.metric.service = message.service.logical_name();
             ack.metric.parent = message.parent;

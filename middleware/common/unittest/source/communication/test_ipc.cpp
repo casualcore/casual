@@ -269,7 +269,7 @@ namespace casual
          common::unittest::Trace trace;
 
          auto send_message = unittest::message::transport::size( 1103);
-         send_message.correlation = strong::correlation::id::emplace( uuid::make());
+         send_message.correlation = strong::correlation::id::generate();
 
          unittest::eventually::send( ipc::inbound::ipc(), send_message);
 
@@ -312,8 +312,8 @@ namespace casual
 
          common::message::service::call::Reply message;
          {
-            message.correlation = strong::correlation::id::emplace( uuid::make());
-            message.execution = strong::execution::id::emplace( uuid::make());
+            message.correlation = strong::correlation::id::generate();
+            message.execution = strong::execution::id::generate();
             message.transaction.trid = transaction::id::create( process::handle());
             message.transaction.state = decltype( message.transaction.state)::rollback;
             message.buffer.type = ".binary";

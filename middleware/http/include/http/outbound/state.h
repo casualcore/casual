@@ -63,7 +63,7 @@ namespace casual
                   common::strong::execution::id execution;
                   platform::time::point::type start = platform::time::point::limit::zero();
                   std::string service;
-                  std::string parent;
+                  common::execution::context::Parent parent;
                   common::transaction::ID trid;
                   std::string url;
 

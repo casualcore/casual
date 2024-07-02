@@ -704,6 +704,17 @@ struct Value< type, A>  \
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( buffer);
          })
 
+         CASUAL_CUSTOMIZATION_POINT_NETWORK( common::message::conversation::connect::v1_2::callee::Request,
+         {
+            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( execution);
+            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( service.name);
+            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( service.timeout.duration);
+            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( parent);
+            CASUAL_SERIALIZE_NAME( value.trid.xid, "xid");
+            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( duplex);
+            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( buffer);
+         })
+
          CASUAL_CUSTOMIZATION_POINT_NETWORK( common::message::conversation::connect::callee::Request,
          {
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( execution);

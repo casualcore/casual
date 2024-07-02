@@ -53,17 +53,83 @@ namespace casual
 
          namespace connect
          {
+            namespace v1_2
+            {
+               using base_type = message::basic_request< Type::conversation_connect_request_v2>;
+               struct base_request : base_type
+               {
+                  using base_type::base_type;
+
+                  service::call::Service service;
+                  std::string parent;
+
+                  common::transaction::ID trid;
+                  common::service::header::Fields header;
+
+                  //! pending time, only to be return in the "ACK", to collect
+                  //! metrics
+                  platform::time::unit pending{};
+
+                  duplex::Type duplex{};
+
+                  CASUAL_CONST_CORRECT_SERIALIZE(
+                     base_type::serialize( archive);
+                     CASUAL_SERIALIZE( service);
+                     CASUAL_SERIALIZE( parent);
+                     CASUAL_SERIALIZE( trid);
+                     CASUAL_SERIALIZE( header);
+                     CASUAL_SERIALIZE( pending);
+                     CASUAL_SERIALIZE( duplex);
+                  )
+               };
+
+               namespace caller
+               {
+                  struct Request : base_request
+                  {
+                     template< typename... Args>
+                     Request( common::buffer::payload::Send buffer, Args&&... args)
+                        : base_request( std::forward< Args>( args)...), buffer( std::move( buffer))
+                     {}
+                     common::buffer::payload::Send buffer;
+
+                     CASUAL_CONST_CORRECT_SERIALIZE(
+                        base_request::serialize( archive);
+                        CASUAL_SERIALIZE( buffer);
+                     )
+                  };
+
+               } // caller
+
+               namespace callee
+               {
+                  struct Request : base_request
+                  {
+                     using base_request::base_request;
+
+                     common::buffer::Payload buffer;
+
+                     CASUAL_CONST_CORRECT_SERIALIZE(
+                        base_request::serialize( archive);
+                        CASUAL_SERIALIZE( buffer);
+                     )
+                  };
+
+               } // callee
+
+            } // v1_2
+
+
             using base_type = message::basic_request< Type::conversation_connect_request>;
             struct base_request : base_type
             {
                using base_type::base_type;
 
                service::call::Service service;
-               std::string parent;
+               execution::context::Parent parent;
 
                common::transaction::ID trid;
                common::service::header::Fields header;
-
 
                //! pending time, only to be return in the "ACK", to collect
                //! metrics

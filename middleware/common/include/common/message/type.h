@@ -11,7 +11,7 @@
 
 #include "common/strong/type.h"
 #include "common/serialize/macro.h"
-#include "common/execution.h"
+#include "common/execution/context.h"
 #include "common/process.h"
 
 #include <type_traits>
@@ -120,10 +120,12 @@ namespace casual
          // 3202
          // 3203
 
-         conversation_connect_request = 3210,
-         conversation_connect_reply   = 3211,
-         conversation_send            = 3212,
-         conversation_disconnect      = 3213,
+         conversation_connect_request_v2 = 3210,
+         conversation_connect_reply      = 3211,
+         conversation_send               = 3212,
+         conversation_disconnect         = 3213,
+
+         conversation_connect_request = 3220,
 
 
          // event messages

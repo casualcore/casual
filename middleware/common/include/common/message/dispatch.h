@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "common/execution.h"
+#include "common/execution/context.h"
 #include "common/traits.h"
 #include "common/serialize/native/complete.h"
 #include "common/communication/device.h"
@@ -149,7 +149,7 @@ namespace casual
                message_type message;
 
                serialize::native::complete( complete, message);
-               execution::id( message.execution);
+               execution::context::id::set( message.execution);
 
                // We got 4 combinations of signature we need to take care of.
                // We could move it out to a few function but that seems to get

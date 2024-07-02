@@ -232,12 +232,15 @@ namespace casual
                   }
                   return "<unknown>";
                }
+
             } // metric
+
 
             struct Metric 
             {
+               strong::execution::span::id span;
                std::string service;
-               std::string parent;
+               execution::context::Parent parent;
                metric::Type type = metric::Type::sequential;
                
                common::process::Handle process;
@@ -255,6 +258,7 @@ namespace casual
                auto duration() const noexcept { return end - start;}
 
                CASUAL_CONST_CORRECT_SERIALIZE(
+                  CASUAL_SERIALIZE( span);
                   CASUAL_SERIALIZE( service);
                   CASUAL_SERIALIZE( parent);
                   CASUAL_SERIALIZE( type);

@@ -63,7 +63,7 @@ namespace casual
          local::Coordinate coordinate;
          bool invoked = false;
 
-         auto correlation = strong::correlation::id::emplace( uuid::make());
+         auto correlation = strong::correlation::id::generate();
 
          coordinate( { { correlation, process::id()}}, [&invoked]( auto received, auto failed)
          {
@@ -81,7 +81,7 @@ namespace casual
          local::Coordinate coordinate;
          bool invoked = false;
 
-         auto correlation = strong::correlation::id::emplace( uuid::make());
+         auto correlation = strong::correlation::id::generate();
 
          coordinate( { { correlation, process::id()}}, [&invoked]( auto received, auto failed)
          {
@@ -108,7 +108,7 @@ namespace casual
          const auto origin = algorithm::generate_n< 10>( []( auto index)
          {
             local::Reply message{ process::Handle{ strong::process::id( process::id().value() + index), communication::ipc::inbound::ipc()}};
-            message.correlation = strong::correlation::id::emplace( uuid::make());
+            message.correlation = strong::correlation::id::generate();
             return message;
          });
 
@@ -147,7 +147,7 @@ namespace casual
          const auto origin = algorithm::generate_n< 10>( []()
          {
             local::Reply message{ process::handle()};
-            message.correlation = strong::correlation::id::emplace( uuid::make());
+            message.correlation = strong::correlation::id::generate();
             return message;
          });
 
@@ -187,7 +187,7 @@ namespace casual
          const auto origin = algorithm::generate_n< 10>( []()
          {
             local::Reply message{ process::handle()};
-            message.correlation = strong::correlation::id::emplace( uuid::make());
+            message.correlation = strong::correlation::id::generate();
             return message;
          });
 
@@ -220,26 +220,26 @@ namespace casual
          auto origin = algorithm::generate_n< 8>( []()
          {
             local::Reply message{ process::handle()};
-            message.correlation = strong::correlation::id::emplace( uuid::make());
+            message.correlation = strong::correlation::id::generate();
             return message;
          });
 
          // 'other' process information
          constexpr auto other_pid = 19700101;
-         const std::vector< decltype( uuid::make()) > other_corrid{ uuid::make(), uuid::make()};
+         const std::vector< strong::correlation::id> other_corrid{ strong::correlation::id::generate(), strong::correlation::id::generate()};
          const Process::Handle other_process{ static_cast< strong::process::id>( other_pid)};
 
          {
             // add 'other' process
             local::Reply message{ other_process};
-            message.correlation = strong::correlation::id::emplace( other_corrid.at( 0));
+            message.correlation = other_corrid.at( 0);
             origin.push_back( message);
          }
 
          {
             // and again
             local::Reply message{ other_process};
-            message.correlation = strong::correlation::id::emplace( other_corrid.at( 1));
+            message.correlation = other_corrid.at( 1);
             origin.push_back( message);
          }
 
@@ -291,7 +291,7 @@ namespace casual
          {
             // first reply from 'other' process
             local::Reply message{ other_process};
-            message.correlation = strong::correlation::id::emplace( other_corrid.at( 0));
+            message.correlation = other_corrid.at( 0);
             coordinate( message);
          }
 
@@ -308,7 +308,7 @@ namespace casual
          {
             // last message from 'other' process beeing coordinated
             local::Reply message{ other_process};
-            message.correlation = strong::correlation::id::emplace( other_corrid.at( 1));
+            message.correlation = other_corrid.at( 1);
             coordinate( message);
          }
 

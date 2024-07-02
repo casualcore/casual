@@ -60,7 +60,7 @@ casual_common_objectfiles = [
     make.Compile( 'source/server/lifetime.cpp'),
     make.Compile( 'source/server/service.cpp'),
     make.Compile( 'source/server/argument.cpp'),
-    make.Compile( 'source/server/start.cpp', directive=[ '-ftemplate-backtrace-limit=0' ]),
+    make.Compile( 'source/server/start.cpp'),
     make.Compile( 'source/server/handle/service.cpp'),
     make.Compile( 'source/server/handle/conversation.cpp'),
     make.Compile( 'source/server/handle/policy.cpp'),
@@ -147,7 +147,7 @@ casual_common_objectfiles = [
     make.Compile( 'source/instance.cpp'),
     make.Compile( 'source/thread.cpp'),
     make.Compile( 'source/domain.cpp'),
-    make.Compile( 'source/execution.cpp'),
+    make.Compile( 'source/execution/context.cpp'),
     make.Compile( 'source/network/byteorder.cpp'),
     make.Compile( 'source/transcode.cpp'),
     make.Compile( 'source/metric.cpp'),
@@ -158,7 +158,7 @@ casual_common_objectfiles = [
     make.Compile( 'source/terminal.cpp'),
 
     make.Compile( 'source/serialize/archive.cpp'),
-    make.Compile( 'source/serialize/line.cpp', directive=[ '-ftemplate-backtrace-limit=0' ]),
+    make.Compile( 'source/serialize/line.cpp'),
     make.Compile( 'source/serialize/log.cpp'),
     make.Compile( 'source/serialize/ini.cpp'),
     make.Compile( 'source/serialize/json.cpp'),
@@ -223,7 +223,7 @@ unittest_objectfiles = [
 
     make.Compile( 'unittest/source/test_range.cpp'),
     make.Compile( 'unittest/source/test_execute.cpp'),
-    make.Compile( 'unittest/source/test_execution.cpp'),
+    make.Compile( 'unittest/source/execution/test_context.cpp'),
     make.Compile( 'unittest/source/test_task.cpp'),
 
     make.Compile( 'unittest/source/log/test_stream.cpp'),

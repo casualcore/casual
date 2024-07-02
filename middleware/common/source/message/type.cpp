@@ -70,6 +70,7 @@ namespace casual
             case Type::service_acknowledge: return "service_acknowledge";
             case Type::service_concurrent_advertise: return "service_concurrent_advertise";
             case Type::conversation_connect_request: return "conversation_connect_request";
+            case Type::conversation_connect_request_v2: return "conversation_connect_request_v2";
             case Type::conversation_connect_reply: return "conversation_connect_reply";
             case Type::conversation_send: return "conversation_send";
             case Type::conversation_disconnect: return "conversation_disconnect";

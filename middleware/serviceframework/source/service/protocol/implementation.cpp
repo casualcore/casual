@@ -16,7 +16,7 @@
 #include "common/serialize/log.h"
 #include "common/serialize/create.h"
 
-#include "common/execution.h"
+#include "common/execution/context.h"
 #include "common/exception/capture.h"
 #include "common/environment.h"
 
@@ -237,7 +237,7 @@ namespace casual
          Trace trace{ "protocol::Describe::Describe"};
          common::log::line( common::verbose::log, "protocol: ", m_protocol);
 
-         m_model.service = common::execution::service::name();
+         m_model.service = common::execution::context::get().service;
 
          m_input.readers.push_back( &m_prepare);
          m_input.writers.push_back( &m_writer.input);

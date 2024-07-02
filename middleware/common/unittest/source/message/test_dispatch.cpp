@@ -181,8 +181,8 @@ namespace casual
             common::unittest::Trace trace;
 
             message::transaction::resource::rollback::Request request;
-            request.correlation = strong::correlation::id::emplace( uuid::make());
-            request.execution = strong::execution::id::emplace( uuid::make());
+            request.correlation = strong::correlation::id::generate();
+            request.execution = strong::execution::id::generate();
 
             auto reply = message::reverse::type( request);
 

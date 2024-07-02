@@ -312,7 +312,7 @@ domain:
 
          // Set the name of the current service
          const std::string calling_service{ "caller"};
-         execution::service::name( calling_service);
+         execution::context::service::set( calling_service);
 
          // Subscribe to the metric event
          common::message::event::service::Calls event;
@@ -334,7 +334,7 @@ domain:
 
             ASSERT_TRUE( event.metrics.size() == 1);
             auto& metric = event.metrics.at( 0);
-            ASSERT_TRUE( metric.parent == calling_service) << "received: " << metric.parent;
+            ASSERT_TRUE( metric.parent.service == calling_service) << CASUAL_NAMED_VALUE( metric.parent);
          }
       }
 

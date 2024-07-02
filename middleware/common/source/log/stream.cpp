@@ -14,7 +14,7 @@
 #include "common/server/context.h"
 #include "common/transaction/context.h"
 #include "common/service/call/context.h"
-#include "common/execution.h"
+#include "common/execution/context.h"
 #include "common/algorithm.h"
 #include "common/string.h"
 #include "common/domain.h"
@@ -70,13 +70,13 @@ namespace casual
 
                   common::stream::write( m_output, platform::time::clock::type::now(),
                      '|', common::domain::identity().name,
-                     '|', execution::id(),
+                     '|', execution::context::get().id,
                      '|', process::id(),
                      '|', std::this_thread::get_id(),
                      '|', m_alias,
                      '|', transaction::Context::instance().current().trid,
-                     '|', execution::service::parent::name(),
-                     '|', execution::service::name(),
+                     '|', execution::context::get().parent.service,
+                     '|', execution::context::get().service,
                      '|', category,
                      '|', message,
                      '\n');

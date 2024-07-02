@@ -47,7 +47,7 @@ namespace casual::http::outbound
       call.execution = common::strong::execution::id::generate();
       call.service.name = "some-service";
       call.service.requested = "some-route";
-      call.parent = "some-other-service";
+      call.parent.service = "some-other-service";
       call.trid = common::transaction::id::create();
 
       auto expected = call;
@@ -57,7 +57,7 @@ namespace casual::http::outbound
       EXPECT_TRUE( request.state().correlation == expected.correlation) << request.state().correlation;
       EXPECT_TRUE( request.state().execution == expected.execution) << request.state().execution;
       EXPECT_TRUE( request.state().service == expected.service.logical_name()) << request.state().service;
-      EXPECT_TRUE( request.state().parent == expected.parent) << request.state().parent;
+      EXPECT_TRUE( request.state().parent == expected.parent) << CASUAL_NAMED_VALUE( request.state());
       EXPECT_TRUE( request.state().trid == expected.trid) << request.state().trid;
       EXPECT_TRUE( request.state().url == local::node().url) << request.state().url;
    }

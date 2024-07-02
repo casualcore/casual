@@ -138,7 +138,7 @@ namespace casual
                   static message::service::call::callee::Request transform( Request request)
                   {
                      message::service::call::callee::Request result;
-                     result.parent = request.url;
+                     result.parent.service = request.url;
                      result.buffer.type = buffer::type( request.payload.header);
                      result.buffer.data = std::move( request.payload.body);
                      result.header = std::move( request.payload.header);

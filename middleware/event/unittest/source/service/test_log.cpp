@@ -102,6 +102,46 @@ domain:
          }
       }
 
+      TEST( event_service_log, format)
+      {
+         common::unittest::Trace trace;
+
+         auto log_file = common::unittest::file::temporary::name( ".log");
+
+         common::environment::variable::set( "SERVICE_LOG_FILE", log_file.string());
+
+         auto domain = domain::unittest::manager( local::configuration::base, R"(
+domain:
+   executables:
+      - path: bin/casual-event-service-log
+        arguments: [ --file, "${SERVICE_LOG_FILE}"]
+        memberships: [ second]   
+)");
+
+         ASSERT_TRUE( local::fetch::service::log());
+
+         // make sure we get som metrics 
+         casual::domain::manager::api::state();
+
+         auto parts = common::string::split( common::string::split( common::unittest::file::fetch::until::content( log_file), '\n').at( 0), '|');
+
+         // .casual/domain/state||26450|d099514934e0411e998eee8e4e99472f||1719906802794796|1719906802795079|0|OK|S|ce80d8aa31982d16|9a0d3e22c30072a0
+
+         EXPECT_TRUE( parts.at( 0) == ".casual/domain/state");
+         EXPECT_TRUE( parts.at( 1).empty());
+         EXPECT_TRUE( common::unittest::regex::match( parts.at( 2), "[0-9]+"));
+         EXPECT_TRUE( common::unittest::regex::match( parts.at( 3), "[0-9a-f]{32}"));
+         EXPECT_TRUE( parts.at( 4).empty()); // trid... need to check?
+         EXPECT_TRUE( common::unittest::regex::match( parts.at( 5), "[0-9]{16}")); // start us
+         EXPECT_TRUE( common::unittest::regex::match( parts.at( 6), "[0-9]{16}")); // end us
+         EXPECT_TRUE( parts.at( 7) == "0"); // pending
+         EXPECT_TRUE( parts.at( 8) == "OK"); // service result
+         EXPECT_TRUE( parts.at( 9) == "S"); // sequential/parallel
+         EXPECT_TRUE( common::unittest::regex::match( parts.at( 10), "[0-9a-f]{16}")); // execution span
+         EXPECT_TRUE( common::unittest::regex::match( parts.at( 10), "[0-9a-f]{16}")); // parent execution span
+      
+      }
+
 
       TEST( event_service_log, filter_exclusive)
       {

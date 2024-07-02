@@ -149,7 +149,7 @@ namespace casual
 
                std::vector< common::strong::correlation::id> boot( const std::vector< std::string>& pattern)
                {
-                  auto correlation = common::strong::correlation::id::emplace( uuid::make());
+                  auto correlation = common::strong::correlation::id::generate();
          
                   auto get_arguments = [&]()
                   {

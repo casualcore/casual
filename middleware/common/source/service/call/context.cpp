@@ -102,7 +102,8 @@ namespace casual
                   message.service.timeout = lookup.service.timeout;
 
                   message.process = process::handle();
-                  message.parent = common::execution::service::name();
+                  message.parent.service = common::execution::context::get().service;
+                  message.parent.span = common::execution::context::get().span;
 
                   message.flags = static_cast< message::service::call::request::Flag>( flags);
 

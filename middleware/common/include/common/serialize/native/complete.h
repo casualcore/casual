@@ -10,6 +10,7 @@
 #include "common/serialize/native/binary.h"
 #include "common/strong/type.h"
 #include "common/message/type.h"
+#include "common/execution/context.h"
 
 namespace casual
 {
@@ -28,7 +29,7 @@ namespace casual
       auto complete( const M& message) -> decltype( void( typename customization::point< std::decay_t< C>>::writer{}() << message), C{})
       {
          if( ! message.execution)
-            message.execution = execution::id();
+            message.execution = execution::context::get().id;
 
          using writer = typename customization::point< std::decay_t< C>>::writer;
 

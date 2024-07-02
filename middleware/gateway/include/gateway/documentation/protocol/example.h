@@ -31,9 +31,12 @@ namespace casual
                   void fill( casual::domain::message::discovery::topology::implicit::Update& message);
 
                   void fill( common::message::service::call::callee::Request& message);
+                  void fill( common::message::service::call::v1_2::callee::Request& message);
                   void fill( common::message::service::call::Reply& message);
+                  void fill( common::message::service::call::v1_2::Reply& message);
 
                   void fill( common::message::conversation::connect::callee::Request& message);
+                  void fill( common::message::conversation::connect::v1_2::callee::Request& message);
                   void fill( common::message::conversation::connect::Reply& message);
 
                   void fill( common::message::conversation::callee::Send& message);

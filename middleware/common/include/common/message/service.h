@@ -585,13 +585,14 @@ namespace casual
                };
             } // v1_2
 
+
             struct base_request : message::basic_request< message::Type::service_call>
             {
                using base_type = message::basic_request< message::Type::service_call>;
                using base_type::base_type;
 
+               execution::context::Parent parent;
                Service service;
-               std::string parent;
 
                common::transaction::ID trid;
                request::Flag flags{};
@@ -604,8 +605,8 @@ namespace casual
 
                CASUAL_CONST_CORRECT_SERIALIZE(
                   base_type::serialize( archive);
-                  CASUAL_SERIALIZE( service);
                   CASUAL_SERIALIZE( parent);
+                  CASUAL_SERIALIZE( service);
                   CASUAL_SERIALIZE( trid);
                   CASUAL_SERIALIZE( flags);
                   CASUAL_SERIALIZE( header);

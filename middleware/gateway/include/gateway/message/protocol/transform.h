@@ -24,7 +24,7 @@ namespace casual
          result.execution = message.execution;
          result.buffer = std::move( message.buffer);
          result.flags = message.flags;
-         result.parent = std::move( message.parent);
+         result.parent = std::move( message.parent.service);
          result.pending = message.pending;
          result.service = std::move( message.service);
          result.trid = std::move( message.trid);
@@ -38,7 +38,7 @@ namespace casual
          result.execution = message.execution;
          result.buffer = std::move( message.buffer);
          result.flags = message.flags;
-         result.parent = std::move( message.parent);
+         result.parent.service = std::move( message.parent);
          result.pending = message.pending;
          result.service = std::move( message.service);
          result.trid = std::move( message.trid);
@@ -65,6 +65,33 @@ namespace casual
          result.buffer = std::move( message.buffer);
          result.code = message.code;
          result.transaction = std::move( message.transaction);
+         return result;
+      }
+
+      template<>
+      inline common::message::conversation::connect::v1_2::callee::Request to( common::message::conversation::connect::callee::Request&& message)
+      {
+         common::message::conversation::connect::v1_2::callee::Request result;
+         result.correlation = message.correlation;
+         result.execution = message.execution;
+         result.buffer = std::move( message.buffer);
+         result.parent = std::move( message.parent.service);
+         result.pending = message.pending;
+         result.service = std::move( message.service);
+         result.trid = std::move( message.trid);
+         return result;
+      }
+
+      inline auto from( common::message::conversation::connect::v1_2::callee::Request&& message)
+      {
+         common::message::conversation::connect::callee::Request result;
+         result.correlation = message.correlation;
+         result.execution = message.execution;
+         result.buffer = std::move( message.buffer);
+         result.parent.service = std::move( message.parent);
+         result.pending = message.pending;
+         result.service = std::move( message.service);
+         result.trid = std::move( message.trid);
          return result;
       }
 

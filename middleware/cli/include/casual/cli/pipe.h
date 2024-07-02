@@ -35,7 +35,7 @@ namespace casual
             void message( const M& message)
             {
                if( ! message.execution)
-                  message.execution = common::execution::id();
+                  message.execution = common::execution::context::get().id;
 
                cli::message::to::human< M>::stream( message);
             }
@@ -45,7 +45,7 @@ namespace casual
          void message( const M& message)
          {
             if( ! message.execution)
-               message.execution = common::execution::id();
+               message.execution = common::execution::context::get().id;
 
             if( pipe::terminal::out())
                cli::message::to::human< M>::stream( message);

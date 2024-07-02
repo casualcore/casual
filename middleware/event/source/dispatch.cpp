@@ -36,7 +36,7 @@ namespace casual
                      R result;
                      metric.execution.underlying().copy( result.execution);
                      result.service.name = std::move( metric.service);
-                     result.service.parent = std::move( metric.parent);
+                     result.service.parent = std::move( metric.parent.service);
                      result.process.pid = metric.process.pid.value();
                      metric.process.ipc.value().copy( result.process.ipc);
 

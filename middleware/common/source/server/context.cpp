@@ -223,8 +223,7 @@ namespace casual
          void Context::finalize()
          {
             buffer::pool::holder().clear();
-            execution::service::clear();
-            execution::service::parent::clear();
+            execution::context::clear();
          }
 
 

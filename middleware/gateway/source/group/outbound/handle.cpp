@@ -186,7 +186,7 @@ namespace casual
                            struct Destination
                            {
                               std::string service;
-                              std::string parent;
+                              execution::context::Parent parent;
                               platform::time::point::type start;
                            };
 
@@ -205,7 +205,7 @@ namespace casual
                            struct Destination
                            {
                               std::string service;
-                              std::string parent;
+                              execution::context::Parent parent;
                               strong::ipc::id ipc;
                               common::transaction::ID trid;
                               platform::time::point::type start;
@@ -296,7 +296,7 @@ namespace casual
                            struct Shared
                            {
                               std::string service;
-                              std::string parent;
+                              execution::context::Parent parent;
                               strong::ipc::id ipc;
                               platform::time::point::type start;
                               common::transaction::ID trid;
@@ -358,13 +358,17 @@ namespace casual
                            Trace trace{ "gateway::group::outbound::handle::local::internal::conversation::connect::request"};
                            log::line( verbose::log, "message: ", message);
 
-                           auto tcp = state.connections.partner( descriptor);
+                           auto connection = state.connections.find_external( descriptor);
+                           CASUAL_ASSERT( connection);
 
-                           state.tasks.add( detail::create::task( state, message, tcp));
+                           state.tasks.add( detail::create::task( state, message, connection->descriptor()));
+                           transaction::associate_and_involve( state, message, connection->descriptor());
 
-                           transaction::associate_and_involve( state, message, tcp);
+                           if( message::protocol::compatible< common::message::conversation::connect::callee::Request>( connection->protocol()))
+                              tcp::send( state, connection->descriptor(), message);
+                           else
+                              tcp::send( state, connection->descriptor(), message::protocol::transform::to< common::message::conversation::connect::v1_2::callee::Request>( std::move( message)));
 
-                           tcp::send( state, tcp, message);
                         };
                      }
 

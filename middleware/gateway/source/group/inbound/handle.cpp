@@ -294,6 +294,22 @@ namespace casual
                            state.tasks.add( task::create::service::conversation( state, descriptor, std::move( message)));
                         };
                      }
+
+                     namespace v1_2
+                     {
+                        auto request( State& state)
+                        {
+                           return [&state]( common::message::conversation::connect::v1_2::callee::Request& message, strong::socket::id descriptor)
+                           {
+                              Trace trace{ "gateway::group::inbound::handle::local::external::conversation::connect::request"};
+                              log::line( verbose::log, "message: ", message);
+
+                              state.tasks.add( task::create::service::conversation( state, descriptor, message::protocol::transform::from( std::move( message))));
+                           };
+                        }
+                        
+                     } // v1_2
+
                   } // connect
 
                   auto disconnect( State& state)
@@ -527,6 +543,7 @@ namespace casual
 
             // conversation
             local::external::conversation::connect::request( state),
+            local::external::conversation::connect::v1_2::request( state),
             local::external::conversation::disconnect( state),
             local::external::conversation::send( state),
 

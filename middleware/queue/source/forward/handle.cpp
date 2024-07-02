@@ -212,7 +212,7 @@ namespace casual
                      {
                         ipc::message::group::dequeue::Request request{ common::process::handle()};
                         request.trid = common::transaction::id::create( common::process::handle());
-                        request.correlation = strong::correlation::id::emplace( common::uuid::make());
+                        request.correlation = strong::correlation::id::generate();
                         request.queue = forward.source.id;
                         request.name = forward.source.queue;
                         request.selector = forward.selector;
