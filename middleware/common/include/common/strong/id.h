@@ -141,6 +141,21 @@ namespace casual
             inline static auto generate() { return uuid::make();}
          };
          using id = strong::Type< Uuid, policy>;
+
+         namespace span
+         {
+            struct policy
+            {
+               using value_type = std::array< std::byte, 8>;
+               using extended_equality = void;
+               static value_type generate();
+               static bool valid( const value_type& value) noexcept;
+               static std::ostream& stream( std::ostream& out, const value_type& value);
+            };
+            using id = strong::Type< policy::value_type, policy>;
+            
+         } // span
+
       } // execution
 
       namespace domain

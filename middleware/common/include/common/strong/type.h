@@ -89,18 +89,11 @@ namespace casual
 
          constexpr Type() noexcept = default;
 
-         template< typename V> 
-         requires std::constructible_from< value_type, V>
-         constexpr explicit Type( V&& value) noexcept( value_traits::nothrow_move_construct) 
-            : m_value( std::forward< V>( value)) {}
-
-         //! creates a Type by emplacing on the internal value_type.
-         template< typename... Ts>
+         template< typename... Ts> 
          requires std::constructible_from< value_type, Ts...>
-         constexpr static auto emplace( Ts&&... ts)
-         {
-            return Type{ value_type{ std::forward< Ts>( ts)...}};
-         }
+         constexpr explicit Type( Ts&&... value) noexcept( value_traits::nothrow_move_construct) 
+            : m_value( std::forward< Ts>( value)...) {}
+
 
          //! return id by value if suitable. const ref otherwise.
          constexpr auto value() const noexcept -> common::traits::by_value_or_const_ref_t< T>
@@ -114,8 +107,8 @@ namespace casual
          {
             if constexpr( detail::has::static_valid< policy_type, value_type>)
                return policy_type::valid( m_value);
-
-            return static_cast< bool>( m_value);
+            else
+               return static_cast< bool>( m_value);
          }
 
          //! @returns true if the underlying value is valid

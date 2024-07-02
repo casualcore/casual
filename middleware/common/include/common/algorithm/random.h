@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include "casual/concepts.h"
+
 #include <random>
 #include <algorithm>
 
@@ -31,6 +33,13 @@ namespace casual
       {
          std::ranges::shuffle( range, random::generator());
          return std::forward< R>( range);
+      }
+
+      template< typename T, T min = std::numeric_limits< T>::min(), T max = std::numeric_limits< T>::max()> 
+      requires concepts::any_of< T, short, int, long, long long, unsigned short, unsigned int, unsigned long, unsigned long long>
+      T value()
+      {
+         return std::uniform_int_distribution< T>{ min, max}( random::generator());
       }
       
    } // common::algorithm::random
