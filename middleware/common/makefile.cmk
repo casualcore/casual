@@ -151,6 +151,7 @@ casual_common_objectfiles = [
     make.Compile( 'source/network/byteorder.cpp'),
     make.Compile( 'source/transcode.cpp'),
     make.Compile( 'source/metric.cpp'),
+    make.Compile( 'source/quantity.cpp'),
     
     make.Compile( 'source/argument.cpp'),
     make.Compile( 'source/argument/cardinality.cpp'),
@@ -282,6 +283,8 @@ unittest_objectfiles = [
 
     make.Compile( 'unittest/source/test_argument.cpp'),
     make.Compile( 'unittest/source/test_metric.cpp'),
+
+    make.Compile( 'unittest/source/test_quantity.cpp'),
 
     make.Compile( 'unittest/source/serialize/test_traits.cpp'),
     make.Compile( 'unittest/source/serialize/test_macro.cpp'),
