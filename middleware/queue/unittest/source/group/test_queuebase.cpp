@@ -892,5 +892,24 @@ PRAGMA journal_mode;
          EXPECT_TRUE( version.minor == 0);
       }
 
+      TEST( casual_queue_group, queue_group_size)
+      {
+         common::unittest::Trace trace;
+
+         auto path = local::file();
+         group::Queuebase database( path);
+         auto queue = database.create( queuebase::Queue{ "unittest_queue"});
+
+         platform::size::type enqueued_size{};
+         common::algorithm::for_n< 44>( [ &]
+         {
+            auto message = local::message( queue);
+            database.enqueue( message);
+            enqueued_size += message.message.payload.data.size();
+         });
+
+         EXPECT_TRUE( database.size() == enqueued_size) << "expected: " << enqueued_size << " actual: " << database.size();
+      }
+
    } // queue::group
 } // casual

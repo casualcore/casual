@@ -27,7 +27,9 @@ namespace casual
             // groups
             for( auto& group : groups)
             {
-               result.groups.push_back( admin::model::Group{ std::move( group.alias), group.process, std::move( group.queuebase), std::move( group.note)});
+               result.groups.push_back(
+                  admin::model::Group{ std::move( group.alias), group.process, std::move( group.queuebase), std::move( group.note), { group.size.current, group.size.capacity}}
+               );
 
                auto transform_queue = [ &state, &group]( auto& queue)
                {

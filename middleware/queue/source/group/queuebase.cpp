@@ -21,8 +21,10 @@
 #include "common/code/raise.h"
 #include "common/code/casual.h"
 
+#include "casual/assert.h"
 
 #include <chrono>
+#include <numeric>
 
 namespace casual
 {
@@ -108,6 +110,20 @@ namespace casual
                   }
                };
 
+               auto size()
+               {
+                  return []( auto& row)
+                  {
+                     platform::size::type size;
+
+                     sql::database::row::get( row,
+                        size
+                     );
+
+                     return size;
+                  };
+               }
+
             } // transform
 
 /*
@@ -146,6 +162,8 @@ namespace casual
 
                sql::database::version::set( connection, required);
             }
+
+
          } // <unnamed>
       } // local
 
@@ -592,13 +610,14 @@ namespace casual
          return messages;
       }
 
-      std::vector< common::transaction::global::ID> Queuebase::recovery_commit( common::strong::queue::id queue, std::vector< common::transaction::global::ID> gtrids)
+      std::tuple< platform::size::type, std::vector< common::transaction::global::ID>> Queuebase::recovery_commit( common::strong::queue::id queue, std::vector< common::transaction::global::ID> gtrids)
       {
+         std::vector< platform::size::type> deleted_sizes{};
          auto missing_message = [&]( auto& id)
          {
             m_statement.commit1.execute( id.range());
             const auto commit1_affected = m_connection.affected();
-            m_statement.commit2.execute( id.range());
+            algorithm::container::append( sql::database::query::fetch( m_statement.commit2.query( id.range()), local::transform::size()), deleted_sizes);
             const auto commit2_affected = m_connection.affected();
  
             return commit1_affected == 0 && commit2_affected == 0;
@@ -606,14 +625,15 @@ namespace casual
 
          algorithm::container::trim( gtrids, algorithm::remove_if( gtrids, missing_message));
 
-         return gtrids;
+         return std::make_tuple( algorithm::reduce( range::make( deleted_sizes)), gtrids);
       }
 
-      std::vector< common::transaction::global::ID> Queuebase::recovery_rollback( common::strong::queue::id queue, std::vector< common::transaction::global::ID> gtrids)
+      std::tuple< platform::size::type, std::vector< common::transaction::global::ID>> Queuebase::recovery_rollback( common::strong::queue::id queue, std::vector< common::transaction::global::ID> gtrids)
       {
+         std::vector< platform::size::type> deleted_sizes{};
          auto missing_message = [&]( auto& id)
          {
-            m_statement.rollback1.execute( id.range());
+            algorithm::container::append( sql::database::query::fetch( m_statement.rollback1.query( id.range()), local::transform::size()), deleted_sizes);
             const auto rollback1_affected = m_connection.affected();
             m_statement.rollback2.execute( id.range());
             const auto rollback2_affected = m_connection.affected();
@@ -624,10 +644,10 @@ namespace casual
 
          algorithm::container::trim( gtrids, algorithm::remove_if( gtrids, missing_message));
 
-         return gtrids;
+         return std::make_tuple( algorithm::reduce( range::make( deleted_sizes)), gtrids);;
       }
 
-      void Queuebase::commit( const common::transaction::ID& id)
+      platform::size::type Queuebase::commit( const common::transaction::ID& id)
       {
          Trace trace{ "queue::Queuebase::commit"};
 
@@ -635,19 +655,25 @@ namespace casual
 
          auto gtrid = common::transaction::id::range::global( id);
          m_statement.commit1.execute( gtrid);
-         m_statement.commit2.execute( gtrid);
+
+         auto sizes = sql::database::query::fetch( m_statement.commit2.query( gtrid), local::transform::size());
+         return std::reduce( std::begin( sizes), std::end( sizes));
       }
 
-      void Queuebase::rollback( const common::transaction::ID& id)
+      platform::size::type Queuebase::rollback( const common::transaction::ID& id)
       {
          Trace trace{ "queue::Queuebase::rollback"};
 
          log::line( log, "rollback xid: ", id);
 
          auto gtrid = common::transaction::id::range::global( id);
-         m_statement.rollback1.execute( gtrid);
+
+         auto sizes = sql::database::query::fetch( m_statement.rollback1.query( gtrid), local::transform::size());
+
          m_statement.rollback2.execute( gtrid);
          m_statement.rollback3.execute( gtrid);
+
+         return std::reduce( std::begin( sizes), std::end( sizes));
       }
 
       std::vector< queue::ipc::message::group::state::Queue> Queuebase::queues()
@@ -700,6 +726,16 @@ namespace casual
             local::transform::row(row, meta);
             return meta;
          });
+      }
+
+      platform::size::type Queuebase::size() const
+      {
+         Trace trace{ "queue::Queuebase::size"};
+
+         auto result = sql::database::query::first( m_statement.size.current.query(), local::transform::size());
+
+         casual::assertion( result, "failed to calculate queuebase size");
+         return result.value();
       }
 
       void Queuebase::metric_reset( const std::vector< common::strong::queue::id>& ids)

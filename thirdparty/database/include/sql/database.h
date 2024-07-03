@@ -87,6 +87,14 @@ namespace sql
          {
             return sqlite3_libversion_number();
          }
+
+         namespace number
+         {
+            inline constexpr int calculate( int major, int minor, int patch)
+            {
+               return major * 1000000 + minor * 1000 + patch;
+            }
+         }
       } // version
 
    } // database
