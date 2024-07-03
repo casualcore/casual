@@ -14,6 +14,7 @@
 #include "common/chronology.h"
 #include "common/log/line.h"
 #include "common/algorithm/coalesce.h"
+#include "common/quantity.h"
 
 namespace casual
 {
@@ -418,6 +419,7 @@ namespace casual
                         result.note = group.note.value_or( "");
                         result.queuebase = group.queuebase.value_or( "");
                         result.directory = default_directory;
+                        result.capacity = common::quantity::bytes::from::string( group.capacity.value_or( "0"));
 
                         common::algorithm::transform( group.queues, result.queues, []( auto& queue)
                         {
@@ -870,6 +872,9 @@ namespace casual
                      user::domain::queue::Group result;
                      result.alias = null_if_empty( value.alias);
                      result.queuebase = null_if_empty( value.queuebase);
+
+                     if( value.capacity)
+                        result.capacity = common::quantity::bytes::to::string( value.capacity);
 
                      result.queues = algorithm::transform( value.queues, []( auto& value)
                      {

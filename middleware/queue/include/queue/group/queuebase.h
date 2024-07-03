@@ -171,13 +171,19 @@ namespace casual
          //! @returns gtrid:s of the messages that was rollbacked
          std::vector< common::transaction::global::ID> recovery_rollback( common::strong::queue::id queue, std::vector< common::transaction::global::ID> gtrids);
 
-         void commit( const common::transaction::ID& id);
-         void rollback( const common::transaction::ID& id);
+         //! @returns total size of messages deleted (committed dequeues)
+         platform::size::type commit( const common::transaction::ID& id);
+
+         //! @returns total size of messages deleted (rollbacked enqueues)
+         platform::size::type rollback( const common::transaction::ID& id);
 
          //! information
          std::vector< queue::ipc::message::group::state::Queue> queues();
          //! information
          std::vector< queue::ipc::message::group::message::Meta> meta( common::strong::queue::id id);
+
+         //! @returns the accumulated size of all messages in all queues
+         platform::size::type size() const;
 
          void metric_reset( const std::vector< common::strong::queue::id>& ids);
          

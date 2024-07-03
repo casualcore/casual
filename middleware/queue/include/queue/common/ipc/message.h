@@ -715,6 +715,9 @@ namespace casual
                std::vector< Queue> queues;
                std::vector< common::strong::queue::id> zombies;
 
+               platform::size::type size;
+               platform::size::type capacity;
+
                CASUAL_CONST_CORRECT_SERIALIZE(
                   base_reply::serialize( archive);
                   CASUAL_SERIALIZE( alias);
@@ -722,6 +725,8 @@ namespace casual
                   CASUAL_SERIALIZE( note);
                   CASUAL_SERIALIZE( queues);
                   CASUAL_SERIALIZE( zombies);
+                  CASUAL_SERIALIZE( size);
+                  CASUAL_SERIALIZE( capacity);
                )
             };
 

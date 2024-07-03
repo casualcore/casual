@@ -83,6 +83,11 @@ namespace casual
             //! arguments: (queue)id;
             sql::database::Statement reset;
          } metric;
+
+         struct
+         {
+            sql::database::Statement current;
+         } size;
       };
 
       Statement statement( sql::database::Connection& connection);

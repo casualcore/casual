@@ -658,6 +658,7 @@ namespace casual
                std::optional< std::string> alias;
                std::optional< std::string> queuebase;
                std::optional< std::string> note;
+               std::optional< std::string> capacity;
                std::vector< Queue> queues;
 
                //! @deprecated
@@ -667,6 +668,7 @@ namespace casual
                   CASUAL_SERIALIZE( alias);
                   CASUAL_SERIALIZE( queuebase);
                   CASUAL_SERIALIZE( note);
+                  CASUAL_SERIALIZE( capacity);
                   CASUAL_SERIALIZE( queues);
                   CASUAL_SERIALIZE( name);
                )

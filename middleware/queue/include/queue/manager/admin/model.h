@@ -27,6 +27,8 @@ namespace casual
          common::process::Handle process;
          std::string queuebase;
          std::string note;
+         platform::size::type size;
+         platform::size::type capacity;
 
          friend bool operator == ( const Group& lhs, common::process::compare_equal_to_handle auto rhs) { return lhs.process == rhs;}
 
@@ -35,6 +37,8 @@ namespace casual
             CASUAL_SERIALIZE( alias);
             CASUAL_SERIALIZE( queuebase);
             CASUAL_SERIALIZE( note);
+            CASUAL_SERIALIZE( size);
+            CASUAL_SERIALIZE( capacity);
          )
       };
 

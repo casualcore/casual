@@ -222,7 +222,9 @@ namespace casual
                      terminal::format::column( "alias", format_alias, terminal::color::yellow),
                      terminal::format::column( "pid", format_pid, terminal::color::white, terminal::format::Align::right),
                      terminal::format::column( "ipc", format_ipc, terminal::color::no_color, terminal::format::Align::right),
-                     terminal::format::column( "queuebase", format_queuebase, terminal::color::cyan)
+                     terminal::format::column( "queuebase", format_queuebase, terminal::color::cyan),
+                     terminal::format::column( "size", std::mem_fn( &manager::admin::model::Group::size), terminal::format::Align::right),
+                     terminal::format::column( "capacity", std::mem_fn( &manager::admin::model::Group::capacity), terminal::format::Align::right)
                   );
                }
 
@@ -1136,8 +1138,13 @@ use auto-complete to help which options has legends)"
                      // use the explict transaction regardless.
                      request.trid = state.current;
 
+
+                     auto reply = communication::ipc::call( state.destination.process.ipc, request);
                      cli::message::queue::message::ID id;
-                     id.id = communication::ipc::call( state.destination.process.ipc, request).id;
+                     id.id = reply.id;
+
+                     if( ! id.id)
+                        code::raise::error( reply.code, "enqueue failed");
                      
                      cli::pipe::forward::message( id);
                   };

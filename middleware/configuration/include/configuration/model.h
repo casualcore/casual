@@ -641,6 +641,7 @@ namespace casual::configuration
             std::string note;
             std::vector< Queue> queues;
             std::string directory;
+            platform::size::type capacity{};
 
             inline friend bool operator == ( const Group& lhs, const std::string& alias) { return lhs.alias == alias;}
             friend auto operator <=> ( const Group&, const Group&) = default;
@@ -656,6 +657,7 @@ namespace casual::configuration
                CASUAL_SERIALIZE( note);
                CASUAL_SERIALIZE( queues);
                CASUAL_SERIALIZE( directory);
+               CASUAL_SERIALIZE( capacity);
             )
          };
 

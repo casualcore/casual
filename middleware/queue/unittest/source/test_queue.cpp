@@ -1449,5 +1449,216 @@ domain:
 
       }
 
+      namespace local
+      {
+         namespace
+         {
+            namespace capacity
+            {
+               auto domain()
+               {
+                  constexpr auto config = R"(
+domain: 
+   queue:
+      groups:
+         -  alias: "A"
+            queuebase: ${CASUAL_UNITTEST_QUEUEBASE}
+            capacity: "100B"
+            queues:
+               - name: a1
+)";
+                  return local::domain( config);
+               }
+
+               auto message( platform::size::type size)
+               {
+                  queue::Message message;
+                  message.payload.type = common::buffer::type::binary;
+                  message.payload.data = common::unittest::random::binary( size);
+                  return message;
+               }
+
+               std::optional< platform::size::type> group_size( std::string_view group)
+               {
+                  auto state = unittest::state();
+                  if( ! state.groups.empty())
+                     return state.groups.at( 0).size;
+                  return std::nullopt;
+               }
+            } // capacity
+         } // unnammed
+      } // local
+
+      TEST( casual_queue, enqueue_dequeue_messages__expect_correct_group_size)
+      {
+         common::unittest::Trace trace;
+
+         auto domain = local::capacity::domain();
+
+         queue::enqueue( "a1", local::capacity::message( 30));
+         queue::enqueue( "a1", local::capacity::message( 30));
+
+         {
+            auto current_size = local::capacity::group_size( "A");
+            ASSERT_TRUE( current_size);
+            EXPECT_TRUE( current_size.value() == 60);
+         }
+         
+         {
+            EXPECT_FALSE( queue::dequeue( "a1").empty());
+            auto current_size = local::capacity::group_size( "A");
+            ASSERT_TRUE( current_size);
+            EXPECT_TRUE( current_size.value() == 30);
+         }
+      }
+
+      TEST( casual_queue, enqueue_message__insufficient_capacity__expect_error)
+      {
+         common::unittest::Trace trace;
+
+         auto domain = local::capacity::domain();
+
+         EXPECT_THROW({
+            queue::enqueue( "a1", local::capacity::message( 101));
+         }, std::system_error);
+      }
+
+      TEST( casual_queue, dequeue_message__full_group__expect_success)
+      {
+         common::unittest::Trace trace;
+
+         auto domain = local::capacity::domain();
+
+         queue::enqueue( "a1", local::capacity::message( 100));
+         
+         EXPECT_FALSE( queue::dequeue( "a1").empty());
+      }
+
+      TEST( casual_queue, restart_domain__expect_correct_group_size)
+      {
+         common::unittest::Trace trace;
+
+         auto directory = common::unittest::directory::temporary::Scoped{};
+         auto scope = common::unittest::environment::scoped::variable( "CASUAL_UNITTEST_QUEUEBASE", ( directory.path() / "a.qb").string());
+
+         {
+            auto domain = local::capacity::domain();
+
+            queue::enqueue( "a1", local::capacity::message( 24));
+            queue::enqueue( "a1", local::capacity::message( 24));
+         }
+
+         {
+            auto domain = local::capacity::domain();
+
+            auto current_size = local::capacity::group_size( "A");
+            ASSERT_TRUE( current_size);
+            EXPECT_TRUE( current_size.value() == 48);
+         }
+      }
+
+      TEST( casual_queue, enqueue_message_transaction__commit__expect_correct_group_size)
+      {
+         common::unittest::Trace trace;
+
+         auto domain = local::capacity::domain();
+
+         EXPECT_EQ( common::transaction::context().begin(), common::code::tx::ok);
+         queue::enqueue( "a1", local::capacity::message( 30));
+
+         {
+            auto current_size = local::capacity::group_size( "A");
+            ASSERT_TRUE( current_size);
+            EXPECT_TRUE( current_size.value() == 30);
+         }
+
+         EXPECT_EQ( common::transaction::context().commit(), common::code::tx::ok);
+
+         {
+            auto current_size = local::capacity::group_size( "A");
+            ASSERT_TRUE( current_size);
+            EXPECT_TRUE( current_size.value() == 30);
+         }
+      }
+
+      TEST( casual_queue, dequeue_message_transaction__commit__expect_correct_group_size)
+      {
+         common::unittest::Trace trace;
+
+         auto domain = local::capacity::domain();
+
+         queue::enqueue( "a1", local::capacity::message( 30));
+
+         EXPECT_EQ( common::transaction::context().begin(), common::code::tx::ok);
+
+         // dequeue not committed - message should not be subtracted from size
+         {
+            EXPECT_FALSE( queue::dequeue( "a1").empty());
+            auto current_size = local::capacity::group_size( "A");
+            ASSERT_TRUE( current_size);
+            EXPECT_TRUE( current_size.value() == 30);
+         }
+
+         EXPECT_EQ( common::transaction::context().commit(), common::code::tx::ok);
+
+         // dequeue rollbacked - expect message subtracted from size
+         {
+            auto current_size = local::capacity::group_size( "A");
+            ASSERT_TRUE( current_size);
+            EXPECT_TRUE( current_size.value() == 0);
+         }
+      }
+
+      TEST( casual_queue, enqueue_message_transaction__rollback__expect_correct_group_size)
+      {
+         common::unittest::Trace trace;
+
+         auto domain = local::capacity::domain();
+
+         EXPECT_EQ( common::transaction::context().begin(), common::code::tx::ok);
+         queue::enqueue( "a1", local::capacity::message( 30));
+
+         {
+            auto current_size = local::capacity::group_size( "A");
+            ASSERT_TRUE( current_size);
+            EXPECT_TRUE( current_size.value() == 30);
+         }
+
+         EXPECT_EQ( common::transaction::context().rollback(), common::code::tx::ok);
+
+         {
+            auto current_size = local::capacity::group_size( "A");
+            ASSERT_TRUE( current_size);
+            EXPECT_TRUE( current_size.value() == 0);
+         }
+      }
+
+      TEST( casual_queue, dequeue_message_transaction__rollback__expect_correct_group_size)
+      {
+         common::unittest::Trace trace;
+
+         auto domain = local::capacity::domain();
+
+         queue::enqueue( "a1", local::capacity::message( 30));
+
+         EXPECT_EQ( common::transaction::context().begin(), common::code::tx::ok);
+
+         // dequeue not committed - message should not be subtracted from size
+         {
+            EXPECT_FALSE( queue::dequeue( "a1").empty());
+            auto current_size = local::capacity::group_size( "A");
+            ASSERT_TRUE( current_size);
+            EXPECT_TRUE( current_size.value() == 30);
+         }
+
+         EXPECT_EQ( common::transaction::context().rollback(), common::code::tx::ok);
+
+         // dequeue rollbacked - expect message still included in size
+         {
+            auto current_size = local::capacity::group_size( "A");
+            ASSERT_TRUE( current_size);
+            EXPECT_TRUE( current_size.value() == 30);
+         }
+      }
    } // queue
 } // casual
