@@ -20,6 +20,9 @@
 #include "common/message/transaction.h"
 #include "common/environment.h"
 #include "common/instance.h"
+#include "common/event/send.h"
+
+#include "sql/database.h"
 
 namespace casual
 {
@@ -29,7 +32,7 @@ namespace casual
          namespace local
          {
             namespace
-            { 
+            {
                namespace select
                {
                   //! Policy for the ipc multiplex select message pump
@@ -60,6 +63,19 @@ namespace casual
 
                } // select
 
+               namespace sqlite::library::version
+               {
+                  constexpr int required = sql::database::version::number::calculate( 3, 35, 0);
+
+                  void check()
+                  {
+                     if( sql::database::version::library() < required)
+                        common::event::error::fatal::raise( common::code::casual::invalid_version,
+                           "casual-queue-group requires sqlite3 version 3.35.0 or greater"
+                        );
+                  }
+               }
+
                struct Settings
                {
                   CASUAL_LOG_SERIALIZE()
@@ -88,6 +104,8 @@ namespace casual
                State initialize( Settings settings)
                {
                   Trace trace{ "queue::group::local::initialize"};
+
+                  sqlite::library::version::check();
 
                   // make sure we handle "alarms"
                   signal::callback::registration< common::code::signal::alarm>( []()

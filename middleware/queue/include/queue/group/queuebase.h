@@ -16,6 +16,8 @@
 #include "common/string.h"
 
 #include <filesystem>
+#include <vector>
+#include <tuple>
 
 namespace casual
 {
@@ -162,22 +164,28 @@ namespace casual
          //! @note: only `enqueued` messages are deleted (no pending for commit)
          platform::size::type clear( common::strong::queue::id queue);
 
-         //! @returns id:s of the messages that was removed
+         //! @returns total size of messages deleted and id:s of the messages that was removed
          std::vector< common::Uuid> remove( common::strong::queue::id queue, std::vector< common::Uuid> messages);
 
-         //! @returns gtrid:s of the messages that was commited
-         std::vector< common::transaction::global::ID> recovery_commit( common::strong::queue::id queue, std::vector< common::transaction::global::ID> gtrids);
+         //! @returns total size of messages deleted and gtrid:s of the messages that was commited
+         std::tuple< platform::size::type, std::vector< common::transaction::global::ID>> recovery_commit( common::strong::queue::id queue, std::vector< common::transaction::global::ID> gtrids);
 
          //! @returns gtrid:s of the messages that was rollbacked
-         std::vector< common::transaction::global::ID> recovery_rollback( common::strong::queue::id queue, std::vector< common::transaction::global::ID> gtrids);
+         std::tuple< platform::size::type, std::vector< common::transaction::global::ID>> recovery_rollback( common::strong::queue::id queue, std::vector< common::transaction::global::ID> gtrids);
 
-         void commit( const common::transaction::ID& id);
-         void rollback( const common::transaction::ID& id);
+         //! @returns total size of messages deleted (committed dequeues)
+         platform::size::type commit( const common::transaction::ID& id);
+
+         //! @returns total size of messages deleted (rollbacked enqueues)
+         platform::size::type rollback( const common::transaction::ID& id);
 
          //! information
          std::vector< queue::ipc::message::group::state::Queue> queues();
          //! information
          std::vector< queue::ipc::message::group::message::Meta> meta( common::strong::queue::id id);
+
+         //! @returns the accumulated size of all messages in all queues
+         platform::size::type size() const;
 
          void metric_reset( const std::vector< common::strong::queue::id>& ids);
          

@@ -217,12 +217,21 @@ namespace casual
                   auto format_pid = []( auto& group) { return group.process.pid;};
                   auto format_ipc = []( auto& group) { return group.process.ipc;};
                   auto format_queuebase = []( auto& group) { return hyphen_if_empty( group.queuebase);};
+                  auto format_size = []( auto& group) { return group.size.current;};
+                  auto format_capacity = []( auto& group) -> std::string
+                  {
+                     if( group.size.capacity)
+                        return common::string::compose( group.size.capacity.value());
+                     return "-";
+                  };
 
                   return terminal::format::formatter< manager::admin::model::Group>::construct(
                      terminal::format::column( "alias", format_alias, terminal::color::yellow),
                      terminal::format::column( "pid", format_pid, terminal::color::white, terminal::format::Align::right),
                      terminal::format::column( "ipc", format_ipc, terminal::color::no_color, terminal::format::Align::right),
-                     terminal::format::column( "queuebase", format_queuebase, terminal::color::cyan)
+                     terminal::format::column( "queuebase", format_queuebase, terminal::color::cyan),
+                     terminal::format::column( "size", format_size, terminal::format::Align::right),
+                     terminal::format::column( "capacity", format_capacity, terminal::format::Align::right)
                   );
                }
 
@@ -1136,8 +1145,13 @@ use auto-complete to help which options has legends)"
                      // use the explict transaction regardless.
                      request.trid = state.current;
 
+
+                     auto reply = communication::ipc::call( state.destination.process.ipc, request);
                      cli::message::queue::message::ID id;
-                     id.id = communication::ipc::call( state.destination.process.ipc, request).id;
+                     id.id = reply.id;
+
+                     if( ! id.id)
+                        code::raise::error( reply.code, "enqueue failed");
                      
                      cli::pipe::forward::message( id);
                   };

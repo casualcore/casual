@@ -65,6 +65,20 @@ namespace casual
             error,
          };
          std::string_view description( Runlevel value);
+
+         struct Size
+         {
+            platform::size::type current;
+            std::optional< platform::size::type> capacity;
+
+            inline void add( platform::size::type size) { current += size;}
+            inline void subtract( platform::size::type size) { current -= size;}
+
+            CASUAL_CONST_CORRECT_SERIALIZE(
+               CASUAL_SERIALIZE( current);
+               CASUAL_SERIALIZE( capacity);
+            )
+         };
          
       } // state
 
@@ -87,6 +101,8 @@ namespace casual
          std::string alias;
          std::string note;
 
+         state::Size size;
+
          bool done() const noexcept;
 
          CASUAL_CONST_CORRECT_SERIALIZE(
@@ -98,6 +114,7 @@ namespace casual
             CASUAL_SERIALIZE( zombies);
             CASUAL_SERIALIZE( alias);
             CASUAL_SERIALIZE( note);
+            CASUAL_SERIALIZE( size);
          )
       };
    } // queue::group

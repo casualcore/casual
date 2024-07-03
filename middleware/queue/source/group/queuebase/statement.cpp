@@ -76,7 +76,7 @@ WHERE queue = :queue AND state = 2 AND properties = :properties AND available < 
             Trace trace{ "queue::group::Database::Database precompile statements commit"};
 
             result.commit1 = connection.precompile( "UPDATE message SET state = 2 WHERE gtrid = :gtrid AND state = 1;");
-            result.commit2 = connection.precompile( "DELETE FROM message WHERE gtrid = :gtrid AND state = 3;");
+            result.commit2 = connection.precompile( "DELETE FROM message WHERE gtrid = :gtrid AND state = 3 RETURNING length( payload);");
             result.commit3 = connection.precompile( "SELECT DISTINCT( queue) FROM message WHERE gtrid = :gtrid AND state = 2;");
          }
 
@@ -96,7 +96,7 @@ WHERE queue = :queue AND state = 2 AND properties = :properties AND available < 
 
             */
 
-            result.rollback1 = connection.precompile( "DELETE FROM message WHERE gtrid = :gtrid AND state = 1;");
+            result.rollback1 = connection.precompile( "DELETE FROM message WHERE gtrid = :gtrid AND state = 1 RETURNING length( payload);");
 
             // this only mutates if availiable has passed, otherwise state would not be 'dequeued' (3)
             result.rollback2 = connection.precompile( 
@@ -281,6 +281,10 @@ WHERE queue = :queue AND state = 2 AND timestamp > :timestamp AND available < :a
             UPDATE queue
             SET metric_dequeued = 0, metric_enqueued = 0
             WHERE id = :id; )");
+
+         result.size.current = connection.precompile(R"(
+            SELECT sum( length( payload))
+            FROM message; )");
 
          return result;
       }
