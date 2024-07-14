@@ -646,8 +646,9 @@ Sent to and received from other domains when one domain wants call a service in 
                         { "service.name.size", "service name size"},
                         { "service.name.data", "byte array with service name"},
                         { "service.timeout.duration", "timeout of the service in use (ns)"},
-                        { "parent.size", "parent service name size"},
-                        { "parent.data", "byte array with parent service name"},
+                        { "parent.span", "parent execution span"},
+                        { "parent.service.size", "parent service name size"},
+                        { "parent.service.data", "byte array with parent service name"},
 
                         { "xid.formatID", "xid format type. if 0 no more information of the xid is transported"},
                         { "xid.gtrid_length", "length of the transaction gtrid part"},
@@ -712,28 +713,19 @@ Reply to call request
 )";
                message_type message;
 
-               message.transaction.trid = common::transaction::id::create();
+               message.transaction_state = decltype( message.transaction_state)::ok;
                message.buffer.type = local::string::value( 8) + '/' + local::string::value( 16);
                message.buffer.data = local::binary::value( 1024);
 
                local::format::type( out, message, {
                         { "execution", "uuid of the current execution context (breadcrumb)"},
-
                         { "code.result", "XATMI result/error code, 0 represent OK"},
                         { "code.user", "XATMI user supplied code"},
-
-                        { "transaction.xid.formatID", "xid format type. if 0 no more information of the xid is transported"},
-                        { "transaction.xid.gtrid_length", "length of the transaction gtrid part"},
-                        { "transaction.xid.bqual_length", "length of the transaction branch part"},
-                        { "transaction.xid.data", "byte array with the size of gtrid_length + bqual_length (max 128)"},
-                        { "transaction.state", "state of the transaction TX_ACTIVE, TX_TIMEOUT_ROLLBACK_ONLY, TX_ROLLBACK_ONLY"},
-
+                        { "transaction_state", "0:ok/absent, 1:rollback, 2:timeout, 3:error"},
                         { "buffer.type.size", "buffer type name size"},
                         { "buffer.type.data", "byte array with buffer type in the form 'type/subtype'"},
                         { "buffer.data.size", "buffer payload size (could be very big)"},
                         { "buffer.data.data", "buffer payload data (with the size of buffer.payload.size)"},
-
-
                      });
             }
 
@@ -761,7 +753,7 @@ Reply to call request
                         { "transaction.xid.gtrid_length", "length of the transaction gtrid part"},
                         { "transaction.xid.bqual_length", "length of the transaction branch part"},
                         { "transaction.xid.data", "byte array with the size of gtrid_length + bqual_length (max 128)"},
-                        { "transaction.state", "state of the transaction TX_ACTIVE, TX_TIMEOUT_ROLLBACK_ONLY, TX_ROLLBACK_ONLY"},
+                        { "transaction.state", "0:ok, 1:rollback, 2:timeout, 3:error"},
 
                         { "buffer.type.size", "buffer type name size"},
                         { "buffer.type.data", "byte array with buffer type in the form 'type/subtype'"},
@@ -913,7 +905,7 @@ Sent to and received from other domains when one domain wants to discover inform
                         { "content.services.element.category.size", "size of the current service category"},
                         { "content.services.element.category.data", "dynamic byte array of the current service category"},
                         { "content.services.element.transaction", "service transaction mode (auto, atomic, join, none)"},
-                        { "content.services.element.timeout", "service timeout"},
+                        { "content.services.element.timeout.duration", "service timeout (ns)"},
                         { "content.services.element.hops", "number of domain hops to the service (local services has 0 hops)"},
                         { "content.queues.size", "number of requested queues to follow (an array of queues)"},
                         { "content.queues.element.name.size", "size of the current queue name"},
@@ -1154,8 +1146,9 @@ Sent to establish a conversation
                         { "service.name.size", "size of the service name"},
                         { "service.name.data", "data of the service name"},
                         { "service.timeout.duration", "timeout (in ns"},
-                        { "parent.size", "size of the parent service name (the caller)"},
-                        { "parent.data", "data of the parent service name (the caller)"},
+                        { "parent.span", "parent execution span"},
+                        { "parent.service.size", "size of the parent service name (the caller)"},
+                        { "parent.service.data", "data of the parent service name (the caller)"},
                         { "xid.formatID", "xid format type. if 0 no more information of the xid is transported"},
                         { "xid.gtrid_length", "length of the transaction gtrid part"},
                         { "xid.bqual_length", "length of the transaction branch part"},
@@ -1225,6 +1218,43 @@ Sent to abruptly disconnect the conversation
                local::format::type( out, message, {
                         { "execution", "uuid of the current execution context (breadcrumb)"},
                         { "events", "events"},
+                     });
+            }
+
+            {
+               using message_type = common::message::conversation::connect::v1_2::callee::Request;
+
+               local::message::section< message_type>( out, "##") << R"(
+
+Sent to establish a conversation
+
+)";
+               message_type message;
+
+               message.service.name = local::string::value( 128);
+               message.parent = local::string::value( 128);
+               message.trid = common::transaction::id::create();
+               message.buffer.type = local::string::value( 8) + '/' + local::string::value( 16);
+               message.buffer.data = local::binary::value( 1024);
+               using Duplex = decltype( message.duplex);
+               message.duplex = Duplex::receive;
+
+               local::format::type( out, message, {
+                        { "execution", "uuid of the current execution context (breadcrumb)"},
+                        { "service.name.size", "size of the service name"},
+                        { "service.name.data", "data of the service name"},
+                        { "service.timeout.duration", "timeout (in ns"},
+                        { "parent.size", "size of the parent service name (the caller)"},
+                        { "parent.data", "data of the parent service name (the caller)"},
+                        { "xid.formatID", "xid format type. if 0 no more information of the xid is transported"},
+                        { "xid.gtrid_length", "length of the transaction gtrid part"},
+                        { "xid.bqual_length", "length of the transaction branch part"},
+                        { "xid.data", "byte array with the size of gtrid_length + bqual_length (max 128)"},
+                        { "duplex", string::compose( "in what duplex the callee shall enter (", Duplex::receive, ":", std::to_underlying( Duplex::receive), ", ", Duplex::send, ":", std::to_underlying( Duplex::send),')') },
+                        { "buffer.type.size", "buffer type name size"},
+                        { "buffer.type.data", "byte array with buffer type in the form 'type/subtype'"},
+                        { "buffer.data.size", "buffer payload size (could be very big)"},
+                        { "buffer.data.data", "buffer payload data (with the size of buffer.payload.size)"},
                      });
             }
             

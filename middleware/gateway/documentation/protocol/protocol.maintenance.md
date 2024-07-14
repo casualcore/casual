@@ -138,7 +138,7 @@ content.services.element.name.data        | dynamic string |       [0..*] | dyna
 content.services.element.category.size    | uint64         |            8 | size of the current service category                            
 content.services.element.category.data    | dynamic string |       [0..*] | dynamic byte array of the current service category              
 content.services.element.transaction      | uint16         |            2 | service transaction mode (auto, atomic, join, none)             
-content.services.element.timeout.duration | uint64         |            8 |                                                                 
+content.services.element.timeout.duration | uint64         |            8 | service timeout (ns)                                            
 content.services.element.hops             | uint64         |            8 | number of domain hops to the service (local services has 0 hops)
 content.queues.size                       | uint64         |            8 | number of requested queues to follow (an array of queues)       
 content.queues.element.name.size          | uint64         |            8 | size of the current queue name                                  
@@ -171,8 +171,9 @@ execution                | (fixed) binary |           16 | uuid of the current e
 service.name.size        | uint64         |            8 | service name size                                                  
 service.name.data        | dynamic string |       [0..*] | byte array with service name                                       
 service.timeout.duration | uint64         |            8 | timeout of the service in use (ns)                                 
-parent.size              | uint64         |            8 | parent service name size                                           
-parent.data              | dynamic string |       [0..*] | byte array with parent service name                                
+parent.span              | (fixed) binary |            8 | parent execution span                                              
+parent.service.size      | uint64         |            8 | parent service name size                                           
+parent.service.data      | dynamic string |       [0..*] | byte array with parent service name                                
 xid.formatID             | uint64         |            8 | xid format type. if 0 no more information of the xid is transported
 xid.gtrid_length         | uint64         |            8 | length of the transaction gtrid part                               
 xid.bqual_length         | uint64         |            8 | length of the transaction branch part                              
@@ -211,20 +212,16 @@ buffer.data.data         | dynamic binary |       [0..*] | buffer payload data (
 
 Reply to call request
 
-role name                    | network type   | network size | description                                                                   
----------------------------- | -------------- | ------------ | ------------------------------------------------------------------------------
-execution                    | (fixed) binary |           16 | uuid of the current execution context (breadcrumb)                            
-code.result                  | uint32         |            4 | XATMI result/error code, 0 represent OK                                       
-code.user                    | uint64         |            8 | XATMI user supplied code                                                      
-transaction.xid.formatID     | uint64         |            8 | xid format type. if 0 no more information of the xid is transported           
-transaction.xid.gtrid_length | uint64         |            8 | length of the transaction gtrid part                                          
-transaction.xid.bqual_length | uint64         |            8 | length of the transaction branch part                                         
-transaction.xid.data         | (fixed) binary |           32 | byte array with the size of gtrid_length + bqual_length (max 128)             
-transaction.state            | uint8          |            1 | state of the transaction TX_ACTIVE, TX_TIMEOUT_ROLLBACK_ONLY, TX_ROLLBACK_ONLY
-buffer.type.size             | uint64         |            8 | buffer type name size                                                         
-buffer.type.data             | dynamic string |       [0..*] | byte array with buffer type in the form 'type/subtype'                        
-buffer.data.size             | uint64         |            8 | buffer payload size (could be very big)                                       
-buffer.data.data             | dynamic binary |       [0..*] | buffer payload data (with the size of buffer.payload.size)                    
+role name         | network type   | network size | description                                               
+----------------- | -------------- | ------------ | ----------------------------------------------------------
+execution         | (fixed) binary |           16 | uuid of the current execution context (breadcrumb)        
+code.result       | uint32         |            4 | XATMI result/error code, 0 represent OK                   
+code.user         | uint64         |            8 | XATMI user supplied code                                  
+transaction_state | uint8          |            1 | 0:absent, 1:active, 2:rollback, 3:timeout, 4:error        
+buffer.type.size  | uint64         |            8 | buffer type name size                                     
+buffer.type.data  | dynamic string |       [0..*] | byte array with buffer type in the form 'type/subtype'    
+buffer.data.size  | uint64         |            8 | buffer payload size (could be very big)                   
+buffer.data.data  | dynamic binary |       [0..*] | buffer payload data (with the size of buffer.payload.size)
 
 
 ## service_reply_v2 - **#3101** - _[v1.0, v1.1, v1.2]_
@@ -451,7 +448,7 @@ message.element.redelivered                | uint64         |            8 | how
 message.element.timestamp                  | uint64         |            8 | when the message was enqueued (us since epoch)             
 
 
-## conversation_connect_request - **#3210** - _[v1.0, v1.1, v1.2, v1.3]_
+## conversation_connect_request - **#3220** - _[v1.3]_
 
 Sent to establish a conversation
 
@@ -461,8 +458,9 @@ execution                | (fixed) binary |           16 | uuid of the current e
 service.name.size        | uint64         |            8 | size of the service name                                           
 service.name.data        | dynamic string |       [0..*] | data of the service name                                           
 service.timeout.duration | uint64         |            8 | timeout (in ns                                                     
-parent.size              | uint64         |            8 | size of the parent service name (the caller)                       
-parent.data              | dynamic string |       [0..*] | data of the parent service name (the caller)                       
+parent.span              | (fixed) binary |            8 | parent execution span                                              
+parent.service.size      | uint64         |            8 | size of the parent service name (the caller)                       
+parent.service.data      | dynamic string |       [0..*] | data of the parent service name (the caller)                       
 xid.formatID             | uint64         |            8 | xid format type. if 0 no more information of the xid is transported
 xid.gtrid_length         | uint64         |            8 | length of the transaction gtrid part                               
 xid.bqual_length         | uint64         |            8 | length of the transaction branch part                              
@@ -507,3 +505,26 @@ Sent to abruptly disconnect the conversation
 role name | network type   | network size | description                                       
 --------- | -------------- | ------------ | --------------------------------------------------
 execution | (fixed) binary |           16 | uuid of the current execution context (breadcrumb)
+
+
+## conversation_connect_request_v2 - **#3210** - _[v1.0, v1.1, v1.2]_
+
+Sent to establish a conversation
+
+role name                | network type   | network size | description                                                        
+------------------------ | -------------- | ------------ | -------------------------------------------------------------------
+execution                | (fixed) binary |           16 | uuid of the current execution context (breadcrumb)                 
+service.name.size        | uint64         |            8 | size of the service name                                           
+service.name.data        | dynamic string |       [0..*] | data of the service name                                           
+service.timeout.duration | uint64         |            8 | timeout (in ns                                                     
+parent.size              | uint64         |            8 | size of the parent service name (the caller)                       
+parent.data              | dynamic string |       [0..*] | data of the parent service name (the caller)                       
+xid.formatID             | uint64         |            8 | xid format type. if 0 no more information of the xid is transported
+xid.gtrid_length         | uint64         |            8 | length of the transaction gtrid part                               
+xid.bqual_length         | uint64         |            8 | length of the transaction branch part                              
+xid.data                 | (fixed) binary |           32 | byte array with the size of gtrid_length + bqual_length (max 128)  
+duplex                   | uint16         |            2 | in what duplex the callee shall enter (receive:1, send:0)          
+buffer.type.size         | uint64         |            8 | buffer type name size                                              
+buffer.type.data         | dynamic string |       [0..*] | byte array with buffer type in the form 'type/subtype'             
+buffer.data.size         | uint64         |            8 | buffer payload size (could be very big)                            
+buffer.data.data         | dynamic binary |       [0..*] | buffer payload data (with the size of buffer.payload.size)         
