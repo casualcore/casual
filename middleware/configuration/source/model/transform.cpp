@@ -417,7 +417,7 @@ namespace casual
 
                         common::algorithm::transform( group.queues, result.queues, []( auto& queue)
                         {
-                           model::queue::Queue result;
+                           queue::Queue result;
 
                            result.name = queue.name;
                            result.note = queue.note.value_or("");
@@ -848,8 +848,16 @@ namespace casual
                   user::domain::queue::Manager result;
                   result.note  = null_if_empty( queue.note);
 
-                  result.groups = null_if_empty( algorithm::transform( queue.groups, []( auto& value)
+                  // set the default directory, if any. Either all groups has the same, ore non has any
                   {
+                     auto has_directory = []( auto& group){ return ! group.directory.empty();};
+
+                     if( auto found = algorithm::find_if( queue.groups, has_directory))
+                        result.defaults.emplace().directory = found->directory;
+                  }
+
+                  result.groups = null_if_empty( algorithm::transform( queue.groups, []( auto& value)
+                  {                           
                      user::domain::queue::Group result;
                      result.alias = null_if_empty( value.alias);
                      result.queuebase = null_if_empty( value.queuebase);
