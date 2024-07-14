@@ -695,7 +695,6 @@ domain:
          {
             auto reply = common::message::reverse::type( request);
             reply.buffer = std::move( request.buffer);
-            reply.transaction.trid = request.trid;
 
             communication::device::blocking::send( request.process.ipc, reply);
          };

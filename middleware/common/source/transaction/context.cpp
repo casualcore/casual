@@ -270,39 +270,6 @@ namespace casual
 
                namespace resources::start
                {
-                  /*
-                  namespace check
-                  {
-                     struct Result
-                     {
-                        transaction::Resource* resource{};
-                        code::xa code = code::xa::ok;
-                     };
-
-                     void results( const transaction::ID& trid, std::vector< Result> results)
-                     {
-                        auto [ failed, succeeded] = algorithm::partition( results, []( auto& result){ return result.code != code::xa::ok;});
-
-                        if( ! failed)
-                           return;
-
-                        auto xa_end = [&trid]( auto& result)
-                        {
-                           result.resource->end( trid, flag::xa::Flag::success);
-                        };
-
-                        // xa_end on the succeeded.
-                        algorithm::for_each( succeeded, xa_end);
-
-                        code::raise::error( range::front( failed).code, "resource start failed: ", algorithm::transform( failed, []( auto& fail)
-                        { 
-                           return std::make_tuple( fail.resource->id(), fail.code);
-                        }));
-                     };
-                     
-                  } // check
-                  */
-
                   namespace involved
                   {
                      auto synchronize( const transaction::ID& trid, std::vector< strong::resource::id> resources)
@@ -534,38 +501,28 @@ namespace casual
          {
             Trace trace{ "transaction::Context::update"};
 
-            if( reply.transaction.trid)
+            if( auto found = algorithm::find( m_transactions, reply.correlation))
             {
-               auto found = algorithm::find( m_transactions, reply.transaction.trid);
+               auto state = Transaction::State( reply.transaction_state);
 
-               if( ! found)
-                  code::raise::error( code::xatmi::system, "failed to find transaction: ", reply.transaction);
-
-               auto& transaction = *found;
-
-               auto state = Transaction::State( reply.transaction.state);
-
-               if( transaction.state < state)
-                  transaction.state = state;
+               if( found->state < state)
+                  found->state = state;
 
                // this descriptor is done, and we can remove the association to the transaction
-               transaction.replied( reply.correlation);
-
-               log::line( log::category::transaction, "updated state: ", transaction);
+               found->replied( reply.correlation);
             }
-            else
-            {
-               // TODO: if call was made in transaction but the service has 'none', the
-               // trid is not replied, but the descriptor is still associated with the transaction.
-               // Don't know what is the best way to solve this, but for now we just go through all
-               // transaction and discard the descriptor, just in case.
-               // TODO: Look this over when we redesign 'call/transaction-context'
-               for( auto& transaction : m_transactions)
-                  transaction.replied( reply.correlation);
-            }
+            // TODO:
+            // We seem to propagate transaction state even if the call was not in a transaction
+            // (callee started a transaction). This does not really matter, but we should fix it.
+            //
+            //else if( reply.transaction_state != decltype( reply.transaction_state)::ok)
+            //{
+            //   code::raise::error( code::tx::protocol,
+            //      "reply with transaction state: ", reply.transaction_state, " and no associated transaction");
+            //}
          }
 
-         message::service::Transaction Context::finalize( bool commit)
+         message::service::transaction::State Context::finalize( bool commit)
          {
             Trace trace{ "transaction::Context::finalize"};
 
@@ -574,9 +531,7 @@ namespace casual
 
             log::line( log::category::transaction, "transactions: ", transactions);
 
-            message::service::Transaction result;
-            result.trid = std::move( caller);
-            result.state = message::service::transaction::State::active;
+            message::service::transaction::State result = message::service::transaction::State::ok;
 
             auto pending_check = [&]( Transaction& transaction)
             {
@@ -587,8 +542,7 @@ namespace casual
                      log::line( log::category::error, "pending replies associated with transaction - action: discard pending and set transaction state to rollback only");
                      log::line( log::category::transaction, transaction);
 
-                     transaction.state = Transaction::State::rollback;
-                     result.state = message::service::transaction::State::error;
+                     result = message::service::transaction::State::error;
                   }
 
                   // Discard pending
@@ -617,7 +571,7 @@ namespace casual
                   using State = message::service::transaction::State;
                   switch( state)
                   {
-                     case Transaction::State::active: return State::active;
+                     case Transaction::State::active: return State::ok;
                      case Transaction::State::rollback: return State::rollback;
                      case Transaction::State::timeout: return State::timeout;
                   }
@@ -628,7 +582,7 @@ namespace casual
                   using State = message::service::transaction::State;
                   switch( code)
                   {
-                     case code::tx::ok: return State::active;
+                     case code::tx::ok: return State::ok;
                      case code::tx::rollback: return State::rollback;
                      default: return State::error;
                   }
@@ -661,17 +615,17 @@ namespace casual
                {
                   log::line( log::category::transaction, "not_owner: ", *not_owner);
 
-                  result.state += transform_state( not_owner->state);
+                  result += transform_state( not_owner->state);
 
-                  if( ! commit && result.state == decltype( result.state)::active)
-                     result.state += decltype( result.state)::rollback;
+                  if( ! commit && result == decltype( result)::ok)
+                     result += decltype( result)::rollback;
 
                   // end resource
                   code += local::resources::end::invoke( local::resources::end::policy::success(), *not_owner, m_resources.all);                  
                }
             }
 
-            result.state += transform_state( code);
+            result += transform_state( code);
 
             log::line( log::category::transaction, "result: ", result);
             log::line( log::category::event::transaction , "finalize");

@@ -104,12 +104,12 @@ namespace casual
 
                // if transaction state is _not good_ we need to indicate this on the
                // normal "reply code channel".
-               switch( reply.transaction.state)
+               switch( reply.transaction_state)
                {
                   // TODO: not totally sure about the exact correlation between 
                   //    transaction.state -> reply.code.result. For now, we use "the worst".
-                  using Enum = decltype( reply.transaction.state);
-                  case Enum::active:
+                  using Enum = decltype( reply.transaction_state);
+                  case Enum::ok:
                      break;
                   case Enum::rollback:
                   case Enum::timeout:
@@ -133,7 +133,7 @@ namespace casual
          // this will execute before execute_reply
          auto execute_error_reply = execute::scope( [&]()
          {
-            reply.transaction = policy.transaction( false);
+            reply.transaction_state = policy.transaction( false);
          });
 
          auto& state = server::Context::instance().state();
@@ -198,7 +198,7 @@ namespace casual
          // - commit/rollback transaction if service has "auto-transaction"
          auto execute_transaction = execute::scope( [&]()
          {
-            reply.transaction = policy.transaction( reply.transaction.state == decltype( reply.transaction.state)::active);
+            reply.transaction_state = policy.transaction( reply.transaction_state == decltype( reply.transaction_state)::ok);
          });
 
          // Nothing did go wrong

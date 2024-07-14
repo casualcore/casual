@@ -28,7 +28,7 @@ namespace casual
       namespace transform
       {
          common::message::service::Code code( const state::pending::Request& request, curl::type::code::easy code) noexcept;
-         common::message::service::Transaction transaction( const state::pending::Request& request, common::message::service::Code code) noexcept;
+         common::message::service::transaction::State transaction( const state::pending::Request& request, common::message::service::Code code) noexcept;
       } // code
 
       namespace receive

@@ -43,11 +43,9 @@ namespace casual
                            auto reply = message::reverse::type( message);
                            reply.code.result = code;
 
+                           // TODO should we really mess with the transaction? 
                            if( message.trid)
-                           {
-                              reply.transaction.trid = message.trid;
-                              reply.transaction.state = decltype( reply.transaction.state)::rollback;
-                           }
+                              reply.transaction_state = decltype( reply.transaction_state)::rollback;
 
                            if( ! flag::contains( message.flags, message::service::call::request::Flag::no_reply))
                               communication::device::blocking::optional::send( message.process.ipc, std::move( reply));
@@ -147,7 +145,7 @@ namespace casual
                message.correlation = request.state().correlation;
                message.execution = request.state().execution;
                message.code = request::transform::code( request, curl_code);
-               message.transaction = request::transform::transaction( request, message.code);
+               message.transaction_state = request::transform::transaction( request, message.code);
 
                // take care of metrics
                state.metric.add( request, message.code);

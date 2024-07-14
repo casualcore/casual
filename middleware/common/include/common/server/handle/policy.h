@@ -43,7 +43,7 @@ namespace casual
                   const platform::time::point::type& now);
 
 
-            message::service::Transaction transaction( bool commit);
+            message::service::transaction::State transaction( bool commit);
 
             void forward( common::service::invoke::Forward&& forward, const message::service::call::callee::Request& message);
             void forward( common::service::invoke::Forward&& forward, const message::conversation::connect::callee::Request& message);
@@ -57,7 +57,7 @@ namespace casual
             void ack( const message::service::call::ACK& message);
             void statistics( strong::ipc::id id, message::event::service::Call& event);
 
-            message::service::Transaction transaction( bool commit);
+            message::service::transaction::State transaction( bool commit);
 
             void transaction(
                   const common::transaction::ID& trid,

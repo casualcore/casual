@@ -390,7 +390,7 @@ namespace casual
             }
          }
 
-         common::message::service::Transaction transaction( const state::pending::Request& request, common::message::service::Code code) noexcept
+         common::message::service::transaction::State transaction( const state::pending::Request& request, common::message::service::Code code) noexcept
          {
             Trace trace{ "http::outbound::request::transform::transaction"};
 
@@ -404,12 +404,12 @@ namespace casual
                   using result_enum = decltype( common::message::service::Transaction{}.state);
                   using Enum = decltype( code);
                   
-                  case Enum::ok: return result_enum::active;
+                  case Enum::ok: return result_enum::ok;
                   default: return result_enum::rollback;
                }
             };
 
-            return { request.state().trid, resolve_state( code.result)};
+            return resolve_state( code.result);
          }
       } // transform
 

@@ -151,7 +151,7 @@ namespace casual
                   }
 
                   template< typename M, typename D>
-                  auto metric( State& state, const M& message, const common::transaction::ID& trid, D&& destination, code::xatmi code)
+                  auto metric( State& state, const M& message, D&& destination, code::xatmi code)
                   {
                      Trace trace{ "gateway::group::outbound::handle::local::internal::service::call::metric"};
 
@@ -165,7 +165,7 @@ namespace casual
                         metric.type = decltype( metric.type)::concurrent;
                         metric.code = code;
                         
-                        metric.trid = trid;
+                        metric.trid = std::move( destination.trid);
                         metric.start = destination.start;
                         metric.end = platform::time::clock::type::now();
                      }
@@ -181,18 +181,18 @@ namespace casual
                         {
                            auto reply = common::message::reverse::type( message);
                            reply.code.result = code;
-                           reply.transaction.trid = message.trid;
                            
                            struct Destination
                            {
                               std::string service;
                               execution::context::Parent parent;
+                              common::transaction::ID trid;
                               platform::time::point::type start;
                            };
 
                            state.multiplex.send( message.process.ipc, reply);
 
-                           service::metric( state, reply, message.trid, Destination{ message.service.name, message.parent, platform::time::clock::type::now()}, code);
+                           service::metric( state, reply, Destination{ message.service.name, message.parent, message.trid, platform::time::clock::type::now()}, code);
 
                         }
                         
@@ -225,7 +225,7 @@ namespace casual
                               if( message.code.result == decltype( message.code.result)::no_entry)
                                  service::unadvertise( state, descriptor, { shared->service});
 
-                              internal::service::metric( state, message, message.transaction.trid, std::move( *shared), message.code.result);
+                              internal::service::metric( state, message, std::move( *shared), message.code.result);
                            },
                            [ &state, shared]( casual::task::concurrent::message::task::Failed& message, strong::socket::id descriptor)
                            {
@@ -234,11 +234,10 @@ namespace casual
                               common::message::service::call::Reply reply;
                               reply.correlation = message.correlation;
                               reply.code.result = common::code::xatmi::service_error;
-                              reply.transaction.trid = shared->trid;
 
                               state.multiplex.send( shared->ipc, reply);
 
-                              service::metric( state, reply, shared->trid, std::move( *shared), reply.code.result);
+                              service::metric( state, reply, std::move( *shared), reply.code.result);
                            }};
                         }
                         
@@ -341,7 +340,7 @@ namespace casual
 
                                  tcp::send( state, descriptor, message);
 
-                                 service::metric( state, message, shared->trid, *shared, code::xatmi::ok);
+                                 service::metric( state, message, std::move( *shared), code::xatmi::ok);
 
                                  return task::concurrent::unit::Dispatch::done;
                               }

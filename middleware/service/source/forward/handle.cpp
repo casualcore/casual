@@ -42,10 +42,9 @@ namespace casual
                      common::message::service::call::Reply reply;
                      reply.correlation = message.correlation;
                      reply.execution = message.execution;
-                     reply.transaction.trid = message.trid;
                      reply.code.result = code;
                      reply.buffer = buffer::Payload{ nullptr};
-                     
+
                      state.multiplex.send( message.process.ipc, reply);
                   }
 

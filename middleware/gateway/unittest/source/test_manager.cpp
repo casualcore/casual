@@ -291,7 +291,6 @@ domain:
                   
                   auto reply = common::message::reverse::type( request);
                   reply.buffer = std::move( request.buffer);
-                  reply.transaction.trid = std::move( request.trid);
 
                   // emulate some sort of work..
                   process::sleep( std::chrono::milliseconds{ 1});
@@ -472,7 +471,6 @@ domain:
             auto reply = common::communication::ipc::receive< common::message::service::call::Reply>( correlation);
 
             EXPECT_TRUE( reply.buffer.data == data);
-            EXPECT_TRUE( reply.transaction.trid == trid) << "reply.transaction.trid: " << reply.transaction.trid << "\ntrid: " << trid;
          }
 
          // send commit
@@ -1480,7 +1478,6 @@ domain:
          [[maybe_unused]] auto send_reply = []( auto& request)
          {
             auto reply = common::message::reverse::type( request);
-            reply.transaction.trid = request.trid;
             reply.code.result = decltype( reply.code.result)::ok;
             reply.buffer = request.buffer;
 

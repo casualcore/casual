@@ -1175,7 +1175,7 @@ namespace casual
                   // service-manager doesn't bother with transactions...
                }
 
-               common::message::service::Transaction transaction( bool commit)
+               common::message::service::transaction::State transaction( bool commit)
                {
                   // service-manager doesn't bother with transactions...
                   return {};

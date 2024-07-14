@@ -133,7 +133,6 @@ domain:
             common::communication::device::blocking::receive( common::communication::ipc::inbound::device(), reply);
 
             EXPECT_TRUE( reply.correlation == correlation);
-            EXPECT_TRUE( reply.transaction.trid == request.trid);
             EXPECT_TRUE( reply.code.result == common::code::xatmi::no_entry) << CASUAL_NAMED_VALUE( reply.code.result);
          }
       }

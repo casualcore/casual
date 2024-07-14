@@ -53,7 +53,7 @@ namespace casual
          result.execution = message.execution;
          result.buffer = std::move( message.buffer);
          result.code = message.code;
-         result.transaction = std::move( message.transaction);
+         result.transaction.state = message.transaction_state;
          return result;
       }
 
@@ -64,7 +64,7 @@ namespace casual
          result.execution = message.execution;
          result.buffer = std::move( message.buffer);
          result.code = message.code;
-         result.transaction = std::move( message.transaction);
+         result.transaction_state = message.transaction.state;
          return result;
       }
 

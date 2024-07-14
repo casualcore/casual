@@ -127,7 +127,6 @@ namespace casual
 
          conversation_connect_request = 3220,
 
-
          // event messages
          EVENT_BASE = 4000,
          event_subscription_begin = EVENT_BASE,

@@ -24,13 +24,13 @@ namespace casual
          
          Transaction::operator bool() const noexcept { return predicate::boolean( trid);}
 
-         void Transaction::associate( const correlation_type& correlation)
+         void Transaction::associate( const strong::correlation::id& correlation)
          {
             m_external = true;
             m_pending.push_back( correlation);
          }
 
-         void Transaction::replied( const correlation_type& correlation)
+         void Transaction::replied( const strong::correlation::id& correlation)
          {
             algorithm::container::trim( m_pending, algorithm::remove( m_pending, correlation));
          }
@@ -61,12 +61,12 @@ namespace casual
             return ! m_pending.empty();
          }
 
-         bool Transaction::associated( const correlation_type& correlation) const noexcept
+         bool Transaction::associated( const strong::correlation::id& correlation) const noexcept
          {
             return ! algorithm::find( m_pending, correlation).empty();
          }
 
-         const std::vector< Transaction::correlation_type>& Transaction::correlations() const noexcept
+         const std::vector< strong::correlation::id>& Transaction::correlations() const noexcept
          {
             return m_pending;
          }
@@ -88,6 +88,12 @@ namespace casual
          bool operator == ( const Transaction& lhs, const ID& rhs) noexcept { return lhs.trid == rhs;}
 
          bool operator == ( const Transaction& lhs, const XID& rhs) noexcept { return lhs.trid.xid == rhs;}
+
+         bool operator == ( const Transaction& lhs, const strong::correlation::id& rhs)
+         {
+            return algorithm::contains( lhs.m_pending, rhs);
+         }
+
 
          std::string_view description( Transaction::State value) noexcept
          {

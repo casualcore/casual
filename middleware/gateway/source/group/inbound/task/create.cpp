@@ -258,8 +258,6 @@ namespace casual
                   {
                      Trace trace{ "gateway::group::inbound::task::create::local reply_type"};
 
-                     reply.transaction.trid = std::move( shared->origin_trid);
-
                      auto connection = state.connections.find_external( descriptor);
                      CASUAL_ASSERT( connection);
 

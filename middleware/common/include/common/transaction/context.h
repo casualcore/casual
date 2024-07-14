@@ -103,7 +103,7 @@ namespace casual
          void update( message::service::call::Reply& state);
 
          //! commits or rollback transaction created from this server
-         message::service::Transaction finalize( bool commit);
+         message::service::transaction::State finalize( bool commit);
 
          //! @return current transaction. 'null xid' if there are none...
          Transaction& current();

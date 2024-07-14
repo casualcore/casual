@@ -677,11 +677,9 @@ struct Value< type, A>  \
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( execution);
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( code.result);
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( code.user);
-            CASUAL_SERIALIZE_NAME( value.transaction.trid.xid, "transaction.xid");
-            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( transaction.state);
+            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( transaction_state);
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( buffer);
          })
-
 
          CASUAL_CUSTOMIZATION_POINT_NETWORK( common::message::service::call::v1_2::callee::Request,
          {

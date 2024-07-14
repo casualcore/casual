@@ -23,7 +23,6 @@ namespace casual
    {
       struct Transaction
       {
-         using correlation_type = strong::correlation::id;
 
          enum class State : TRANSACTION_STATE
          {
@@ -67,20 +66,20 @@ namespace casual
          bool disassociate_dynamic( strong::resource::id id);
 
          //! associate a pending message reply
-         void associate( const correlation_type& correlation);
+         void associate( const strong::correlation::id& correlation);
 
          //! discards a pending reply from this transaction
-         void replied( const correlation_type& correlation);
+         void replied( const strong::correlation::id& correlation);
 
          //! @return true if this transaction has any pending replies
          //! associated
          bool pending() const noexcept;
 
          //! @return true if this transaction has @p correlation associated
-         bool associated( const correlation_type& correlation) const noexcept;
+         bool associated( const strong::correlation::id& correlation) const noexcept;
 
          //! associated descriptors to this transaction
-         const std::vector< correlation_type>& correlations() const noexcept;
+         const std::vector< strong::correlation::id>& correlations() const noexcept;
 
          //! functions to deduce or set if the transaction is suspended
          //! or not.
@@ -100,6 +99,7 @@ namespace casual
          friend bool operator == ( const Transaction& lhs, const ID& rhs) noexcept;
          friend bool operator == ( const Transaction& lhs, const XID& rhs) noexcept;
          inline friend bool operator == ( const Transaction& lhs, const Transaction& rhs) noexcept { return lhs.trid == rhs.trid;}
+         friend bool operator == ( const Transaction& lhs, const strong::correlation::id& rhs);
 
          CASUAL_LOG_SERIALIZE({
             CASUAL_SERIALIZE( trid);
@@ -114,7 +114,7 @@ namespace casual
 
       private:
          std::vector< strong::resource::id> m_involved;
-         std::vector< correlation_type> m_pending;
+         std::vector< strong::correlation::id> m_pending;
          std::vector< strong::resource::id> m_dynamic;
          bool m_external = false;
          bool m_suspended = false;

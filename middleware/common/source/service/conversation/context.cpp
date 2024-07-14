@@ -302,7 +302,8 @@ namespace casual
                auto message = local::prepare::message< message::conversation::connect::caller::Request>( value, std::move( buffer), process::handle());
                {
                   message.service = message::service::call::Service{ service};
-                  message.parent = common::execution::context::get().parent;
+                  message.parent.span = common::execution::context::get().span;
+                  message.parent.service = common::execution::context::get().service;
                   message.duplex = local::duplex::invert( value.duplex);
 
                   auto& transaction = common::transaction::context().current();
@@ -322,7 +323,7 @@ namespace casual
 
                   ack.execution = message.execution;
                   ack.metric.execution = message.execution;
-                  ack.metric.span = common::execution::context::get().span;
+                  ack.metric.span = strong::execution::span::id::generate();
                   ack.metric.service = service;
                   ack.metric.parent = message.parent;
                   ack.metric.process = common::process::handle();

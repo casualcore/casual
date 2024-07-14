@@ -123,11 +123,9 @@ namespace casual
 
          namespace transaction
          {
-            // TODO: major-version change to short 
-            enum class State : char
+            enum class State : std::uint8_t
             {
-               absent,
-               active = absent,
+               ok,
                rollback,
                timeout,
                error,
@@ -143,10 +141,10 @@ namespace casual
             {
                switch( value)
                {
-                  case State::error: return "error";
-                  case State::active: return "active";
+                  case State::ok: return "ok";
                   case State::rollback: return "rollback";
                   case State::timeout: return "timeout";
+                  case State::error: return "error";
                }
                return "<unknown>";
             }
@@ -156,7 +154,7 @@ namespace casual
          struct Transaction
          {
             common::transaction::ID trid;
-            transaction::State state = transaction::State::active;
+            transaction::State state = transaction::State::ok;
 
             CASUAL_CONST_CORRECT_SERIALIZE(
                CASUAL_SERIALIZE( trid);
@@ -656,13 +654,13 @@ namespace casual
             struct Reply : base_reply
             {
                service::Code code;
-               Transaction transaction;
+               transaction::State transaction_state = transaction::State::ok;
                common::buffer::Payload buffer;
 
                CASUAL_CONST_CORRECT_SERIALIZE(
                   base_reply::serialize( archive);
                   CASUAL_SERIALIZE( code);
-                  CASUAL_SERIALIZE( transaction);
+                  CASUAL_SERIALIZE( transaction_state);
                   CASUAL_SERIALIZE( buffer);
                )
             };

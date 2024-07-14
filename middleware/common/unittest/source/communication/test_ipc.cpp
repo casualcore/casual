@@ -314,8 +314,7 @@ namespace casual
          {
             message.correlation = strong::correlation::id::generate();
             message.execution = strong::execution::id::generate();
-            message.transaction.trid = transaction::id::create( process::handle());
-            message.transaction.state = decltype( message.transaction.state)::rollback;
+            message.transaction_state = decltype( message.transaction_state)::rollback;
             message.buffer.type = ".binary";
             message.code.result = common::code::xatmi::ok;
             message.code.user = 0;
@@ -330,8 +329,7 @@ namespace casual
 
          EXPECT_TRUE( receive_message.correlation == correlation);
          EXPECT_TRUE( receive_message.execution == message.execution);
-         EXPECT_TRUE( receive_message.transaction.trid == message.transaction.trid);
-         EXPECT_TRUE( receive_message.transaction.state == message.transaction.state);
+         EXPECT_TRUE( receive_message.transaction_state == message.transaction_state);
          EXPECT_TRUE( receive_message.buffer.data == message.buffer.data);
       }
 

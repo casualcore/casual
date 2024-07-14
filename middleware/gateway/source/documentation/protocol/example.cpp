@@ -210,7 +210,7 @@ namespace casual
             message.code.result = common::code::xatmi::service_fail;
             message.code.user = 42;
             message.transaction.trid = local::trid();
-            message.transaction.state = decltype( message.transaction.state)::active;
+            message.transaction.state = decltype( message.transaction.state)::ok;
 
             message.buffer.type = ".binary/";
             message.buffer.data = local::binary::value( 128);
@@ -222,8 +222,7 @@ namespace casual
 
             message.code.result = common::code::xatmi::service_fail;
             message.code.user = 42;
-            message.transaction.trid = local::trid();
-            message.transaction.state = decltype( message.transaction.state)::active;
+            message.transaction_state = decltype( message.transaction_state)::ok;
 
             message.buffer.type = ".binary/";
             message.buffer.data = local::binary::value( 128);

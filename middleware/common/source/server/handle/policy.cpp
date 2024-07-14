@@ -193,7 +193,7 @@ namespace casual
          }
 
 
-         message::service::Transaction Default::transaction( bool commit)
+         message::service::transaction::State Default::transaction( bool commit)
          {
             return transaction::context().finalize( commit);
          }
@@ -285,7 +285,7 @@ namespace casual
             // no-op
          }
 
-         message::service::Transaction Admin::transaction( bool commit)
+         message::service::transaction::State Admin::transaction( bool commit)
          {
             // no-op
             return {};
