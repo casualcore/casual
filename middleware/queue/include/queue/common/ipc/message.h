@@ -124,16 +124,36 @@ namespace casual
                   return "<unknown>";
                }
 
+               enum class Action : short
+               {
+                  any,
+                  enqueue,
+                  dequeue,
+               };
+
+               inline constexpr std::string_view description( Action value) noexcept
+               {
+                  switch( value)
+                  {
+                     case Action::any: return "any";
+                     case Action::enqueue: return "enqueue";
+                     case Action::dequeue: return "dequeue";
+                  }
+                  return "<unknown>";
+               }
+
             } // context
 
             struct Context
             {
                context::Semantic semantic = context::Semantic::direct;
                context::Requester requester = context::Requester::internal;
+               context::Action action = context::Action::any; 
 
                CASUAL_CONST_CORRECT_SERIALIZE(
                   CASUAL_SERIALIZE( semantic);
                   CASUAL_SERIALIZE( requester);
+                  CASUAL_SERIALIZE( action);
                )
             };
 

@@ -265,7 +265,7 @@ namespace casual
             // expect lookup
             auto request = communication::device::receive< message::discovery::lookup::Request>( provider2);
             auto reply = common::message::reverse::type( request);
-            reply.content.queues = { message::discovery::reply::Queue{ "a"}};
+            reply.content.queues = { message::discovery::reply::content::Queue{ "a"}};
             reply.absent.queues = { "b"};
             communication::device::blocking::send( request.process.ipc, reply);
          }
@@ -277,7 +277,7 @@ namespace casual
             EXPECT_TRUE( request.content.queues.at( 0) == "b");
             
             auto reply = common::message::reverse::type( request); 
-            reply.content.queues = { message::discovery::reply::Queue{ "a"}};
+            reply.content.queues = { message::discovery::reply::content::Queue{ "a"}};
             communication::device::blocking::send( request.process.ipc, reply);
          }
 
@@ -314,7 +314,7 @@ namespace casual
             auto request = communication::ipc::receive< message::discovery::Request>();
             EXPECT_TRUE( algorithm::equal( request.content.queues, array::make( "a"sv, "b"sv))) << CASUAL_NAMED_VALUE( request.content.queues);
             auto reply = common::message::reverse::type( request);
-            reply.content.queues = { message::discovery::reply::Queue{ "a"}};
+            reply.content.queues = { message::discovery::reply::content::Queue{ "a"}};
             communication::device::blocking::send( request.process.ipc, reply);
          };
 
@@ -547,7 +547,7 @@ domain:
 
          constexpr static auto create_queue = []( auto name)
          {
-            return message::discovery::reply::Queue{ name};
+            return message::discovery::reply::content::Queue{ name};
          };
 
          auto create_expected_resources = []( auto prefix, auto count)
@@ -725,7 +725,7 @@ domain:
 
          constexpr static auto create_queue = []( auto name)
          {
-            return message::discovery::reply::Queue{ name};
+            return message::discovery::reply::content::Queue{ name};
          };
 
          // will reply with absent s2, q2, known s1, q1

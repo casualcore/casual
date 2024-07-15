@@ -600,15 +600,32 @@ namespace casual::configuration
                )
             };
 
+            struct Enable
+            {
+               bool enqueue = true;
+               bool dequeue = true;
+
+               friend auto operator <=> ( const Enable&, const Enable&) = default;
+
+               CASUAL_CONST_CORRECT_SERIALIZE(
+                  CASUAL_SERIALIZE( enqueue);
+                  CASUAL_SERIALIZE( dequeue);
+               )
+            };
+
             std::string name;
             Retry retry;
+            Enable enable;
             std::string note;
 
+            inline friend bool operator == ( const Queue& lhs, const std::string& rhs) { return lhs.name == rhs;}
             friend auto operator <=> ( const Queue&, const Queue&) = default;
+            friend bool operator == ( const Queue&, const Queue&) = default;
 
             CASUAL_CONST_CORRECT_SERIALIZE(
                CASUAL_SERIALIZE( name);
                CASUAL_SERIALIZE( retry);
+               CASUAL_SERIALIZE( enable);
                CASUAL_SERIALIZE( note);
             )
          };

@@ -349,7 +349,7 @@ namespace casual
          });
 
          if( ! result)
-            common::code::raise::error( common::code::casual::invalid_argument, "requested queue is not hosted by this queue-group - name: ", name);
+            common::code::raise::error( code::queue::no_queue, "requested queue is not hosted by this queue-group - name: ", name);
 
          return std::move( result.value());
       }
@@ -432,7 +432,9 @@ namespace casual
          else
          {
             common::log::line( log, "dequeue - qid: ", message.queue, " - no message");
-            return common::message::reverse::type( message);
+            auto reply = common::message::reverse::type( message);
+            reply.code = decltype( reply.code)::no_message;
+            return reply;
          }
 
       }

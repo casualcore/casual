@@ -99,9 +99,13 @@ namespace casual
             )
          };
 
+         
+
 
          struct Queue
          {
+            using Enable = casual::configuration::model::queue::Queue::Enable;
+
             Queue() = default;
             inline Queue( common::process::Handle process, common::strong::queue::id queue, platform::size::type order = 0)
                : process{ std::move( process)}, queue{ queue}, order{ order} {}
@@ -109,6 +113,7 @@ namespace casual
             common::process::Handle process;
             common::strong::queue::id queue;
             platform::size::type order{};
+            Enable enable;
 
             inline auto remote() const { return order > 0;}
             inline auto local() const { return order == 0;}
@@ -120,6 +125,7 @@ namespace casual
                CASUAL_SERIALIZE( process);
                CASUAL_SERIALIZE( queue);
                CASUAL_SERIALIZE( order);
+               CASUAL_SERIALIZE( enable);
             )
          };
 
@@ -188,7 +194,9 @@ namespace casual
          {
             std::vector< state::forward::Group> groups;
             
-            CASUAL_LOG_SERIALIZE( CASUAL_SERIALIZE( groups);)
+            CASUAL_LOG_SERIALIZE( 
+               CASUAL_SERIALIZE( groups);
+            )
          } forward;
 
 
@@ -198,10 +206,10 @@ namespace casual
 
          //! @returns 0..1 queue (providers) that provides the queue
          //! @{
-         const state::Queue* queue( const std::string& name) const noexcept;
-         const state::Queue* queue( common::strong::queue::id id) const noexcept;
+         const state::Queue* queue( const std::string& name, queue::ipc::message::lookup::request::context::Action action) const noexcept;
+         //const state::Queue* queue( common::strong::queue::id id) const noexcept;
 
-         const state::Queue* local_queue( const std::string& name) const noexcept;
+         const state::Queue* local_queue( const std::string& name, queue::ipc::message::lookup::request::context::Action action) const noexcept;
          //! @}
 
          void update( queue::ipc::message::group::configuration::update::Reply group);

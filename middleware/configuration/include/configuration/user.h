@@ -610,6 +610,17 @@ namespace casual
                   )
                };
 
+               struct Enable
+               {
+                  bool enqueue = true;
+                  bool dequeue = true;
+
+                  CASUAL_CONST_CORRECT_SERIALIZE(
+                     CASUAL_SERIALIZE( enqueue);
+                     CASUAL_SERIALIZE( dequeue);
+                  )
+               };
+
                struct Default
                {
                   std::optional< Retry> retry;
@@ -625,6 +636,7 @@ namespace casual
 
                std::string name;
                std::optional< Retry> retry;
+               std::optional< Enable> enable;
                std::optional< std::string> note;
 
                //! @deprecated
@@ -633,6 +645,7 @@ namespace casual
                CASUAL_CONST_CORRECT_SERIALIZE(
                   CASUAL_SERIALIZE( name);
                   CASUAL_SERIALIZE( retry);
+                  CASUAL_SERIALIZE( enable);
                   CASUAL_SERIALIZE( note);
 
                   CASUAL_SERIALIZE( retries);

@@ -296,7 +296,7 @@ namespace casual
          {
             Trace trace( "casual::queue::enqueue");
             
-            queue::Lookup lookup( queue);
+            queue::Lookup lookup( queue, queue::Lookup::Action::enqueue);
 
             return local::enqueue( lookup, message);
          }
@@ -305,7 +305,7 @@ namespace casual
          {
             Trace trace{ "casual::queue::dequeue"};
 
-            queue::Lookup lookup( queue);
+            queue::Lookup lookup( queue, queue::Lookup::Action::dequeue);
 
             return local::dequeue::non::blocking( lookup, selector);
          }
@@ -329,7 +329,7 @@ namespace casual
                Trace trace{ "casual::queue::blocking::dequeue"};
                common::log::line( verbose::log, "queue: ", queue, ", selector: ", selector);
 
-               queue::Lookup lookup( queue);
+               queue::Lookup lookup( queue, queue::Lookup::Action::dequeue);
 
                auto message = local::dequeue::blocking( lookup, selector);
 
@@ -350,7 +350,7 @@ namespace casual
                {
                   Trace trace{ "casual::queue::blocking::available::dequeue"};
 
-                  queue::Lookup lookup( queue, ipc::message::lookup::request::context::Semantic::wait);
+                  queue::Lookup lookup( queue, queue::Lookup::Action::dequeue, ipc::message::lookup::request::context::Semantic::wait);
 
                   auto message = local::dequeue::blocking( lookup, selector);
 
@@ -399,7 +399,7 @@ namespace casual
             {
                Trace trace{ "casual::queue::xatmi::enqueue"};
 
-               const queue::Lookup lookup{ queue};
+               const queue::Lookup lookup{ queue, queue::Lookup::Action::enqueue};
 
                auto send = common::buffer::pool::holder().get( common::buffer::handle::type{ message.payload.buffer}, message.payload.size);
 
@@ -462,7 +462,7 @@ namespace casual
             {
                Trace trace{ "casual::queue::peek::information"};
 
-               queue::Lookup lookup{ queuename};
+               queue::Lookup lookup{ queuename, queue::Lookup::Action::any};
 
                std::vector< message::Information> result;
 
@@ -520,7 +520,7 @@ namespace casual
                Trace trace{ "casual::queue::peek::messages"};
                common::log::line( verbose::log, "queue: ", queuename, ", ids: ", ids);
 
-               queue::Lookup lookup{ queuename};
+               queue::Lookup lookup{ queuename, queue::Lookup::Action::any};
 
                ipc::message::group::message::peek::Request request{ common::process::handle()};
                request.ids = ids;
@@ -555,7 +555,7 @@ namespace casual
                Trace trace{ "casual::queue::browse::peek"};
                common::log::line( verbose::log, "name: ", name);
 
-               queue::Lookup lookup{ std::move( name)};
+               queue::Lookup lookup{ std::move( name), queue::Lookup::Action::any};
 
                ipc::message::group::message::browse::Request request{ common::process::handle()};
                

@@ -49,20 +49,43 @@ namespace casual
          }
       } // state
 
-      const state::Queue* State::queue( const std::string& name) const noexcept
+      const state::Queue* State::queue( const std::string& name, queue::ipc::message::lookup::request::context::Action action) const noexcept
       {
+         auto active_action = [ action]( auto& queue)
+         {
+            if( action == decltype( action)::enqueue)
+               return ! queue.local() || queue.enable.enqueue;
+            if( action == decltype( action)::dequeue)
+               return ! queue.local() || queue.enable.dequeue;
+
+            return true;
+         };
+
          if( auto found = algorithm::find( queues, name))
-            if( ! found->second.empty())
-               return &range::front( found->second);
+            if( auto queue = algorithm::find_if( found->second, active_action))
+               return queue.data();
 
          return nullptr;
       }
 
-      const state::Queue* State::local_queue( const std::string& name) const noexcept
+      const state::Queue* State::local_queue( const std::string& name, queue::ipc::message::lookup::request::context::Action action) const noexcept
       {
+         // we don't know the action from a remote discovery (absent), if the queue has one
+         // action enabled we have to reply with the queue... I think. This will lead to possible
+         // enqueue/dequeue errors later on. I'm not sure of what effect this has in practice.
+         auto local_enabled_queue = [ action]( auto& queue)
+         {
+            if( action == decltype( action)::enqueue && ! queue.enable.enqueue)
+               return false;
+            if( action == decltype( action)::dequeue && ! queue.enable.dequeue)
+               return false;
+               
+            return queue.local();
+         };
+
          if( auto found = algorithm::find( queues, name))
-            if( ! found->second.empty() && range::front( found->second).local())
-               return &range::front( found->second);
+            if( auto queue = algorithm::find_if( found->second, local_enabled_queue))
+               return queue.data();
 
          return nullptr;
       }
@@ -76,21 +99,29 @@ namespace casual
 
          remove_queues( reply.process.pid);
 
-         if( auto found = algorithm::find( groups, reply.process.pid))
+         auto update_group = []( auto& state, auto& group, auto& reply)
          {
-            found->alias = reply.alias;
-            found->state = decltype( found->state())::running;
-         }
+            group.alias = reply.alias;
+            group.state = decltype( group.state())::running;
+
+            for( auto& queue : reply.queues)
+            {
+               auto& instances = state.queues[ queue.name];
+               auto& instance = instances.emplace_back( group.process, queue.id);
+
+               // get the enable from configuration
+               if( auto found = algorithm::find( group.configuration.queues, queue.name))
+                  instance.enable = found->enable;
+               
+               algorithm::sort( instances);
+            }
+         };
+
+         if( auto found = algorithm::find( groups, reply.process.pid))
+            update_group( *this, *found, reply);
          else
             log::line( log::category::error, "failed to correlate group", reply.process, " - action: discard");
             
-
-         for( auto& queue : reply.queues)
-         {
-            auto& instances = queues[ queue.name];
-            instances.emplace_back( reply.process, queue.id);
-            algorithm::sort( instances);
-         }
       }
 
       namespace local

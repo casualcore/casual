@@ -70,7 +70,7 @@ namespace casual
             common::log::line( verbose::log, "name: ", name);
 
             // wait until it's known...
-            auto reply = queue::Lookup{ name, queue::Lookup::Semantic::wait}();
+            auto reply = queue::Lookup{ name, queue::Lookup::Action::any, queue::Lookup::Semantic::wait}();
             common::log::line( verbose::log, "reply: ", reply);
          }
       } // wait::until

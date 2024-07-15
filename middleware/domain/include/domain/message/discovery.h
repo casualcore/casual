@@ -65,26 +65,32 @@ namespace casual
 
       namespace reply
       {
-         struct Queue : common::Compare< Queue>
+         namespace content
          {
-            Queue() = default;
-            inline Queue( std::string name, platform::size::type retries) : name{ std::move( name)}, retries{ retries} {}
-            inline explicit Queue( std::string name) : name{ std::move( name)} {}
+            struct Queue : common::Compare< Queue>
+            {
+               Queue() = default;
+               inline Queue( std::string name, platform::size::type retries) : name{ std::move( name)}, retries{ retries} {}
+               inline explicit Queue( std::string name) : name{ std::move( name)} {}
 
-            std::string name;
-            platform::size::type retries{};
+               std::string name;
+               platform::size::type retries{};
 
-            inline friend bool operator == ( const Queue& lhs, std::string_view rhs) { return lhs.name == rhs;}
+               inline friend bool operator == ( const Queue& lhs, std::string_view rhs) { return lhs.name == rhs;}
 
-            inline auto tie() const noexcept { return std::tie( name);}
+               inline auto tie() const noexcept { return std::tie( name);}
 
-            CASUAL_CONST_CORRECT_SERIALIZE(
-               CASUAL_SERIALIZE( name);
-               CASUAL_SERIALIZE( retries);
-            )
-         };
+               CASUAL_CONST_CORRECT_SERIALIZE(
+                  CASUAL_SERIALIZE( name);
+                  CASUAL_SERIALIZE( retries);
+               )
+            };
 
-         using Service = common::message::service::concurrent::advertise::Service;
+            using Service = common::message::service::concurrent::advertise::Service;
+            
+         } // content  
+         
+
 
          struct Content
          {
@@ -102,8 +108,8 @@ namespace casual
             //! logical ordered unique set. 
             //! @attention it's the _mutater_ responsibility to restore the invariant.
             //! @{
-            std::vector< Service> services;
-            std::vector< Queue> queues;
+            std::vector< content::Service> services;
+            std::vector< content::Queue> queues;
             //! @}
 
          

@@ -234,6 +234,9 @@ domain:
             note: "will get default queuebase: ${CASUAL_DOMAIN_HOME}/queue/groups/A.qb"
             queues:
                -  name: a1
+                  enable:
+                     enqueue: true
+                     dequeue: false
                -  name: a2
                   retry:
                      count: 10

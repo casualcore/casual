@@ -81,7 +81,8 @@ domain:
          // available
          {
             auto capture = local::execute( R"(echo "casual" | casual buffer --compose | casual queue --attributes available 42s | casual pipe --human-sink)");
-            EXPECT_TRUE( std::regex_match( capture.standard.out, std::regex{ R"(.*available: 42.*\n)"})) << CASUAL_NAMED_VALUE( capture); 
+            // 42s after unix epoch. Since we're using local + utc-offset, the date could be before 1970-01-01
+            EXPECT_TRUE( std::regex_match( capture.standard.out, std::regex{ R"(.*available: .*T.*42[.]000000.*\n)"})) << CASUAL_NAMED_VALUE( capture); 
          }
       }
 
@@ -111,6 +112,50 @@ domain:
             auto capture = local::execute( R"(casual queue --dequeue a | casual pipe --human-sink)");
             EXPECT_TRUE( std::regex_match( capture.standard.out, std::regex{ R"(.*reply: b.error.*\n)"})) << CASUAL_NAMED_VALUE( capture); 
          }
+      }
+
+      TEST( cli_queue, list_queues)
+      {
+         common::unittest::Trace trace;
+
+
+         auto domain = local::domain( R"(
+domain:
+   name: A
+   queue:
+      groups:
+         -  alias: A
+            queues:
+               -  name: a
+                  enable:
+                     enqueue: false
+               -  name: b
+                  enable:
+                     dequeue: false
+               -  name: c
+                  enable:
+                     enqueue: false
+                     dequeue: false
+               -  name: d               
+
+)");
+
+
+         constexpr std::string_view expected = R"(name     group  rc  rd     count  size  avg  E   EQ  DQ  UC  last
+-------  -----  --  -----  -----  ----  ---  --  --  --  --  ----
+a        A       0  0.000      0     0    0   D   0   0   0  -   
+b        A       0  0.000      0     0    0   E   0   0   0  -   
+c        A       0  0.000      0     0    0   -   0   0   0  -   
+d        A       0  0.000      0     0    0  ED   0   0   0  -   
+a.error  A       0  0.000      0     0    0  ED   0   0   0  -   
+b.error  A       0  0.000      0     0    0  ED   0   0   0  -   
+c.error  A       0  0.000      0     0    0  ED   0   0   0  -   
+d.error  A       0  0.000      0     0    0  ED   0   0   0  -   
+)";
+
+         auto capture = local::execute( R"(casual queue --color false --list-queues)");
+
+         EXPECT_TRUE( capture.standard.out == expected) << capture.standard.out;
       }
 
       TEST( cli_queue, list_forward_groups)

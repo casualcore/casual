@@ -621,14 +621,14 @@ struct Value< type, A>  \
          })
 
          // value
-         CASUAL_CUSTOMIZATION_POINT_NETWORK( casual::domain::message::discovery::reply::Queue,
+         CASUAL_CUSTOMIZATION_POINT_NETWORK( casual::domain::message::discovery::reply::content::Queue,
          {
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( name);
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( retries);
          })
 
          // value
-         CASUAL_CUSTOMIZATION_POINT_NETWORK( casual::domain::message::discovery::reply::Service,
+         CASUAL_CUSTOMIZATION_POINT_NETWORK( casual::domain::message::discovery::reply::content::Service,
          {
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( name);
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( category);

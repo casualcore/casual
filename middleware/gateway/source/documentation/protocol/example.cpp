@@ -143,7 +143,7 @@ namespace casual
 
             message.content.services = { {
                   [](){
-                     casual::domain::message::discovery::reply::Service service;
+                     casual::domain::message::discovery::reply::content::Service service;
                      service.name = "service1";
                      service.category = "example";
                      service.transaction = common::service::transaction::Type::join;
@@ -154,7 +154,7 @@ namespace casual
             }};
             message.content.queues = { {
                   [](){
-                     casual::domain::message::discovery::reply::Queue queue;
+                     casual::domain::message::discovery::reply::content::Queue queue;
                      queue.name = "queue1";
                      queue.retries = 10;
                      return queue;

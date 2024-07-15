@@ -430,6 +430,9 @@ namespace casual
                                  result.retry.delay = common::chronology::from::string( retry.delay.value());
                            }
 
+                           if( queue.enable)
+                              result.enable = queue::Queue::Enable{ .enqueue = queue.enable->enqueue, .dequeue = queue.enable->dequeue};
+                           
                            return result;
                         });
                         return result;
@@ -873,7 +876,9 @@ namespace casual
                            retry.delay = null_if_empty( chronology::to::string( value.retry.delay));
                            result.retry = std::move( retry);
                         }
-                        
+
+                        result.enable = user::domain::queue::Queue::Enable{ .enqueue = value.enable.enqueue, .dequeue = value.enable.dequeue};
+
                         result.note  = null_if_empty( value.note);
                         return result;
                      });

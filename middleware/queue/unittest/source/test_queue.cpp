@@ -255,7 +255,7 @@ domain:
             EXPECT_TRUE( common::algorithm::equal( request.content.queues, common::array::make( "a")));
 
             auto reply = common::message::reverse::type( request);
-            reply.content.queues = { domain::message::discovery::reply::Queue{ "a"}};
+            reply.content.queues = { domain::message::discovery::reply::content::Queue{ "a"}};
             common::communication::device::blocking::send( request.process.ipc, reply);
          }
          
@@ -697,7 +697,7 @@ domain:
                template< typename IPC>
                void dequeue( IPC&& ipc, std::string name)
                {
-                  queue::Lookup lookup{ std::move( name)};
+                  queue::Lookup lookup{ std::move( name), queue::Lookup::Action::dequeue};
 
                   ipc::message::group::dequeue::Request message;
                   message.name = lookup.name();
@@ -1365,8 +1365,7 @@ domain:
                common::communication::instance::outbound::queue::manager::device(), 
                request);
 
-            ipc::message::lookup::Reply reply;
-            common::communication::device::blocking::receive( common::communication::ipc::inbound::device(), reply);
+            auto reply = common::communication::ipc::receive< ipc::message::lookup::Reply>();
             return reply.process.ipc;
          };
 
@@ -1376,9 +1375,78 @@ domain:
 
          common::communication::device::blocking::send( find_queuegroup(), request);
 
-         ipc::message::group::dequeue::Reply reply;
-         common::communication::device::blocking::receive( common::communication::ipc::inbound::device(), reply);
+         auto reply = common::communication::ipc::receive< ipc::message::group::dequeue::Reply>();
          EXPECT_TRUE( ! reply.message);
+         EXPECT_TRUE( reply.code == decltype( reply.code)::no_queue) << CASUAL_NAMED_VALUE( reply);
+      }
+
+
+      TEST( casual_queue, enqueue_dequeue_enable)
+      {
+         common::unittest::Trace trace;
+
+         auto a = local::domain( R"(
+domain:
+   name: A
+   queue:
+      groups:
+         -  queues:
+               -  name: a
+                  enable:
+                     enqueue: false
+               -  name: b
+                  enable:
+                     dequeue: false
+               -  name: c
+                  enable:
+                     enqueue: false
+                     dequeue: false
+               -  name: d
+
+)");
+
+         auto enqueue = []( std::string name) -> std::error_code
+         {
+            try
+            {
+               queue::Message message;
+               queue::enqueue( name, message);
+               return common::code::queue::ok;
+            }
+            catch( const std::system_error& error)
+            {
+               return error.code();
+            }
+         };
+
+         auto dequeue = []( std::string name) -> std::error_code
+         {
+            try
+            {
+               auto message = queue::dequeue( name);
+               if( ! message.empty())
+                  return common::code::queue::ok;
+               else 
+                  return common::code::queue::no_message;
+            }
+            catch( const std::system_error& error)
+            {
+               return error.code();
+            }
+         };
+
+
+         EXPECT_TRUE( enqueue( "a") == common::code::queue::no_queue);
+         EXPECT_TRUE( enqueue( "b") == common::code::queue::ok);
+         EXPECT_TRUE( enqueue( "c") == common::code::queue::no_queue);
+         EXPECT_TRUE( enqueue( "d") == common::code::queue::ok);
+
+         EXPECT_TRUE( dequeue( "a") == common::code::queue::no_message);
+         EXPECT_TRUE( dequeue( "b") == common::code::queue::no_queue);
+         EXPECT_TRUE( dequeue( "c") == common::code::queue::no_queue);
+         // we've enqueued to d before
+         EXPECT_TRUE( dequeue( "d") == common::code::queue::ok);
+
       }
 
    } // queue

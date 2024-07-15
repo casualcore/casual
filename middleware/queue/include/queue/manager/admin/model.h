@@ -19,7 +19,7 @@ namespace casual
 {
    namespace queue::manager::admin::model
    {
-      inline namespace v1 {
+      inline namespace v2 {
       
       struct Group
       {
@@ -96,11 +96,23 @@ namespace casual
             )
          };
 
+         struct Enable
+         {
+            bool enqueue = true;
+            bool dequeue = true;
+
+            CASUAL_CONST_CORRECT_SERIALIZE(
+               CASUAL_SERIALIZE( enqueue);
+               CASUAL_SERIALIZE( dequeue);
+            )
+         };
+
          inline Type type() const { return  error ? Type::queue : Type::error_queue;}
 
          common::strong::process::id group;
          common::strong::queue::id id;
          std::string name;
+         Enable enable;
          Retry retry;
          common::strong::queue::id error;
 
@@ -127,6 +139,7 @@ namespace casual
             CASUAL_SERIALIZE( group);
             CASUAL_SERIALIZE( id);
             CASUAL_SERIALIZE( name);
+            CASUAL_SERIALIZE( enable);
             CASUAL_SERIALIZE( retry);
             CASUAL_SERIALIZE( error);
             CASUAL_SERIALIZE( count);
@@ -400,7 +413,7 @@ namespace casual
 
       } // scale
 
-      } // inline v1
+      } // inline v2
 
    } // queue::manager::admin::model
 } // casual

@@ -59,7 +59,7 @@ namespace casual
             {
                std::vector< model::Message> list( const State& state, const std::string& queue)
                {
-                  auto instance = state.queue( queue);
+                  auto instance = state.queue( queue, {});
 
                   if( ! instance || instance->remote())
                      return {};
@@ -109,7 +109,7 @@ namespace casual
 
                      algorithm::for_each( queues, [&]( auto& name)
                      {
-                        if( auto instance = state.queue( name); instance && ! instance->remote())
+                        if( auto instance = state.queue( name, {}); instance && ! instance->remote())
                         {
                            if( auto found = algorithm::find( result, instance->process.ipc))
                               found->queues.push_back( instance->queue);
@@ -130,7 +130,7 @@ namespace casual
                
                std::vector< model::Affected> result;
 
-               if( auto queue = state.queue( name))
+               if( auto queue = state.queue( name, {}))
                {
                   ipc::message::group::queue::restore::Request request{ common::process::handle()};
                   request.queues.push_back( queue->queue);

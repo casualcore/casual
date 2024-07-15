@@ -122,7 +122,7 @@ These are the providers that has registered them self with discovery abilities
                         auto format_name = []( auto& service) { return service.name;};
                         auto format_hops = []( auto& service) { return service.property.hops;};
 
-                        return terminal::format::formatter< message::discovery::reply::Service>::construct(
+                        return terminal::format::formatter< message::discovery::reply::content::Service>::construct(
                            terminal::format::column( "name", format_name, terminal::color::yellow, terminal::format::Align::left),
                            terminal::format::column( "hops", format_hops, terminal::color::white, terminal::format::Align::right)
                         );
@@ -154,7 +154,7 @@ Will try to find provided services in other domains.
                      {
                         auto format_name = []( auto& queue) { return queue.name;};
 
-                        return terminal::format::formatter< message::discovery::reply::Queue>::construct(
+                        return terminal::format::formatter< message::discovery::reply::content::Queue>::construct(
                            terminal::format::column( "name", format_name, terminal::color::yellow, terminal::format::Align::left)
                         );
                      };

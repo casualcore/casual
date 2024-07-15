@@ -256,19 +256,54 @@ namespace casual
                      return queue.count == 0 ? 0 : queue.size / queue.count;
                   };
 
-                  return terminal::format::formatter< manager::admin::model::Queue>::construct(
-                     terminal::format::column( "name", []( const auto& q){ return q.name;}, terminal::color::yellow),
-                     terminal::format::column( "group", format_group),
-                     terminal::format::column( "rc", []( const auto& q){ return q.retry.count;}, common::terminal::color::blue, terminal::format::Align::right),
-                     terminal::format::column( "rd", format_retry_delay, common::terminal::color::blue, terminal::format::Align::right),
-                     terminal::format::column( "count", []( const auto& q){ return q.count;}, terminal::color::white, terminal::format::Align::right),
-                     terminal::format::column( "size", []( const auto& q){ return q.size;}, common::terminal::color::white, terminal::format::Align::right),
-                     terminal::format::column( "avg", avg_size, common::terminal::color::white, terminal::format::Align::right),
-                     terminal::format::column( "EQ", []( auto& q){ return q.metric.enqueued;}, common::terminal::color::cyan, terminal::format::Align::right),
-                     terminal::format::column( "DQ", []( auto& q){ return q.metric.dequeued;}, common::terminal::color::cyan, terminal::format::Align::right),
-                     terminal::format::column( "UC", []( const auto& q){ return q.uncommitted;}, common::terminal::color::magenta, terminal::format::Align::right),
-                     terminal::format::column( "last", []( auto& q){ return normalize::timestamp( q.last);}, common::terminal::color::blue)
-                  );
+                  auto enable = []( auto& queue) -> std::string_view
+                  {
+                     if( queue.enable.enqueue && queue.enable.dequeue)
+                        return "ED";
+                     if( queue.enable.enqueue)
+                        return "E";
+                     if( queue.enable.dequeue)
+                        return "D";
+                     if( terminal::output::directive().porcelain())
+                        return {};
+                     return "-";
+                  };
+                  
+                  if( ! terminal::output::directive().porcelain())
+                  {
+                     return terminal::format::formatter< manager::admin::model::Queue>::construct(
+                        terminal::format::column( "name", []( const auto& q){ return q.name;}, terminal::color::yellow),
+                        terminal::format::column( "group", format_group),
+                        terminal::format::column( "rc", []( const auto& q){ return q.retry.count;}, common::terminal::color::blue, terminal::format::Align::right),
+                        terminal::format::column( "rd", format_retry_delay, common::terminal::color::blue, terminal::format::Align::right),
+                        terminal::format::column( "count", []( const auto& q){ return q.count;}, terminal::color::white, terminal::format::Align::right),
+                        terminal::format::column( "size", []( const auto& q){ return q.size;}, common::terminal::color::white, terminal::format::Align::right),
+                        terminal::format::column( "avg", avg_size, common::terminal::color::white, terminal::format::Align::right),
+                        terminal::format::column( "E", enable, common::terminal::color::blue, terminal::format::Align::right),
+                        terminal::format::column( "EQ", []( auto& q){ return q.metric.enqueued;}, common::terminal::color::cyan, terminal::format::Align::right),
+                        terminal::format::column( "DQ", []( auto& q){ return q.metric.dequeued;}, common::terminal::color::cyan, terminal::format::Align::right),
+                        terminal::format::column( "UC", []( const auto& q){ return q.uncommitted;}, common::terminal::color::magenta, terminal::format::Align::right),
+                        terminal::format::column( "last", []( auto& q){ return normalize::timestamp( q.last);}, common::terminal::color::blue)
+                     );
+                  }
+                  else
+                  {
+                     return terminal::format::formatter< manager::admin::model::Queue>::construct(
+                        terminal::format::column( "name", []( const auto& q){ return q.name;}),
+                        terminal::format::column( "group", format_group),
+                        terminal::format::column( "rc", []( const auto& q){ return q.retry.count;}),
+                        terminal::format::column( "rd", format_retry_delay),
+                        terminal::format::column( "count", []( const auto& q){ return q.count;}),
+                        terminal::format::column( "size", []( const auto& q){ return q.size;}),
+                        terminal::format::column( "avg", avg_size),
+                        terminal::format::column( "EQ", []( auto& q){ return q.metric.enqueued;}),
+                        terminal::format::column( "DQ", []( auto& q){ return q.metric.dequeued;}),
+                        terminal::format::column( "UC", []( const auto& q){ return q.uncommitted;}),
+                        terminal::format::column( "last", []( auto& q){ return normalize::timestamp( q.last);}),
+                        terminal::format::column( "E", enable)
+                     );
+                  }
+
                }
 
                namespace remote
@@ -724,6 +759,8 @@ namespace casual
       the current size of the queue, aggregated message sizes
    avg:
       average message size in the queue
+   E:
+      enqueue/dequeue enable; E = enqueue enabled, D = dequeue enabled.   
    EQ: 
       enqueued - total number of successfully enqueued messages on the queue (committed), over time.
       note: this also include moved and restored messages.
@@ -1113,7 +1150,7 @@ use auto-complete to help which options has legends)"
                      Trace trace{ "queue::local::enqueue::invoke"};
 
                      pipe::State state;
-                     state.destination = queue::Lookup{ name}();
+                     state.destination = queue::Lookup{ name, queue::Lookup::Action::enqueue}();
 
                      auto handler = cli::message::dispatch::create( 
                         cli::pipe::forward::handle::defaults(),
@@ -1196,7 +1233,7 @@ cat somefile.bin | casual queue --enqueue <queue-name>
                      Trace trace{ "queue::local::dequeue::invoke"};
 
                      pipe::State state;
-                     state.destination = queue::Lookup{ std::move( queue)}();
+                     state.destination = queue::Lookup{ std::move( queue), queue::Lookup::Action::dequeue}();
 
                      auto handler = cli::message::dispatch::create(
                         cli::pipe::forward::handle::defaults(),
@@ -1253,7 +1290,7 @@ casual queue --dequeue <queue> <id> | <some other part in casual-pipe> | ... | <
                      Trace trace{ "queue::local::consume::invoke"};
 
                      pipe::State state;
-                     state.destination = queue::Lookup{ std::move( queue)}();
+                     state.destination = queue::Lookup{ std::move( queue), queue::Lookup::Action::dequeue}();
 
                      auto handler = cli::message::dispatch::create(
                         cli::pipe::forward::handle::defaults(),

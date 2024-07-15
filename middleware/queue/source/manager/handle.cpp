@@ -56,7 +56,7 @@ namespace casual
 
                   auto lookup_replied = [ &state]( auto& lookup)
                   {
-                     if( auto queue = state.queue( lookup.name))
+                     if( auto queue = state.queue( lookup.name, lookup.context.action))
                      {
                         auto reply = common::message::reverse::type( lookup);
                         reply.name = lookup.name;
@@ -258,7 +258,9 @@ namespace casual
 
                   bool internal_only( State& state, queue::ipc::message::lookup::Request& message)
                   {
-                     if( auto queue = state.local_queue( message.name))
+                     Trace trace{ "queue::manager::local::handle::lookup::detail::dispatch::lookup::internal_only"};
+
+                     if( auto queue = state.local_queue( message.name, message.context.action))
                      {
                         dispatch::lookup::reply( state, *queue, message);
                         return true;
@@ -269,7 +271,9 @@ namespace casual
 
                   bool internal_external( State& state, queue::ipc::message::lookup::Request& message)
                   {
-                     if( auto queue = state.queue( message.name))
+                     Trace trace{ "queue::manager::local::handle::lookup::detail::dispatch::lookup::internal_external"};
+
+                     if( auto queue = state.queue( message.name, message.context.action))
                      {
                         dispatch::lookup::reply( state, *queue, message);
                         return true;
@@ -458,9 +462,9 @@ namespace casual
                         auto get_queue = [ &state, scope = message.scope]( auto& name)
                         {
                            if( scope == decltype( scope)::internal)
-                              return state.local_queue( name);
+                              return state.local_queue( name, {});
                            else
-                              return state.queue( name);
+                              return state.queue( name, {});
                         };
 
                         auto reply = common::message::reverse::type( message);

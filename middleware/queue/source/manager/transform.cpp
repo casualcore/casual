@@ -29,12 +29,25 @@ namespace casual
             {
                result.groups.push_back( admin::model::Group{ std::move( group.alias), group.process, std::move( group.queuebase), std::move( group.note)});
 
-               auto transform_queue = [&group]( auto& queue)
+               auto transform_queue = [ &state, &group]( auto& queue)
                {
+                  auto find_lookup = [ &]( auto& queue) -> const manager::state::Queue*
+                  {
+                     if( auto pair = algorithm::find( state.queues, queue.name))
+                        if( auto lookup = algorithm::find( pair->second, group.process.ipc))
+                           return pair->second.data();
+
+                     return nullptr;
+                  };
+
                   admin::model::Queue result;
                   result.group = group.process.pid;
                   result.name = queue.name;
                   result.id = queue.id;
+
+                  if( auto lookup = find_lookup( queue))
+                     result.enable = admin::model::Queue::Enable{ .enqueue = lookup->enable.enqueue, .dequeue = lookup->enable.dequeue};
+
                   result.retry.count = queue.retry.count;
                   result.retry.delay = queue.retry.delay;
                   result.error = queue.error;

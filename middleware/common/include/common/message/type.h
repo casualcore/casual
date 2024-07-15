@@ -486,6 +486,8 @@ namespace casual
          template< typename T, typename... Ts>
          auto type( T&& message, Ts&&... ts)
          {
+            static_assert( requires(){ reverse::type_t< T>();}, "a reverse::type specialization needs to be provided for the message type");
+
             reverse::type_t< T> result{ std::forward< Ts>( ts)...};
 
             result.correlation = message.correlation;

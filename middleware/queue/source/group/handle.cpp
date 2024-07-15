@@ -243,8 +243,16 @@ namespace casual
                         }
                         catch( ...)
                         {
-                           log::line( log::category::error, exception::capture(), " failed with enqueue request to queue: ", message.name);
-                           state.multiplex.send( message.process.ipc, common::message::reverse::type( message));
+                           auto reply = common::message::reverse::type( message);
+
+                           auto error = exception::capture();
+                           if( code::is::category< code::queue>( error.code()))
+                              reply.code = static_cast< code::queue>( error.code().value());
+                           else
+                              reply.code = decltype( reply.code)::system;
+
+                           log::error( reply.code, " failed with enqueue request to queue: ", message.name, " - ", error);
+                           state.multiplex.send( message.process.ipc, reply);
                         }
                      };
                   }
@@ -258,29 +266,20 @@ namespace casual
                      Trace trace{ "queue::handle::dequeue::Request::handle"};
                      log::line( verbose::log, "message: ", message);
 
-                     // send an empty reply on error TODO: is this the api we want?
-                     auto reply = common::message::reverse::type( message);
-                     reply.correlation = message.correlation;
-
-                     // make sure we always send reply
-                     auto send_reply = execute::scope( [&]()
-                     {
-                        state.multiplex.send( message.process.ipc, reply);
-                     });
-
                      // Make sure we've got the quid.
                      message.queue = state.queuebase.id( message);
-
                      auto now = platform::time::clock::type::now();
 
-                     reply = state.queuebase.dequeue( message, now);
+                     auto reply = state.queuebase.dequeue( message, now);
                      reply.correlation = message.correlation;
 
-                     if( reply.message)
+                     if( reply.code == decltype( reply.code)::ok)
                      {
                         // we notify TM if the dequeue is in a transaction
                         if( message.trid)
                            local::detail::transaction::involved( state, message);
+
+                        state.multiplex.send( message.process.ipc, reply);
                      }
                      else if( message.block)
                      {
@@ -297,12 +296,11 @@ namespace casual
 
                         // no message, but caller wants to block
                         state.pending.add( std::move( message));
-
-                        // we don't send reply
-                        send_reply.release();
-
                         return false;
                      }
+                     else
+                        state.multiplex.send( message.process.ipc, reply);
+
                      return true;
                   }
 
@@ -318,10 +316,19 @@ namespace casual
                         }
                         catch( ...)
                         {
-                           log::line( log::category::error, exception::capture(), " failed with dequeue request from queue: ", message.name);
-                           return true;
-                        }
-                        
+                           auto reply = common::message::reverse::type( message);
+                           auto error = exception::capture();
+
+                           if( code::is::category< code::queue>( error.code()))
+                              reply.code = static_cast< code::queue>( error.code().value());
+                           else
+                              reply.code = decltype( reply.code)::system;
+
+                           log::error( reply.code, " failed with dequeue request to queue: ", message.name, " - ", error);
+                           state.multiplex.send( message.process.ipc, reply);
+
+                           return false;
+                        } 
                      };
                   }
 
@@ -719,13 +726,13 @@ namespace casual
 
                         log::line( verbose::log, "remove: ", remove);
 
-                        // if something goes wrong we send fatal event
-                        auto queues = common::event::guard::fatal( [&]()
-                        { 
-                           return detail::update( state, wanted, remove, state.zombies);
-                        });
-
                         {
+                           // if something goes wrong we send fatal event
+                           auto queues = common::event::guard::fatal( [&]()
+                           { 
+                              return detail::update( state, wanted, remove, state.zombies);
+                           });
+
                            auto reply = common::message::reverse::type( message, process::handle());
                            reply.alias = state.alias;
                            reply.queues = std::move( queues);
@@ -825,7 +832,9 @@ namespace casual
                                  // we only keep (and don't try to deque) if we "know" 
                                  if( count < 1)
                                     return true;
-
+                                 
+                                 // TODO this might send a reply, we need to fix this.
+                                 // maybe using expected instead?
                                  if( dequeue( message))
                                     --count;
 

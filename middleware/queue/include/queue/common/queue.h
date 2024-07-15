@@ -25,7 +25,8 @@ namespace casual
       struct Lookup
       {
          using Semantic = ipc::message::lookup::request::context::Semantic;
-         explicit Lookup( common::string::Argument queue, Semantic semantic = Semantic::direct);
+         using Action = ipc::message::lookup::request::context::Action;
+         explicit Lookup( common::string::Argument queue, Action action, Semantic semantic = Semantic::direct);
 
          ipc::message::lookup::Reply operator () () const;
 

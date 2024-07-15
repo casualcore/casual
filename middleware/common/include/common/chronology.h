@@ -9,7 +9,7 @@
 
 
 #include "casual/platform.h"
-#include "common/stream.h"
+#include "common/stream/customization.h"
 
 #include <string>
 #include <chrono>
@@ -80,7 +80,7 @@ namespace casual
 
    } // common::chronology
 
-   namespace common::stream::customization
+   namespace common::stream::customization::supersede
    {
       template< typename R, typename P>
       struct point< std::chrono::duration< R, P>>
@@ -101,7 +101,7 @@ namespace casual
          }
       };
 
-   } // common::stream::customization
+   } // common::stream::customization::supersede
 
 } // casual
 
