@@ -29,6 +29,13 @@ property               | description                                            
 [count : `integer`]    | number of rollbacks before move to _error queue_             | `0`
 [delay : `Duration`]   | delay before message is available for dequeue after rollback | `0s`
 
+### Enable _(structure)_
+
+property               | description                            | default
+-----------------------|----------------------------------------|-----------
+[enqueue : `boolean`]  | if enqueue is enabled for the queue    | `true`
+[dequeue : `boolean`]  | if dequeue is enabled for the queue    | `true`
+
 ### domain.queue.default
 
 Default properties that will be used if not defined per `queue`
@@ -54,10 +61,11 @@ Note: if `:memory:` is used as `queuebase`, the storage is non persistent
 
 #### domain.queue.groups.queues
 
-property           | description
--------------------|----------------------------------------------------
-name : `string`    | the (unique) name of the queue.
-[retry : `Retry`]  | retry semantics
+property             | description
+---------------------|----------------------------------------------------
+name : `string`      | the (unique) name of the queue.
+[retry : `Retry`]    | retry semantics
+[enable : `Enable`]  | enqueue/dequeue enable/disable
 
 
 ### domain.queue.forward
@@ -118,6 +126,10 @@ domain:
         note: "will get default queuebase: ${CASUAL_DOMAIN_HOME}/queue/groups/A.qb"
         queues:
           - name: "a1"
+            enable:
+              enqueue: true
+              dequeue: false
+            note: "dequeue is disabled -> dequeue will give no_queue error (unless the queue is found elsewhere)"
           - name: "a2"
             retry:
               count: 10
@@ -192,7 +204,12 @@ domain:
                     "note": "will get default queuebase: ${CASUAL_DOMAIN_HOME}/queue/groups/A.qb",
                     "queues": [
                         {
-                            "name": "a1"
+                            "name": "a1",
+                            "enable": {
+                                "enqueue": true,
+                                "dequeue": false
+                            },
+                            "note": "dequeue is disabled -> dequeue will give no_queue error (unless the queue is found elsewhere)"
                         },
                         {
                             "name": "a2",

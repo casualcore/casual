@@ -237,6 +237,7 @@ domain:
                   enable:
                      enqueue: true
                      dequeue: false
+                  note: dequeue is disabled -> dequeue will give no_queue error (unless the queue is found elsewhere)
                -  name: a2
                   retry:
                      count: 10
