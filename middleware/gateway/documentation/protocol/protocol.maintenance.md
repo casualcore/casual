@@ -16,10 +16,11 @@ The full table:
 
 version | protocol value
 --------|----------------------------
-v1.0    | 1000
-v1.1    | 1001
-v1.2    | 1002
-v1.3    | 1003
+1.0    | 1000
+1.1    | 1001
+1.2    | 1002
+1.3    | 1003
+1.4    | 1004
 
 ## definitions
 
@@ -58,7 +59,7 @@ header.correlation | (fixed) binary |           16 | correlation id of the messa
 header.size        | uint64         |            8 | the size of the payload that follows         
 
 
-## gateway_domain_connect_request - **#7200** - _[v1.0, v1.1, v1.2, v1.3]_
+## gateway_domain_connect_request - **#7200** - _[1.0, 1.1, 1.2, 1.3, 1.4]_
 
 Connection requests from another domain that wants to connect
 
@@ -71,8 +72,28 @@ domain.name.data          | dynamic string |       [0..*] | dynamic byte array w
 protocol.versions.size    | uint64         |            8 | number of protocol versions outbound domain can 'speak'
 protocol.versions.element | uint64         |            8 | a protocol version                                     
 
+#### example 
+```yaml
+---
+execution: !!binary "cHPL9BRESkGHswCG8UP8YA=="
+domain:
+  id: !!binary "MV2sxhguTBK/mHfvqSTLhg=="
+  name: "domain A"
+protocol.versions:
+  - 1004
+  - 1003
+  - 1002
+  - 1001
+  - 1000
+...
+```
 
-## gateway_domain_connect_reply - **#7201** - _[v1.0, v1.1, v1.2, v1.3]_
+Binary representation of the example (network byte ordering in base64):
+`cHPL9BRESkGHswCG8UP8YDFdrMYYLkwSv5h376kky4YAAAAAAAAACGRvbWFpbiBBAAAAAAAAAAUAAAAAAAAD7AAAAAAAAAPrAAAAAAAAA+oAAAAAAAAD6QAAAAAAAAPo`
+
+
+
+## gateway_domain_connect_reply - **#7201** - _[1.0, 1.1, 1.2, 1.3, 1.4]_
 
 Connection reply with the chosen _protocol version_
 
@@ -84,8 +105,23 @@ domain.name.size | uint64         |            8 | size of the inbound domain na
 domain.name.data | dynamic string |       [0..*] | dynamic byte array with the inbound domain name                   
 protocol.version | uint64         |            8 | the chosen protocol version to use, or invalid (0) if incompatible
 
+#### example 
+```yaml
+---
+execution: !!binary "cHPL9BRESkGHswCG8UP8YA=="
+domain:
+  id: !!binary "MV2sxhguTBK/mHfvqSTLhg=="
+  name: "domain A"
+protocol.version: 1000
+...
+```
 
-## gateway_domain_disconnect_request - **#7202** - _[v1.1, v1.2, v1.3]_
+Binary representation of the example (network byte ordering in base64):
+`cHPL9BRESkGHswCG8UP8YDFdrMYYLkwSv5h376kky4YAAAAAAAAACGRvbWFpbiBBAAAAAAAAA+g=`
+
+
+
+## gateway_domain_disconnect_request - **#7202** - _[1.1, 1.2, 1.3, 1.4]_
 
 Sent from inbound to connected outbound to notify that the connection is about to close, and outbound 
 will stop sending new requests. Hence, the inbound can gracefully disconnect.
@@ -94,8 +130,19 @@ role name | network type   | network size | description
 --------- | -------------- | ------------ | --------------------------------------------------
 execution | (fixed) binary |           16 | uuid of the current execution context (breadcrumb)
 
+#### example 
+```yaml
+---
+execution: !!binary "cHPL9BRESkGHswCG8UP8YA=="
+...
+```
 
-## gateway_domain_disconnect_reply - **#7203** - _[v1.1, v1.2, v1.3]_
+Binary representation of the example (network byte ordering in base64):
+`cHPL9BRESkGHswCG8UP8YA==`
+
+
+
+## gateway_domain_disconnect_reply - **#7203** - _[1.1, 1.2, 1.3, 1.4]_
 
 Confirmation that the outbound has got the disconnect request.
 
@@ -103,8 +150,19 @@ role name | network type   | network size | description
 --------- | -------------- | ------------ | --------------------------------------------------
 execution | (fixed) binary |           16 | uuid of the current execution context (breadcrumb)
 
+#### example 
+```yaml
+---
+execution: !!binary "cHPL9BRESkGHswCG8UP8YA=="
+...
+```
 
-## domain_discovery_request - **#7300** - _[v1.0, v1.1, v1.2, v1.3]_
+Binary representation of the example (network byte ordering in base64):
+`cHPL9BRESkGHswCG8UP8YA==`
+
+
+
+## domain_discovery_request - **#7300** - _[1.0, 1.1, 1.2, 1.3, 1.4]_
 
 Sent to and received from other domains when one domain wants to discover information abut the other.
 
@@ -121,8 +179,30 @@ content.queues.size           | uint64         |            8 | number of reques
 content.queues.element.size   | uint64         |            8 | size of the current queue name                               
 content.queues.element.data   | dynamic string |       [0..*] | dynamic byte array of the current queue name                 
 
+#### example 
+```yaml
+---
+execution: !!binary "cHPL9BRESkGHswCG8UP8YA=="
+domain:
+  id: !!binary "MV2sxhguTBK/mHfvqSTLhg=="
+  name: "domain A"
+content.services:
+  - "service1"
+  - "service2"
+  - "service3"
+content.queues:
+  - "queue1"
+  - "queue2"
+  - "queue3"
+...
+```
 
-## domain_discovery_reply - **#7301** - _[v1.0, v1.1, v1.2, v1.3]_
+Binary representation of the example (network byte ordering in base64):
+`cHPL9BRESkGHswCG8UP8YDFdrMYYLkwSv5h376kky4YAAAAAAAAACGRvbWFpbiBBAAAAAAAAAAMAAAAAAAAACHNlcnZpY2UxAAAAAAAAAAhzZXJ2aWNlMgAAAAAAAAAIc2VydmljZTMAAAAAAAAAAwAAAAAAAAAGcXVldWUxAAAAAAAAAAZxdWV1ZTIAAAAAAAAABnF1ZXVlMw==`
+
+
+
+## domain_discovery_reply - **#7311** - _[1.4]_
 
 Sent to and received from other domains when one domain wants to discover information abut the other.
 
@@ -143,10 +223,41 @@ content.services.element.hops             | uint64         |            8 | numb
 content.queues.size                       | uint64         |            8 | number of requested queues to follow (an array of queues)       
 content.queues.element.name.size          | uint64         |            8 | size of the current queue name                                  
 content.queues.element.name.data          | dynamic string |       [0..*] | dynamic byte array of the current queue name                    
-content.queues.element.retries            | uint64         |            8 | how many 'retries' the queue has                                
+content.queues.element.retry.count        | uint64         |            8 | how many 'retries' the queue has                                
+content.queues.element.retry.delay        | uint64         |            8 | when retried, the amount of us until available                  
+content.queues.element.enable.enqueue     | uint8          |            1 | if queue is enabled for enqueue (1/0)(true/false)               
+content.queues.element.enable.dequeue     | uint8          |            1 | if queue is enabled for dequeue (1/0)(true/false)               
+
+#### example 
+```yaml
+---
+execution: !!binary "cHPL9BRESkGHswCG8UP8YA=="
+domain:
+  id: !!binary "4va3w39zSgmCoKsVgbIfpQ=="
+  name: "domain B"
+content.services:
+  - name: "service1"
+    category: "example"
+    transaction: 1
+    timeout.duration: 90000000000
+    hops: 0
+content.queues:
+  - name: "queue1"
+    retry:
+      count: 10
+      delay: 4000000
+    enable:
+      enqueue: true
+      dequeue: false
+...
+```
+
+Binary representation of the example (network byte ordering in base64):
+`cHPL9BRESkGHswCG8UP8YOL2t8N/c0oJgqCrFYGyH6UAAAAAAAAACGRvbWFpbiBCAAAAAAAAAAEAAAAAAAAACHNlcnZpY2UxAAAAAAAAAAdleGFtcGxlAAEAAAAU9GsEAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAABnF1ZXVlMQAAAAAAAAAKAAAAAAA9CQABAA==`
 
 
-## domain_discovery_topology_implicit_update - **#7302** - _[v1.2, v1.3]_
+
+## domain_discovery_topology_implicit_update - **#7302** - _[1.2, 1.3, 1.4]_
 
 Sent to all inbound connections from a domain when when it gets a new connection or gets this message from an outbound.
 When the message is passed "upstream" domains will add its id to the domains array, hence it's possible to mitigate endless 
@@ -160,8 +271,22 @@ domains.element.id        | (fixed) binary |           16 | uuid of the domain
 domains.element.name.size | uint64         |            8 | size of the domain name                                           
 domains.element.name.data | dynamic string |       [0..*] | dynamic byte array with the domain name                           
 
+#### example 
+```yaml
+---
+execution: !!binary "cHPL9BRESkGHswCG8UP8YA=="
+domains:
+  - id: !!binary "4fa3w39zSgmCoKsVgbIfog=="
+    name: "B"
+...
+```
 
-## service_call - **#3102** - _[v1.3]_
+Binary representation of the example (network byte ordering in base64):
+`cHPL9BRESkGHswCG8UP8YAAAAAAAAAAB4fa3w39zSgmCoKsVgbIfogAAAAAAAAABQg==`
+
+
+
+## service_call - **#3102** - _[1.3, 1.4]_
 
 Sent to and received from other domains when one domain wants call a service in the other domain
 
@@ -184,8 +309,33 @@ buffer.type.data         | dynamic string |       [0..*] | byte array with buffe
 buffer.data.size         | uint64         |            8 | buffer payload size (could be very big)                            
 buffer.data.data         | dynamic binary |       [0..*] | buffer payload data (with the size of buffer.payload.size)         
 
+#### example 
+```yaml
+---
+execution: !!binary "cHPL9BRESkGHswCG8UP8YA=="
+service.name: "service1"
+service.timeout.duration: 42000000000
+parent:
+  span: !!binary "gIGCg4SFhoc="
+  service: "parent-service"
+xid:
+  formatID: 42
+  gtrid_length: 16
+  bqual_length: 16
+  data: !!binary "W2wb9vJLSA29vN71TDoIUVtsG/byS0gNvbze9Uw6CFI="
+flags: 4
+buffer:
+  type: ".binary/"
+  data: !!binary "gIGCg4SFhoeIiYqLjI2Oj5CRkpOUlZaXmJmam5ydnp+goaKjpKWmp6ipqqusra6vsLGys7S1tre4ubq7vL2+v8DBwsPExcbHyMnKy8zNzs/Q0dLT1NXW19jZ2tvc3d7f4OHi4+Tl5ufo6err7O3u7/Dx8vP09fb3+Pn6+/z9/v8="
+...
+```
 
-## service_call_v2 - **#3100** - _[v1.0, v1.1, v1.2]_
+Binary representation of the example (network byte ordering in base64):
+`cHPL9BRESkGHswCG8UP8YAAAAAAAAAAIc2VydmljZTEAAAAJx2UkAICBgoOEhYaHAAAAAAAAAA5wYXJlbnQtc2VydmljZQAAAAAAAAAqAAAAAAAAABAAAAAAAAAAEFtsG/byS0gNvbze9Uw6CFFbbBv28ktIDb283vVMOghSAAAAAAAAAAQAAAAAAAAACC5iaW5hcnkvAAAAAAAAAICAgYKDhIWGh4iJiouMjY6PkJGSk5SVlpeYmZqbnJ2en6ChoqOkpaanqKmqq6ytrq+wsbKztLW2t7i5uru8vb6/wMHCw8TFxsfIycrLzM3Oz9DR0tPU1dbX2Nna29zd3t/g4eLj5OXm5+jp6uvs7e7v8PHy8/T19vf4+fr7/P3+/w==`
+
+
+
+## service_call_v2 - **#3100** - _[1.0, 1.1, 1.2]_
 
 Sent to and received from other domains when one domain wants call a service in the other domain
 
@@ -207,8 +357,31 @@ buffer.type.data         | dynamic string |       [0..*] | byte array with buffe
 buffer.data.size         | uint64         |            8 | buffer payload size (could be very big)                            
 buffer.data.data         | dynamic binary |       [0..*] | buffer payload data (with the size of buffer.payload.size)         
 
+#### example 
+```yaml
+---
+execution: !!binary "cHPL9BRESkGHswCG8UP8YA=="
+service.name: "service1"
+service.timeout.duration: 42000000000
+parent: "parent-service"
+xid:
+  formatID: 42
+  gtrid_length: 16
+  bqual_length: 16
+  data: !!binary "W2wb9vJLSA29vN71TDoIUVtsG/byS0gNvbze9Uw6CFI="
+flags: 4
+buffer:
+  type: ".binary/"
+  data: !!binary "gIGCg4SFhoeIiYqLjI2Oj5CRkpOUlZaXmJmam5ydnp+goaKjpKWmp6ipqqusra6vsLGys7S1tre4ubq7vL2+v8DBwsPExcbHyMnKy8zNzs/Q0dLT1NXW19jZ2tvc3d7f4OHi4+Tl5ufo6err7O3u7/Dx8vP09fb3+Pn6+/z9/v8="
+...
+```
 
-## service_reply - **#3103** - _[v1.3]_
+Binary representation of the example (network byte ordering in base64):
+`cHPL9BRESkGHswCG8UP8YAAAAAAAAAAIc2VydmljZTEAAAAJx2UkAAAAAAAAAAAOcGFyZW50LXNlcnZpY2UAAAAAAAAAKgAAAAAAAAAQAAAAAAAAABBbbBv28ktIDb283vVMOghRW2wb9vJLSA29vN71TDoIUgAAAAAAAAAEAAAAAAAAAAguYmluYXJ5LwAAAAAAAACAgIGCg4SFhoeIiYqLjI2Oj5CRkpOUlZaXmJmam5ydnp+goaKjpKWmp6ipqqusra6vsLGys7S1tre4ubq7vL2+v8DBwsPExcbHyMnKy8zNzs/Q0dLT1NXW19jZ2tvc3d7f4OHi4+Tl5ufo6err7O3u7/Dx8vP09fb3+Pn6+/z9/v8=`
+
+
+
+## service_reply - **#3103** - _[1.3, 1.4]_
 
 Reply to call request
 
@@ -217,34 +390,73 @@ role name         | network type   | network size | description
 execution         | (fixed) binary |           16 | uuid of the current execution context (breadcrumb)        
 code.result       | uint32         |            4 | XATMI result/error code, 0 represent OK                   
 code.user         | uint64         |            8 | XATMI user supplied code                                  
-transaction_state | uint8          |            1 | 0:absent, 1:active, 2:rollback, 3:timeout, 4:error        
+transaction_state | uint8          |            1 | 0:ok/absent, 1:rollback, 2:timeout, 3:error               
 buffer.type.size  | uint64         |            8 | buffer type name size                                     
 buffer.type.data  | dynamic string |       [0..*] | byte array with buffer type in the form 'type/subtype'    
 buffer.data.size  | uint64         |            8 | buffer payload size (could be very big)                   
 buffer.data.data  | dynamic binary |       [0..*] | buffer payload data (with the size of buffer.payload.size)
 
+#### example 
+```yaml
+---
+execution: !!binary "cHPL9BRESkGHswCG8UP8YA=="
+code.result: 11
+code.user: 42
+transaction_state: ' '
+buffer:
+  type: ".binary/"
+  data: !!binary "gIGCg4SFhoeIiYqLjI2Oj5CRkpOUlZaXmJmam5ydnp+goaKjpKWmp6ipqqusra6vsLGys7S1tre4ubq7vL2+v8DBwsPExcbHyMnKy8zNzs/Q0dLT1NXW19jZ2tvc3d7f4OHi4+Tl5ufo6err7O3u7/Dx8vP09fb3+Pn6+/z9/v8="
+...
+```
 
-## service_reply_v2 - **#3101** - _[v1.0, v1.1, v1.2]_
+Binary representation of the example (network byte ordering in base64):
+`cHPL9BRESkGHswCG8UP8YAAAAAsAAAAAAAAAKgAAAAAAAAAACC5iaW5hcnkvAAAAAAAAAICAgYKDhIWGh4iJiouMjY6PkJGSk5SVlpeYmZqbnJ2en6ChoqOkpaanqKmqq6ytrq+wsbKztLW2t7i5uru8vb6/wMHCw8TFxsfIycrLzM3Oz9DR0tPU1dbX2Nna29zd3t/g4eLj5OXm5+jp6uvs7e7v8PHy8/T19vf4+fr7/P3+/w==`
+
+
+
+## service_reply_v2 - **#3101** - _[1.0, 1.1, 1.2]_
 
 Reply to call request
 
-role name                    | network type   | network size | description                                                                   
----------------------------- | -------------- | ------------ | ------------------------------------------------------------------------------
-execution                    | (fixed) binary |           16 | uuid of the current execution context (breadcrumb)                            
-code.result                  | uint32         |            4 | XATMI result/error code, 0 represent OK                                       
-code.user                    | uint64         |            8 | XATMI user supplied code                                                      
-transaction.xid.formatID     | uint64         |            8 | xid format type. if 0 no more information of the xid is transported           
-transaction.xid.gtrid_length | uint64         |            8 | length of the transaction gtrid part                                          
-transaction.xid.bqual_length | uint64         |            8 | length of the transaction branch part                                         
-transaction.xid.data         | (fixed) binary |           32 | byte array with the size of gtrid_length + bqual_length (max 128)             
-transaction.state            | uint8          |            1 | state of the transaction TX_ACTIVE, TX_TIMEOUT_ROLLBACK_ONLY, TX_ROLLBACK_ONLY
-buffer.type.size             | uint64         |            8 | buffer type name size                                                         
-buffer.type.data             | dynamic string |       [0..*] | byte array with buffer type in the form 'type/subtype'                        
-buffer.data.size             | uint64         |            8 | buffer payload size (could be very big)                                       
-buffer.data.data             | dynamic binary |       [0..*] | buffer payload data (with the size of buffer.payload.size)                    
+role name                    | network type   | network size | description                                                        
+---------------------------- | -------------- | ------------ | -------------------------------------------------------------------
+execution                    | (fixed) binary |           16 | uuid of the current execution context (breadcrumb)                 
+code.result                  | uint32         |            4 | XATMI result/error code, 0 represent OK                            
+code.user                    | uint64         |            8 | XATMI user supplied code                                           
+transaction.xid.formatID     | uint64         |            8 | xid format type. if 0 no more information of the xid is transported
+transaction.xid.gtrid_length | uint64         |            8 | length of the transaction gtrid part                               
+transaction.xid.bqual_length | uint64         |            8 | length of the transaction branch part                              
+transaction.xid.data         | (fixed) binary |           32 | byte array with the size of gtrid_length + bqual_length (max 128)  
+transaction.state            | uint8          |            1 | 0:ok, 1:rollback, 2:timeout, 3:error                               
+buffer.type.size             | uint64         |            8 | buffer type name size                                              
+buffer.type.data             | dynamic string |       [0..*] | byte array with buffer type in the form 'type/subtype'             
+buffer.data.size             | uint64         |            8 | buffer payload size (could be very big)                            
+buffer.data.data             | dynamic binary |       [0..*] | buffer payload data (with the size of buffer.payload.size)         
+
+#### example 
+```yaml
+---
+execution: !!binary "cHPL9BRESkGHswCG8UP8YA=="
+code.result: 11
+code.user: 42
+transaction.xid:
+  formatID: 42
+  gtrid_length: 16
+  bqual_length: 16
+  data: !!binary "W2wb9vJLSA29vN71TDoIUVtsG/byS0gNvbze9Uw6CFI="
+transaction.state: ' '
+buffer:
+  type: ".binary/"
+  data: !!binary "gIGCg4SFhoeIiYqLjI2Oj5CRkpOUlZaXmJmam5ydnp+goaKjpKWmp6ipqqusra6vsLGys7S1tre4ubq7vL2+v8DBwsPExcbHyMnKy8zNzs/Q0dLT1NXW19jZ2tvc3d7f4OHi4+Tl5ufo6err7O3u7/Dx8vP09fb3+Pn6+/z9/v8="
+...
+```
+
+Binary representation of the example (network byte ordering in base64):
+`cHPL9BRESkGHswCG8UP8YAAAAAsAAAAAAAAAKgAAAAAAAAAqAAAAAAAAABAAAAAAAAAAEFtsG/byS0gNvbze9Uw6CFFbbBv28ktIDb283vVMOghSAAAAAAAAAAAILmJpbmFyeS8AAAAAAAAAgICBgoOEhYaHiImKi4yNjo+QkZKTlJWWl5iZmpucnZ6foKGio6SlpqeoqaqrrK2ur7CxsrO0tba3uLm6u7y9vr/AwcLDxMXGx8jJysvMzc7P0NHS09TV1tfY2drb3N3e3+Dh4uPk5ebn6Onq6+zt7u/w8fLz9PX29/j5+vv8/f7/`
 
 
-## transaction_resource_prepare_request - **#5201** - _[v1.0, v1.1, v1.2, v1.3]_
+
+## transaction_resource_prepare_request - **#5201** - _[1.0, 1.1, 1.2, 1.3, 1.4]_
 
 Sent to and received from other domains when one domain wants to prepare a transaction. 
 
@@ -258,8 +470,26 @@ xid.data         | (fixed) binary |           32 | byte array with the size of g
 resource         | uint32         |            4 | RM id of the resource - has to correlate with the reply            
 flags            | uint64         |            8 | XA flags to be forward to the resource                             
 
+#### example 
+```yaml
+---
+execution: !!binary "cHPL9BRESkGHswCG8UP8YA=="
+xid:
+  formatID: 42
+  gtrid_length: 16
+  bqual_length: 16
+  data: !!binary "W2wb9vJLSA29vN71TDoIUVtsG/byS0gNvbze9Uw6CFI="
+resource: 42
+flags: 0
+...
+```
 
-## transaction_resource_prepare_reply - **#5202** - _[v1.0, v1.1, v1.2, v1.3]_
+Binary representation of the example (network byte ordering in base64):
+`cHPL9BRESkGHswCG8UP8YAAAAAAAAAAqAAAAAAAAABAAAAAAAAAAEFtsG/byS0gNvbze9Uw6CFFbbBv28ktIDb283vVMOghSAAAAKgAAAAAAAAAA`
+
+
+
+## transaction_resource_prepare_reply - **#5202** - _[1.0, 1.1, 1.2, 1.3, 1.4]_
 
 Sent to and received from other domains when one domain is done preparing a transaction. 
 
@@ -273,11 +503,29 @@ xid.data         | (fixed) binary |           32 | byte array with the size of g
 resource         | uint32         |            4 | RM id of the resource - has to correlate with the request          
 state            | uint32         |            4 | The state of the operation - If successful XA_OK ( 0)              
 
+#### example 
+```yaml
+---
+execution: !!binary "cHPL9BRESkGHswCG8UP8YA=="
+xid:
+  formatID: 42
+  gtrid_length: 16
+  bqual_length: 16
+  data: !!binary "W2wb9vJLSA29vN71TDoIUVtsG/byS0gNvbze9Uw6CFI="
+resource: 42
+state: 0
+...
+```
+
+Binary representation of the example (network byte ordering in base64):
+`cHPL9BRESkGHswCG8UP8YAAAAAAAAAAqAAAAAAAAABAAAAAAAAAAEFtsG/byS0gNvbze9Uw6CFFbbBv28ktIDb283vVMOghSAAAAKgAAAAA=`
+
+
 ### Resource commit
 
 
 
-## transaction_resource_commit_request - **#5203** - _[v1.0, v1.1, v1.2, v1.3]_
+## transaction_resource_commit_request - **#5203** - _[1.0, 1.1, 1.2, 1.3, 1.4]_
 
 Sent to and received from other domains when one domain wants to commit an already prepared transaction.
 
@@ -291,8 +539,26 @@ xid.data         | (fixed) binary |           32 | byte array with the size of g
 resource         | uint32         |            4 | RM id of the resource - has to correlate with the reply            
 flags            | uint64         |            8 | XA flags to be forward to the resource                             
 
+#### example 
+```yaml
+---
+execution: !!binary "cHPL9BRESkGHswCG8UP8YA=="
+xid:
+  formatID: 42
+  gtrid_length: 16
+  bqual_length: 16
+  data: !!binary "W2wb9vJLSA29vN71TDoIUVtsG/byS0gNvbze9Uw6CFI="
+resource: 42
+flags: 0
+...
+```
 
-## transaction_resource_commit_reply - **#5204** - _[v1.0, v1.1, v1.2, v1.3]_
+Binary representation of the example (network byte ordering in base64):
+`cHPL9BRESkGHswCG8UP8YAAAAAAAAAAqAAAAAAAAABAAAAAAAAAAEFtsG/byS0gNvbze9Uw6CFFbbBv28ktIDb283vVMOghSAAAAKgAAAAAAAAAA`
+
+
+
+## transaction_resource_commit_reply - **#5204** - _[1.0, 1.1, 1.2, 1.3, 1.4]_
 
 Reply to a commit request. 
 
@@ -306,8 +572,26 @@ xid.data         | (fixed) binary |           32 | byte array with the size of g
 resource         | uint32         |            4 | RM id of the resource - has to correlate with the request          
 state            | uint32         |            4 | The state of the operation - If successful XA_OK ( 0)              
 
+#### example 
+```yaml
+---
+execution: !!binary "cHPL9BRESkGHswCG8UP8YA=="
+xid:
+  formatID: 42
+  gtrid_length: 16
+  bqual_length: 16
+  data: !!binary "W2wb9vJLSA29vN71TDoIUVtsG/byS0gNvbze9Uw6CFI="
+resource: 42
+state: 0
+...
+```
 
-## transaction_resource_rollback_request - **#5205** - _[v1.0, v1.1, v1.2, v1.3]_
+Binary representation of the example (network byte ordering in base64):
+`cHPL9BRESkGHswCG8UP8YAAAAAAAAAAqAAAAAAAAABAAAAAAAAAAEFtsG/byS0gNvbze9Uw6CFFbbBv28ktIDb283vVMOghSAAAAKgAAAAA=`
+
+
+
+## transaction_resource_rollback_request - **#5205** - _[1.0, 1.1, 1.2, 1.3, 1.4]_
 
 Sent to and received from other domains when one domain wants to rollback an already prepared transaction.
 That is, when one or more resources has failed to prepare.
@@ -322,8 +606,26 @@ xid.data         | (fixed) binary |           32 | byte array with the size of g
 resource         | uint32         |            4 | RM id of the resource - has to correlate with the reply            
 flags            | uint64         |            8 | XA flags to be forward to the resource                             
 
+#### example 
+```yaml
+---
+execution: !!binary "cHPL9BRESkGHswCG8UP8YA=="
+xid:
+  formatID: 42
+  gtrid_length: 16
+  bqual_length: 16
+  data: !!binary "W2wb9vJLSA29vN71TDoIUVtsG/byS0gNvbze9Uw6CFI="
+resource: 42
+flags: 0
+...
+```
 
-## transaction_resource_rollback_reply - **#5206** - _[v1.0, v1.1, v1.2, v1.3]_
+Binary representation of the example (network byte ordering in base64):
+`cHPL9BRESkGHswCG8UP8YAAAAAAAAAAqAAAAAAAAABAAAAAAAAAAEFtsG/byS0gNvbze9Uw6CFFbbBv28ktIDb283vVMOghSAAAAKgAAAAAAAAAA`
+
+
+
+## transaction_resource_rollback_reply - **#5206** - _[1.0, 1.1, 1.2, 1.3, 1.4]_
 
 Reply to a rollback request. 
 
@@ -337,8 +639,26 @@ xid.data         | (fixed) binary |           32 | byte array with the size of g
 resource         | uint32         |            4 | RM id of the resource - has to correlate with the request          
 state            | uint32         |            4 | The state of the operation - If successful XA_OK ( 0)              
 
+#### example 
+```yaml
+---
+execution: !!binary "cHPL9BRESkGHswCG8UP8YA=="
+xid:
+  formatID: 42
+  gtrid_length: 16
+  bqual_length: 16
+  data: !!binary "W2wb9vJLSA29vN71TDoIUVtsG/byS0gNvbze9Uw6CFI="
+resource: 42
+state: 0
+...
+```
 
-## queue_group_enqueue_request - **#6100** - _[v1.0, v1.1, v1.2, v1.3]_
+Binary representation of the example (network byte ordering in base64):
+`cHPL9BRESkGHswCG8UP8YAAAAAAAAAAqAAAAAAAAABAAAAAAAAAAEFtsG/byS0gNvbze9Uw6CFFbbBv28ktIDb283vVMOghSAAAAKgAAAAA=`
+
+
+
+## queue_group_enqueue_request - **#6100** - _[1.0, 1.1, 1.2, 1.3, 1.4]_
 
 Represent enqueue request.
 
@@ -362,8 +682,34 @@ message.payload.type.data          | dynamic string |       [0..*] | data of the
 message.payload.data.size          | uint64         |            8 | size of the payload                                                
 message.payload.data.data          | dynamic binary |       [0..*] | data of the payload                                                
 
+#### example 
+```yaml
+---
+execution: !!binary "cHPL9BRESkGHswCG8UP8YA=="
+name: "queueA"
+xid:
+  formatID: 42
+  gtrid_length: 16
+  bqual_length: 16
+  data: !!binary "W2wb9vJLSA29vN71TDoIUVtsG/byS0gNvbze9Uw6CFI="
+message:
+  id: !!binary "5v2fz4asR/SlJS9ZfiX8ag=="
+  attributes:
+    properties: "property 1:property 2"
+    reply: "queueB"
+    available: 1559762216552100000
+  payload:
+    type: ".binary/"
+    data: !!binary "gIGCg4SFhoeIiYqLjI2Oj5CRkpOUlZaXmJmam5ydnp+goaKjpKWmp6ipqqusra6vsLGys7S1tre4ubq7vL2+v8DBwsPExcbHyMnKy8zNzs/Q0dLT1NXW19jZ2tvc3d7f4OHi4+Tl5ufo6err7O3u7/Dx8vP09fb3+Pn6+/z9/v8="
+...
+```
 
-## queue_group_enqueue_reply - **#6102** - _[v1.3]_
+Binary representation of the example (network byte ordering in base64):
+`cHPL9BRESkGHswCG8UP8YAAAAAAAAAAGcXVldWVBAAAAAAAAACoAAAAAAAAAEAAAAAAAAAAQW2wb9vJLSA29vN71TDoIUVtsG/byS0gNvbze9Uw6CFLm/Z/PhqxH9KUlL1l+JfxqAAAAAAAAABVwcm9wZXJ0eSAxOnByb3BlcnR5IDIAAAAAAAAABnF1ZXVlQhWlY3jTqfCgAAAAAAAAAAguYmluYXJ5LwAAAAAAAACAgIGCg4SFhoeIiYqLjI2Oj5CRkpOUlZaXmJmam5ydnp+goaKjpKWmp6ipqqusra6vsLGys7S1tre4ubq7vL2+v8DBwsPExcbHyMnKy8zNzs/Q0dLT1NXW19jZ2tvc3d7f4OHi4+Tl5ufo6err7O3u7/Dx8vP09fb3+Pn6+/z9/v8=`
+
+
+
+## queue_group_enqueue_reply - **#6102** - _[1.3, 1.4]_
 
 Represent enqueue reply.
 
@@ -373,8 +719,21 @@ execution | (fixed) binary |           16 | uuid of the current execution contex
 id        | (fixed) binary |           16 | id of the enqueued message                        
 code      | uint32         |            4 | error/result code                                 
 
+#### example 
+```yaml
+---
+execution: !!binary "cHPL9BRESkGHswCG8UP8YA=="
+id: !!binary "HJjZS9KaQGGdinMAGdyJHw=="
+code: 30
+...
+```
 
-## queue_group_enqueue_reply_v1_2 - **#6101** - _[v1.0, v1.1, v1.2]_
+Binary representation of the example (network byte ordering in base64):
+`cHPL9BRESkGHswCG8UP8YByY2UvSmkBhnYpzABnciR8AAAAe`
+
+
+
+## queue_group_enqueue_reply_v1_2 - **#6101** - _[1.0, 1.1, 1.2]_
 
 Represent enqueue reply.
 
@@ -383,8 +742,20 @@ role name | network type   | network size | description
 execution | (fixed) binary |           16 | uuid of the current execution context (breadcrumb)
 id        | (fixed) binary |           16 | id of the enqueued message                        
 
+#### example 
+```yaml
+---
+execution: !!binary "cHPL9BRESkGHswCG8UP8YA=="
+id: !!binary "MV2sxhguTBK/mHfvqSTLhw=="
+...
+```
 
-## queue_group_dequeue_request - **#6200** - _[v1.0, v1.1, v1.2, v1.3]_
+Binary representation of the example (network byte ordering in base64):
+`cHPL9BRESkGHswCG8UP8YDFdrMYYLkwSv5h376kky4c=`
+
+
+
+## queue_group_dequeue_request - **#6200** - _[1.0, 1.1, 1.2, 1.3, 1.4]_
 
 Represent dequeue request.
 
@@ -402,8 +773,29 @@ selector.properties.data | dynamic string |       [0..*] | data of the selector 
 selector.id              | (fixed) binary |           16 | selector uuid (ignored if 'empty'                                  
 block                    | uint8          |            1 | dictates if this is a blocking call or not                         
 
+#### example 
+```yaml
+---
+execution: !!binary "cHPL9BRESkGHswCG8UP8YA=="
+name: "queueA"
+xid:
+  formatID: 42
+  gtrid_length: 16
+  bqual_length: 16
+  data: !!binary "W2wb9vJLSA29vN71TDoIUVtsG/byS0gNvbze9Uw6CFI="
+selector:
+  properties: "property 1:property 2"
+  id: !!binary "MV2sxhguTBK/mHfvqSTLhw=="
+block: false
+...
+```
 
-## queue_group_dequeue_reply - **#6202** - _[v1.3]_
+Binary representation of the example (network byte ordering in base64):
+`cHPL9BRESkGHswCG8UP8YAAAAAAAAAAGcXVldWVBAAAAAAAAACoAAAAAAAAAEAAAAAAAAAAQW2wb9vJLSA29vN71TDoIUVtsG/byS0gNvbze9Uw6CFIAAAAAAAAAFXByb3BlcnR5IDE6cHJvcGVydHkgMjFdrMYYLkwSv5h376kky4cA`
+
+
+
+## queue_group_dequeue_reply - **#6202** - _[1.3, 1.4]_
 
 Represent dequeue reply.
 
@@ -425,8 +817,31 @@ message.redelivered                | uint64         |            8 | how many ti
 message.timestamp                  | uint64         |            8 | when the message was enqueued (us since epoch)                                  
 code                               | uint32         |            4 | result/error code                                                               
 
+#### example 
+```yaml
+---
+execution: !!binary "cHPL9BRESkGHswCG8UP8YA=="
+message:
+  id: !!binary "Uy+LbBV2Tcqf6CowAt5Xng=="
+  attributes:
+    properties: "property 1:property 2"
+    reply: "queueB"
+    available: 1559762216552100000
+  payload:
+    type: ".json/"
+    data: !!binary "e30="
+  redelivered: 1
+  timestamp: 1559762216552100000
+code: 20
+...
+```
 
-## queue_group_dequeue_reply_v1_2 - **#6201** - _[v1.0, v1.1, v1.2]_
+Binary representation of the example (network byte ordering in base64):
+`cHPL9BRESkGHswCG8UP8YAFTL4tsFXZNyp/oKjAC3leeAAAAAAAAABVwcm9wZXJ0eSAxOnByb3BlcnR5IDIAAAAAAAAABnF1ZXVlQhWlY3jTqfCgAAAAAAAAAAYuanNvbi8AAAAAAAAAAnt9AAAAAAAAAAEVpWN406nwoAAAABQ=`
+
+
+
+## queue_group_dequeue_reply_v1_2 - **#6201** - _[1.0, 1.1, 1.2]_
 
 Represent dequeue reply.
 
@@ -447,8 +862,30 @@ message.element.payload.data.data          | dynamic binary |       [0..*] | dat
 message.element.redelivered                | uint64         |            8 | how many times the message has been redelivered            
 message.element.timestamp                  | uint64         |            8 | when the message was enqueued (us since epoch)             
 
+#### example 
+```yaml
+---
+execution: !!binary "cHPL9BRESkGHswCG8UP8YA=="
+message:
+  - id: !!binary "Uy+LbBV2Tcqf6CowAt5Xng=="
+    attributes:
+      properties: "property 1:property 2"
+      reply: "queueB"
+      available: 1559762216552100000
+    payload:
+      type: ".json/"
+      data: !!binary "e30="
+    redelivered: 1
+    timestamp: 1559762216552100000
+...
+```
 
-## conversation_connect_request - **#3220** - _[v1.3]_
+Binary representation of the example (network byte ordering in base64):
+`cHPL9BRESkGHswCG8UP8YAAAAAAAAAABUy+LbBV2Tcqf6CowAt5XngAAAAAAAAAVcHJvcGVydHkgMTpwcm9wZXJ0eSAyAAAAAAAAAAZxdWV1ZUIVpWN406nwoAAAAAAAAAAGLmpzb24vAAAAAAAAAAJ7fQAAAAAAAAABFaVjeNOp8KA=`
+
+
+
+## conversation_connect_request - **#3220** - _[1.3, 1.4]_
 
 Sent to establish a conversation
 
@@ -459,8 +896,8 @@ service.name.size        | uint64         |            8 | size of the service n
 service.name.data        | dynamic string |       [0..*] | data of the service name                                           
 service.timeout.duration | uint64         |            8 | timeout (in ns                                                     
 parent.span              | (fixed) binary |            8 | parent execution span                                              
-parent.service.size      | uint64         |            8 | size of the parent service name (the caller)                       
-parent.service.data      | dynamic string |       [0..*] | data of the parent service name (the caller)                       
+parent.service.size      | uint64         |            8 | parent service name size                                           
+parent.service.data      | dynamic string |       [0..*] | byte array with parent service name                                
 xid.formatID             | uint64         |            8 | xid format type. if 0 no more information of the xid is transported
 xid.gtrid_length         | uint64         |            8 | length of the transaction gtrid part                               
 xid.bqual_length         | uint64         |            8 | length of the transaction branch part                              
@@ -471,8 +908,79 @@ buffer.type.data         | dynamic string |       [0..*] | byte array with buffe
 buffer.data.size         | uint64         |            8 | buffer payload size (could be very big)                            
 buffer.data.data         | dynamic binary |       [0..*] | buffer payload data (with the size of buffer.payload.size)         
 
+#### example 
+```yaml
+---
+execution: !!binary "cHPL9BRESkGHswCG8UP8YA=="
+service.name: "service1"
+service.timeout.duration: 42000000000
+parent:
+  span: !!binary "gIGCg4SFhoc="
+  service: "parent-service"
+xid:
+  formatID: 42
+  gtrid_length: 16
+  bqual_length: 16
+  data: !!binary "W2wb9vJLSA29vN71TDoIUVtsG/byS0gNvbze9Uw6CFI="
+duplex: 0
+buffer:
+  type: ".binary/"
+  data: !!binary "gIGCg4SFhoeIiYqLjI2Oj5CRkpOUlZaXmJmam5ydnp+goaKjpKWmp6ipqqusra6vsLGys7S1tre4ubq7vL2+v8DBwsPExcbHyMnKy8zNzs/Q0dLT1NXW19jZ2tvc3d7f4OHi4+Tl5ufo6err7O3u7/Dx8vP09fb3+Pn6+/z9/v8="
+...
+```
 
-## conversation_connect_reply - **#3211** - _[v1.0, v1.1, v1.2, v1.3]_
+Binary representation of the example (network byte ordering in base64):
+`cHPL9BRESkGHswCG8UP8YAAAAAAAAAAIc2VydmljZTEAAAAJx2UkAICBgoOEhYaHAAAAAAAAAA5wYXJlbnQtc2VydmljZQAAAAAAAAAqAAAAAAAAABAAAAAAAAAAEFtsG/byS0gNvbze9Uw6CFFbbBv28ktIDb283vVMOghSAAAAAAAAAAAACC5iaW5hcnkvAAAAAAAAAICAgYKDhIWGh4iJiouMjY6PkJGSk5SVlpeYmZqbnJ2en6ChoqOkpaanqKmqq6ytrq+wsbKztLW2t7i5uru8vb6/wMHCw8TFxsfIycrLzM3Oz9DR0tPU1dbX2Nna29zd3t/g4eLj5OXm5+jp6uvs7e7v8PHy8/T19vf4+fr7/P3+/w==`
+
+
+
+## conversation_connect_request_v2 - **#3210** - _[1.0, 1.1, 1.2]_
+
+Sent to establish a conversation
+
+role name                | network type   | network size | description                                                        
+------------------------ | -------------- | ------------ | -------------------------------------------------------------------
+execution                | (fixed) binary |           16 | uuid of the current execution context (breadcrumb)                 
+service.name.size        | uint64         |            8 | size of the service name                                           
+service.name.data        | dynamic string |       [0..*] | data of the service name                                           
+service.timeout.duration | uint64         |            8 | timeout (in ns                                                     
+parent.size              | uint64         |            8 | parent service name size                                           
+parent.data              | dynamic string |       [0..*] | byte array with parent service name                                
+xid.formatID             | uint64         |            8 | xid format type. if 0 no more information of the xid is transported
+xid.gtrid_length         | uint64         |            8 | length of the transaction gtrid part                               
+xid.bqual_length         | uint64         |            8 | length of the transaction branch part                              
+xid.data                 | (fixed) binary |           32 | byte array with the size of gtrid_length + bqual_length (max 128)  
+duplex                   | uint16         |            2 | in what duplex the callee shall enter (receive:1, send:0)          
+buffer.type.size         | uint64         |            8 | buffer type name size                                              
+buffer.type.data         | dynamic string |       [0..*] | byte array with buffer type in the form 'type/subtype'             
+buffer.data.size         | uint64         |            8 | buffer payload size (could be very big)                            
+buffer.data.data         | dynamic binary |       [0..*] | buffer payload data (with the size of buffer.payload.size)         
+
+#### example 
+```yaml
+---
+execution: !!binary "cHPL9BRESkGHswCG8UP8YA=="
+service.name: "service1"
+service.timeout.duration: 42000000000
+parent: "parent-service"
+xid:
+  formatID: 42
+  gtrid_length: 16
+  bqual_length: 16
+  data: !!binary "W2wb9vJLSA29vN71TDoIUVtsG/byS0gNvbze9Uw6CFI="
+duplex: 0
+buffer:
+  type: ".binary/"
+  data: !!binary "gIGCg4SFhoeIiYqLjI2Oj5CRkpOUlZaXmJmam5ydnp+goaKjpKWmp6ipqqusra6vsLGys7S1tre4ubq7vL2+v8DBwsPExcbHyMnKy8zNzs/Q0dLT1NXW19jZ2tvc3d7f4OHi4+Tl5ufo6err7O3u7/Dx8vP09fb3+Pn6+/z9/v8="
+...
+```
+
+Binary representation of the example (network byte ordering in base64):
+`cHPL9BRESkGHswCG8UP8YAAAAAAAAAAIc2VydmljZTEAAAAJx2UkAAAAAAAAAAAOcGFyZW50LXNlcnZpY2UAAAAAAAAAKgAAAAAAAAAQAAAAAAAAABBbbBv28ktIDb283vVMOghRW2wb9vJLSA29vN71TDoIUgAAAAAAAAAAAAguYmluYXJ5LwAAAAAAAACAgIGCg4SFhoeIiYqLjI2Oj5CRkpOUlZaXmJmam5ydnp+goaKjpKWmp6ipqqusra6vsLGys7S1tre4ubq7vL2+v8DBwsPExcbHyMnKy8zNzs/Q0dLT1NXW19jZ2tvc3d7f4OHi4+Tl5ufo6err7O3u7/Dx8vP09fb3+Pn6+/z9/v8=`
+
+
+
+## conversation_connect_reply - **#3211** - _[1.0, 1.1, 1.2, 1.3, 1.4]_
 
 Reply for a conversation
 
@@ -481,8 +989,20 @@ role name   | network type   | network size | description
 execution   | (fixed) binary |           16 | uuid of the current execution context (breadcrumb)
 code.result | uint32         |            4 | result code of the connection attempt             
 
+#### example 
+```yaml
+---
+execution: !!binary "cHPL9BRESkGHswCG8UP8YA=="
+code.result: -1
+...
+```
 
-## conversation_send - **#3212** - _[v1.0, v1.1, v1.2, v1.3]_
+Binary representation of the example (network byte ordering in base64):
+`cHPL9BRESkGHswCG8UP8YP////8=`
+
+
+
+## conversation_send - **#3212** - _[1.0, 1.1, 1.2, 1.3, 1.4]_
 
 Represent a message sent 'over' an established connection
 
@@ -497,8 +1017,25 @@ buffer.type.data | dynamic string |       [0..*] | byte array with buffer type i
 buffer.data.size | uint64         |            8 | buffer payload size (could be very big)                   
 buffer.data.data | dynamic binary |       [0..*] | buffer payload data (with the size of buffer.payload.size)
 
+#### example 
+```yaml
+---
+execution: !!binary "cHPL9BRESkGHswCG8UP8YA=="
+duplex: 0
+code.result: 0
+code.user: 42
+buffer:
+  type: ".binary/"
+  data: !!binary "gIGCg4SFhoeIiYqLjI2Oj5CRkpOUlZaXmJmam5ydnp+goaKjpKWmp6ipqqusra6vsLGys7S1tre4ubq7vL2+v8DBwsPExcbHyMnKy8zNzs/Q0dLT1NXW19jZ2tvc3d7f4OHi4+Tl5ufo6err7O3u7/Dx8vP09fb3+Pn6+/z9/v8="
+...
+```
 
-## conversation_disconnect - **#3213** - _[v1.0, v1.1, v1.2, v1.3]_
+Binary representation of the example (network byte ordering in base64):
+`cHPL9BRESkGHswCG8UP8YAAAAAAAAAAAAAAAAAAqAAAAAAAAAAguYmluYXJ5LwAAAAAAAACAgIGCg4SFhoeIiYqLjI2Oj5CRkpOUlZaXmJmam5ydnp+goaKjpKWmp6ipqqusra6vsLGys7S1tre4ubq7vL2+v8DBwsPExcbHyMnKy8zNzs/Q0dLT1NXW19jZ2tvc3d7f4OHi4+Tl5ufo6err7O3u7/Dx8vP09fb3+Pn6+/z9/v8=`
+
+
+
+## conversation_disconnect - **#3213** - _[1.0, 1.1, 1.2, 1.3, 1.4]_
 
 Sent to abruptly disconnect the conversation
 
@@ -506,8 +1043,19 @@ role name | network type   | network size | description
 --------- | -------------- | ------------ | --------------------------------------------------
 execution | (fixed) binary |           16 | uuid of the current execution context (breadcrumb)
 
+#### example 
+```yaml
+---
+execution: !!binary "cHPL9BRESkGHswCG8UP8YA=="
+...
+```
 
-## conversation_connect_request_v2 - **#3210** - _[v1.0, v1.1, v1.2]_
+Binary representation of the example (network byte ordering in base64):
+`cHPL9BRESkGHswCG8UP8YA==`
+
+
+
+## conversation_connect_request_v2 - **#3210** - _[1.0, 1.1, 1.2]_
 
 Sent to establish a conversation
 

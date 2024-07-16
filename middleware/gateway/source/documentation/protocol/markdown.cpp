@@ -10,6 +10,7 @@
 
 #include "common/serialize/native/binary.h"
 #include "common/serialize/native/network.h"
+#include "common/serialize/yaml.h"
 #include "common/network/byteorder.h"
 #include "common/communication/tcp.h"
 
@@ -431,8 +432,51 @@ namespace casual
                   algorithm::copy( binary, result.underlying());
                   return result;
                };
-               
             } // span
+
+            namespace yaml
+            {
+               // local yaml writer that has network property -> we use the 
+               // gateway network specialization for every message.
+               struct Writer : common::serialize::Writer
+               {
+                  constexpr static auto archive_properties() { return common::serialize::archive::Property::named | common::serialize::archive::Property::network;}
+
+                  Writer()
+                     : common::serialize::Writer{ common::serialize::yaml::writer()}
+                  {}
+
+                  template< typename V>
+                  [[maybe_unused]] Writer& operator << ( V&& value)
+                  {
+                     common::serialize::value::write( *this, std::forward< V>( value), nullptr);
+                     return *this;
+                  }
+               };
+
+               static_assert( common::serialize::archive::is::network::normalizing< Writer>);
+               static_assert( ! common::serialize::archive::is::dynamic< Writer>);
+               
+            } // yaml
+
+
+            template< typename M> 
+            void example_and_base64( std::ostream& out)
+            {
+               out << "\n#### example \n```yaml\n"; 
+
+               auto message = protocol::example::message< M>();
+
+               auto writer = yaml::Writer{};
+               writer << message;
+               writer.consume( out);
+
+
+               out << "```\n\n";
+               out << "Binary representation of the example (network byte ordering in base64):\n`" << protocol::example::representation::base64< M>() << "`\n\n";
+            }
+
+
          } // <unnamed>
       } // local
 
@@ -559,6 +603,8 @@ Sent to and received from other domains when one domain wants to prepare a trans
 
 )";
                transaction_request( out, message_type{});
+               local::example_and_base64< message_type>( out);
+
             }
 
             {
@@ -570,6 +616,7 @@ Sent to and received from other domains when one domain is done preparing a tran
 
 )";
                transaction_reply( out, message_type{});
+               local::example_and_base64< message_type>( out);
             }
 
             out << R"(
@@ -586,6 +633,7 @@ Sent to and received from other domains when one domain wants to commit an alrea
 
 )";
                transaction_request( out, message_type{});
+               local::example_and_base64< message_type>( out);
             }
 
             {
@@ -597,6 +645,7 @@ Reply to a commit request.
 
 )";
                transaction_reply( out, message_type{});
+               local::example_and_base64< message_type>( out);
             }
 
             {
@@ -609,6 +658,7 @@ That is, when one or more resources has failed to prepare.
 
 )";
                transaction_request( out, message_type{});
+               local::example_and_base64< message_type>( out);
             }
 
             {
@@ -620,6 +670,7 @@ Reply to a rollback request.
 
 )";
                transaction_reply( out, message_type{});
+               local::example_and_base64< message_type>( out);
             }
          }
 
@@ -662,6 +713,8 @@ Sent to and received from other domains when one domain wants call a service in 
                         { "buffer.data.size", "buffer payload size (could be very big)"},
                         { "buffer.data.data", "buffer payload data (with the size of buffer.payload.size)"},
                      });
+
+               local::example_and_base64< message_type>( out);
             }
 
             {
@@ -700,6 +753,8 @@ Sent to and received from other domains when one domain wants call a service in 
                         { "buffer.data.size", "buffer payload size (could be very big)"},
                         { "buffer.data.data", "buffer payload data (with the size of buffer.payload.size)"},
                      });
+
+               local::example_and_base64< message_type>( out);
             }
 
 
@@ -727,6 +782,8 @@ Reply to call request
                         { "buffer.data.size", "buffer payload size (could be very big)"},
                         { "buffer.data.data", "buffer payload data (with the size of buffer.payload.size)"},
                      });
+
+               local::example_and_base64< message_type>( out);
             }
 
             {
@@ -762,6 +819,8 @@ Reply to call request
 
 
                      });
+
+               local::example_and_base64< message_type>( out);
             }
 
          }
@@ -791,6 +850,7 @@ Connection requests from another domain that wants to connect
                      { "protocol.versions.element", "a protocol version "},
                   });
 
+                  local::example_and_base64< message_type>( out);
             }
 
             {
@@ -802,18 +862,19 @@ Connection reply with the chosen _protocol version_
 
 )";
 
-                  message_type message;
-                  message.version = gateway::message::protocol::Version::v1_2;
-                  message.domain.name = "domain-A";
+               message_type message;
+               message.version = gateway::message::protocol::Version::v1_2;
+               message.domain.name = "domain-A";
 
-                  local::format::type( out, message, {
-                     { "execution", "uuid of the current execution context (breadcrumb)"},
-                     { "domain.id", "uuid of the inbound domain"},
-                     { "domain.name.size", "size of the inbound domain name"},
-                     { "domain.name.data", "dynamic byte array with the inbound domain name"},
-                     { "protocol.version", "the chosen protocol version to use, or invalid (0) if incompatible"},
-                  });
+               local::format::type( out, message, {
+                  { "execution", "uuid of the current execution context (breadcrumb)"},
+                  { "domain.id", "uuid of the inbound domain"},
+                  { "domain.name.size", "size of the inbound domain name"},
+                  { "domain.name.data", "dynamic byte array with the inbound domain name"},
+                  { "protocol.version", "the chosen protocol version to use, or invalid (0) if incompatible"},
+               });
 
+               local::example_and_base64< message_type>( out);
             }
 
             {
@@ -825,11 +886,13 @@ Sent from inbound to connected outbound to notify that the connection is about t
 will stop sending new requests. Hence, the inbound can gracefully disconnect.
 
 )";
-                  message_type message;
+               message_type message;
 
-                  local::format::type( out, message, {
-                     { "execution", "uuid of the current execution context (breadcrumb)"},
-                  });
+               local::format::type( out, message, {
+                  { "execution", "uuid of the current execution context (breadcrumb)"},
+               });
+               
+               local::example_and_base64< message_type>( out);
             }
 
             {
@@ -840,11 +903,13 @@ will stop sending new requests. Hence, the inbound can gracefully disconnect.
 Confirmation that the outbound has got the disconnect request.
 
 )";
-                  message_type message;
+               message_type message;
 
-                  local::format::type( out, message, {
-                     { "execution", "uuid of the current execution context (breadcrumb)"},
-                  });
+               local::format::type( out, message, {
+                  { "execution", "uuid of the current execution context (breadcrumb)"},
+               });
+
+               local::example_and_base64< message_type>( out);
             }
             
          }
@@ -879,7 +944,7 @@ Sent to and received from other domains when one domain wants to discover inform
                         { "content.queues.element.data", "dynamic byte array of the current queue name"},
                      });
 
-
+               local::example_and_base64< message_type>( out);
             }
 
 
@@ -910,8 +975,13 @@ Sent to and received from other domains when one domain wants to discover inform
                         { "content.queues.size", "number of requested queues to follow (an array of queues)"},
                         { "content.queues.element.name.size", "size of the current queue name"},
                         { "content.queues.element.name.data", "dynamic byte array of the current queue name"},
-                        { "content.queues.element.retries", "how many 'retries' the queue has"},
+                        { "content.queues.element.retry.count", "how many 'retries' the queue has"},
+                        { "content.queues.element.retry.delay", "when retried, the amount of us until available"},
+                        { "content.queues.element.enable.enqueue", "if queue is enabled for enqueue (1/0)(true/false)"},
+                        { "content.queues.element.enable.dequeue", "if queue is enabled for dequeue (1/0)(true/false)"},
                      });
+
+               local::example_and_base64< message_type>( out);
             }
 
             {
@@ -936,6 +1006,8 @@ loops of this message, depending on the topology of the deployment.
                         { "domains.element.name.size", "size of the domain name"},
                         { "domains.element.name.data", "dynamic byte array with the domain name"},
                      });
+
+               local::example_and_base64< message_type>( out);
             }
          }
 
@@ -977,6 +1049,8 @@ Represent enqueue request.
                         { "message.payload.data.size", "size of the payload"},
                         { "message.payload.data.data", "data of the payload"},
                      });
+
+               local::example_and_base64< message_type>( out);   
             }
 
 
@@ -996,6 +1070,8 @@ Represent enqueue reply.
                         { "id", "id of the enqueued message"},
                         { "code", "error/result code"},
                      });
+
+               local::example_and_base64< message_type>( out);
             }
 
             // <= v1.2
@@ -1014,6 +1090,8 @@ Represent enqueue reply.
                         { "execution", "uuid of the current execution context (breadcrumb)"},
                         { "id", "id of the enqueued message"},
                      });
+
+               local::example_and_base64< message_type>( out);
             }
 
 
@@ -1045,6 +1123,8 @@ Represent dequeue request.
                         { "selector.id", "selector uuid (ignored if 'empty'"},
                         { "block", "dictates if this is a blocking call or not"},
                      });
+
+               local::example_and_base64< message_type>( out);
             }
 
             {
@@ -1081,6 +1161,8 @@ Represent dequeue reply.
                   { "message.timestamp", "when the message was enqueued (us since epoch)"},
                   { "code", "result/error code"},
                });
+
+               local::example_and_base64< message_type>( out);
             }
 
             // <= v1.2
@@ -1116,6 +1198,8 @@ Represent dequeue reply.
                         { "message.element.redelivered", "how many times the message has been redelivered"},
                         { "message.element.timestamp", "when the message was enqueued (us since epoch)"},
                      });
+
+               local::example_and_base64< message_type>( out);
             }
          }
 
@@ -1147,8 +1231,8 @@ Sent to establish a conversation
                         { "service.name.data", "data of the service name"},
                         { "service.timeout.duration", "timeout (in ns"},
                         { "parent.span", "parent execution span"},
-                        { "parent.service.size", "size of the parent service name (the caller)"},
-                        { "parent.service.data", "data of the parent service name (the caller)"},
+                        { "parent.service.size", "parent service name size"},
+                        { "parent.service.data", "byte array with parent service name"},
                         { "xid.formatID", "xid format type. if 0 no more information of the xid is transported"},
                         { "xid.gtrid_length", "length of the transaction gtrid part"},
                         { "xid.bqual_length", "length of the transaction branch part"},
@@ -1159,6 +1243,47 @@ Sent to establish a conversation
                         { "buffer.data.size", "buffer payload size (could be very big)"},
                         { "buffer.data.data", "buffer payload data (with the size of buffer.payload.size)"},
                      });
+
+               local::example_and_base64< message_type>( out);
+            }
+
+            {
+               using message_type = common::message::conversation::connect::v1_2::callee::Request;
+
+               local::message::section< message_type>( out, "##") << R"(
+
+Sent to establish a conversation
+
+)";
+               message_type message;
+
+               message.service.name = local::string::value( 128);
+               message.parent = local::string::value( 128);
+               message.trid = common::transaction::id::create();
+               message.buffer.type = local::string::value( 8) + '/' + local::string::value( 16);
+               message.buffer.data = local::binary::value( 1024);
+               using Duplex = decltype( message.duplex);
+               message.duplex = Duplex::receive;
+
+               local::format::type( out, message, {
+                        { "execution", "uuid of the current execution context (breadcrumb)"},
+                        { "service.name.size", "size of the service name"},
+                        { "service.name.data", "data of the service name"},
+                        { "service.timeout.duration", "timeout (in ns"},
+                        { "parent.size", "parent service name size"},
+                        { "parent.data", "byte array with parent service name"},
+                        { "xid.formatID", "xid format type. if 0 no more information of the xid is transported"},
+                        { "xid.gtrid_length", "length of the transaction gtrid part"},
+                        { "xid.bqual_length", "length of the transaction branch part"},
+                        { "xid.data", "byte array with the size of gtrid_length + bqual_length (max 128)"},
+                        { "duplex", string::compose( "in what duplex the callee shall enter (", Duplex::receive, ":", std::to_underlying( Duplex::receive), ", ", Duplex::send, ":", std::to_underlying( Duplex::send),')') },
+                        { "buffer.type.size", "buffer type name size"},
+                        { "buffer.type.data", "byte array with buffer type in the form 'type/subtype'"},
+                        { "buffer.data.size", "buffer payload size (could be very big)"},
+                        { "buffer.data.data", "buffer payload data (with the size of buffer.payload.size)"},
+                     });
+
+               local::example_and_base64< message_type>( out);
             }
 
             {
@@ -1175,6 +1300,8 @@ Reply for a conversation
                         { "execution", "uuid of the current execution context (breadcrumb)"},
                         { "code.result", "result code of the connection attempt"},
                      });
+
+               local::example_and_base64< message_type>( out);
             }
 
             {
@@ -1203,6 +1330,8 @@ Represent a message sent 'over' an established connection
                         { "buffer.data.size", "buffer payload size (could be very big)"},
                         { "buffer.data.data", "buffer payload data (with the size of buffer.payload.size)"},
                      });
+
+               local::example_and_base64< message_type>( out);
             }
 
             {
@@ -1219,6 +1348,8 @@ Sent to abruptly disconnect the conversation
                         { "execution", "uuid of the current execution context (breadcrumb)"},
                         { "events", "events"},
                      });
+
+               local::example_and_base64< message_type>( out);
             }
 
             {
