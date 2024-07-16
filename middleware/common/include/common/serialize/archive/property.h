@@ -29,10 +29,16 @@ namespace casual
 
       namespace is
       {
-         template< typename T>
-         concept dynamic = requires
+         template< typename T> 
+         concept not_dynamic = requires
          {
-            typename T::dynamic_archive;
+            { T::archive_properties() } -> std::same_as< Property>;
+         };
+
+         template< typename T>
+         concept dynamic = ! not_dynamic< T> && requires( T a)
+         {
+            { a.archive_properties()} -> std::same_as< Property>;
          };
       } // is
 
