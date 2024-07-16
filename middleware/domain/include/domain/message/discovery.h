@@ -67,7 +67,7 @@ namespace casual
       {
          namespace content
          {
-            struct Queue : common::Compare< Queue>
+            struct Queue
             {
                Queue() = default;
                inline Queue( std::string name, platform::size::type retries) : name{ std::move( name)}, retries{ retries} {}
@@ -77,9 +77,9 @@ namespace casual
                platform::size::type retries{};
 
                inline friend bool operator == ( const Queue& lhs, std::string_view rhs) { return lhs.name == rhs;}
-
-               inline auto tie() const noexcept { return std::tie( name);}
-
+               friend auto operator <=> ( const Queue&, const Queue&) = default;
+               friend bool operator == ( const Queue&, const Queue&) = default;
+            
                CASUAL_CONST_CORRECT_SERIALIZE(
                   CASUAL_SERIALIZE( name);
                   CASUAL_SERIALIZE( retries);
@@ -87,6 +87,29 @@ namespace casual
             };
 
             using Service = common::message::service::concurrent::advertise::Service;
+
+            namespace v1_3
+            {
+               struct Queue : common::Compare< Queue>
+               {
+                  Queue() = default;
+                  inline Queue( std::string name, platform::size::type retries) : name{ std::move( name)}, retries{ retries} {}
+                  inline explicit Queue( std::string name) : name{ std::move( name)} {}
+
+                  std::string name;
+                  platform::size::type retries{};
+
+                  inline friend bool operator == ( const Queue& lhs, std::string_view rhs) { return lhs.name == rhs;}
+
+                  inline auto tie() const noexcept { return std::tie( name);}
+
+                  CASUAL_CONST_CORRECT_SERIALIZE(
+                     CASUAL_SERIALIZE( name);
+                     CASUAL_SERIALIZE( retries);
+                  )
+               };
+               
+            } // v1_3
             
          } // content  
          
@@ -111,14 +134,42 @@ namespace casual
             std::vector< content::Service> services;
             std::vector< content::Queue> queues;
             //! @}
-
          
             CASUAL_CONST_CORRECT_SERIALIZE(
                CASUAL_SERIALIZE( services);
                CASUAL_SERIALIZE( queues);
             )
-
          };
+
+         namespace v1_3
+         {
+            struct Content
+            {
+               inline explicit operator bool () const noexcept { return ! services.empty() || ! queues.empty();}
+
+               inline Content& operator += ( Content other)
+               {
+                  common::algorithm::sorted::append_unique( std::move( other.services), services);
+                  common::algorithm::sorted::append_unique( std::move( other.queues), queues);
+                  return *this;
+               }
+
+               inline friend Content operator + ( Content lhs, Content rhs) { return lhs += std::move( rhs);}
+
+               //! logical ordered unique set. 
+               //! @attention it's the _mutater_ responsibility to restore the invariant.
+               //! @{
+               std::vector< content::Service> services;
+               std::vector< content::v1_3::Queue> queues;
+               //! @}
+            
+               CASUAL_CONST_CORRECT_SERIALIZE(
+                  CASUAL_SERIALIZE( services);
+                  CASUAL_SERIALIZE( queues);
+               )
+            };
+         } // v1_3
+
       } // reply
 
 
@@ -141,6 +192,24 @@ namespace casual
          )
       };
 
+      namespace v1_3
+      {
+         using base_reply = common::message::basic_reply< common::message::Type::domain_discovery_reply_v3>;
+         struct Reply : base_reply
+         {
+            using base_reply::base_reply;
+
+            common::domain::Identity domain;
+            discovery::reply::v1_3::Content content;
+
+            CASUAL_CONST_CORRECT_SERIALIZE(
+               base_reply::serialize( archive);
+               CASUAL_SERIALIZE( domain);
+               CASUAL_SERIALIZE( content);
+            )
+         }; 
+      } // v1_3
+
       using base_reply = common::message::basic_reply< common::message::Type::domain_discovery_reply>;
       struct Reply : base_reply
       {
@@ -154,7 +223,8 @@ namespace casual
             CASUAL_SERIALIZE( domain);
             CASUAL_SERIALIZE( content);
          )
-      };
+      }; 
+
 
       namespace topology
       {

@@ -309,9 +309,10 @@ namespace casual
          gateway_domain_disconnect_reply   = 7203,  // 1.1
 
          // part of domain-discovery, but we need to keep the pinned values.         
-         domain_discovery_request   = 7300,
-         domain_discovery_reply     = 7301,
+         domain_discovery_request    = 7300,
+         domain_discovery_reply_v3   = 7301,
          domain_discovery_topology_implicit_update = 7302, // 1.2
+         domain_discovery_reply      = 7311, // 1.4
 
          //! sent to _discovery_ when current domain gets a new outbound connection
          domain_discovery_topology_direct_update,

@@ -190,6 +190,7 @@ namespace casual
             case Type::gateway_domain_connected: return "gateway_domain_connected";
             case Type::domain_discovery_request: return "domain_discovery_request";
             case Type::domain_discovery_reply: return "domain_discovery_reply";
+            case Type::domain_discovery_reply_v3: return "domain_discovery_reply_v3";
             case Type::domain_discovery_topology_implicit_update: return "domain_discovery_topology_implicit_update";
             case Type::domain_discovery_topology_direct_update: return "domain_discovery_topology_direct_update";
             case Type::domain_discovery_topology_direct_explore: return "domain_discovery_topology_direct_explore";

@@ -24,7 +24,8 @@ namespace casual
          v1_1 = 1001,
          v1_2 = 1002,
          v1_3 = 1003,
-         current = v1_3,
+         v1_4 = 1004,
+         current = v1_4,
       };
 
       constexpr std::string_view description( Version value) noexcept
@@ -32,16 +33,17 @@ namespace casual
          switch( value)
          {
             case Version::invalid: return "invalid";
-            case Version::v1_0: return "v1.0";
-            case Version::v1_1: return "v1.1";
-            case Version::v1_2: return "v1.2";
-            case Version::v1_3: return "v1.3";
+            case Version::v1_0: return "1.0";
+            case Version::v1_1: return "1.1";
+            case Version::v1_2: return "1.2";
+            case Version::v1_3: return "1.3";
+            case Version::v1_4: return "1.4";
          };
          return "<unknown>";
       }
 
       //! an array with all versions ordered by highest to lowest
-      constexpr auto versions = common::array::make( Version::v1_3, Version::v1_2, Version::v1_1, Version::v1_0);
+      constexpr auto versions = common::array::make( Version::v1_4, Version::v1_3, Version::v1_2, Version::v1_1, Version::v1_0);
 
       consteval Version compiled_for_version()
       {

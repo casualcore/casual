@@ -678,7 +678,7 @@ namespace casual
                   {
                      return [ &state]( casual::domain::message::discovery::Reply&& message, strong::socket::id descriptor)
                      {
-                        Trace trace{ "gateway::group::outbound::handle::local::external::domain::discover::reply"};
+                        Trace trace{ "gateway::group::outbound::handle::local::external::domain::discovery::reply"};
                         log::line( verbose::log, "message: ", message);
 
                         auto handle = state.connections.process_handle( descriptor);
@@ -723,6 +723,21 @@ namespace casual
       
                      };
                   }
+
+                  namespace v1_3
+                  {
+                     auto reply( State& state)
+                     {
+                        return [ &state]( casual::domain::message::discovery::v1_3::Reply&& message, strong::socket::id descriptor)
+                        {
+                           Trace trace{ "gateway::group::outbound::handle::local::external::domain::discovery::v1_3::reply"};
+                           log::line( verbose::log, "message: ", message);
+
+                           discovery::reply( state)( message::protocol::transform::from( std::move( message)), descriptor);
+                        };
+                     }
+                     
+                  } // v1_3
 
                   namespace topology
                   {
@@ -883,6 +898,7 @@ namespace casual
 
             // discover
             local::external::domain::discovery::reply( state),
+            local::external::domain::discovery::v1_3::reply( state),
             local::external::domain::discovery::topology::update( state)
          };
       }

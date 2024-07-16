@@ -65,11 +65,27 @@ namespace casual
 
       TEST( gateway_protocol_v1, connect_request)
       {
-         // Without v1.3 in `versions` 
-         // constexpr std::string_view expected = R"(cHPL9BRESkGHswCG8UP8YDFdrMYYLkwSv5h376kky4YAAAAAAAAACGRvbWFpbiBBAAAAAAAAAAMAAAAAAAAD6gAAAAAAAAPpAAAAAAAAA+g=)";
-         constexpr std::string_view expected = R"(cHPL9BRESkGHswCG8UP8YDFdrMYYLkwSv5h376kky4YAAAAAAAAACGRvbWFpbiBBAAAAAAAAAAQAAAAAAAAD6wAAAAAAAAPqAAAAAAAAA+kAAAAAAAAD6A==)";
+         auto message = local::fill< gateway::message::domain::connect::Request>();
+         
+         // current 1.4
+         {
+            constexpr std::string_view expected = R"(cHPL9BRESkGHswCG8UP8YDFdrMYYLkwSv5h376kky4YAAAAAAAAACGRvbWFpbiBBAAAAAAAAAAUAAAAAAAAD7AAAAAAAAAPrAAAAAAAAA+oAAAAAAAAD6QAAAAAAAAPo)";
+            local::compare( message, expected);
+         }
 
-         local::compare( local::fill< gateway::message::domain::connect::Request>(), expected);
+         // 1.3
+         {
+            algorithm::container::erase( message.versions, message::protocol::Version::v1_4);
+            constexpr std::string_view expected = R"(cHPL9BRESkGHswCG8UP8YDFdrMYYLkwSv5h376kky4YAAAAAAAAACGRvbWFpbiBBAAAAAAAAAAQAAAAAAAAD6wAAAAAAAAPqAAAAAAAAA+kAAAAAAAAD6A==)";
+            local::compare( message, expected);
+         }
+
+         // 1.2
+         {
+            algorithm::container::erase( message.versions, message::protocol::Version::v1_3);
+            constexpr std::string_view expected = R"(cHPL9BRESkGHswCG8UP8YDFdrMYYLkwSv5h376kky4YAAAAAAAAACGRvbWFpbiBBAAAAAAAAAAMAAAAAAAAD6gAAAAAAAAPpAAAAAAAAA+g=)";
+            local::compare( message, expected);
+         }
       }
 
       TEST( gateway_protocol_v1, connect_reply)
@@ -85,6 +101,12 @@ namespace casual
       }
 
       TEST( gateway_protocol_v1, discover_reply)
+      {
+         constexpr std::string_view expected = R"(cHPL9BRESkGHswCG8UP8YOL2t8N/c0oJgqCrFYGyH6UAAAAAAAAACGRvbWFpbiBCAAAAAAAAAAEAAAAAAAAACHNlcnZpY2UxAAAAAAAAAAdleGFtcGxlAAEAAAAU9GsEAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAABnF1ZXVlMQAAAAAAAAAK)";
+         local::compare( local::fill< casual::domain::message::discovery::v1_3::Reply>(), expected);
+      }
+
+      TEST( gateway_protocol_v4, discover_reply)
       {
          constexpr std::string_view expected = R"(cHPL9BRESkGHswCG8UP8YOL2t8N/c0oJgqCrFYGyH6UAAAAAAAAACGRvbWFpbiBCAAAAAAAAAAEAAAAAAAAACHNlcnZpY2UxAAAAAAAAAAdleGFtcGxlAAEAAAAU9GsEAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAABnF1ZXVlMQAAAAAAAAAK)";
          local::compare( local::fill< casual::domain::message::discovery::Reply>(), expected);

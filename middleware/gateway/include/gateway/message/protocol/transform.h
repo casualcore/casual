@@ -7,7 +7,9 @@
 #pragma once
 
 #include "common/message/service.h"
+#include "common/message/conversation.h"
 #include "queue/common/ipc/message.h"
+#include "domain/message/discovery.h"
 
 namespace casual
 {
@@ -137,6 +139,43 @@ namespace casual
             result.message = std::move( message.message.front());
          else
             result.code = decltype( result.code)::no_message;
+
+         return result;
+      }
+
+      inline auto from( casual::domain::message::discovery::v1_3::Reply&& message)
+      {
+         casual::domain::message::discovery::Reply result;
+         result.correlation = message.correlation;
+         result.execution = message.execution;
+         result.domain = std::move( message.domain);
+         result.content.services = std::move( message.content.services);
+         result.content.queues = common::algorithm::transform( message.content.queues, []( auto& queue)
+         {
+            casual::domain::message::discovery::reply::content::Queue result;
+            result.name = std::move( queue.name);
+            result.retries = queue.retries;
+            return result;
+         });
+
+         return result;
+      }
+
+      template<>
+      inline casual::domain::message::discovery::v1_3::Reply to( casual::domain::message::discovery::Reply&& message)
+      {
+         casual::domain::message::discovery::v1_3::Reply result;
+         result.correlation = message.correlation;
+         result.execution = message.execution;
+         result.domain = std::move( message.domain);
+         result.content.services = std::move( message.content.services);
+         result.content.queues = common::algorithm::transform( message.content.queues, []( auto& queue)
+         {
+            casual::domain::message::discovery::reply::content::v1_3::Queue result;
+            result.name = std::move( queue.name);
+            result.retries = queue.retries;
+            return result;
+         });
 
          return result;
       }

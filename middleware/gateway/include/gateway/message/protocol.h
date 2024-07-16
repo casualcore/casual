@@ -66,6 +66,12 @@ namespace casual
       struct version_traits< casual::domain::message::discovery::topology::implicit::Update> : version_helper< Version::v1_2> {};
 
       template<>
+      struct version_traits< casual::domain::message::discovery::v1_3::Reply> : version_helper< Version::v1_0, Version::v1_3> {};
+
+      template<>
+      struct version_traits< casual::domain::message::discovery::Reply> : version_helper< Version::v1_4> {};
+
+      template<>
       struct version_traits< casual::queue::ipc::message::group::enqueue::Reply> : version_helper< Version::v1_3> {};
 
       template<>

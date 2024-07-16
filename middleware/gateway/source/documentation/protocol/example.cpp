@@ -6,6 +6,8 @@
 
 #include "gateway/documentation/protocol/example.h"
 
+#include "gateway/message/protocol/transform.h"
+
 namespace casual
 {
    namespace gateway::documentation::protocol::example
@@ -160,6 +162,11 @@ namespace casual
                      return queue;
                   }()
             }};
+         }
+
+         void fill( casual::domain::message::discovery::v1_3::Reply& message)
+         {
+            message = message::protocol::transform::to< casual::domain::message::discovery::v1_3::Reply>( protocol::example::message< casual::domain::message::discovery::Reply>());
          }
 
          void fill( casual::domain::message::discovery::topology::implicit::Update& message)

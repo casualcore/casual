@@ -625,6 +625,25 @@ struct Value< type, A>  \
          {
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( name);
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( retries);
+            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( enable);
+         })
+
+         CASUAL_CUSTOMIZATION_POINT_NETWORK( casual::domain::message::discovery::reply::content::v1_3::Queue,
+         {
+            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( name);
+            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( retries);
+         })
+
+         CASUAL_CUSTOMIZATION_POINT_NETWORK( casual::domain::message::discovery::reply::Content,
+         {
+            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( services);
+            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( queues);
+         })
+
+         CASUAL_CUSTOMIZATION_POINT_NETWORK( casual::domain::message::discovery::reply::v1_3::Content,
+         {
+            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( services);
+            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( queues);
          })
 
          // value
@@ -648,6 +667,15 @@ struct Value< type, A>  \
          })
 
          CASUAL_CUSTOMIZATION_POINT_NETWORK( casual::domain::message::discovery::Reply,
+         {
+            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( execution);
+            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( domain);
+            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( content.services);
+            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( content.queues);
+         })
+
+
+         CASUAL_CUSTOMIZATION_POINT_NETWORK( casual::domain::message::discovery::v1_3::Reply,
          {
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( execution);
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( domain);
