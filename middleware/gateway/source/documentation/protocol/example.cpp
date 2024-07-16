@@ -402,6 +402,5 @@ namespace casual
          void fill( common::message::transaction::resource::rollback::Reply& message) { local::transaction_reply( message);}
 
       } // detail
-
    } // gateway::documentation::protocol::example
 } // casual
