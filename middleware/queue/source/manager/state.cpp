@@ -51,18 +51,18 @@ namespace casual
 
       const state::Queue* State::queue( const std::string& name, queue::ipc::message::lookup::request::context::Action action) const noexcept
       {
-         auto active_action = [ action]( auto& queue)
+         auto enabled_queue = [ action]( auto& queue)
          {
             if( action == decltype( action)::enqueue)
-               return ! queue.local() || queue.enable.enqueue;
+               return queue.enable.enqueue;
             if( action == decltype( action)::dequeue)
-               return ! queue.local() || queue.enable.dequeue;
+               return queue.enable.dequeue;
 
             return true;
          };
 
          if( auto found = algorithm::find( queues, name))
-            if( auto queue = algorithm::find_if( found->second, active_action))
+            if( auto queue = algorithm::find_if( found->second, enabled_queue))
                return queue.data();
 
          return nullptr;
@@ -107,11 +107,15 @@ namespace casual
             for( auto& queue : reply.queues)
             {
                auto& instances = state.queues[ queue.name];
-               auto& instance = instances.emplace_back( group.process, queue.id);
-
-               // get the enable from configuration
-               if( auto found = algorithm::find( group.configuration.queues, queue.name))
-                  instance.enable = found->enable;
+               {
+                  auto& instance = instances.emplace_back();
+                  instance.process = group.process;
+                  instance.queue = queue.id;
+                  
+                  // get the enable from configuration
+                  if( auto found = algorithm::find( group.configuration.queues, queue.name))
+                     instance.enable = found->enable;
+               }
                
                algorithm::sort( instances);
             }
@@ -191,8 +195,12 @@ namespace casual
          auto add_queue = [&]( auto& queue)
          {
             auto& instances = queues[ queue.name];
-
-            instances.emplace_back( message.process, queue::remote::queue::id, order);
+            auto& instance = instances.emplace_back();// message.process, queue::remote::queue::id, order);
+            instance.process = message.process;
+            instance.queue = queue::remote::queue::id;
+            instance.order = order;
+            instance.enable.enqueue = queue.enable.enqueue;
+            instance.enable.dequeue = queue.enable.dequeue;
 
             // Make sure we prioritize local queue
             common::algorithm::stable_sort( instances);

@@ -67,14 +67,44 @@ namespace casual
       {
          namespace content
          {
+            namespace queue
+            {
+               struct Retry 
+               {
+                  platform::size::type count{};
+                  platform::time::unit delay{};
+
+                  friend auto operator <=> ( const Retry&, const Retry&) = default;
+
+                  CASUAL_CONST_CORRECT_SERIALIZE(
+                     CASUAL_SERIALIZE( count);
+                     CASUAL_SERIALIZE( delay);
+                  )
+               };
+
+               struct Enable
+               {
+                  bool enqueue = true;
+                  bool dequeue = true;
+
+                  friend auto operator <=> ( const Enable&, const Enable&) = default;
+
+                  CASUAL_CONST_CORRECT_SERIALIZE(
+                     CASUAL_SERIALIZE( enqueue);
+                     CASUAL_SERIALIZE( dequeue);
+                  )
+               };
+               
+            } // queue
+
             struct Queue
             {
                Queue() = default;
-               inline Queue( std::string name, platform::size::type retries) : name{ std::move( name)}, retries{ retries} {}
                inline explicit Queue( std::string name) : name{ std::move( name)} {}
 
                std::string name;
-               platform::size::type retries{};
+               queue::Retry retry{};
+               queue::Enable enable;
 
                inline friend bool operator == ( const Queue& lhs, std::string_view rhs) { return lhs.name == rhs;}
                friend auto operator <=> ( const Queue&, const Queue&) = default;
@@ -82,7 +112,8 @@ namespace casual
             
                CASUAL_CONST_CORRECT_SERIALIZE(
                   CASUAL_SERIALIZE( name);
-                  CASUAL_SERIALIZE( retries);
+                  CASUAL_SERIALIZE( retry);
+                  CASUAL_SERIALIZE( enable);
                )
             };
 

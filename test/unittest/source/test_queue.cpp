@@ -267,6 +267,94 @@ domain:
             EXPECT_TRUE( message.front().payload.data == origin.payload.data);
          });
       }
+
+
+      TEST( test_queue, enable_enqueue_dequeue)
+      {
+         common::unittest::Trace trace;
+
+         auto b = local::domain( R"(
+domain: 
+   name: B
+   queue:
+      groups:
+         -  alias: B
+            queuebase: ':memory:'
+            queues:
+               -  name: a
+                  enable:
+                     enqueue: false
+               -  name: b
+                  enable:
+                     dequeue: false
+               -  name: c
+                  enable:
+                     enqueue: false
+                     dequeue: false
+               -  name: d
+
+                  
+   gateway:
+      inbound:
+         groups:
+            -  connections:
+                  -  address: 127.0.0.1:7010
+)");
+
+         auto a = local::domain( R"(
+domain: 
+   name: A
+   gateway:
+      outbound:
+         groups:
+            -  connections:
+                  -  address: 127.0.0.1:7010
+)");
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected());
+
+         auto enqueue = []( std::string name) -> std::error_code
+         {
+            try
+            {
+               queue::Message message;
+               queue::enqueue( name, message);
+               return common::code::queue::ok;
+            }
+            catch( const std::system_error& error)
+            {
+               return error.code();
+            }
+         };
+
+         auto dequeue = []( std::string name) -> std::error_code
+         {
+            try
+            {
+               auto message = queue::dequeue( name);
+               if( ! message.empty())
+                  return common::code::queue::ok;
+               else 
+                  return common::code::queue::no_message;
+            }
+            catch( const std::system_error& error)
+            {
+               return error.code();
+            }
+         };
+
+
+         EXPECT_TRUE( enqueue( "a") == common::code::queue::no_queue);
+         EXPECT_TRUE( enqueue( "b") == common::code::queue::ok);
+         EXPECT_TRUE( enqueue( "c") == common::code::queue::no_queue);
+         EXPECT_TRUE( enqueue( "d") == common::code::queue::ok);
+
+         EXPECT_TRUE( dequeue( "a") == common::code::queue::no_message);
+         EXPECT_TRUE( dequeue( "b") == common::code::queue::no_queue);
+         EXPECT_TRUE( dequeue( "c") == common::code::queue::no_queue);
+         // we've enqueued to d before
+         EXPECT_TRUE( dequeue( "d") == common::code::queue::ok);
+
+      }
       
    } // test
 } // casual

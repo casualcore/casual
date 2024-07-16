@@ -106,10 +106,6 @@ namespace casual
          {
             using Enable = casual::configuration::model::queue::Queue::Enable;
 
-            Queue() = default;
-            inline Queue( common::process::Handle process, common::strong::queue::id queue, platform::size::type order = 0)
-               : process{ std::move( process)}, queue{ queue}, order{ order} {}
-
             common::process::Handle process;
             common::strong::queue::id queue;
             platform::size::type order{};
@@ -207,8 +203,6 @@ namespace casual
          //! @returns 0..1 queue (providers) that provides the queue
          //! @{
          const state::Queue* queue( const std::string& name, queue::ipc::message::lookup::request::context::Action action) const noexcept;
-         //const state::Queue* queue( common::strong::queue::id id) const noexcept;
-
          const state::Queue* local_queue( const std::string& name, queue::ipc::message::lookup::request::context::Action action) const noexcept;
          //! @}
 

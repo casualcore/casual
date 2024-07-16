@@ -624,7 +624,7 @@ struct Value< type, A>  \
          CASUAL_CUSTOMIZATION_POINT_NETWORK( casual::domain::message::discovery::reply::content::Queue,
          {
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( name);
-            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( retries);
+            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( retry);
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( enable);
          })
 

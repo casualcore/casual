@@ -158,7 +158,10 @@ namespace casual
                   [](){
                      casual::domain::message::discovery::reply::content::Queue queue;
                      queue.name = "queue1";
-                     queue.retries = 10;
+                     queue.retry.count = 10;
+                     queue.retry.delay = std::chrono::milliseconds{ 4};
+                     queue.enable.enqueue = true;
+                     queue.enable.dequeue = false;
                      return queue;
                   }()
             }};

@@ -32,19 +32,33 @@ namespace casual
 
       namespace advertise
       {
+         namespace queue
+         {
+            using Retry = message::Retry;
+
+            struct Enable
+            {
+               bool enqueue = true;
+               bool dequeue = true;
+
+               CASUAL_CONST_CORRECT_SERIALIZE(
+                  CASUAL_SERIALIZE( enqueue);
+                  CASUAL_SERIALIZE( dequeue);
+               )
+            };
+            
+         } // queue
+
          struct Queue
          {
-            Queue() = default;
-
-            inline Queue( std::string name, platform::size::type retries) : name{ std::move( name)}, retry{ retries, {}} {}
-            inline Queue( std::string name) : name{ std::move( name)} {}
-
             std::string name;
-            Retry retry{};
+            queue::Retry retry;
+            queue::Enable enable;
 
             CASUAL_CONST_CORRECT_SERIALIZE(
                CASUAL_SERIALIZE( name);
                CASUAL_SERIALIZE( retry);
+               CASUAL_SERIALIZE( enable);
             )
          };
       } // advertise

@@ -169,7 +169,7 @@ namespace casual
                            auto connection = state.connections.find_external( descriptor);
                            CASUAL_ASSERT( connection);
                            
-                           if( ! message::protocol::compatible< casual::domain::message::discovery::Reply>( connection->protocol()))
+                           if( message::protocol::compatible< casual::domain::message::discovery::Reply>( connection->protocol()))
                               tcp::send( state, connection->descriptor(), message);
                            else
                               tcp::send( state, connection->descriptor(), message::protocol::transform::to< casual::domain::message::discovery::v1_3::Reply>( std::move( message)));

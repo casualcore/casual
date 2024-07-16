@@ -710,7 +710,13 @@ namespace casual
                            request.order = state.order;
                            request.queues.add = algorithm::transform( message.content.queues, []( auto& queue)
                            {
-                              return casual::queue::ipc::message::advertise::Queue{ queue.name, queue.retries};
+                              casual::queue::ipc::message::advertise::Queue result;
+                              result.name = queue.name;
+                              result.retry.count = queue.retry.count;
+                              result.retry.delay = queue.retry.delay;
+                              result.enable.enqueue = queue.enable.enqueue;
+                              result.enable.dequeue = queue.enable.dequeue;
+                              return result;
                            });
 
                            state.multiplex.send( ipc::manager::optional::queue(), request);

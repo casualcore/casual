@@ -58,6 +58,8 @@ namespace casual
                   {
                      if( auto queue = state.queue( lookup.name, lookup.context.action))
                      {
+                        log::line( verbose::log, "queue: ", *queue);
+
                         auto reply = common::message::reverse::type( lookup);
                         reply.name = lookup.name;
                         reply.queue = queue->queue;
@@ -472,7 +474,13 @@ namespace casual
                         for( auto& name : message.content.queues)
                         {
                            if( auto queue = get_queue( name))
-                              reply.content.queues.emplace_back( std::move( name), queue->order);
+                           {
+                              auto& value = reply.content.queues.emplace_back();
+                              value.name = name;
+                              value.enable.enqueue = queue->enable.enqueue;
+                              value.enable.dequeue = queue->enable.dequeue;
+                              // TODO retry?
+                           }
                            else
                               reply.absent.queues.push_back( std::move( name));
                         }

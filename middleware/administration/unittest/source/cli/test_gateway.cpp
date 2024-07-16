@@ -93,17 +93,19 @@ domain:
          groups:
             -  connections:
                   -  address: 127.0.0.1:7001
+
 )");
 
          gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected());
 
 /*
-name  id                                group     bound  runlevel   P     local            peer            created                         
-----  --------------------------------  --------  -----  ---------  ----  ---------------  --------------  --------------------------------
-B     656643a8709a41379a5243ca129f0c83  outbound  out    connected  v1.3  127.0.0.1:53362  127.0.0.1:7001  2024-06-03T20:43:51.236192+02:00
-B     656643a8709a41379a5243ca129f0c83  outbound  out    connected  v1.3  127.0.0.1:53361  127.0.0.1:7001  2024-06-03T20:43:51.235747+02:00
-B     656643a8709a41379a5243ca129f0c83  outbound  out    connected  v1.3  127.0.0.1:53360  127.0.0.1:7001  2024-06-03T20:43:51.234773+02:00
+name  id                                group     bound  runlevel   P    local            peer            created                         
+----  --------------------------------  --------  -----  ---------  ---  ---------------  --------------  --------------------------------
+B     b2793f25142543c19a42c3818fb779f5  outbound  out    connected  1.4  127.0.0.1:59810  127.0.0.1:7001  2024-07-16T15:13:50.610546+02:00
+B     b2793f25142543c19a42c3818fb779f5  outbound  out    connected  1.4  127.0.0.1:59809  127.0.0.1:7001  2024-07-16T15:13:50.610016+02:00
+B     b2793f25142543c19a42c3818fb779f5  outbound  out    connected  1.4  127.0.0.1:59808  127.0.0.1:7001  2024-07-16T15:13:50.607818+02:00
 */
+
 
          const auto columns = string::adjacent::split( local::execute_get_lines( "casual gateway --color false --header false --list-connections").at( 0), ' ');
 
@@ -111,7 +113,7 @@ B     656643a8709a41379a5243ca129f0c83  outbound  out    connected  v1.3  127.0.
          EXPECT_TRUE( algorithm::contains( columns, "outbound"));
          EXPECT_TRUE( algorithm::contains( columns, "out"));
          EXPECT_TRUE( algorithm::contains( columns, "connected"));
-         EXPECT_TRUE( algorithm::contains( columns, "v1.3"));
+         EXPECT_TRUE( algorithm::contains( columns, "1.4"));
       }
 
       TEST( cli_gateway, inbound_discovery_forward__expect_state_with_connection_bound__in_star)

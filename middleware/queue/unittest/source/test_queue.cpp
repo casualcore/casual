@@ -242,7 +242,7 @@ domain:
             ipc::message::Advertise remote;
 
             remote.process = common::process::handle();
-            remote.queues.add.emplace_back( "a");
+            remote.queues.add.push_back( { "a", {}, {}});
 
             common::communication::device::blocking::send( 
                common::communication::instance::outbound::queue::manager::device(), remote);
@@ -487,7 +487,7 @@ domain:
             remote.process.pid = common::strong::process::id{ 666};
             remote.process.ipc = common::strong::ipc::id{ common::uuid::make()};
 
-            remote.queues.add.emplace_back( "remote-queue");
+            remote.queues.add.push_back( { "remote-queue", {}, {}});
 
             common::communication::device::blocking::send( 
                common::communication::instance::outbound::queue::manager::device(), remote);

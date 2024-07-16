@@ -154,7 +154,7 @@ namespace casual
          {
             casual::domain::message::discovery::reply::content::Queue result;
             result.name = std::move( queue.name);
-            result.retries = queue.retries;
+            result.retry.count = queue.retries;
             return result;
          });
 
@@ -173,7 +173,7 @@ namespace casual
          {
             casual::domain::message::discovery::reply::content::v1_3::Queue result;
             result.name = std::move( queue.name);
-            result.retries = queue.retries;
+            result.retries = queue.retry.count;
             return result;
          });
 
