@@ -64,16 +64,10 @@ namespace casual
 
                      service::call::Service service;
                      std::string parent;
-
                      common::transaction::ID trid;
                      common::service::header::Fields header;
-
-                     //! pending time, only to be return in the "ACK", to collect
-                     //! metrics
                      platform::time::unit pending{};
-
                      duplex::Type duplex{};
-
                      common::buffer::Payload buffer;
 
                      CASUAL_CONST_CORRECT_SERIALIZE(
@@ -89,7 +83,6 @@ namespace casual
                   };
 
                } // callee
-
             } // v1_2
 
 
