@@ -442,11 +442,7 @@ domain:
 
          // we expect to get a forward call
          {
-            common::message::service::call::callee::Request request;
-            
-            common::communication::device::blocking::receive( 
-               common::communication::ipc::inbound::device(),
-               request);
+            auto request = common::communication::ipc::receive< common::message::service::call::callee::Request>();
 
             EXPECT_TRUE( request.buffer.data == payload);
             EXPECT_TRUE( request.buffer.type == common::buffer::type::binary);

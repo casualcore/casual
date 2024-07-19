@@ -79,8 +79,7 @@ namespace casual
                // we can supply configuration
                {
                   using Ability = casual::domain::configuration::registration::Ability;
-                  // TODO: we should be able to handle runtime configuration update? Ability::runtime_update
-                  casual::domain::configuration::registration::apply( Ability::supply);
+                  casual::domain::configuration::registration::apply( Ability::supply | Ability::runtime_update);
                }
                
 

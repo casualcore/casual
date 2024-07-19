@@ -648,6 +648,7 @@ namespace casual
                         Trace trace{ "queue::handle::local::configuration::update::request"};
                         log::line( verbose::log, "message: ", message);
 
+
                         // this can't be updated if once set (yet)
                         if( ! state.queuebase)
                            state.queuebase = detail::queuebase( message);

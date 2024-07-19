@@ -101,7 +101,6 @@ namespace casual
 
          auto update_group = []( auto& state, auto& group, auto& reply)
          {
-            group.alias = reply.alias;
             group.state = decltype( group.state())::running;
 
             for( auto& queue : reply.queues)

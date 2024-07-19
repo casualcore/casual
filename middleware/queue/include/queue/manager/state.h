@@ -53,9 +53,9 @@ namespace casual
 
             common::state::Machine< entity::Lifetime> state;
             common::process::Handle process;
-            std::string alias;
             C configuration;
 
+            inline friend bool operator == ( const Entity& lhs, const std::string& rhs) { return lhs.configuration.alias == rhs;}
             inline friend bool operator == ( const Entity& lhs, common::process::compare_equal_to_handle auto rhs) { return lhs.process.pid == rhs;}
 
             auto tie() const { return std::tie( configuration);}
@@ -63,7 +63,6 @@ namespace casual
             CASUAL_LOG_SERIALIZE(
                CASUAL_SERIALIZE( state);
                CASUAL_SERIALIZE( process);
-               CASUAL_SERIALIZE( alias);
                CASUAL_SERIALIZE( configuration);
             )
          };
@@ -125,30 +124,12 @@ namespace casual
             )
          };
 
-         namespace task
-         {
-            struct State
-            {
-               casual::task::unit::id id;
-               std::vector< common::strong::process::id> pids;
-               
-               inline friend bool operator == ( const State& lhs, casual::task::unit::id rhs) { return lhs.id == rhs;}
-
-               CASUAL_LOG_SERIALIZE(
-                  CASUAL_SERIALIZE( id);
-                  CASUAL_SERIALIZE( pids);
-               )
-            };
-
-         } // task
 
          struct Task
          {
-            std::vector< task::State> states;
             casual::task::Coordinator coordinator;
 
             CASUAL_LOG_SERIALIZE(
-               CASUAL_SERIALIZE( states);
                CASUAL_SERIALIZE( coordinator);
             )
          };

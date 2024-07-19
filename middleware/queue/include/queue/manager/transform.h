@@ -32,6 +32,12 @@ namespace casual
 
       } // model
 
+      std::vector< state::Group> groups( std::vector< casual::configuration::model::queue::Group> model);
+      std::vector< state::forward::Group> groups( std::vector< casual::configuration::model::queue::forward::Group> model);
+
+
+
+
       casual::configuration::model::queue::Model configuration( const State& state);
 
    } // queue::manager::transform

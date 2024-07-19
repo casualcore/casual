@@ -7,6 +7,7 @@
 #include "queue/manager/handle.h"
 #include "queue/manager/admin/server.h"
 #include "queue/manager/transform.h"
+#include "queue/manager/configuration.h"
 #include "queue/common/log.h"
 #include "queue/common/ipc/message.h"
 #include "queue/common/ipc.h"
@@ -107,6 +108,7 @@ namespace casual
                         common::log::line( verbose::log, "event: ", event);
 
                         state.task.coordinator( event);
+                        state.remove( event.state.pid);
                      };
                   }
 
@@ -125,82 +127,19 @@ namespace casual
             } // dead
 
             namespace shutdown
-            {
-               namespace detail
-               {
-                  template< typename Es>
-                  auto action( State& state, Es& entities)
-                  {
-                     return [ &state, &entities]( task::unit::id id)
-                     {
-                        Trace trace{ "queue::manager::handle::local::shutdown::action"};
-                        common::log::line( verbose::log, "entities: ", entities);
-
-                        state::task::State task_state;
-                        task_state.id = id;
-                        task_state.pids = algorithm::transform( entities, [ &state]( auto& entity)
-                        {
-                           if( entity.process.ipc)
-                              state.multiplex.send( entity.process.ipc, common::message::shutdown::Request{ common::process::handle()});
-                           else
-                              signal::send( entity.process.pid, common::code::signal::terminate);
-
-                           return entity.process.pid;
-                        });
-
-                        common::log::line( verbose::log, "task_state: ", task_state);
-
-                        if( task_state.pids.empty())
-                           return task::unit::action::Outcome::abort;
-
-                        state.task.states.push_back( std::move( task_state));
-                        return task::unit::action::Outcome::success;
-                     };
-                  };
-
-                  auto handler( State& state)
-                  {
-                     return [ &state]( task::unit::id id, const common::message::event::process::Exit& event)
-                     {
-                        Trace trace{ "queue::manager::handle::local::shutdown::request shutdown_handler"};
-
-                        auto task_state = casual::assertion( algorithm::find( state.task.states, id));
-                        algorithm::container::erase( task_state->pids, event.state.pid);
-
-                        common::log::line( verbose::log, "task_state: ", task_state);
-
-                        state.remove( event.state.pid);
-
-                        if( ! task_state->pids.empty())
-                           return task::unit::Dispatch::pending;
-                        else
-                           state.task.states.erase( std::begin( task_state));
-                        return task::unit::Dispatch::done;
-                     };
-                  }
-                  
-               } // detail
-
-               
+            {  
                auto request( State& state)
                {
-                  return [&state]( common::message::shutdown::Request& message)
+                  return [ &state]( common::message::shutdown::Request& message)
                   {
                      Trace trace{ "queue::manager::handle::local::shutdown::request"};
                      common::log::line( verbose::log, "message: ", message);
 
                      state.runlevel = decltype( state.runlevel())::shutdown;
-
                      local::pending::lookups::discard( state);
 
-                     // create coordinated tasks, first the forwards, then the queue groups
-                     state.task.coordinator.then( task::create::unit( 
-                        task::create::action( shutdown::detail::action( state, state.forward.groups)),
-                        shutdown::detail::handler( state)
-                     )).then( task::create::unit( 
-                        task::create::action( shutdown::detail::action( state, state.groups)),
-                        shutdown::detail::handler( state)
-                     ));
+                     // conform to empty configuration
+                     manager::configuration::conform( state, manager::transform::configuration( state), {});
                   };
                }
 
@@ -356,6 +295,8 @@ namespace casual
                      Trace trace{ "queue::manager::handle::local::group::connect"};
                      log::line( verbose::log, "message: ", message);
 
+                     state.task.coordinator( message);
+
                      if( auto found = common::algorithm::find( state.groups, message.process.pid))
                      {
                         found->state = decltype( found->state())::connected;
@@ -380,6 +321,8 @@ namespace casual
                         Trace trace{ "queue::manager::handle::local::group::configuration::update::reply"};
                         log::line( verbose::log, "message: ", message);
 
+                        state.task.coordinator( message);
+
                         state.update( std::move( message));
 
                         pending::lookups::check( state);
@@ -397,6 +340,8 @@ namespace casual
                   {
                      Trace trace{ "queue::manager::handle::local::forward::connect"};
                      log::line( verbose::log, "message: ", message);
+
+                     state.task.coordinator( message);
 
                      if( auto found = common::algorithm::find( state.forward.groups, message.process.pid))
                      {
@@ -424,6 +369,8 @@ namespace casual
                      {
                         Trace trace{ "queue::manager::handle::local::forward::configuration::update::reply"};
                         log::line( verbose::log, "message: ", message);
+
+                        state.task.coordinator( message);
 
                         if( auto found = common::algorithm::find( state.forward.groups, message.process.pid))
                            found->state = decltype( found->state())::running;
@@ -554,9 +501,23 @@ namespace casual
 
             namespace configuration
             {
+               namespace update
+               {
+                  auto request( State& state)
+                  {
+                     return [ &state]( casual::configuration::message::update::Request& message)
+                     {
+                        Trace trace{ "queue::manager::handle::local::configuration::update::request"};
+                        log::line( verbose::log, "message: ", message);
+
+                        queue::manager::configuration::conform( state, std::move( message));
+                     };
+                  }
+               } // update
+
                auto request( State& state)
                {
-                  return [&state]( casual::configuration::message::Request& message)
+                  return [ &state]( casual::configuration::message::Request& message)
                   {
                      Trace trace{ "handle::domain::handle::local::configuration::request"};
                      common::log::line( verbose::log, "message: ", message);
@@ -598,26 +559,10 @@ namespace casual
             Trace trace{ "queue::manager::handle::comply::configuration"};
             log::line( verbose::log, "model: ", model);
 
-            // TODO maintainence: runtime configuration
-
             state.note = model.queue.note;
             state.group_coordinator.update( model.domain.groups);
 
-            state.groups = algorithm::transform( model.queue.groups, []( auto& config){ return state::Group{ std::move( config)};});
-            state.forward.groups = algorithm::transform( model.queue.forward.groups, []( auto& config){ return state::forward::Group{ std::move( config)};});
-
-            auto spawn = []( auto& entity)
-            {
-               entity.process.pid = common::process::spawn(
-                  state::entity::path( entity),
-                  {},
-                  { instance::variable( instance::Information{ entity.configuration.alias})});
-               entity.state = decltype( entity.state())::spawned;
-            };
-
-            algorithm::for_each( state.groups, spawn);
-            algorithm::for_each( state.forward.groups, spawn);
-            
+            configuration::conform( state, {}, std::move( model.queue));
          }
       } // comply
 
@@ -664,6 +609,7 @@ namespace casual
             handle::local::forward::connect( state),
             handle::local::forward::configuration::update::reply( state),
 
+            handle::local::configuration::update::request( state),
             handle::local::configuration::request( state),
             
             handle::local::lookup::request( state),
