@@ -28,20 +28,40 @@ namespace casual
             CASUAL_SERIALIZE( removed);
          )
       };
+
+      namespace predicate
+      {
+         inline auto alias()
+         {
+            return []( auto& lhs, auto& rhs)
+            { 
+               return lhs.alias == rhs.alias;
+            };
+         }
+         
+      } // predicate
       
       //! calculates the changes between `current` and `wanted`
       //! @returns `Result` with added, modified, removed.
-      template< typename Range, typename Predicate>
-      auto calculate( Range&& current, Range&& wanted, Predicate key)
+      template< typename Range>
+      auto calculate( Range&& current, Range&& wanted, auto predicate)
       {
          Result< decltype( common::range::make( current))> result;
 
          auto differ = std::get< 1>( common::algorithm::intersection( wanted, current));
 
-         std::tie( result.modified, result.added) = common::algorithm::intersection( differ, current, key);
-         result.removed = std::get< 1>( common::algorithm::intersection( current, wanted, key));
+         std::tie( result.modified, result.added) = common::algorithm::intersection( differ, current, predicate);
+         result.removed = std::get< 1>( common::algorithm::intersection( current, wanted, predicate));
 
          return result;
+      }
+
+      //! calculates the changes between `current` and `wanted`, uses equal-alias-predicate
+      //! @returns `Result` with added, modified, removed.
+      template< typename Range>
+      auto calculate( Range&& current, Range&& wanted)
+      {
+         return calculate( std::forward< Range>( current), std::forward< Range>( wanted), change::predicate::alias());
       }
 
       namespace concrete
@@ -61,6 +81,14 @@ namespace casual
                { std::begin( calculated.modified), std::end( calculated.modified)},
                { std::begin( calculated.removed), std::end( calculated.removed)},
             };
+         }
+
+         //! calculates the changes between `current` and `wanted`, uses equal-alias-predicate 
+         //! @returns `Result` with added, modified, removed. Range type is a concrete vector with copied values
+         template< typename Range>
+         auto calculate( Range&& current, Range&& wanted)
+         {
+            return calculate( std::forward< Range>( current), std::forward< Range>( wanted), change::predicate::alias());
          }
       } // concrete
 

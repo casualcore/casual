@@ -63,7 +63,7 @@ namespace casual
 
          std::vector< model::domain::Group> Coordinator::config() const
          {
-            return algorithm::transform( m_groups, [ groups = m_groups]( const auto& group)
+            return algorithm::transform( m_groups, []( const auto& group)
             {
                model::domain::Group result;
                result.name = group.name;

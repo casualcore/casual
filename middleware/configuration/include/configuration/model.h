@@ -740,7 +740,9 @@ namespace casual::configuration
                Group set_difference( Group lhs, Group rhs);
                Group set_intersection( Group lhs, Group rhs);
 
+               inline friend bool operator == ( const Group& lhs, const std::string& alias) { return lhs.alias == alias;}
                friend auto operator <=> ( const Group&, const Group&) = default;
+               friend bool operator == ( const Group&, const Group&) = default;
 
                CASUAL_CONST_CORRECT_SERIALIZE(
                   CASUAL_SERIALIZE( alias);
