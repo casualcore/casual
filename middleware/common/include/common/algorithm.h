@@ -344,6 +344,35 @@ namespace casual
          return result;
       }
 
+
+      //! @returns a 'generated' vector of size `count`
+      template< typename G>
+      auto generate_n( platform::size::type count, G generator) 
+         -> std::vector< std::remove_reference_t< decltype( generator())>>
+      {
+         std::vector< std::remove_reference_t< decltype( generator())>> result;
+         result.reserve( count);
+         std::generate_n( std::back_inserter( result), count, std::move( generator));
+         return result;
+      }
+
+      //! @returns a 'generated' vector of size `N`
+      template< typename G>
+      auto generate_n( platform::size::type count, G generator) requires
+         requires 
+         {
+            { generator()} -> concepts::optional::like;
+         }
+      {
+         std::vector< std::remove_reference_t< decltype( generator().value())>> result;
+
+         while( count-- > 0)
+            if( auto value = generator())
+               result.push_back( std::move( *value));
+
+         return result;
+      } 
+
       //! Applies std::unique on [std::begin( range), std::end( range) )
       //!
       //! @return the unique range

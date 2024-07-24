@@ -330,6 +330,11 @@ domain:
    transaction:
       log: ':memory:'
       resources:
+         - name: a
+           key: rm-mockup
+           note: modified
+           instances: 3
+           openinfo: "openinfo modified"
          - key: rm-mockup
            name: x
            instances: 3

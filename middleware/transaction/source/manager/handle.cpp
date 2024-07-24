@@ -9,6 +9,7 @@
 #include "transaction/manager/action.h"
 #include "transaction/common.h"
 #include "transaction/manager/admin/server.h"
+#include "transaction/manager/configuration.h"
 
 #include "casual/assert.h"
 
@@ -23,6 +24,7 @@
 #include "common/communication/ipc/flush/send.h"
 
 #include "configuration/message.h"
+#include "configuration/model/change.h"
 
 
 namespace casual
@@ -920,7 +922,7 @@ namespace casual
                               return;
                            }
 
-                           // we can't do any _one phase commit optimization_, since we're not the on in charge.
+                           // we can't do any _one phase commit optimization_, since we're not the one in charge.
                            common::log::line( log, "global: ", transaction->global, " preparing");
 
                            // Start the prepare phase
@@ -1070,10 +1072,12 @@ namespace casual
 
                auto ready( State& state)
                {
-                  return [&state]( const common::message::transaction::resource::Ready& message)
+                  return [ &state]( const common::message::transaction::resource::Ready& message)
                   {
                      Trace trace{ "transaction::manager::handle::local::resource::ready"};
                      common::log::line( log, "message: ", message);
+
+                     state.task.coordinator( message);
 
                      auto& instance = state.get_instance( message.id, message.process.pid);
                      instance.process = message.process;
@@ -1131,6 +1135,8 @@ namespace casual
                         state.multiplex.send( common::communication::instance::outbound::domain::manager::device(), message);
                         return;
                      }
+
+                     state.task.coordinator( message);
 
                      // check external
                      common::algorithm::container::erase_if( state.externals, [ &state, pid = message.state.pid]( auto& resource)
@@ -1222,9 +1228,43 @@ namespace casual
                   }
                } // alias
 
+               namespace update
+               {
+                  auto request( State& state)
+                  {
+                     return [ &state]( casual::configuration::message::update::Request& message)
+                     {
+                        Trace trace{ "transaction::manager::handle::local::configuration::update::request"};
+                        common::log::line( verbose::log, "message: ", message);
+
+                        if( state.runlevel == state::Runlevel::running)
+                           state.runlevel.explict_set( state::Runlevel::configuring);
+
+                        manager::configuration::conform( state, std::move( message.model));
+
+                        // we add a continuation to send the reply when all configuration conform tasks 
+                        // (if any) are done. 
+
+                        auto send_reply = [ &state, ipc = message.process.ipc, reply = common::message::reverse::type( message)]( task::unit::id)
+                        {
+                           state.runlevel = decltype( state.runlevel())::running;
+                           state.multiplex.send( ipc, reply);
+                           return task::unit::action::Outcome::abort;
+                        };
+
+                        // add a task to send reply when previous tasks are done
+                        state.task.coordinator.then( task::create::unit( 
+                           task::create::action( "send update reply", std::move( send_reply))
+                        ));
+
+                        
+                     };
+                  }
+               } // update
+
                auto request( State& state)
                {
-                  return [&state]( const casual::configuration::message::Request& message)
+                  return [ &state]( const casual::configuration::message::Request& message)
                   {
                      Trace trace{ "transaction::manager::handle::local::configuration::request"};
                      common::log::line( verbose::log, "message: ", message);
@@ -1265,6 +1305,31 @@ namespace casual
                }
             } // active
 
+            namespace shutdown
+            {  
+               void apply( State& state)
+               {
+                  state.runlevel = decltype( state.runlevel())::shutdown;
+
+                  // TODO local::pending::lookups::discard( state);
+
+                  // conform to empty configuration
+                  manager::configuration::conform( state, {});
+               }
+
+               auto request( State& state)
+               {
+                  return [ &state]( common::message::shutdown::Request& message)
+                  {
+                     Trace trace{ "transaction::manager::handle::local::shutdown::request"};
+                     common::log::line( verbose::log, "message: ", message);
+
+                     shutdown::apply( state);
+                  };
+               }
+
+            } // shutdown
+
          } // <unnamed>
       } // local
 
@@ -1293,19 +1358,6 @@ namespace casual
             
       } // persist
 
-      namespace startup
-      {
-         dispatch_type handlers( State& state)
-         {
-            return common::message::dispatch::handler( ipc::device(),
-               common::message::dispatch::handle::defaults(),
-               local::event::process::exit( state),
-               local::resource::configuration::request( state),
-               local::resource::ready( state)
-               );
-         }
-
-      } // startup
 
       dispatch_type handlers( State& state)
       {
@@ -1319,6 +1371,7 @@ namespace casual
             local::resource::involved::request( state),
             local::configuration::alias::request( state),
             local::configuration::request( state),
+            local::configuration::update::request( state),
             local::resource::configuration::request( state),
             local::resource::ready( state),
             local::resource::prepare::reply( state),
@@ -1331,6 +1384,7 @@ namespace casual
             local::resource::external::rollback::request( state),
             local::inbound::branch::request( state),
             local::active::request( state),
+            local::shutdown::request( state),
             common::server::handle::admin::Call{
                manager::admin::services( state)}
          );
@@ -1340,18 +1394,9 @@ namespace casual
       {
          Trace trace{ "transaction::manager::handle::abort"};
 
-         auto scale_down = [&]( auto& resource)
-         { 
-            common::exception::guard( [&](){
-               resource.configuration.instances = 0;
-               manager::action::resource::scale::instances( state, resource);
-            }); 
-         };
+         // TODO clear tasks?
 
-         common::algorithm::for_each( state.resources, scale_down);
-
-         auto processes = state.processes();
-         common::process::lifetime::wait( processes, std::chrono::milliseconds( processes.size() * 100));
+         local::shutdown::apply( state);
 
       }
    } // transaction::manager::handle

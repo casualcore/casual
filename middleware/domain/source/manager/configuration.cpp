@@ -314,8 +314,8 @@ namespace casual
 
                   // TODO the order?
 
-                  if( state.configuration.model.transaction != wanted.transaction)
-                     add_singleton( communication::instance::identity::transaction::manager.id, "casual-transaction-manager");
+                  //if( state.configuration.model.transaction != wanted.transaction)
+                  //   add_singleton( communication::instance::identity::transaction::manager.id, "casual-transaction-manager");
                   if( state.configuration.model.gateway != wanted.gateway)
                      add_singleton( communication::instance::identity::gateway::manager.id, "casual-gateway-manager");
 

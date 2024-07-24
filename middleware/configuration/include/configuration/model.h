@@ -72,6 +72,8 @@ namespace casual::configuration
 
             friend auto operator <=> ( const Model&, const Model&) = default;
 
+            inline explicit operator bool() const { return ! resources.empty();}
+
             CASUAL_CONST_CORRECT_SERIALIZE(
                CASUAL_SERIALIZE( resources);
             )

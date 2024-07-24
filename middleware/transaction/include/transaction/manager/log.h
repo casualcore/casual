@@ -38,7 +38,7 @@ namespace casual
          };
 
          Log() = default;
-         Log( std::filesystem::path file);
+         explicit Log( std::filesystem::path file);
          ~Log();
 
          void prepare( const state::Transaction& transaction);
@@ -47,6 +47,8 @@ namespace casual
 
          //! persist the current "transaction" and start a new one
          void persist();
+
+         inline explicit operator bool() const { return common::predicate::boolean( m_connection);}
 
          struct Statistics
          {

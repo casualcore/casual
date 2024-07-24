@@ -40,7 +40,7 @@ namespace casual
 
       TEST( transaction_manager_state, proxy_instance_metric)
       {
-         state::resource::proxy::Instance instance;
+         state::resource::proxy::Instance instance{ {}, {}};
          instance.state( decltype( instance.state())::idle);
 
          static constexpr auto duration = std::chrono::microseconds{ 100};
@@ -64,7 +64,7 @@ namespace casual
 
       TEST( transaction_manager_state, proxy_instance_metric_100)
       {
-         state::resource::proxy::Instance instance;
+         state::resource::proxy::Instance instance{ {}, {}};
          instance.state( decltype( instance.state())::idle);
 
          static constexpr auto duration = std::chrono::microseconds{ 10};
@@ -96,7 +96,7 @@ namespace casual
 
       TEST( transaction_manager_state, proxy_instance_pending)
       {
-         state::resource::proxy::Instance instance;
+         state::resource::proxy::Instance instance{ {}, {}};
          instance.state( decltype( instance.state())::idle);
 
          static constexpr auto duration = std::chrono::milliseconds{ 1};
@@ -139,7 +139,7 @@ namespace casual
 
       TEST( transaction_manager_state, proxy_instance_multiple_pending)
       {
-         state::resource::proxy::Instance instance;
+         state::resource::proxy::Instance instance{ {}, {}};
          instance.state( decltype( instance.state())::idle);
 
          auto pending_roundtrip = [ &instance]( auto requested)

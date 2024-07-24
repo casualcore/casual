@@ -59,8 +59,7 @@ namespace casual
          {
             enum class State : long
             {
-               absent,
-               started,
+               spawned,
                idle,
                busy,
                shutdown
@@ -70,8 +69,7 @@ namespace casual
             {
                switch( value)
                {
-                  case State::absent: return "absent";
-                  case State::started: return "started";
+                  case State::spawned: return "spawned";
                   case State::idle: return "idle";
                   case State::busy: return "busy";
                   case State::shutdown: return "shutdown";

@@ -43,8 +43,8 @@ namespace casual
       
       //! calculates the changes between `current` and `wanted`
       //! @returns `Result` with added, modified, removed.
-      template< typename Range>
-      auto calculate( Range&& current, Range&& wanted, auto predicate)
+      template< typename C, typename W>
+      auto calculate( C&& current, W&& wanted, auto predicate)
       {
          Result< decltype( common::range::make( current))> result;
 
@@ -58,23 +58,23 @@ namespace casual
 
       //! calculates the changes between `current` and `wanted`, uses equal-alias-predicate
       //! @returns `Result` with added, modified, removed.
-      template< typename Range>
-      auto calculate( Range&& current, Range&& wanted)
+      template< typename C, typename W>
+      auto calculate( C&& current, W&& wanted)
       {
-         return calculate( std::forward< Range>( current), std::forward< Range>( wanted), change::predicate::alias());
+         return calculate( std::forward< C>( current), std::forward< W>( wanted), change::predicate::alias());
       }
 
       namespace concrete
       {
          //! calculates the changes between `current` and `wanted`
          //! @returns `Result` with added, modified, removed. Range type is a concrete vector with copied values
-         template< typename Range, typename Predicate>
-         auto calculate( Range&& current, Range&& wanted, Predicate key)
+         template< typename C, typename W, typename Predicate>
+         auto calculate( C&& current, W&& wanted, Predicate key)
          {
-            using range_type = std::vector< std::ranges::range_value_t< Range>>;
+            using range_type = std::vector< std::ranges::range_value_t< C>>;
             Result< range_type> result;
 
-            auto calculated = change::calculate( std::forward< Range>( current), std::forward< Range>( wanted), std::move( key));
+            auto calculated = change::calculate( std::forward< C>( current), std::forward< W>( wanted), std::move( key));
 
             return Result< range_type>{
                { std::begin( calculated.added), std::end( calculated.added)},
@@ -85,10 +85,10 @@ namespace casual
 
          //! calculates the changes between `current` and `wanted`, uses equal-alias-predicate 
          //! @returns `Result` with added, modified, removed. Range type is a concrete vector with copied values
-         template< typename Range>
-         auto calculate( Range&& current, Range&& wanted)
+         template< typename C, typename W>
+         auto calculate( C&& current, W&& wanted)
          {
-            return calculate( std::forward< Range>( current), std::forward< Range>( wanted), change::predicate::alias());
+            return calculate( std::forward< C>( current), std::forward< W>( wanted), change::predicate::alias());
          }
       } // concrete
 

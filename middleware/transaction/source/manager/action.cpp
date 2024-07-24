@@ -52,12 +52,9 @@ namespace casual
                      if( ! found)
                         return;
 
-                     state::resource::proxy::Instance instance;
-                     instance.id = proxy.id;
-
                      try
                      {
-                        instance.process.pid = process::spawn(
+                        auto pid = process::spawn(
                            found->server,
                            {
                               "--id", std::to_string( proxy.id.value()),
@@ -65,9 +62,7 @@ namespace casual
                            { common::instance::variable( { proxy.configuration.name, proxy.id.value()})}
                         );
 
-                        instance.state( state::resource::proxy::instance::State::started);
-
-                        proxy.instances.push_back( std::move( instance));
+                        proxy.instances.emplace_back( proxy.id, pid);
                      }
                      catch( ...)
                      {
@@ -85,8 +80,7 @@ namespace casual
                      {
                         using State = decltype( instance.state());
 
-                        case State::absent:
-                        case State::started:
+                        case State::spawned:
                         {
 
                            log::line( log, "Instance has not register yet. We, kill it...: ", instance);

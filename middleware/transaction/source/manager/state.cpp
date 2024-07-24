@@ -46,8 +46,7 @@ namespace casual
                   {
                      switch( value)
                      {
-                        case State::absent: return "absent";
-                        case State::started: return "started";
+                        case State::spawned: return "spawned";
                         case State::idle: return "idle";
                         case State::busy: return "busy";
                         case State::shutdown: return "shutdown";
@@ -103,18 +102,34 @@ namespace casual
                
             } // proxy
 
-           
+            platform::size::type Proxy::scale_difference() const
+            {
+               auto running = common::algorithm::count_if( instances, []( auto& instance)
+               {
+                  using State = proxy::instance::State;
+                  return common::algorithm::compare::any( instance.state(), State::idle, State::busy, State::spawned);
+               });
+
+               return configuration.instances - running;
+            }
+
+            std::span< proxy::Instance> Proxy::shutdownable()
+            {
+               auto is_shutdown = []( auto& instance){ return instance.state() == proxy::instance::State::shutdown;};
+
+               auto [ running, shutdown] = common::algorithm::partition( instances, common::predicate::negate( is_shutdown));
+
+               if( std::size( running) <= configuration.instances)
+                  return {};
+
+               return { std::next( std::begin( running), configuration.instances), std::end( running)};
+            }
+
             bool Proxy::booted() const
             {
-               return common::algorithm::all_of( instances, []( auto& instance){
-                  switch( instance.state())
-                  {
-                     case proxy::instance::State::idle:
-                     case proxy::instance::State::busy:
-                        return true;
-                     default:
-                        return false;
-                  }
+               return common::algorithm::all_of( instances, []( auto& instance)
+               {
+                  return common::algorithm::compare::any( instance.state(), proxy::instance::State::idle, proxy::instance::State::busy);
                });
             }
 
@@ -221,6 +236,15 @@ namespace casual
       bool State::booted() const
       {
          return common::algorithm::all_of( resources, []( const auto& p){ return p.booted();});
+      }
+
+      bool State::done() const
+      {
+         if( runlevel <= state::Runlevel::running)
+            return false;
+
+         // TODO we need to check more things?
+         return task.coordinator.empty();
       }
 
       platform::size::type State::instances() const
