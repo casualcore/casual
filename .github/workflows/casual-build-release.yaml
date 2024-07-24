@@ -127,7 +127,7 @@ jobs:
 
       - name: Build
         run: |
-          docker run --rm -v ${{ github.workspace }}:/git/casual:Z -i ${{ env.centos_image}}:${{ needs.calculate-version.outputs.major_minor }}
+          docker run --rm -v ${{ github.workspace }}:/git/casual:Z -i ${{ env.ubi_image}}:${{ needs.calculate-version.outputs.major_minor }}
 
       - name: Logpublisher
         if: ${{ failure() || cancelled() }}
