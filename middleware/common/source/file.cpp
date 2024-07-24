@@ -222,8 +222,7 @@ namespace casual
       {
          std::filesystem::path create( std::filesystem::path path)
          {
-            if( ! std::filesystem::exists( path))
-               std::filesystem::create_directories( path);
+            std::filesystem::create_directories( path);
 
             return path;
          }

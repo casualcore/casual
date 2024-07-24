@@ -35,7 +35,7 @@ namespace casual
          {
             Input( std::filesystem::path path);
 
-            const auto& path() const { return m_path;}
+            inline const auto& path() const noexcept { return m_path;}
             inline operator std::istream& () noexcept { return m_stream;}
 
             friend std::ostream& operator << ( std::ostream& out, const Input& value);
@@ -53,12 +53,11 @@ namespace casual
             //! @returns a new/reopened file with the same path and mode.
             Output reopen( std::ios::openmode mode = std::ios::app) &&;
 
-            inline const std::filesystem::path& path() const noexcept { return m_path;}
+            inline const auto& path() const noexcept { return m_path;}
             
             friend std::ostream& operator << ( std::ostream& out, const Output& value);
 
          private:
-            std::ofstream m_stream;
             std::filesystem::path m_path;
          };
 
