@@ -6,7 +6,7 @@ on:
 
 env:
   build_type: normal
-  centos_image: casual/centos-builder
+  ubi_image: casual/ubi8-builder
   suse_image: casual/suse-builder
 
 jobs:
@@ -72,12 +72,12 @@ jobs:
         with:
           args: "Starting a new build, Repo: ${{ github.repository }}, Branch: ${{ github.ref_name }}, Version: ${{ needs.calculate-version.outputs.build_version }}, URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"           
   
-  build-centos:
+  build-ubi:
     runs-on: [self-hosted, builder]
     if: ${{ success() }}
     needs: [calculate-version,notification-start]
     env:
-      DISTRIBUTION: 'centos'
+      DISTRIBUTION: 'ubi'
     steps:
       - name: check out repository casual
         uses: actions/checkout@v4
@@ -105,6 +105,8 @@ jobs:
           #! /bin/bash
 
           set -e
+
+          git config --global --add safe.directory /git/casual/casual
 
           source /git/casual/casual/pipeline/script/pipeline.env
 
@@ -144,7 +146,7 @@ jobs:
       - name: Save artifact
         uses: actions/upload-artifact@v4
         with:
-          name: centos_rpm
+          name: ubi_rpm
           path: ./**/casual-middleware*.rpm
 
   build-suse:
@@ -224,7 +226,7 @@ jobs:
   tag-repo:
     runs-on: ubuntu-latest
     if: ${{ success() }}
-    needs: [calculate-version,build-centos,build-suse]
+    needs: [calculate-version,build-ubi,build-suse]
     steps:
       - uses: actions/checkout@v4
       - name: Bump version and push tag
@@ -237,7 +239,7 @@ jobs:
 
   publish-version:
     runs-on: [self-hosted, casual, publish]
-    needs: [build-centos,build-suse,tag-repo]
+    needs: [build-ubi,build-suse,tag-repo]
     if: ${{ success() }}
     steps:
       - name: Publish suse
@@ -245,10 +247,10 @@ jobs:
         with:
           name: suse_rpm
           path: /var/www/release/
-      - name: Publish centos
+      - name: Publish ubi
         uses: actions/download-artifact@v4
         with:
-          name: centos_rpm
+          name: ubi_rpm
           path: /var/www/release/
       - name: Move rpm to right location
         run: |
@@ -257,7 +259,7 @@ jobs:
 
   notification-end:
     runs-on: ubuntu-latest
-    needs: [calculate-version,build-centos,build-suse,tag-repo,publish-version]
+    needs: [calculate-version,build-ubi,build-suse,tag-repo,publish-version]
     if: ${{ always() }}
     steps: 
       - uses: martialonline/workflow-status@v4
