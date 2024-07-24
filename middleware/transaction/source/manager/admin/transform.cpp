@@ -56,13 +56,12 @@ namespace casual
                      using To = admin::model::resource::instance::State;
                      switch( state)
                      {
-                        case From::absent: return To::absent;
+                        case From::spawned: return To::spawned;
                         case From::idle: return To::idle;
                         case From::busy: return To::busy;
-                        case From::started: return To::started;
                         case From::shutdown: return To::shutdown;
                      }
-                     return To::absent;
+                     return To{ -1};
                   };
 
                   admin::model::resource::Instance result;

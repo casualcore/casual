@@ -29,18 +29,17 @@ namespace casual
             return *this;
          }
 
+         void explict_set( Enum wanted) { m_current = wanted;}
+
          auto operator() () const noexcept 
          {
             return m_current;
          }
 
          inline friend bool operator == ( Machine lhs, Enum rhs) {  return lhs.m_current == rhs;}
-         inline friend bool operator == ( Enum lhs, Machine rhs) {  return lhs == rhs.m_current;}
-         inline friend bool operator != ( Machine lhs, Enum rhs) {  return lhs.m_current != rhs;}
-
          inline friend bool operator < ( Machine lhs, Enum rhs) { return lhs.m_current < rhs;}
-         inline friend bool operator > ( Machine lhs, Enum rhs) { return lhs.m_current > rhs;}
          inline friend bool operator <= ( Machine lhs, Enum rhs) { return lhs.m_current <= rhs;}
+         inline friend bool operator > ( Machine lhs, Enum rhs) { return lhs.m_current > rhs;}
          inline friend bool operator >= ( Machine lhs, Enum rhs) { return lhs.m_current >= rhs;}
 
          inline friend std::ostream& operator << ( std::ostream& out, Machine value) { return out << description( value.m_current);}

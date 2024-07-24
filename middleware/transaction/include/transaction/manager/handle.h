@@ -40,12 +40,6 @@ namespace casual
 
          using dispatch_type = decltype( common::message::dispatch::handler( ipc::device()));
 
-         namespace startup
-         {
-            //! return the handlers used during startup
-            dispatch_type handlers( State& state);
-         } // startup
-
          dispatch_type handlers( State& state);
 
          void abort( State& state);

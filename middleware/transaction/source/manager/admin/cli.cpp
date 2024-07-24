@@ -61,8 +61,8 @@ namespace casual
                {
                   enum struct State : std::uint16_t
                   {
-                     absent,
-                     started,
+                     unknown,
+                     spawned,
                      idle,
                      busy,
                      shutdown,
@@ -73,8 +73,8 @@ namespace casual
                   {
                      switch( value)
                      {
-                        case State::absent: return "absent";
-                        case State::started: return "started";
+                        case State::unknown: return "unknown";
+                        case State::spawned: return "spawned";
                         case State::idle: return "idle";
                         case State::busy: return "busy";
                         case State::shutdown: return "shutdown";
@@ -111,13 +111,12 @@ namespace casual
                            using To = normalized::instance::State;
                            switch( state)
                            {
-                              case From::absent: return To::absent;
-                              case From::started: return To::started;
+                              case From::spawned: return To::spawned;
                               case From::idle: return To::idle;
                               case From::busy: return To::busy;
                               case From::shutdown: return To::shutdown;
                            }
-                           return To::absent;
+                           return To::unknown;
                         };
 
                         value.process = instance.process;
@@ -456,8 +455,8 @@ PAT:
                         using State = normalized::instance::State;
                         switch( instance.state)
                         {
-                           case State::absent: stream::write( out, std::left, std::setw( width), terminal::color::no_color, State::absent); break;
-                           case State::started: stream::write( out, std::left, std::setw( width), terminal::color::white, State::started); break;
+                           case State::unknown: stream::write( out, std::left, std::setw( width), terminal::color::red, State::unknown); break;
+                           case State::spawned: stream::write( out, std::left, std::setw( width), terminal::color::white, State::spawned); break;
                            case State::idle: stream::write( out, std::left, std::setw( width), terminal::color::green, State::idle);break;
                            case State::busy: stream::write( out, std::left, std::setw( width), terminal::color::yellow, State::busy);break;
                            case State::shutdown: stream::write( out, std::left, std::setw( width), terminal::color::red, State::shutdown); break;

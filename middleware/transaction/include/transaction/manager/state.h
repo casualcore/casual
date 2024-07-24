@@ -27,6 +27,8 @@
 
 #include "configuration/model.h"
 
+#include "casual/task.h"
+
 #include <map>
 #include <deque>
 #include <vector>
@@ -68,8 +70,7 @@ namespace casual
                {
                   enum class State : short
                   {
-                     absent,
-                     started,
+                     spawned,
                      idle,
                      busy,
                      shutdown
@@ -80,6 +81,10 @@ namespace casual
 
                struct Instance
                {
+                  inline Instance( common::strong::resource::id id, common::strong::process::id pid)
+                     : id{ id}, process{ pid}
+                  {}
+
                   void reserve();
                   //! used when requests has been pending.
                   void reserve( platform::time::point::type requested);
@@ -109,7 +114,7 @@ namespace casual
                private:
                   void general_reserve( platform::time::point::type now);
 
-                  instance::State m_state = instance::State::absent;
+                  instance::State m_state{};
                   platform::time::point::type m_reserved{};
                   Metrics m_metrics;
                   common::Metric m_pending;
@@ -119,18 +124,23 @@ namespace casual
 
             struct Proxy
             {
-               inline Proxy( configuration::model::transaction::Resource configuration)
+               inline Proxy( casual::configuration::model::transaction::Resource configuration)
                   : configuration{ std::move( configuration)} {}
 
                common::strong::resource::id id = common::strong::resource::id::generate();
 
                std::vector< proxy::Instance> instances;
-               configuration::model::transaction::Resource configuration;
+               casual::configuration::model::transaction::Resource configuration;
 
                //! This 'counters' keep track of metrics for removed
                //! instances, so we can give a better view for the operator.
                Metrics metrics;
                common::Metric pending;
+
+               //! @returns the difference between configured and spawned instances 
+               platform::size::type scale_difference() const;
+
+               std::span< proxy::Instance> shutdownable();
 
 
                //! @return true if all instances 'has connected'
@@ -139,8 +149,7 @@ namespace casual
                bool remove_instance( common::strong::process::id pid);
 
                inline friend bool operator < ( const Proxy& lhs, const Proxy& rhs) { return lhs.id < rhs.id;}
-               friend bool operator == ( const Proxy& lhs, common::strong::resource::id rhs) { return lhs.id == rhs; }
-               friend bool operator == ( common::strong::resource::id lhs, const Proxy& rhs) { return lhs == rhs.id; }
+               inline friend bool operator == ( const Proxy& lhs, common::strong::resource::id rhs) { return lhs.id == rhs; }
 
                CASUAL_LOG_SERIALIZE(
                   CASUAL_SERIALIZE( id);
@@ -334,25 +343,14 @@ namespace casual
             };
          } // pending
 
-      } // state
-
-      struct State
-      {
-         common::communication::select::Directive directive;
-         common::communication::ipc::send::Coordinator multiplex{ directive};
-
-         std::vector< state::Transaction> transactions;
-         std::vector< state::resource::Proxy> resources;
-         std::vector< state::resource::external::Instance> externals;
-
-         struct
+         struct Coordinate
          {
             template< typename Reply>
-            using Coordinate = common::message::coordinate::fan::Out< Reply, common::strong::resource::id>;
+            using coordinate_type = common::message::coordinate::fan::Out< Reply, common::strong::resource::id>;
             
-            Coordinate< common::message::transaction::resource::prepare::Reply> prepare;   
-            Coordinate< common::message::transaction::resource::commit::Reply> commit;
-            Coordinate< common::message::transaction::resource::rollback::Reply> rollback;
+            coordinate_type< common::message::transaction::resource::prepare::Reply> prepare;   
+            coordinate_type< common::message::transaction::resource::commit::Reply> commit;
+            coordinate_type< common::message::transaction::resource::rollback::Reply> rollback;
 
             inline void failed( common::strong::resource::id id) { prepare.failed( id); commit.failed( id); rollback.failed( id);}
 
@@ -361,9 +359,9 @@ namespace casual
                CASUAL_SERIALIZE( commit);
                CASUAL_SERIALIZE( rollback);
             )
-         } coordinate;
+         };
 
-         struct
+         struct Persistent
          {
             //! Replies that will be sent after an atomic write to the log
             common::communication::ipc::pending::Holder replies;
@@ -376,9 +374,9 @@ namespace casual
                CASUAL_SERIALIZE( log);
             )
 
-         } persistent;
+         };
 
-         struct
+         struct Pending
          {
             //! Resource request, that will be processed as soon as possible,
             //! that is, as soon as corresponding resources is done/idle
@@ -387,32 +385,71 @@ namespace casual
             CASUAL_LOG_SERIALIZE(
                CASUAL_SERIALIZE( requests);
             )
+         };
 
-         } pending;
-
-
-         struct
+         struct Task
          {
-            configuration::model::system::Model configuration;
+            casual::task::Coordinator coordinator;
+
+            CASUAL_LOG_SERIALIZE(
+               CASUAL_SERIALIZE( coordinator);
+            )
+         };
+
+         struct System
+         {
+            casual::configuration::model::system::Model configuration;
 
             CASUAL_LOG_SERIALIZE(
                CASUAL_SERIALIZE( configuration);
             )
-         } system;
-         
+         };
 
-         struct 
+         struct Alias
          {
             std::map< std::string, std::vector< common::strong::resource::id>> configuration;
 
             CASUAL_LOG_SERIALIZE(
                CASUAL_SERIALIZE( configuration);
             )
-         } alias;
+         };
+
+         enum struct Runlevel : short
+         {
+            configuring,
+            running,
+            shutdown,
+            error,
+         };
+         std::string_view description( Runlevel value);
+
+      } // state
+
+      struct State
+      {
+         common::state::Machine< state::Runlevel> runlevel;
+
+         common::communication::select::Directive directive;
+         common::communication::ipc::send::Coordinator multiplex{ directive};
+
+         std::vector< state::Transaction> transactions;
+         std::vector< state::resource::Proxy> resources;
+         std::vector< state::resource::external::Instance> externals;
+
+         state::Coordinate coordinate;
+         state::Persistent persistent;
+         state::Pending pending;
+
+         state::Task task;
+         state::System system;
+         state::Alias alias;
 
 
          //! @return true if all resource proxies is booted
          bool booted() const;
+
+         //! @returns true if manager should exit.
+         bool done() const;
 
          //! @return number of total instances
          platform::size::type instances() const;
@@ -437,15 +474,18 @@ namespace casual
          common::message::transaction::configuration::alias::Reply configuration(
             const common::message::transaction::configuration::alias::Request& request);
 
-         configuration::model::transaction::Model configuration() const;
+         casual::configuration::model::transaction::Model configuration() const;
 
 
 
          CASUAL_LOG_SERIALIZE(
+            CASUAL_SERIALIZE( multiplex);
             CASUAL_SERIALIZE( transactions);
             CASUAL_SERIALIZE( resources);
             CASUAL_SERIALIZE( externals);
+            CASUAL_SERIALIZE( coordinate);
             CASUAL_SERIALIZE( persistent);
+            CASUAL_SERIALIZE( task);
             CASUAL_SERIALIZE( system);
             CASUAL_SERIALIZE( alias);
          )

@@ -460,7 +460,13 @@ namespace sql
             return sqlite3_sql( m_statement.get());
          } 
 
-         inline friend std::ostream& operator << ( std::ostream& out, const Statement& value) { return out << "{ statement: " << sqlite3_sql( value.m_statement.get()) << '}';}
+         inline friend std::ostream& operator << ( std::ostream& out, const Statement& value) 
+         {
+            if( value.m_statement) 
+               return out << "{ statement: " << sqlite3_sql( value.m_statement.get()) << '}';
+            else
+               return out << "{}";
+         }
 
       private:
          std::shared_ptr< sqlite3> m_handle;
