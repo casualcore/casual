@@ -49,19 +49,6 @@ namespace casual
             } // standard
          } // descriptor
 
-         namespace local
-         {
-            namespace
-            {
-               const std::filesystem::path& create_parent( const std::filesystem::path& path)
-               {
-                  directory::create( path.parent_path());
-                  return path;
-               }
-               
-            } // <unnamed>
-         } // local
-
          Input::Input( std::filesystem::path path) 
             : m_stream{ path, std::ios::in }, m_path{ std::move( path)}
          {
@@ -78,7 +65,7 @@ namespace casual
 
 
          Output::Output( std::filesystem::path path, std::ios::openmode mode)
-            : std::ofstream{ local::create_parent( path), std::ios::out | mode}, m_path{ std::move( path)}
+            : std::ofstream{ directory::create_parent_path( path), std::ios::out | mode}, m_path{ std::move( path)}
          {}
 
          //! @returns a new/reopened file with the same path
@@ -96,7 +83,7 @@ namespace casual
          namespace output
          {
             base::base( std::filesystem::path path, std::ios::openmode mode) 
-               : m_stream{ local::create_parent( path), std::ios::out | mode}, m_path{ std::move( path)}
+               : m_stream{ directory::create_parent_path( path), std::ios::out | mode}, m_path{ std::move( path)}
             {
                if( ! m_stream.is_open())
                   code::raise::error( code::casual::invalid_path, "failed to open file: ", *this);
@@ -105,7 +92,7 @@ namespace casual
             void base::reopen( std::ios::openmode mode)
             {
                m_stream.close();
-               m_stream.open( local::create_parent( m_path), mode);
+               m_stream.open( directory::create_parent_path( m_path), mode);
                if( ! m_stream.is_open())
                   code::raise::error( code::casual::invalid_path, "failed to reopen file: ", *this);
             }
@@ -220,22 +207,24 @@ namespace casual
 
       namespace directory
       {
-         std::filesystem::path create( std::filesystem::path path)
+         const std::filesystem::path& create( const std::filesystem::path& path)
          {
             std::filesystem::create_directories( path);
 
             return path;
          }
 
-         std::filesystem::path create_parent_path( std::filesystem::path path)
+         const std::filesystem::path& create_parent_path( const std::filesystem::path& path)
          {
-            create( path.parent_path());
+            if( path.has_parent_path())
+               create( path.parent_path());
+
             return path;
          }
 
          namespace shared
          {
-            std::filesystem::path create( std::filesystem::path path)
+            const std::filesystem::path& create( const std::filesystem::path& path)
             {
                namespace fs = std::filesystem;
                if( ! fs::exists( path))
