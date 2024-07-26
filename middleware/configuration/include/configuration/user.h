@@ -447,12 +447,13 @@ namespace casual
                {
                   std::optional< std::string> alias;
                   std::optional< std::string> note;
+                  std::optional< platform::size::type> order;
                   std::vector< outbound::Connection> connections;
-
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
                      CASUAL_SERIALIZE( alias);
                      CASUAL_SERIALIZE( note);
+                     CASUAL_SERIALIZE( order);
                      CASUAL_SERIALIZE( connections);
                   )
                };

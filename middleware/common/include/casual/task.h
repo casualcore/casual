@@ -57,17 +57,32 @@ namespace casual
                }
                return "<unknown>";
             }
+
+            template< typename T>
+            concept callable = requires
+            {
+               requires 
+               requires( T a, unit::id id)
+               {
+                  { a( id)} -> std::same_as< action::Outcome>;
+               } ||
+               requires( T a, unit::id id, std::string_view b)
+               {
+                  { a( id, b)} -> std::same_as< action::Outcome>;
+               };
+            };
+
          } // action
 
          // A callback that's invoked when a Unit starts
          struct Action
          {
-            template< typename C>
+            template< action::callable C>
             Action( C callable) 
                : m_action{ Model< C>{ std::move( callable)}}
             {}
 
-            template< typename C>
+            template< action::callable C>
             Action( C callable, std::string description) 
                : m_action{ Model< C>{ std::move( callable)}}, m_description{ std::move( description)}
             {}
@@ -407,17 +422,28 @@ namespace casual
 
       namespace create
       {
-         template< typename A>
-         auto action( A action) requires std::constructible_from< unit::Action, A> { return unit::Action{ std::move( action)};}
+         template< unit::action::callable A>
+         auto action( A action)
+         { 
+            return unit::Action{ std::move( action)};
+         }
 
-         template< typename A>
-         auto action( std::string description, A action) requires std::constructible_from< unit::Action, A> 
-         { return unit::Action{ std::move( action), std::move( description)};}
+         template< unit::action::callable A>
+         auto action( std::string description, A action)
+         { 
+            return unit::Action{ std::move( action), std::move( description)};
+         }
 
          template< typename... Ts>
          auto unit( unit::Action action, Ts&&... ts) -> decltype( Unit{ std::move( action), std::forward< Ts>( ts)...})
          {
             return Unit{ std::move( action), std::forward< Ts>( ts)...};
+         }
+
+         template< unit::action::callable T, typename... Ts>
+         auto unit( T callable, Ts&&... ts) -> decltype( Unit{ unit::Action{ std::move( callable)}, std::forward< Ts>( ts)...})
+         {
+            return Unit{ unit::Action{ std::move( callable)}, std::forward< Ts>( ts)...};
          }
 
          template< typename... Ts>

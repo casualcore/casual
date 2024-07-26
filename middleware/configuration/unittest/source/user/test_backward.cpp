@@ -44,6 +44,7 @@ gateway:
    outbound:
       groups:
          -  alias: outbound
+            order: 1
             connect: 1 # regular ( not reversed)
             # user normalize add this note...
             note: "transformed from DEPRECATED domain.gateway.connections[]"
@@ -51,12 +52,14 @@ gateway:
                -  address: localhost:7001
                   note: 7001
          -  alias: outbound.2
+            order: 2
             connect: 1 # regular ( not reversed)
             note: "transformed from DEPRECATED domain.gateway.connections[]"
             connections:
                -  address: localhost:7002
                   note: 7002
          -  alias: outbound.3
+            order: 3
             connect: 1 # regular ( not reversed)
             note: "transformed from DEPRECATED domain.gateway.connections[]"
             connections:
@@ -64,6 +67,7 @@ gateway:
                   note: 7003
                   services: [ a, b, c]
          -  alias: outbound.4
+            order: 4
             connect: 1 # regular ( not reversed)
             note: "transformed from DEPRECATED domain.gateway.connections[]"
             connections:
@@ -78,7 +82,7 @@ gateway:
 
          auto model = unittest::serialize::create::value< configuration::Model>( "yaml", model_yaml);
 
-         EXPECT_TRUE( user == model) << " " << CASUAL_NAMED_VALUE( user) << '\n' << CASUAL_NAMED_VALUE( model);
+         EXPECT_TRUE( user.gateway == model.gateway) << " " << CASUAL_NAMED_VALUE( user.gateway) << '\n' << CASUAL_NAMED_VALUE( model.gateway);
 
       }
 

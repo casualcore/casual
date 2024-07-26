@@ -9,6 +9,7 @@
 #include "gateway/manager/state.h"
 #include "gateway/manager/handle.h"
 #include "gateway/manager/transform.h"
+#include "gateway/manager/configuration.h"
 
 #include "gateway/environment.h"
 #include "gateway/common.h"
@@ -50,14 +51,9 @@ namespace casual
                   common::environment::variable::name::ipc::gateway::manager,
                   process::handle());
 
-               // Ask domain manager for configuration
-               return transform::state( casual::domain::configuration::fetch().gateway);
+               
+               return {};
             }
-
-#if CASUAL_PROTOCOL_VERSION == 1002
-
-#endif
-
 
             auto condition( State& state)
             {
@@ -75,22 +71,31 @@ namespace casual
                   handle::shutdown( state);
                });
 
-               // boot outbounds
-               manager::handle::boot( state);
-
-               // Connect to domain
-               communication::instance::whitelist::connect( communication::instance::identity::gateway::manager);
-
-               // we can supply configuration
+               // boot procedure
                {
-                  using Ability = casual::domain::configuration::registration::Ability;
-                  casual::domain::configuration::registration::apply( Ability::supply);
+                  configuration::conform( state, casual::domain::configuration::fetch());
+
+                  // will execute after all configuration tasks are done
+                  auto configuration_done = [ &state]( task::unit::id)
+                  {
+                     // Connect to domain
+                     communication::instance::whitelist::connect( communication::instance::identity::gateway::manager);
+
+                     using Ability = casual::domain::configuration::registration::Ability;
+                     casual::domain::configuration::registration::apply( Ability::supply | Ability::runtime_update);
+
+                     state.runlevel = manager::state::Runlevel::running;
+
+                     log::line( log::category::information, "casual-gateway-manager is online");
+
+                     return task::unit::action::Outcome::abort;
+                  };
+
+                  state.tasks.then( task::create::unit( 
+                     task::create::action( "configuration_done", std::move( configuration_done))
+                  ));
+                    
                }
-               
-
-               state.runlevel = manager::state::Runlevel::running;
-
-               log::line( log::category::information, "casual-gateway-manager is online");
 
                // start message pump
                common::message::dispatch::pump(

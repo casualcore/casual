@@ -8,6 +8,7 @@
 #include "gateway/manager/handle.h"
 #include "gateway/manager/admin/server.h"
 #include "gateway/manager/transform.h"
+#include "gateway/manager/configuration.h"
 #include "gateway/environment.h"
 #include "gateway/common.h"
 
@@ -39,163 +40,18 @@ namespace casual
 
       namespace handle
       {
-         namespace local
-         {
-            namespace
-            {
-               namespace shutdown
-               {
-                  auto group()
-                  {
-                     return []( auto& group)
-                     {
-                        Trace trace{ "gateway::manager::handle::local::shutdown::group"};
-
-                        // We only want to handle terminate during this
-                        common::signal::thread::scope::Mask mask{ signal::set::filled( code::signal::terminate)};
-
-                        if( group.process)
-                        {
-                           log::line( log, "send shutdown to 'group': ", group);
-
-                           communication::device::blocking::optional::send( 
-                              group.process.ipc, 
-                              common::message::shutdown::Request{ common::process::handle()});
-                        }
-                        else if( group.process.pid)
-                        {
-                           log::line( log, "terminate group: ", group);
-                           signal::send( group.process.pid, code::signal::terminate);
-                        }
-
-                        return group.process.pid;
-                     };
-                  }
-
-                  template< typename R>
-                  auto task( const R& groups)
-                  {
-                     // shared "local" state between the 'action' that initiate the shutdown
-                     // and the _handler/predicate_ that decides if the task is done or not. 
-                     auto pids = std::make_shared< std::vector< strong::process::id>>();
-
-                     // initiate the shutdown
-                     auto action = [ pids, &groups]( task::unit::id id)
-                     {
-                        Trace trace{ "gateway::manager::handle::local::shutdown::task::action"};
-
-                        algorithm::transform( groups, *pids, shutdown::group()); 
-
-                        log::line( log, "task: ", id, ", pids: ", *pids);
-
-                        // if we've got nothing, we need to "abort" the task
-                        return pids->empty() ? task::unit::action::Outcome::abort : task::unit::action::Outcome::success;    
-                     };
-
-                     return task::create::unit( std::move( action), [ pids]( task::unit::id id, const common::message::event::process::Exit& message)
-                     {
-                        Trace trace{ "gateway::manager::handle::local::shutdown::task::unit"};
-
-                        algorithm::container::erase( *pids, message.state.pid);
-
-                        log::line( log, "task: ", id, ", pids: ", *pids);
-
-                        return pids->empty() ? task::unit::Dispatch::done : task::unit::Dispatch::pending;
-                     });
-                  }
-
-               } // shutdown
-
-
-               namespace spawn
-               {
-                  strong::process::id process( const std::string& alias, const std::filesystem::path& path, const std::vector< std::string>& arguments)
-                  {
-                     try
-                     { 
-                        auto pid = common::process::spawn(
-                           path,
-                           arguments,
-                           // To set the alias for the spawned process
-                           { instance::variable( instance::Information{ alias})});
-
-                        // Send event
-                        {
-                           common::message::event::process::Spawn event{ common::process::handle()};
-                           event.path = path;
-                           event.alias = alias;
-                           event.pids.push_back( pid);
-                           common::event::send( event);
-                        }
-
-                        return pid;
-                        
-                     }
-                     catch( ...)
-                     {
-                        log::line( log::category::error, exception::capture(), " spawn process ", path);
-                     }
-                     return {};
-                  }
-   
-                  auto group()
-                  {
-                     return []( auto& group)
-                     {
-                        group.process.pid = spawn::process( group.configuration.alias, state::executable::path( group),
-                           {});
-                     };
-                  }
-
-               } // spawn
-
-            } // <unnamed>
-         } // local
-
          void shutdown( State& state)
          {
             Trace trace{ "gateway::manager::handle::shutdown"};
 
             state.runlevel = state::Runlevel::shutdown;
-            
-            // start with the inbound, when shutdown, continue
-            // with the outbound
-            state.tasks.then(
-               local::shutdown::task( state.inbound.groups))
-               .then( local::shutdown::task( state.outbound.groups));
+
+            // conform to empty configuration
+            configuration::conform( state, {});
 
             log::line( verbose::log, "state: ", state);
          }
 
-         void boot( State& state)
-         {
-            Trace trace{ "gateway::manager::handle::boot"};
-
-            auto boot = [handler = manager::handler( state)]( auto& groups) mutable
-            {
-               algorithm::for_each( groups, local::spawn::group());
-
-               common::message::dispatch::relaxed::pump(
-                  common::message::dispatch::condition::compose(
-                     common::message::dispatch::condition::done( [&groups]()
-                     {
-                        auto connected = []( auto& bound)
-                        {
-                           return predicate::boolean( bound.process);
-                        };
-
-                        return algorithm::all_of( groups, connected);
-                     })
-                  ),
-                  handler,
-                  ipc::inbound());
-            };
-
-            // make sure we boot 'in order' and got connected stuff before we continue
-            boot( state.outbound.groups);
-            boot( state.inbound.groups);
-            
-         }
 
          namespace process
          {
@@ -228,24 +84,19 @@ namespace casual
                      return [ &state]( const common::message::event::process::Exit& message)
                      {
                         Trace trace{ "gateway::manager::handle::local::process::exit"};
+                        log::line( verbose::log, "state.runlevel: ", state.runlevel);
 
                         if( ! message.state.deceased())
                            return;
 
-                        // dispatch to potential tasks.
-                        state.tasks( message);
-
                         const auto pid = message.state.pid;
 
-                        auto restart = [&state, &message]( auto& group, auto information)
+                        auto do_restart = [ &state, reason = message.state.reason]( auto& group, auto description)
                         {
                            if( state.runlevel == decltype( state.runlevel())::running)
                            {
-                              log::line( log::category::error, code::casual::invalid_semantics, ' ', information, ' ',
-                                 message.state.reason, " - pid: ", message.state.pid, " alias: ", group.configuration.alias, " - action: restart");
-
-                              group.process = {};
-                              local::spawn::group()( group);
+                              event::error::send( code::casual::invalid_semantics, description, " group ", group.configuration.alias, " exited - reason: ",
+                                 reason, " - action: restart");
                               return true;
                            }
                            return  false;
@@ -253,21 +104,20 @@ namespace casual
 
                         if( auto found = algorithm::find( state.inbound.groups, pid))
                         {
-                           log::line( log::category::information, "inbound terminated - alias: ", found->configuration.alias);
-                           log::line( verbose::log, "connection: ", *found);
-
-                           if( ! restart( *found, "inbound"))
-                              state.inbound.groups.erase( std::begin( found));
+                           auto group = algorithm::container::extract( state.inbound.groups, std::begin( found));
+                           if( do_restart( group, "inbound"))
+                              manager::configuration::add::group( state, std::move( group.configuration));
                         }
-                        
+
                         if( auto found = algorithm::find( state.outbound.groups, pid))
                         {
-                           log::line( log::category::information, "outbound terminated - alias: ", found->configuration.alias);
-                           log::line( verbose::log, "connection: ", *found);
-
-                           if( ! restart( *found, "outbound"))
-                              state.outbound.groups.erase( std::begin( found));
+                           auto group = algorithm::container::extract( state.outbound.groups, std::begin( found));
+                           if( do_restart( group, "outbound"))
+                              manager::configuration::add::group( state, std::move( group.configuration));
                         }
+
+                        // dispatch to potential tasks.
+                        state.tasks( message);
                      };
                   }
 
@@ -287,7 +137,6 @@ namespace casual
                            found->process = message.process;
 
                            message::outbound::configuration::update::Request request{ common::process::handle()};
-                           request.order = found->order;
                            request.model = found->configuration;
                            communication::device::blocking::optional::send( message.process.ipc, request);                                 
                         }
@@ -300,12 +149,12 @@ namespace casual
                   {
                      auto reply( State& state)
                      {
-                        return []( message::outbound::configuration::update::Reply& message)
+                        return [ &state]( message::outbound::configuration::update::Reply& message)
                         {
                            Trace trace{ "gateway::manager::handle::local::outbound::configuration::update"};
                            log::line( verbose::log, "message: ", message);
 
-                           log::line( log::category::information, "outbound configured - pid: ", message.process.pid);
+                           state.tasks( message);
                         };
                      }
                      
@@ -339,12 +188,12 @@ namespace casual
                   {
                      auto reply( State& state)
                      {
-                        return []( message::inbound::configuration::update::Reply& message)
+                        return [ &state]( message::inbound::configuration::update::Reply& message)
                         {
                            Trace trace{ "gateway::manager::handle::local::inbound::configuration::update"};
                            log::line( verbose::log, "message: ", message);
 
-                           log::line( log::category::information, "inbound configured - pid: ", message.process.pid);
+                           state.tasks( message);
                         };
                      }
                      
@@ -367,8 +216,34 @@ namespace casual
 
                         communication::device::blocking::optional::send( message.process.ipc, reply);
                      };
-
                   }
+
+                  namespace update
+                  {
+                     auto request( State& state)
+                     {
+                        return [ &state]( casual::configuration::message::update::Request& message)
+                        {
+                           Trace trace{ "gateway::manager::handle::local::configuration::update::request"};
+                           log::line( verbose::log, "message: ", message);
+
+                           if( state.runlevel == state::Runlevel::running)
+                              state.runlevel.explict_set( state::Runlevel::configuring);
+
+                           manager::configuration::conform( state, std::move( message.model));
+
+                           auto configure_done = [ &state, message]( task::unit::id)
+                           {
+                              state.runlevel = state::Runlevel::running;
+
+                              communication::device::blocking::optional::send( message.process.ipc, common::message::reverse::type( message));
+                              return task::unit::action::Outcome::abort;
+                           };
+
+                           state.tasks.then( task::create::unit( std::move( configure_done)));
+                        };
+                     }
+                  } // update
                } // configuration
 
                namespace shutdown
@@ -404,6 +279,7 @@ namespace casual
             handle::local::inbound::configuration::update::reply( state),
             
             handle::local::configuration::request( state),
+            handle::local::configuration::update::request( state),
             handle::local::shutdown::request( state),
 
             std::ref( call));

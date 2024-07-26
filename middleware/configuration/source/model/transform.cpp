@@ -352,11 +352,13 @@ namespace casual
                      if( ! source)
                         return;
 
-                     algorithm::transform( source->groups, std::back_inserter( target), [connect]( auto& source)
+                     algorithm::transform( source->groups, std::back_inserter( target), [ order = 0l, connect]( auto& source) mutable
                      {
                         gateway::outbound::Group result;
                         result.alias = source.alias.value_or( "");
                         result.note = source.note.value_or( "");
+                        // every group that has no 'order' set, we just set increased order numbers.
+                        result.order = source.order.value_or( ++order);
                         result.connect = connect;
                         result.connections = algorithm::transform( source.connections, []( auto& connection)
                         {
@@ -782,6 +784,7 @@ namespace casual
                      configuration::user::domain::gateway::outbound::Group result;
                      result.alias = value.alias;
                      result.note = null_if_empty( value.note);
+                     result.order = value.order;
                      result.connections = algorithm::transform( value.connections, []( auto& value)
                      {
                         configuration::user::domain::gateway::outbound::Connection result;
