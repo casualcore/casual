@@ -37,10 +37,6 @@ namespace casual
 
             void shutdown( State& state);
 
-            void boot( State& state);
-
-            common::Uuid rediscover( State& state);
-
             namespace process
             {
                void exit( const common::process::lifetime::Exit& exit);

@@ -297,31 +297,6 @@ namespace casual
                      algorithm::container::move::append( manager::task::create::configuration::managers::update( state, wanted, std::move( handles)), result);
                }
 
-               // restarts for "the rest"
-               {
-                  std::vector< state::dependency::Group> groups;
-
-                  auto add_singleton = [&]( auto& id, std::string description)
-                  {
-                     if( auto handle = state.singleton( id))
-                        if( auto server = state.server( handle.pid))
-                        {
-                           auto& group = groups.emplace_back();
-                           group.description = std::move( description);
-                           group.servers.push_back( server->id);
-                        }
-                  };
-
-                  // TODO the order?
-
-                  //if( state.configuration.model.transaction != wanted.transaction)
-                  //   add_singleton( communication::instance::identity::transaction::manager.id, "casual-transaction-manager");
-                  if( state.configuration.model.gateway != wanted.gateway)
-                     add_singleton( communication::instance::identity::gateway::manager.id, "casual-gateway-manager");
-
-                  algorithm::container::move::append( manager::task::create::restart::groups( state, std::move( groups)), result);
-               }
-
                return result;
             }
 

@@ -74,7 +74,7 @@ namespace casual
             {
                switch( value)
                {
-                  case Runlevel::startup: { return "startup";}
+                  case Runlevel::configuring: { return "configuring";}
                   case Runlevel::running: { return "running";}
                   case Runlevel::shutdown: { return "shutdown";}
                }

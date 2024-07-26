@@ -57,6 +57,7 @@ manager_object_files = [
     make.Compile( 'source/manager/handle.cpp'),
     make.Compile( 'source/manager/admin/server.cpp'),
     make.Compile( 'source/manager/transform.cpp'),
+    make.Compile( 'source/manager/configuration.cpp'),
 ]
 
 # The gateway-manager

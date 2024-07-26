@@ -105,7 +105,7 @@ namespace casual
                            // TODO maintainence - make sure we can handle runtime updates...
 
                            state.alias = message.model.alias;
-                           state.order = message.order;
+                           state.order = message.model.order;
 
                            for( auto& configuration : message.model.connections)
                               state.connect.prospects.emplace_back( std::move( configuration));

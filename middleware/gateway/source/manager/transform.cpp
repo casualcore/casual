@@ -20,31 +20,6 @@ namespace casual
    namespace gateway::manager::transform
    {
 
-      manager::State state( configuration::model::gateway::Model configuration)
-      {
-         Trace trace{ "gateway::transform::state"};
-
-         manager::State state;
-         
-         state.outbound.groups = algorithm::transform( configuration.outbound.groups, [ order = platform::size::type{ 0}]( auto& group) mutable
-         {
-            manager::state::outbound::Group result;
-            result.order = order++;
-            result.configuration = group;
-            return result;
-         });
-
-         state.inbound.groups = algorithm::transform( configuration.inbound.groups, []( auto& group)
-         {
-            manager::state::inbound::Group result;
-            result.configuration = group;
-            return result;
-         });
-
-         log::line( verbose::log, "state: ", state);
-
-         return state;
-      }
 
       manager::admin::model::State state( const manager::State& state,
          std::tuple< std::vector< message::inbound::state::Reply>, std::vector< message::inbound::reverse::state::Reply>> inbounds, 

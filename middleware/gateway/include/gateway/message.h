@@ -455,12 +455,10 @@ namespace casual
             {
                using base_request::base_request;
 
-               platform::size::type order{};
                casual::configuration::model::gateway::outbound::Group model;
 
                CASUAL_CONST_CORRECT_SERIALIZE(
                   base_request::serialize( archive);
-                  CASUAL_SERIALIZE( order);
                   CASUAL_SERIALIZE( model);
                )
             };

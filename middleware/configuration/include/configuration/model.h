@@ -526,6 +526,7 @@ namespace casual::configuration
                std::string alias;
                connect::Semantic connect = connect::Semantic::unknown;
                std::vector< outbound::Connection> connections;
+               platform::size::type order{};
                std::string note;
 
                Group set_union( Group lhs, Group rhs);
@@ -540,6 +541,7 @@ namespace casual::configuration
                   CASUAL_SERIALIZE( alias);
                   CASUAL_SERIALIZE( connect);
                   CASUAL_SERIALIZE( connections);
+                  CASUAL_SERIALIZE( order);
                   CASUAL_SERIALIZE( note);
                )
             };

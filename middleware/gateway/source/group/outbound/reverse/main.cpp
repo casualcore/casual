@@ -83,7 +83,7 @@ namespace casual
                            // TODO maintainece - make sure we can handle runtime updates...
 
                            state.alias = message.model.alias;
-                           state.order = message.order;
+                           state.order = message.model.order;
 
                            tcp::listen::attempt( state, std::move( message.model.connections));
 

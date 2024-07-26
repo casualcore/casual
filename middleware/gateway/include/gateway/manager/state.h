@@ -36,6 +36,7 @@ namespace casual
                common::process::Handle process;
                Configuration configuration;
 
+               friend inline bool operator == ( const basic_group& lhs, const std::string& rhs) { return lhs.configuration.alias == rhs;}
                friend inline bool operator == ( const basic_group& lhs, common::strong::process::id rhs) { return lhs.process == rhs;}
                inline explicit operator bool () const { return static_cast< bool>( process);}
 
@@ -47,21 +48,12 @@ namespace casual
 
             namespace inbound
             {  
-               using Group = basic_group< configuration::model::gateway::inbound::Group>;
+               using Group = basic_group< casual::configuration::model::gateway::inbound::Group>;
             } // inbound
 
             namespace outbound
             {
-               using base_group = basic_group< configuration::model::gateway::outbound::Group>;
-               struct Group : base_group
-               {
-                  platform::size::type order{};
-                  
-                  CASUAL_LOG_SERIALIZE(
-                     base_group::serialize( archive);
-                     CASUAL_SERIALIZE( configuration);
-                  )
-               };
+               using Group = basic_group< casual::configuration::model::gateway::outbound::Group>;
             } // outbound
 
             namespace executable
@@ -73,7 +65,7 @@ namespace casual
 
             enum class Runlevel : short
             {
-               startup,
+               configuring,
                running,
                shutdown
             };
@@ -82,7 +74,7 @@ namespace casual
 
          struct State
          {
-            common::state::Machine< state::Runlevel, state::Runlevel::startup> runlevel;
+            common::state::Machine< state::Runlevel, state::Runlevel::configuring> runlevel;
 
             struct
             {
@@ -101,6 +93,8 @@ namespace casual
             //! coordinated tasks, only(?) for shutdown 
             //! inbound before outbound
             casual::task::Coordinator tasks;
+
+            void remove( common::strong::process::id pid);
 
             
             //! @return true if we're done, and ready to exit
