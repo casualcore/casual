@@ -21,6 +21,8 @@
 #include "common/communication/instance.h"
 #include "common/communication/select/ipc.h"
 
+#include "configuration/model/change.h"
+
 namespace casual
 {
    namespace gateway::group::inbound::reverse
@@ -103,12 +105,36 @@ namespace casual
                            Trace trace{ "gateway::reverse::inbound::local::internal::handle::configuration::update::request"};
                            log::line( verbose::log, "message: ", message);
 
-                           // TODO maintainece - make sure we can handle runtime updates...
                            state.alias = message.model.alias;
                            state.limit = message.model.limit;
+
+                           auto equal_address = []( auto& lhs, auto& rhs){ return lhs.address == rhs.address;};
+
+                           auto change = casual::configuration::model::change::concrete::calculate( 
+                              state.connections.configuration(), 
+                              message.model.connections, 
+                              equal_address);
+
+                           log::line( verbose::log, "change: ", change);
                            
-                           for( auto& configuration : message.model.connections)
-                              state.connect.prospects.emplace_back( std::move( configuration));
+                           // add
+                           {
+                              for( auto& configuration : change.added)
+                                 state.connect.prospects.emplace_back( std::move( configuration));
+                           }
+
+                           // modify
+                           {
+                              for( auto& configuration : change.modified)
+                                 state.connections.replace_configuration( std::move( configuration));
+                           }
+
+                           // remove
+                           {
+                              for( auto& configuration : change.removed)
+                                 if( auto descriptor = state.connections.external_descriptor( configuration.address))
+                                    inbound::handle::connection::disconnect( state, descriptor);
+                           }
 
                            // we might got some addresses to try...
                            external::connect( state);
@@ -187,8 +213,10 @@ namespace casual
                            Trace trace{ "gateway::group::inbound::reverse::local::internal::handle::connection::lost"};
                            log::line( verbose::log, "message: ", message);
 
-                           log::line( log::category::information, code::casual::communication_unavailable, " lost connection to domain: ", message.remote);
+                           if( state.runlevel > inbound::state::Runlevel::running)
+                              return;
 
+                           log::line( log::category::information, code::casual::communication_unavailable, " lost connection to domain: ", message.remote);
                            external::reconnect( state, std::move( message.configuration));
                         };
                      }

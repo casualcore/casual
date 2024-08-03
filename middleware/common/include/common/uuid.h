@@ -49,12 +49,10 @@ namespace casual
 
          // forward serialization
          CASUAL_FORWARD_SERIALIZE( view::binary::make( m_uuid))
-
-         friend inline bool operator == ( const Uuid& lhs, const Uuid& rhs) noexcept { return algorithm::equal( lhs.m_uuid, rhs.m_uuid);}     
-         friend inline bool operator < ( const Uuid& lhs, const Uuid& rhs) noexcept { return algorithm::lexicographical::compare( lhs.m_uuid, rhs.m_uuid);}
-
-         friend inline bool operator == ( const Uuid& lhs, const Uuid::uuid_type& rhs) noexcept { return algorithm::equal( lhs.m_uuid, rhs);}    
-
+ 
+         friend inline bool operator == ( const Uuid& lhs, const Uuid::uuid_type& rhs) noexcept { return algorithm::equal( lhs.m_uuid, rhs);}
+         inline friend bool operator == ( const Uuid&, const Uuid&) = default;  
+         inline friend auto operator <=> ( const Uuid&, const Uuid&) = default;  
 
          friend std::ostream& operator << ( std::ostream& out, const Uuid& uuid);
          friend std::istream& operator >> ( std::istream& in, Uuid& uuid);

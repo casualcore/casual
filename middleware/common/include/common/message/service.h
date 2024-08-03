@@ -258,6 +258,24 @@ namespace casual
                   )
                };
 
+               enum struct Directive
+               {
+                  update,   //! regular update
+                  reset,    //! remove all previous associated services for the 'device'
+                  instance, //! instance (order) only 
+               };
+
+               constexpr std::string_view description( Directive value) noexcept
+               {
+                  switch( value)
+                  {
+                     case Directive::update: return "update";
+                     case Directive::reset: return "reset";
+                     case Directive::instance: return "instance";
+                  }
+                  return "<unknown>";
+               }
+
             } // advertise
 
             using basic_advertise = basic_request< message::Type::service_concurrent_advertise>;
@@ -270,8 +288,7 @@ namespace casual
                //! A human readable description of the "instance"
                std::string description;
                platform::size::type order = 0;
-               //! remove all previous associated services for the 'device'
-               bool reset = false;
+               advertise::Directive directive{};
 
                struct
                {
@@ -289,7 +306,7 @@ namespace casual
                   CASUAL_SERIALIZE( alias);
                   CASUAL_SERIALIZE( description);
                   CASUAL_SERIALIZE( order);
-                  CASUAL_SERIALIZE( reset);
+                  CASUAL_SERIALIZE( directive);
                   CASUAL_SERIALIZE( services);
                )
             };

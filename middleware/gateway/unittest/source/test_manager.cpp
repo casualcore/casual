@@ -39,6 +39,7 @@
 #include "configuration/model/load.h"
 #include "configuration/model/transform.h"
 
+
 namespace casual
 {
    using namespace common;
@@ -175,20 +176,46 @@ domain:
    gateway:
       inbound:
          groups:
-            -  alias: inbound-1
+            -  alias: A
                note: xxx
                connections: 
-                  -  address: 127.0.0.1:6669
+                  -  address: 127.0.0.1:7010
                      note: yyy
+            -  alias: X
+               connections: 
+                  -  address: 127.0.0.1:7011
+                  -  address: 127.0.0.1:7012
       outbound:
          groups: 
-            -  alias: outbound-1
+            -  alias: B
+               order: 2
                connections:
-                  -  address: 127.0.0.1:6669
+                  -  address: 127.0.0.1:7010
+      reverse:
+         inbound:
+            groups:
+               -  alias: RA
+                  connections: 
+                     -  address: 127.0.0.1:7020
+                     -  address: 127.0.0.1:7021
+         outbound:
+            groups: 
+               -  alias: RB
+                  order: 1
+                  connections:
+                     -  address: 127.0.0.1:7020
+               -  alias: RC
+                  order: 1
+                  connections:
+                     -  address: 127.0.0.1:7021
+
+
+            
 )");
 
          // wait for the 'bounds' to be connected...
          unittest::fetch::until( unittest::fetch::predicate::outbound::connected());
+
 
          auto wanted = local::configuration::load( local::configuration::servers, R"(
 domain: 
@@ -196,28 +223,99 @@ domain:
    gateway:
       inbound:
          groups:
-            -  alias: A
+            -  alias: X
+               connections: 
+                  -  address: 127.0.0.1:7013
+            -  alias: C
                note: yyy
                connections: 
                   -  address: 127.0.0.1:7001
                      note: yyy
+
       outbound:
          groups: 
             -  alias: B
+               order: 2
+               connections:
+                  -  address: 127.0.0.1:7013
+            -  alias: D
+               order: 1
                connections:
                   -  address: 127.0.0.1:7001
+      reverse:
+         inbound:
+            groups:
+               -  alias: RA
+                  connections: 
+                     -  address: 127.0.0.1:7031
+                     -  address: 127.0.0.1:7032
+         outbound:
+            groups: 
+               -  alias: RB
+                  order: 1
+                  connections:
+                     -  address: 127.0.0.1:7031
+               -  alias: RD
+                  order: 1
+                  connections:
+                     -  address: 127.0.0.1:7032
 )");
 
          // make sure the wanted differs (otherwise we're not testing anything...)
-         ASSERT_TRUE( wanted.gateway != casual::configuration::model::transform( casual::domain::unittest::configuration::get()).gateway);
+         {
+            auto gateway = casual::configuration::model::transform( casual::domain::unittest::configuration::get()).gateway;
+            ASSERT_TRUE( wanted.gateway != gateway);
+         }
+
+         // When adding/removing and stuff, the order is not guaranteed.
+         // We sort groups for deterministic compare
+         auto sort_groups = []( auto model)
+         {
+            algorithm::sort( model.gateway.inbound.groups);
+            algorithm::sort( model.gateway.outbound.groups);
+            return model;
+         };
+
+         // normalize order
+         wanted = sort_groups( std::move( wanted));
+         
 
          // post the wanted model (with transformed user representation)
          casual::domain::unittest::configuration::post( casual::configuration::model::transform( wanted));
          
-         // wait for the 'bounds' to be connected...
-         unittest::fetch::until( unittest::fetch::predicate::outbound::connected());
+         // wait for the 'bounds' to be connected... and some sanity checks to verify that the 
+         // configuration has been applied
+         {
+            auto state = unittest::fetch::until( unittest::fetch::predicate::outbound::connected());
 
-         auto updated = casual::configuration::model::transform( casual::domain::unittest::configuration::get());
+            auto has_address = [ &connections = state.connections]( std::string_view name, std::string_view address)
+            {
+               auto is_group_address = [ name, address]( auto& connection)
+               { 
+                  return connection.group == name && algorithm::compare::any( address, connection.address.local, connection.address.peer);
+               };
+
+               return predicate::boolean( algorithm::find_if( connections, is_group_address));
+            };
+
+            // inbound
+            EXPECT_TRUE( has_address( "X", "127.0.0.1:7013"));
+            EXPECT_TRUE( has_address( "C", "127.0.0.1:7001"));
+            
+            // outbound
+            EXPECT_TRUE( has_address( "B", "127.0.0.1:7013"));
+            EXPECT_TRUE( has_address( "D", "127.0.0.1:7001"));
+
+            // reverse inbound
+            EXPECT_TRUE( has_address( "RA", "127.0.0.1:7031"));
+            EXPECT_TRUE( has_address( "RA", "127.0.0.1:7032"));
+
+            // reverse outbound
+            EXPECT_TRUE( has_address( "RB", "127.0.0.1:7031"));
+            EXPECT_TRUE( has_address( "RD", "127.0.0.1:7032"));
+         }
+
+         auto updated = sort_groups( casual::configuration::model::transform( casual::domain::unittest::configuration::get()));
 
          EXPECT_TRUE( wanted.gateway == updated.gateway) << CASUAL_NAMED_VALUE( wanted.gateway) << '\n' << CASUAL_NAMED_VALUE( updated.gateway);
 

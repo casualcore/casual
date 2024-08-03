@@ -34,8 +34,18 @@ namespace casual
 
          //! unadvertise all associated resources to descriptor, mark the connection as 'disconnecting'
          void disconnect( State& state, common::strong::socket::id descriptor);
+
+         //! unadvertise all associated resources to descriptor, mark the connection as 'disconnecting' and 'remove'
+         void remove( State& state, common::strong::socket::id descriptor);
          
       } // connection
+
+      namespace advertise
+      {
+         //! (re)advertise all connection
+         void connections( State& state);
+         
+      } // advertise
 
       //! take care of pending tasks, when message dispatch is idle.
       void idle( State& state);

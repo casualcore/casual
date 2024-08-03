@@ -97,9 +97,8 @@ namespace casual
                      return common::predicate::conjunction( is::inbound(), is::runlevel::connected());
                   }
                } // connected
-
-
             } // is
+
             namespace outbound
             {
                inline auto connected()
@@ -131,6 +130,7 @@ namespace casual
                {
                   return connected( std::vector< std::string_view>{ name});
                }
+
 
                // returns a predicate that checks if all out-connections has NOT a 'remote id'
                inline auto disconnected()

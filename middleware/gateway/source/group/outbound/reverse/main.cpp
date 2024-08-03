@@ -18,6 +18,8 @@
 #include "common/argument.h"
 #include "common/message/dispatch/handle.h"
 
+#include "configuration/model/change.h"
+
 
 namespace casual
 {
@@ -75,17 +77,47 @@ namespace casual
                   {
                      auto request( State& state)
                      {
-                        return [&state]( gateway::message::outbound::configuration::update::Request&& message)
+                        return [ &state]( gateway::message::outbound::configuration::update::Request&& message)
                         {
                            Trace trace{ "gateway::group::outbound::reverse::local::internal::handle::configuration::update::request"};
                            log::line( verbose::log, "message: ", message);
 
-                           // TODO maintainece - make sure we can handle runtime updates...
-
                            state.alias = message.model.alias;
-                           state.order = message.model.order;
+                           
+                           // if the order differ we need to re-advertise all current connections with
+                           // the new order.
+                           if( state.order != message.model.order)
+                           {
+                              state.order = message.model.order;
+                              outbound::handle::advertise::connections( state);
+                           }
 
-                           tcp::listen::attempt( state, std::move( message.model.connections));
+                           auto equal_address = []( auto& lhs, auto& rhs){ return lhs.address == rhs.address;};
+
+                           auto change = casual::configuration::model::change::concrete::calculate( 
+                              state.listen.configuration(), 
+                              message.model.connections, 
+                              equal_address);
+
+                           log::line( verbose::log, "change: ", change);
+                           
+                           // add
+                           {
+                              tcp::listen::attempt( state, std::move( change.added));
+                           }
+
+                           // modify
+                           {
+                              for( auto& configuration : change.modified)
+                                 state.listen.replace_configuration( std::move( configuration));
+                           }
+
+                           // remove
+                           {
+                              for( auto& configuration : change.removed)
+                                 if( auto listener = state.listen.extract( state.directive, configuration.address))
+                                    log::line( log::category::information, "stopped listening on: ", listener->configuration.address);
+                           }
 
                            // send reply
                            state.multiplex.send( message.process.ipc, common::message::reverse::type( message, common::process::handle()));

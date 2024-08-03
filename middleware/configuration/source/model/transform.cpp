@@ -313,6 +313,8 @@ namespace casual
 
                   auto& gateway = *domain.gateway;
 
+                  log::line( verbose::log, "gateway.reverse: ", gateway.reverse);
+
                   auto append_inbounds = []( auto& source, auto& target, auto connect)
                   { 
                      if( ! source)

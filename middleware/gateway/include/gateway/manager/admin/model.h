@@ -90,6 +90,8 @@ namespace casual
             {
                std::string local;
                std::string peer;
+
+               inline friend auto operator <=> ( const Address&, const Address&) = default;
                
                CASUAL_CONST_CORRECT_SERIALIZE(
                   CASUAL_SERIALIZE( local);
@@ -99,7 +101,7 @@ namespace casual
             
          } // connection
 
-         struct Connection : common::Compare< Connection>
+         struct Connection
          {
             std::string group;
             connection::Runlevel runlevel = connection::Runlevel::connecting;
@@ -114,6 +116,8 @@ namespace casual
             
             
             inline friend bool operator == ( const Connection& lhs, std::string_view rhs) { return lhs.remote == rhs;}
+            inline friend bool operator == ( const Connection&, const Connection&) = default;
+            inline friend auto operator <=> ( const Connection&, const Connection&) = default;
 
             //! @deprecated remove in 2.0 - group knows the process, not the connection
             common::process::Handle process;
@@ -133,8 +137,6 @@ namespace casual
                //! @deprecated remove in 2.0
                CASUAL_SERIALIZE( process);
             )
-
-            inline auto tie() const noexcept { return std::tie( remote, bound, group);}
          };
 
          namespace group

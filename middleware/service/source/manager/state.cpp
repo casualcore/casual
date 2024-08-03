@@ -215,6 +215,12 @@ namespace casual
                   instance.get().remove( service, replacement);
             }
 
+            void Instances::update_prioritized()
+            {
+               algorithm::stable_sort( m_concurrent);
+               prioritize();
+            }
+
             void Instances::prioritize() noexcept
             {
                if( m_concurrent.empty())
@@ -662,20 +668,38 @@ namespace casual
       std::vector< state::service::pending::Lookup> State::update( common::message::service::concurrent::Advertise&& message)
       {
          Trace trace{ "service::manager::State::update concurrent"};
-
+         
          if( ! message.process)
          {
-            log::line( common::log::category::error, code::casual::internal_unexpected_value, " invalid process ", message.process, " tries to advertise services - action: ignore");
-            log::line( verbose::log, "message: ", message);
+            log::error( code::casual::internal_unexpected_value, "invalid process ", message.process, " tries to advertise services - action: ignore");
             return {};
          }
 
-         if( message.reset)
+         if( message.directive == decltype( message.directive)::reset)
          {
             // remove the instance and it's associations
             remove( message.process.ipc);
 
             // we're removing stuff, no new services can be available.
+            return {};
+         }
+
+         if( message.directive == decltype( message.directive)::instance)
+         {
+            auto concurrent= algorithm::find( instances.concurrent, message.process.ipc);
+
+            if( ! concurrent)
+               return {};
+
+            concurrent->second.order = message.order;
+            concurrent->second.alias = message.alias;
+            concurrent->second.description = message.description;
+
+            // We need to go through all services and update order/prio
+            for( auto& service : services)
+               service.second.instances.update_prioritized();
+
+            // nothing added, no new services available.
             return {};
          }
 

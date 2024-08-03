@@ -309,6 +309,8 @@ namespace casual
                //!   Otherwise, the first instance, and rotate.
                state::service::instance::Concurrent* next_concurrent( ipc_range_type preferred) noexcept;
 
+               void update_prioritized();
+
                inline const auto& sequential() const noexcept { return m_sequential;}
                inline const auto& concurrent() const noexcept { return m_concurrent;}
 

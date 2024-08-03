@@ -98,9 +98,7 @@ namespace casual
             )
          };
 
-         
-
-
+      
          struct Queue
          {
             using Enable = casual::configuration::model::queue::Queue::Enable;

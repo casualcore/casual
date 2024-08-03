@@ -113,6 +113,7 @@ namespace casual
             task::Unit modified_outbound_groups( State& state, std::vector< casual::configuration::model::gateway::outbound::Group> configuration)
             {
                Trace trace{ "gateway::manager::configuration::conform::local::modified_outbound_groups"};
+               log::line( verbose::log, "configuration: ", configuration);
 
                struct Shared
                {
@@ -129,6 +130,8 @@ namespace casual
                   {
                      if( auto found = algorithm::find( state.outbound.groups, configuration.alias))
                      {
+                        found->configuration = configuration;
+
                         message::outbound::configuration::update::Request request{ common::process::handle()};
                         request.model = configuration;
                         communication::device::blocking::optional::send( found->process.ipc, request);
@@ -169,6 +172,8 @@ namespace casual
                   {
                      if( auto found = algorithm::find( state.inbound.groups, configuration.alias))
                      {
+                        found->configuration = configuration;
+                        
                         message::inbound::configuration::update::Request request{ common::process::handle()};
                         request.model = configuration;
                         communication::device::blocking::optional::send( found->process.ipc, request);
@@ -281,6 +286,7 @@ namespace casual
                auto action = [ &state, shared, configuration = std::move( configuration)]( task::unit::id)
                {
                   Trace trace{ "gateway::manager::configuration::conform::local::added_outbound_groups action"};
+                  log::line( verbose::log, "configuration: ", configuration);
 
                   auto groups = algorithm::transform( configuration, []( auto& group)
                   {

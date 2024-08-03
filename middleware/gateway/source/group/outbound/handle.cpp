@@ -925,13 +925,13 @@ namespace casual
          {
             common::message::service::concurrent::Advertise request{ handle};
             request.alias = instance::alias();
-            request.reset = true;
+            request.directive = decltype( request.directive)::reset;
             state.multiplex.send( ipc::manager::service(), request);
          }
 
          {
             casual::queue::ipc::message::Advertise request{ handle};
-            request.reset = true;
+            request.directive = decltype( request.directive)::reset;
             if( ! state.multiplex.send( ipc::manager::optional::queue(), request))
                log::line( verbose::log, "queue-manager is not on-line");
          }
@@ -968,16 +968,74 @@ namespace casual
             // unadvertise all associated services and queues, if any.
             handle::unadvertise( state, descriptor);
 
-            state.disconnecting.push_back( descriptor);
+            state.disconnecting.push_back( state::Disconnect{ descriptor, state::disconnect::Directive::disconnect});
+         }
+
+         void remove( State& state, common::strong::socket::id descriptor)
+         {
+            Trace trace{ "gateway::group::outbound::handle::connection::remove"};
+            log::line( verbose::log, "descriptor: ", descriptor);
+
+            // unadvertise all associated services and queues, if any.
+            handle::unadvertise( state, descriptor);
+
+            state.disconnecting.push_back( state::Disconnect{ descriptor, state::disconnect::Directive::remove});
          }
          
       } // connection
+
+      namespace advertise
+      {
+         void connections( State& state)
+         {
+            Trace trace{ "gateway::group::outbound::handle::advertise::connections"};
+
+            auto advertise = [ &state]( auto& information)
+            {
+               auto handle = state.connections.process_handle( information.descriptor);
+               {
+                  common::message::service::concurrent::Advertise request{ handle};
+                  // only update instance information
+                  request.directive = decltype( request.directive)::instance;
+                  request.alias = state.alias;
+                  request.description = information.domain.name;
+                  request.order = state.order;
+                  state.multiplex.send( ipc::manager::service(), request);
+               }
+               {
+                  casual::queue::ipc::message::Advertise request{ handle};
+                  // only update instance information
+                  request.directive = decltype( request.directive)::instance;
+                  request.alias = state.alias;
+                  request.description = information.domain.name;
+                  request.order = state.order;
+                  state.multiplex.send( ipc::manager::optional::queue(), request);
+               }
+            };
+
+            algorithm::for_each( state.connections.information(), advertise);
+         }
+         
+      } // advertise
 
       void idle( State& state)
       {
          Trace trace{ "gateway::group::outbound::handle::idle"};
 
-         // we need to check metric, we don't know when we're about to be called again.
+         auto is_idle = [ &state]( auto disconnect){ return state.idle( disconnect.descriptor);};
+
+         if( auto range = algorithm::filter( state.disconnecting, is_idle))
+         {
+            // copy the descriptors - connection::lost will modify state.disconnecting
+            for( auto disconnect : range | std::ranges::to< std::vector>())
+            {
+               auto lost = connection::lost( state, disconnect.descriptor);
+               if( disconnect.directive == state::disconnect::Directive::disconnect)
+                  communication::ipc::inbound::device().push( std::move( lost));
+            }
+         }
+
+         // we need to check/send metric, we don't know when we're about to be called again.
          state.service_metric.force_metric( state, &handle::metric::send);
       }
 
