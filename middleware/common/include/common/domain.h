@@ -22,7 +22,7 @@ namespace casual
    namespace common::domain
    {
 
-      struct Identity : common::Compare< Identity>
+      struct Identity
       {
          // enable environment variable serialization
          using environment_variable_enable = void;
@@ -43,9 +43,9 @@ namespace casual
 
          inline friend bool operator == ( const Identity& lhs, std::string_view rhs) { return lhs.name == rhs;}
          inline friend bool operator == ( const Identity& lhs, const strong::domain::id& rhs) { return lhs.id == rhs;}
-
-         inline auto tie() const noexcept { return std::tie( id);}
-
+         
+         inline friend bool operator == ( const Identity&, const Identity&) = default;
+         inline friend auto operator <=> ( const Identity&, const Identity&) = default;
       };
 
       const Identity& identity();

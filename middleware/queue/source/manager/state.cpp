@@ -180,12 +180,34 @@ namespace casual
          // from this domains queue-groups. Hence, the advertised queues are
          // remote queues.
          
-         if( message.reset)         
+         if( message.directive == decltype( message.directive)::reset)      
             return remove_queues( message.process.ipc);
 
-
          // outbound order is zero-based, we add 1 to give it lower prio.
-         auto order = message.order + 1;
+         const auto order = message.order + 1;
+
+         if( message.directive == decltype( message.directive)::instance)
+         {
+            auto remote = algorithm::find( remotes, message.process.ipc);
+
+            if( ! remote)
+               return;
+
+            remote->alias = message.alias;
+            remote->order = order;
+            remote->description = message.description;
+
+            // we need to go through all queues and update instance order
+            for( auto& pair : queues)
+            {
+               if( auto found = algorithm::find( pair.second, message.process.ipc))
+                  found->order = order;
+
+               algorithm::stable_sort( pair.second);
+            }
+
+            return;
+         }
 
          // make sure we've got the instance
          if( ! common::algorithm::find( remotes, message.process))
@@ -202,7 +224,7 @@ namespace casual
             instance.enable.dequeue = queue.enable.dequeue;
 
             // Make sure we prioritize local queue
-            common::algorithm::stable_sort( instances);
+            algorithm::stable_sort( instances);
          };
 
          algorithm::for_each( message.queues.add, add_queue);

@@ -204,7 +204,7 @@ namespace casual
          {
             struct Result
             {
-               group::tcp::connection::Information< configuration::model::gateway::outbound::Connection> information;
+               group::tcp::connection::Information< casual::configuration::model::gateway::outbound::Connection> information;
                std::vector< reply::destination::Entry> destinations;
                std::vector< common::transaction::global::ID> gtrids;
 
@@ -218,20 +218,45 @@ namespace casual
             };
          } // extract
 
+         namespace disconnect
+         {
+            enum struct Directive : short
+            {
+               disconnect,
+               remove,
+            };
+            std::string_view description( Directive value);
+            
+         } // disconnect
+
+         struct Disconnect
+         {
+            common::strong::socket::id descriptor;
+            disconnect::Directive directive;
+            
+            inline friend bool operator == ( const Disconnect& lhs, common::strong::socket::id rhs) { return lhs.descriptor == rhs;}
+
+            CASUAL_LOG_SERIALIZE( 
+               CASUAL_SERIALIZE( directive);
+               CASUAL_SERIALIZE( descriptor);
+            )
+         };
+
       } // state
 
       struct State
       {
          common::state::Machine< state::Runlevel, state::Runlevel::running> runlevel;
+         
          common::communication::select::Directive directive;
-         group::connection::Holder< configuration::model::gateway::outbound::Connection> connections;
+         common::communication::ipc::send::Coordinator multiplex{ directive};
+
+         group::connection::Holder< casual::configuration::model::gateway::outbound::Connection> connections;
 
          state::task_coordinator_type tasks;
          
          state::reply::Destination reply_destination;
          state::service::Metric service_metric;
-
-         common::communication::ipc::send::Coordinator multiplex{ directive};
 
          
          struct
@@ -246,7 +271,7 @@ namespace casual
 
 
          //! holds all connections that has been requested to disconnect.
-         std::vector< common::strong::socket::id> disconnecting;
+         std::vector< state::Disconnect> disconnecting;
 
          std::string alias;
          platform::size::type order{};

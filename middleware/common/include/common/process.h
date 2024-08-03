@@ -45,7 +45,7 @@ namespace casual
          strong::ipc::id ipc;
 
          inline friend bool operator == ( const Handle&, const Handle&) = default;
-         inline friend bool operator < ( const Handle& lhs, const Handle& rhs) { return std::tie( lhs.pid, lhs.ipc) < std::tie( rhs.pid, rhs.ipc);}
+         inline friend auto operator <=> ( const Handle&, const Handle&) = default;
 
          //! extended equality
          inline friend bool operator == ( const Handle& lhs, strong::process::id rhs) noexcept { return lhs.pid == rhs;}

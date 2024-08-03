@@ -88,6 +88,19 @@ namespace casual
             return common::algorithm::transform( m_mapping, []( auto& pair){ return pair.ipc;});
          }
 
+         common::strong::socket::id external_descriptor( const std::string& address) const
+         {
+            auto is_address = [ &address]( auto& information)
+            {
+               return information.configuration.address == address;
+            };
+
+            if( auto found = common::algorithm::find_if( m_information, is_address))
+               return found->descriptor;
+
+            return {};
+         }
+
          inline common::strong::ipc::descriptor::id partner( common::strong::socket::id tcp) const noexcept
          {
             if( auto found = common::algorithm::find( m_mapping, tcp))
@@ -117,7 +130,6 @@ namespace casual
 
             return nullptr;
          }
-         
 
          const Information* information( common::strong::socket::id descriptor) const noexcept
          {
@@ -131,6 +143,18 @@ namespace casual
             if( auto found = common::algorithm::find( m_information, domain))
                return found.data();
             return nullptr;
+         }
+
+
+         void replace_configuration( Configuration configuration)
+         {
+            auto is_address = [ &configuration]( auto& information)
+            {
+               return information.configuration.address == configuration.address;
+            };
+
+            if( auto found = common::algorithm::find_if( m_information, is_address))
+               found->configuration = std::move( configuration);
          }
 
          inline common::communication::ipc::inbound::Device* find_internal( common::strong::ipc::descriptor::id ipc) noexcept
@@ -252,6 +276,10 @@ namespace casual
             return reply;
          }
 
+         std::vector< Configuration> configuration() const
+         {
+            return common::algorithm::transform( m_information, []( auto& information){ return information.configuration;});
+         }
 
          CASUAL_LOG_SERIALIZE( 
             CASUAL_SERIALIZE( m_mapping);

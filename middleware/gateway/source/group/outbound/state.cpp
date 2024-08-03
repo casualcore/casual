@@ -116,6 +116,21 @@ namespace casual
             
          } // pending
 
+         namespace disconnect
+         {
+            std::string_view description( Directive value)
+            {
+               switch( value)
+               {
+                  case Directive::disconnect: return "disconnect";
+                  case Directive::remove: return "remove";
+               }
+               return "<unknown>";
+            }
+            
+         } // disconnect
+
+
       } // state
 
       state::extract::Result State::failed( common::strong::socket::id descriptor)

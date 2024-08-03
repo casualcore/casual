@@ -58,6 +58,60 @@ namespace casual
                   offline.push_back( std::move( listener.configuration));
             }
 
+            common::strong::socket::id descriptor( const std::string& address) const
+            {
+               auto is_address = [ &address]( auto& listener){ return listener.configuration == address;};
+
+               if( auto found = common::algorithm::find_if( actives, is_address))
+                  return found->socket.descriptor();
+
+               return {};
+            }
+
+            std::optional< Configuration> extract( common::communication::select::Directive& directive, common::strong::socket::id id)
+            {
+               if( auto found = common::algorithm::find( actives, id))
+               {
+                  auto active = common::algorithm::container::extract( actives, std::begin( found));
+                  directive.read.remove( active.socket.descriptor());
+                  return active.configuration;
+               }
+               return {};
+            }
+
+            std::optional< Listener> extract( common::communication::select::Directive& directive, const std::string& address)
+            {
+               auto is_address = [ &address]( auto& listener){ return listener.configuration.address == address;};
+
+               if( auto found = common::algorithm::find_if( actives, is_address))
+               {
+                  auto active = common::algorithm::container::extract( actives, std::begin( found));
+                  directive.read.remove( active.socket.descriptor());
+                  return active;
+               }
+               return {};
+            }
+
+            void replace_configuration( Configuration configuration)
+            {
+               auto is_address = [ &configuration]( auto& listener){ return listener.configuration.address == configuration.address;};
+
+               if( auto found = common::algorithm::find_if( actives, is_address))
+                  found->configuration = std::move( configuration);
+            }
+
+            std::vector< Configuration> configuration() const
+            {
+               auto result = common::algorithm::transform( actives, []( auto& listener)
+               { 
+                  return listener.configuration;
+               });
+
+               // TODO offline/failed too?
+
+               return result;
+            };
+
             std::vector< Listener> actives;
             std::vector< Configuration> offline;
             std::vector< Configuration> failed;
@@ -124,10 +178,12 @@ namespace casual
 
                // we need the socket to not block in 'accept'
                listener.socket.set( communication::socket::option::File::no_block);
+
+               log::information( "started listening on: ", listener.configuration.address);
             }
             catch( ...)
             {
-               log::line( log::category::error, "failed to listen on ", configuration.address, " - error: ", exception::capture());
+               log::error( exception::capture(), "failed to listen on ", configuration.address);
                state.listen.failed.push_back( std::move( configuration));
             } 
          };

@@ -95,7 +95,6 @@ outbound_archive = make.LinkArchive( 'bin/casual-gateway-outbound-archive',
     [
         make.Compile( 'source/group/outbound/state.cpp'),
         make.Compile( 'source/group/outbound/handle.cpp'),
-        make.Compile( 'source/group/outbound/state/route.cpp'),
     ]
 )
 

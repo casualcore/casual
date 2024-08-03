@@ -16,7 +16,10 @@ namespace casual
       namespace detail
       {
          template< typename T>
-         concept code_like = std::is_error_code_enum_v< T> || std::is_error_condition_enum_v< T>;
+         concept code_like = 
+            std::is_error_code_enum_v< T> || std::is_error_condition_enum_v< T> ||
+            std::same_as< T, std::error_code>;
+
       } // detail
 
       template< typename... Args>
@@ -39,6 +42,21 @@ namespace casual
       auto error( Code code, Args&&... args)
       {
          log::code( log::category::error, code, std::forward< Args>( args)...);
+      }
+
+      template< typename... Args>
+      auto error( const std::system_error& error, Args&&... args)
+      {
+         if constexpr( sizeof...( Args) == 0)
+            log::code( log::category::error, error.code(), std::forward< Args>( args)...);
+         else
+            log::code( log::category::error, error.code(), std::forward< Args>( args)..., " - ", error.what());
+      }
+
+      template< typename... Args>
+      void information( Args&&... args)
+      {
+         log::line( log::category::information, std::forward< Args>( args)...);
       }
 
       namespace verbose

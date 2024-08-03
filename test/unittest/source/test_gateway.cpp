@@ -590,14 +590,13 @@ domain:
          // shutdown and boot b
          common::sink( std::move( b));
          gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected( 0));
-
+         
 
          b = local::domain( B);
          a.activate();
 
          // wait until we're connected again
          gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected( 1));
-
       }
 
       TEST( test_gateway, domain_A_to_B_reverse_connection_shutdown_A__boot_A__expect_connection_to_B_again)

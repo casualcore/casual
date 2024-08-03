@@ -29,7 +29,7 @@ _use_pager() {
 arguments=($(_use_pager "$*"))
 ret=$?
 (( ret == 0 )) && \
-    casual-log-format "${arguments[@]}" | less -R || \
+    casual-log-format "${arguments[@]}" | less -n -R || \
         casual-log-format "${arguments[@]}"
 
 if (( ret == 2 )); then
