@@ -671,9 +671,6 @@ namespace casual
                            Trace trace{ "queue::forward::service::local::handle::service::lookup::reply"};
                            log::line( verbose::log, "message: ", message);
 
-                           if( message.state == decltype( message.state)::busy)
-                              return;
-
                            auto pending = pending::consume( state.pending.service.lookups, message.correlation);
                            
                            if( ! pending)

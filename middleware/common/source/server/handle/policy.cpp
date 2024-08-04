@@ -221,12 +221,6 @@ namespace casual
 
                   auto target = lookup();
 
-                  if( target.busy())
-                  {
-                     // We wait for service to become idle
-                     target = lookup();
-                  }
-
                   request.buffer = std::move( forward.parameter.payload);
                   request.service = target.service;
 

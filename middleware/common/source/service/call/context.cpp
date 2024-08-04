@@ -163,12 +163,6 @@ namespace casual
          auto unreserve = common::execute::scope( [&](){ m_state.pending.unreserve( prepared.descriptor);});
 
 
-         if( target.busy())
-         {
-            // We wait for an instance to become idle.
-            target = service();
-         }
-
          if( target.state != decltype( target.state)::idle)
             code::raise::error( code::casual::invalid_semantics, "unable to reserve instance of service '", target.service, "'");
 

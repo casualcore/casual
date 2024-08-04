@@ -63,12 +63,6 @@ namespace casual
                         Trace trace{ "service::forward::handle::local::service::name::lookup::reply"};
                         log::line( verbose::log, "message: ", message);
 
-                        if( message.state == decltype( message.state)::busy)
-                        {
-                           log::line( log, "service is busy - action: wait for idle");
-                           return;
-                        }
-
                         auto found = algorithm::find( state.pending, message.correlation);
 
                         if( ! found)

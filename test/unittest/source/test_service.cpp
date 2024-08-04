@@ -392,7 +392,6 @@ domain:
 
          // lookup / reserve the instance
          auto lookup = common::service::Lookup{ "casual/example/echo"}();
-         ASSERT_TRUE( ! lookup.busy());
 
          communication::ipc::inbound::Device inbound;
 

@@ -74,7 +74,6 @@ namespace casual
                {
                   message::service::lookup::Request lookup{ local::handle( ipc)};
                   lookup.requested = service;
-                  lookup.context.semantic = decltype( lookup.context.semantic)::no_busy_intermediate;
                   return communication::device::blocking::send( communication::instance::outbound::service::manager::device(), lookup);
                }
 

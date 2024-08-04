@@ -45,7 +45,7 @@ namespace casual
             concurrent = 2,
          };
 
-         struct Base : common::Compare < Base>
+         struct Base 
          {
             Base() = default;
 
@@ -64,8 +64,9 @@ namespace casual
             service::Type type = service::Type::sequential;
 
             inline friend bool operator == ( const Base& lhs, std::string_view rhs) { return lhs.name == rhs;}
+            inline friend bool operator == ( const Base& lhs, const Base& rhs) { return lhs.name == rhs.name;}
+            inline friend auto operator <=> ( const Base& lhs, const Base& rhs) { return lhs.name <=> rhs.name;}
 
-            inline auto tie() const noexcept { return std::tie( name);}
 
             CASUAL_CONST_CORRECT_SERIALIZE(
                CASUAL_SERIALIZE( name);
@@ -324,7 +325,6 @@ namespace casual
                   {
                      regular,
                      no_reply,
-                     no_busy_intermediate,
                      wait,
                      // used fromm service-forward only (fire-and-forget)
                      forward_request,
@@ -336,7 +336,6 @@ namespace casual
                      {
                         case Semantic::regular: return "regular";
                         case Semantic::no_reply: return "no_reply";
-                        case Semantic::no_busy_intermediate: return "no_busy_intermediate";
                         case Semantic::wait: return "wait";
                         case Semantic::forward_request: return "forward_request";
                      }
@@ -413,7 +412,6 @@ namespace casual
                enum class State : short
                {
                   absent,
-                  busy,
                   idle
                };
 
@@ -423,7 +421,6 @@ namespace casual
                   {
                      case State::absent: return "absent";
                      case State::idle: return "idle";
-                     case State::busy: return "busy";
                   }
                   return "<unknown>";
                }
@@ -440,7 +437,7 @@ namespace casual
                platform::time::unit pending{};
                reply::State state = reply::State::idle;
                
-               inline bool busy() const { return state == reply::State::busy;}
+               inline bool absent() const { return state == reply::State::absent;}
 
                CASUAL_CONST_CORRECT_SERIALIZE(
                   base_reply::serialize( archive);
