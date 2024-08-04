@@ -37,6 +37,8 @@ namespace casual
          std::string_view host() const;
          std::string_view port() const;
 
+         inline friend auto operator <=> ( const Address&, const Address&) = default;
+
          inline friend std::ostream& operator << ( std::ostream& out, const Address& value) { return out << value.m_address;}
 
          CASUAL_FORWARD_SERIALIZE( m_address)

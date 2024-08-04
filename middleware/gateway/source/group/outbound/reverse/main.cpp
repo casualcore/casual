@@ -114,9 +114,18 @@ namespace casual
 
                            // remove
                            {
-                              for( auto& configuration : change.removed)
+                              auto remove = [ &state]( auto& configuration)
+                              {
                                  if( auto listener = state.listen.extract( state.directive, configuration.address))
-                                    log::line( log::category::information, "stopped listening on: ", listener->configuration.address);
+                                 {
+                                    log::information( "stopped listening on: ", listener->configuration.address);
+                                    
+                                    for( auto descriptor : state.connections.host_connections( listener->socket.descriptor()))
+                                       outbound::handle::connection::remove( state, descriptor);
+                                 }
+                              };
+
+                              algorithm::for_each( change.removed, remove);
                            }
 
                            // send reply

@@ -166,6 +166,23 @@ domain:
 
       }
 
+      namespace local
+      {
+         namespace
+         {
+            bool has_address( auto& state, std::string_view name, std::string_view address)
+            {
+               auto is_group_address = [ name, address]( auto& connection)
+               { 
+                  return connection.group == name && algorithm::compare::any( address, connection.address.local, connection.address.peer);
+               };
+
+               return predicate::boolean( algorithm::find_if( state.connections, is_group_address));
+            }
+            
+         } // <unnamed>
+      } // local
+
       TEST( gateway_manager, configuration_post)
       {
          common::unittest::Trace trace;
@@ -208,9 +225,6 @@ domain:
                   order: 1
                   connections:
                      -  address: 127.0.0.1:7021
-
-
-            
 )");
 
          // wait for the 'bounds' to be connected...
@@ -286,36 +300,126 @@ domain:
          // wait for the 'bounds' to be connected... and some sanity checks to verify that the 
          // configuration has been applied
          {
-            auto state = unittest::fetch::until( unittest::fetch::predicate::outbound::connected());
-
-            auto has_address = [ &connections = state.connections]( std::string_view name, std::string_view address)
-            {
-               auto is_group_address = [ name, address]( auto& connection)
-               { 
-                  return connection.group == name && algorithm::compare::any( address, connection.address.local, connection.address.peer);
-               };
-
-               return predicate::boolean( algorithm::find_if( connections, is_group_address));
-            };
+            auto state = unittest::fetch::until( unittest::fetch::predicate::outbound::connected( 4));
 
             // inbound
-            EXPECT_TRUE( has_address( "X", "127.0.0.1:7013"));
-            EXPECT_TRUE( has_address( "C", "127.0.0.1:7001"));
+            EXPECT_TRUE( local::has_address( state, "X", "127.0.0.1:7013"));
+            EXPECT_TRUE( local::has_address( state, "C", "127.0.0.1:7001"));
             
             // outbound
-            EXPECT_TRUE( has_address( "B", "127.0.0.1:7013"));
-            EXPECT_TRUE( has_address( "D", "127.0.0.1:7001"));
+            EXPECT_TRUE( local::has_address( state, "B", "127.0.0.1:7013"));
+            EXPECT_TRUE( local::has_address( state, "D", "127.0.0.1:7001"));
 
             // reverse inbound
-            EXPECT_TRUE( has_address( "RA", "127.0.0.1:7031"));
-            EXPECT_TRUE( has_address( "RA", "127.0.0.1:7032"));
+            EXPECT_TRUE( local::has_address( state, "RA", "127.0.0.1:7031"));
+            EXPECT_TRUE( local::has_address( state, "RA", "127.0.0.1:7032"));
 
             // reverse outbound
-            EXPECT_TRUE( has_address( "RB", "127.0.0.1:7031"));
-            EXPECT_TRUE( has_address( "RD", "127.0.0.1:7032"));
+            EXPECT_TRUE( local::has_address( state, "RB", "127.0.0.1:7031"));
+            EXPECT_TRUE( local::has_address( state, "RD", "127.0.0.1:7032"));
          }
 
          auto updated = sort_groups( casual::configuration::model::transform( casual::domain::unittest::configuration::get()));
+
+         EXPECT_TRUE( wanted.gateway == updated.gateway) << CASUAL_NAMED_VALUE( wanted.gateway) << '\n' << CASUAL_NAMED_VALUE( updated.gateway);
+
+      }
+
+      TEST( gateway_manager, configuration_post_remove_listener)
+      {
+         common::unittest::Trace trace;
+
+         auto domain = local::domain( R"(
+domain: 
+   name: remove
+   gateway:
+      inbound:
+         groups:
+            -  alias: A
+               connections: 
+                  -  address: 127.0.0.1:7010
+                  -  address: 127.0.0.1:7011
+      outbound:
+         groups: 
+            -  alias: B
+               connections:
+                  -  address: 127.0.0.1:7010
+                  -  address: 127.0.0.1:7011
+
+      reverse:
+         inbound:
+            groups:
+               -  alias: RA
+                  connections: 
+                     -  address: 127.0.0.1:7020
+                     -  address: 127.0.0.1:7021
+         outbound:
+            groups: 
+               -  alias: RB
+                  order: 1
+                  connections:
+                     -  address: 127.0.0.1:7020
+                     -  address: 127.0.0.1:7021
+
+)");
+
+         // wait for the 'bounds' to be connected...
+         unittest::fetch::until( unittest::fetch::predicate::outbound::connected());
+
+
+         auto wanted = local::configuration::load( local::configuration::servers, R"(
+domain: 
+   name: remove
+   gateway:
+      inbound:
+         groups:
+            -  alias: A
+               connections: 
+                  -  address: 127.0.0.1:7010
+      outbound:
+         groups: 
+            -  alias: B
+               connections:
+                  -  address: 127.0.0.1:7010
+                  -  address: 127.0.0.1:7011
+
+      reverse:
+         inbound:
+            groups:
+               -  alias: RA
+                  connections: 
+                     -  address: 127.0.0.1:7020
+                     -  address: 127.0.0.1:7021
+         outbound:
+            groups: 
+               -  alias: RB
+                  order: 1
+                  connections:
+                     -  address: 127.0.0.1:7020
+         )");
+
+         // post the wanted model (with transformed user representation)
+         casual::domain::unittest::configuration::post( casual::configuration::model::transform( wanted));
+
+         // wait for the 'bounds' to be connected... and some sanity checks to verify that the 
+         // configuration has been applied
+         {
+            auto state = unittest::fetch::until( unittest::fetch::predicate::outbound::connected( 2));
+
+            // inbound
+            EXPECT_TRUE( local::has_address( state, "A", "127.0.0.1:7010"));
+            
+            // outbound
+            EXPECT_TRUE( local::has_address( state, "B", "127.0.0.1:7010"));
+
+            // reverse inbound
+            EXPECT_TRUE( local::has_address( state, "RA", "127.0.0.1:7020"));
+
+            // reverse outbound
+            EXPECT_TRUE( local::has_address( state, "RB", "127.0.0.1:7020"));
+         }
+
+         auto updated = casual::configuration::model::transform( casual::domain::unittest::configuration::get());
 
          EXPECT_TRUE( wanted.gateway == updated.gateway) << CASUAL_NAMED_VALUE( wanted.gateway) << '\n' << CASUAL_NAMED_VALUE( updated.gateway);
 

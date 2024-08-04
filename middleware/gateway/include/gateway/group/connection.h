@@ -189,6 +189,19 @@ namespace casual
             return {};
          }
 
+         //! @returns all connections that has the same host address as `listener`
+         std::vector< common::strong::socket::id> host_connections( common::strong::socket::id listener)
+         {
+            auto address = common::communication::tcp::socket::address::host( listener);
+
+            return common::algorithm::accumulate( m_external, std::vector< common::strong::socket::id>{}, [ address]( auto result, auto& pair)
+            {
+               if( address == common::communication::tcp::socket::address::host( pair.first))
+                  result.push_back( pair.first);
+               return result;
+            });
+         }
+
          //! Destruct and remove all associated state to `descriptor` and
          //! @returns the `Information` about the external connection (could be
          //! used to try to reconnect, or log)
