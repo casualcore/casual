@@ -154,7 +154,6 @@ domain:
             {
                common::message::service::lookup::Request request{ common::process::handle()};
                request.requested = ".casual/domain/state";
-               request.context.semantic = decltype( request.context.semantic)::no_busy_intermediate;
 
                return common::communication::device::async::call( 
                   common::communication::instance::outbound::service::manager::device(),

@@ -335,12 +335,6 @@ namespace casual
                   communication::device::blocking::send( communication::instance::outbound::service::manager::device(), ack);
                });
 
-               
-               if( target.busy())
-               {
-                  // We wait for an instance to become idle.
-                  target = lookup();
-               }
 
                value.process = target.process;
 

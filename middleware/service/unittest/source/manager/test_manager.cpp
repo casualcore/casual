@@ -339,7 +339,7 @@ domain:
          service::unittest::advertise( { "a"});
 
          auto service = common::service::Lookup{ "a"}();
-         ASSERT_TRUE( ! service.busy());
+         ASSERT_TRUE( ! service.absent());
 
          common::message::service::call::Reply reply;
          EXPECT_TRUE( common::communication::device::blocking::receive( 
@@ -569,11 +569,10 @@ domain:
          }
 
          {
-            auto service = common::service::Lookup{ "service2"}();
-            EXPECT_TRUE( service.service.name == "service2");
+            auto lookup = common::service::non::blocking::Lookup{ "service2"};
 
-            // we only have one instance, we expect this to be busy
-            EXPECT_TRUE( service.state == decltype( service.state)::busy);
+            // we only have one instance, we expect lookup to not get "the reply"
+            EXPECT_TRUE( ! lookup);
          }
       }
 
@@ -624,13 +623,10 @@ domain:
             EXPECT_TRUE( service.state == decltype( service.state)::idle);
          }
 
-         common::service::Lookup lookup{ "service2"};
+         common::service::non::blocking::Lookup lookup{ "service2"};
          {
-            auto service = lookup();
-            EXPECT_TRUE( service.service.name == "service2");
-
             // we only have one instance, we expect this to be busy
-            EXPECT_TRUE( service.state == decltype( service.state)::busy);
+            EXPECT_TRUE( ! lookup);
          }
 
          {
@@ -644,8 +640,8 @@ domain:
                   message);
             }
 
-            // get next pending reply
-            auto service = lookup();
+            // get next pending reply, we force it...
+            auto service =  std::move( lookup).force_reply();
 
             EXPECT_TRUE( service.state == decltype( service.state)::idle);
          }
@@ -806,13 +802,13 @@ domain:
 
          auto idle = common::service::Lookup{ "a"};
 
-         auto lookups = common::algorithm::container::emplace::initialize< std::vector< common::service::Lookup>>(  "b", "c", "d");
+         auto lookups = common::algorithm::container::emplace::initialize< std::vector< common::service::non::blocking::Lookup>>(  "b", "c", "d");
 
          EXPECT_TRUE( idle().state == decltype( idle().state)::idle);
 
-         // the pending lookups should be busy (in the first round)
+         // the pending lookups should be "busy" (in the first round)
          for( auto& lookup : lookups)
-            EXPECT_TRUE( lookup().state == decltype( lookup().state)::busy);
+            EXPECT_TRUE( ! lookup);
 
          // send prepare shutdown
          {
@@ -823,10 +819,9 @@ domain:
                request);
          }
 
-
          // We should get lookup reply with 'absent', hence, the pending lookups should throw 'no_entry'
          for( auto& lookup : lookups)
-            EXPECT_CODE( lookup(), common::code::xatmi::no_entry);
+            EXPECT_CODE( std::move( lookup).force_reply(), common::code::xatmi::no_entry);
          
          // we make service-manager think we've died
          {
@@ -879,20 +874,22 @@ domain:
          struct 
          {
             common::service::Lookup first{ "B"};
-            common::service::Lookup second{ "B"};
+            common::service::non::blocking::Lookup second{ "B"};
          } lookup;
 
+         using State =  decltype( lookup.first().state);
+
          // 'emulate' that a call is in progress (more like consuming the lookup reply...)
-         EXPECT_TRUE( lookup.first().state == decltype( lookup.first().state)::idle);
+         EXPECT_TRUE( lookup.first().state == State::idle);
 
          // expect a second "call" to get busy
-         EXPECT_TRUE( lookup.second().state == decltype( lookup.second().state)::busy);
+         EXPECT_TRUE( ! lookup.second);
 
          // pretend the first call has been done
          service::unittest::send::ack( lookup.first());
 
          // expect the second to be idle now.
-         EXPECT_TRUE( lookup.second().state == decltype( lookup.second().state)::idle);
+         EXPECT_TRUE( std::move( lookup.second).force_reply().state == State::idle);
 
       }
 
@@ -1070,17 +1067,13 @@ domain:
          }
 
          // lookup 'local-service' again
-         common::service::Lookup lookup{ "local-service"};
+         common::service::non::blocking::Lookup lookup{ "local-service"};
 
          // some unrelated concurrent services are advertised while our second lookup is pending
          service::unittest::concurrent::advertise( { "some-remote-service", "some-other-remote-service"});
 
          // we have ourselves reserved - expect to be busy
-         {
-            auto service = lookup();
-            EXPECT_TRUE( service.service.name == "local-service");
-            EXPECT_TRUE( service.state == decltype( service.state)::busy);
-         }
+         EXPECT_TRUE( ! lookup);
 
          {
             // send ack for our initial "call"
@@ -1094,7 +1087,7 @@ domain:
             }
 
             // we should be idle again
-            auto service = lookup();
+            auto service = std::move( lookup).force_reply();
             EXPECT_TRUE( service.state == decltype( service.state)::idle);
          }
       }
@@ -1115,7 +1108,7 @@ domain:
          }
 
          // lookup 'local-service' again
-         common::service::Lookup lookup{ "local-service"};
+         common::service::non::blocking::Lookup lookup{ "local-service"};
 
          // meanwhile, some process dies
          {
@@ -1126,11 +1119,7 @@ domain:
          }
 
          // we have ourselves reserved - expect to be busy
-         {
-            auto service = lookup();
-            EXPECT_TRUE( service.service.name == "local-service");
-            EXPECT_TRUE( service.state == decltype( service.state)::busy);
-         }
+         EXPECT_TRUE( ! lookup);
 
          {
             // send ack for our initial "call"
@@ -1144,7 +1133,7 @@ domain:
             }
 
             // we should be idle again
-            auto service = lookup();
+            auto service = std::move( lookup).force_reply();
             EXPECT_TRUE( service.state == decltype( service.state)::idle);
          }
       }

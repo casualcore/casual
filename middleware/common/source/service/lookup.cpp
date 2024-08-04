@@ -36,7 +36,7 @@ namespace casual
          Lookup::~Lookup()
          {
             // we have to discard if we're still pending with the service manager
-            if( ! m_reply || m_reply->busy())
+            if( ! m_reply)
                lookup::discard( m_correlation);
          }
 
@@ -113,44 +113,41 @@ namespace casual
          Trace trace{ "common::service::Lookup::operator()"};
 
          if( ! m_reply)
-         {
             update( communication::ipc::receive< Reply>());
-         }
-         else
-         {
-            // wait until service is idle
-            // the second lookup::Reply should always be idle, but the service manager
-            // is currently not completely reliable in that regard
-            // TODO: rework this after fixing service manager
-            while( m_reply->busy())
-               update( communication::ipc::receive< Reply>());
-         }
 
          return m_reply.value();
       }
 
-      namespace non
+      namespace non::blocking
       {
-         namespace blocking
+         Lookup::operator bool ()
          {
-            Lookup::operator bool ()
+            if( ! m_reply)
             {
-               if( ! m_reply || m_reply->busy())
-               {
-                  detail::Lookup::Reply result;
-                  if( communication::device::non::blocking::receive( communication::ipc::inbound::device(), result, m_correlation))
-                     update( std::move( result));
-               }
-               return m_reply.has_value() && ! m_reply.value().busy();
+               detail::Lookup::Reply result;
+               if( communication::device::non::blocking::receive( communication::ipc::inbound::device(), result, m_correlation))
+                  update( std::move( result));
             }
+            return m_reply.has_value();
+         }
 
-            Lookup::operator service::Lookup () &&
-            {
-               service::Lookup result;
-               swap( result, *this);
-               return result;
-            }
-         } // blocking
-      } // non
+         Lookup::operator service::Lookup () &&
+         {
+            service::Lookup result;
+            swap( result, *this);
+            return result;
+         }
+
+         Lookup::Reply Lookup::force_reply() &&
+         {
+            if( ! m_reply)
+               update( communication::ipc::receive< Reply>());
+
+            CASUAL_ASSERT( m_reply);
+
+            return std::move( *m_reply);
+         }
+
+      } // non::blocking
    } // common::service
 } // casual

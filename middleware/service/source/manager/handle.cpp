@@ -493,30 +493,14 @@ namespace casual
                               // This is a request from service-forward from a previous _forward_ lookup.
                               // We treat it as "regular" pending lookup.
                               [[fallthrough]];
-                           case Semantic::no_busy_intermediate:
+                           case Semantic::regular:
                            {
-                              // the caller does not want to get a busy intermediate, only want's to wait until
-                              // the service is idle. That is, we don't need to send timeout and
-                              // stuff to the caller.
-                              //
+
                               // If this is from another domain the actual timeouts and stuff can differ
                               // and this might be a problem?
                               // TODO semantics: something we need to address? probably not,
                               // since we can't make it 100% any way...)
                               state.pending.lookups.emplace_back( std::move( message), platform::time::clock::type::now());
-
-                              break;
-                           }
-                           case Semantic::regular:
-                           {
-                              // send busy-message to caller, to set timeouts and stuff
-                              reply.state = decltype( reply.state)::busy;
-
-                              if( local::optional::send( state, message.process.ipc, reply))
-                              {
-                                 // All instances are busy, we stack the request
-                                 state.pending.lookups.emplace_back( std::move( message), platform::time::clock::type::now());
-                              }
 
                               break;
                            }

@@ -70,42 +70,39 @@ namespace casual
          using detail::Lookup::Lookup;
 
          //! @return the reply from the `service-manager`
-         //!    can only be either idle (reserved) or busy.
-         //!
-         //!    if busy, a second invocation will block until it's idle
-         //!
          //! @throws common::exception::xatmi::service::no::Entry if the service is not present or discovered
          const Reply& operator () ();
       };
 
-      namespace non
+      namespace non::blocking
       {
-         namespace blocking
+
+         //! non-blocking lookup
+         struct Lookup : detail::Lookup
          {
-            //! non-blocking lookup
-            //! 
+            using detail::Lookup::Lookup;
 
-            struct Lookup : detail::Lookup
-            {
-               using detail::Lookup::Lookup;
+            //! return true if the service is ready to be called
+            //! @throws common::exception::xatmi::service::no::Entry if the service is not present or discovered
+            explicit operator bool ();
 
-               //! return true if the service is ready to be called
-               //! @throws common::exception::xatmi::service::no::Entry if the service is not present or discovered
-               explicit operator bool ();
+            //! converts this non-blocking to a blocking lookup
+            //! usage:
+            //! void some_function( service::Lookup&& lookup);
+            //!
+            //! service::non::blocking::Lookup lookup( "someService");
+            //!
+            //! if( lookup)
+            //!   some_function( std::move( lookup));
+            //! @attention This instance is not useful after this
+            operator service::Lookup () &&;
 
-               //! converts this non-blocking to a blocking lookup
-               //! usage:
-               //! void some_function( service::Lookup&& lookup);
-               //!
-               //! service::non::blocking::Lookup lookup( "someService");
-               //!
-               //! if( lookup)
-               //!   some_function( std::move( lookup));
-               operator service::Lookup () &&;
-         
-            };
-         } // blocking
-      } // non
+            //! Block and force wait for the reply. T
+            //! @attention This instance is not useful after this.
+            Reply force_reply() &&;
+
+         };
+      } // non::blocking
 
    } // common::service
 } // casual
