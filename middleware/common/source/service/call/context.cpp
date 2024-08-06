@@ -91,7 +91,7 @@ namespace casual
                      common::buffer::payload::Send&& buffer,
                      service::header::Fields header,
                      async::Flag flags,
-                     const service::Lookup::Reply& lookup)
+                     const service::lookup::Reply& lookup)
                {
                   Trace trace( "service::call::local::prepare::message");
 
@@ -154,7 +154,7 @@ namespace casual
          //buffer::transport::Context::instance().dispatch( idata, ilen, service, buffer::transport::Lifecycle::pre_call);
 
          // Get target corresponding to the service
-         auto target = service();
+         auto target = service::lookup::reply( std::move( service));
 
          // The service exists. Take care of reserving descriptor and determine timeout
          auto prepared = local::prepare::message( m_state, start, std::move( buffer), std::move( header), flags, target);

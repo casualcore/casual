@@ -214,12 +214,12 @@ namespace casual
 
                   common::service::Lookup lookup{
                      forward.parameter.service.name,
-                     decltype( common::service::Lookup::Context::semantic)::no_reply};
+                     decltype( common::service::lookup::Context::semantic)::no_reply};
 
                   // TODO make this forward work without a copy of payload...
                   auto request = message;
 
-                  auto target = lookup();
+                  auto target = common::service::lookup::reply( std::move( lookup));
 
                   request.buffer = std::move( forward.parameter.payload);
                   request.service = target.service;

@@ -307,7 +307,7 @@ domain:
 
          auto state = local::call::state();
 
-         auto service = common::service::Lookup{ "B"}();
+         auto service = common::service::lookup::reply( common::service::Lookup{ "B"});
          // we expect the 'real-name' of the service to be replied
          EXPECT_TRUE( service.service.name == "A");
 
@@ -338,7 +338,7 @@ domain:
 
          service::unittest::advertise( { "a"});
 
-         auto service = common::service::Lookup{ "a"}();
+         auto service = common::service::lookup::reply( common::service::Lookup{ "a"});
          ASSERT_TRUE( ! service.absent());
 
          common::message::service::call::Reply reply;
@@ -545,11 +545,11 @@ domain:
          }
 
          EXPECT_CODE({
-            auto service = common::service::Lookup{ "service1"}();
+            auto service = common::service::lookup::reply( common::service::Lookup{ "service1"});
          }, common::code::xatmi::no_entry);
 
          EXPECT_CODE({
-            auto service = common::service::Lookup{ "service2"}();
+            auto service = common::service::lookup::reply( common::service::Lookup{ "service2"});
          }, common::code::xatmi::no_entry);
       }
 
@@ -562,17 +562,16 @@ domain:
          service::unittest::advertise( { "service1", "service2"});
 
          {
-            auto service = common::service::Lookup{ "service1"}();
+            auto service = common::service::lookup::reply( common::service::Lookup{ "service1"});
             EXPECT_TRUE( service.service.name == "service1");
             EXPECT_TRUE( service.process == common::process::handle());
             EXPECT_TRUE( service.state == decltype( service.state)::idle);
          }
 
          {
-            auto lookup = common::service::non::blocking::Lookup{ "service2"};
-
             // we only have one instance, we expect lookup to not get "the reply"
-            EXPECT_TRUE( ! lookup);
+            auto lookup = common::service::Lookup{ "service2"};
+            EXPECT_TRUE( ! common::service::lookup::non::blocking::reply( lookup));
          }
       }
 
@@ -588,7 +587,7 @@ domain:
          // echo server has unadvertise this service. The service is
          // still "present" in service-manager with no instances. Hence it's absent
          EXPECT_CODE({
-            auto service = common::service::Lookup{ "service2"}();
+            common::service::lookup::reply( common::service::Lookup{ "service2"});
          }, common::code::xatmi::no_entry);
       }
 
@@ -603,7 +602,7 @@ domain:
          service::unittest::advertise( { "service1", "service2"});
 
          EXPECT_CODE({
-            auto service = common::service::Lookup{ "non-existent-service"}();
+            common::service::lookup::reply( common::service::Lookup{ "non-existent-service"});
          }, common::code::xatmi::no_entry);
       }
 
@@ -617,16 +616,16 @@ domain:
          service::unittest::advertise( { "service1", "service2"});
 
          {
-            auto service = common::service::Lookup{ "service1"}();
+            auto service = common::service::lookup::reply( common::service::Lookup{ "service1"});
             EXPECT_TRUE( service.service.name == "service1");
             EXPECT_TRUE( service.process == common::process::handle());
             EXPECT_TRUE( service.state == decltype( service.state)::idle);
          }
 
-         common::service::non::blocking::Lookup lookup{ "service2"};
+         common::service::Lookup lookup{ "service2"};
          {
             // we only have one instance, we expect this to be busy
-            EXPECT_TRUE( ! lookup);
+            EXPECT_TRUE( ! common::service::lookup::non::blocking::reply( lookup));
          }
 
          {
@@ -641,7 +640,7 @@ domain:
             }
 
             // get next pending reply, we force it...
-            auto service =  std::move( lookup).force_reply();
+            auto service = common::service::lookup::reply( std::move( lookup));
 
             EXPECT_TRUE( service.state == decltype( service.state)::idle);
          }
@@ -659,7 +658,7 @@ domain:
          auto forward = common::communication::instance::fetch::handle( forward::instance::identity.id);
 
          {
-            auto service = common::service::Lookup{ "service1"}();
+            auto service = common::service::lookup::reply( common::service::Lookup{ "service1"});
             EXPECT_TRUE( service.service.name == "service1");
             EXPECT_TRUE( service.process == common::process::handle());
             EXPECT_TRUE( service.state == decltype( service.state)::idle);
@@ -667,8 +666,7 @@ domain:
 
 
          {
-            common::service::Lookup lookup{ "service1", decltype(common::service::Lookup::Context::semantic)::no_reply};
-            auto service = lookup();
+            auto service = common::service::lookup::reply( common::service::Lookup{ "service1", decltype( common::service::lookup::Context::semantic)::no_reply});
             EXPECT_TRUE( service.service.name == "service1");
 
             // service-manager will let us think that the service is idle, and send us the process-handle to the forward-cache
@@ -688,7 +686,7 @@ domain:
 
          auto correlation = []()
          {
-            auto service = common::service::Lookup{ "service1"}();
+            auto service = common::service::lookup::reply( common::service::Lookup{ "service1"});
             EXPECT_TRUE( service.service.name == "service1");
             EXPECT_TRUE( service.process == common::process::handle());
             EXPECT_TRUE( service.state == decltype( service.state)::idle);
@@ -747,7 +745,7 @@ domain:
          {
             // we expect service 'a' to be absent.
             auto lookup = common::service::Lookup{ "a"};
-            EXPECT_CODE( lookup(), common::code::xatmi::no_entry);
+            EXPECT_CODE( common::service::lookup::reply( std::move( lookup)), common::code::xatmi::no_entry);
          }
       }
 
@@ -759,11 +757,10 @@ domain:
 
          service::unittest::advertise( { "a"});
 
-         // we reserve (lock) our instance to the 'call'
-         auto lookup = common::service::Lookup{ "a"};
-
          // 'emulate' that a call is in progress (more like consuming the lookup reply...)
-         EXPECT_TRUE( lookup().state == decltype( lookup().state)::idle);
+         const auto service = common::service::lookup::reply( common::service::Lookup{ "a"});
+
+         EXPECT_TRUE( service.state == decltype( service.state)::idle);
 
          // send prepare shutdown
          {
@@ -775,7 +772,7 @@ domain:
          }
 
          // pretend a service call has been done
-         service::unittest::send::ack( lookup());
+         service::unittest::send::ack( service);
 
          {
             // we expect to get a prepare shutdown reply, with our self
@@ -788,7 +785,7 @@ domain:
          {
             // we expect service 'a' to be absent.
             auto absent = common::service::Lookup{ "a"};
-            EXPECT_CODE( absent(), common::code::xatmi::no_entry);
+            EXPECT_CODE( common::service::lookup::reply( std::move( absent)), common::code::xatmi::no_entry);
          }
       }
 
@@ -800,15 +797,15 @@ domain:
 
          service::unittest::advertise( { "a", "b", "c", "d"});
 
-         auto idle = common::service::Lookup{ "a"};
+         auto idle = common::service::lookup::reply( common::service::Lookup{ "a"});
 
-         auto lookups = common::algorithm::container::emplace::initialize< std::vector< common::service::non::blocking::Lookup>>(  "b", "c", "d");
+         auto lookups = common::algorithm::container::emplace::initialize< std::vector< common::service::Lookup>>(  "b", "c", "d");
 
-         EXPECT_TRUE( idle().state == decltype( idle().state)::idle);
+         EXPECT_TRUE( idle.state == decltype( idle.state)::idle);
 
          // the pending lookups should be "busy" (in the first round)
          for( auto& lookup : lookups)
-            EXPECT_TRUE( ! lookup);
+            EXPECT_TRUE( ! common::service::lookup::non::blocking::reply( lookup));
 
          // send prepare shutdown
          {
@@ -821,7 +818,7 @@ domain:
 
          // We should get lookup reply with 'absent', hence, the pending lookups should throw 'no_entry'
          for( auto& lookup : lookups)
-            EXPECT_CODE( std::move( lookup).force_reply(), common::code::xatmi::no_entry);
+            EXPECT_CODE( common::service::lookup::reply( std::move( lookup)), common::code::xatmi::no_entry);
          
          // we make service-manager think we've died
          {
@@ -841,7 +838,7 @@ domain:
             common::communication::device::blocking::receive( local::ipc::inbound(), message);
             
             EXPECT_TRUE( message.code.result == decltype( message.code.result)::service_error);
-            EXPECT_TRUE( message.correlation == idle().correlation) << CASUAL_NAMED_VALUE( message) << "\n" << CASUAL_NAMED_VALUE( idle);
+            EXPECT_TRUE( message.correlation == idle.correlation) << CASUAL_NAMED_VALUE( message) << "\n" << CASUAL_NAMED_VALUE( idle);
          }
 
          {
@@ -874,22 +871,23 @@ domain:
          struct 
          {
             common::service::Lookup first{ "B"};
-            common::service::non::blocking::Lookup second{ "B"};
+            common::service::Lookup second{ "B"};
          } lookup;
 
-         using State =  decltype( lookup.first().state);
+         using State =  common::service::lookup::State;
 
          // 'emulate' that a call is in progress (more like consuming the lookup reply...)
-         EXPECT_TRUE( lookup.first().state == State::idle);
+         const auto first = common::service::lookup::reply( std::move( lookup.first));
+         EXPECT_TRUE( first.state == State::idle);
 
          // expect a second "call" to get busy
-         EXPECT_TRUE( ! lookup.second);
+         EXPECT_TRUE( ! common::service::lookup::non::blocking::reply( lookup.second));
 
          // pretend the first call has been done
-         service::unittest::send::ack( lookup.first());
+         service::unittest::send::ack( first);
 
          // expect the second to be idle now.
-         EXPECT_TRUE( std::move( lookup.second).force_reply().state == State::idle);
+         EXPECT_TRUE( common::service::lookup::reply( std::move( lookup.second)).state == State::idle);
 
       }
 
@@ -905,7 +903,7 @@ domain:
          auto end = start + std::chrono::milliseconds{ 2};
 
          {
-            auto service = common::service::Lookup{ "service1"}();
+            auto service = common::service::lookup::reply( common::service::Lookup{ "service1"});
             EXPECT_TRUE( service.service.name == "service1");
             EXPECT_TRUE( service.process == common::process::handle());
             EXPECT_TRUE( service.state == decltype( service.state)::idle);
@@ -1061,19 +1059,19 @@ domain:
 
          // we reserve ourselves
          {
-            auto service = common::service::Lookup{ "local-service"}();
+            auto service = common::service::lookup::reply( common::service::Lookup{ "local-service"});
             EXPECT_TRUE( service.service.name == "local-service");
             EXPECT_TRUE( service.state == decltype( service.state)::idle);
          }
 
          // lookup 'local-service' again
-         common::service::non::blocking::Lookup lookup{ "local-service"};
+         common::service::Lookup lookup{ "local-service"};
 
          // some unrelated concurrent services are advertised while our second lookup is pending
          service::unittest::concurrent::advertise( { "some-remote-service", "some-other-remote-service"});
 
          // we have ourselves reserved - expect to be busy
-         EXPECT_TRUE( ! lookup);
+         EXPECT_TRUE( ! common::service::lookup::non::blocking::reply( lookup));
 
          {
             // send ack for our initial "call"
@@ -1087,7 +1085,7 @@ domain:
             }
 
             // we should be idle again
-            auto service = std::move( lookup).force_reply();
+            auto service = common::service::lookup::reply( std::move( lookup));
             EXPECT_TRUE( service.state == decltype( service.state)::idle);
          }
       }
@@ -1102,13 +1100,13 @@ domain:
 
          // we reserve ourselves
          {
-            auto service = common::service::Lookup{ "local-service"}();
+            auto service = common::service::lookup::reply( common::service::Lookup{ "local-service"});
             EXPECT_TRUE( service.service.name == "local-service");
             EXPECT_TRUE( service.state == decltype( service.state)::idle);
          }
 
          // lookup 'local-service' again
-         common::service::non::blocking::Lookup lookup{ "local-service"};
+         common::service::Lookup lookup{ "local-service"};
 
          // meanwhile, some process dies
          {
@@ -1119,7 +1117,7 @@ domain:
          }
 
          // we have ourselves reserved - expect to be busy
-         EXPECT_TRUE( ! lookup);
+         EXPECT_TRUE( ! common::service::lookup::non::blocking::reply( lookup));
 
          {
             // send ack for our initial "call"
@@ -1133,7 +1131,7 @@ domain:
             }
 
             // we should be idle again
-            auto service = std::move( lookup).force_reply();
+            auto service = common::service::lookup::reply( std::move( lookup));
             EXPECT_TRUE( service.state == decltype( service.state)::idle);
          }
       }

@@ -18,91 +18,53 @@ namespace casual
 {
    namespace common::service
    {
-      namespace detail
-      {
-         struct Lookup
-         {
-            using Context = message::service::lookup::request::Context;
-            using Reply = message::service::lookup::Reply;
-            using State = message::service::lookup::reply::State;
-
-            Lookup() noexcept;
-                           
-            //! Lookup an entry point for the @p service
-            Lookup( std::string service, std::optional< platform::time::point::type> deadline = {});
-
-            //! Lookup an entry point for the @p service
-            //! using a specific context
-            Lookup( std::string service, Context context, std::optional< platform::time::point::type> deadline = {});
-
-            ~Lookup();
-
-            Lookup( Lookup&&) noexcept;
-            Lookup& operator = ( Lookup&&) noexcept;
-
-            friend void swap( Lookup& lhs, Lookup& rhs);
-
-            const strong::correlation::id& correlation() const noexcept;
-
-            CASUAL_LOG_SERIALIZE(
-               CASUAL_SERIALIZE_NAME( m_service, "service");
-               CASUAL_SERIALIZE_NAME( m_correlation, "correlation");
-               CASUAL_SERIALIZE_NAME( m_reply, "reply");
-            )
-         protected:
-            void update( Reply&& reply);
-
-            std::string m_service;
-            strong::correlation::id m_correlation;
-            std::optional< Reply> m_reply;
-         };
-      } // detail
+      struct Lookup;
 
       namespace lookup
       {
-         //! discards a lookup reservation.
-         //! TODO maintainence - this should be taken cared of by the type it self...
-         void discard( const strong::correlation::id& correlation) noexcept;
+         using Context = message::service::lookup::request::Context;
+         using Reply = message::service::lookup::Reply;
+         using State = message::service::lookup::reply::State;
+
+         //! consume the lookup and block for the _lookup reply_.
+         lookup::Reply reply( Lookup&& lookup);
+
+         namespace non::blocking
+         {
+            std::optional< lookup::Reply> reply( Lookup& lookup);
+
+         } // non::blocking
+               
       } // lookup
 
-      struct Lookup : detail::Lookup
-      {
-         using detail::Lookup::Lookup;
+      struct Lookup
+      {                        
+         //! Lookup an entry point for the @p service
+         Lookup( std::string service, std::optional< platform::time::point::type> deadline = {});
 
-         //! @return the reply from the `service-manager`
-         //! @throws common::exception::xatmi::service::no::Entry if the service is not present or discovered
-         const Reply& operator () ();
+         //! Lookup an entry point for the @p service
+         //! using a specific context
+         Lookup( std::string service, lookup::Context context, std::optional< platform::time::point::type> deadline = {});
+
+         //! If pending lookup discard it.
+         ~Lookup();
+
+         Lookup( Lookup&&) noexcept;
+         Lookup& operator = ( Lookup&&) noexcept;
+
+         inline strong::correlation::id correlation() const noexcept { return m_correlation;}
+
+         friend lookup::Reply lookup::reply( Lookup&& lookup);
+         friend std::optional< lookup::Reply> lookup::non::blocking::reply( Lookup& lookup);
+
+         CASUAL_LOG_SERIALIZE(
+            CASUAL_SERIALIZE( m_service);
+            CASUAL_SERIALIZE( m_correlation);
+         )
+      protected:
+         std::string m_service;
+         strong::correlation::id m_correlation;
       };
-
-      namespace non::blocking
-      {
-
-         //! non-blocking lookup
-         struct Lookup : detail::Lookup
-         {
-            using detail::Lookup::Lookup;
-
-            //! return true if the service is ready to be called
-            //! @throws common::exception::xatmi::service::no::Entry if the service is not present or discovered
-            explicit operator bool ();
-
-            //! converts this non-blocking to a blocking lookup
-            //! usage:
-            //! void some_function( service::Lookup&& lookup);
-            //!
-            //! service::non::blocking::Lookup lookup( "someService");
-            //!
-            //! if( lookup)
-            //!   some_function( std::move( lookup));
-            //! @attention This instance is not useful after this
-            operator service::Lookup () &&;
-
-            //! Block and force wait for the reply. T
-            //! @attention This instance is not useful after this.
-            Reply force_reply() &&;
-
-         };
-      } // non::blocking
 
    } // common::service
 } // casual
