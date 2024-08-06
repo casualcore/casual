@@ -12,142 +12,112 @@ namespace casual
 {
    namespace common::service
    {
-      namespace detail
+      namespace local
       {
-         Lookup::Lookup() noexcept {};
-
-         Lookup::Lookup( std::string service, Context context, std::optional< platform::time::point::type> deadline)
-            : m_service( std::move( service))
+         namespace
          {
-            Trace trace{ "common::service::Lookup"};
+            void discard( const strong::correlation::id& correlation) noexcept
+            {
+               if( ! correlation)
+                  return;
 
-            message::service::lookup::Request request{ process::handle()};
-            request.requested = m_service;
-            request.context = context;
-            request.deadline = std::move( deadline);
+               exception::guard( [ &]()
+               {
+                  Trace trace{ "common::service::lookup::discard"};
 
-            m_correlation = communication::device::blocking::send( communication::instance::outbound::service::manager::device(), request);
-         }
+                  const auto request = [&]()
+                  {
+                     message::service::lookup::discard::Request result{ process::handle()};
+                     result.correlation = correlation;
+                     return result;
+                  }();
 
-         Lookup::Lookup( std::string service, std::optional< platform::time::point::type> deadline) 
-            : Lookup( std::move( service), Context{}, std::move( deadline)) 
-         {}
+                  auto reply = communication::ipc::call( communication::instance::outbound::service::manager::device(), request);
 
-         Lookup::~Lookup()
-         {
-            // we have to discard if we're still pending with the service manager
-            if( ! m_reply)
-               lookup::discard( m_correlation);
-         }
+                  if( reply.state == decltype( reply.state)::replied)
+                     communication::ipc::inbound::device().discard( correlation);
+               });
+            }
 
-         Lookup::Lookup( Lookup&& other) noexcept
-            : m_service{ std::exchange( other.m_service, {})},
-               m_correlation{ std::exchange( other.m_correlation, {})},
-               m_reply{ std::exchange( other.m_reply, {})}
-         {}
+            void validate( const lookup::Reply& reply)
+            {
+               using Enum = decltype( reply.state);
+               switch( reply.state)
+               {
+                  case Enum::idle:
+                     return;
+                  case Enum::absent:
+                     code::raise::error( code::xatmi::no_entry, "failed to lookup service");
+               };
+            }
+            
+         } // <unnamed>
+      } // local
 
-         const strong::correlation::id& Lookup::correlation() const noexcept
-         {
-            if( m_reply)
-               return m_reply->correlation;
 
-            return m_correlation;
-         }
+      //Lookup::Lookup() noexcept {};
 
-         Lookup& Lookup::operator = ( Lookup&& other) noexcept
-         {
-            m_service = std::exchange( other.m_service, {});
-            m_correlation = std::exchange( other.m_correlation, {});
-            m_reply = std::exchange( other.m_reply, {});
-            return *this;
-         }
+      Lookup::Lookup( std::string service, lookup::Context context, std::optional< platform::time::point::type> deadline)
+         : m_service( std::move( service))
+      {
+         Trace trace{ "common::service::Lookup"};
 
-         void swap( Lookup& lhs, Lookup& rhs)
-         {
-            using std::swap;
-            swap( lhs.m_service, rhs.m_service);
-            swap( lhs.m_reply, rhs.m_reply);
-            swap( lhs.m_correlation, rhs.m_correlation);
-         }
+         message::service::lookup::Request request{ process::handle()};
+         request.requested = m_service;
+         request.context = context;
+         request.deadline = std::move( deadline);
 
-         void Lookup::update( Reply&& reply)
-         {
-            log::line( verbose::log, "reply: ", reply);
+         m_correlation = communication::device::blocking::send( communication::instance::outbound::service::manager::device(), request);
+      }
 
-            m_reply = std::move( reply);
+      Lookup::Lookup( std::string service, std::optional< platform::time::point::type> deadline) 
+         : Lookup( std::move( service), lookup::Context{}, std::move( deadline)) 
+      {}
 
-            if( m_reply->state == State::absent)
-               code::raise::error( code::xatmi::no_entry, "lookup: ", *this);
-         }
-      } // detail
+      Lookup::~Lookup()
+      {
+         // we have to discard if we're still pending with the service manager
+         if( ! m_correlation)
+            local::discard( m_correlation);
+      }
+
+      Lookup::Lookup( Lookup&& other) noexcept
+         : m_service{ std::exchange( other.m_service, {})},
+            m_correlation{ std::exchange( other.m_correlation, {})}
+      {}
+
+      Lookup& Lookup::operator = ( Lookup&& other) noexcept
+      {
+         m_service = std::exchange( other.m_service, {});
+         m_correlation = std::exchange( other.m_correlation, {});
+         return *this;
+      }
 
       namespace lookup
       {
-         void discard( const strong::correlation::id& correlation) noexcept
+         lookup::Reply reply( Lookup&& lookup)
          {
-            if( ! correlation)
-               return;
+            auto reply = communication::ipc::receive< lookup::Reply>( std::exchange( lookup.m_correlation, {}));
 
-            exception::guard( [ &]()
+            local::validate( reply);
+            return reply;
+         }
+
+         namespace non::blocking
+         {
+            std::optional< lookup::Reply> reply( Lookup& lookup)
             {
-               Trace trace{ "common::service::lookup::discard"};
-
-               const auto request = [&]()
+               if( auto reply = communication::ipc::non::blocking::receive< lookup::Reply>( lookup.m_correlation))
                {
-                  message::service::lookup::discard::Request result{ process::handle()};
-                  result.correlation = correlation;
-                  return result;
-               }();
-
-               auto reply = communication::ipc::call( communication::instance::outbound::service::manager::device(), request);
-
-               if( reply.state == decltype( reply.state)::replied)
-                  communication::ipc::inbound::device().discard( correlation);
-            });
-         }
-
-      } // lookup
-
-      const Lookup::Reply& Lookup::operator () ()
-      {
-         Trace trace{ "common::service::Lookup::operator()"};
-
-         if( ! m_reply)
-            update( communication::ipc::receive< Reply>());
-
-         return m_reply.value();
-      }
-
-      namespace non::blocking
-      {
-         Lookup::operator bool ()
-         {
-            if( ! m_reply)
-            {
-               detail::Lookup::Reply result;
-               if( communication::device::non::blocking::receive( communication::ipc::inbound::device(), result, m_correlation))
-                  update( std::move( result));
+                  lookup.m_correlation = {};
+                  local::validate( *reply);
+                  return reply;
+               }
+               return std::nullopt;
             }
-            return m_reply.has_value();
-         }
+         } // non::blocking
+  
+      } // lookups
 
-         Lookup::operator service::Lookup () &&
-         {
-            service::Lookup result;
-            swap( result, *this);
-            return result;
-         }
-
-         Lookup::Reply Lookup::force_reply() &&
-         {
-            if( ! m_reply)
-               update( communication::ipc::receive< Reply>());
-
-            CASUAL_ASSERT( m_reply);
-
-            return std::move( *m_reply);
-         }
-
-      } // non::blocking
    } // common::service
 } // casual

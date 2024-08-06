@@ -284,7 +284,7 @@ namespace casual
                   // the conversation receive (and send?) calls need to use
                   // the same correlation id to wait for/read responses
                   // from the service
-                  strong::correlation::id{ lookup.correlation()},
+                  lookup.correlation(),
                   process::Handle{},
                   local::duplex::convert( flags),
                   true);
@@ -296,7 +296,7 @@ namespace casual
                // If some thing goes wrong we unreserve the descriptor
                auto unreserve = common::execute::scope( [&](){ m_state.descriptors.unreserve( descriptor);});
 
-               auto target = lookup();
+               auto target = service::lookup::reply( std::move( lookup));
 
                // The service exists. prepare the request
                auto message = local::prepare::message< message::conversation::connect::caller::Request>( value, std::move( buffer), process::handle());

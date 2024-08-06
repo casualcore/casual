@@ -391,7 +391,7 @@ domain:
 )");
 
          // lookup / reserve the instance
-         auto lookup = common::service::Lookup{ "casual/example/echo"}();
+         auto lookup = common::service::lookup::reply( common::service::Lookup{ "casual/example/echo"});
 
          communication::ipc::inbound::Device inbound;
 
