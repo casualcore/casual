@@ -118,6 +118,14 @@ namespace casual
             }
 
             template< typename M>
+            void fake_conversation_connect_error_reply( State& state, strong::socket::id descriptor, M&& request, common::code::xatmi code)
+            {
+               auto reply = common::message::reverse::type( request);
+               reply.code.result = code;
+               local::send_to_partner_ipc( state, descriptor, std::move( reply));
+            }  
+
+            template< typename M>
             void fake_queue_error_reply( State& state, strong::socket::id descriptor, M&& request)
             {
                local::send_to_partner_ipc( state, descriptor, common::message::reverse::type( request));
@@ -230,12 +238,27 @@ namespace casual
                   {
                      Trace trace{ "gateway::group::inbound::task::create::service::call lookup::Reply"};
 
-                     shared->lookup = std::move( reply);
+                     switch( reply.state)
+                     {
+                        using Enum = decltype( reply.state);
+                        case Enum::idle:
+                        {
+                           shared->lookup = std::move( reply);
 
-                     // If the call wasn't in transaction, or we've branched the trid already.
-                     // If the call failed, we've "sent" the reply, 
-                     if( ! shared->origin_trid || shared->origin_trid != shared->message.trid)
-                        local::send::service_request( state, descriptor, *shared->lookup, shared->message);
+                           // If the call wasn't in transaction, or we've branched the trid already.
+                           // If the call failed, we've "sent" the reply, 
+                           if( ! shared->origin_trid || shared->origin_trid != shared->message.trid)
+                              local::send::service_request( state, descriptor, *shared->lookup, shared->message);
+
+                           break;
+                        }
+                        case Enum::absent:
+                           local::fake_service_error_reply( state, descriptor, shared->message, code::xatmi::no_entry);
+                           break;
+                        case Enum::timeout:
+                           local::fake_service_error_reply( state, descriptor, shared->message, code::xatmi::timeout);
+                           break;
+                     }
                      
                      return casual::task::concurrent::unit::Dispatch::pending;
 
@@ -251,7 +274,6 @@ namespace casual
                      if( shared->lookup)
                         local::send::service_request( state, descriptor, *shared->lookup, shared->message);
 
-                  
                      return casual::task::concurrent::unit::Dispatch::pending;
                   },
                   [ &state, shared]( common::message::service::call::Reply& reply, strong::socket::id descriptor)
@@ -265,9 +287,6 @@ namespace casual
                         tcp::send( state, connection->descriptor(), reply);
                      else
                         tcp::send( state, connection->descriptor(), message::protocol::transform::to< common::message::service::call::v1_2::Reply>( std::move( reply)));
-
-
-                     inbound::tcp::send( state, descriptor, reply);
                      
                      // We're done
                      return casual::task::concurrent::unit::Dispatch::done;
@@ -329,11 +348,26 @@ namespace casual
                   {
                      Trace trace{ "gateway::group::inbound::task::create::local::handle_conversation lookup::Reply"};
 
-                     shared->lookup = std::move( reply);
+                     switch( reply.state)
+                     {
+                        using Enum = decltype( reply.state);
+                        case Enum::idle:
+                        {
+                           shared->lookup = std::move( reply);
 
-                     // if the call wasn't in transaction, or we've branched the trid already
-                     if( ! shared->origin_trid || shared->origin_trid != shared->message.trid)
-                        local::send::service_request( state, descriptor, *shared->lookup, shared->message);
+                           // if the call wasn't in transaction, or we've branched the trid already
+                           if( ! shared->origin_trid || shared->origin_trid != shared->message.trid)
+                              local::send::service_request( state, descriptor, *shared->lookup, shared->message);
+
+                           break;
+                        }
+                        case Enum::absent:
+                           local::fake_conversation_connect_error_reply( state, descriptor, shared->message, code::xatmi::no_entry);
+                           break;
+                        case Enum::timeout:
+                           local::fake_conversation_connect_error_reply( state, descriptor, shared->message, code::xatmi::timeout);
+                           break;
+                     }
                      
                      return casual::task::concurrent::unit::Dispatch::pending;
 

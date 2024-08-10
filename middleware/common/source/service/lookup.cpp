@@ -76,7 +76,7 @@ namespace casual
       Lookup::~Lookup()
       {
          // we have to discard if we're still pending with the service manager
-         if( ! m_correlation)
+         if( m_correlation)
             local::discard( m_correlation);
       }
 

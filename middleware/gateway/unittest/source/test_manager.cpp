@@ -1797,7 +1797,11 @@ domain:
          {
             auto request = communication::ipc::receive< common::message::service::call::callee::Request>();
             communication::device::blocking::send( request.process.ipc, common::message::reverse::type( request));
-            casual::service::unittest::send::ack( request);
+            {
+               b.activate();
+               casual::service::unittest::send::ack( request);
+               a.activate();
+            }
 
 
             EXPECT_TRUE( request.parent.service == "casual/example/resource/nested/calls/B");
@@ -1806,6 +1810,81 @@ domain:
 
          }
 
+      }
+
+      TEST( gateway_manager_inbound, advertise_b_in_B__5ms_timeout__call_b_from_A__twice__expect__timeout_for_both_calls)
+      {
+         common::unittest::Trace trace;
+         
+         auto b = local::domain( R"(
+domain:
+   name: B
+   services:
+      -  name: b
+         execution:
+            timeout:
+               duration: 5ms
+
+   gateway:
+      inbound:
+         groups:
+            -  alias: in-b
+               connections:
+                  -  address: 127.0.0.1:7010
+)");
+         
+         casual::service::unittest::advertise( { "b"});
+
+         auto a = local::domain( R"(
+domain:
+   name: A
+   gateway:
+      outbound:
+         groups:
+            -  alias: out-a
+               connections:
+                  -  address: 127.0.0.1:7010
+)");
+
+         unittest::fetch::until( unittest::fetch::predicate::outbound::connected());
+
+         const auto payload = unittest::random::binary( 1024);
+         
+         auto correlation_1 = common::unittest::service::send( "b", payload);
+         auto correlation_2 = common::unittest::service::send( "b", payload);
+
+         // the first call will arrive
+         auto first_request = communication::ipc::receive< common::message::service::call::callee::Request>( correlation_1);
+
+         // first one get's a 'in-flight-timeout'
+         EXPECT_TRUE( communication::ipc::receive< common::message::service::call::Reply>( correlation_1).code.result == code::xatmi::timeout);
+         // second gets a 'pending timeout' in inbound B from B service-manager
+         EXPECT_TRUE( communication::ipc::receive< common::message::service::call::Reply>( correlation_2).code.result == code::xatmi::timeout);
+
+         // send ack for the first request
+         b.activate();
+         casual::service::unittest::send::ack( first_request);
+         a.activate();
+         
+
+         // make sure that we can call the service a -> it has been unreserved
+         // This assumes that we're running the unittest on a machine that can
+         // do a _remote call_ within 5ms (which is extremely long time).
+         {
+            auto correlation = common::unittest::service::send( "b", payload);
+            {
+               b.activate();
+               auto request = communication::ipc::receive< common::message::service::call::callee::Request>( correlation);
+               auto reply = common::message::reverse::type( request);
+               reply.buffer = std::move( request.buffer);
+               communication::device::blocking::send( request.process.ipc, reply);
+               casual::service::unittest::send::ack( request);
+               a.activate();
+            }
+            auto reply = communication::ipc::receive< common::message::service::call::Reply>( correlation);
+            EXPECT_TRUE( reply.buffer.data == payload);
+            EXPECT_TRUE( reply.code.result == decltype( reply.code.result)::ok);
+         }
       }
 
    } // gateway
