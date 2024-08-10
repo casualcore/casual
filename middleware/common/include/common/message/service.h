@@ -45,6 +45,16 @@ namespace casual
             concurrent = 2,
          };
 
+         constexpr std::string_view description( Type value) noexcept
+         {
+            switch( value)
+            {
+               case Type::sequential: return "sequential";
+               case Type::concurrent: return "concurrent";
+            }
+            return "<unknown>";
+         }
+
          struct Base 
          {
             Base() = default;
@@ -80,6 +90,8 @@ namespace casual
          struct Timeout
          {
             platform::time::unit duration{};
+
+            inline explicit operator bool() const { return duration != platform::time::unit{};}
 
             CASUAL_CONST_CORRECT_SERIALIZE(
                CASUAL_SERIALIZE( duration);
@@ -412,7 +424,8 @@ namespace casual
                enum class State : short
                {
                   absent,
-                  idle
+                  idle,
+                  timeout,
                };
 
                inline constexpr std::string_view description( State value) noexcept
@@ -421,6 +434,7 @@ namespace casual
                   {
                      case State::absent: return "absent";
                      case State::idle: return "idle";
+                     case State::timeout: return "timeout";
                   }
                   return "<unknown>";
                }

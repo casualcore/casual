@@ -82,6 +82,19 @@ namespace casual
                }
             } // error
 
+            namespace lookup
+            {
+               auto timeout( State& state, state::service::pending::Lookup lookup)
+               {
+                  Trace trace{ "service::manager::handle::local::lookup::timeout"};
+                  log::line( verbose::log, "lookup: ", lookup);
+
+                  auto reply = common::message::reverse::type( lookup.request);
+                  reply.state = decltype( reply.state)::timeout;
+                  state.multiplex.send( lookup.request.process.ipc, std::move( reply));
+               }
+            } // lookup
+
             namespace metric
             {
                void send( State& state)
@@ -161,28 +174,39 @@ namespace casual
 
          auto handle_timeout = [&state]( auto& entry)
          {
-            auto order_assassination = []( auto& target, auto& contract, auto& announcement)
+            auto order_assassination = []( auto& entry)
             {
+               CASUAL_ASSERT( entry.service);
+
+               auto contract = entry.service->timeout.contract.value_or( common::service::execution::timeout::contract::Type::linger);
+               auto announcement = common::string::compose( "service ", entry.service->information.name, " timed out");
+
                // send event, at least domain-manager want's to know...
                common::message::event::process::Assassination event{ common::process::handle()};
-               event.target = target;
+               event.target = entry.target;
                event.contract = contract;
                event.announcement = announcement;
                common::event::send( event);
             };
 
-            auto contract = entry.service->timeout.contract.value_or( common::service::execution::timeout::contract::Type::linger);
-            auto announcement = common::string::compose( "service ", entry.service->information.name, " timed out");
-
-            if( auto caller = entry.service->consume( entry.correlation))
+            if( auto found = algorithm::find( state.pending.lookups, entry.correlation))
+            {
+               local::lookup::timeout( state, algorithm::container::extract( state.pending.lookups, std::begin( found)));
+            }
+            else if( ! entry.service)
+            {
+               log::error( code::casual::invalid_semantics, "timeout entry has no associated service: ", entry);
+            }
+            else if( auto caller = entry.service->consume( entry.correlation))
             {
                // keep track of instance until we get an ACK, or the server dies
                // We need to notify TM if this call was in transaction.
                state.timeout_instances.push_back( entry.target);
                local::error::reply( state, caller, common::code::xatmi::timeout);
-               order_assassination( entry.target, contract, announcement);
+               order_assassination( entry);
             }
             else
+            {
                // This happens during shutdown
                // Sadly the state of service-manager is not yet `Runlevel::shutdown`
                // due to the fact that service-manager is still only in "prepare::shutdown" state.
@@ -191,7 +215,8 @@ namespace casual
                //   - in this case the reply to the caller is not going to be TPETIME
                //     but rather TPESVCERR, can we redesign that?
                // 
-               order_assassination( entry.target, contract, announcement);
+               order_assassination( entry);
+            }
 
          };
 
@@ -382,6 +407,17 @@ namespace casual
 
                namespace detail
                {
+                  auto calculate_deadline( const state::Service& service, platform::time::point::type now, std::optional< platform::time::point::type> caller_deadline) -> std::optional< platform::time::point::type>
+                  {
+                     if( service.timeout.duration && service.timeout.duration > std::chrono::microseconds{ 0})
+                     {
+                        auto deadline = now + *service.timeout.duration;
+                        if( ! caller_deadline || *caller_deadline > deadline)
+                           return { deadline};
+                     }
+                     return caller_deadline;
+                  };
+
                   void discover( State& state, common::message::service::lookup::Request&& message, const std::string& name)
                   {
                      Trace trace{ "service::manager::handle::local::service::detail::discover"};
@@ -427,13 +463,16 @@ namespace casual
                         state.multiplex.send( message.process.ipc, reply);
                      }
 
-                     void reply( State& state, state::Service& service, const common::process::Handle& destination, common::message::service::lookup::Request& message, platform::time::unit pending)
+                     void reply( State& state, state::Service& service, 
+                        const common::process::Handle& destination, 
+                        const common::message::service::lookup::Request& message, 
+                        platform::time::unit pending)
                      {
                         log::line( verbose::log, "'reserved' instance: ", destination);
+                        log::line( verbose::log, "REMOVE - service: ", service);
 
                         auto reply = common::message::reverse::type( message);
                         reply.service = service.information;
-                        reply.service.timeout.duration = service.timeout.duration.value_or( platform::time::unit::zero());
                         reply.state = decltype( reply.state)::idle;
                         reply.process = destination;
                         reply.pending = pending;
@@ -441,23 +480,38 @@ namespace casual
                         if( service.information.name != message.requested)
                            reply.service.requested = message.requested;
 
-                        if( service.timeoutable())
+                        const auto now = platform::time::clock::type::now();
+
+                        // This lookup might have been pending, and have a timeout associated
+                        if( auto entry = state.pending.deadline.find_entry( message.correlation))
                         {
-                           auto now = platform::time::clock::type::now();
-
-                           auto next = state.pending.deadline.add( {
-                              now + reply.service.timeout.duration,
-                              message.correlation,
-                              destination.pid,
-                              &service});
-
-                           if( next)
-                              signal::timer::set( next.value() - now);
+                           entry->service = &service;
+                           entry->target = destination.pid;
+                           // set the remaining duration of the deadline
+                           reply.service.timeout.duration = entry->when - now;
                         }
-                        else if( message.deadline)
+                        // otherwise, check if we need to set a new deadline.
+                        else if( auto deadline = detail::calculate_deadline( service, now, message.deadline))
                         {
-                           reply.service.timeout.duration = message.deadline.value() - platform::time::clock::type::now();
-                        }                             
+                           log::line( verbose::log, "deadline: ", deadline);
+                           
+
+                           // no pending, the caller get's the whole duration of the deadline.
+                           reply.service.timeout.duration = *deadline - now;
+
+                           // We only actually add a timer if the service is 'local', 
+                           // if the service has local/sequential instances.
+                           if( service.has_sequential())
+                           {
+                              auto next = state.pending.deadline.add( { .when = *deadline,
+                                 .correlation = message.correlation,
+                                 .target = destination.pid,
+                                 .service = &service});
+
+                              if( next)
+                                 signal::timer::set( next.value() - now);
+                           }
+                        }
 
                         // send reply, if caller gone, we discard the reservation.
                         state.multiplex.send( message.process.ipc, reply, [ &state]( auto& destination, auto& complete)
@@ -467,10 +521,9 @@ namespace casual
                         });
                      }
 
-                     void pending( State& state, const state::Service& service, common::message::service::lookup::Request& message)
+                     void pending( State& state, const state::Service& service, common::message::service::lookup::Request&& message)
                      {
-                        auto reply = common::message::reverse::type( message);
-                        reply.service = service.information;
+                        Trace trace{ "service::manager::handle::local::service::detail::dispatch::lookup::pending"};
 
                         switch( message.context.semantic)
                         {
@@ -478,6 +531,8 @@ namespace casual
 
                            case Semantic::no_reply:
                            {
+                              auto reply = common::message::reverse::type( message);
+                              reply.service = service.information;
                               // The intention is "send and forget", or a plain forward, we use our forward-cache for this
                               reply.process = state.forward;
 
@@ -495,12 +550,13 @@ namespace casual
                               [[fallthrough]];
                            case Semantic::regular:
                            {
+                              auto now = platform::time::clock::type::now();
 
-                              // If this is from another domain the actual timeouts and stuff can differ
-                              // and this might be a problem?
-                              // TODO semantics: something we need to address? probably not,
-                              // since we can't make it 100% any way...)
-                              state.pending.lookups.emplace_back( std::move( message), platform::time::clock::type::now());
+                              if( auto deadline = detail::calculate_deadline( service, now, message.deadline))
+                                 if( service.has_sequential())
+                                    state.pending.deadline.add( { .when = *deadline, .correlation = message.correlation});
+
+                              state.pending.lookups.emplace_back( std::move( message), now);
 
                               break;
                            }
@@ -516,6 +572,8 @@ namespace casual
 
                      bool internal_only( State& state, state::Service& service, common::message::service::lookup::Request& message, platform::time::unit pending)
                      {  
+                        Trace trace{ "service::manager::handle::local::service::detail::dispatch::lookup::internal_only"};
+
                         if( service.has_sequential())
                         {
                            auto get_caller = []( const auto& message) -> common::process::Handle
@@ -528,14 +586,17 @@ namespace casual
                            if( auto destination = service.reserve_sequential( get_caller( message), message.correlation))
                               dispatch::lookup::reply( state, service, destination, message, pending);
                            else
-                              dispatch::lookup::pending( state, service, message);
+                              dispatch::lookup::pending( state, service, std::move( message));
                            return true;
                         }
                         return false;
                      }
 
-                     bool external_internal( State& state, state::Service& service, common::message::service::lookup::Request& message, platform::time::unit pending)
+                     bool external_internal( State& state, 
+                        state::Service& service, common::message::service::lookup::Request& message, platform::time::unit pending)
                      {
+                        Trace trace{ "service::manager::handle::local::service::detail::dispatch::lookup::external_internal"};
+
                         if( dispatch::lookup::internal_only( state, service, message, pending))
                            return true;
 
@@ -579,7 +640,7 @@ namespace casual
                      
                   } // dispatch::lookup
 
-                  void lookup( State& state, common::message::service::lookup::Request& message, platform::time::unit pending)
+                  void lookup( State& state, common::message::service::lookup::Request& message, platform::time::unit pending = {})
                   {
                      Trace trace{ "service::manager::handle::local::service::detail::lookup"};
                      log::line( verbose::log, "message: ", message, ", pending: ", pending);
@@ -597,9 +658,6 @@ namespace casual
                                  dispatch::lookup::no_entry( state, message);
                               break;
                            case Enum::external_discovery:
-                              if( ! dispatch::lookup::external_internal( state, *service, message, pending))
-                                 discover( state, std::move( message), service->information.name);
-                              break;
                            case Enum::internal:
                               if( ! dispatch::lookup::external_internal( state, *service, message, pending))
                                  discover( state, std::move( message), service->information.name);
@@ -622,9 +680,9 @@ namespace casual
 
                auto lookup( State& state)
                {
-                  return [&state]( common::message::service::lookup::Request& message)
+                  return [ &state]( common::message::service::lookup::Request& message)
                   {
-                     detail::lookup( state, message, platform::time::unit{});
+                     detail::lookup( state, message);
                   };
                }
 
@@ -692,11 +750,11 @@ namespace casual
                         if( pending.empty())
                            return;
 
-                        auto lookup = [ &state, now = platform::time::clock::type::now()]( auto& pending)
+                        auto lookup = [ &state]( auto& pending)
                         {
                            // context::wait is not relevant for pending time.
                            if( pending.request.context.semantic == decltype( pending.request.context.semantic)::wait)
-                              service::detail::lookup( state, pending.request, {});
+                              service::detail::lookup( state, pending.request);
                            else
                               service::detail::lookup( state, pending.request, platform::time::clock::type::now() - pending.when);
                         };
@@ -896,21 +954,22 @@ namespace casual
 
                         if( auto found = algorithm::find( state.pending.lookups, message.correlation))
                         {
-                           auto pending = algorithm::container::extract( state.pending.lookups, std::begin( found));
-
-                           if( auto service = state.service( pending.request.requested); service && service->instances)
+                           if( auto service = state.service( found->request.requested); service && service->instances)
                            {
+                              auto pending = algorithm::container::extract( state.pending.lookups, std::begin( found));
+
                               // The requested service is now available, use
                               // the lookup to decide how to progress.
-                              service::lookup( state)( pending.request);
+                              service::detail::lookup( state, pending.request);
                            }
-                           else if( pending.request.context.semantic == decltype( pending.request.context.semantic)::wait)
+                           else if( found->request.context.semantic == decltype( found->request.context.semantic)::wait)
                            {
-                              // we put the pending back.
-                              state.pending.lookups.push_back( std::move( pending));
+                              // we let the lookup remain
                            }
                            else 
                            {
+                              auto pending = algorithm::container::extract( state.pending.lookups, std::begin( found));
+
                               auto reply = common::message::reverse::type( pending.request);
                               reply.service.name = pending.request.requested;
                               reply.state = decltype( reply.state)::absent;

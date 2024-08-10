@@ -11,6 +11,7 @@
 
 #include "common/server/context.h"
 #include "common/service/conversation/context.h"
+#include "common/service/call/context.h"
 
 #include "common/buffer/transport.h"
 #include "common/execution/context.h"
@@ -53,16 +54,18 @@ namespace casual
       {
          Trace trace{ "server::handle::service::call"};
 
+         auto start = platform::time::clock::type::now();
+
          execution::context::service::set( message.service.name);
          execution::context::span::reset();
          execution::context::parent::service::set( message.parent.service);
          execution::context::parent::span::set( message.parent.span);
 
-
          common::service::header::fields() = std::move( message.header);
 
-         auto start = platform::time::clock::type::now();
-
+         // set deadline (if any) for further service calls downstream
+         common::service::call::context().deadline( start, message.service.timeout.duration);
+         
          // Prepare current_trid for later;
          decltype( common::transaction::Context::instance().current().trid) current_trid;
 

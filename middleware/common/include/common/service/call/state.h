@@ -19,10 +19,9 @@ namespace casual
       using descriptor_type = platform::descriptor::type;
       using correlation_type = strong::correlation::id;
 
-      struct State
+      namespace state
       {
-
-         struct Pending
+         namespace pending
          {
             struct Descriptor
             {
@@ -37,23 +36,25 @@ namespace casual
                common::strong::process::id target{};
                Contract contract{ Contract::linger};
 
-               friend bool operator == ( descriptor_type cd, const Descriptor& d) { return cd == d.descriptor;}
-               friend bool operator == ( const Descriptor& d, descriptor_type cd) { return cd == d.descriptor;}
+               inline friend bool operator == ( const Descriptor& lhs, descriptor_type rhs) { return lhs.descriptor == rhs;}
             };
+            
+         } // pending
 
-
+         struct Pending
+         {
             Pending();
 
             //! Reserves a descriptor and associates it to message-correlation
-            Descriptor& reserve( const correlation_type& correlation);
+            pending::Descriptor& reserve( const correlation_type& correlation);
 
             void unreserve( descriptor_type descriptor);
 
             bool active( descriptor_type descriptor) const;
 
-            const Descriptor& get( descriptor_type descriptor) const;
-            const Descriptor& get( const correlation_type& correlation) const;
-            Descriptor& get( descriptor_type descriptor);
+            const pending::Descriptor& get( descriptor_type descriptor) const;
+            const pending::Descriptor& get( const correlation_type& correlation) const;
+            pending::Descriptor& get( descriptor_type descriptor);
 
             //! Tries to discard descriptor, throws if fail.
             void discard( descriptor_type descriptor);
@@ -64,11 +65,16 @@ namespace casual
 
          private:
 
-            Descriptor& reserve();
+            pending::Descriptor& reserve();
+            std::vector< pending::Descriptor> m_descriptors;
+         };
+         
+      } // state
 
-            std::vector< Descriptor> m_descriptors;
-
-         } pending;
+      struct State
+      {
+         state::Pending pending;
+         std::optional< platform::time::point::type> deadline;
       };
 
    } // common::service::call
