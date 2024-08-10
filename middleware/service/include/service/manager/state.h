@@ -184,7 +184,7 @@ namespace casual
                      platform::time::point::type when;
                      common::strong::correlation::id correlation;
                      //! The actual instance that the timeout refers to.
-                     common::strong::process::id target;
+                     common::strong::process::id target{};
                      state::Service* service = nullptr;
 
                      inline friend bool operator < ( const Entry& lhs, const Entry& rhs) { return lhs.when < rhs.when;}
@@ -205,6 +205,8 @@ namespace casual
                   std::optional< platform::time::point::type> add( deadline::Entry entry);
                   std::optional< platform::time::point::type> remove( const common::strong::correlation::id& correlation);
                   std::optional< platform::time::point::type> remove( const std::vector< common::strong::correlation::id>& correlations);
+
+                  deadline::Entry* find_entry( const common::strong::correlation::id& correlation);
 
                   struct Expired
                   {
@@ -385,6 +387,7 @@ namespace casual
             bool is_discoverable() const noexcept;
 
             bool timeoutable() const noexcept;
+
 
             //! @returns the concurrent property of the service, "empty" property if not applicable.
             service::instance::Concurrent::Property property() const noexcept;

@@ -57,7 +57,7 @@ namespace casual
                   message::service::call::caller::Request message;
                };
 
-               auto lookup( std::string service, async::Flag flags)
+               auto lookup( std::string service, async::Flag flags, const std::optional< platform::time::point::type>& deadline)
                {
                   Trace trace( "service::call::local::prepare::lookup");
 
@@ -82,12 +82,11 @@ namespace casual
                      }
                   }
 
-                  return service::Lookup{ std::move( service), transform_context( flags)};
+                  return service::Lookup{ std::move( service), transform_context( flags), deadline};
                }
 
                inline Reply message(
                      State& state,
-                     const platform::time::point::type& start,
                      common::buffer::payload::Send&& buffer,
                      service::header::Fields header,
                      async::Flag flags,
@@ -148,8 +147,6 @@ namespace casual
 
          log::line( log::debug, "service: ", service, ", buffer: ", buffer, " flags: ", flags);
 
-         auto start = platform::time::clock::type::now();
-
          // TODO: Invoke pre-transport buffer modifiers
          //buffer::transport::Context::instance().dispatch( idata, ilen, service, buffer::transport::Lifecycle::pre_call);
 
@@ -157,7 +154,7 @@ namespace casual
          auto target = service::lookup::reply( std::move( service));
 
          // The service exists. Take care of reserving descriptor and determine timeout
-         auto prepared = local::prepare::message( m_state, start, std::move( buffer), std::move( header), flags, target);
+         auto prepared = local::prepare::message( m_state, std::move( buffer), std::move( header), flags, target);
 
          // If some thing goes wrong we unreserve the descriptor
          auto unreserve = common::execute::scope( [&](){ m_state.pending.unreserve( prepared.descriptor);});
@@ -188,7 +185,7 @@ namespace casual
 
       descriptor_type Context::async( const std::string& service, common::buffer::payload::Send buffer, async::Flag flags)
       {
-         return async( local::prepare::lookup( service, flags), std::move( buffer), flags); 
+         return async( local::prepare::lookup( service, flags, m_state.deadline), std::move( buffer), flags); 
       }
 
       namespace local
@@ -361,15 +358,25 @@ namespace casual
          // TODO: Do some cleaning on buffers, pending replies and such...
       }
 
-      Context::Context()
-      = default;
+      Context::Context() = default;
 
       bool Context::pending() const
       {
          return ! m_state.pending.empty();
-
       }
 
+      void Context::deadline( platform::time::point::type now, platform::time::unit timeout)
+      {
+         if( timeout != platform::time::unit{})
+            m_state.deadline = now + timeout;
+         else 
+            m_state.deadline = std::nullopt;
+      }
+
+      std::optional< platform::time::point::type> Context::deadline() const
+      {
+         return m_state.deadline;
+      }
 
 
       bool Context::receive( message::service::call::Reply& reply, descriptor_type descriptor, reply::Flag flags)

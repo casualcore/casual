@@ -39,7 +39,7 @@ namespace casual
                });
             }
 
-            void validate( const lookup::Reply& reply)
+            void validate( const lookup::Reply& reply, const std::string& service)
             {
                using Enum = decltype( reply.state);
                switch( reply.state)
@@ -47,15 +47,14 @@ namespace casual
                   case Enum::idle:
                      return;
                   case Enum::absent:
-                     code::raise::error( code::xatmi::no_entry, "failed to lookup service");
+                     code::raise::error( code::xatmi::no_entry, "failed to lookup service: ", service);
+                  case Enum::timeout:
+                     code::raise::error( code::xatmi::timeout, "timeout during lookup of service: ", service);
                };
             }
             
          } // <unnamed>
       } // local
-
-
-      //Lookup::Lookup() noexcept {};
 
       Lookup::Lookup( std::string service, lookup::Context context, std::optional< platform::time::point::type> deadline)
          : m_service( std::move( service))
@@ -99,7 +98,7 @@ namespace casual
          {
             auto reply = communication::ipc::receive< lookup::Reply>( std::exchange( lookup.m_correlation, {}));
 
-            local::validate( reply);
+            local::validate( reply, lookup.m_service);
             return reply;
          }
 
@@ -110,7 +109,7 @@ namespace casual
                if( auto reply = communication::ipc::non::blocking::receive< lookup::Reply>( lookup.m_correlation))
                {
                   lookup.m_correlation = {};
-                  local::validate( *reply);
+                  local::validate( *reply, lookup.m_service);
                   return reply;
                }
                return std::nullopt;

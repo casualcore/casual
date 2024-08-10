@@ -341,21 +341,47 @@ domain:
          auto service = common::service::lookup::reply( common::service::Lookup{ "a"});
          ASSERT_TRUE( ! service.absent());
 
-         common::message::service::call::Reply reply;
-         EXPECT_TRUE( common::communication::device::blocking::receive( 
-            common::communication::ipc::inbound::device(),
-            reply));
+         auto reply = common::communication::ipc::receive< common::message::service::call::Reply>();
 
          EXPECT_TRUE( reply.code.result == decltype( reply.code.result)::timeout);
 
-         common::message::event::process::Assassination event;
-         EXPECT_TRUE( common::communication::device::blocking::receive( 
-            common::communication::ipc::inbound::device(),
-            event));
+         auto event = common::communication::ipc::receive< common::message::event::process::Assassination>();
 
          EXPECT_TRUE( event.target == common::process::id());
          EXPECT_TRUE( event.contract == decltype( event.contract)::linger);
          EXPECT_TRUE( event.announcement == "service a timed out");
+      }
+
+      TEST( service_manager, service_a_execution_timeout_duration_1ms__advertise_a__reserve_a__lookup_a__expect_lookup_timeout)
+      {
+         common::unittest::Trace trace;
+
+         constexpr auto configuration = R"(
+domain:
+   services:
+      -  name: a
+         execution:
+            timeout:
+               duration: 1ms
+
+)";
+
+         auto domain = local::domain( configuration);
+
+         service::unittest::advertise( { "a"});
+
+         // reserve
+         {
+            common::service::lookup::reply( common::service::Lookup{ "a"});
+         }
+
+         EXPECT_CODE( 
+            common::service::lookup::reply( common::service::Lookup{ "a"});
+         ,common::code::xatmi::timeout);
+
+         // the first reserve should give timeout reply
+         auto reply = common::communication::ipc::receive< common::message::service::call::Reply>();
+         EXPECT_TRUE( reply.code.result == decltype( reply.code.result)::timeout);
       }
 
 

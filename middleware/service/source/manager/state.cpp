@@ -298,6 +298,11 @@ namespace casual
                   return {};
                }
 
+               deadline::Entry* Deadline::find_entry( const common::strong::correlation::id& correlation)
+               {
+                  return algorithm::find( m_entries, correlation).data();
+               }
+
                Deadline::Expired Deadline::expired( platform::time::point::type now)
                {
                   auto pivot = std::find_if( std::begin( m_entries), std::end( m_entries), [now]( auto& entry)
@@ -367,10 +372,11 @@ namespace casual
             return information.visibility == Enum::discoverable;
          }
 
-         bool Service::timeoutable() const noexcept
+         bool Service::timeoutable() const noexcept   
          {
             return has_sequential() && timeout.duration > platform::time::unit::zero();
          }
+
 
         service::instance::Concurrent::Property Service::property() const noexcept
          {
