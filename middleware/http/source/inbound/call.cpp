@@ -79,15 +79,24 @@ namespace casual
 
                void request( const communication::ipc::inbound::Device& ipc, message::service::lookup::Reply lookup, message::service::call::callee::Request request)
                {
-                  if( lookup.state == decltype( lookup.state)::absent)
-                     common::code::raise::error( common::code::xatmi::no_entry, "failed to lookup service: ", lookup.service.name);
+                  switch( lookup.state)
+                  {
+                     using Enum = decltype( lookup.state);
+                     case Enum::absent:
+                        common::code::raise::error( common::code::xatmi::no_entry, "failed to lookup service: ", lookup.service.name);
+                     case Enum::timeout:
+                        common::code::raise::error( common::code::xatmi::timeout, "timeout during lookup of service: ", lookup.service.name);
+                     case Enum::idle:
+                     {
+                        request.process = local::handle( ipc);
+                        request.service = lookup.service;
+                        request.pending = lookup.pending;
+                        request.correlation = lookup.correlation;
 
-                  request.process = local::handle( ipc);
-                  request.service = lookup.service;
-                  request.pending = lookup.pending;
-                  request.correlation = lookup.correlation;
-
-                  communication::device::blocking::send( lookup.process.ipc, request);
+                        communication::device::blocking::send( lookup.process.ipc, request);
+                        break;
+                     }
+                  }
                }
             } // send
             
