@@ -46,20 +46,23 @@ namespace casual
       {
          [[nodiscard]] strong::correlation::id send( std::string service, platform::binary::type payload, const transaction::ID& trid)
          {
-            {
+            auto send_lookup = []( auto service, auto& trid){
                common::message::service::lookup::Request request{ process::handle()};
                request.gtrid = transaction::id::range::global( trid);
                request.requested = std::move( service);
                request.context.semantic = decltype( request.context.semantic)::regular;
-               communication::device::blocking::send( communication::instance::outbound::service::manager::device(), request);
-            }
+               return communication::device::blocking::send( communication::instance::outbound::service::manager::device(), request);
+            };
             
-            auto lookup = communication::ipc::receive< common::message::service::lookup::Reply>();
+            auto lookup = communication::ipc::receive< common::message::service::lookup::Reply>( send_lookup( std::move( service), trid));
             
-            if( lookup.state != decltype( lookup.state)::idle)
+            if( lookup.state == decltype( lookup.state)::absent)
                code::raise::error( code::xatmi::no_entry);
+            if( lookup.state == decltype( lookup.state)::timeout)
+               code::raise::error( code::xatmi::timeout);
 
             common::message::service::call::callee::Request message{ process::handle()};
+            message.correlation = lookup.correlation;
             message.service = std::move( lookup.service);
             message.trid = trid;
             message.buffer.data = std::move( payload);

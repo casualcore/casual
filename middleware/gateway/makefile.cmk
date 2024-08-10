@@ -32,7 +32,8 @@ make.LibraryPaths([
     '../service/bin',
     '../serviceframework/bin',
     '../xatmi/bin',
-    '../queue/bin']
+    '../queue/bin',
+    '../transaction/bin']
     + make.optional_library_paths()
     + dsl.paths().library.gtest
    )
