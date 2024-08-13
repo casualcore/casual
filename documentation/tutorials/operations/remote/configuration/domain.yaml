@@ -1,0 +1,31 @@
+# A peer for your domain to connect to. Look but don't touch! Or do touch, but the exercises might not work as described...
+
+domain:
+
+  name: remote-domain
+
+  servers:
+    - alias: remote-example-server
+      path: ${CASUAL_HOME}/example/bin/casual-example-server
+      instances: 1
+      restrictions:
+        - casual/example/domain/name
+    
+  services:
+    - name: casual/example/domain/name
+      routes:
+        - remote-service
+
+  queue:
+    groups:
+      - alias: remote-queue-group
+        queues:
+          - name: remote-queue
+
+  gateway:
+    inbound:
+      groups:
+        - alias: remote-domain-inbound
+          note: listens for incoming connections
+          connections:
+            - address: 127.0.0.1:7778
