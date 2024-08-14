@@ -199,6 +199,8 @@ namespace casual
                   if( std::empty( spawned))
                      return task::unit::action::Outcome::abort;
 
+                  shared->pids = algorithm::transform( spawned, []( auto& instance){ return instance.process.pid;});
+
                   algorithm::move( spawned, std::back_inserter( proxy->instances));
 
                   return task::unit::action::Outcome::success;
