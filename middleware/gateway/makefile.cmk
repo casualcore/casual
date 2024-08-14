@@ -2,6 +2,8 @@ import unittest
 import casual.make.api as make
 import casual.middleware.make.api as dsl
 
+import os
+
 
 
 make.IncludePaths([
@@ -293,7 +295,7 @@ make.Dependencies( target_unittest, build_executables_for_testing_protocol_v1_2(
 
 
 
-target = make.LinkExecutable( "bin/casual-gateway-markdown-protocol",
+markdown_protocol_target = make.LinkExecutable( "bin/casual-gateway-markdown-protocol",
     [
         make.Compile( 'source/documentation/protocol/markdown.cpp')
     ] + protocol_objects,
@@ -302,7 +304,7 @@ target = make.LinkExecutable( "bin/casual-gateway-markdown-protocol",
         'casual-common'
     ])
 
-install_example_bin.append( target)
+install_example_bin.append( markdown_protocol_target)
 
 target = make.LinkExecutable( "bin/casual-gateway-binary-protocol",
     [
@@ -321,4 +323,16 @@ make.Install( install_example_bin, dsl.paths().install + '/example/bin')
 make.Install( install_bin, dsl.paths().install + '/bin')
 make.Install( install_lib, dsl.paths().install + '/lib')
 
+# GenerateDocumentation
+def casual_gateway_markdown_protocol( input):
+    import casual.make.tools.executor as executor
 
+    output = "documentation/protocol/protocol.maintenance.md"
+    cmd = "bin/casual-gateway-markdown-protocol"
+
+    print(f"Executing {cmd} > {output}")
+
+    context_directory = os.path.dirname(input['target'].makefile())
+    executor.execute_result_to_file(cmd, directory=context_directory, file=output)
+
+dsl.GenerateDocumentation(".", dependencies = [markdown_protocol_target], generator_function = casual_gateway_markdown_protocol)

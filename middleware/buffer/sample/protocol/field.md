@@ -15,7 +15,7 @@ Every field in the buffer has the following parts: `<field-id><size><data>`
 
 ## example
 
-### host values
+### host representation
 
  type   | field-id     | size value   | value       
 --------|--------------|--------------|------------ 
