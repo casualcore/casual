@@ -1,5 +1,7 @@
 import casual.make.api as make
 import casual.middleware.make.api as dsl
+import os
+
 
 make.IncludePaths( [
    'include',
@@ -189,6 +191,21 @@ install_bin.append( binary)
 make.Install( install_lib,  dsl.paths().install + '/lib')
 make.Install( install_bin,  dsl.paths().install + '/bin')
 make.Install( install_headers,  dsl.paths().install + '/include')
+
+# GenerateDocumentation
+
+
+def casual_buffer_protocol_sample( input):
+    import casual.make.tools.executor as executor
+
+    cmd = "bin/casual-buffer-protocol-sample"
+
+    print(f"Executing {cmd}")
+
+    context_directory = os.path.dirname(input['target'].makefile())
+    executor.command(cmd, directory=context_directory, show_command=False)
+
+dsl.GenerateDocumentation(".", dependencies = [exe_field_sample], generator_function = casual_buffer_protocol_sample)
 
 
 

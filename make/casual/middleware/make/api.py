@@ -22,6 +22,9 @@ def BUILD_SERVER():
 link_server_target = model.register( 'link-server')
 api.link_target.add_dependency( [link_server_target])
 
+generate_documentation_target = model.register( 'documentation')
+
+
 def caller():
    
    name = inspect.getouterframes( inspect.currentframe())[2][1]
@@ -156,3 +159,35 @@ def link_server( input):
    executor.command( cmd, destination, context_directory)
 
 
+def default_generator_function( input):
+
+   print(f"NOOP default_generator_function for {input['path']}")
+
+
+def GenerateDocumentation( path, dependencies=[], generator_function=default_generator_function):
+
+   makefile = caller()
+   directory, dummy = os.path.split( makefile.filename())
+
+   full_path_name = os.path.abspath( os.path.join( directory, path))
+   documentation_target = model.register( 'documentation' + full_path_name, 'documentation' + full_path_name, makefile = makefile.filename())
+
+   if dependencies:
+      for dependency in dependencies:
+         if isinstance(dependency, Target):
+            documentation_target.add_dependency( dependency)
+         else:
+            target = model.get( dependency)
+            if not target:
+               raise SystemError(f"Target for {dependency} not found")
+
+   arguments = {
+      'target' : documentation_target,
+      'path' : full_path_name
+      }
+
+   documentation_target.add_recipe( 
+      Recipe( generator_function, arguments)
+   ).serial(True)
+
+   generate_documentation_target.add_dependency( documentation_target)
