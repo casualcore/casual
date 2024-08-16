@@ -1027,7 +1027,7 @@ namespace casual
          if( auto range = algorithm::filter( state.disconnecting, is_idle))
          {
             // copy the descriptors - connection::lost will modify state.disconnecting
-            for( auto disconnect : range | std::ranges::to< std::vector>())
+            for( auto disconnect : algorithm::container::vector::create( range))
             {
                auto lost = connection::lost( state, disconnect.descriptor);
                if( disconnect.directive == state::disconnect::Directive::disconnect)
