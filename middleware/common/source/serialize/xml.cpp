@@ -275,7 +275,7 @@ namespace casual
                         // wanna make sure the whole content is processed
                         static void read( const pugi::xml_node& node, bool& value)
                         {
-                           const std::string boolean = node.text().get();
+                           const std::string_view boolean = node.text().get();
                            if( boolean == "true") 
                               value = true;
                            else if( boolean == "false") 
@@ -421,7 +421,7 @@ namespace casual
                         template<typename T>
                         void write( const T& value)
                         {
-                           m_stack.back().text().set( std::to_string( value).data());
+                           set( std::to_string( value));
                         }
 
                         // A few overloads
@@ -430,7 +430,7 @@ namespace casual
                         {
                            std::ostringstream stream;
                            stream << std::boolalpha << value;
-                           m_stack.back().text().set( std::move( stream).str().data());
+                           set( std::move( stream).str());
                         }
 
                         void write( const char& value)
@@ -440,12 +440,12 @@ namespace casual
 
                         void write( const std::string& value)
                         {
-                           write( transcode::utf8::encode( value));
+                           set( transcode::utf8::string::encode( value));
                         }
 
                         void write( const std::u8string& value)
                         {
-                           m_stack.back().text().set( reinterpret_cast< const char*>( value.data()));
+                           set( transcode::utf8::cast( value));
                         }
 
                         void write( const platform::binary::type& value)
@@ -455,8 +455,15 @@ namespace casual
 
                         void write( view::immutable::Binary value)
                         {
-                           m_stack.back().text().set( transcode::base64::encode( value).data());
+                           set( transcode::base64::encode( value));
                         }
+
+
+                        void set(const auto& value)
+                        {
+                           m_stack.back().text().set( value.data(), value.size());
+                        }
+                        
 
                         pugi::xml_document m_document;
                         std::vector< pugi::xml_node> m_stack;
