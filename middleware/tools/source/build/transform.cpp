@@ -105,9 +105,12 @@ namespace casual
 
                auto result = common::algorithm::transform( model.server.services, []( auto& service)
                {
-                  model::Service result{ service.name};
-                  result.function = service.function.value_or( service.name);
-                  result.category = service.category.value_or( "");
+                  model::Service result{ 
+                     .name = service.name, 
+                     .function = service.function.value_or( service.name),
+                     .category = service.category.value_or( "")
+                  };
+
                   if( service.transaction)
                      result.transaction = common::service::transaction::mode( *service.transaction);
                   if( service.visibility)
@@ -120,9 +123,7 @@ namespace casual
 
                common::algorithm::transform( names, result, [mode]( auto& name)
                {
-                  model::Service result{ name};
-                  result.transaction = mode;
-                  return result;
+                  return model::Service{ .name = name, .transaction = mode};
                });
 
                return result;

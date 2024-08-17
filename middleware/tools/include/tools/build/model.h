@@ -19,12 +19,9 @@ namespace casual
    {
       struct Service
       {
-         Service( std::string name) : name( name), function( std::move( name)) {}
-         Service() = default;
-
          std::string name;
-         std::string function;
-         std::string category;
+         std::string function{};
+         std::string category{};
          common::service::transaction::Type transaction = common::service::transaction::Type::automatic;
          common::service::visibility::Type visibility = common::service::visibility::Type::discoverable;
 

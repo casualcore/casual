@@ -64,7 +64,7 @@ namespace casual
          common::service::header::fields() = std::move( message.header);
 
          // set deadline (if any) for further service calls downstream
-         common::service::call::context().deadline( start, message.service.timeout.duration);
+         common::service::call::context().deadline( start, message.deadline.remaining);
          
          // Prepare current_trid for later;
          decltype( common::transaction::Context::instance().current().trid) current_trid;
@@ -152,8 +152,7 @@ namespace casual
          // Do transaction stuff...
          // - begin transaction if service has "auto-transaction"
          // - notify TM about potentially resources involved.
-         // - set 'global' deadline/timeout
-         policy.transaction( message.trid, service, message.service.timeout.duration, start);
+         policy.transaction( message.trid, service);
 
          // Need to grab current transactionID before it is committed and gone when
          // execute_finalize executes

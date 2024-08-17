@@ -301,7 +301,8 @@ namespace casual
                // The service exists. prepare the request
                auto message = local::prepare::message< message::conversation::connect::caller::Request>( value, std::move( buffer), process::handle());
                {
-                  message.service = message::service::call::Service{ service};
+                  message.service = target.service;
+                  message.deadline = target.deadline;
                   message.parent.span = common::execution::context::get().span;
                   message.parent.service = common::execution::context::get().service;
                   message.duplex = local::duplex::invert( value.duplex);

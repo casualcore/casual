@@ -142,11 +142,19 @@ namespace casual
                if( auto found = algorithm::find_if( m_state.physical_services, is_prospect))
                {
                   m_state.services.emplace( prospect.name, *found);
-                  message.services.add.emplace_back( prospect.name, found->category, found->transaction, found->visibility);
+                  message.services.add.push_back( { 
+                     .name = prospect.name, 
+                     .category = found->category, 
+                     .transaction = found->transaction, 
+                     .visibility = found->visibility});
                }
                else
                {
-                  message.services.add.emplace_back( prospect.name, prospect.category, prospect.transaction, prospect.visibility);
+                  message.services.add.push_back( { 
+                     .name = prospect.name, 
+                     .category = prospect.category, 
+                     .transaction = prospect.transaction, 
+                     .visibility = prospect.visibility});
 
                   m_state.physical_services.push_back( prospect);
                   m_state.services.emplace( prospect.name, m_state.physical_services.back());

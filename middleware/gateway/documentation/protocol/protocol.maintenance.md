@@ -290,31 +290,32 @@ Binary representation of the example (network byte ordering in base64):
 
 Sent to and received from other domains when one domain wants call a service in the other domain
 
-role name                | network type   | network size | description                                                        
------------------------- | -------------- | ------------ | -------------------------------------------------------------------
-execution                | (fixed) binary |           16 | uuid of the current execution context (breadcrumb)                 
-service.name.size        | uint64         |            8 | service name size                                                  
-service.name.data        | dynamic string |       [0..*] | byte array with service name                                       
-service.timeout.duration | uint64         |            8 | timeout of the service in use (ns)                                 
-parent.span              | (fixed) binary |            8 | parent execution span                                              
-parent.service.size      | uint64         |            8 | parent service name size                                           
-parent.service.data      | dynamic string |       [0..*] | byte array with parent service name                                
-xid.formatID             | uint64         |            8 | xid format type. if 0 no more information of the xid is transported
-xid.gtrid_length         | uint64         |            8 | length of the transaction gtrid part                               
-xid.bqual_length         | uint64         |            8 | length of the transaction branch part                              
-xid.data                 | (fixed) binary |           32 | byte array with the size of gtrid_length + bqual_length (max 128)  
-flags                    | uint64         |            8 | XATMI flags sent to the service                                    
-buffer.type.size         | uint64         |            8 | buffer type name size                                              
-buffer.type.data         | dynamic string |       [0..*] | byte array with buffer type in the form 'type/subtype'             
-buffer.data.size         | uint64         |            8 | buffer payload size (could be very big)                            
-buffer.data.data         | dynamic binary |       [0..*] | buffer payload data (with the size of buffer.payload.size)         
+role name           | network type   | network size | description                                                        
+------------------- | -------------- | ------------ | -------------------------------------------------------------------
+execution           | (fixed) binary |           16 | uuid of the current execution context (breadcrumb)                 
+service.name.size   | uint64         |            8 | service name size                                                  
+service.name.data   | dynamic string |       [0..*] | byte array with service name                                       
+has_value           | uint8          |            1 | if 1, deadline.remaining is propagated                             
+deadline.remaining  | uint64         |            8 | if has_value, the remaining time before deadline (ns)              
+parent.span         | (fixed) binary |            8 | parent execution span                                              
+parent.service.size | uint64         |            8 | parent service name size                                           
+parent.service.data | dynamic string |       [0..*] | byte array with parent service name                                
+xid.formatID        | uint64         |            8 | xid format type. if 0 no more information of the xid is transported
+xid.gtrid_length    | uint64         |            8 | length of the transaction gtrid part                               
+xid.bqual_length    | uint64         |            8 | length of the transaction branch part                              
+xid.data            | (fixed) binary |           32 | byte array with the size of gtrid_length + bqual_length (max 128)  
+flags               | uint64         |            8 | XATMI flags sent to the service                                    
+buffer.type.size    | uint64         |            8 | buffer type name size                                              
+buffer.type.data    | dynamic string |       [0..*] | byte array with buffer type in the form 'type/subtype'             
+buffer.data.size    | uint64         |            8 | buffer payload size (could be very big)                            
+buffer.data.data    | dynamic binary |       [0..*] | buffer payload data (with the size of buffer.payload.size)         
 
 #### example 
 ```yaml
 ---
 execution: !!binary "cHPL9BRESkGHswCG8UP8YA=="
 service.name: "service1"
-service.timeout.duration: 42000000000
+deadline.remaining: 42000000000
 parent:
   span: !!binary "gIGCg4SFhoc="
   service: "parent-service"
@@ -331,7 +332,7 @@ buffer:
 ```
 
 Binary representation of the example (network byte ordering in base64):
-`cHPL9BRESkGHswCG8UP8YAAAAAAAAAAIc2VydmljZTEAAAAJx2UkAICBgoOEhYaHAAAAAAAAAA5wYXJlbnQtc2VydmljZQAAAAAAAAAqAAAAAAAAABAAAAAAAAAAEFtsG/byS0gNvbze9Uw6CFFbbBv28ktIDb283vVMOghSAAAAAAAAAAQAAAAAAAAACC5iaW5hcnkvAAAAAAAAAICAgYKDhIWGh4iJiouMjY6PkJGSk5SVlpeYmZqbnJ2en6ChoqOkpaanqKmqq6ytrq+wsbKztLW2t7i5uru8vb6/wMHCw8TFxsfIycrLzM3Oz9DR0tPU1dbX2Nna29zd3t/g4eLj5OXm5+jp6uvs7e7v8PHy8/T19vf4+fr7/P3+/w==`
+`cHPL9BRESkGHswCG8UP8YAAAAAAAAAAIc2VydmljZTEBAAAACcdlJACAgYKDhIWGhwAAAAAAAAAOcGFyZW50LXNlcnZpY2UAAAAAAAAAKgAAAAAAAAAQAAAAAAAAABBbbBv28ktIDb283vVMOghRW2wb9vJLSA29vN71TDoIUgAAAAAAAAAEAAAAAAAAAAguYmluYXJ5LwAAAAAAAACAgIGCg4SFhoeIiYqLjI2Oj5CRkpOUlZaXmJmam5ydnp+goaKjpKWmp6ipqqusra6vsLGys7S1tre4ubq7vL2+v8DBwsPExcbHyMnKy8zNzs/Q0dLT1NXW19jZ2tvc3d7f4OHi4+Tl5ufo6err7O3u7/Dx8vP09fb3+Pn6+/z9/v8=`
 
 
 
@@ -889,31 +890,32 @@ Binary representation of the example (network byte ordering in base64):
 
 Sent to establish a conversation
 
-role name                | network type   | network size | description                                                        
------------------------- | -------------- | ------------ | -------------------------------------------------------------------
-execution                | (fixed) binary |           16 | uuid of the current execution context (breadcrumb)                 
-service.name.size        | uint64         |            8 | size of the service name                                           
-service.name.data        | dynamic string |       [0..*] | data of the service name                                           
-service.timeout.duration | uint64         |            8 | timeout (in ns                                                     
-parent.span              | (fixed) binary |            8 | parent execution span                                              
-parent.service.size      | uint64         |            8 | parent service name size                                           
-parent.service.data      | dynamic string |       [0..*] | byte array with parent service name                                
-xid.formatID             | uint64         |            8 | xid format type. if 0 no more information of the xid is transported
-xid.gtrid_length         | uint64         |            8 | length of the transaction gtrid part                               
-xid.bqual_length         | uint64         |            8 | length of the transaction branch part                              
-xid.data                 | (fixed) binary |           32 | byte array with the size of gtrid_length + bqual_length (max 128)  
-duplex                   | uint16         |            2 | in what duplex the callee shall enter (receive:1, send:0)          
-buffer.type.size         | uint64         |            8 | buffer type name size                                              
-buffer.type.data         | dynamic string |       [0..*] | byte array with buffer type in the form 'type/subtype'             
-buffer.data.size         | uint64         |            8 | buffer payload size (could be very big)                            
-buffer.data.data         | dynamic binary |       [0..*] | buffer payload data (with the size of buffer.payload.size)         
+role name           | network type   | network size | description                                                        
+------------------- | -------------- | ------------ | -------------------------------------------------------------------
+execution           | (fixed) binary |           16 | uuid of the current execution context (breadcrumb)                 
+service.name.size   | uint64         |            8 | size of the service name                                           
+service.name.data   | dynamic string |       [0..*] | data of the service name                                           
+has_value           | uint8          |            1 | if 1, deadline.remaining is propagated                             
+deadline.remaining  | uint64         |            8 | if has_value, the remaining time before deadline (ns)              
+parent.span         | (fixed) binary |            8 | parent execution span                                              
+parent.service.size | uint64         |            8 | parent service name size                                           
+parent.service.data | dynamic string |       [0..*] | byte array with parent service name                                
+xid.formatID        | uint64         |            8 | xid format type. if 0 no more information of the xid is transported
+xid.gtrid_length    | uint64         |            8 | length of the transaction gtrid part                               
+xid.bqual_length    | uint64         |            8 | length of the transaction branch part                              
+xid.data            | (fixed) binary |           32 | byte array with the size of gtrid_length + bqual_length (max 128)  
+duplex              | uint16         |            2 | in what duplex the callee shall enter (receive:1, send:0)          
+buffer.type.size    | uint64         |            8 | buffer type name size                                              
+buffer.type.data    | dynamic string |       [0..*] | byte array with buffer type in the form 'type/subtype'             
+buffer.data.size    | uint64         |            8 | buffer payload size (could be very big)                            
+buffer.data.data    | dynamic binary |       [0..*] | buffer payload data (with the size of buffer.payload.size)         
 
 #### example 
 ```yaml
 ---
 execution: !!binary "cHPL9BRESkGHswCG8UP8YA=="
 service.name: "service1"
-service.timeout.duration: 42000000000
+deadline.remaining: 42000000000
 parent:
   span: !!binary "gIGCg4SFhoc="
   service: "parent-service"
@@ -930,7 +932,7 @@ buffer:
 ```
 
 Binary representation of the example (network byte ordering in base64):
-`cHPL9BRESkGHswCG8UP8YAAAAAAAAAAIc2VydmljZTEAAAAJx2UkAICBgoOEhYaHAAAAAAAAAA5wYXJlbnQtc2VydmljZQAAAAAAAAAqAAAAAAAAABAAAAAAAAAAEFtsG/byS0gNvbze9Uw6CFFbbBv28ktIDb283vVMOghSAAAAAAAAAAAACC5iaW5hcnkvAAAAAAAAAICAgYKDhIWGh4iJiouMjY6PkJGSk5SVlpeYmZqbnJ2en6ChoqOkpaanqKmqq6ytrq+wsbKztLW2t7i5uru8vb6/wMHCw8TFxsfIycrLzM3Oz9DR0tPU1dbX2Nna29zd3t/g4eLj5OXm5+jp6uvs7e7v8PHy8/T19vf4+fr7/P3+/w==`
+`cHPL9BRESkGHswCG8UP8YAAAAAAAAAAIc2VydmljZTEBAAAACcdlJACAgYKDhIWGhwAAAAAAAAAOcGFyZW50LXNlcnZpY2UAAAAAAAAAKgAAAAAAAAAQAAAAAAAAABBbbBv28ktIDb283vVMOghRW2wb9vJLSA29vN71TDoIUgAAAAAAAAAAAAguYmluYXJ5LwAAAAAAAACAgIGCg4SFhoeIiYqLjI2Oj5CRkpOUlZaXmJmam5ydnp+goaKjpKWmp6ipqqusra6vsLGys7S1tre4ubq7vL2+v8DBwsPExcbHyMnKy8zNzs/Q0dLT1NXW19jZ2tvc3d7f4OHi4+Tl5ufo6err7O3u7/Dx8vP09fb3+Pn6+/z9/v8=`
 
 
 

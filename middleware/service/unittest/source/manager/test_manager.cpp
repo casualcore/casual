@@ -986,7 +986,10 @@ domain:
          common::algorithm::for_n< 3>( []()
          {
             common::message::service::concurrent::Advertise message{ common::process::handle()};
-            message.services.add.emplace_back( "concurrent_a", "", common::service::transaction::Type::none, common::service::visibility::Type::discoverable);
+            message.services.add.push_back( { 
+               .name = "concurrent_a", 
+               .transaction = common::service::transaction::Type::none, 
+               .visibility = common::service::visibility::Type::discoverable});
             
             common::communication::device::blocking::send( 
                common::communication::instance::outbound::service::manager::device(),

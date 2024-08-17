@@ -687,6 +687,7 @@ Sent to and received from other domains when one domain wants call a service in 
 
                message_type request;
                request.trid = common::transaction::id::create();
+               request.deadline.remaining = std::chrono::seconds{ 42};
                request.service.name = local::string::value( 128);
                request.parent.service = local::string::value( 128);
                request.buffer.type = local::string::value( 8) + '/' + local::string::value( 16);
@@ -696,7 +697,8 @@ Sent to and received from other domains when one domain wants call a service in 
                         { "execution", "uuid of the current execution context (breadcrumb)"},
                         { "service.name.size", "service name size"},
                         { "service.name.data", "byte array with service name"},
-                        { "service.timeout.duration", "timeout of the service in use (ns)"},
+                        { "has_value", "if 1, deadline.remaining is propagated"},
+                        { "deadline.remaining", "if has_value, the remaining time before deadline (ns)"},
                         { "parent.span", "parent execution span"},
                         { "parent.service.size", "parent service name size"},
                         { "parent.service.data", "byte array with parent service name"},
@@ -1215,7 +1217,7 @@ Sent to establish a conversation
 
 )";
                message_type message;
-
+               message.deadline.remaining = std::chrono::seconds{ 42};
                message.service.name = local::string::value( 128);
                message.parent.service = local::string::value( 128);
                message.parent.span = local::span::value();
@@ -1229,7 +1231,8 @@ Sent to establish a conversation
                         { "execution", "uuid of the current execution context (breadcrumb)"},
                         { "service.name.size", "size of the service name"},
                         { "service.name.data", "data of the service name"},
-                        { "service.timeout.duration", "timeout (in ns"},
+                        { "has_value", "if 1, deadline.remaining is propagated"},
+                        { "deadline.remaining", "if has_value, the remaining time before deadline (ns)"},
                         { "parent.span", "parent execution span"},
                         { "parent.service.size", "parent service name size"},
                         { "parent.service.data", "byte array with parent service name"},

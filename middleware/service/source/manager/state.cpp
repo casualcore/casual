@@ -366,10 +366,7 @@ namespace casual
 
          bool Service::is_discoverable() const noexcept
          {
-            using Enum = decltype( information.visibility);
-            if( visibility)
-               return visibility == Enum::discoverable;
-            return information.visibility == Enum::discoverable;
+            return ! visibility || *visibility == common::service::visibility::Type::discoverable;
          }
 
          bool Service::timeoutable() const noexcept   
@@ -464,8 +461,8 @@ namespace casual
                return instances.emplace( process.ipc, process).first->second;
             }
 
-            template< typename A>
-            void find_or_add_service( State& state, const state::Service& service, A&& add_instance)
+            template< typename S, typename A>
+            void find_or_add_service( State& state, const S& service, A&& add_instance)
             {
                Trace trace{ "service::manager::local::find_or_add service"};
 
@@ -482,54 +479,44 @@ namespace casual
                      // update properties.
                      // TODO: semantics - should we do this? We might degrade the properties
 
-                     auto assign_if_not_equal = []( auto&& source, auto& target)
-                     {
-                        if( source != target) 
-                           target = source;
-                     };
+                     if( ! std::empty( service.category))
+                        found->second.category = service.category;
 
-                     assign_if_not_equal( service.information.category, found->second.information.category);
-                     assign_if_not_equal( service.information.transaction, found->second.information.transaction);
-
-                     // is there config override for visibility?
-                     found->second.information.visibility = found->second.visibility ? *found->second.visibility : service.information.visibility;
-
+                     found->second.transaction = service.transaction;
+                     
+                     // only set visibility from advertise, if it's not set before
+                     // (configured to a given visibility)
+                     if( ! found->second.visibility)
+                        found->second.visibility = service.visibility;
 
                      add_instance( found->second);
                      log::line( verbose::log, "existing service: ", found->second);
                   }
                   else 
                   {
-                     // a new service (to us), add to advertised AND services
-                     auto& advertised = state.services.emplace( name, service).first->second;
+                     // a new service (to us)
+                     state::Service added{
+                        .information = { .name = service.name},
+                        .timeout = state.timeout,
+                        .transaction = service.transaction,
+                        .visibility = service.visibility,
+                        .category = service.category
+                     };
+
+                     auto& advertised = state.services.emplace( name, std::move( added)).first->second;
                      add_instance( advertised);
                      log::line( verbose::log, "new service: ", advertised);
                   }
                };
 
-               if( auto found = algorithm::find( state.routes, service.information.name))
+               if( auto found = algorithm::find( state.routes, service.name))
                {
                   // service has routes, use them instead
                   algorithm::for_each( found->second, add_service);
                }
                else
-                  add_service( service.information.name);
+                  add_service( service.name);
                   
-            }
-
-
-            template< typename Service>
-            auto transform( const Service& service, configuration::model::service::Timeout timeout)
-            {
-               state::Service result;
-
-               result.information.name = service.name;
-               result.information.transaction = service.transaction;
-               result.information.visibility = service.visibility;
-               result.information.category = service.category;
-               result.timeout = std::move( timeout);
-
-               return result;
             }
 
             template< typename I>
@@ -647,7 +634,7 @@ namespace casual
                {
                   service.add( instance);
                };
-               local::find_or_add_service( *this, local::transform( service, timeout), add_instance);
+               local::find_or_add_service( *this, service, add_instance);
             };
 
             algorithm::for_each( message.services.add, add_service);
@@ -662,7 +649,7 @@ namespace casual
             {
                return instance.service( pending.request.requested);
             };
-
+ 
             if( auto found = algorithm::find_if( pending.lookups, requested_service))
                return { algorithm::container::extract( pending.lookups, std::begin( found))};
          }
@@ -727,11 +714,7 @@ namespace casual
                   service.add( instance, property);
                };
 
-               configuration::model::service::Timeout timeout;
-               if( service.timeout.duration > platform::time::unit::zero())
-                  timeout.duration = service.timeout.duration;
-
-               local::find_or_add_service( *this, local::transform( service, timeout), add_instance);
+               local::find_or_add_service( *this, service, add_instance);
             };
 
             algorithm::for_each( message.services.add, add_service);
@@ -823,9 +806,10 @@ namespace casual
 
          for( auto service : algorithm::transform( services, transform_service))
          {
-            local::find_or_add_service( 
-               *this, 
-               local::transform( service, {}), [&instance]( auto& service) { service.add( instance);});
+            local::find_or_add_service( *this, service, [&instance]( auto& service) 
+            { 
+               service.add( instance);
+            });
          }
       }
 

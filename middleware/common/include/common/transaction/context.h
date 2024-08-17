@@ -89,7 +89,7 @@ namespace casual
          //! @ingroup service-start
          //!
          //! Start a new transaction
-         Transaction& start( const platform::time::point::type& start);
+         Transaction& start();
 
          //! @ingroup service-start
          //!

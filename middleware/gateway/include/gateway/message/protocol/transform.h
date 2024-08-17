@@ -28,7 +28,8 @@ namespace casual
          result.flags = message.flags;
          result.parent = std::move( message.parent.service);
          result.pending = message.pending;
-         result.service = std::move( message.service);
+         result.service.name = std::move( message.service.name);
+         result.service.timeout.duration = message.deadline.remaining.value_or( platform::time::unit{});
          result.trid = std::move( message.trid);
          return result;
       }
@@ -42,7 +43,11 @@ namespace casual
          result.flags = message.flags;
          result.parent.service = std::move( message.parent);
          result.pending = message.pending;
-         result.service = std::move( message.service);
+         result.service.name = std::move( message.service.name);
+         
+         if( message.service.timeout.duration > platform::time::unit{})
+            result.deadline.remaining = message.service.timeout.duration;
+
          result.trid = std::move( message.trid);
          return result;
       }
@@ -79,7 +84,8 @@ namespace casual
          result.buffer = std::move( message.buffer);
          result.parent = std::move( message.parent.service);
          result.pending = message.pending;
-         result.service = std::move( message.service);
+         result.service.name = std::move( message.service.name);
+         result.service.timeout.duration = message.deadline.remaining.value_or( platform::time::unit{});
          result.trid = std::move( message.trid);
          return result;
       }
@@ -92,7 +98,11 @@ namespace casual
          result.buffer = std::move( message.buffer);
          result.parent.service = std::move( message.parent);
          result.pending = message.pending;
-         result.service = std::move( message.service);
+         result.service.name = std::move( message.service.name);
+         
+         if( message.service.timeout.duration > platform::time::unit{})
+            result.deadline.remaining = message.service.timeout.duration;
+         
          result.trid = std::move( message.trid);
          return result;
       }

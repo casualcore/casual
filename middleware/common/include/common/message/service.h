@@ -38,101 +38,45 @@ namespace casual
                CASUAL_SERIALIZE( user);
             )
          };
-
-         enum class Type : short
-         {
-            sequential = 1,
-            concurrent = 2,
-         };
-
-         constexpr std::string_view description( Type value) noexcept
-         {
-            switch( value)
-            {
-               case Type::sequential: return "sequential";
-               case Type::concurrent: return "concurrent";
-            }
-            return "<unknown>";
-         }
-
-         struct Base 
-         {
-            Base() = default;
-
-            explicit Base( std::string name, std::string category, common::service::transaction::Type transaction, common::service::visibility::Type visibility)
-               : name( std::move( name)), category( std::move( category)), transaction( transaction), visibility{ visibility}
-            {}
-
-            explicit Base( std::string name)
-               : name( std::move( name))
-            {}
-
-            std::string name;
-            std::string category;
-            common::service::transaction::Type transaction = common::service::transaction::Type::automatic;
-            common::service::visibility::Type visibility = common::service::visibility::Type::discoverable;
-            service::Type type = service::Type::sequential;
-
-            inline friend bool operator == ( const Base& lhs, std::string_view rhs) { return lhs.name == rhs;}
-            inline friend bool operator == ( const Base& lhs, const Base& rhs) { return lhs.name == rhs.name;}
-            inline friend auto operator <=> ( const Base& lhs, const Base& rhs) { return lhs.name <=> rhs.name;}
-
-
-            CASUAL_CONST_CORRECT_SERIALIZE(
-               CASUAL_SERIALIZE( name);
-               CASUAL_SERIALIZE( category);
-               CASUAL_SERIALIZE( transaction);
-               CASUAL_SERIALIZE( visibility);
-               CASUAL_SERIALIZE( type);
-            )
-         };
-
-         struct Timeout
-         {
-            platform::time::unit duration{};
-
-            inline explicit operator bool() const { return duration != platform::time::unit{};}
-
-            CASUAL_CONST_CORRECT_SERIALIZE(
-               CASUAL_SERIALIZE( duration);
-            )
-
-         };
-
-      } // service
-
-      struct Service : service::Base
-      {
-         using service::Base::Base;
-
-         service::Timeout timeout;
-
-         CASUAL_CONST_CORRECT_SERIALIZE(
-            service::Base::serialize( archive);
-            CASUAL_SERIALIZE( timeout);
-         )
-      };
-
-      namespace service
-      {
+         
          namespace call
          {
             //! Represent service information in a 'call context'
-            struct Service : message::Service
+            struct Service 
             {
-               using message::Service::Service;
+               std::string name;
 
                // if the requested service name differs from the 'origin', requested is set.
-               std::optional< std::string> requested;
+               std::optional< std::string> requested{};
 
                inline auto logical_name() const noexcept { return requested.value_or( name); }
 
                CASUAL_CONST_CORRECT_SERIALIZE(
-                  message::Service::serialize( archive);
+                  CASUAL_SERIALIZE( name);
                   CASUAL_SERIALIZE( requested);
                )
             };
+
+            struct Deadline
+            {
+               std::optional< platform::time::unit> remaining;
+
+               CASUAL_CONST_CORRECT_SERIALIZE(
+                  CASUAL_SERIALIZE( remaining);
+               )
+            };
+
          } // call
+
+         //! service timeout
+         struct Timeout
+         {
+            platform::time::unit duration{};
+
+            CASUAL_CONST_CORRECT_SERIALIZE(
+               CASUAL_SERIALIZE( duration);
+            )
+         };
 
          namespace transaction
          {
@@ -178,7 +122,27 @@ namespace casual
          namespace advertise
          {
             //! Represent service information in a 'advertise context'
-            using Service = message::service::Base;
+            struct Service 
+            {
+               std::string name;
+               std::string category{};
+               common::service::transaction::Type transaction = common::service::transaction::Type::automatic;
+               common::service::visibility::Type visibility = common::service::visibility::Type::discoverable;
+               message::service::Timeout timeout{};
+
+               inline friend bool operator == ( const Service& lhs, std::string_view rhs) { return lhs.name == rhs;}
+               inline friend bool operator == ( const Service& lhs, const Service& rhs) { return lhs.name == rhs.name;}
+               inline friend auto operator <=> ( const Service& lhs, const Service& rhs) { return lhs.name <=> rhs.name;}
+
+
+               CASUAL_CONST_CORRECT_SERIALIZE(
+                  CASUAL_SERIALIZE( name);
+                  CASUAL_SERIALIZE( category);
+                  CASUAL_SERIALIZE( transaction);
+                  CASUAL_SERIALIZE( visibility);
+                  CASUAL_SERIALIZE( timeout);
+               )
+            };
 
          } // advertise
 
@@ -218,55 +182,39 @@ namespace casual
             {
                namespace service
                {
-                  namespace property
-                  {
-                     enum class Type : short
-                     {
-                        configured,
-                        discovered,
-                     };
-
-                     constexpr std::string_view description( Type value) noexcept
-                     {
-                        switch( value)
-                        {
-                           case Type::configured: return "configured";
-                           case Type::discovered: return "discovered";
-                        }
-                        return "<unknown>";
-                     }
-                  } // property
-
                   struct Property
                   {
-                     property::Type type = property::Type::discovered;
                      platform::size::type hops = 0;
                      
                      friend auto operator <=> ( const Property&, const Property&) = default;
 
                      CASUAL_CONST_CORRECT_SERIALIZE(
-                        CASUAL_SERIALIZE( type);
                         CASUAL_SERIALIZE( hops);
                      )
                   };
 
                } // service
 
-               //! Represent service information in a 'advertise context'
-               struct Service : message::Service
+               //! Represent service information in a 'concurrent advertise context'
+               struct Service
                {
-                  Service() = default;
-                  inline Service( std::string name, 
-                     std::string category, 
-                     common::service::transaction::Type transaction,
-                     common::service::visibility::Type visibility,
-                     service::Property property = service::Property{})
-                     : message::Service( std::move( name), std::move( category), transaction, visibility), property( property) {}
+                  std::string name;
+                  std::string category{};
+                  common::service::transaction::Type transaction = common::service::transaction::Type::automatic;
+                  common::service::visibility::Type visibility = common::service::visibility::Type::discoverable;
+                  message::service::Timeout timeout{};
+                  service::Property property{};
 
-                  service::Property property;
+                  inline friend bool operator == ( const Service& lhs, std::string_view rhs) { return lhs.name == rhs;}
+                  inline friend bool operator == ( const Service& lhs, const Service& rhs) { return lhs.name == rhs.name;}
+                  inline friend auto operator <=> ( const Service& lhs, const Service& rhs) { return lhs.name <=> rhs.name;}
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
-                     message::Service::serialize( archive);
+                     CASUAL_SERIALIZE( name);
+                     CASUAL_SERIALIZE( category);
+                     CASUAL_SERIALIZE( transaction);
+                     CASUAL_SERIALIZE( visibility);
+                     CASUAL_SERIALIZE( timeout);
                      CASUAL_SERIALIZE( property);
                   )
                };
@@ -447,6 +395,7 @@ namespace casual
                using base_reply::base_reply;
 
                call::Service service;
+               call::Deadline deadline;
                //! represent how long this request was pending (busy);
                platform::time::unit pending{};
                reply::State state = reply::State::idle;
@@ -456,6 +405,7 @@ namespace casual
                CASUAL_CONST_CORRECT_SERIALIZE(
                   base_reply::serialize( archive);
                   CASUAL_SERIALIZE( service);
+                  CASUAL_SERIALIZE( deadline);
                   CASUAL_SERIALIZE( pending);
                   CASUAL_SERIALIZE( state);
                )
@@ -529,6 +479,19 @@ namespace casual
 
             namespace v1_2
             {
+
+               //! Represent service information in a 'call context'
+               struct Service 
+               {
+                  std::string name;
+                  service::Timeout timeout;
+
+                  CASUAL_CONST_CORRECT_SERIALIZE(
+                     CASUAL_SERIALIZE( name);
+                     CASUAL_SERIALIZE( timeout);
+                  )
+               };
+
                struct base_request : message::basic_request< message::Type::service_call_v2>
                {
                   using base_type = message::basic_request< message::Type::service_call_v2>;
@@ -557,26 +520,6 @@ namespace casual
                   )
                };
 
-               namespace caller
-               {
-                  //! Represents a service call. via tp(a)call, from the callers perspective
-                  struct Request : base_request
-                  {
-                     template< typename... Args>
-                     Request( common::buffer::payload::Send buffer, Args&&... args)
-                        : base_request( std::forward< Args>( args)...), buffer( std::move( buffer))
-                     {}
-                     
-                     common::buffer::payload::Send buffer;
-
-                     CASUAL_CONST_CORRECT_SERIALIZE(
-                        base_request::serialize( archive);
-                        CASUAL_SERIALIZE( buffer);
-                     )
-                  };
-
-               } // caller
-
                namespace callee
                {
                   //! Represents a service call. via tp(a)call, from the callee's perspective
@@ -598,7 +541,7 @@ namespace casual
                using base_reply = basic_message< message::Type::service_reply_v2>;
                struct Reply : base_reply
                {
-                  service::Code code;
+                  message::service::Code code;
                   Transaction transaction;
                   common::buffer::Payload buffer;
 
@@ -618,7 +561,8 @@ namespace casual
                using base_type::base_type;
 
                execution::context::Parent parent;
-               Service service;
+               service::call::Service service;
+               service::call::Deadline deadline;
 
                common::transaction::ID trid;
                request::Flag flags{};
@@ -633,6 +577,7 @@ namespace casual
                   base_type::serialize( archive);
                   CASUAL_SERIALIZE( parent);
                   CASUAL_SERIALIZE( service);
+                  CASUAL_SERIALIZE( deadline);
                   CASUAL_SERIALIZE( trid);
                   CASUAL_SERIALIZE( flags);
                   CASUAL_SERIALIZE( header);
@@ -724,9 +669,6 @@ namespace casual
 
          template<>
          struct type_traits< service::call::caller::Request> : detail::type<  service::call::Reply> {};
-
-         //template<>
-         //struct type_traits< service::call::v1_2::caller::Request> : detail::type<  service::call::v1_2::Reply> {};
 
          template<>
          struct type_traits< service::call::v1_2::callee::Request> : detail::type<  service::call::v1_2::Reply> {};

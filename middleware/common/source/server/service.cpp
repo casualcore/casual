@@ -52,10 +52,6 @@ namespace casual
             }
             return false;
          }
-         bool operator != ( const Service& lhs, const Service& rhs)
-         {
-            return ! ( lhs == rhs);
-         }
 
          bool operator == ( const Service& lhs, const std::string& rhs)
          {

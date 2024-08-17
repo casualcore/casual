@@ -256,10 +256,17 @@ namespace casual
 
                namespace start
                {
-                  Transaction transaction( const platform::time::point::type& start, platform::time::unit timeout)
+                  Transaction transaction()
                   {
                      Transaction transaction{ common::transaction::id::create( process::handle())};
                      transaction.state = Transaction::State::active;
+                     return transaction;
+                  }
+
+                  Transaction transaction( platform::time::unit timeout)
+                  {
+                     auto transaction = start::transaction();
+
                      if( timeout > platform::time::unit{})
                         transaction.deadline = platform::time::clock::type::now() + timeout;
 
@@ -466,11 +473,11 @@ namespace casual
             return transaction;
          }
 
-         Transaction& Context::start( const platform::time::point::type& start)
+         Transaction& Context::start()
          {
             Trace trace{ "transaction::Context::start"};
 
-            auto transaction = local::start::transaction( start, m_timeout);
+            auto transaction = local::start::transaction();
 
             local::raise::code( local::resources::start::invoke( local::resources::start::policy::start(), transaction, m_resources.fixed),
                "failed to start on ore more fixed resources");
@@ -708,7 +715,7 @@ namespace casual
                   return code::tx::outside;
             }
 
-            auto transaction = local::start::transaction( platform::time::clock::type::now(), m_timeout);
+            auto transaction = local::start::transaction( std::exchange( m_timeout, {}));
 
             // We know we've got a local transaction.
             {

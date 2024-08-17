@@ -131,9 +131,7 @@ namespace casual
 
          void Default::transaction(
                const common::transaction::ID& trid,
-               const server::Service& service,
-               const platform::time::unit& timeout,
-               const platform::time::point::type& now)
+               const server::Service& service)
          {
             Trace trace{ "server::handle::policy::Default::transaction"};
 
@@ -142,39 +140,33 @@ namespace casual
             // We keep track of callers transaction (can be null-trid).
             transaction::context().caller = trid;
 
-            auto set_deadline = [&timeout, &now]( auto& transaction)
-            {
-               if( timeout > platform::time::unit::zero())
-                  transaction.deadline = now + timeout;
-            };
-
             switch( service.transaction)
             {
                case service::transaction::Type::automatic:
                {
                   if( trid)
-                     set_deadline( transaction::Context::instance().join( trid));
+                     transaction::Context::instance().join( trid);
                   else
-                     set_deadline( transaction::Context::instance().start( now));
+                     transaction::Context::instance().start();
 
                   break;
                }
                case service::transaction::Type::branch:
                {
                   if( trid)
-                     set_deadline( transaction::Context::instance().branch( trid));
+                     transaction::Context::instance().branch( trid);
                   else
-                     set_deadline( transaction::Context::instance().start( now));
+                     transaction::Context::instance().start();
                   break;
                }
                case service::transaction::Type::join:
                {
-                  set_deadline( transaction::Context::instance().join( trid));
+                  transaction::Context::instance().join( trid);
                   break;
                }
                case service::transaction::Type::atomic:
                {
-                  set_deadline( transaction::Context::instance().start( now));
+                  transaction::Context::instance().start();
                   break;
                }
                default:
@@ -272,9 +264,7 @@ namespace casual
 
          void Admin::transaction(
                const common::transaction::ID& trid,
-               const server::Service& service,
-               const platform::time::unit& timeout,
-               const platform::time::point::type& now)
+               const server::Service& service)
          {
             // no-op
          }
