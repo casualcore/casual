@@ -49,6 +49,8 @@ namespace casual
                      return result;
                   };
 
+                  
+
                   manager::admin::model::Service result;
 
                   result.name = name;
@@ -56,9 +58,9 @@ namespace casual
                   result.metric.invoked = transform_metric( value.metric.invoked);
                   result.metric.pending = transform_metric( value.metric.pending);
                   result.metric.remote = value.metric.remote;
-                  result.category = value.information.category;
-                  result.transaction = value.information.transaction;
-                  result.visibility = value.information.visibility;
+                  result.category = value.category;
+                  result.transaction = value.transaction;
+                  result.visibility = value.visibility.value_or( common::service::visibility::Type::discoverable);
                   result.metric.last = value.metric.last;
 
                   auto transform_concurrent = []( const auto& value)
@@ -195,7 +197,7 @@ namespace casual
          common::algorithm::for_each( state.services, [ &result]( auto& pair)
          {
             auto& service = pair.second;
-            if( service.information.category == ".admin")
+            if( service.category == ".admin")
                return;
 
             if( ! service.timeout.duration)

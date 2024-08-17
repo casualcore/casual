@@ -38,9 +38,7 @@ namespace casual
 
             void transaction(
                   const common::transaction::ID& trid,
-                  const server::Service& service,
-                  const platform::time::unit& timeout,
-                  const platform::time::point::type& now);
+                  const server::Service& service);
 
 
             message::service::transaction::State transaction( bool commit);
@@ -61,9 +59,7 @@ namespace casual
 
             void transaction(
                   const common::transaction::ID& trid,
-                  const server::Service& service,
-                  const platform::time::unit& timeout,
-                  const platform::time::point::type& now);
+                  const server::Service& service);
 
 
             void forward( common::service::invoke::Forward&& forward, const message::service::call::callee::Request& message);

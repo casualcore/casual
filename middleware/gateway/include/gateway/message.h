@@ -594,6 +594,12 @@ struct Value< type, A>  \
 
 #define CASUAL_CUSTOMIZATION_POINT_SERIALIZE( role) CASUAL_SERIALIZE_NAME( value.role, #role)
 
+         CASUAL_CUSTOMIZATION_POINT_NETWORK( common::execution::context::Parent,
+         {
+            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( span);
+            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( service);
+         })
+
          CASUAL_CUSTOMIZATION_POINT_NETWORK( casual::gateway::message::domain::connect::Request,
          {
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( execution);
@@ -650,8 +656,6 @@ struct Value< type, A>  \
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( name);
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( category);
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( transaction);
-            // TODO 2.0
-            // CASUAL_CUSTOMIZATION_POINT_SERIALIZE( type);
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( timeout.duration);
             CASUAL_SERIALIZE_NAME( value.property.hops, "hops");
          })
@@ -691,7 +695,7 @@ struct Value< type, A>  \
          {
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( execution);
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( service.name);
-            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( service.timeout.duration);
+            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( deadline.remaining);
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( parent);
             CASUAL_SERIALIZE_NAME( value.trid.xid, "xid");
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( flags);
@@ -743,7 +747,7 @@ struct Value< type, A>  \
          {
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( execution);
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( service.name);
-            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( service.timeout.duration);
+            CASUAL_CUSTOMIZATION_POINT_SERIALIZE( deadline.remaining);
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( parent);
             CASUAL_SERIALIZE_NAME( value.trid.xid, "xid");
             CASUAL_CUSTOMIZATION_POINT_SERIALIZE( duplex);

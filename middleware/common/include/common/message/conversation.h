@@ -62,7 +62,7 @@ namespace casual
                   {
                      using base_type::base_type;
 
-                     service::call::Service service;
+                     service::call::v1_2::Service service;
                      std::string parent;
                      common::transaction::ID trid;
                      common::service::header::Fields header;
@@ -93,6 +93,7 @@ namespace casual
 
                service::call::Service service;
                execution::context::Parent parent;
+               service::call::Deadline deadline;
 
                common::transaction::ID trid;
                common::service::header::Fields header;
@@ -107,6 +108,7 @@ namespace casual
                   base_type::serialize( archive);
                   CASUAL_SERIALIZE( service);
                   CASUAL_SERIALIZE( parent);
+                  CASUAL_SERIALIZE( deadline);
                   CASUAL_SERIALIZE( trid);
                   CASUAL_SERIALIZE( header);
                   CASUAL_SERIALIZE( pending);

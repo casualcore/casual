@@ -194,7 +194,7 @@ namespace casual
             auto request = communication::ipc::receive< message::discovery::lookup::Request>();
             EXPECT_TRUE( algorithm::equal( request.content.services, array::make( "a")));
             auto reply = common::message::reverse::type( request);
-            reply.content.services = { { "a", "foo", common::service::transaction::Type::branch, common::service::visibility::Type::discoverable}};
+            reply.content.services.push_back( { .name = "a", .category = "foo", .transaction = common::service::transaction::Type::branch, .visibility = common::service::visibility::Type::discoverable});
             communication::device::blocking::send( request.process.ipc, reply);
          }
 
@@ -538,10 +538,9 @@ domain:
          constexpr static auto create_service = []( auto name)
          {
             return common::message::service::concurrent::advertise::Service{
-               name,
-               "",
-               common::service::transaction::Type::none,
-               common::service::visibility::Type::discoverable,
+               .name = name,
+               .transaction = common::service::transaction::Type::none,
+               .visibility = common::service::visibility::Type::discoverable
             };
          }; 
 

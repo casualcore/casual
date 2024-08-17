@@ -712,7 +712,8 @@ namespace casual
 
                      result.routes = null_if_empty( service.routes);
                      result.name = service.name;
-                     if( service.visibility) 
+                     
+                     if( service.visibility)
                         result.visibility = common::service::visibility::transform( *service.visibility);
 
                      result.execution = detail::execution( service.timeout);

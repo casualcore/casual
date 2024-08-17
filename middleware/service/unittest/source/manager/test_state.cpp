@@ -75,7 +75,7 @@ namespace casual
          {
             common::message::service::Advertise message;
             message.process = common::process::handle();
-            message.services.add.emplace_back( "service1");
+            message.services.add.push_back( { .name = "service1"});
             EXPECT_TRUE( state.update( std::move( message)).empty());
          }
 
@@ -104,7 +104,7 @@ namespace casual
          {
             common::message::service::Advertise message;
             message.process = common::process::handle();
-            message.services.add.emplace_back( "service1");
+            message.services.add.push_back( { .name = "service1"});
             EXPECT_TRUE( state.update( std::move( message)).empty());
          }
 
@@ -146,7 +146,7 @@ namespace casual
             message.process = common::process::handle();
             {
                using Service = common::message::service::advertise::Service;
-               message.services.add = { Service{ "s0"}, Service{ "s1"}, Service{ "s2"}, Service{ "s3"}, Service{ "s4"}, Service{ "s5"}, Service{ "s6"}, Service{ "s7"}, Service{ "s8"}, Service{ "s9"}};
+               message.services.add = { Service{ .name = "s0"}, Service{ .name = "s1"}, Service{ .name = "s2"}, Service{ .name = "s3"}, Service{ .name = "s4"}, Service{ .name = "s5"}, Service{ .name = "s6"}, Service{ .name = "s7"}, Service{ .name = "s8"}, Service{ .name = "s9"}};
                std::random_device device;
                std::mt19937 generator(device());
                std::shuffle( std::begin( message.services.add), std::end( message.services.add), generator);
@@ -179,7 +179,7 @@ namespace casual
             message.process = common::process::handle();
             {
                using Service = common::message::service::advertise::Service;
-               message.services.add = { Service{ "s0"}, Service{ "s1"}, Service{ "s2"}, Service{ "s3"}, Service{ "s4"}, Service{ "s5"}, Service{ "s6"}, Service{ "s7"}, Service{ "s8"}, Service{ "s9"}};
+               message.services.add = { Service{ .name = "s0"}, Service{ .name = "s1"}, Service{ .name = "s2"}, Service{ .name = "s3"}, Service{ .name = "s4"}, Service{ .name = "s5"}, Service{ .name = "s6"}, Service{ .name = "s7"}, Service{ .name = "s8"}, Service{ .name = "s9"}};
                std::random_device device;
                std::mt19937 generator(device());
                std::shuffle( std::begin( message.services.add), std::end( message.services.add), generator);
@@ -219,14 +219,13 @@ namespace casual
          common::unittest::Trace trace;
 
          using Property = state::service::instance::Concurrent::Property;
-         using property_type = decltype( Property::type);
 
          auto create_advertise = []( common::strong::process::id pid, platform::size::type order, Property property)
          {
             common::message::service::concurrent::Advertise result;
             result.order = order;
             result.process.pid = pid;
-            result.process.ipc = common::strong::ipc::id{ common::uuid::make()};
+            result.process.ipc = common::strong::ipc::id::generate();
             {
                auto& service = result.services.add.emplace_back();
                service.name = "a";
@@ -237,13 +236,13 @@ namespace casual
 
          manager::State state;
 
-         (void)state.update( create_advertise( common::strong::process::id{ 100}, 0, Property{ property_type::discovered, 0}));
-         (void)state.update( create_advertise( common::strong::process::id{ 100}, 0, Property{ property_type::discovered, 0}));
-         (void)state.update( create_advertise( common::strong::process::id{ 100}, 0, Property{ property_type::discovered, 0}));
-         (void)state.update( create_advertise( common::strong::process::id{ 101}, 1, Property{ property_type::discovered, 0}));
-         (void)state.update( create_advertise( common::strong::process::id{ 101}, 1, Property{ property_type::discovered, 0}));
-         (void)state.update( create_advertise( common::strong::process::id{ 102}, 2, Property{ property_type::discovered, 0}));
-         (void)state.update( create_advertise( common::strong::process::id{ 103}, 3, Property{ property_type::configured, 3}));
+         std::ignore = state.update( create_advertise( common::strong::process::id{ 100}, 4, Property{ 1}));
+         std::ignore = state.update( create_advertise( common::strong::process::id{ 100}, 4, Property{ 1}));
+         std::ignore = state.update( create_advertise( common::strong::process::id{ 100}, 4, Property{ 1}));
+         std::ignore = state.update( create_advertise( common::strong::process::id{ 101}, 3, Property{ 1}));
+         std::ignore = state.update( create_advertise( common::strong::process::id{ 101}, 3, Property{ 1}));
+         std::ignore = state.update( create_advertise( common::strong::process::id{ 102}, 2, Property{ 2}));
+         std::ignore = state.update( create_advertise( common::strong::process::id{ 103}, 2, Property{ 1})); // we should get this. lowest order and lowest hops.
 
          auto service = state.service( "a");
 
@@ -252,7 +251,7 @@ namespace casual
          // 103 should be prioritized
          {
             auto process = service->reserve_concurrent( {});
-            EXPECT_TRUE( process.pid == common::strong::process::id{ 103});
+            EXPECT_TRUE( process.pid == common::strong::process::id{ 103}) << CASUAL_NAMED_VALUE( process);
             
             // expect only 103 to be in the prioritized range
             EXPECT_TRUE( process == service->reserve_concurrent( {}));

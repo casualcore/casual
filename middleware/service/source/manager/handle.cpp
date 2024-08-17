@@ -488,16 +488,15 @@ namespace casual
                            entry->service = &service;
                            entry->target = destination.pid;
                            // set the remaining duration of the deadline
-                           reply.service.timeout.duration = entry->when - now;
+                           reply.deadline.remaining = entry->when - now;
                         }
                         // otherwise, check if we need to set a new deadline.
                         else if( auto deadline = detail::calculate_deadline( service, now, message.deadline))
                         {
                            log::line( verbose::log, "deadline: ", deadline);
-                           
-
+                        
                            // no pending, the caller get's the whole duration of the deadline.
-                           reply.service.timeout.duration = *deadline - now;
+                           reply.deadline.remaining = *deadline - now;
 
                            // We only actually add a timer if the service is 'local', 
                            // if the service has local/sequential instances.
@@ -922,13 +921,17 @@ namespace casual
 
                         for( auto& name : message.content.services)
                         {
+                           // filter only local/sequential services
                            if( auto service = state.service( name); predicate( service))
                            {
-                              reply.content.services.emplace_back( std::move( name),
-                                 service->information.category,
-                                 service->information.transaction, 
-                                 service->information.visibility, 
-                                 service->property());
+                              casual::domain::message::discovery::reply::content::Service result;
+                              result.name = std::move( name);
+                              result.category = service->category;
+                              result.transaction = service->transaction;
+                              result.visibility = service->visibility.value_or( common::service::visibility::Type::discoverable);
+                              result.property = service->property();
+
+                              reply.content.services.push_back( std::move( result));
                            }
                            else
                            {

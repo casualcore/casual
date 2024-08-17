@@ -275,7 +275,7 @@ namespace casual
                   inline friend bool operator == ( const Concurrent& lhs, common::process::compare_equal_to_handle auto rhs) { return lhs.process() == rhs;}
                   
                   //! for common::Compare. The configured services are 'worth more' than not configured. 
-                  inline auto tie() const { return std::tie( property.type, get().order, property.hops);}
+                  inline auto tie() const { return std::tie( get().order, property.hops);}
 
                   CASUAL_LOG_SERIALIZE(
                      get().serialize( archive);
@@ -362,11 +362,14 @@ namespace casual
          struct Service
          {
             // state
-            service::Instances instances;
+            service::Instances instances{};
             common::message::service::call::Service information;
-            casual::configuration::model::service::Timeout timeout;
-            service::Metric metric;
+            casual::configuration::model::service::Timeout timeout{};
+            common::service::transaction::Type transaction = common::service::transaction::Type::automatic;
             std::optional< common::service::visibility::Type> visibility;
+            service::Metric metric{};
+            std::string category{};
+            
 
             void remove( const common::strong::ipc::id& ipc);
 
@@ -399,8 +402,10 @@ namespace casual
                CASUAL_SERIALIZE( information);
                CASUAL_SERIALIZE( instances);
                CASUAL_SERIALIZE( timeout);
-               CASUAL_SERIALIZE( metric);
                CASUAL_SERIALIZE( visibility);
+               CASUAL_SERIALIZE( metric);
+               CASUAL_SERIALIZE( category);
+               
             )
          };
 

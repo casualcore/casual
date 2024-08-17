@@ -201,7 +201,7 @@ namespace casual
             local::set_general( message);
 
             message.service.name = "service1";
-            message.service.timeout.duration = std::chrono::seconds{ 42};
+            message.deadline.remaining = std::chrono::seconds{ 42};
 
             message.parent.service = "parent-service";
             message.parent.span = local::span();
@@ -258,7 +258,7 @@ namespace casual
             local::set_general( message);
 
             message.service.name = "service1";
-            message.service.timeout.duration = std::chrono::seconds{ 42};
+            message.deadline.remaining = std::chrono::seconds{ 42};
 
             message.parent.service = "parent-service";
             message.parent.span = local::span();

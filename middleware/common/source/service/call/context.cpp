@@ -98,7 +98,7 @@ namespace casual
 
                   message.correlation = lookup.correlation;
                   message.service = lookup.service;
-                  message.service.timeout = lookup.service.timeout;
+                  message.deadline = lookup.deadline;
 
                   message.process = process::handle();
                   message.parent.service = common::execution::context::get().service;
@@ -365,10 +365,10 @@ namespace casual
          return ! m_state.pending.empty();
       }
 
-      void Context::deadline( platform::time::point::type now, platform::time::unit timeout)
+      void Context::deadline( platform::time::point::type now, std::optional< platform::time::unit> timeout)
       {
-         if( timeout != platform::time::unit{})
-            m_state.deadline = now + timeout;
+         if( timeout)
+            m_state.deadline = now + *timeout;
          else 
             m_state.deadline = std::nullopt;
       }

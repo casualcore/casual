@@ -35,7 +35,7 @@ namespace casual
          message.alias = instance::alias();
          message.services.add = algorithm::transform( services, []( auto& service)
          {
-            return message::service::advertise::Service{ std::move( service)};
+            return message::service::advertise::Service{ .name = std::move( service)};
          });
 
          communication::device::blocking::send( local::ipc::manager(), message);
@@ -92,8 +92,6 @@ namespace casual
             message.metric.pending = request.pending;
             message.metric.service = request.service.name;
             message.metric.trid = request.trid;
-            message.metric.type = ( request.service.type == decltype( request.service.type)::concurrent) ?
-               decltype( message.metric.type)::concurrent : decltype( message.metric.type)::sequential;
 
             message.metric.process = process::handle();
             
@@ -106,8 +104,6 @@ namespace casual
             message.correlation = lookup.correlation;
             message.metric.pending = lookup.pending;
             message.metric.service = lookup.service.name;
-            message.metric.type = ( lookup.service.type == decltype( lookup.service.type)::concurrent) ?
-               decltype( message.metric.type)::concurrent : decltype( message.metric.type)::sequential;
 
             message.metric.process = process::handle();
             

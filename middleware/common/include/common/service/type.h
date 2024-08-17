@@ -30,7 +30,7 @@ namespace casual
       {
          enum class Type : short
          {
-            discoverable,
+            discoverable = 1,
             undiscoverable
          };
          
