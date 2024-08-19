@@ -13,7 +13,6 @@ course be used as a mean to help document actual production configuration.
 
 
 
-
 ## domain.gateway
 
 Defines configuration for communication with other `casual` domains.
@@ -82,14 +81,16 @@ higher prioritized connections.
 Each group gets an _order_ in the order they are defined. Groups defined lower down will only be used if the higher
 ups does not provide the wanted _service_ or _queue_. Hence, the lower downs can be used as _fallback_.
 
-property                       | description                           | default
--------------------------------|---------------------------------------|------------
-[alias : `string`]             | an _identity_ for this group instance | _generated unique name_
-[connections : `[Connection]`] | all the connections for this group
+property                       | description                               | default
+-------------------------------|-------------------------------------------|------------
+[alias : `string`]             | an _identity_ for this group instance     | _generated unique name_
+[order : `integer`]            | a number that is used for load-balancing  | the implied order in the configuration
+[connections : `[Connection]`] | all the connections for this group        |
 
-All connections within a group ar treated equal, and service calls will be load balanced with _round robin_. Although,
-`casual` will try to _route_ the same transaction to the previous _associated_ connection with the specific transaction. 
-This is only done to minimize the amount of _resources_ involved within the prepare and commit/rollback stage.  
+All connections within a group, and all groups with the same `order` ar treated equal. Service calls will be 
+load balanced with _randomization_. Although, `casual` will try to _route_ the same transaction to the 
+previous _associated_ connection with the specific transaction. This is done to minimize the amount 
+of _resources_ involved within the prepare and commit/rollback stage.  
 
 
 ### domain.gateway.reverse
@@ -125,7 +126,7 @@ domain:
           discovery:
             forward: false
       groups:
-        - alias: "unique-inbound-alias"
+        - alias: "in-A"
           note: "if threshold of 2MB of total payload 'in flight' is reach inbound will stop consume from socket until we're below"
           limit:
             size: 2097152
@@ -136,7 +137,8 @@ domain:
               discovery:
                 forward: true
               note: "discovery will be forward to 'all' outbounds"
-        - note: "(generated alias) listeners - threshold of either 10 messages OR 10MB - the first that is reach, inbound will stop consume"
+        - alias: "in-B"
+          note: "threshold of either 10 messages OR 10MB - the first that is reach, inbound will stop consume"
           limit:
             size: 10485760
             messages: 10
@@ -148,8 +150,9 @@ domain:
             - address: "some.host.org:4242"
     outbound:
       groups:
-        - alias: "primary"
+        - alias: "out-A"
           note: "casual will 'round-robin' between connections within a group for the same service/queue"
+          order: 1
           connections:
             - address: "a45.domain.host.org:7779"
               note: "connection to domain 'a45' - we expect to find service 's1' and 's2' there."
@@ -163,14 +166,20 @@ domain:
               queues:
                 - "q1"
                 - "q2"
+        - alias: "out-B"
+          note: "has the same order as out-A group -> services found in out-A and out-B will be load balanced."
+          order: 1
+          connections:
+            - address: "a47.domain.host.org:7779"
         - alias: "fallback"
+          order: 10
           connections:
             - address: "a99.domain.host.org:7780"
-              note: "will be chosen if _resources_ are not found at connections in the 'primary' outbound"
+              note: "will be chosen if _resources_ are not found at connections in the out-A or out-B group"
     reverse:
       inbound:
         groups:
-          - alias: "unique-alias-name"
+          - alias: "in-C"
             note: "connect to other reverse outbound that is listening on this port - then treat it as a regular inbound"
             limit:
               messages: 42
@@ -179,16 +188,18 @@ domain:
                 note: "one of possible many addresses to connect to"
       outbound:
         groups:
-          - alias: "primary"
+          - alias: "out-C"
             note: "listen for connection from reverse inbound - then treat it as a regular outbound"
+            order: 1
             connections:
               - address: "localhost:7780"
-                note: "one of possible many listining addresses."
-          - alias: "secondary"
-            note: "onther instance (proces) that handles (multiplexed) traffic on it's own"
+                note: "one of possible many listening addresses."
+          - alias: "out-D"
+            note: "another instance (process) that handles (multiplexed) traffic on it's own"
+            order: 2
             connections:
               - address: "localhost:7781"
-                note: "one of possible many listining addresses."
+                note: "one of possible many listening addresses."
 ...
 
 ````
@@ -208,7 +219,7 @@ domain:
                 },
                 "groups": [
                     {
-                        "alias": "unique-inbound-alias",
+                        "alias": "in-A",
                         "note": "if threshold of 2MB of total payload 'in flight' is reach inbound will stop consume from socket until we're below",
                         "limit": {
                             "size": 2097152
@@ -228,7 +239,8 @@ domain:
                         ]
                     },
                     {
-                        "note": "(generated alias) listeners - threshold of either 10 messages OR 10MB - the first that is reach, inbound will stop consume",
+                        "alias": "in-B",
+                        "note": "threshold of either 10 messages OR 10MB - the first that is reach, inbound will stop consume",
                         "limit": {
                             "size": 10485760,
                             "messages": 10
@@ -255,8 +267,9 @@ domain:
             "outbound": {
                 "groups": [
                     {
-                        "alias": "primary",
+                        "alias": "out-A",
                         "note": "casual will 'round-robin' between connections within a group for the same service/queue",
+                        "order": 1,
                         "connections": [
                             {
                                 "address": "a45.domain.host.org:7779",
@@ -280,11 +293,22 @@ domain:
                         ]
                     },
                     {
+                        "alias": "out-B",
+                        "note": "has the same order as out-A group -> services found in out-A and out-B will be load balanced.",
+                        "order": 1,
+                        "connections": [
+                            {
+                                "address": "a47.domain.host.org:7779"
+                            }
+                        ]
+                    },
+                    {
                         "alias": "fallback",
+                        "order": 10,
                         "connections": [
                             {
                                 "address": "a99.domain.host.org:7780",
-                                "note": "will be chosen if _resources_ are not found at connections in the 'primary' outbound"
+                                "note": "will be chosen if _resources_ are not found at connections in the out-A or out-B group"
                             }
                         ]
                     }
@@ -294,7 +318,7 @@ domain:
                 "inbound": {
                     "groups": [
                         {
-                            "alias": "unique-alias-name",
+                            "alias": "in-C",
                             "note": "connect to other reverse outbound that is listening on this port - then treat it as a regular inbound",
                             "limit": {
                                 "messages": 42
@@ -311,22 +335,24 @@ domain:
                 "outbound": {
                     "groups": [
                         {
-                            "alias": "primary",
+                            "alias": "out-C",
                             "note": "listen for connection from reverse inbound - then treat it as a regular outbound",
+                            "order": 1,
                             "connections": [
                                 {
                                     "address": "localhost:7780",
-                                    "note": "one of possible many listining addresses."
+                                    "note": "one of possible many listening addresses."
                                 }
                             ]
                         },
                         {
-                            "alias": "secondary",
-                            "note": "onther instance (proces) that handles (multiplexed) traffic on it's own",
+                            "alias": "out-D",
+                            "note": "another instance (process) that handles (multiplexed) traffic on it's own",
+                            "order": 2,
                             "connections": [
                                 {
                                     "address": "localhost:7781",
-                                    "note": "one of possible many listining addresses."
+                                    "note": "one of possible many listening addresses."
                                 }
                             ]
                         }

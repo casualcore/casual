@@ -420,7 +420,6 @@ target.service : `string`  | service to call                     |
 
                   out << "# configuration gateway"  << domain::header << R"(
 
-
 ## domain.gateway
 
 Defines configuration for communication with other `casual` domains.
@@ -489,14 +488,16 @@ higher prioritized connections.
 Each group gets an _order_ in the order they are defined. Groups defined lower down will only be used if the higher
 ups does not provide the wanted _service_ or _queue_. Hence, the lower downs can be used as _fallback_.
 
-property                       | description                           | default
--------------------------------|---------------------------------------|------------
-[alias : `string`]             | an _identity_ for this group instance | _generated unique name_
-[connections : `[Connection]`] | all the connections for this group
+property                       | description                               | default
+-------------------------------|-------------------------------------------|------------
+[alias : `string`]             | an _identity_ for this group instance     | _generated unique name_
+[order : `integer`]            | a number that is used for load-balancing  | the implied order in the configuration
+[connections : `[Connection]`] | all the connections for this group        |
 
-All connections within a group ar treated equal, and service calls will be load balanced with _round robin_. Although,
-`casual` will try to _route_ the same transaction to the previous _associated_ connection with the specific transaction. 
-This is only done to minimize the amount of _resources_ involved within the prepare and commit/rollback stage.  
+All connections within a group, and all groups with the same `order` ar treated equal. Service calls will be 
+load balanced with _randomization_. Although, `casual` will try to _route_ the same transaction to the 
+previous _associated_ connection with the specific transaction. This is done to minimize the amount 
+of _resources_ involved within the prepare and commit/rollback stage.  
 
 
 ### domain.gateway.reverse

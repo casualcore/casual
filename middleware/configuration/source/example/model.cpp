@@ -306,7 +306,7 @@ domain:
                   forward: false
 
          groups: 
-            -  alias: unique-inbound-alias
+            -  alias: in-A
                limit:
                   size: 2097152
                note: if threshold of 2MB of total payload 'in flight' is reach inbound will stop consume from socket until we're below
@@ -319,10 +319,11 @@ domain:
                         forward: true
                      note: discovery will be forward to 'all' outbounds
 
-            -  limit:
+            -  alias: in-B
+               limit:
                   size: 10485760
                   messages: 10
-               note: (generated alias) listeners - threshold of either 10 messages OR 10MB - the first that is reach, inbound will stop consume
+               note: threshold of either 10 messages OR 10MB - the first that is reach, inbound will stop consume
                connections:
                   -  address: some.host.org:7780
                   -  address: some.host.org:4242
@@ -334,7 +335,8 @@ domain:
 
       outbound:
          groups: 
-            -  alias: primary
+            -  alias: out-A
+               order: 1
                note: casual will 'round-robin' between connections within a group for the same service/queue
                connections:
                   -  address: a45.domain.host.org:7779
@@ -350,15 +352,22 @@ domain:
                         -  q1
                         -  q2
 
+            -  alias: out-B
+               order: 1
+               note: has the same order as out-A group -> services found in out-A and out-B will be load balanced.
+               connections:
+                  -  address: a47.domain.host.org:7779
+
             -  alias: fallback
+               order: 10
                connections:
                   -  address: a99.domain.host.org:7780
-                     note: will be chosen if _resources_ are not found at connections in the 'primary' outbound
+                     note: will be chosen if _resources_ are not found at connections in the out-A or out-B group
 
       reverse:
          inbound:
             groups:
-               -  alias: unique-alias-name
+               -  alias: in-C
                   note: connect to other reverse outbound that is listening on this port - then treat it as a regular inbound
                   limit:
                      messages: 42
@@ -368,16 +377,18 @@ domain:
 
          outbound:
             groups:
-               -  alias: primary
+               -  alias: out-C
+                  order: 1
                   note: listen for connection from reverse inbound - then treat it as a regular outbound
                   connections:
-                     -  note: one of possible many listining addresses.
+                     -  note: one of possible many listening addresses.
                         address: localhost:7780
 
-               -  alias: secondary
-                  note: onther instance (proces) that handles (multiplexed) traffic on it's own
+               -  alias: out-D
+                  order: 2
+                  note: another instance (process) that handles (multiplexed) traffic on it's own
                   connections:
-                     -  note: one of possible many listining addresses.
+                     -  note: one of possible many listening addresses.
                         address: localhost:7781
 
 )");
