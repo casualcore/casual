@@ -116,7 +116,7 @@ namespace casual
             metric.parent = request.state().parent;
             metric.type = decltype( metric.type)::concurrent;
             metric.process = common::process::handle();
-            metric.code = code.result;
+            metric.code = code;
             
             // no transactions over http...
             // metric.trid

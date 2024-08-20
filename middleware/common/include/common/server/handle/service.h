@@ -91,7 +91,7 @@ namespace casual
 
             // make sure service-manager "gets back" the pending metric
             ack.metric.pending = message.pending;
-            ack.metric.code = reply.code.result;
+            ack.metric.code = reply.code;
 
             policy.ack( ack);
             server::context().finalize();

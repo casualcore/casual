@@ -151,7 +151,7 @@ namespace casual
                   }
 
                   template< typename M, typename D>
-                  auto metric( State& state, const M& message, D&& destination, code::xatmi code)
+                  auto metric( State& state, const M& message, D&& destination, common::service::Code code)
                   {
                      Trace trace{ "gateway::group::outbound::handle::local::internal::service::call::metric"};
 
@@ -192,7 +192,7 @@ namespace casual
 
                            state.multiplex.send( message.process.ipc, reply);
 
-                           service::metric( state, reply, Destination{ message.service.name, message.parent, message.trid, platform::time::clock::type::now()}, code);
+                           service::metric( state, reply, Destination{ message.service.name, message.parent, message.trid, platform::time::clock::type::now()}, { .result = code});
 
                         }
                         
@@ -225,7 +225,7 @@ namespace casual
                               if( message.code.result == decltype( message.code.result)::no_entry)
                                  service::unadvertise( state, descriptor, { shared->service});
 
-                              internal::service::metric( state, message, std::move( *shared), message.code.result);
+                              internal::service::metric( state, message, std::move( *shared), message.code);
                            },
                            [ &state, shared]( casual::task::concurrent::message::task::Failed& message, strong::socket::id descriptor)
                            {
@@ -237,7 +237,7 @@ namespace casual
 
                               state.multiplex.send( shared->ipc, reply);
 
-                              service::metric( state, reply, std::move( *shared), reply.code.result);
+                              service::metric( state, reply, std::move( *shared), reply.code);
                            }};
                         }
                         
@@ -340,7 +340,7 @@ namespace casual
 
                                  tcp::send( state, descriptor, message);
 
-                                 service::metric( state, message, std::move( *shared), code::xatmi::ok);
+                                 service::metric( state, message, std::move( *shared), { .result = code::xatmi::ok});
 
                                  return task::concurrent::unit::Dispatch::done;
                               }

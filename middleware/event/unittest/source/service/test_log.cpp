@@ -16,6 +16,7 @@
 #include "common/signal.h"
 #include "common/result.h"
 #include "common/environment.h"
+#include "common/message/event.h"
 
 namespace casual
 {
@@ -118,28 +119,54 @@ domain:
         memberships: [ second]   
 )");
 
-         ASSERT_TRUE( local::fetch::service::log());
+         auto service_log =  local::fetch::service::log();
 
-         // make sure we get som metrics 
-         casual::domain::manager::api::state();
+         ASSERT_TRUE( service_log);
 
-         auto parts = common::string::split( common::string::split( common::unittest::file::fetch::until::content( log_file), '\n').at( 0), '|');
+         const auto metric = common::message::event::service::Metric{
+            .span = common::strong::execution::span::id::generate(),
+            .service = "some/service",
+            .parent = { .span = common::strong::execution::span::id::generate(), .service = "some/parent/service"} ,
+            .type = common::message::event::service::metric::Type::sequential,
+            .process = common::process::handle(),
+            .correlation = common::strong::correlation::id::generate(),
+            .execution = common::strong::execution::id::generate(),
+            .trid = common::transaction::id::create( common::process::handle()),
+            .start = platform::time::clock::type::now() - std::chrono::milliseconds{ 42},
+            .end = platform::time::clock::type::now(),
+            .pending = std::chrono::milliseconds{ 6},
+            .code = common::service::Code{ .result = common::code::xatmi::ok, .user = 42},
+         };
 
-         // .casual/domain/state||26450|d099514934e0411e998eee8e4e99472f||1719906802794796|1719906802795079|0|OK|S|ce80d8aa31982d16|9a0d3e22c30072a0
+         // send metrics
+         {
+            common::message::event::service::Calls event;
+            event.metrics.push_back( metric);
+            ASSERT_TRUE( common::communication::device::blocking::send( service_log.ipc, event));
+         }
 
-         EXPECT_TRUE( parts.at( 0) == ".casual/domain/state");
-         EXPECT_TRUE( parts.at( 1).empty());
-         EXPECT_TRUE( common::unittest::regex::match( parts.at( 2), "[0-9]+"));
-         EXPECT_TRUE( common::unittest::regex::match( parts.at( 3), "[0-9a-f]{32}"));
-         EXPECT_TRUE( parts.at( 4).empty()); // trid... need to check?
-         EXPECT_TRUE( common::unittest::regex::match( parts.at( 5), "[0-9]{16}")); // start us
-         EXPECT_TRUE( common::unittest::regex::match( parts.at( 6), "[0-9]{16}")); // end us
-         EXPECT_TRUE( parts.at( 7) == "0"); // pending
+
+         auto content = common::unittest::file::fetch::until::content( log_file);
+
+         //EXPECT_TRUE( false) << CASUAL_NAMED_VALUE( content);
+
+         auto parts = common::string::split( common::string::split( content, '\n').at( 0), '|');
+
+         // some/service|some/parent/service|90053|0bd2c4b424e34e2296c25938766eedbf|10459c8a34e6422a9d5f584856db6701:a6f10817cdd94f3987985a8195e8f927:42:90053|1724141674147439|1724141674189439|6000|OK|S|cdb2b8d804d6e205|9bfeec3308a2a9cd|42
+
+         EXPECT_TRUE( parts.at( 0) == "some/service");
+         EXPECT_TRUE( parts.at( 1) == "some/parent/service");
+         EXPECT_TRUE( parts.at( 2) == common::string::to( metric.process.pid));
+         EXPECT_TRUE( parts.at( 3) == common::string::to( metric.execution));
+         EXPECT_TRUE( parts.at( 4) == common::string::to( metric.trid));
+         EXPECT_TRUE( parts.at( 5) == common::string::to( std::chrono::duration_cast< std::chrono::microseconds>( metric.start.time_since_epoch()).count()));
+         EXPECT_TRUE( parts.at( 6) == common::string::to( std::chrono::duration_cast< std::chrono::microseconds>( metric.end.time_since_epoch()).count()));
+         EXPECT_TRUE( parts.at( 7) == "6000"); // pending
          EXPECT_TRUE( parts.at( 8) == "OK"); // service result
          EXPECT_TRUE( parts.at( 9) == "S"); // sequential/parallel
-         EXPECT_TRUE( common::unittest::regex::match( parts.at( 10), "[0-9a-f]{16}")); // execution span
-         EXPECT_TRUE( common::unittest::regex::match( parts.at( 10), "[0-9a-f]{16}")); // parent execution span
-      
+         EXPECT_TRUE( parts.at( 10) == common::string::to( metric.span));
+         EXPECT_TRUE( parts.at( 11) == common::string::to( metric.parent.span));
+         EXPECT_TRUE( parts.at( 12) == "42"); // user return code
       }
 
 

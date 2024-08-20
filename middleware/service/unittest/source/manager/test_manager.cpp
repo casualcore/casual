@@ -952,7 +952,7 @@ domain:
             message.metric.parent.span = span;
             message.metric.start = start;
             message.metric.end = end;
-            message.metric.code = common::code::xatmi::service_fail;
+            message.metric.code.result = common::code::xatmi::service_fail;
 
             common::communication::device::blocking::send( 
                common::communication::instance::outbound::service::manager::device(),
@@ -973,7 +973,7 @@ domain:
             EXPECT_TRUE( metric.process == common::process::handle());
             EXPECT_TRUE( metric.start == start);
             EXPECT_TRUE( metric.end == end);
-            EXPECT_TRUE( metric.code == common::code::xatmi::service_fail);
+            EXPECT_TRUE( metric.code.result == common::code::xatmi::service_fail);
          }
       }
 

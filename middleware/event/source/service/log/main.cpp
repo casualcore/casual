@@ -153,10 +153,11 @@ namespace casual
                               << log.delimiter << std::chrono::duration_cast< std::chrono::microseconds>( metric.start.time_since_epoch()).count()
                               << log.delimiter << std::chrono::duration_cast< std::chrono::microseconds>( metric.end.time_since_epoch()).count()
                               << log.delimiter << std::chrono::duration_cast< std::chrono::microseconds>( metric.pending).count()
-                              << log.delimiter << common::code::description( metric.code)
+                              << log.delimiter << common::code::description( metric.code.result)
                               << log.delimiter << service_category( metric.type)
                               << log.delimiter << metric.span
                               << log.delimiter << metric.parent.span
+                              << log.delimiter << metric.code.user
                               << '\n';
                         };
 

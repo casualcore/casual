@@ -253,7 +253,7 @@ namespace casual
 
                platform::time::unit pending{};
 
-               code::xatmi code = code::xatmi::ok;
+               common::service::Code code;
 
                auto duration() const noexcept { return end - start;}
 

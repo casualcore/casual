@@ -32,23 +32,27 @@ domain:
 
 Columns are separated by the provided `delimiter` option (default `|`)
 
-column    | format    | description
-----------|-----------|------------------------
-service   | string    | name of the invoked service
-parent    | string    | name of the parent service, if any.
-pid       | integer   | process id of the invoked instance 
-execution | uuid      | unique _execution id_, like _breadcrumbs_ 
-trid      | xid       | transaction id
-start     | integer   | when the service was invoked, `us` since epoch.
-end       | integer   | when the service was done, `us` since epoch
-pending   | integer   | how long caller had to wait for a non busy server, in `us`
-code      | string    | outcome of the service call. `OK` if ok, otherwise the reported error from the service
-order     | character | "order" of the service - sequential or concurrent, denoted by `S` or `C`. `S` reserves a process, `C` does not.
+column       | format    | description
+-------------|-----------|------------------------
+service      | string    | name of the invoked service
+parent       | string    | name of the parent service, if any.
+pid          | integer   | process id of the invoked instance 
+execution    | uuid      | unique _execution id_, like _breadcrumbs_ 
+trid         | xid       | transaction id
+start        | integer   | when the service was invoked, `us` since epoch.
+end          | integer   | when the service was done, `us` since epoch
+pending      | integer   | how long caller had to wait for a non busy server, in `us`
+code.result  | string    | outcome of the service call. `OK` if ok, otherwise the reported error from the service
+order        | character | "order" of the service - sequential or concurrent, denoted by `S` or `C`. `S` reserves a process, `C` does not.
+span         | hex       | 64b OpenTelemetry trace span
+parent.span  | hex       | 64b OpenTelemetry parent trace span
+code.user    | integer   | user return code from tpreturn
+
 
 ### example
 
 ```
-some/service|some/parent/service|9585|ff75bcc6ef1b4d1c8ae8d58ee0918f81|3d7519f801e4f65a127d9ac09fa159d:b81a4d8715ad44e8afccb796a02fd77f:42:123|1670372749162496|1670372749162723|0|OK|S
+some/service|some/parent/service|90053|0bd2c4b424e34e2296c25938766eedbf|10459c8a34e6422a9d5f584856db6701:a6f10817cdd94f3987985a8195e8f927:42:90053|1724141674147439|1724141674189439|6000|OK|S|cdb2b8d804d6e205|9bfeec3308a2a9cd|42
 ``` 
 
 
