@@ -103,7 +103,7 @@ namespace casual
          inbound.m_wait.fd = communication::ipc::inbound::handle().socket().descriptor().value();
       }
 
-      void State::Metric::add( const state::pending::Request& request, common::message::service::Code code)
+      void State::Metric::add( const state::pending::Request& request, common::service::Code code)
       {
          auto now = platform::time::clock::type::now();
 

@@ -28,16 +28,6 @@ namespace casual
    {
       namespace service
       {
-         struct Code 
-         {
-            code::xatmi result = code::xatmi::ok;
-            long user{};
-
-            CASUAL_CONST_CORRECT_SERIALIZE(
-               CASUAL_SERIALIZE( result);
-               CASUAL_SERIALIZE( user);
-            )
-         };
          
          namespace call
          {
@@ -541,7 +531,7 @@ namespace casual
                using base_reply = basic_message< message::Type::service_reply_v2>;
                struct Reply : base_reply
                {
-                  message::service::Code code;
+                  common::service::Code code;
                   Transaction transaction;
                   common::buffer::Payload buffer;
 
@@ -626,7 +616,7 @@ namespace casual
             using base_reply = basic_message< message::Type::service_reply>;
             struct Reply : base_reply
             {
-               service::Code code;
+               common::service::Code code;
                transaction::State transaction_state = transaction::State::ok;
                common::buffer::Payload buffer;
 

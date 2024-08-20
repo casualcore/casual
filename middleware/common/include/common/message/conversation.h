@@ -21,7 +21,7 @@ namespace casual
    {
       namespace conversation
       {
-         using Code = service::Code;
+         using Code = common::service::Code;
          namespace code
          {
             constexpr auto initialize()
@@ -156,7 +156,7 @@ namespace casual
             {
                using base_reply::base_reply;
 
-               service::Code code = code::initialize();
+               common::service::Code code = code::initialize();
 
                CASUAL_CONST_CORRECT_SERIALIZE(
                   base_reply::serialize( archive);
@@ -172,7 +172,7 @@ namespace casual
          {
             duplex::Type duplex{};
             service::transaction::State transaction_state = service::transaction::State::ok;
-            service::Code code = code::initialize();
+            common::service::Code code = code::initialize();
 
             CASUAL_CONST_CORRECT_SERIALIZE(
                send_base::serialize( archive);

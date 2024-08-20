@@ -124,7 +124,7 @@ namespace casual
          {
             using message_base::message_base;
 
-            common::message::service::Code code;
+            common::service::Code code;
             common::buffer::Payload payload;
 
             CASUAL_CONST_CORRECT_SERIALIZE(

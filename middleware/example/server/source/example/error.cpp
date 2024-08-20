@@ -32,16 +32,16 @@ namespace casual
                   {
                      namespace code
                      {
-                        const std::map< std::string, std::function< message::service::Code()>> mapping{
-                           { "casual/example/error/urcode", [](){ return message::service::Code{ common::code::xatmi::ok, 42};}},
-                           { "casual/example/error/TPEOS", [](){ return message::service::Code{ common::code::xatmi::os, 0};}},
-                           { "casual/example/error/TPEPROTO", [](){ return message::service::Code{ common::code::xatmi::protocol, 0};}},
-                           { "casual/example/error/TPESVCERR", [](){ return message::service::Code{ common::code::xatmi::service_error, 0};}},
-                           { "casual/example/error/TPESVCFAIL", [](){ return message::service::Code{ common::code::xatmi::service_fail, 0};}},
-                           { "casual/example/error/TPESYSTEM", [](){ return message::service::Code{ common::code::xatmi::system, 0};}},
+                        const std::map< std::string, std::function< common::service::Code()>> mapping{
+                           { "casual/example/error/urcode", [](){ return common::service::Code{ common::code::xatmi::ok, 42};}},
+                           { "casual/example/error/TPEOS", [](){ return common::service::Code{ common::code::xatmi::os, 0};}},
+                           { "casual/example/error/TPEPROTO", [](){ return common::service::Code{ common::code::xatmi::protocol, 0};}},
+                           { "casual/example/error/TPESVCERR", [](){ return common::service::Code{ common::code::xatmi::service_error, 0};}},
+                           { "casual/example/error/TPESVCFAIL", [](){ return common::service::Code{ common::code::xatmi::service_fail, 0};}},
+                           { "casual/example/error/TPESYSTEM", [](){ return common::service::Code{ common::code::xatmi::system, 0};}},
                         };
 
-                        message::service::Code get( const std::string& service)
+                        common::service::Code get( const std::string& service)
                         {
                            auto found = algorithm::find( mapping, service);
 

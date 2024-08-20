@@ -203,7 +203,7 @@ namespace casual
 
          struct Metric 
          {
-            void add( const state::pending::Request& request, common::message::service::Code code);
+            void add( const state::pending::Request& request, common::service::Code code);
 
             explicit operator bool () const noexcept;
 

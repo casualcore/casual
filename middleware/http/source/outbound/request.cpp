@@ -356,7 +356,7 @@ namespace casual
             } // <unnamed>
          } // local
 
-         common::message::service::Code code( const state::pending::Request& request, curl::type::code::easy code) noexcept
+         common::service::Code code( const state::pending::Request& request, curl::type::code::easy code) noexcept
          {
             Trace trace{ "http::outbound::request::transform::code"};
 
@@ -366,7 +366,7 @@ namespace casual
 
             if( auto field = header.find( http::header::name::result::code))
             {
-               common::message::service::Code result;
+               common::service::Code result;
                result.result = http::header::value::result::code( field->value());
 
                if( auto found = header.find( http::header::name::result::user::code))
@@ -390,7 +390,7 @@ namespace casual
             }
          }
 
-         common::message::service::transaction::State transaction( const state::pending::Request& request, common::message::service::Code code) noexcept
+         common::message::service::transaction::State transaction( const state::pending::Request& request, common::service::Code code) noexcept
          {
             Trace trace{ "http::outbound::request::transform::transaction"};
 

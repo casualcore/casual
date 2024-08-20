@@ -7,7 +7,8 @@
 
 #pragma once
 
-
+#include "common/code/xatmi.h"
+#include "common/serialize/macro.h"
 
 #include <string>
 #include <iosfwd>
@@ -18,6 +19,16 @@ namespace casual
 {
    namespace common::service
    {
+      struct Code 
+      {
+         code::xatmi result = code::xatmi::ok;
+         long user{};
+
+         CASUAL_CONST_CORRECT_SERIALIZE(
+            CASUAL_SERIALIZE( result);
+            CASUAL_SERIALIZE( user);
+         )
+      };
 
       namespace category
       {
