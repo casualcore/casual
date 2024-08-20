@@ -71,16 +71,6 @@ target = make.LinkExecutable( 'bin/casual-build-resource-proxy',
 install_bin.append( target)
 
 
-
-target = make.LinkExecutable( 'file/header/bin/casual-source-code-header',
-   [ make.Compile( 'file/header/source/main.cpp')],
-   [ 
-    'casual-common', 
-    ])
-
-install_bin.append( target)
-
-
 # TODO: if we keep the python implementation we need to package python "correct"?
 install_bin.append( 'log/casual-log')
 install_bin.append( 'log/casual-log-format')
