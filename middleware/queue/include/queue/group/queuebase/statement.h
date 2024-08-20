@@ -46,7 +46,7 @@ namespace casual
             sql::database::Statement message;
          } available;
 
-         
+
 
          sql::database::Statement id;
 

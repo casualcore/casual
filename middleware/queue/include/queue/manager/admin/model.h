@@ -13,6 +13,7 @@
 #include "common/domain.h"
 
 #include <algorithm>
+#include <optional>
 
 
 namespace casual
@@ -20,15 +21,25 @@ namespace casual
    namespace queue::manager::admin::model
    {
       inline namespace v2 {
-      
+
       struct Group
       {
+         struct Size
+         {
+            platform::size::type current;
+            std::optional< platform::size::type> capacity;
+
+            CASUAL_CONST_CORRECT_SERIALIZE(
+               CASUAL_SERIALIZE( current);
+               CASUAL_SERIALIZE( capacity);
+            )
+         };
+
          std::string alias;
          common::process::Handle process;
          std::string queuebase;
          std::string note;
-         platform::size::type size;
-         platform::size::type capacity;
+         Size size;
 
          friend bool operator == ( const Group& lhs, common::process::compare_equal_to_handle auto rhs) { return lhs.process == rhs;}
 
@@ -38,7 +49,6 @@ namespace casual
             CASUAL_SERIALIZE( queuebase);
             CASUAL_SERIALIZE( note);
             CASUAL_SERIALIZE( size);
-            CASUAL_SERIALIZE( capacity);
          )
       };
 

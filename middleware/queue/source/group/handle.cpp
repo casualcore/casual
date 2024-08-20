@@ -142,8 +142,8 @@ namespace casual
                         reply.alias = state.alias;
                         reply.queuebase = state.queuebase.file();
                         reply.zombies = state.zombies;
-                        reply.size = state.size.current;
-                        reply.capacity = state.size.capacity;
+                        reply.size.current = state.size.current;
+                        reply.size.capacity = state.size.capacity;
 
                         state.multiplex.send( message.process.ipc, reply);
                      };
@@ -200,12 +200,12 @@ namespace casual
 
                            auto reply = common::message::reverse::type( message);
 
-                           if( message.directive == decltype( message.directive)::commit)
-                              reply.gtrids = state.queuebase.recovery_commit( message.queue, std::move( message.gtrids));
-                           else
-                              reply.gtrids = state.queuebase.recovery_rollback( message.queue, std::move( message.gtrids));
+                           auto [ size, gtrids] = message.directive == decltype( message.directive)::commit ?
+                              state.queuebase.recovery_commit( message.queue, std::move( message.gtrids)) :
+                              state.queuebase.recovery_rollback( message.queue, std::move( message.gtrids));
 
-                           state.size.current = state.queuebase.size();
+                           state.size.subtract( size);
+                           reply.gtrids = gtrids;
 
                            state.multiplex.send( message.process, reply);
                         };
@@ -217,14 +217,23 @@ namespace casual
                {
                   namespace detail
                   {
+                     namespace payload::size
+                     {
+                        platform::size::type calculate( const queue::ipc::message::group::enqueue::Request& message)
+                        {
+                           return message.message.payload.data.size();
+                        }
+                     } // payload::size
+
                      namespace has::sufficient
                      {
-                        bool capacity( State& state, platform::size::type message_size)
+                        bool capacity( State& state, const queue::ipc::message::group::enqueue::Request& message)
                         {
-                           if( state.size.capacity == 0)
+                           if( ! state.size.capacity)
                               return true;
                            
-                           return state.size.available() >= message_size;
+                           auto available = state.size.capacity.value() - state.size.current;
+                           return available >= payload::size::calculate( message);
                         }
                      } // has::sufficient
                   } // detail
@@ -236,7 +245,7 @@ namespace casual
                         Trace trace{ "queue::handle::enqueue::Request"};
                         log::line( verbose::log, "message: ", message);
 
-                        if( ! detail::has::sufficient::capacity( state, message.message.payload.data.size()))
+                        if( ! detail::has::sufficient::capacity( state, message))
                         {
                            log::line( log::category::error, " failed with enqueue request to queue: ", message.name, " - queue-group ", state.alias, " full");
                            auto reply = common::message::reverse::type( message);
@@ -252,7 +261,7 @@ namespace casual
 
                            auto reply = state.queuebase.enqueue( message);
 
-                           state.size.add( message.message.payload.data.size());
+                           state.size.add( detail::payload::size::calculate( message));
 
                            if( message.trid)
                            {

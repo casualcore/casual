@@ -1463,7 +1463,8 @@ domain:
       groups:
          -  alias: "A"
             queuebase: ${CASUAL_UNITTEST_QUEUEBASE}
-            capacity: "100B"
+            capacity:
+               size: "100B"
             queues:
                - name: a1
 )";
@@ -1482,7 +1483,7 @@ domain:
                {
                   auto state = unittest::state();
                   if( ! state.groups.empty())
-                     return state.groups.at( 0).size;
+                     return state.groups.at( 0).size.current;
                   return std::nullopt;
                }
             } // capacity
@@ -1660,5 +1661,138 @@ domain:
             EXPECT_TRUE( current_size.value() == 30);
          }
       }
+
+      TEST( casual_queue, enqueue_message_transaction__recover_commit__expect_correct_group_size)
+      {
+         common::unittest::Trace trace;
+
+         auto domain = local::capacity::domain();
+
+         queue::enqueue( "a1", local::capacity::message( 30));
+
+         EXPECT_EQ( common::transaction::context().begin(), common::code::tx::ok);
+
+         // dequeue committed - messages should be subtracted from size
+         {
+            queue::enqueue( "a1", local::capacity::message( 30));
+            queue::enqueue( "a1", local::capacity::message( 30));
+
+            auto gtrids = local::recover( { common::transaction::id::range::global( common::transaction::context().current().trid)}, ipc::message::group::message::recovery::Directive::commit);
+            EXPECT_FALSE( gtrids.size() == 2);
+
+            auto current_size = local::capacity::group_size( "A");
+            ASSERT_TRUE( current_size);
+            EXPECT_TRUE( current_size.value() == 90);
+         }
+
+         EXPECT_EQ( common::transaction::context().commit(), common::code::tx::ok);
+
+         {
+            auto current_size = local::capacity::group_size( "A");
+            ASSERT_TRUE( current_size);
+            EXPECT_TRUE( current_size.value() == 90);
+         }
+      }
+
+      TEST( casual_queue, enqueue_message_transaction__recover_rollback__expect_correct_group_size)
+      {
+         common::unittest::Trace trace;
+
+         auto domain = local::capacity::domain();
+
+         queue::enqueue( "a1", local::capacity::message( 30));
+
+         EXPECT_EQ( common::transaction::context().begin(), common::code::tx::ok);
+
+         // dequeue rollbacked - messages should NOT be subtracted from size
+         {
+            queue::enqueue( "a1", local::capacity::message( 30));
+            queue::enqueue( "a1", local::capacity::message( 30));
+
+            auto gtrids = local::recover( { common::transaction::id::range::global( common::transaction::context().current().trid)}, ipc::message::group::message::recovery::Directive::rollback);
+            EXPECT_FALSE( gtrids.size() == 2);
+
+            auto current_size = local::capacity::group_size( "A");
+            ASSERT_TRUE( current_size);
+            EXPECT_TRUE( current_size.value() == 30);
+         }
+
+         EXPECT_EQ( common::transaction::context().commit(), common::code::tx::ok);
+
+         {
+            auto current_size = local::capacity::group_size( "A");
+            ASSERT_TRUE( current_size);
+            EXPECT_TRUE( current_size.value() == 30);
+         }
+      }
+
+      TEST( casual_queue, dequeue_message_transaction__recover_commit__expect_correct_group_size)
+      {
+         common::unittest::Trace trace;
+
+         auto domain = local::capacity::domain();
+
+         queue::enqueue( "a1", local::capacity::message( 30));
+         queue::enqueue( "a1", local::capacity::message( 30));
+         queue::enqueue( "a1", local::capacity::message( 30));
+
+         EXPECT_EQ( common::transaction::context().begin(), common::code::tx::ok);
+
+         // dequeue committed - messages should be subtracted from size
+         {
+            EXPECT_FALSE( queue::dequeue( "a1").empty());
+            EXPECT_FALSE( queue::dequeue( "a1").empty());
+
+            auto gtrids = local::recover( { common::transaction::id::range::global( common::transaction::context().current().trid)}, ipc::message::group::message::recovery::Directive::commit);
+            EXPECT_FALSE( gtrids.size() == 2);
+
+            auto current_size = local::capacity::group_size( "A");
+            ASSERT_TRUE( current_size);
+            EXPECT_TRUE( current_size.value() == 30);
+         }
+
+         EXPECT_EQ( common::transaction::context().commit(), common::code::tx::ok);
+
+         {
+            auto current_size = local::capacity::group_size( "A");
+            ASSERT_TRUE( current_size);
+            EXPECT_TRUE( current_size.value() == 30);
+         }
+      }
+
+      TEST( casual_queue, dequeue_message_transaction__recover_rollback__expect_correct_group_size)
+      {
+         common::unittest::Trace trace;
+
+         auto domain = local::capacity::domain();
+
+         queue::enqueue( "a1", local::capacity::message( 30));
+         queue::enqueue( "a1", local::capacity::message( 30));
+         queue::enqueue( "a1", local::capacity::message( 30));
+
+         EXPECT_EQ( common::transaction::context().begin(), common::code::tx::ok);
+
+         // dequeue rollbacked - messages should NOT be subtracted from size
+         {
+            EXPECT_FALSE( queue::dequeue( "a1").empty());
+            EXPECT_FALSE( queue::dequeue( "a1").empty());
+
+            auto gtrids = local::recover( { common::transaction::id::range::global( common::transaction::context().current().trid)}, ipc::message::group::message::recovery::Directive::rollback);
+            EXPECT_FALSE( gtrids.size() == 2);
+
+            auto current_size = local::capacity::group_size( "A");
+            ASSERT_TRUE( current_size);
+            EXPECT_TRUE( current_size.value() == 90);
+         }
+
+         EXPECT_EQ( common::transaction::context().commit(), common::code::tx::ok);
+
+         {
+            auto current_size = local::capacity::group_size( "A");
+            ASSERT_TRUE( current_size);
+            EXPECT_TRUE( current_size.value() == 90);
+         }
+      }
+
    } // queue
 } // casual

@@ -1072,6 +1072,12 @@ namespace casual
          }
       } // lexicographical
 
+      template< concepts::range Range>
+      [[nodiscard]] auto reduce( Range&& range)
+      {
+         return std::reduce( std::begin( range), std::end( range));
+      }
+
    } // common::algorithm
 } // casual
 

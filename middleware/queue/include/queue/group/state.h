@@ -65,6 +65,20 @@ namespace casual
             error,
          };
          std::string_view description( Runlevel value);
+
+         struct Size
+         {
+            platform::size::type current;
+            std::optional< platform::size::type> capacity;
+
+            inline void add( platform::size::type size) { current += size;}
+            inline void subtract( platform::size::type size) { current -= size;}
+
+            CASUAL_CONST_CORRECT_SERIALIZE(
+               CASUAL_SERIALIZE( current);
+               CASUAL_SERIALIZE( capacity);
+            )
+         };
          
       } // state
 
@@ -87,20 +101,7 @@ namespace casual
          std::string alias;
          std::string note;
 
-         struct
-         {
-            platform::size::type current;
-            platform::size::type capacity;
-
-            inline void add( platform::size::type size) { current += size;}
-            inline void subtract( platform::size::type size) { current -= size;}
-            inline platform::size::type available() const { return capacity - current;}
-
-            CASUAL_CONST_CORRECT_SERIALIZE(
-               CASUAL_SERIALIZE( current);
-               CASUAL_SERIALIZE( capacity);
-            )
-         } size;
+         state::Size size;
 
          bool done() const noexcept;
 

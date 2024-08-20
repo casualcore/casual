@@ -655,10 +655,19 @@ namespace casual
 
             struct Group
             {
+               struct Capacity
+               {
+                  std::optional< std::string> size;
+
+                  CASUAL_CONST_CORRECT_SERIALIZE(
+                     CASUAL_SERIALIZE( size);
+                  )
+               };
+
                std::optional< std::string> alias;
                std::optional< std::string> queuebase;
                std::optional< std::string> note;
-               std::optional< std::string> capacity;
+               std::optional< Capacity> capacity;
                std::vector< Queue> queues;
 
                //! @deprecated

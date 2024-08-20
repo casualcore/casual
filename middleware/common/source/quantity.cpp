@@ -31,25 +31,34 @@ namespace casual
          {
             namespace
             {
+               struct map
+               {
+                  bytes_type unit;
+                  std::string_view symbol;
+                  
+                  bool operator == ( bytes_type rhs) const noexcept { return unit == rhs;}
+                  bool operator == ( std::string_view rhs) const noexcept { return symbol == rhs;}
+               };
+
+               constexpr std::array< map, 10> unit_mappings{{
+                  { unit::byte, ""},
+                  { unit::byte, symbol::byte},
+                  { unit::kilobyte, symbol::kilobyte},
+                  { unit::kibibyte, symbol::kibibyte},
+                  { unit::megabyte, symbol::megabyte},
+                  { unit::mebibyte, symbol::mebibyte},
+                  { unit::gigabyte, symbol::gigabyte},
+                  { unit::gibibyte, symbol::gibibyte},
+                  { unit::terabyte, symbol::terabyte},
+                  { unit::tebibyte, symbol::tebibyte}
+               }};
+
                namespace parse
                {
                   std::optional< bytes_type> symbol( std::string_view symbol)
                   {
-                     static const std::map< std::string_view, bytes_type> symbol_map{
-                        { "", unit::byte },
-                        { symbol::byte, unit::byte },
-                        { symbol::kilobyte, unit::kilobyte },
-                        { symbol::kibibyte, unit::kibibyte },
-                        { symbol::megabyte, unit::megabyte },
-                        { symbol::mebibyte, unit::mebibyte },
-                        { symbol::gigabyte, unit::gigabyte },
-                        { symbol::gibibyte, unit::gibibyte },
-                        { symbol::terabyte, unit::terabyte },
-                        { symbol::tebibyte, unit::tebibyte }
-                     };
-
-                     if( auto found = symbol_map.find( symbol); found != std::end( symbol_map))
-                        return found->second;
+                     if( auto found = algorithm::find( unit_mappings, symbol))
+                        return found->unit;
 
                      return std::nullopt;
                   }
@@ -59,27 +68,15 @@ namespace casual
                {
                   std::string representation( bytes_type value)
                   {
-                     static const std::map< bytes_type, std::string_view> unit_map{
-                        { unit::byte, symbol::byte},
-                        { unit::kilobyte, symbol::kilobyte},
-                        { unit::kibibyte, symbol::kibibyte},
-                        { unit::megabyte, symbol::megabyte},
-                        { unit::mebibyte, symbol::mebibyte},
-                        { unit::gigabyte, symbol::gigabyte},
-                        { unit::gibibyte, symbol::gibibyte},
-                        { unit::terabyte, symbol::terabyte},
-                        { unit::tebibyte, symbol::tebibyte}
-                     };
-
                      auto representable_as_integer = [ &value]( auto& pair)
                      {
-                        return value % pair.first == 0;
+                        return value % pair.unit == 0;
                      };
 
                      // find the largest unit for which _value_ can be respresented as an integer, prefer binary units
-                     auto found = algorithm::find_if( range::reverse( unit_map), representable_as_integer);
+                     auto found = algorithm::find_if( range::reverse( unit_mappings), representable_as_integer);
                      casual::assertion( found, "failed to find symbol for byte quantity");
-                     return common::string::compose( value / found->first, found->second);
+                     return common::string::compose( value / found->unit, found->symbol);
                   }
                } // string
             } // <unnamed>

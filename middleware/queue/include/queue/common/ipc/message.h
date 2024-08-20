@@ -15,6 +15,8 @@
 
 #include "configuration/model.h"
 
+#include <optional>
+
 namespace casual
 {
    namespace queue::ipc::message
@@ -703,6 +705,20 @@ namespace casual
                )
             };
 
+            namespace reply
+            {
+               struct Size
+               {
+                  platform::size::type current;
+                  std::optional< platform::size::type> capacity;
+
+                  CASUAL_CONST_CORRECT_SERIALIZE(
+                     CASUAL_SERIALIZE( current);
+                     CASUAL_SERIALIZE( capacity);
+                  )
+               };
+            }
+
             using base_reply = common::message::basic_request< common::message::Type::queue_group_state_reply>;
             struct Reply : base_reply
             {
@@ -715,8 +731,7 @@ namespace casual
                std::vector< Queue> queues;
                std::vector< common::strong::queue::id> zombies;
 
-               platform::size::type size;
-               platform::size::type capacity;
+               reply::Size size;
 
                CASUAL_CONST_CORRECT_SERIALIZE(
                   base_reply::serialize( archive);
@@ -726,7 +741,6 @@ namespace casual
                   CASUAL_SERIALIZE( queues);
                   CASUAL_SERIALIZE( zombies);
                   CASUAL_SERIALIZE( size);
-                  CASUAL_SERIALIZE( capacity);
                )
             };
 

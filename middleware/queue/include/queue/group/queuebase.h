@@ -16,6 +16,8 @@
 #include "common/string.h"
 
 #include <filesystem>
+#include <vector>
+#include <tuple>
 
 namespace casual
 {
@@ -162,14 +164,14 @@ namespace casual
          //! @note: only `enqueued` messages are deleted (no pending for commit)
          platform::size::type clear( common::strong::queue::id queue);
 
-         //! @returns id:s of the messages that was removed
+         //! @returns total size of messages deleted and id:s of the messages that was removed
          std::vector< common::Uuid> remove( common::strong::queue::id queue, std::vector< common::Uuid> messages);
 
-         //! @returns gtrid:s of the messages that was commited
-         std::vector< common::transaction::global::ID> recovery_commit( common::strong::queue::id queue, std::vector< common::transaction::global::ID> gtrids);
+         //! @returns total size of messages deleted and gtrid:s of the messages that was commited
+         std::tuple< platform::size::type, std::vector< common::transaction::global::ID>> recovery_commit( common::strong::queue::id queue, std::vector< common::transaction::global::ID> gtrids);
 
          //! @returns gtrid:s of the messages that was rollbacked
-         std::vector< common::transaction::global::ID> recovery_rollback( common::strong::queue::id queue, std::vector< common::transaction::global::ID> gtrids);
+         std::tuple< platform::size::type, std::vector< common::transaction::global::ID>> recovery_rollback( common::strong::queue::id queue, std::vector< common::transaction::global::ID> gtrids);
 
          //! @returns total size of messages deleted (committed dequeues)
          platform::size::type commit( const common::transaction::ID& id);

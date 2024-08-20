@@ -610,15 +610,14 @@ namespace casual
          return messages;
       }
 
-      std::vector< common::transaction::global::ID> Queuebase::recovery_commit( common::strong::queue::id queue, std::vector< common::transaction::global::ID> gtrids)
+      std::tuple< platform::size::type, std::vector< common::transaction::global::ID>> Queuebase::recovery_commit( common::strong::queue::id queue, std::vector< common::transaction::global::ID> gtrids)
       {
+         std::vector< platform::size::type> deleted_sizes{};
          auto missing_message = [&]( auto& id)
          {
             m_statement.commit1.execute( id.range());
             const auto commit1_affected = m_connection.affected();
-            // raises 'sql:another row available' if we dont fetch the result from RETURNING
-            // is this good or should we use another statement or should the function return std::tuple with affected and 'changed_size' instead?
-            sql::database::query::fetch( m_statement.commit2.query( id.range()), local::transform::size());
+            algorithm::container::append( sql::database::query::fetch( m_statement.commit2.query( id.range()), local::transform::size()), deleted_sizes);
             const auto commit2_affected = m_connection.affected();
  
             return commit1_affected == 0 && commit2_affected == 0;
@@ -626,15 +625,15 @@ namespace casual
 
          algorithm::container::trim( gtrids, algorithm::remove_if( gtrids, missing_message));
 
-         return gtrids;
+         return std::make_tuple( algorithm::reduce( range::make( deleted_sizes)), gtrids);
       }
 
-      std::vector< common::transaction::global::ID> Queuebase::recovery_rollback( common::strong::queue::id queue, std::vector< common::transaction::global::ID> gtrids)
+      std::tuple< platform::size::type, std::vector< common::transaction::global::ID>> Queuebase::recovery_rollback( common::strong::queue::id queue, std::vector< common::transaction::global::ID> gtrids)
       {
+         std::vector< platform::size::type> deleted_sizes{};
          auto missing_message = [&]( auto& id)
          {
-            // same as recovery_commit
-            sql::database::query::fetch( m_statement.rollback1.query( id.range()), local::transform::size());
+            algorithm::container::append( sql::database::query::fetch( m_statement.rollback1.query( id.range()), local::transform::size()), deleted_sizes);
             const auto rollback1_affected = m_connection.affected();
             m_statement.rollback2.execute( id.range());
             const auto rollback2_affected = m_connection.affected();
@@ -645,7 +644,7 @@ namespace casual
 
          algorithm::container::trim( gtrids, algorithm::remove_if( gtrids, missing_message));
 
-         return gtrids;
+         return std::make_tuple( algorithm::reduce( range::make( deleted_sizes)), gtrids);;
       }
 
       platform::size::type Queuebase::commit( const common::transaction::ID& id)
