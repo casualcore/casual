@@ -58,8 +58,9 @@ namespace casual
          enum class Type : short
          {
             linger,
+            interrupt,
             kill,
-            terminate
+            abort
          };
          
          std::string_view description( Type value) noexcept;

@@ -68,7 +68,7 @@ domain:
          execution:
             timeout:
                duration: 90
-               contract: terminate
+               contract: kill
 )");
 
          // name
@@ -88,7 +88,7 @@ domain:
          // timeout contract
          {
             const auto capture = administration::unittest::cli::command::execute( R"(casual service --list-services --porcelain true | awk -F'|' '{printf $15}')");
-            constexpr auto expected = "terminate";
+            constexpr auto expected = "kill";
             EXPECT_EQ( capture.standard.out, expected);
          }
       }

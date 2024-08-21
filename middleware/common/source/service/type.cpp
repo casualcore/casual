@@ -58,8 +58,15 @@ namespace casual
          Type transform( std::string_view contract)
          {
             if( contract == "linger") return Type::linger;
+            if( contract == "interrupt") return Type::interrupt;
             if( contract == "kill") return Type::kill;
-            if( contract == "terminate") return Type::terminate;
+            if( contract == "abort") return Type::abort;
+
+            if( contract == "terminate")
+            {
+               log::warning( code::casual::invalid_configuration, "contract 'terminate' is removed - using 'kill' instead");
+               return Type::kill;
+            }
             
             code::raise::error( code::casual::invalid_configuration, "unexpected value: ", contract);
          }
@@ -74,8 +81,9 @@ namespace casual
             switch( value)
             {
                case Type::linger: return "linger";
+               case Type::interrupt: return "interrupt";
                case Type::kill: return "kill";
-               case Type::terminate: return "terminate";
+               case Type::abort: return "abort";
             }
             return "unknown";
          }
