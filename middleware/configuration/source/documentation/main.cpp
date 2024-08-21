@@ -112,11 +112,12 @@ undiscoverable  | service is **not** discoverable from other domains
 
 A string representation that defines the timeout contract. Can be one of the following:
 
-value         | description
---------------|---------------------
-linger        | no action, let the server be
-kill          | send `kill` signal
-terminate     | `@deprecated` send terminate signal
+value         |  severity  | description
+--------------|------------|---------------------
+linger        | non-lethal | no action, let the server be
+interrupt     | non-lethal | send `interrupt` signal as a tap on the shoulder
+kill          | lethal     | send `kill` signal
+abort         | lethal     | send 'abort' signal 
 
 
 ### domain::service::Timeout _(structure)_

@@ -644,7 +644,7 @@ domain:
          // order hit
          message::event::process::Assassination assassination;
          assassination.target = target;
-         assassination.contract = Contract::terminate;
+         assassination.contract = Contract::kill;
          communication::device::blocking::send( communication::instance::outbound::domain::manager::device(), assassination);
 
          // check if/when hit is performed

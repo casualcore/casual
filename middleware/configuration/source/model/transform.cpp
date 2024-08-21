@@ -238,7 +238,9 @@ namespace casual
                         if( timeout.duration)
                            result.duration = common::chronology::from::string( *timeout.duration);
                         if( timeout.contract)
+                        {
                            result.contract = common::service::execution::timeout::contract::transform( *timeout.contract);
+                        }
                      }
                      return result;
                   }

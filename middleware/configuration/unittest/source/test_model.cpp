@@ -293,7 +293,7 @@ domain:
       execution:
          timeout:
             duration: 88s
-            contract: terminate
+            contract: abort 
 )";
          
          auto model = local::configuration( configuration);
@@ -303,9 +303,10 @@ domain:
          EXPECT_TRUE( model.service.services.at(0).name == "a");
 
          EXPECT_TRUE( model.service.services.at(0).timeout.duration == common::chronology::from::string( "88s"));
-         EXPECT_TRUE( model.service.services.at(0).timeout.contract == common::service::execution::timeout::contract::Type::terminate );
+         EXPECT_TRUE( model.service.services.at(0).timeout.contract == common::service::execution::timeout::contract::Type::abort);
 
       }
+
 
       TEST( configuration_model_transform, service_no_defaults_with_error)
       {
@@ -369,13 +370,13 @@ domain:
       execution:
          timeout:
             duration: 53min
-            contract: terminate
+            contract: linger
 )";
          
          auto model = local::configuration( configuration);
 
          EXPECT_TRUE( model.service.global.timeout.duration == common::chronology::from::string( "53min"));
-         EXPECT_TRUE( model.service.global.timeout.contract == common::service::execution::timeout::contract::Type::terminate);
+         EXPECT_TRUE( model.service.global.timeout.contract == common::service::execution::timeout::contract::Type::linger);
 
       }
 
@@ -391,7 +392,7 @@ domain:
     execution:
       timeout:
         duration: 53min
-        contract: terminate
+        contract: interrupt
 
   default:
     service:
@@ -424,7 +425,7 @@ domain:
          EXPECT_TRUE( model.service.services.at(1).timeout.contract == common::service::execution::timeout::contract::Type::linger );
 
          EXPECT_TRUE( model.service.global.timeout.duration == common::chronology::from::string( "53min"));
-         EXPECT_TRUE( model.service.global.timeout.contract == common::service::execution::timeout::contract::Type::terminate );
+         EXPECT_TRUE( model.service.global.timeout.contract == common::service::execution::timeout::contract::Type::interrupt );
 
       }
 
@@ -698,7 +699,7 @@ domain:
          execution:
             timeout:
                duration: 90
-               contract: terminate
+               contract: kill
    servers:
       - alias: a
         path: a
@@ -727,7 +728,7 @@ domain:
          execution:
             timeout:
                duration: 45
-               contract: terminate
+               contract: kill
    servers:
       - alias: a
         path: a

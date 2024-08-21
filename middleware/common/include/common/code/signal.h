@@ -31,6 +31,7 @@ namespace casual
          user = SIGUSR1,
          pipe = SIGPIPE,
          hangup = SIGHUP,
+         abort = SIGABRT,
       };
       std::string_view description( code::signal code) noexcept;
 

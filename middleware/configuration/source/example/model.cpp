@@ -152,7 +152,7 @@ domain:
          execution:
             timeout:
                duration: 64ms
-               contract: terminate
+               contract: abort
          visibility: undiscoverable
 )");
             }

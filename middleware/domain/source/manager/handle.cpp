@@ -676,26 +676,32 @@ namespace casual
                            return message;
                         });
 
-                        if( message.contract == decltype( message.contract)::linger)
+                        using contract_type = decltype( message.contract);
+
+                        if( message.contract == contract_type::linger)
                         {
-                           log::line( log, code::casual::domain_instance_assassinate, " event not severe enough, pid: ", message.target);
+                           log::code( log, code::casual::domain_instance_assassinate, "event not severe enough, pid: ", message.target);
                            return;
                         } 
 
+                        // fulfill assassination contract if not untouchable
                         if( ! algorithm::find( state.whitelisted, message.target))
-                        {                             
-                           // fulfill assassination contract if not untouchable
-                           auto weapon = common::code::signal::kill;
-                           if( message.contract == decltype( message.contract)::terminate) 
-                              weapon = common::code::signal::terminate;
+                        {  
+                           auto deduce_signal = []( contract_type contract)
+                           {
+                              if( contract == contract_type::interrupt)
+                                 return common::code::signal::interrupt;
+                              if( contract == contract_type::kill)
+                                 return common::code::signal::kill;
+                              return common::code::signal::abort;
+                           };
 
-                           auto alias =  get_alias( state)( message.target);
+                           common::signal::send( message.target, deduce_signal( message.contract));
 
-                           common::signal::send( message.target, weapon);
-                           log::line( log::category::error, code::casual::domain_instance_assassinate, " pid: ", message.target, ", alias: ", alias, ", weapon: ", weapon, ", announcement: ", message.announcement);
+                           log::line( log::category::error, code::casual::domain_instance_assassinate, " pid: ", message.target, ", alias: ", get_alias( state)( message.target), ", contract: ", message.contract, ", announcement: ", message.announcement);
                         }
                         else
-                           log::line( log::category::information, code::casual::domain_instance_assassinate, " whitelisted process pardoned, pid: ", message.target);
+                           log::information( code::casual::domain_instance_assassinate, "whitelisted process pardoned, pid: ", message.target);
                         
                      };
                   }
@@ -717,7 +723,6 @@ namespace casual
                         state.runlevel = state::Runlevel::error;
                         handle::shutdown( state);
                      }
-
                   };
                }
 
