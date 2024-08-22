@@ -45,16 +45,27 @@ property                 | description                           | default
 [directory : `string`]   | directory for generated storage files | `${CASUAL_PERSISTENT_DIRECTORY}/queue` 
 [queue.retry : `Retry`]  | retry semantics                       |
 
+### Bytes : `string`
+
+A string representation of a quantity of _bytes_. IEC 80000-13 units up to T/Ti can be used. Example: `3B`, `24MiB`, `15MB`. If no unit is specified, `B` is used.
+
+### Capacity _(structure)_
+
+property               | description                                                 | default
+-----------------------|-------------------------------------------------------------|-----------
+[size : `Bytes`]       | the maximum total size of messages that the group may store |
 
 ### domain.queue.groups _(list)_
 
 Defines groups of queues which share the same storage location. Groups has no other meaning.
 
-property               | description                                  | default
------------------------|----------------------------------------------|------
-alias : `string`       | the (unique) alias of the group.             | 
-[queuebase : `string`] | the path to the storage file.                | `domain.queue.default.directory/<group-name>.qb`
-[queues : `list`]      | defines all queues in this group, see below  |
+property                | description                                  | default
+------------------------|----------------------------------------------|------
+alias : `string`        | the (unique) alias of the group.             | 
+[queuebase : `string`]  | the path to the storage file.                | `domain.queue.default.directory/<group-name>.qb`
+[queues : `list`]       | defines all queues in this group, see below  |
+[capacity : `capacity`] | limits the storage capacity of the group     |
+
 
 Note: if `:memory:` is used as `queuebase`, the storage is non persistent
 
@@ -151,6 +162,13 @@ domain:
         queues:
           - name: "c1"
           - name: "c2"
+      - alias: "D"
+        note: "group limited to a total message size of 10KiB, after which further enqueues will give no_queue error"
+        capacity:
+          size: "10KiB"
+        queues:
+          - name: "d1"
+          - name: "d2"
     forward:
       default:
         service:
@@ -253,6 +271,21 @@ domain:
                         },
                         {
                             "name": "c2"
+                        }
+                    ]
+                },
+                {
+                    "alias": "D",
+                    "note": "group limited to a total message size of 10KiB, after which further enqueues will give no_queue error",
+                    "capacity": {
+                        "size": "10KiB"
+                    },
+                    "queues": [
+                        {
+                            "name": "d1"
+                        },
+                        {
+                            "name": "d2"
                         }
                     ]
                 }
