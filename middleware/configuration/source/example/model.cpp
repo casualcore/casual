@@ -259,6 +259,13 @@ domain:
             queues:
                -  name: c1
                -  name: c2
+         -  alias: D
+            capacity:
+               size: "10KiB"
+            note: group limited to a total message size of 10KiB, after which further enqueues will give no_queue error
+            queues:
+               -  name: d1
+               -  name: d2
 
       forward:
          default:
