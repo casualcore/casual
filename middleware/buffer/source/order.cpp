@@ -107,7 +107,7 @@ namespace casual
                {
                   static constexpr auto types() 
                   {
-                     constexpr std::string_view key = CASUAL_ORDER "/";
+                     constexpr std::string_view key = CASUAL_ORDER "/";                     
                      return common::array::make( key);
                   };
 
@@ -230,8 +230,8 @@ namespace casual
                template<typename M>
                void append( M& memory, std::string_view value)
                {
-                  auto binary = common::view::binary::make( value);
-                  common::algorithm::container::append( binary, memory);
+                  auto data = common::view::binary::make( value);
+                  common::algorithm::container::append( data, memory);
                   memory.push_back( std::byte{ '\0'});
                }
 
@@ -239,18 +239,8 @@ namespace casual
                template<typename M>
                void append( M& memory, common::view::immutable::Binary data)
                {
-                  // Make sure to reset the size in case of exception since
-                  // this is not an atomic operation
-
-                  // capture current size
-                  const auto used = memory.size();
-
-                  // create potential rollback
-                  const auto reset = common::execute::scope
-                  ( [&](){ if( std::uncaught_exceptions()) memory.resize( used);});
-
                   // append first size chunk
-                  append( memory, std::ssize( data));
+                  append( memory, static_cast< size_type>( std::ssize( data)));
 
                   // append other data chunk
                   common::algorithm::container::append( data, memory);
@@ -263,11 +253,19 @@ namespace casual
                   {
                      auto& buffer = pool_type::pool().get( common::buffer::handle::type{ *handle});
 
+                     // create potential rollback
+                     const auto reset = common::execute::scope
+                     ( 
+                        [ used = buffer.payload.data.size(), &buffer]()
+                        { if( std::uncaught_exceptions()) buffer.payload.data.resize( used);}
+                     );
+
                      // Make sure to update the handle regardless
-                     const auto synchronize = common::execute::scope( [ handle, &buffer]() 
-                     { 
-                        *handle = buffer.handle().raw();
-                     });
+                     const auto synchronize = common::execute::scope
+                     ( 
+                        [ handle, &buffer]() 
+                        { *handle = buffer.handle().raw();}
+                     );
 
                      // Append the data
                      append( buffer.payload.data, std::forward<A>( arguments)...);
