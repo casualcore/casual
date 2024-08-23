@@ -1242,7 +1242,7 @@ cat somefile.bin | casual queue --enqueue <queue-name>
 
                auto option()
                {
-                  auto invoke = []( std::string queue, const std::optional< Uuid>& id)
+                  auto invoke = []( std::string queue, const std::vector< Uuid>& ids)
                   {
                      Trace trace{ "queue::local::dequeue::invoke"};
 
@@ -1260,7 +1260,15 @@ cat somefile.bin | casual queue --enqueue <queue-name>
                      communication::stream::inbound::Device in{ std::cin};
                      common::message::dispatch::pump( cli::pipe::condition::done( state.done), handler, in);
 
-                     dequeue_and_forward( state, id);
+                     if( std::empty( ids))
+                     {
+                        dequeue_and_forward( state, {});
+                     }
+                     else
+                     {
+                        for( auto& id : ids)
+                           dequeue_and_forward( state, id);
+                     }
 
                      // state.done dtor will send Done downstream
                   };
@@ -1270,7 +1278,7 @@ cat somefile.bin | casual queue --enqueue <queue-name>
                      return []( auto, bool help) -> std::vector< std::string>
                      {
                         if( help)
-                           return { "<queue>", "[<id>]"};
+                           return { "<queue>", "[<id>..]"};
 
                         return local::queues();
                      };
@@ -1287,6 +1295,8 @@ if id is absent the oldest available message is dequeued.
 Example:
 casual queue --dequeue <queue> | <some other part in casual-pipe> | ... | <casual-pipe termination>
 casual queue --dequeue <queue> <id> | <some other part in casual-pipe> | ... | <casual-pipe termination>
+casual queue --dequeue <queue> <id> <id> <id> <id> | <some other part in casual-pipe> | ... | <casual-pipe termination>
+
 
 @note: part of casual-pipe
 )"

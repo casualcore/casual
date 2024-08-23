@@ -101,6 +101,7 @@ domain:
                -  name: b
 
 )");
+
          // enqueue
          {
             auto capture = local::execute( R"(echo "casual" | casual buffer --compose | casual queue --attributes reply b.error | casual queue --enqueue a | casual pipe --human-sink)");
@@ -112,6 +113,29 @@ domain:
             auto capture = local::execute( R"(casual queue --dequeue a | casual pipe --human-sink)");
             EXPECT_TRUE( std::regex_match( capture.standard.out, std::regex{ R"(.*reply: b.error.*\n)"})) << CASUAL_NAMED_VALUE( capture); 
          }
+      }
+
+      TEST( cli_queue, enqueue_dequeue_ids)
+      {
+         common::unittest::Trace trace;
+
+         auto domain = local::domain( R"(
+domain:
+   queue:
+      groups:
+         -  alias: Q
+            queues:
+               -  name: a
+               -  name: b
+)");
+         constexpr auto enqueue_command = R"(echo "casual" | casual buffer --compose | casual buffer --duplicate 10 | casual queue --enqueue a | casual pipe --human-sink)";
+         // sort the qid's and dequeue them all with help of xargs
+         constexpr auto dequeue_command = R"(sort | xargs casual queue --dequeue a | casual queue --enqueue b | casual pipe --human-sink)";
+         
+         auto capture = local::execute( enqueue_command, '|', dequeue_command, " | wc -l" );
+
+         EXPECT_TRUE( std::stoi( capture.standard.out) == 10) << CASUAL_NAMED_VALUE( capture);
+
       }
 
       TEST( cli_queue, list_queues)
