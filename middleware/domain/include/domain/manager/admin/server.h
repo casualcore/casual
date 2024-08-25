@@ -20,31 +20,31 @@ namespace casual
    {
       namespace service::name
       {
-         constexpr auto state = ".casual/domain/state";
+         constexpr std::string_view state = ".casual/domain/state";
          namespace scale
          {
-            constexpr auto aliases = ".casual/domain/scale/aliases";
+            constexpr std::string_view aliases = ".casual/domain/scale/aliases";
          } // scale
 
          namespace restart
          {
-            constexpr auto aliases = ".casual/domain/restart/aliases";
-            constexpr auto groups = ".casual/domain/restart/groups";
+            constexpr std::string_view aliases = ".casual/domain/restart/aliases";
+            constexpr std::string_view groups = ".casual/domain/restart/groups";
          } // restart
 
-         constexpr auto shutdown = ".casual/domain/shutdown";
+         constexpr std::string_view shutdown = ".casual/domain/shutdown";
 
          namespace configuration
          {
-            constexpr auto get = ".casual/domain/configuration/get";
-            constexpr auto put = ".casual/domain/configuration/put";
-            constexpr auto post = ".casual/domain/configuration/post";
+            constexpr std::string_view get = ".casual/domain/configuration/get";
+            constexpr std::string_view put = ".casual/domain/configuration/put";
+            constexpr std::string_view post = ".casual/domain/configuration/post";
          } // configuration
 
          namespace environment
          {
-            constexpr auto set = ".casual/domain/environment/set";
-            constexpr auto unset = ".casual/domain/environment/unset";
+            constexpr std::string_view set = ".casual/domain/environment/set";
+            constexpr std::string_view unset = ".casual/domain/environment/unset";
          } // environment
 
       } // service::name

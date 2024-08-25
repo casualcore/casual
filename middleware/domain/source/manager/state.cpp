@@ -44,14 +44,27 @@ namespace casual
             {
                switch( value)
                {
+                  case State::disabled: return "disabled";
                   case State::running: return "running";
                   case State::spawned : return "spawned";
-                  case State::scale_out: return "scale-out";
-                  case State::scale_in: return "scale-in";
+                  case State::scale_out: return "scale_out";
+                  case State::scale_in: return "scale_in";
                   case State::exit: return "exit";
                   case State::error: return "error";
                }
-               return "unknown";
+               return "<unknown>";
+            }
+
+            std::string_view description( Phase value) noexcept
+            {
+               switch( value)
+               {
+                  case Phase::disabled: return "disabled";
+                  case Phase::running: return "running";
+                  case Phase::exit: return "exit";
+                  case Phase::error: return "error";
+               }
+               return "<unknown>";
             }
          } // instance
 
@@ -70,109 +83,113 @@ namespace casual
             {
                namespace instance
                {
-                  template< typename I>
-                  auto spawnable( I& instances)
+                  auto spawnable( auto& entity)
                   {
-                     using state_type = typename I::value_type::state_type;
-
-                     return algorithm::sorted::subrange( instances, []( auto& i){
-                        return i.state == state_type::scale_out && ! common::process::id( i.handle);
+                     return algorithm::sorted::subrange( entity.instances, []( auto& instance)
+                     {
+                        return instance.state() == state::instance::State::scale_out;
                      });
                   }
 
-                  template< typename I>
-                  auto shutdownable( I& instances)
+                  auto shutdownable( auto& entity)
                   {
-                     using state_type = typename I::value_type::state_type;
-
-                     return algorithm::sorted::subrange( instances, []( auto& i){
-                        return i.state == state_type::scale_in && common::process::id( i.handle);
+                     return algorithm::sorted::subrange( entity.instances, []( auto& instance)
+                     {
+                        return instance.state() == state::instance::State::scale_in;
                      });
                   }
 
-                  template< typename I>
-                  void scale( I& instances, platform::size::type count)
+                  void scale( auto& entity, platform::size::type count)
                   {
                      Trace trace{ "domain::manager::state::local::scale"};
-                     log::line( verbose::log, "instances: ", instances);
+                     log::line( verbose::log, "instances: ", entity.instances);
 
-                     using state_type = decltype( std::begin( instances)->state);
-
-                     auto [ running, rest] = algorithm::stable::partition( instances, []( auto& instance)
+                     auto set_scale_keep = [ enabled = entity.enabled]( auto& instance)
                      {
-                        return algorithm::compare::any( instance.state, state_type::running, state_type::scale_out);
+                        if( enabled) 
+                           instance.wanted = state::instance::Phase::running;
+                        else
+                           instance.wanted = state::instance::Phase::disabled;
+                     };
+
+                     auto set_scale_exit = []( auto& instance)
+                     {
+                        instance.wanted = state::instance::Phase::exit;
+                     };
+
+                     if( std::ssize( entity.instances) < count)
+                     {
+                        entity.instances.resize( count);
+                        algorithm::for_each( entity.instances, set_scale_keep);
+                        return;
+                     }
+
+                     // move all running to the front, if any                     
+                     algorithm::stable::partition( entity.instances, []( auto& instance)
+                     {
+                        return instance.state() == state::instance::State::running;
                      });
 
-                     // Do we scale in, or scale out?
-                     if( running.size() < count)
+                     auto keep = range::make( std::begin( entity.instances), count);
+                     auto exit = range::make( std::end( keep), std::end( entity.instances));
+
+                     algorithm::for_each( keep, set_scale_keep);
+                     algorithm::for_each( exit, set_scale_exit);
+
+                     // remove already exit (wasn't spawned to begin with)
                      {
-                        count -= running.size();
-
-                        // scale out
-                        // check if we got any 'exit' to reuse
-                        {
-                           auto exit = algorithm::filter( rest, []( auto& instance)
-                           {
-                              return algorithm::compare::any( instance.state, state_type::exit, state_type::error);
-                           });
-
-                           count -= algorithm::for_each_n( exit, count, []( auto& instance)
-                           {
-                              instance.state = state_type::scale_out;
-                           }).size();
-
-                           algorithm::container::trim( instances, algorithm::remove_if( instances, []( auto& instance)
-                           {
-                              return algorithm::compare::any( instance.state, state_type::exit, state_type::error);
-                           }));
-                        }
-
-                        // resize the source to get the rest, and rely on default ctor for instance_type.
-                        instances.resize( instances.size() + count);
-                     }
-                     else
-                     {
-                        // scale in.
-                        // We just advance the range, and scale_in the reminders.
-                        algorithm::for_each( running.advance( count), []( auto& instance)
-                        {
-                           instance.state = state_type::scale_in;
-                        });
-                        
-                        auto is_removable = []( auto& i)
-                        {
-                           return i.state == state_type::scale_in && ! process::id( i.handle);
-                        };
-
-                        // we can remove the backmarkers with invalid 'pids'
-                        algorithm::container::trim( instances, algorithm::remove_if( instances, is_removable));
+                        algorithm::container::erase( entity.instances, algorithm::filter( exit, []( auto& instance)
+                        { 
+                           return instance.state() == state::instance::State::exit;
+                        }));
                      }
 
-                     log::line( verbose::log, "instances: ", instances);
+                     log::line( verbose::log, "instances: ", entity.instances);
                   }
 
                } // instance
+
             } // <unnamed>
          } // local
 
+         instance::State Executable::instance_policy::state( common::strong::process::id pid, instance::Phase wanted)
+         {
+            switch( wanted)
+            {
+               case instance::Phase::running:
+                  return pid ? instance::State::running : instance::State::scale_out;
+               case instance::Phase::exit:
+                  return pid ? instance::State::scale_in : instance::State::exit;
+               case instance::Phase::disabled:
+                  return pid ? instance::State::scale_in : instance::State::disabled;
+               case instance::Phase::error:
+                  return instance::State::error;
+            }
+            common::code::raise::error( common::code::casual::internal_unexpected_value, "wanted phase: ", wanted);
+         }
+
+
          Executable::instances_range Executable::spawnable()
          {
-            return local::instance::spawnable( instances);
+            return local::instance::spawnable( *this);
          }
 
          Executable::const_instances_range Executable::spawnable() const
          {
-            return local::instance::spawnable( instances);
+            if( ! enabled)
+               return {};
+
+            return local::instance::spawnable( *this);
          }
 
          Executable::const_instances_range Executable::shutdownable() const
          {
-            return local::instance::shutdownable( instances);
+            return local::instance::shutdownable( *this);
          }
 
          void Executable::scale( platform::size::type count)
          {
-            local::instance::scale( instances, count);
+            local::instance::scale( *this, count);
          }
 
          void Executable::remove( strong::process::id pid)
@@ -182,20 +199,29 @@ namespace casual
             if( auto found = algorithm::find( instances, pid))
             {
                log::line( verbose::log, "found: ", *found);
-               auto const state = found->state;
+               log::line( verbose::log, "instances: ", instances);
 
-               if( state == state_type::scale_in)
+               found->handle = {};
+
+               switch( found->wanted)
                {
-                  log::line( verbose::log, "remove: ", *found);
-                  instances.erase( std::begin( found));
-               }
-               else
-               {
-                  found->handle = common::strong::process::id{};
-                  found->state =  state == state_type::running && restart ? state_type::scale_out : state_type::exit;
-                  log::line( verbose::log, "reset: ", *found);
-                  if( found->state == state_type::scale_out)
-                     initiated_restarts++;
+                  case instance::Phase::disabled:
+                  case instance::Phase::error:
+                     break;
+                  case instance::Phase::exit:
+                  {
+                     algorithm::container::erase( instances, std::begin( found));
+                     break;
+                  }
+                  case instance::Phase::running:
+                  {
+                     if( restart)
+                        initiated_restarts++;
+                     else
+                        found->wanted = instance::Phase::exit;
+
+                     break;
+                  }
                }
             }
          }
@@ -205,6 +231,21 @@ namespace casual
             return predicate::boolean( algorithm::find( lhs.instances, rhs));
          }
 
+         instance::State Server::instance_policy::state( const common::process::Handle& handle, instance::Phase wanted)
+         {
+            switch( wanted)
+            {
+               case instance::Phase::running:
+                  return handle ? instance::State::running : handle.pid ? instance::State::spawned : instance::State::scale_out;
+               case instance::Phase::exit:
+                  return handle ? instance::State::scale_in : instance::State::exit;
+               case instance::Phase::disabled:
+                  return handle ? instance::State::scale_in : instance::State::disabled;
+               case instance::Phase::error:
+                  return instance::State::error;
+            }
+            common::code::raise::error( common::code::casual::internal_unexpected_value, "wanted phase: ", wanted);
+         }
 
          const Server::instance_type* Server::instance( common::strong::process::id pid) const
          {
@@ -220,12 +261,23 @@ namespace casual
                log::line( verbose::log, "found: ", *found);
                log::line( verbose::log, "instances: ", instances);
 
-               if( found->state == state_type::scale_in)
-                  return algorithm::container::extract( instances, std::begin( found)).handle;
+               switch( found->wanted)
+               {
+                  case instance::Phase::disabled:
+                  case instance::Phase::error:
+                     break;
+                  case instance::Phase::exit:
+                     return algorithm::container::extract( instances, std::begin( found)).handle;
+                  case instance::Phase::running:
+                  {
+                     if( restart)
+                        initiated_restarts++;
+                     else
+                        found->wanted = instance::Phase::exit;
 
-               found->state = found->state == state_type::running && restart ? state_type::scale_out : state_type::exit;
-               if( found->state == state_type::scale_out)
-                  initiated_restarts++;
+                     break;
+                  }
+               }
 
                return std::exchange( found->handle, {});
             }
@@ -238,31 +290,32 @@ namespace casual
             if( auto found = algorithm::find( instances, process.pid))
             {
                found->handle = process;
-               found->state = instance::State::running;
                return true;
             }
             return false;
          }
 
-
          Server::instances_range Server::spawnable()
          {
-            return local::instance::spawnable( instances);
+            if( ! enabled)
+               return {};
+
+            return local::instance::spawnable( *this);
          }
 
          Server::const_instances_range Server::spawnable() const
          {
-            return local::instance::spawnable( instances);
+            return local::instance::spawnable( *this);
          }
 
          Server::const_instances_range Server::shutdownable() const
          {
-            return local::instance::shutdownable( instances);
+            return local::instance::shutdownable( *this);
          }
 
          void Server::scale( platform::size::type count)
          {
-            local::instance::scale( instances, count);
+            local::instance::scale( *this, count);
          }
 
          bool operator == ( const Server& lhs, common::strong::process::id rhs)
@@ -412,14 +465,14 @@ namespace casual
          return nullptr;
       }
 
-      state::Group& State::group( state::Group::id_type id)
+      state::Group& State::group( strong::group::id id)
       {
          return range::front( algorithm::find_if( groups, [=]( const auto& g){
             return g.id == id;
          }));
       }
 
-      const state::Group& State::group( state::Group::id_type id) const
+      const state::Group& State::group( strong::group::id id) const
       {
          return range::front( algorithm::find_if( groups, [=]( const auto& g){
             return g.id == id;

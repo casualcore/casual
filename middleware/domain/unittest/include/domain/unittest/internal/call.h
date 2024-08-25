@@ -35,13 +35,13 @@ namespace casual
       } // detail
          
       template< typename R, typename... Ts> 
-      R call( std::string service, Ts&&... arguments)
+      R call( std::string_view service, Ts&&... arguments)
       {
          auto correlation = [&]()
          {
             common::message::service::call::callee::Request request;
             request.process = common::process::handle();
-            request.service.name = std::move( service);
+            request.service.name = std::string{ service};
             request.buffer.type = common::buffer::type::binary;
 
             auto archive = common::serialize::binary::writer();

@@ -34,7 +34,7 @@ namespace casual
 
             auto membership( const std::vector< std::string>& members, const std::vector< manager::state::Group>& groups)
             {
-               return algorithm::accumulate( members, std::vector< manager::state::Group::id_type>{}, [&groups]( auto result, auto& member)
+               return algorithm::accumulate( members, std::vector< strong::group::id>{}, [&groups]( auto result, auto& member)
                {
                   if( auto found = common::algorithm::find( groups, member))
                      result.push_back( found->id);
@@ -49,9 +49,13 @@ namespace casual
             void groups( const manager::State& state, Groups&& source, std::vector< manager::state::Group>& target)
             {
                // 'two phase' - we add all groups, and then take care of dependencies. Hence, we don't rely on order...
-               algorithm::transform( source, std::back_inserter( target), [master = state.group_id.master]( auto& group)
+               algorithm::transform( source, std::back_inserter( target), [ master = state.group_id.master]( auto& group)
                {
-                  return manager::state::Group{ group.name, { master}, group.note, group.enabled};
+                  return manager::state::Group{ 
+                     .name = group.name, 
+                     .enabled = group.enabled, 
+                     .dependencies = { master}, 
+                     .note = group.note};
                });
 
                // take care of dependencies
@@ -68,10 +72,10 @@ namespace casual
             {
                target.alias = value.alias;
                target.arguments = value.arguments;
-               target.scale( value.instances);
                target.note = value.note;
                target.path = value.path;
                target.restart = value.lifetime.restart;
+               target.enabled = value.enabled;
 
                target.environment.variables = value.environment.variables;
 
@@ -80,6 +84,8 @@ namespace casual
                // If empty, we make it member of '.global'
                if( target.memberships.empty())
                   target.memberships = local::membership( { ".global"}, groups);
+
+               target.scale( value.instances);
 
             }
          } // <unnamed>
@@ -167,6 +173,7 @@ namespace casual
 
                            switch( state)
                            {
+                              case IN::disabled: return OUT::disabled;
                               case IN::running: return OUT::running;
                               case IN::spawned: return OUT::spawned;
                               case IN::scale_out: return OUT::scale_out;
@@ -180,7 +187,7 @@ namespace casual
 
                         R result;
                         result.handle = value.handle;
-                        result.state = state( value.state);
+                        result.state = state( value.state());
                         result.spawnpoint = value.spawnpoint;
                         return result;
                      };
@@ -322,19 +329,19 @@ namespace casual
 
          // Handle groups
          {
-            manager::state::Group core{ ".casual.core", {}, "domain-manager internal group"};
+            manager::state::Group core{ .name = ".casual.core", .note = "domain-manager internal group"};
             result.group_id.core = core.id;
 
-            manager::state::Group master{ ".casual.master", { result.group_id.core}, "the master and (implicit) parent of all groups"};
+            manager::state::Group master{ .name =".casual.master", .dependencies = { result.group_id.core}, .note = "the master and (implicit) parent of all groups"};
             result.group_id.master = master.id;
             
-            manager::state::Group transaction{ ".casual.transaction", { result.group_id.master}};
+            manager::state::Group transaction{ .name = ".casual.transaction", .dependencies = { result.group_id.master}};
             result.group_id.transaction = transaction.id;
             
-            manager::state::Group queue{ ".casual.queue", { transaction.id}};
+            manager::state::Group queue{ .name = ".casual.queue", .dependencies = { transaction.id}};
             result.group_id.queue = queue.id;
             
-            manager::state::Group global{ ".global", { queue.id, transaction.id}, "user global group"};
+            manager::state::Group global{ .name = ".global", .dependencies = { queue.id, transaction.id}, .note = "user global group"};
             result.group_id.global = global.id;
 
             result.groups.push_back( std::move( core));
@@ -363,13 +370,12 @@ namespace casual
             // We need to make sure the gateway have dependencies to all user groups. We could
             // order the groups and pick the last one, but it's more semantic correct to have dependencies
             // to all, since that is exactly what we're trying to represent.
-            manager::state::Group gateway{ ".casual.gateway", {}};
+            manager::state::Group gateway{ .name = ".casual.gateway"};
             result.group_id.gateway = gateway.id;
 
             for( auto& group : result.groups)
-            {
                gateway.dependencies.push_back( group.id);
-            }
+
             result.groups.push_back( std::move( gateway));
          }
 
@@ -387,7 +393,7 @@ namespace casual
                manager.note = "responsible for all executables in this domain";
 
                manager::state::Server::instance_type instance{ common::process::handle()};
-               instance.state = manager::state::Server::state_type::running;
+               instance.wanted = manager::state::instance::Phase::running;
                instance.spawnpoint = platform::time::clock::type::now();
                manager.instances.push_back( std::move( instance));
 
@@ -463,6 +469,7 @@ namespace casual
             result.environment.variables = server.environment.variables;
             result.memberships = name_groups( server.memberships);
             result.instances = server.instances.size();
+            result.enabled = server.enabled;
             result.note = server.note;
             result.lifetime.restart = server.restart;
 
@@ -481,6 +488,7 @@ namespace casual
             result.environment.variables = executable.environment.variables;
             result.memberships = name_groups( executable.memberships);
             result.instances = executable.instances.size();
+            result.enabled = executable.enabled;
             result.note = executable.note;
             result.lifetime.restart = executable.restart;
 

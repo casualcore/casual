@@ -16,6 +16,7 @@
 #include "configuration/example/model.h"
 
 #include "common/unittest/file.h"
+#include "common/algorithm/random.h"
 
 #include "serviceframework/log.h"
 
@@ -225,6 +226,83 @@ domain:
          executable.instances.resize( 5);
 
          EXPECT_TRUE( executable.spawnable().size() == 5);
+         EXPECT_TRUE( executable.shutdownable().empty()) << CASUAL_NAMED_VALUE( executable);
+      }
+
+      TEST( domain_state_instances, executable__scale)
+      {
+         common::unittest::Trace trace;
+
+         auto executable = state::Executable::create();
+         executable.scale( 10);
+
+         EXPECT_TRUE( executable.spawnable().size() == 10);
+         EXPECT_TRUE( executable.shutdownable().empty()) << CASUAL_NAMED_VALUE( executable);
+      }
+
+      TEST( domain_state_instances, executable_running__disable)
+      {
+         common::unittest::Trace trace;
+
+         auto has_state = []( state::instance::State state)
+         {
+            return [ state]( auto& instance){ return instance.state() == state;};
+         };
+
+         auto has_wanted = []( state::instance::Phase wanted)
+         {
+            return [ wanted]( auto& instance){ return instance.wanted == wanted;};
+         };
+
+         auto generate_pid = []()
+         {
+            static int base = 10;
+            return common::strong::process::id{ base++};
+         };
+
+         auto executable = state::Executable::create();
+         
+         // first we scale to running
+         {
+            executable.scale( 10);
+
+            EXPECT_TRUE( executable.spawnable().size() == 10);
+            EXPECT_TRUE( executable.shutdownable().empty());
+
+            for( auto& instance : executable.instances)
+               instance.spawned( generate_pid());
+
+            EXPECT_TRUE( executable.spawnable().empty()) << CASUAL_NAMED_VALUE( executable.spawnable());
+            EXPECT_TRUE( executable.shutdownable().empty());
+         }
+
+         // now we disable and "re scale"
+         {
+            executable.enabled = false;
+            executable.scale( 10);
+
+            EXPECT_TRUE( executable.spawnable().empty());
+            EXPECT_TRUE( executable.shutdownable().size() == 10);
+            EXPECT_TRUE( common::algorithm::all_of( executable.instances, has_wanted( state::instance::Phase::disabled)));
+         }
+
+         auto pids = common::algorithm::transform( executable.instances, []( auto& instance){ return instance.handle;});
+
+         for( auto pid : common::algorithm::random::shuffle( pids))
+            executable.remove( pid);
+
+         EXPECT_TRUE( common::algorithm::all_of( executable.instances, has_state( state::instance::State::disabled)));
+      }
+
+      TEST( domain_state_instances, executable_disabled__scale)
+      {
+         common::unittest::Trace trace;
+
+         auto executable = state::Executable::create();
+         executable.enabled = false;
+         executable.scale( 10);
+
+         EXPECT_TRUE( executable.spawnable().empty());
          EXPECT_TRUE( executable.shutdownable().empty()) << CASUAL_NAMED_VALUE( executable);
       }
 

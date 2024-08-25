@@ -381,8 +381,8 @@ namespace casual
                      {
                         return algorithm::all_of( state.entity( id).instances, []( auto& instance)
                         {
-                           using Enum = decltype( instance.state);
-                           return algorithm::compare::any( instance.state, Enum::running, Enum::exit, Enum::error);
+                           using Enum = decltype( instance.state());
+                           return algorithm::compare::any( instance.state(), Enum::running, Enum::exit, Enum::disabled, Enum::error);
                         });
                      };
 

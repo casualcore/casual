@@ -42,22 +42,15 @@ namespace casual
       {
          struct Group
          {
-            using id_type = strong::group::id;
-            Group() = default;
+            strong::group::id id = strong::group::id::generate();
 
-            Group( std::string name, std::vector< id_type> dependencies, std::string note = "", bool enabled = true)
-               : name( std::move( name)), note( std::move( note)), enabled( enabled), dependencies( std::move( dependencies)) {}
-
-            id_type id = id_type::generate();
-
-            std::string name;
-            std::string note;
+            std::string name{};
             bool enabled = true;
 
-            std::vector< id_type> dependencies;
+            std::vector< strong::group::id> dependencies{};
+            std::string note{};
 
-            inline friend bool operator == ( const Group& lhs, Group::id_type id) { return lhs.id == id;}
-            inline friend bool operator == ( Group::id_type id, const Group& rhs) { return id == rhs.id;}
+            inline friend bool operator == ( const Group& lhs, strong::group::id id) { return lhs.id == id;}
             inline friend bool operator == ( const Group& lhs, const std::string& name) { return lhs.name == name;}
 
             struct boot
@@ -73,9 +66,9 @@ namespace casual
             CASUAL_LOG_SERIALIZE(
                CASUAL_SERIALIZE( id);
                CASUAL_SERIALIZE( name);
-               CASUAL_SERIALIZE( note);
                CASUAL_SERIALIZE( enabled);
                CASUAL_SERIALIZE( dependencies);
+               CASUAL_SERIALIZE( note);
             )
          };
 
@@ -97,7 +90,7 @@ namespace casual
             std::vector< std::string> arguments;
             std::string note;
 
-            std::vector< Group::id_type> memberships;
+            std::vector< strong::group::id> memberships;
 
             struct
             {
@@ -109,6 +102,7 @@ namespace casual
             } environment;
 
             bool restart = false;
+            bool enabled = true;
 
             platform::size::type initiated_restarts = 0;
 
@@ -125,6 +119,7 @@ namespace casual
                CASUAL_SERIALIZE( memberships);
                CASUAL_SERIALIZE( environment);
                CASUAL_SERIALIZE( restart);
+               CASUAL_SERIALIZE( enabled);
                CASUAL_SERIALIZE( initiated_restarts);
             )
          };
@@ -133,6 +128,7 @@ namespace casual
          {
             enum class State : short
             {
+               disabled,
                running,
                spawned,
                scale_out,
@@ -142,6 +138,14 @@ namespace casual
             };
             std::string_view description( State value) noexcept;
 
+            enum class Phase : short
+            {
+               running,
+               exit,
+               disabled,
+               error, // not really a wanted phase...
+            };
+            std::string_view description( Phase value) noexcept;
 
          } // instance
 
@@ -150,11 +154,13 @@ namespace casual
          {
             using policy_type = P;
             using handle_type = typename policy_type::handle_type;
-            using state_type = typename policy_type::state_type;
 
             handle_type handle;
-            state_type state = state_type::scale_out;
+            instance::Phase wanted = instance::Phase::running;
+
             platform::time::point::type spawnpoint = platform::time::point::limit::zero();
+
+            instance::State state() const { return policy_type::state( handle, wanted);}
             
             void spawned( common::strong::process::id pid)
             {
@@ -163,11 +169,11 @@ namespace casual
             }
 
             friend bool operator == ( const Instance& lhs, common::strong::process::id pid) { return lhs.handle == pid;}
-            friend bool operator == ( common::strong::process::id pid, const Instance& rhs) { return pid == rhs.handle;}
 
             CASUAL_LOG_SERIALIZE(
                CASUAL_SERIALIZE( handle);
-               CASUAL_SERIALIZE( state);
+               CASUAL_SERIALIZE( wanted);
+               CASUAL_SERIALIZE( state());
                CASUAL_SERIALIZE( spawnpoint);
             )
          };
@@ -182,19 +188,17 @@ namespace casual
             struct instance_policy
             {
                using handle_type = common::strong::process::id;
-               using state_type = instance::State;
 
-               template< typename I>
-               static void spawned( common::strong::process::id pid, I& instance)
+               static instance::State state( common::strong::process::id pid, instance::Phase wanted);
+
+               static void spawned( common::strong::process::id pid, auto& instance)
                {
                   instance.handle = pid;
-                  instance.state = state_type::running;
                }
 
             };
 
             using instance_type = Instance< instance_policy>;
-            using state_type = typename instance_type::state_type;
 
             using instances_range = common::range::type_t< std::vector< instance_type>>;
             using const_instances_range = common::range::type_t< const std::vector< instance_type>>;
@@ -226,18 +230,16 @@ namespace casual
             struct instance_policy
             {
                using handle_type = common::process::Handle;
-               using state_type = instance::State;
 
-               template< typename I>
-               static void spawned( common::strong::process::id pid, I& instance)
+               static instance::State state( const common::process::Handle& handle, instance::Phase wanted);
+
+               static void spawned( common::strong::process::id pid, auto& instance)
                {
                   instance.handle.pid = pid;
-                  instance.state = state_type::spawned;
                }
             };
 
             using instance_type = Instance< instance_policy>;
-            using state_type = typename instance_type::state_type;
 
             using instances_range = common::range::type_t< std::vector< instance_type>>;
             using const_instances_range = common::range::type_t< const std::vector< instance_type>>;
@@ -401,7 +403,7 @@ namespace casual
          //! Group id:s
          struct
          {
-            using id_type = state::Group::id_type;
+            using id_type = strong::group::id;
             
             id_type core;
             id_type master;

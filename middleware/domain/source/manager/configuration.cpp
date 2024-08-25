@@ -102,7 +102,7 @@ namespace casual
                   {
                      return [&state]( auto& group)
                      {
-                        manager::state::Group result{ group.name, { state.group_id.master}, group.note, group.enabled};
+                        manager::state::Group result{ .name = group.name, .enabled = group.enabled, .note = group.note};
                         result.dependencies = algorithm::transform( group.dependencies, group::id( state));
                         return result;
                      };
@@ -251,8 +251,6 @@ namespace casual
 
                      return manager::task::create::scale::group( state, std::move( action));
                   }
-
-                  
                } // entity
 
             } // detail
@@ -260,6 +258,10 @@ namespace casual
             std::vector< casual::task::Group> domain( State& state, casual::configuration::model::domain::Model& wanted)
             {
                Trace trace{ "domain::manager::configuration::local::domain"};
+
+               log::line( verbose::log, "REMOVE state.configuration.model.domain.executables: ", state.configuration.model.domain.executables);
+               log::line( verbose::log, "REMOVE wanted.executables: ", wanted.executables);
+
 
                auto change = detail::change( state.configuration.model.domain, wanted);
                log::line( verbose::log, "change: ", change);

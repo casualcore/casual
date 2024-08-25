@@ -65,7 +65,7 @@ namespace casual
                   instance.alias = entity.alias;
 
                   // we set error state now in case the spawn fails
-                  algorithm::for_each( spawnable, []( auto& entity){ entity.state = decltype( entity.state)::error;});
+                  //algorithm::for_each( spawnable, []( auto& entity){ entity.state = decltype( entity.state)::error;});
 
                   // temporary to enable increment
                   auto range = spawnable;
@@ -81,7 +81,9 @@ namespace casual
                      catch( ...)
                      {
                         auto error = exception::capture();
-                        log::line( log::category::error, error, " failed to spawn: ", entity.path);
+                        log::error( error, "failed to spawn: ", entity.path);
+
+                        range->wanted = state::instance::Phase::error;
 
                         manager::task::event::dispatch( state, [&]()
                         {
@@ -105,7 +107,7 @@ namespace casual
 
                      algorithm::transform_if( spawnable, message.pids, 
                      []( auto& instance){ return common::process::id( instance.handle);},
-                     []( auto& instance){ return instance.state != decltype( instance.state)::error;});
+                     []( auto& instance){ return instance.state() != state::instance::State::error;});
 
                      communication::ipc::inbound::device().push( std::move( message));
                   }
@@ -318,7 +320,7 @@ namespace casual
 
             auto done_event = task::create::event::parent( state, "scale aliases");
 
-            auto scalables = state.scalables( algorithm::transform( aliases, []( auto& a){ return a.name;}));
+            auto scalables = state.scalables( algorithm::transform( aliases, []( auto& alias){ return alias.name;}));
 
             // prepare the scaling
             {                  

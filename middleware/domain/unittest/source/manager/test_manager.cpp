@@ -108,6 +108,7 @@ domain:
    name: echo
    executables:
       -  path: echo
+         arguments: [ "casual" ]
          instances: 4    
 
 )";
@@ -214,7 +215,7 @@ domain:
       }
 
 
-      TEST( domain_manager, unordered_depdendent_groups)
+      TEST( domain_manager, unordered_dependent_groups)
       {
          common::unittest::Trace trace;
 
@@ -1293,15 +1294,27 @@ domain:
          {
             namespace call
             {
-               // post helper - post the wanted, we need to listen to events to know when it's done.
-               // @returns the new configuration model transformed to internal model
-               template< typename T>
-               auto post( T&& wanted)
+               auto configuration( auto wanted, auto service)
                {
-                  local::event_listen_call( [ &wanted](){ return unittest::internal::call< std::vector< common::strong::correlation::id>>( admin::service::name::configuration::post, wanted);});
+                  local::event_listen_call( [ wanted, service]()
+                  { 
+                     return unittest::internal::call< std::vector< common::strong::correlation::id>>( service, wanted);
+                  });
 
                   // return the new configuration model
                   return casual::configuration::model::transform( unittest::internal::call< casual::configuration::user::Model>( admin::service::name::configuration::get));
+               }
+
+               // post helper - post the wanted, we need to listen to events to know when it's done.
+               // @returns the new configuration model transformed to internal model
+               auto post( auto wanted)
+               {
+                  return configuration( wanted, admin::service::name::configuration::post);
+               }
+
+               auto put( auto wanted)
+               {
+                  return configuration( wanted, admin::service::name::configuration::put);
                }
                
             } // call
@@ -1436,8 +1449,163 @@ domain:
          EXPECT_TRUE( origin.domain != wanted.domain) << CASUAL_NAMED_VALUE( origin.domain) << "\n " << CASUAL_NAMED_VALUE( wanted.domain);
 
          auto updated = local::call::post( casual::configuration::model::transform( wanted));
-         EXPECT_TRUE( updated.domain == wanted.domain) << CASUAL_NAMED_VALUE( updated.domain) << "\n " << CASUAL_NAMED_VALUE( wanted.domain);
-         
+         EXPECT_TRUE( updated.domain == wanted.domain) << CASUAL_NAMED_VALUE( updated.domain) << "\n " << CASUAL_NAMED_VALUE( wanted.domain);  
+      }
+
+      namespace local
+      {
+         namespace
+         {
+            auto instance_state( auto& executables, auto alias, auto state)
+            {
+               if( auto found = algorithm::find( executables, alias))
+               {
+                  return algorithm::all_of( found->instances, [ state]( auto& instance)
+                  {
+                     return instance.state == state;
+                  });
+               }
+
+               return false;
+            };
+
+            auto instance_count( auto& executables, auto alias, platform::size::type count)
+            {
+               if( auto found = algorithm::find( executables, alias))
+                  return std::ssize( found->instances) == count;
+
+               return false;
+            };
+         } // <unnamed>
+      } // local
+
+      TEST( domain_manager, configuration_put__enable_group)
+      {
+         common::unittest::Trace trace;
+
+         auto domain = local::domain( R"(
+domain:
+   name: post
+   groups:
+      -  name: A
+      -  name: B
+         enabled: false
+         dependencies: [ A]
+      -  name: C
+         dependencies: [ B]
+   executables:
+      -  alias: a
+         path: sleep
+         arguments: [60]
+         instances: 2
+         memberships: [ A]
+      -  alias: b
+         path: sleep
+         arguments: [60]
+         instances: 2
+         memberships: [ B]
+      -  alias: c
+         path: sleep
+         arguments: [60]
+         instances: 2
+         memberships: [ C]
+
+)");
+
+
+         // check that b and c does not have any instances
+         {
+            auto state = local::call::state();
+            EXPECT_TRUE( local::instance_state( state.executables, "a", manager::admin::model::instance::State::running));
+            EXPECT_TRUE( local::instance_count( state.executables, "a", 2));
+            EXPECT_TRUE( local::instance_state( state.executables, "b", manager::admin::model::instance::State::disabled));
+            EXPECT_TRUE( local::instance_count( state.executables, "b", 2));
+            EXPECT_TRUE( local::instance_state( state.executables, "c", manager::admin::model::instance::State::disabled));
+            EXPECT_TRUE( local::instance_count( state.executables, "c", 2));
+         }
+
+
+         auto wanted = local::configuration::load( R"(
+domain:
+   groups:
+      -  name: B
+         enabled: true
+         dependencies: [ A]
+)");
+
+         local::call::put( casual::configuration::model::transform( wanted));
+
+         {
+            auto state = local::call::state();
+            EXPECT_TRUE( local::instance_state( state.executables, "a", manager::admin::model::instance::State::running));
+            EXPECT_TRUE( local::instance_count( state.executables, "a", 2));
+            EXPECT_TRUE( local::instance_state( state.executables, "b", manager::admin::model::instance::State::running));
+            EXPECT_TRUE( local::instance_count( state.executables, "b", 2));
+            EXPECT_TRUE( local::instance_state( state.executables, "c", manager::admin::model::instance::State::running));
+            EXPECT_TRUE( local::instance_count( state.executables, "c", 2));
+         }
+          
+      }
+
+      TEST( domain_manager, configuration_error_path__put_sleep)
+      {
+         common::unittest::Trace trace;
+
+         auto domain = local::domain( R"(
+domain:
+   name: post
+   groups:
+      -  name: A
+      -  name: B
+         enabled: false
+         dependencies: [ A]
+   executables:
+      -  alias: a
+         path: non-existent-path
+         arguments: [60]
+         instances: 2
+         memberships: [ A]
+      -  alias: b
+         path: sleep
+         arguments: [60]
+         instances: 2
+         memberships: [ B]
+)");
+
+
+         // check that b and c does not have any instances
+         {
+            auto state = local::call::state();
+            EXPECT_TRUE( local::instance_state( state.executables, "a", manager::admin::model::instance::State::error));
+            EXPECT_TRUE( local::instance_count( state.executables, "a", 2));
+            EXPECT_TRUE( local::instance_state( state.executables, "b", manager::admin::model::instance::State::disabled));
+            EXPECT_TRUE( local::instance_count( state.executables, "b", 2));
+         }
+
+
+         auto wanted = local::configuration::load( R"(
+domain:
+   groups:
+      -  name: B
+         enabled: true
+         dependencies: [ A]
+   executables:
+      -  alias: a
+         path: sleep
+         arguments: [60]
+         instances: 2
+         memberships: [ A]
+)");
+
+         local::call::put( casual::configuration::model::transform( wanted));
+
+         {
+            auto state = local::call::state();
+            EXPECT_TRUE( local::instance_state( state.executables, "a", manager::admin::model::instance::State::running));
+            EXPECT_TRUE( local::instance_count( state.executables, "a", 2));
+            EXPECT_TRUE( local::instance_state( state.executables, "b", manager::admin::model::instance::State::running));
+            EXPECT_TRUE( local::instance_count( state.executables, "b", 2));
+         }
       }
 
       namespace local

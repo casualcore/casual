@@ -87,6 +87,7 @@ namespace casual
          {
             enum class State : int
             {
+               disabled,
                running,
                spawned,
                scale_out,
@@ -99,6 +100,7 @@ namespace casual
             {
                switch( state)
                {
+                  case State::disabled: return "disabled";
                   case State::running: return "running";
                   case State::spawned: return "spawned";
                   case State::scale_out: return "scale-out";
