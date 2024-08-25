@@ -6,6 +6,7 @@
 
 #include "configuration/model.h"
 #include "configuration/common.h"
+#include "configuration/group.h"
 
 #include "casual/assert.h"
 
@@ -617,6 +618,17 @@ namespace casual
 
             algorithm::for_each( model.service.restriction.servers, resolve_placeholders);
             algorithm::for_each( model.transaction.mappings, resolve_placeholders);
+         }
+
+         // take care of implicit disabled stuff from group memberships
+         {            
+            auto update_enabled = [ coordinator = configuration::group::Coordinator{ model.domain.groups}]( auto& entity)
+            {
+               entity.enabled = coordinator.enabled( entity.memberships);
+            };
+
+            algorithm::for_each( model.domain.servers, update_enabled);
+            algorithm::for_each( model.domain.executables, update_enabled);
          }
 
          return model;

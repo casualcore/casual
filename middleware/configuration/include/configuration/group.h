@@ -16,22 +16,20 @@ namespace casual
    {
       struct Group
       {
-         Group() = default;
-         Group( std::string name, std::string note, bool enabled, std::vector< std::string> dependencies):
-            name( std::move( name)), note( std::move( note)), enabled( enabled), dependencies( std::move( dependencies)) {}
+         // TODO Why do we not just use model::domain::Group?
 
          std::string name;
-         std::string note;
          bool enabled;
          std::vector< std::string> dependencies;
+         std::string note;
 
          inline friend bool operator == ( const Group& lhs, const std::string& name) { return lhs.name == name;}
 
          CASUAL_LOG_SERIALIZE(
             CASUAL_SERIALIZE( name);
-            CASUAL_SERIALIZE( note);
             CASUAL_SERIALIZE( enabled);
             CASUAL_SERIALIZE( dependencies);
+            CASUAL_SERIALIZE( note);
          );
       };
 
@@ -39,6 +37,9 @@ namespace casual
       {
          struct Coordinator
          {
+            Coordinator() = default;
+            Coordinator( const std::vector< model::domain::Group>& configured_groups);
+
             //! updates the coordinator with the provided configuration
             void update( const std::vector< model::domain::Group>& configured_groups);
 

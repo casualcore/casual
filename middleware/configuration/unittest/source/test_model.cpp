@@ -130,6 +130,61 @@ domain:
          }
       }
 
+      TEST( configuration_model_transform, server_group_enable)
+      {
+         common::unittest::Trace trace;
+
+         constexpr auto configuration = R"(
+domain:
+   name: model
+   groups:
+      -  name: A
+      -  name: B
+         dependencies: [ A]
+      -  name: C
+         enabled: false
+         dependencies: [ B]
+
+      -  name: X
+      -  name: Y
+         enabled: false
+         dependencies: [ X]
+      -  name: Z
+         dependencies: [ Y]
+   
+   servers:
+      -  path: a
+         memberships: [ A]
+      -  path: b
+         memberships: [ B]
+      -  path: c
+         memberships: [ C]
+      -  path: x
+         memberships: [ X]
+      -  path: y
+         memberships: [ Y]
+      -  path: z
+         memberships: [ Z]
+)";
+         
+         auto model = local::configuration( configuration);
+
+         auto get_server = [ &model]( std::string alias)
+         {
+            auto found = algorithm::find( model.domain.servers, alias);
+            CASUAL_ASSERT( found);
+            return *found;
+         };
+
+         EXPECT_TRUE( get_server( "a").enabled == true);
+         EXPECT_TRUE( get_server( "b").enabled == true);
+         EXPECT_TRUE( get_server( "c").enabled == false);
+         EXPECT_TRUE( get_server( "x").enabled == true);
+         EXPECT_TRUE( get_server( "y").enabled == false);
+         EXPECT_TRUE( get_server( "z").enabled == false);
+
+      }
+
       TEST( configuration_model_transform, service_visibility)
       {
          common::unittest::Trace trace;

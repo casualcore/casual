@@ -101,10 +101,9 @@ namespace casual::configuration
          struct Group
          {
             std::string name;
-            std::string note;
             bool enabled = true;
-
             std::vector< std::string> dependencies;
+            std::string note;
 
             inline friend bool operator == ( const Group& lhs, const std::string& rhs) { return lhs.name == rhs;}
             friend auto operator <=> ( const Group&, const Group&) = default;
@@ -112,9 +111,9 @@ namespace casual::configuration
 
             CASUAL_CONST_CORRECT_SERIALIZE(
                CASUAL_SERIALIZE( name);
-               CASUAL_SERIALIZE( note);
                CASUAL_SERIALIZE( enabled);
                CASUAL_SERIALIZE( dependencies);
+               CASUAL_SERIALIZE( note);
             )
          };
 
@@ -140,8 +139,8 @@ namespace casual::configuration
                platform::size::type instances = 1;
                std::vector< std::string> memberships;
                Environment environment;
-
                Lifetime lifetime;
+               bool enabled = true;
                std::string note;
 
                inline friend bool operator == ( const Entity& lhs, const std::string& rhs) noexcept { return lhs.alias == rhs;}
@@ -156,6 +155,7 @@ namespace casual::configuration
                   CASUAL_SERIALIZE( memberships);
                   CASUAL_SERIALIZE( environment);
                   CASUAL_SERIALIZE( lifetime);
+                  CASUAL_SERIALIZE( enabled);
                   CASUAL_SERIALIZE( note);
                )
             };
@@ -807,7 +807,7 @@ namespace casual::configuration
       model::queue::Model queue;
       model::gateway::Model gateway;
 
-      inline friend Model operator + ( Model lhs, Model rhs) { return set_union( lhs, rhs);}
+      inline friend Model operator + ( Model lhs, Model rhs) { return set_union( std::move( lhs), std::move( rhs));}
 
       friend Model normalize( Model model);
       friend Model set_union( Model lhs, Model rhs);

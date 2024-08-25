@@ -14,22 +14,24 @@
 namespace casual
 {
    using namespace common;
-   namespace configuration
+   namespace configuration::group
    {
-      namespace group
+      namespace local
       {
-         void Coordinator::update( const std::vector< model::domain::Group>& configured_groups)
+         namespace
          {
-            auto groups = algorithm::transform( configured_groups, []( const auto& group)
+            auto transform_groups( auto& configured_groups)
             {
-               return Group{ group.name, group.note, group.enabled, group.dependencies};
-            });
+               return algorithm::transform( configured_groups, []( const auto& group)
+               {
+                  return Group{ 
+                     .name = group.name, 
+                     .enabled = group.enabled, 
+                     .dependencies = group.dependencies, 
+                     .note = group.note};
+               });
+            }
 
-            m_groups = std::move( groups);
-         }
-
-         namespace local
-         {
             bool enabled( const std::vector< std::string>& memberships, std::vector< Group> groups)
             {
                // if we've checked all our dependencies we're done
@@ -54,26 +56,34 @@ namespace casual
 
                return enabled( transitive_dependencies, algorithm::container::vector::create( remaining_groups));
             }
-         }
+         } // <unnamed>
+      } // local
 
-         bool Coordinator::enabled( const std::vector< std::string>& memberships) const
+      Coordinator::Coordinator( const std::vector< model::domain::Group>& configured_groups)
+         : m_groups{ local::transform_groups( configured_groups)}
+      {}
+
+      void Coordinator::update( const std::vector< model::domain::Group>& configured_groups)
+      {
+         m_groups = local::transform_groups( configured_groups);
+      }
+
+      bool Coordinator::enabled( const std::vector< std::string>& memberships) const
+      {
+         return local::enabled( memberships, m_groups);
+      }
+
+      std::vector< model::domain::Group> Coordinator::config() const
+      {
+         return algorithm::transform( m_groups, []( const auto& group)
          {
-            return local::enabled( memberships, m_groups);
-         }
-
-         std::vector< model::domain::Group> Coordinator::config() const
-         {
-            return algorithm::transform( m_groups, []( const auto& group)
-            {
-               model::domain::Group result;
-               result.name = group.name;
-               result.note = group.note;
-               result.enabled = group.enabled;
-               result.dependencies = group.dependencies;
-               return result;
-            });
-         }
-
-      } // group
-   } // configuration
+            return model::domain::Group{
+               .name = group.name,
+               .enabled = group.enabled,
+               .dependencies = group.dependencies,
+               .note = group.note,
+            };
+         });
+      }
+   } // configuration::group
 } // casual
