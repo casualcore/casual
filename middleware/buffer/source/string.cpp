@@ -71,7 +71,6 @@ namespace casual
             {
                static constexpr auto types() 
                {
-                  constexpr std::string_view key = CASUAL_STRING "/";
                   return common::array::make( key);
                };
 
@@ -171,10 +170,11 @@ namespace casual
                try
                {
                   auto& buffer = pool_type::pool().get( common::buffer::handle::type{ *handle});
+
                   const auto count = std::strlen( value) + 1;
 
-                  auto binary = common::view::binary::make( value, count);
-                  buffer.payload.data.assign( std::begin( binary), std::end( binary));
+                  casual::common::algorithm::copy( common::view::binary::make( value, count), buffer.payload.data);
+
                   *handle = buffer.payload.handle().raw();
                }
                catch( ...)
@@ -186,24 +186,22 @@ namespace casual
 
             }
 
-            int get( const char* const handle, const char** value)
+            int get( const char* const handle, const char*& value)
             {
                try
                {
                   const auto& buffer = pool_type::pool().get( common::buffer::handle::type{ handle});
 
-                  const auto used = std::strlen( buffer.payload.handle().raw()) + 1;
-                  const auto size = buffer.payload.data.size();
+                  value = reinterpret_cast< const char*>( buffer.handle().underlying());
 
-                  if( used > size)
+                  const auto count = std::strlen( value) + 1;
+                  const auto space = buffer.payload.data.size();
+
+                  if( count > space)
                   {
                      // We need to report this
-                     buffer.payload.data.at( used);
+                     return CASUAL_STRING_OUT_OF_BOUNDS;
                   }
-
-                  if( value) 
-                     *value = buffer.payload.handle().raw();
-
                }
                catch( ...)
                {
@@ -255,6 +253,6 @@ int casual_string_set( char** const handle, const char* const value)
 
 int casual_string_get( const char* handle, const char** value)
 {
-   return casual::buffer::string::get( handle, value);
+   return casual::buffer::string::get( handle, *value);
 }
 

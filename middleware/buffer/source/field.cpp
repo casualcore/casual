@@ -47,7 +47,6 @@ namespace casual
       using item_type = long;
       using size_type = platform::binary::size::type;
       using const_data_type = const char*;
-      using data_type = char*;
 
       enum : long
       {
@@ -83,8 +82,8 @@ namespace casual
 
                   while( cursor < end)
                   {
-                     const auto item = local::decode<item_type>( &*cursor + item_offset);
-                     const auto size = local::decode<size_type>( &*cursor + size_offset);
+                     const auto item = local::decode< item_type>( &*cursor + item_offset);
+                     const auto size = local::decode< size_type>( &*cursor + size_offset);
 
                      index[ item].push_back( std::distance( begin, cursor));
 
@@ -108,23 +107,16 @@ namespace casual
                   m_inbound = inbound;
                }
 
-               template< concepts::binary::iterator Iter>
-               auto append( Iter first, Iter end)
-               {                  
-                  payload.data.insert( payload.data.end(), first, end);
+               Buffer( Buffer&&) noexcept = default;
+               Buffer& operator = ( Buffer&&) noexcept = default;
+
+               template< concepts::binary::like T>
+               auto append( const T& bytes)
+               {
+                  common::algorithm::container::append( bytes, payload.data);
                   if( m_inbound)
                      *m_inbound = handle();
                }
-
-
-               template< concepts::binary::like C>
-               auto append( C binary)
-               {
-                  append( std::begin( binary), std::end( binary));
-               }
-
-               Buffer( Buffer&&) noexcept = default;
-               Buffer& operator = ( Buffer&&) noexcept = default;
 
                void shrink() 
                {
@@ -156,7 +148,6 @@ namespace casual
                size_type transport( platform::size::type user_size) const
                {
                   // Just ignore user-size all together
-
                   return utilized();
                }
 
@@ -169,7 +160,6 @@ namespace casual
                )
 
                common::buffer::handle::type* m_inbound = nullptr;
-
             };
 
             // Might be named Pool as well
@@ -178,7 +168,7 @@ namespace casual
             {
                constexpr static auto types() 
                {
-                  return common::array::make( buffer::key);
+                  return common::array::make( key);
                };
 
                // called on service invocation
@@ -269,42 +259,25 @@ namespace casual
 
          namespace add
          {
-
-            template<typename B>
-            void append( B& buffer, const_data_type data, platform::size::type size)
-            {
-               buffer.append( common::view::binary::make( data, size));
-            }
-
-
-            template<typename B, typename T>
-            void append( B& buffer, const T value)
-            {
-               const auto encoded = common::network::byteorder::encode( value);
-               auto span = std::span{ &encoded, 1};
-               buffer.append( std::as_bytes( span));
-            }
-
-
-            template<typename B>
-            void append( B& buffer, const item_type id, const_data_type data, const size_type size)
+            auto append( auto& buffer, const auto id, const auto& bytes)
             {
                const auto used = buffer.utilized();
 
+               //  Casts are important in order to get correct type
+               const auto item = common::network::byteorder::encode( static_cast< item_type>( id));
+               const auto size = common::network::byteorder::encode( static_cast< size_type>( bytes.size()));
+
                try
                {
-                  // Append id to buffer
-                  append( buffer, id);
-
-                  // Append size to buffer
-                  append( buffer, size);
-
-                  // Append data to buffer
-                  append( buffer, data, size);
+                  // Write the id
+                  buffer.append( std::as_bytes( std::span{ &item, 1}));
+                  // Write the size
+                  buffer.append( std::as_bytes( std::span{ &size, 1}));
+                  // Write the data
+                  buffer.append( bytes);
 
                   // Append current offset to index
                   buffer.index[id].push_back( used);
-
                }
                catch( ...)
                {
@@ -314,17 +287,20 @@ namespace casual
                }
             }
 
-            template<typename B>
-            void append( B& buffer, const item_type id, const char* const value)
-            {
-               append( buffer, id, value, std::strlen( value) + 1);
-            }
-
-            template<typename B, typename T>
-            void append( B& buffer, const item_type id, const T value)
+            void insert( auto& buffer, const item_type id, const auto value)
             {
                const auto encoded = common::network::byteorder::encode( value);
-               append( buffer, id, reinterpret_cast<const_data_type>( &encoded), sizeof( encoded));
+               append( buffer, id, std::as_bytes( std::span{ &encoded, 1}));
+            }
+
+            void insert( auto& buffer, const item_type id, const char* const value)
+            {
+               append( buffer, id, common::view::binary::make( value, std::strlen( value) + 1));
+            }
+
+            void insert( auto& buffer, const item_type id, const_data_type data, const size_type size)
+            {
+               append( buffer, id, common::view::binary::make( data, size));
             }
 
             template<typename... A>
@@ -332,7 +308,6 @@ namespace casual
             {
                if( type != (id / CASUAL_FIELD_TYPE_BASE))
                {
-
                   common::log::line( casual::buffer::verbose::log, "buffer::field::add::data: invalid argument - id: ", id, " - type: ", type);
                   return CASUAL_FIELD_INVALID_ARGUMENT;
                }
@@ -347,9 +322,8 @@ namespace casual
                      *handle = buffer.handle().raw();
                   });
 
-                  // Append the data
-                  append( buffer, id, std::forward<A>( arguments)...);
-
+                  // Insert (append) the data
+                  insert( buffer, id, std::forward<A>( arguments)...);
                }
                catch( ...)
                {
@@ -357,42 +331,38 @@ namespace casual
                }
 
                return CASUAL_FIELD_SUCCESS;
-
             }
          } // add
 
          namespace get
          {
-            template<typename I>
-            size_type offset( const I& index, const item_type id, const size_type occurrence)
+            size_type offset( const auto& index, const item_type id, const size_type occurrence)
             {
                return index.at( id).at( occurrence);
             }
 
-            template<typename B>
-            void select( const B& buffer, const item_type id, const size_type occurrence, const_data_type& data, size_type& size)
+            void select( const auto& buffer, const item_type id, const size_type occurrence, const_data_type& data, size_type& size)
             {
-               const auto field_offset = offset( buffer.index, id, occurrence);
+               const auto where = buffer.handle().value() + offset( buffer.index, id, occurrence);
 
-               data = buffer.handle().raw() + field_offset + data_offset;
+               data = reinterpret_cast< const_data_type>( where + data_offset);
 
-               size = local::decode< size_type>( buffer.handle().underlying() + field_offset + size_offset);
+               size = local::decode< size_type>( where + size_offset);
             }
 
-            template<typename B>
-            void select( const B& buffer, const item_type id, const size_type occurrence, const_data_type& data)
+            void select( const auto& buffer, const item_type id, const size_type occurrence, const char*& value)
             {
-               const auto field_offset = offset( buffer.index, id, occurrence);
+               const auto where = buffer.handle().value() + offset( buffer.index, id, occurrence);
 
-               data = buffer.handle().raw() + field_offset + data_offset;
+               value = reinterpret_cast< const char*>( where + data_offset);
             }
 
-            template<typename B, typename T>
-            void select( const B& buffer, const item_type id, const size_type occurrence, T& data)
+            template<typename T>
+            void select( const auto& buffer, const item_type id, const size_type occurrence, T& value)
             {
-               const auto field_offset = offset( buffer.index, id, occurrence);
+               const auto where = buffer.handle().value() + offset( buffer.index, id, occurrence);
 
-               data = local::decode< T>( buffer.handle().value() + field_offset + data_offset);
+               value = local::decode< T>( where + data_offset);
             }
 
 
@@ -416,16 +386,13 @@ namespace casual
                }
 
                return CASUAL_FIELD_SUCCESS;
-
             }
 
          } // get
 
          namespace cut
          {
-
-            template<typename B>
-            void remove( B& buffer, const item_type id, const size_type occurrence)
+            void remove( auto& buffer, const item_type id, const size_type occurrence)
             {
                auto& occurrences = buffer.index.at( id);
 
@@ -457,7 +424,6 @@ namespace casual
                   for( auto& occurrence : field.second)
                      if( occurrence > offset)
                         occurrence += ( 0 - data_offset - size);
-
             }
 
 
@@ -478,7 +444,6 @@ namespace casual
                }
 
                return CASUAL_FIELD_SUCCESS;
-
             }
 
             int all( const char* const handle)
@@ -496,23 +461,18 @@ namespace casual
                }
 
                return CASUAL_FIELD_SUCCESS;
-
             }
 
          } // cut
 
          namespace set
          {
-
-            template<typename M, typename I>
-            void update( M& memory, I& index, const item_type id, const size_type occurrence, const_data_type data, const size_type size)
+            void change( auto& memory, auto& index, const item_type id, const size_type occurrence, const auto& bytes)
             {
                // Get the offset to where the field begin
                const auto offset = index.at( id).at( occurrence);
 
-               const auto current = local::decode<size_type>( memory.data() + offset + size_offset);
-
-               auto binary = common::view::binary::make( data, size);
+               const auto current = local::decode< size_type>( memory.data() + offset + size_offset);
 
                // With equal sizes, stuff could be optimized ... but no
 
@@ -524,17 +484,14 @@ namespace casual
                   memory.erase(
                      memory.begin() + offset + data_offset,
                      memory.begin() + offset + data_offset + current),
-                  std::begin( binary), std::end( binary));
+                  std::begin( bytes), std::end( bytes));
 
                // Write the new size (afterwards since above can throw)
                {
-                  const auto encoded = common::network::byteorder::encode( size);
-                  auto bytes = std::as_bytes( std::span{ &encoded, 1});
+                  const auto encoded = common::network::byteorder::encode( static_cast< size_type>( bytes.size()));
+                  const auto updated = std::as_bytes( std::span{ &encoded, 1});
 
-                  std::copy(
-                     std::begin( bytes),
-                     std::end( bytes),
-                     memory.begin() + offset + size_offset);
+                  std::copy( std::begin( updated), std::end( updated), memory.begin() + offset + size_offset);
                }
 
                // Update offsets beyond this one
@@ -545,27 +502,28 @@ namespace casual
                for( auto& field : index)
                   for( auto& occurrence : field.second)
                      if( occurrence > offset)
-                        occurrence += (size - current);
-
+                        occurrence += (std::ssize( bytes) - current);
             }
 
-            template<typename M, typename I>
-            void update( M& memory, I& index, const item_type id, const size_type occurrence, const_data_type value)
+            void update( auto& memory, auto& index, const item_type id, const size_type occurrence, const_data_type data, const size_type size)
+            {
+               change( memory, index, id, occurrence, common::view::binary::make( data, size));
+            }
+
+            void update( auto& memory, auto& index, const item_type id, const size_type occurrence, const char* const value)
             {
                const auto count = std::strlen( value) + 1;
-               update( memory, index, id, occurrence, value, count);
+               change( memory, index, id, occurrence, common::view::binary::make( value, count));
             }
 
 
-            template<typename M, typename I, typename T>
-            void update( M& memory, I& index, const item_type id, const size_type occurrence, const T value)
+            template<typename T>
+            void update( auto& memory, auto& index, const item_type id, const size_type occurrence, const T value)
             {
                // Could be optimized, but ... no
                const auto encoded = common::network::byteorder::encode( value);
-               update( memory, index, id, occurrence, reinterpret_cast<const_data_type>( &encoded), sizeof( encoded));
+               change( memory, index, id, occurrence, std::as_bytes( std::span{ &encoded, 1}));
             }
-
-
 
             template<typename... A>
             int data( char** handle, const item_type id, size_type occurrence, const int type, A&&... arguments)
@@ -593,7 +551,6 @@ namespace casual
                }
 
                return CASUAL_FIELD_SUCCESS;
-
             }
 
          } // set
@@ -622,13 +579,6 @@ namespace casual
             {
                try
                {
-                  //common::log::line( common::verbose::log, "TODO remove - common::buffer::handle::type{ handle}: ",   common::buffer::handle::type{ handle});
-
-                  //common::log::line( common::verbose::log, "TODO remove - &pool_type::pool() ",   &pool_type::pool());
-                  //common::log::line( common::verbose::log, "TODO remove - common::buffer::pool::holder().find_pool( casual::buffer::field::buffer::key)->stable_address(): ", common::buffer::pool::holder().find_pool( casual::buffer::field::buffer::key)->stable_address());
-
-                  //common::log::line( common::verbose::log, "TODO remove - * common::buffer::pool::holder().find_pool( casual::buffer::field::buffer::key): ", * common::buffer::pool::holder().find_pool( casual::buffer::field::buffer::key));
-                  //common::log::line( common::verbose::log, "TODO remove - pool_type::pool(): ",  pool_type::pool());
                   const auto& buffer = pool_type::pool().get( common::buffer::handle::type{ handle});
                   size = buffer.capacity();
                   used = buffer.utilized();
@@ -647,7 +597,7 @@ namespace casual
                {
                   const auto& buffer = pool_type::pool().get( common::buffer::handle::type{ handle});
 
-                  // Just to force an exception
+                  // Just to force an exception if not present
                   buffer.index.at( id).at( occurrence);
 
                   return CASUAL_FIELD_SUCCESS;
@@ -659,19 +609,13 @@ namespace casual
 
             }
 
-
             int count( const char* const handle, const item_type id, size_type& occurrences)
             {
                try
                {
                   const auto& buffer = pool_type::pool().get( common::buffer::handle::type{ handle});
 
-                  auto found = common::algorithm::find( buffer.index, id);
-
-                  if( found)
-                     occurrences = found->second.size();
-                  else
-                     occurrences = 0;
+                  occurrences = buffer.index.contains( id) ? buffer.index.at(id).size() : 0;
                }
                catch( ...)
                {
@@ -725,7 +669,6 @@ namespace casual
                }
 
                return CASUAL_FIELD_SUCCESS;
-
             }
 
             int next( const char* const handle, item_type& id, size_type& index)
@@ -737,7 +680,7 @@ namespace casual
                   const auto current = buffer.index.find( id);
                   if( current != buffer.index.end())
                   {
-                     if( static_cast<std::size_t>(++index) < current->second.size())
+                     if( ++index < std::ssize( current->second))
                      {
                         // Then we are ok
                      }
@@ -768,7 +711,6 @@ namespace casual
                }
 
                return CASUAL_FIELD_SUCCESS;
-
             }
 
          } // iterate
@@ -1600,7 +1542,7 @@ namespace casual
 
                private:
                   //char** data() noexcept { return &m_buffer.underlying();}
-                  char* m_buffer = pool_type::pool().allocate( buffer::key, 1024).raw();
+                  char* m_buffer = pool_type::pool().allocate( key, 1024).raw();
                };
 
 
@@ -1672,7 +1614,7 @@ namespace casual
             {
                Trace trace{ "field::internal::add"};
 
-               return pool_type::pool().insert( common::buffer::Payload{ buffer::key, std::move( buffer)}).raw();
+               return pool_type::pool().insert( common::buffer::Payload{ key, std::move( buffer)}).raw();
             }
 
          } // internal
@@ -2023,20 +1965,18 @@ int casual_field_print( const char* const buffer)
 
 int casual_field_match( const char* const buffer, const char* const expression, int* const match)
 {
-   std::ostringstream s;
+   std::ostringstream stream;
 
-   if( const auto result = casual::buffer::field::transform::stream( buffer, s))
+   if( const auto result = casual::buffer::field::transform::stream( buffer, stream))
    {
       return result;
    }
 
    try
    {
-      const std::regex x( expression);
-
       if( match)
       {
-         *match = std::regex_search( std::move(s).str(), x);
+         *match = std::regex_search( std::move( stream).str(), std::regex{ expression});
       }
    }
    catch( const std::regex_error&)
@@ -2051,7 +1991,7 @@ int casual_field_make_expression( const char* expression, const void** regex)
 {
    try
    {
-      *regex = new std::regex( expression, std::regex::optimize);
+      *regex = new std::regex{ expression, std::regex::optimize};
    }
    catch( const std::regex_error&)
    {
@@ -2063,9 +2003,9 @@ int casual_field_make_expression( const char* expression, const void** regex)
 
 int casual_field_match_expression( const char* buffer, const void* regex, int* match)
 {
-   std::ostringstream s;
+   std::ostringstream stream;
 
-   if( const auto result = casual::buffer::field::transform::stream( buffer, s))
+   if( const auto result = casual::buffer::field::transform::stream( buffer, stream))
    {
       return result;
    }
@@ -2074,7 +2014,7 @@ int casual_field_match_expression( const char* buffer, const void* regex, int* m
    {
       if( match)
       {
-         *match = std::regex_search( s.str(), *reinterpret_cast<const std::regex*>(regex));
+         *match = std::regex_search( std::move( stream).str(), *reinterpret_cast<const std::regex*>( regex));
       }
    }
    catch( const std::regex_error&)

@@ -31,6 +31,14 @@
 
 
 #ifdef __cplusplus
+
+#include <string_view>
+
+namespace casual::buffer::order
+{
+   constexpr std::string_view key = CASUAL_ORDER "/";
+} // casual::buffer::order
+
 extern "C" {
 #endif
 

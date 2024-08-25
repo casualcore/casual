@@ -22,10 +22,10 @@
 
 #include <string_view>
 
-namespace casual::buffer::string::buffer
+namespace casual::buffer::string
 {
    constexpr std::string_view key = CASUAL_STRING "/";
-} // casual::buffer::field::buffer
+} // casual::buffer::field
 
 extern "C" {
 #endif
