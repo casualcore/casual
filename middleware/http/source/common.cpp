@@ -120,8 +120,8 @@ namespace casual
                   {
                      namespace type
                      {
-                        constexpr auto fielded() { return casual::buffer::field::buffer::key;}
-                        constexpr auto string() { return casual::buffer::string::buffer::key;}
+                        constexpr auto fielded() { return casual::buffer::field::key;}
+                        constexpr auto string() { return casual::buffer::string::key;}
                         constexpr auto null() { return common::buffer::type::null;}
                      } // type
                   } // buffer

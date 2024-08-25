@@ -18,8 +18,8 @@
 
 #include "common/code/xatmi.h"
 
-#include <cstring>
 #include <utility>
+#include <memory>
 
 namespace casual
 {
@@ -57,7 +57,7 @@ namespace casual
                      return payload.data.capacity();
                   }
 
-                  void capacity( const decltype(payload.data.capacity()) value)
+                  void capacity( const auto value)
                   {
                      payload.data.reserve( value);
                   }
@@ -67,7 +67,7 @@ namespace casual
                      return payload.data.size();
                   }
 
-                  void utilized( const decltype(payload.data.size()) value)
+                  void utilized( const auto value)
                   {
                      payload.data.resize( value);
                   }
@@ -77,7 +77,7 @@ namespace casual
                      return selector;
                   }
 
-                  void consumed( const decltype(payload.data.size()) value) noexcept
+                  void consumed( const auto value) noexcept
                   {
                      selector = value;
                   }
@@ -99,7 +99,7 @@ namespace casual
                   }
 
                private:
-                  decltype( payload.data.size()) selector = 0;
+                  decltype( payload.data.size()) selector{};
                };
 
                using allocator_base = common::buffer::pool::implementation::Default< Buffer>;
@@ -107,7 +107,6 @@ namespace casual
                {
                   static constexpr auto types() 
                   {
-                     constexpr std::string_view key = CASUAL_ORDER "/";                     
                      return common::array::make( key);
                   };
 
@@ -219,31 +218,34 @@ namespace casual
                   return CASUAL_ORDER_SUCCESS;
                }
 
-               template<typename M, typename T>
-               void append( M& memory, const T value)
+               auto append( auto& memory, const auto value)
                {
                   const auto encoded = common::network::byteorder::encode( value);
-                  auto bytes = std::as_bytes( std::span{ &encoded, 1});
-                  memory.insert( memory.end(), std::begin( bytes), std::end( bytes));
+                  common::algorithm::container::append( std::as_bytes( std::span{ &encoded, 1}), memory);
                }
 
-               template<typename M>
-               void append( M& memory, std::string_view value)
+               auto append( auto& memory, const char* const value)
                {
-                  auto data = common::view::binary::make( value);
-                  common::algorithm::container::append( data, memory);
-                  memory.push_back( std::byte{ '\0'});
+                  common::algorithm::container::append( common::view::binary::make( value, std::strlen( value) + 1), memory);
                }
 
-
-               template<typename M>
-               void append( M& memory, common::view::immutable::Binary data)
+               auto append( auto& memory, const char* const data, const size_type size)
                {
-                  // append first size chunk
-                  append( memory, static_cast< size_type>( std::ssize( data)));
+                  const auto used = memory.size();
 
-                  // append other data chunk
-                  common::algorithm::container::append( data, memory);
+                  try
+                  {
+                     // append first size chunk
+                     append( memory, size);
+                     // append other data chunk
+                     common::algorithm::container::append( common::view::binary::make( data, size), memory);
+                  }
+                  catch(const std::exception& e)
+                  {
+                     // make sure to reset the size in case of exception
+                     memory.resize( used);
+                     throw;
+                  }
                }
 
                template<typename... A>
@@ -253,23 +255,14 @@ namespace casual
                   {
                      auto& buffer = pool_type::pool().get( common::buffer::handle::type{ *handle});
 
-                     // create potential rollback
-                     const auto reset = common::execute::scope
-                     ( 
-                        [ used = buffer.payload.data.size(), &buffer]()
-                        { if( std::uncaught_exceptions()) buffer.payload.data.resize( used);}
-                     );
+                     // make sure to update the handle regardless
+                     const auto synchronize = common::execute::scope( [ handle, &buffer]() 
+                     { 
+                        *handle = buffer.handle().raw();
+                     });
 
-                     // Make sure to update the handle regardless
-                     const auto synchronize = common::execute::scope
-                     ( 
-                        [ handle, &buffer]() 
-                        { *handle = buffer.handle().raw();}
-                     );
-
-                     // Append the data
+                     // append the data
                      append( buffer.payload.data, std::forward<A>( arguments)...);
-
                   }
                   catch( ...)
                   {
@@ -297,15 +290,12 @@ namespace casual
                   return CASUAL_ORDER_SUCCESS;
                }
 
-
                template<typename T>
                size_type select( const_data_type where, T& value) noexcept
                {
-                  const auto encoded = *reinterpret_cast< const common::network::byteorder::type<T>*>( where);
-
-                  value = common::network::byteorder::decode<T>( encoded);
-
-                  return sizeof( encoded);
+                  //value = common::network::byteorder::decode< T>( *std::start_lifetime_as< common::network::byteorder::type< T>>( where));
+                  value = common::network::byteorder::decode< T>( *reinterpret_cast< const common::network::byteorder::type< T>*>( where));
+                  return common::network::byteorder::bytes< T>();
                }
 
                size_type select( const_data_type where, const char*& value) noexcept
@@ -316,6 +306,7 @@ namespace casual
 
                size_type select( const_data_type where, const char*& data, size_type& size) noexcept
                {
+                  // select first size chunk
                   const auto read = select( where, size);
                   data = reinterpret_cast< const char*>( where + read);
                   return read + size;
@@ -338,7 +329,10 @@ namespace casual
                      const auto consumed = read + size;
 
                      if( consumed > buffer.utilized())
-                        return CASUAL_ORDER_OUT_OF_BOUNDS; // We need to report this
+                     {
+                        // We need to report this
+                        return CASUAL_ORDER_OUT_OF_BOUNDS;
+                     }
 
                      // Update the cursor
                      buffer.consumed( consumed);
@@ -364,8 +358,6 @@ namespace casual
 
 } // casual
 
-
-
 const char* casual_order_description( const int code)
 {
    switch( code)
@@ -387,100 +379,100 @@ const char* casual_order_description( const int code)
    }
 }
 
-int casual_order_explore_buffer( const char* const buffer, long* const reserved, long* const utilized, long* const consumed)
+int casual_order_explore_buffer( const char* const handle, long* const reserved, long* const utilized, long* const consumed)
 {
-   return casual::buffer::order::explore::buffer( buffer, reserved, utilized, consumed);
+   return casual::buffer::order::explore::buffer( handle, reserved, utilized, consumed);
 }
 
-int casual_order_add_prepare( const char* const buffer)
+int casual_order_add_prepare( const char* const handle)
 {
-   return casual::buffer::order::add::reset( buffer);
+   return casual::buffer::order::add::reset( handle);
 }
 
-int casual_order_add_bool( char** buffer, const bool value)
+int casual_order_add_bool( char** handle, const bool value)
 {
-   return casual::buffer::order::add::data( buffer, value);
+   return casual::buffer::order::add::data( handle, value);
 }
 
-int casual_order_add_char( char** buffer, const char value)
+int casual_order_add_char( char** handle, const char value)
 {
-   return casual::buffer::order::add::data( buffer, value);
+   return casual::buffer::order::add::data( handle, value);
 }
 
-int casual_order_add_short( char** buffer, const short value)
+int casual_order_add_short( char** handle, const short value)
 {
-   return casual::buffer::order::add::data( buffer, value);
+   return casual::buffer::order::add::data( handle, value);
 }
 
-int casual_order_add_long( char** buffer, const long value)
+int casual_order_add_long( char** handle, const long value)
 {
-   return casual::buffer::order::add::data( buffer, value);
+   return casual::buffer::order::add::data( handle, value);
 }
 
-int casual_order_add_float( char** buffer, const float value)
+int casual_order_add_float( char** handle, const float value)
 {
-   return casual::buffer::order::add::data( buffer, value);
+   return casual::buffer::order::add::data( handle, value);
 }
 
-int casual_order_add_double( char** buffer, const double value)
+int casual_order_add_double( char** handle, const double value)
 {
-   return casual::buffer::order::add::data( buffer, value);
+   return casual::buffer::order::add::data( handle, value);
 }
 
-int casual_order_add_string( char** buffer, const char* const value)
+int casual_order_add_string( char** handle, const char* const value)
 {
-   return casual::buffer::order::add::data( buffer, std::string_view{ value});
+   return casual::buffer::order::add::data( handle, value);
 }
 
-int casual_order_add_binary( char** buffer, const char* const data, const long size)
+int casual_order_add_binary( char** handle, const char* const data, const long size)
 {
    if( size < 0)
       return CASUAL_ORDER_INVALID_ARGUMENT;
 
-   return casual::buffer::order::add::data( buffer, casual::common::view::binary::make( data, size));
+   return casual::buffer::order::add::data( handle, data, size);
 }
 
-int casual_order_get_prepare( const char* const buffer)
+int casual_order_get_prepare( const char* const handle)
 {
-   return casual::buffer::order::get::reset( buffer);
+   return casual::buffer::order::get::reset( handle);
 }
 
-int casual_order_get_bool( const char* const buffer, bool* const value)
+int casual_order_get_bool( const char* const handle, bool* const value)
 {
-   return casual::buffer::order::get::data( buffer, *value);
+   return casual::buffer::order::get::data( handle, *value);
 }
 
-int casual_order_get_char( const char* const buffer, char* const value)
+int casual_order_get_char( const char* const handle, char* const value)
 {
-   return casual::buffer::order::get::data( buffer, *value);
+   return casual::buffer::order::get::data( handle, *value);
 }
 
-int casual_order_get_short( const char* const buffer, short* const value)
+int casual_order_get_short( const char* const handle, short* const value)
 {
-   return casual::buffer::order::get::data( buffer, *value);
+   return casual::buffer::order::get::data( handle, *value);
 }
 
-int casual_order_get_long( const char* const buffer, long* const value)
+int casual_order_get_long( const char* const handle, long* const value)
 {
-   return casual::buffer::order::get::data( buffer, *value);
+   return casual::buffer::order::get::data( handle, *value);
 }
 
-int casual_order_get_float( const char* const buffer, float* const value)
+int casual_order_get_float( const char* const handle, float* const value)
 {
-   return casual::buffer::order::get::data( buffer, *value);
+   return casual::buffer::order::get::data( handle, *value);
 }
 
-int casual_order_get_double( const char* const buffer, double* const value)
+int casual_order_get_double( const char* const handle, double* const value)
 {
-   return casual::buffer::order::get::data( buffer, *value);
+   return casual::buffer::order::get::data( handle, *value);
 }
 
-int casual_order_get_string( const char* const buffer, const char** value)
+int casual_order_get_string( const char* const handle, const char** value)
 {
-   return casual::buffer::order::get::data( buffer, *value);
+   return casual::buffer::order::get::data( handle, *value);
 }
 
-int casual_order_get_binary( const char* const buffer, const char** data, long* const size)
+int casual_order_get_binary( const char* const handle, const char** data, long* const size)
 {
-   return casual::buffer::order::get::data( buffer, *data, *size);
+   return casual::buffer::order::get::data( handle, *data, *size);
 }

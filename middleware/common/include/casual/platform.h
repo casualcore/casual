@@ -351,7 +351,7 @@ namespace casual
       namespace binary
       {
          using type = std::vector< std::byte>;
-         using pointer = decltype( std::declval< binary::type>().data());
+         using pointer = decltype( std::declval< type>().data());
 
          namespace value
          {
