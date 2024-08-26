@@ -203,14 +203,31 @@ property                        | description                   | default
 ## domain.groups _(list)_
 
 Defines the groups in the configuration. Groups are used define dependency order, which is 
-used during boot and shutdown. 
+used during boot and shutdown. Arbitrary number of groups and group hierarchies can be 
+defined.
 Groups can be used to associate `resources` to servers/executables.
 
-property                      | description
-------------------------------|----------------------------------------------------
-name : `string`               | the name (unique key) of the group.
-[dependencies : `[string]`]   | name of groups this group has dependency to.
-[resources : `[string]`]      | names of resources this group is associated with (transient to the members of the group)
+property                      | description                                        | default
+------------------------------|----------------------------------------------------|-----------
+name : `string`               | the name (unique key) of the group.                |
+[dependencies : `[string]`]   | name of groups this group has dependency to.       |
+[resources : `[string]`]      | names of resources this group is associated with   |
+[enabled : `boolean`]         | if the group is enabled or not _see below_         | `true`
+
+
+**[enabled : `boolean`]**
+
+This property enables or disables the group. This could enable/disable _entities_ that has 
+membership to the group.
+
+For an entity to be _enabled_: ALL explicit and implicit membership groups has `enabled: true`
+
+For an entity to be _disabled_: ANY explicit and implicit membership groups has `enabled: false`
+
+Entities effected:
+* domain.executables
+* domain.servers
+* queue.forward.groups
 
 
 ## domain.servers _(list)_

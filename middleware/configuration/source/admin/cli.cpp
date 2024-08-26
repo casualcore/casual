@@ -482,11 +482,13 @@ The semantics are similar to http PUT:
                            argument::option::one::many( std::move( invoke)), 
                            completer, 
                            { "--enable-groups"}, 
-                           R"(enables groups
+                           R"(INCUBATION enables groups
 Enables groups that provided group names matches.
 
 This effects entities that has memberships to enabled groups
 (domain:Server, domain:Executable, queue::Forward)
+
+@attention INCUBATION - might change during, or in between minor version.
 )"
                         };
                      }
@@ -515,11 +517,13 @@ This effects entities that has memberships to enabled groups
                            argument::option::one::many( std::move( invoke)), 
                            completer, 
                            { "--disable-groups"}, 
-                           R"(disables groups
+                           R"(INCUBATION disables groups
 Disables groups that provided group names matches.
 
 This effects entities that has memberships to enabled groups
 (domain:Server, domain:Executable, queue::Forward)
+
+@attention INCUBATION - might change during, or in between minor version.
 )"
                         };
                      }
