@@ -50,6 +50,41 @@ namespace casual
          return local::find_instance( state.executables, alias, index);
       }
 
+
+      namespace instances
+      {
+         bool count( const manager::admin::model::State& model, std::string_view alias, platform::size::type count)
+         {
+            auto has_count = [ alias, count]( auto& entity)
+            {
+               if( entity.alias != alias)
+                  return false;
+
+               return std::ssize( entity.instances) == count;
+            };
+
+            return algorithm::any_of( model.servers, has_count) || algorithm::any_of( model.executables, has_count);
+         }
+
+         namespace has
+         {
+            bool state( const manager::admin::model::State& model, std::string_view alias, manager::admin::model::instance::State state)
+            {
+               auto has_state = [ alias, state]( auto& entity)
+               {
+                  if( entity.alias != alias)
+                     return false;
+
+                  return algorithm::all_of( entity.instances, [ state]( auto& instance){ return instance.state == state;});
+               };
+
+               return algorithm::any_of( model.servers, has_state) || algorithm::any_of( model.executables, has_state);
+            }
+            
+         } // has
+         
+      } // instances  
+
       namespace fetch::predicate
       {
          namespace alias::has

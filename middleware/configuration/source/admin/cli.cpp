@@ -441,6 +441,97 @@ The semantics are similar to http PUT:
                      return detail::put( argument::option::keys( { "--put"}, {}), description);     
                   }
 
+                  namespace groups
+                  {
+                     auto completer = []( auto values, bool help) -> std::vector< std::string>
+                     {
+                        if( help)
+                           return { "<name>.."};
+
+                        auto model = call::get();
+
+                        if( ! model.domain || ! model.domain->groups)
+                           return { "<value>"};
+
+                        
+                        return algorithm::transform( *model.domain->groups, []( auto group){ return group.name;});
+                     }; 
+                  
+                     
+                     auto enable()
+                     {
+                        auto invoke = []( std::vector< std::string> names)
+                        {
+                           auto enable_group = [ names = std::move( names)]( auto& group)
+                           {
+                              if( algorithm::find( names, group.name))
+                                 group.enabled = true;
+                           };
+
+                           auto model = call::get();
+
+                           if( ! model.domain || ! model.domain->groups)
+                              return;
+
+                           algorithm::for_each( *model.domain->groups, enable_group);
+
+                           event::invoke( call::post, model);
+                        };
+
+                        return argument::Option{ 
+                           argument::option::one::many( std::move( invoke)), 
+                           completer, 
+                           { "--enable-groups"}, 
+                           R"(enables groups
+Enables groups that provided group names matches.
+
+This effects entities that has memberships to enabled groups
+(domain:Server, domain:Executable, queue::Forward)
+)"
+                        };
+                     }
+
+                     auto disable()
+                     {
+                        auto invoke = []( std::vector< std::string> names)
+                        {
+                           auto disable_group = [ names = std::move( names)]( auto& group)
+                           {
+                              if( algorithm::find( names, group.name))
+                                 group.enabled = false;
+                           };
+
+                           auto model = call::get();
+
+                           if( ! model.domain || ! model.domain->groups)
+                              return;
+
+                           algorithm::for_each( *model.domain->groups, disable_group);
+
+                           event::invoke( call::post, model);
+                        };
+
+                        return argument::Option{ 
+                           argument::option::one::many( std::move( invoke)), 
+                           completer, 
+                           { "--disable-groups"}, 
+                           R"(disables groups
+Disables groups that provided group names matches.
+
+This effects entities that has memberships to enabled groups
+(domain:Server, domain:Executable, queue::Forward)
+)"
+                        };
+                     }
+                     
+                  } // groups
+
+                  namespace disable
+                  {
+                     
+                  } // disable
+
+
                } // runtime
             } // <unnamed>
          } // local
@@ -483,6 +574,8 @@ Used to check and normalize configuration
                   local::runtime::post(),
                   local::runtime::put(),
                   local::runtime::edit(),
+                  local::runtime::groups::enable(),
+                  local::runtime::groups::disable(),
                   local::normalize( state),
                   local::validate(),
                   local::format( state),

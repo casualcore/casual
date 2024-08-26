@@ -11,6 +11,7 @@
 #include "administration/unittest/cli/command.h"
 
 #include "domain/unittest/manager.h"
+#include "domain/unittest/utility.h"
 
 #include "configuration/model/transform.h"
 #include "configuration/unittest/utility.h"
@@ -129,6 +130,74 @@ domain:
 
       }
 
+
+      TEST( cli_configuration_runtime, enable_group)
+      {
+         common::unittest::Trace trace;
+
+         auto a = local::domain( R"(
+domain:
+   name: A
+   groups:
+      -  name: A
+         enabled: false
+   executables:
+      -  alias: a
+         path: sleep
+         instances: 4
+         arguments: [ 60]
+         memberships: [ A]
+)");
+
+         {
+            auto capture = administration::unittest::cli::command::execute( "casual configuration --enable-groups A B");
+            EXPECT_TRUE( capture.exit == 0);
+         }
+
+         {
+            auto state = casual::domain::unittest::state();
+
+            EXPECT_TRUE( casual::domain::unittest::instances::count( state, "a", 4));
+            EXPECT_TRUE( casual::domain::unittest::instances::has::state( state, "a", casual::domain::manager::admin::model::instance::State::running));
+         }
+      }
+
+
+      TEST( cli_configuration_runtime, disable_group)
+      {
+         common::unittest::Trace trace;
+
+         auto a = local::domain( R"(
+domain:
+   name: A
+   groups:
+      -  name: A
+         enabled: true
+   executables:
+      -  alias: a
+         path: sleep
+         instances: 4
+         arguments: [ 60]
+         memberships: [ A]
+)");
+
+         {
+            auto state = casual::domain::unittest::state();
+            EXPECT_TRUE( casual::domain::unittest::instances::count( state, "a", 4));
+            EXPECT_TRUE( casual::domain::unittest::instances::has::state( state, "a", casual::domain::manager::admin::model::instance::State::running));
+         }
+
+         {
+            auto capture = administration::unittest::cli::command::execute( "casual configuration --disable-groups A B");
+            EXPECT_TRUE( capture.exit == 0);
+         }
+
+         {
+            auto state = casual::domain::unittest::state();
+            EXPECT_TRUE( casual::domain::unittest::instances::count( state, "a", 4));
+            EXPECT_TRUE( casual::domain::unittest::instances::has::state( state, "a", casual::domain::manager::admin::model::instance::State::disabled));
+         }
+      }
 
    } // administration
 } // casual
