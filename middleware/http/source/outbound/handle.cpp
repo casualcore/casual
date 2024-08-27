@@ -20,6 +20,24 @@ namespace casual
    using namespace common;
    namespace http::outbound::handle
    {
+      namespace local
+      {
+         namespace
+         {
+            namespace metric::maybe
+            {
+               void send( State& state)
+               {
+                  if( state.pending.requests.empty() || state.metric)
+                  {
+                     communication::device::blocking::send( communication::instance::outbound::service::manager::device(), state.metric.message());
+                     state.metric.clear();
+                  }
+               }
+            } // metric::maybe
+         } // <unnamed>
+      } // local
+
       namespace internal
       {
          namespace local
@@ -28,6 +46,50 @@ namespace casual
             {
                namespace service::call
                {
+                  namespace detail::send::error
+                  {
+
+                     void reply( State& state, message::service::call::callee::Request& message, code::xatmi code)
+                     {
+                        Trace trace{ "http::request::local::handle::service::call::detail::send::error_reply"};
+                        log::line( log::category::verbose::error, code, " - message: ", message);
+
+                        auto send_metric = []( auto& state, auto& message, code::xatmi code)
+                        {
+                           common::message::event::service::Metric metric;
+
+                           metric.process = common::process::handle();
+                           metric.correlation = message.correlation;
+                           metric.execution = message.execution;
+                           metric.service = message.service.logical_name();
+                           metric.parent =  message.parent;
+                           metric.type = decltype( metric.type)::concurrent;
+                           metric.code = { .result = code};
+                           
+                           metric.trid = message.trid;
+                           // This feels a bit meh?
+                           metric.start = platform::time::clock::type::now();
+                           metric.end = platform::time::clock::type::now();
+
+                           state.metric.add( std::move( metric));
+                           http::outbound::handle::local::metric::maybe::send( state);
+                        };
+
+                        auto reply = message::reverse::type( message);
+                        reply.code.result = code;
+
+                        // TODO should we really mess with the transaction? 
+                        if( message.trid)
+                           reply.transaction_state = decltype( reply.transaction_state)::rollback;
+
+                        if( ! flag::contains( message.flags, message::service::call::request::Flag::no_reply))
+                           communication::device::blocking::optional::send( message.process.ipc, std::move( reply));
+
+                        send_metric( state, message, code);
+                     }
+                    
+                  } // detail::send::error
+
                   auto request( State& state)
                   {
                      return [&state]( message::service::call::callee::Request& message)
@@ -35,28 +97,12 @@ namespace casual
                         Trace trace{ "http::outbound::handle::local::service::call::request"};
                         log::line( verbose::log, "message: ", message);
 
-                        auto send_error_reply = []( auto& message, auto code)
-                        {
-                           Trace trace{ "http::request::local::handle::service::call::Request::send_error_reply"};
-                           log::line( log::category::verbose::error, code, " - message: ", message);
-
-                           auto reply = message::reverse::type( message);
-                           reply.code.result = code;
-
-                           // TODO should we really mess with the transaction? 
-                           if( message.trid)
-                              reply.transaction_state = decltype( reply.transaction_state)::rollback;
-
-                           if( ! flag::contains( message.flags, message::service::call::request::Flag::no_reply))
-                              communication::device::blocking::optional::send( message.process.ipc, std::move( reply));
-                        };
-
                         auto found = algorithm::find( state.lookup, message.service.name);
 
                         if( ! found)
                         {
                            log::line( log::category::error, code::xatmi::no_entry, " - http-outbound service not configured: ",  message.service.name);
-                           send_error_reply( message, code::xatmi::no_entry);
+                           detail::send::error::reply( state, message, code::xatmi::no_entry);
                            return;
                         }
 
@@ -69,7 +115,7 @@ namespace casual
                               // we can't allow this forward to be in a transaction
                               log::line( log::category::error, code::xatmi::protocol, " - http-outbound can't be used in transaction for service: ",  message.service.name);
                               log::line( log::category::verbose::error, code::xatmi::protocol, " - node: ", node);
-                              send_error_reply( message, common::code::xatmi::protocol);
+                              detail::send::error::reply( state, message, code::xatmi::protocol);
                               return;
                            }
                            else
@@ -177,11 +223,7 @@ namespace casual
                communication::device::blocking::optional::send( destination.ipc, message);
 
                // do we send metrics to service-manager?
-               if( state.pending.requests.empty() || state.metric)
-               {
-                  communication::device::blocking::send( communication::instance::outbound::service::manager::device(), state.metric.message());
-                  state.metric.clear();
-               }
+               local::metric::maybe::send( state);
             };
 
          }

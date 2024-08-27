@@ -12,6 +12,8 @@
 #include "common/communication/device.h"
 #include "common/communication/ipc.h"
 #include "common/unittest/file.h"
+#include "common/message/event.h"
+#include "common/event/listen.h"
 
 #include "domain/unittest/manager.h"
 #include "domain/discovery/api.h"
@@ -163,5 +165,41 @@ domain:
          EXPECT_TRUE( common::algorithm::find( reply.content.services, "discard/transaction")) << CASUAL_NAMED_VALUE( reply);
       }
 */
+      TEST( http_outbound, call_outbound_service__protocol_error__still_expect_metric)
+      {
+         common::unittest::Trace trace;
+         local::Domain domain;
+
+         common::message::event::service::Calls event;
+         common::event::subscribe( common::process::handle(), { event.type()});
+
+         // this call will fail due to discard_transaction: false
+         {
+            ASSERT_TRUE( tx_begin() == TX_OK);
+
+            auto buffer = tpalloc( "X_OCTET", nullptr, 128);
+            long size = 128;
+
+            EXPECT_TRUE( tpcall( "do/not/discard/transaction", buffer, size, &buffer, &size, 0) == -1);
+
+            EXPECT_TRUE( tx_commit() == TX_PROTOCOL_ERROR);
+            EXPECT_TRUE( tx_rollback() == TX_OK);
+
+            tpfree( buffer);
+         }
+
+         {
+            common::communication::device::blocking::receive( 
+               common::communication::ipc::inbound::device(),
+               event);
+            
+            ASSERT_TRUE( event.metrics.size() == 1);
+            auto& metric = event.metrics.at( 0);
+            EXPECT_TRUE( metric.service == "do/not/discard/transaction");
+            EXPECT_TRUE( metric.parent.service == "");
+            EXPECT_TRUE( metric.type == common::message::event::service::metric::Type::concurrent);
+            EXPECT_TRUE( metric.code.result == common::code::xatmi::protocol);
+         }
+      }
    } // http::outbound
 } // casual
