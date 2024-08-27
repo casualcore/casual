@@ -205,6 +205,8 @@ namespace casual
          {
             void add( const state::pending::Request& request, common::service::Code code);
 
+            void add( common::message::event::service::Metric metric);
+
             explicit operator bool () const noexcept;
 
             void clear();

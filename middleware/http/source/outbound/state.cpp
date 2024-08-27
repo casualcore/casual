@@ -128,6 +128,11 @@ namespace casual
          }());
       }
 
+      void State::Metric::add( message::event::service::Metric metric)
+      {
+         m_message.metrics.push_back( std::move( metric));
+      }
+
       State::Metric::operator bool () const noexcept
       {
          return m_message.metrics.size() >= platform::batch::http::outbound::concurrent::metrics;
