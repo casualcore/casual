@@ -83,6 +83,7 @@ casual
             <h2>learn</h2>
           </div>
           <ul>
+          <li><a href="documentation/tutorials/operations/README.html">tutorials</a></li>
            </ul>
         </td>
       </tr>
@@ -108,6 +109,8 @@ table of contents
    operation <middleware/documentation/operation>
    development <middleware/documentation/development>
    examples <middleware/documentation/examples>
+   tutorials <documentation/tutorials/operations/README>
+
 
 * :ref:`genindex`
 
