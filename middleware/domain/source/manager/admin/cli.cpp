@@ -225,44 +225,73 @@ namespace casual
                template< typename P>
                auto process()
                {
-                  auto format_configured_instances = []( const P& e)
+                  auto format_configured_instances = []( const P& entity)
                   {
-                     return algorithm::count_if( e.instances, []( auto& i)
+                     return algorithm::count_if( entity.instances, []( auto& instances)
                      {
-                        using State = decltype( i.state);
-                        return algorithm::compare::any( i.state, State::running, State::spawned, State::scale_out, State::exit, State::error);
+                        using State = decltype( instances.state);
+                        // everything that is not scale_in is regarded as configured
+                        return instances.state != State::scale_in;
                      });
                   };
 
-                  auto format_running_instances = []( const P& e)
+                  auto format_running_instances = []( const P& entity)
                   {
-                     return common::algorithm::count_if( e.instances, []( auto& i)
+                     return common::algorithm::count_if( entity.instances, []( auto& instance)
                      {
-                        return i.state == decltype( i.state)::running;
+                        return instance.state == decltype( instance.state)::running;
                      });
                   };
 
-                  auto format_restart = []( const P& e)
+                  auto format_restart = []( const P& entity)
                   {
-                     if( e.restart) 
+                     if( entity.restart) 
                         return "true";
                      return "false";
                   };
 
-                  auto format_restarts = []( const P& e)
+                  auto format_state = []( const P& entity)
                   {
-                     return e.restarts;
+                     if( ! entity.enabled) 
+                        return "disabled";
+
+                     auto has_error = []( auto& instance){ return instance.state == decltype( instance.state)::error;};
+
+                     if( ! std::empty( entity.instances) && algorithm::all_of( entity.instances, has_error))
+                        return "error";
+
+                     return "enabled";
                   };
 
+                  auto format_restarts = []( const P& entity)
+                  {
+                     return entity.restarts;
+                  };
 
-                  return terminal::format::formatter< P>::construct(
-                     terminal::format::column( "alias", std::mem_fn( &P::alias), terminal::color::yellow, terminal::format::Align::left),
-                     terminal::format::column( "CI", format_configured_instances, terminal::color::no_color, terminal::format::Align::right),
-                     terminal::format::column( "I", format_running_instances, terminal::color::white, terminal::format::Align::right),
-                     terminal::format::column( "restart", format_restart, terminal::color::blue, terminal::format::Align::right),
-                     terminal::format::column( "#r", format_restarts, terminal::color::red, terminal::format::Align::right),
-                     terminal::format::column( "path", std::mem_fn( &P::path), terminal::color::blue, terminal::format::Align::left)
-                  );
+                  if( ! terminal::output::directive().porcelain())
+                  {
+                     return terminal::format::formatter< P>::construct(
+                        terminal::format::column( "alias", std::mem_fn( &P::alias), terminal::color::yellow, terminal::format::Align::left),
+                        terminal::format::column( "CI", format_configured_instances, terminal::color::no_color, terminal::format::Align::right),
+                        terminal::format::column( "I", format_running_instances, terminal::color::white, terminal::format::Align::right),
+                        terminal::format::column( "state", format_state, terminal::color::white, terminal::format::Align::left),
+                        terminal::format::column( "restart", format_restart, terminal::color::blue, terminal::format::Align::right),
+                        terminal::format::column( "#r", format_restarts, terminal::color::red, terminal::format::Align::right),
+                        terminal::format::column( "path", std::mem_fn( &P::path), terminal::color::blue, terminal::format::Align::left)
+                     );
+                  }
+                  else
+                  {
+                     return terminal::format::formatter< P>::construct(
+                        terminal::format::column( "alias", std::mem_fn( &P::alias)),
+                        terminal::format::column( "CI", format_configured_instances),
+                        terminal::format::column( "I", format_running_instances),
+                        terminal::format::column( "restart", format_restart),
+                        terminal::format::column( "#r", format_restarts),
+                        terminal::format::column( "path", std::mem_fn( &P::path)),
+                        terminal::format::column( "state", format_state)
+                     );
+                  }
                }
 
 
@@ -325,53 +354,6 @@ namespace casual
 
                namespace list
                {
-                  namespace process
-                  {
-                     constexpr auto legend = R"(
-   alias:
-      the configured alias, or the binary name (potentially with postfix to make it unique)
-   CI:
-      configured number of instances
-   I:
-      running instances
-   restart;
-      if instances should be restarted if exited
-   #r:
-      number of times instances has been initiated for a restart
-   path:
-      the path to the binary
-
-)";
-                  } // process
-                  namespace servers
-                  {
-                     void invoke()
-                     {
-                        auto state = call::state();
-
-                        print::processes( std::cout, algorithm::sort( state.servers, predicate::less::alias));
-                     }
-
-                     constexpr auto description = R"(list all servers)";
-
-                     constexpr auto legend = process::legend;
-
-                  } // servers
-
-                  namespace executables
-                  {
-                     void invoke()
-                     {
-                        auto state = call::state();
-
-                        print::processes( std::cout, algorithm::sort( state.executables, predicate::less::alias));
-                     }
-
-                     constexpr auto description = R"(list all executables)";
-
-                     constexpr auto legend = process::legend;
-                  } // executables
-
                   namespace instances 
                   {
                      namespace server
@@ -690,38 +672,7 @@ for all servers and executables
                   } // state
                } // global
 
-               namespace legend
-               {
-                  const std::map< std::string, const char*> legends{
-                     { "list-servers", action::list::servers::legend},
-                     { "list-executables", action::list::executables::legend},
-                     { "ping", action::ping::legend},
-                  };
-                  
-                  
-                  void invoke( const std::string& option)
-                  {
-                     auto found = algorithm::find( legend::legends, option);
 
-                     if( found)
-                        std::cout << found->second;
-                  }
-
-                  auto complete() 
-                  {
-                     return []( auto values, auto help)
-                     {
-                        return algorithm::transform( legends, []( auto& pair){ return pair.first;});
-                     };
-                  }
-
-                  constexpr auto description = R"(the legend for the supplied option
-
-Documentation and description for abbreviations and acronyms used as columns in output
-
-note: not all options has legend, use 'auto complete' to find out which legends are supported.
-)";
-               } // legend
 
                namespace information
                {
@@ -925,6 +876,67 @@ Fails if any configured server/executable fails to start or exits with an error 
 
                } // shutdown
 
+               namespace list
+               {
+                  namespace process
+                  {
+                     constexpr std::string_view legend = R"(
+   alias:
+      the configured alias, or the binary name (potentially with postfix to make it unique)
+   CI:
+      configured number of instances
+   I:
+      running instances
+   state:
+      * enabled  | the entity is enabled
+      * disabled | the entity has explicit/implicit membership to at least one disabled group
+      * error    | all of the instances has state error
+   restart:
+      if instances should be restarted if exited
+   #r:
+      number of times instances has been initiated for a restart
+   path:
+      the path to the binary
+
+)";
+                  } // process
+   
+                  auto servers()
+                  {
+                     auto invoke = []()
+                     {
+                        auto state = call::state();
+
+                        print::processes( std::cout, algorithm::sort( state.servers, predicate::less::alias));
+                     };
+
+                     return argument::Option{
+                        std::move( invoke), 
+                        { "-ls", "--list-servers"},
+                        R"(list all servers)"};
+                  }
+
+                  constexpr auto servers_legend = process::legend;
+
+                  auto executables()
+                  {
+                     auto invoke = []()
+                     {
+                        auto state = call::state();
+
+                        print::processes( std::cout, algorithm::sort( state.executables, predicate::less::alias));
+                     };
+
+                     return argument::Option{
+                        std::move( invoke), 
+                        { "-le", "--list-executables"},
+                        R"(list all executables)"};
+                  }
+
+                  constexpr auto executables_legend = process::legend;
+
+               } // list
+
                namespace scale
                {
                   auto aliases()
@@ -1095,8 +1107,40 @@ note: some aliases are unrestartable
                      };
                   }
                } // log
-            } // option
 
+               auto legend()
+               {
+                  static const std::map< std::string, std::string_view> legends{
+                     { "list-servers", option::list::servers_legend},
+                     { "list-executables", option::list::executables_legend},
+                     { "ping", action::ping::legend},
+                  };
+                                    
+                  auto invoke = []( const std::string& option)
+                  {
+                     if( auto found = algorithm::find( legends, option))
+                        std::cout << found->second;
+                  };
+
+                  auto complete = []( auto values, auto help)
+                  {
+                     return algorithm::transform( legends, []( auto& pair){ return pair.first;});
+                  };
+
+                  return argument::Option{
+                     std::move( invoke),
+                     std::move( complete),
+                     { "--legend"},
+                     R"(the legend for the supplied option
+
+Documentation and description for abbreviations and acronyms used as columns in output
+
+note: not all options has legend, use 'auto complete' to find out which legends are supported.
+)"
+                  };
+               }
+
+            } // option
          } // <unnamed>
       } // local
 
@@ -1106,8 +1150,8 @@ note: some aliases are unrestartable
          argument::Group options()
          {
             return argument::Group{ [](){}, { "domain"}, "local casual domain related administration",
-               argument::Option( &local::action::list::servers::invoke, { "-ls", "--list-servers"}, local::action::list::servers::description),
-               argument::Option( &local::action::list::executables::invoke, { "-le", "--list-executables"}, local::action::list::executables::description),
+               local::option::list::servers(),
+               local::option::list::executables(),
                local::option::scale::aliases(),
                local::option::restart::aliases(),
                local::option::restart::groups(),
@@ -1121,7 +1165,7 @@ note: some aliases are unrestartable
             
                argument::Option( argument::option::one::many( &local::action::ping::invoke), local::action::ping::complete(), { "--ping"}, local::action::ping::description),
                argument::Option( &local::action::global::state::invoke, local::action::global::state::complete(), { "--instance-global-state"}, local::action::global::state::description),
-               argument::Option( &local::action::legend::invoke, local::action::legend::complete(), { "--legend"}, local::action::legend::description),
+               local::option::legend(),
                argument::Option( &local::action::information::invoke, { "--information"}, local::action::information::description),
                casual::cli::state::option( &local::call::state),
                local::option::log::reopen(),

@@ -203,6 +203,7 @@ namespace casual
                      result.path = value.path;
                      result.arguments = value.arguments;
                      result.note = value.note;
+                     result.enabled = value.enabled;
                      using instance_type = typename R::instance_type;
                      result.instances = algorithm::transform( value.instances, detail::instance< instance_type>());
                      result.memberships = algorithm::transform( value.memberships, []( auto id){

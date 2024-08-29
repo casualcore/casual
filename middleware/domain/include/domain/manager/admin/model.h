@@ -63,6 +63,7 @@ namespace casual
 
             } environment;
 
+            bool enabled = true;
             bool restart = false;
             size_type restarts = 0;
 
@@ -74,6 +75,7 @@ namespace casual
                CASUAL_SERIALIZE( note);
                CASUAL_SERIALIZE( memberships);
                CASUAL_SERIALIZE( environment);
+               CASUAL_SERIALIZE( enabled);
                CASUAL_SERIALIZE( restart);
                CASUAL_SERIALIZE( restarts);
             )
