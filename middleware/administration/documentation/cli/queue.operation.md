@@ -15,8 +15,8 @@ host# casual --help queue
       -z, --list-zombies [0..1]
             list information of all zombie queues in current domain
 
-      -r, --list-remote [0..1]
-            list all remote discovered queues
+      -lqi, --list-queue-instances [0..1]
+            list instances for all queues, including external instances
 
       -g, --list-groups [0..1]
             list information of all groups in current domain
@@ -51,7 +51,7 @@ host# casual --help queue
             
             @note: part of casual-pipe
 
-      -d, --dequeue [0..1]  (<queue>, [<id>]) [1..2]
+      -d, --dequeue [0..1]  (<queue>, [<id>..]) [1..*]
             dequeue message from a queue to `casual-pipe`
             
             if id is absent the oldest available message is dequeued. 
@@ -59,6 +59,8 @@ host# casual --help queue
             Example:
             casual queue --dequeue <queue> | <some other part in casual-pipe> | ... | <casual-pipe termination>
             casual queue --dequeue <queue> <id> | <some other part in casual-pipe> | ... | <casual-pipe termination>
+            casual queue --dequeue <queue> <id> <id> <id> <id> | <some other part in casual-pipe> | ... | <casual-pipe termination>
+            
             
             @note: part of casual-pipe
 
@@ -135,5 +137,8 @@ host# casual --help queue
 
       --state [0..1]  (json, yaml, xml, ini, line) [0..1]
             prints state in the provided format to stdout
+
+      [deprecated] -r, --list-remote [0..1]
+            deprecated - use --list-instances
 
 ```

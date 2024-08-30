@@ -1,6 +1,8 @@
 import casual.make.api as make
 import casual.middleware.make.api as dsl
 
+import os
+
 
 make.IncludePaths( [
     'include',
@@ -80,7 +82,7 @@ target = make.LinkExecutable( 'bin/casual',
 install_exe.append( target)
 
 
-make.LinkExecutable( 'bin/casual-administration-cli-documentation', 
+documentation_target = make.LinkExecutable( 'bin/casual-administration-cli-documentation', 
    [ 
       make.Compile( 'source/documentation/cli.cpp')
    ],
@@ -132,6 +134,21 @@ make.Install( install_libs, dsl.paths().install + '/lib')
 
 make.Install( 'etc/bash_completion.d/casual',  dsl.paths().install + '/etc/bash_completion.d')
 make.Install( 'etc/bash_completion.d/casual-log',  dsl.paths().install + '/etc/bash_completion.d')
+
+
+# GenerateDocumentation
+def casual_administration_documentation( input):
+   import casual.make.tools.executor as executor
+
+   directory = os.path.dirname( input[ 'target'].makefile())
+
+   executor.execute( [ 
+      directory + "/bin/casual-administration-cli-documentation",
+      "--root",
+      directory + "/documentation" 
+   ])
+
+dsl.GenerateDocumentation( ".", dependencies = [ documentation_target], generator_function = casual_administration_documentation)
 
 
 

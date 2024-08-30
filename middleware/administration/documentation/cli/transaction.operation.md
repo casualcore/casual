@@ -16,10 +16,17 @@ host# casual --help transaction
             list all resources
 
       -li, --list-instances [0..1]
-            list resource instances
+            list all resource instances, internal and external
 
-      --list-external-resources [0..1]
-            list external resources
+      --list-internal-instances [0..1]
+            list details of all internal resource instances
+
+      --list-external-instances [0..1]
+            list external resource instances
+            
+            External resources only have one instance, hence resources and resource-instances are unambiguous.
+
+            deprecated: [--list-external-resources]
 
       --begin [0..1]
             creates a 'single' transaction directive
@@ -27,7 +34,7 @@ host# casual --help transaction
             * creates a new transaction and send it downstream.
             * all downstream `actions` will be associated with this transaction, until commit/rollback.
             * @attention there has to be a corresponding commit/rollback downstream for every 
-               --begin, otherwise the transaction(s) will be unresolved (indoubt).
+            --begin, otherwise the transaction(s) will be unresolved (indoubt).
             
             @note: part of casual-pipe
 

@@ -19,11 +19,11 @@ host# casual --help gateway
 
             deprecated: [-l]
 
-      -ls, --list-services [0..1]
-            list all services and connections
+      [deprecated] -ls, --list-services [0..1]
+            removed - use casual service --list-TODO
 
-      -lq, --list-queues [0..1]
-            list all queues and connections
+      [deprecated] -ls, --list-services [0..1]
+            removed - use casual queue --list-TODO
 
       --list-inbound-groups [0..1]
             list all inbound groups

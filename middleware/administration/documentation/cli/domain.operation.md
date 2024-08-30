@@ -45,6 +45,13 @@ host# casual --help domain
             
             With supplied configuration files, in the form of glob patterns.
 
+      --boot-strict [0..1]  (<glob patterns>) [0..*]
+            boot domain
+            
+            With supplied configuration files, in the form of glob patterns.
+            
+            Fails if any configured server/executable fails to start or exits with an error during the boot sequence.
+
       -s, --shutdown [0..1]
             shutdown domain
 
@@ -55,33 +62,12 @@ host# casual --help domain
             for all servers and executables 
                                  
 
-      --configuration-get [0..1]  (json, yaml, xml, ini) [0..1]
-            get current configuration
-
-      --configuration-post [0..1]  (json, yaml, xml, ini) [1]
-            reads configuration from stdin and replaces the domain configuration
-            
-            casual will try to conform to the new configuration as smooth as possible. Although, there could be some "noise"
-            depending on what parts are updated.
-
-      --configuration-edit [0..1]  (json, yaml, xml, ini) [0..1]
-            get current configuration, starts an editor, on quit the edited configuration is posted.
-            
-            The editor is deduced from the following environment variables, in this order:
-              * CASUAL_TERMINAL_EDITOR
-              * VISUAL
-              * EDITOR
-            
-            If none is set, `vi` is used.
-            
-            If no changes are detected, no update will take place.
-
-      --configuration-put [0..1]  (json, yaml, xml, ini) [1]
-            reads configuration from stdin and adds or updates parts
-            
-            The semantics are similar to http PUT:
-            * every key that is found is treated as an update of that _entity_
-            * every key that is NOT found is treated as a new _entity_ and added to the current state 
+      --unset-environment [0..*]  (<variable>, [<alias>*]) [1..*]
+            unset an environment variable for explicit aliases
+                                 
+            if 0 aliases are provided, the environment variable will be unset 
+            for all servers and executables 
+                                 
 
       --ping [0..1]  (<alias>) [1..*]
             ping all instances of the provided server alias
@@ -104,5 +90,17 @@ host# casual --help domain
 
       --log-reopen [0..1]
             reopen casual.log by sending SIGHUP to all servers, and outputs all running executables
+
+      [deprecated] --configuration-get [0..1]  (json, yaml, xml, ini) [0..1]
+            @deprecated: use `casual configuration --get`
+
+      [deprecated] --configuration-post [0..1]  (json, yaml, xml, ini) [1]
+            @deprecated: use `casual configuration --post`
+
+      [deprecated] --configuration-edit [0..1]  (json, yaml, xml, ini) [0..1]
+            @deprecated: use `casual configuration --edit`
+
+      [deprecated] --configuration-put [0..1]  (json, yaml, xml, ini) [1]
+            @deprecated: use `casual configuration --put`
 
 ```

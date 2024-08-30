@@ -32,25 +32,21 @@ host# casual --help discovery
       --metric [0..1]
             list metrics
             
-            List counts of _discovery tasks_ the domain-discovery has (begun) executed.
+            List counts of _discovery tasks_ the domain-discovery has in-flight and completed
             
-            * external-discovery: 
+            * discovery-out: 
                Requests to other domains
-            * internal-discovery: 
-               Requests to local providers that supplies _resources_ (service/queues)
-            * local-known-request:
-               Requests to local providers about the total set of known _resources_ (service/queues)
-            * local-needs-request
-               Requests to local providers about resources that are needed but not known
+            * discovery-in: 
+               Requests from other domains
+            * lookup: 
+               Requests to local providers that has service/queues
+            * fetch-known:
+               Requests to local providers about the total set of known service/queues
             
             @attention INCUBATION - might change during, or in between minor version.
 
-      --metric-message-count [0..1]
-            list message counts
-            
-            Lists counts of "all" internal messages that has been sent and received. 
-            
-            @attention These might change over time, and between minor versions.
+      [deprecated] --metric-message-count [0..1]
+            @removed use `casual internal --message-count <pid>` instead
 
       --state [0..1]  (json, yaml, xml, ini, line) [0..1]
             prints state in the provided format to stdout

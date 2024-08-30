@@ -10,6 +10,7 @@ host# casual --help service
 
     SUB OPTIONS
       -ls, --list-services [0..1]
+            list known services
 
       -li, --list-instances [0..1]
             list instances
@@ -17,22 +18,21 @@ host# casual --help service
       --list-routes [0..1]
             list service routes
 
-      -mr, --metric-reset [0..1]  (<service name>...) [0..*]
+      -mr, --metric-reset [0..1]  (<service>...) [0..*]
             reset metrics for provided services, if no services provided, all metrics will be reset
 
       --list-admin-services [0..1]
             list casual administration services
 
-      --legend [0..1]  (list-admin-services, list-services) [1]
+      --legend [0..1]  (<option>) [1]
             the legend for the supplied option
             
             Documentation and description for abbreviations and acronyms used as columns in output
             
             note: not all options has legend, use 'auto complete' to find out which legends are supported.
-                  
 
       --information [0..1]
-            collect aggregated information about services in this domain
+            collect aggregated information about known services
 
       --state [0..1]  (json, yaml, xml, ini, line) [0..1]
             prints state in the provided format to stdout
