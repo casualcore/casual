@@ -200,7 +200,7 @@ def casual_buffer_protocol_sample( input):
 
     cmd = "bin/casual-buffer-protocol-sample"
 
-    print(f"Executing {cmd}")
+    print( "documentation: generate buffer documentation")
 
     context_directory = os.path.dirname(input['target'].makefile())
     executor.command(cmd, directory=context_directory, show_command=False)

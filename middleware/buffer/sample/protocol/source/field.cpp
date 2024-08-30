@@ -76,7 +76,6 @@ namespace casual
             long used = 0;
             casual_field_explore_buffer( buffer, &size, &used);
 
-            std::cout << "buffer size: " << size << " - used: " << used << '\n';
             out.write( buffer, used);
             out.flush();
          }

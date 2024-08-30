@@ -142,7 +142,9 @@ def casual_administration_documentation( input):
 
    directory = os.path.dirname( input[ 'target'].makefile())
 
-   executor.execute( [ 
+   print( "documentation: generate administration documentation")
+
+   executor.execute( show_command=False, command= [ 
       directory + "/bin/casual-administration-cli-documentation",
       "--root",
       directory + "/documentation" 

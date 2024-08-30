@@ -1,6 +1,8 @@
 import casual.make.api as make
 import casual.middleware.make.api as dsl
 
+import os
+
 make.IncludePaths([
    'include',
    '../common/include',
@@ -89,7 +91,7 @@ make.LinkUnittest( 'bin/test-casual-configuration',
    ])  
 
 # Example maker
-make.LinkExecutable( 'bin/casual-configuration-documentation', 
+documentation_target = make.LinkExecutable( 'bin/casual-configuration-documentation', 
     [ 
         make.Compile( 'source/documentation/main.cpp'),
    ],          
@@ -100,9 +102,24 @@ make.LinkExecutable( 'bin/casual-configuration-documentation',
    ])  
 
 
-
 # Install
 make.Install( install_libs,  dsl.paths().install + '/lib')
 make.Install( 'resources.yaml',  dsl.paths().install + '/configuration/example')
+
+# GenerateDocumentation
+def casual_configuration_documentation( input):
+   import casual.make.tools.executor as executor
+
+   directory = os.path.dirname( input[ 'target'].makefile())
+
+   print( "documentation: generate configuration documentation")
+
+   executor.execute( show_command=False, command= [ 
+      directory + "/bin/casual-configuration-documentation",
+      "--root",
+      directory + "/documentation" 
+   ])
+
+dsl.GenerateDocumentation( ".", dependencies = [ documentation_target], generator_function = casual_configuration_documentation)
 
 

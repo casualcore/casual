@@ -331,7 +331,7 @@ def casual_gateway_markdown_protocol( input):
     output = "documentation/protocol/protocol.maintenance.md"
     cmd = "bin/casual-gateway-markdown-protocol"
 
-    print(f"Executing {cmd} > {output}")
+    print( "documentation: generate gateway protocol documentation")
 
     context_directory = os.path.dirname(input['target'].makefile())
     executor.execute_result_to_file(cmd, directory=context_directory, file=output)
