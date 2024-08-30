@@ -837,6 +837,83 @@ domain:
          EXPECT_TRUE( unittest::messages( "a1").empty());
       }
 
+      TEST( casual_queue, enqueue_1__dequeue__try_remove_message__expect_1_message_in_queue)
+      {
+         common::unittest::Trace trace;
+
+         auto domain = local::domain();
+
+         // enqueue
+         {
+            const auto payload = common::unittest::random::binary( 64);
+            queue::Message message;
+            message.payload.type = common::buffer::type::binary;
+            message.payload.data.assign( std::begin( payload), std::end( payload));
+
+            queue::enqueue( "a1", message);
+         }
+
+         auto messages = unittest::messages( "a1");
+         ASSERT_TRUE( messages.size() == 1);
+
+         // dequeue without committing
+         {
+            EXPECT_EQ( common::transaction::context().begin(), common::code::tx::ok);
+            auto dequeued = queue::dequeue( "a1");
+            EXPECT_TRUE( ! dequeued.empty());
+            EXPECT_TRUE( dequeued.front().id == messages.front().id);
+         }
+
+         // remove without forcing - message should not be removed
+         {
+            auto removed = queue::messages::remove( "a1", { messages.front().id}, false);
+            ASSERT_TRUE( removed.size() == 0);
+         }
+
+         EXPECT_TRUE( unittest::messages( "a1").size() == 1);
+
+         EXPECT_EQ( common::transaction::context().rollback(), common::code::tx::ok);
+      }
+
+      TEST( casual_queue, enqueue_1__dequeue__force_remove_message__expect_0_message_in_queue)
+      {
+         common::unittest::Trace trace;
+
+         auto domain = local::domain();
+
+         // enqueue
+         {
+            const auto payload = common::unittest::random::binary( 64);
+            queue::Message message;
+            message.payload.type = common::buffer::type::binary;
+            message.payload.data.assign( std::begin( payload), std::end( payload));
+
+            queue::enqueue( "a1", message);
+         }
+
+         auto messages = unittest::messages( "a1");
+         ASSERT_TRUE( messages.size() == 1);
+
+         // dequeue without committing
+         {
+            EXPECT_EQ( common::transaction::context().begin(), common::code::tx::ok);
+            auto dequeued = queue::dequeue( "a1");
+            EXPECT_TRUE( ! dequeued.empty());
+            EXPECT_TRUE( dequeued.front().id == messages.front().id);
+         }
+
+         // force removal - message should be removed despite being dequeued
+         {
+            auto removed = queue::messages::remove( "a1", { messages.front().id}, true);
+            ASSERT_TRUE( removed.size() == 1);
+            EXPECT_TRUE( messages.front().id == removed.at( 0));
+         }
+
+         EXPECT_TRUE( unittest::messages( "a1").empty());
+
+         EXPECT_EQ( common::transaction::context().rollback(), common::code::tx::ok);
+      }
+
       namespace local
       {
          namespace

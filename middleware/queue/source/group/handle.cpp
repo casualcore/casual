@@ -179,7 +179,9 @@ namespace casual
                            log::line( verbose::log, "message: ", message);
 
                            auto reply = common::message::reverse::type( message);
-                           reply.ids = state.queuebase.remove( message.queue, std::move( message.ids));
+                           reply.ids = message.force ?
+                              state.queuebase.force_remove( message.queue, std::move( message.ids)) :
+                              state.queuebase.remove( message.queue, std::move( message.ids));
 
                            state.size.current = state.queuebase.size();
 

@@ -164,13 +164,17 @@ namespace casual
          //! @note: only `enqueued` messages are deleted (no pending for commit)
          platform::size::type clear( common::strong::queue::id queue);
 
-         //! @returns total size of messages deleted and id:s of the messages that was removed
+         //! @returns ids of the removed messages
          std::vector< common::Uuid> remove( common::strong::queue::id queue, std::vector< common::Uuid> messages);
+
+         //! @returns ids of the removed messages
+         //! @note removes messages regardless of state
+         std::vector< common::Uuid> force_remove( common::strong::queue::id queue, std::vector< common::Uuid> messages);
 
          //! @returns total size of messages deleted and gtrid:s of the messages that was commited
          std::tuple< platform::size::type, std::vector< common::transaction::global::ID>> recovery_commit( common::strong::queue::id queue, std::vector< common::transaction::global::ID> gtrids);
 
-         //! @returns gtrid:s of the messages that was rollbacked
+         //! @returns total size of messages deleted and gtrids:s of the messages that was rollbacked
          std::tuple< platform::size::type, std::vector< common::transaction::global::ID>> recovery_rollback( common::strong::queue::id queue, std::vector< common::transaction::global::ID> gtrids);
 
          //! @returns total size of messages deleted (committed dequeues)

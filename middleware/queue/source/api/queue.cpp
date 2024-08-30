@@ -646,7 +646,7 @@ namespace casual
 
          namespace messages
          {
-            std::vector< common::Uuid> remove( const std::string& queue, const std::vector< common::Uuid>& messages)
+            std::vector< common::Uuid> remove( const std::string& queue, const std::vector< common::Uuid>& messages, bool force)
             {
                Trace trace{ "casual::queue::messages::remove"};
                common::log::line( verbose::log, "queue: ", queue, ", messages: ", messages);
@@ -654,6 +654,7 @@ namespace casual
                serviceframework::service::protocol::binary::Call call;
                call << CASUAL_NAMED_VALUE( queue);
                call << CASUAL_NAMED_VALUE( messages);
+               call << CASUAL_NAMED_VALUE( force);
 
                auto reply = call( manager::admin::service::name::messages::remove);
 

@@ -93,7 +93,7 @@ namespace casual
 
       namespace messages
       {
-         std::vector< common::Uuid> remove( const std::string& queue, const std::vector< common::Uuid>& messages);
+         std::vector< common::Uuid> remove( const std::string& queue, const std::vector< common::Uuid>& messages, bool force = false);
       } // messages
 
       } // v1

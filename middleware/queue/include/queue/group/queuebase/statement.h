@@ -76,6 +76,7 @@ namespace casual
          {
             //! arguments: queue, id;
             sql::database::Statement remove;
+            sql::database::Statement force_remove;
          } message;
 
          struct

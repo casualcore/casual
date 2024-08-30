@@ -54,7 +54,14 @@ namespace casual
 
             } // global
 
+            struct State
+            {
+               bool force = false;
 
+               CASUAL_LOG_SERIALIZE(
+                  CASUAL_SERIALIZE( force);
+               )
+            };
 
             namespace normalize
             {
@@ -1536,12 +1543,12 @@ casual queue --restore <queue-name>)"
             {
                namespace remove
                {
-                  auto option()
+                  auto option( State& state)
                   {
-                     auto invoke = []( const std::string& queue, Uuid id, std::vector< Uuid> ids)
+                     auto invoke = [ &state]( const std::string& queue, Uuid id, std::vector< Uuid> ids)
                      {
                         ids.insert( std::begin( ids), std::move( id));
-                        auto removed = queue::messages::remove( queue, ids);
+                        auto removed = queue::messages::remove( queue, ids, state.force);
 
                         algorithm::for_each( removed, []( auto& id)
                         {
@@ -1564,10 +1571,13 @@ casual queue --restore <queue-name>)"
                         std::move( invoke),
                         complete,
                         {  "--remove-messages"},
-                        R"(removes specific messages from a given queue)"
+                        R"(removes specific messages from a given queue
+
+if used with `--force true` messages will be removed regardless of state.)"
                      };
                   }
                } // remove
+
                namespace recovery
                {
                   using Directive = ipc::message::group::message::recovery::Directive;
@@ -1602,7 +1612,8 @@ casual queue --restore <queue-name>)"
                            R"(recover specific messages from a given queue with commit)"
                         };
                      }
-                  }
+                  } // commit
+
                   namespace rollback
                   {
                      auto option()
@@ -1633,8 +1644,8 @@ casual queue --restore <queue-name>)"
                            R"(recover specific messages from a given queue with rollback)"
                         };
                      }
-                  }
-               }
+                  } // rollback
+               } // recovery
             } // messages
 
             namespace clear
@@ -1819,6 +1830,26 @@ casual queue --metric-reset a b)"
 
             } // information
 
+            namespace force
+            {
+               auto option( State& state)
+               {
+                  auto complete = []( auto&&, auto) -> std::vector< std::string>
+                  {
+                     return { "true", "false"};
+                  };
+
+                  return argument::Option{
+                     std::tie( state.force),
+                     complete,
+                     { "--force"},
+                     R"(force removal of message regardless of state (default: false)
+
+used in conjunction with `--remove-messages`)"
+                  };
+               }
+            } // force
+
          } // <unnamed>
       } // local
 
@@ -1846,7 +1877,8 @@ casual queue --metric-reset a b)"
                      local::consume::option(),
                      local::attributes::option(),
                      local::clear::option(),
-                     local::messages::remove::option(),
+                     local::messages::remove::option( state),
+                     local::force::option( state),
                      local::messages::recovery::commit::option(),
                      local::messages::recovery::rollback::option(),
                      local::forward::scale::aliases::option(),
@@ -1857,6 +1889,8 @@ casual queue --metric-reset a b)"
                      local::list::remote::queues::option(),
                   };
                }
+
+               local::State state;
             };
 
             cli::cli() = default; 

@@ -72,7 +72,7 @@ namespace casual
                   return transform::model::message::meta( { std::move( reply)});
                }  
 
-               std::vector< common::Uuid> remove( manager::State& state, const std::string& queue, std::vector< common::Uuid> ids)
+               std::vector< common::Uuid> remove( manager::State& state, const std::string& queue, std::vector< common::Uuid> ids, bool force)
                {
                   auto found = common::algorithm::find( state.queues, queue);
 
@@ -81,6 +81,7 @@ namespace casual
                      ipc::message::group::message::remove::Request request{ common::process::handle()};
                      request.queue = found->second.front().queue;
                      request.ids = std::move( ids);
+                     request.force = force;
 
                      return communication::ipc::call( found->second.front().process.ipc, request).ids;
                   }
@@ -309,13 +310,15 @@ namespace casual
 
                         auto queue = protocol.extract< std::string>( "queue");
                         auto ids = protocol.extract< std::vector< common::Uuid>>( "ids");
+                        auto force = protocol.extract< bool>( "force");
 
                         return serviceframework::service::user( 
                            std::move( protocol), 
                            &local::messages::remove, 
                            state, 
                            std::move( queue),
-                           std::move( ids));
+                           std::move( ids),
+                           force);
                      };
                   }
                } // messages

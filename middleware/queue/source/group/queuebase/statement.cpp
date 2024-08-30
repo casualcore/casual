@@ -277,6 +277,10 @@ WHERE queue = :queue AND state = 2 AND timestamp > :timestamp AND available < :a
             DELETE FROM message
             WHERE state = 2 AND queue = :queue AND id = :id; )");
 
+         result.message.force_remove = connection.precompile(R"(
+            DELETE FROM message
+            WHERE queue = :queue AND id = :id; )");
+
          result.metric.reset = connection.precompile(R"( 
             UPDATE queue
             SET metric_dequeued = 0, metric_enqueued = 0

@@ -937,11 +937,13 @@ namespace casual
                   common::strong::queue::id queue;
                   //! messages to remove
                   std::vector< common::Uuid> ids;
+                  bool force = false;
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
                      base_request::serialize( archive);
                      CASUAL_SERIALIZE( queue);
                      CASUAL_SERIALIZE( ids);
+                     CASUAL_SERIALIZE( force);
                   )
                };
 

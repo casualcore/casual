@@ -610,6 +610,18 @@ namespace casual
          return messages;
       }
 
+      std::vector< common::Uuid> Queuebase::force_remove( common::strong::queue::id queue, std::vector< common::Uuid> messages)
+      {
+         auto missing_message = [ &]( auto& id)
+         {
+            m_statement.message.force_remove.execute( queue.value(), id.range());
+            return m_connection.affected() == 0;
+         };
+
+         algorithm::container::trim( messages, algorithm::remove_if( messages, missing_message));
+         return messages;
+      }
+
       std::tuple< platform::size::type, std::vector< common::transaction::global::ID>> Queuebase::recovery_commit( common::strong::queue::id queue, std::vector< common::transaction::global::ID> gtrids)
       {
          std::vector< platform::size::type> deleted_sizes{};
