@@ -91,7 +91,7 @@ make.LinkUnittest( 'bin/test-casual-configuration',
    ])  
 
 # Example maker
-documentation_target = make.LinkExecutable( 'bin/casual-configuration-documentation', 
+documentation_target = make.LinkExecutable( 'bin/casual-configuration-samples', 
     [ 
         make.Compile( 'source/documentation/main.cpp'),
    ],          
@@ -112,10 +112,10 @@ def casual_configuration_documentation( input):
 
    directory = os.path.dirname( input[ 'target'].makefile())
 
-   print( "documentation: generate configuration documentation")
+   print( "documentation: generate configuration samples")
 
    executor.execute( show_command=False, command= [ 
-      directory + "/bin/casual-configuration-documentation",
+      directory + "/bin/casual-configuration-samples",
       "--root",
       directory + "/documentation" 
    ])

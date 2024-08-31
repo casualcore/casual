@@ -1,0 +1,101 @@
+---
+domain:
+  name: "domain-name"
+  global:
+    note: "'domain global' config. Aggregates right to left"
+    service:
+      note: "Will be used for services that are not explicitly configured."
+      execution:
+        timeout:
+          duration: "2h"
+          contract: "linger"
+  default:
+    note: "'default', fallback, configuration. Will only affect 'local' configuration and will not aggregate 'between' configurations"
+    server:
+      instances: 1
+      restart: true
+      memberships:
+        - "customer-group"
+      environment:
+        variables:
+          - key: "SOME_VARIABLE"
+            value: "foo"
+    executable:
+      instances: 1
+      restart: false
+    service:
+      execution:
+        timeout:
+          duration: "20s"
+      visibility: "discoverable"
+  environment:
+    variables:
+      - key: "SOME_VARIABLE"
+        value: "42"
+      - key: "SOME_OTHER_VARIABLE"
+        value: "some value"
+  groups:
+    - name: "common-group"
+      note: "group that logically groups 'common' stuff"
+    - name: "customer-group"
+      note: "group that logically groups 'customer' stuff"
+      resources:
+        - "customer-db"
+      dependencies:
+        - "common-group"
+    - name: "sales-group"
+      note: "group that logically groups 'customer' stuff"
+      resources:
+        - "sales-db"
+        - "event-queue"
+      dependencies:
+        - "customer-group"
+  servers:
+    - path: "/some/path/customer-server-1"
+      memberships:
+        - "customer-group"
+    - path: "/some/path/customer-server-2"
+      memberships:
+        - "customer-group"
+    - path: "/some/path/sales-server"
+      alias: "sales-pre"
+      note: "the only services that will be advertised are the ones who matches regex \"preSales.*\""
+      instances: 10
+      memberships:
+        - "sales-group"
+      restrictions:
+        - "preSales.*"
+    - path: "/some/path/sales-server"
+      alias: "sales-post"
+      note: "he only services that will be advertised are the ones who matches regex \"postSales.*\""
+      memberships:
+        - "sales-group"
+      restrictions:
+        - "postSales.*"
+    - path: "/some/path/sales-broker"
+      memberships:
+        - "sales-group"
+      environment:
+        variables:
+          - key: "SALES_BROKER_VARIABLE"
+            value: "556"
+      resources:
+        - "event-queue"
+  executables:
+    - path: "/some/path/mq-server"
+      arguments:
+        - "--configuration"
+        - "/path/to/configuration"
+      memberships:
+        - "common-group"
+  services:
+    - name: "a"
+      execution:
+        timeout:
+          duration: "64ms"
+          contract: "abort"
+      routes:
+        - "b"
+        - "c"
+      visibility: "undiscoverable"
+...

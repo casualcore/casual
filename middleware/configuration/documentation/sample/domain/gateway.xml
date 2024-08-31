@@ -1,0 +1,156 @@
+<?xml version="1.0"?>
+<domain>
+ <gateway>
+  <inbound>
+   <default>
+    <note>discovery forward is disabled default.</note>
+    <connection>
+     <discovery>
+      <forward>false</forward>
+     </discovery>
+    </connection>
+   </default>
+   <groups>
+    <element>
+     <alias>in-A</alias>
+     <note>if threshold of 2MB of total payload 'in flight' is reach inbound will stop consume from socket until we're below</note>
+     <limit>
+      <size>2097152</size>
+     </limit>
+     <connections>
+      <element>
+       <address>localhost:7778</address>
+       <note>can be several listening host:port per inbound instance</note>
+      </element>
+      <element>
+       <address>some.host.org:7779</address>
+       <discovery>
+        <forward>true</forward>
+       </discovery>
+       <note>discovery will be forward to 'all' outbounds</note>
+      </element>
+     </connections>
+    </element>
+    <element>
+     <alias>in-B</alias>
+     <note>threshold of either 10 messages OR 10MB - the first that is reach, inbound will stop consume</note>
+     <limit>
+      <size>10485760</size>
+      <messages>10</messages>
+     </limit>
+     <connections>
+      <element>
+       <address>some.host.org:7780</address>
+      </element>
+      <element>
+       <address>some.host.org:4242</address>
+      </element>
+     </connections>
+    </element>
+    <element>
+     <note>(generated alias) listeners - no limits</note>
+     <connections>
+      <element>
+       <address>some.host.org:4242</address>
+      </element>
+     </connections>
+    </element>
+   </groups>
+  </inbound>
+  <outbound>
+   <groups>
+    <element>
+     <alias>out-A</alias>
+     <note>casual will 'round-robin' between connections within a group for the same service/queue</note>
+     <order>1</order>
+     <connections>
+      <element>
+       <address>a45.domain.host.org:7779</address>
+       <note>connection to domain 'a45' - we expect to find service 's1' and 's2' there.</note>
+       <services>
+        <element>s1</element>
+        <element>s2</element>
+       </services>
+      </element>
+      <element>
+       <address>a46.domain.host.org:7779</address>
+       <note>we expect to find queues 'q1' and 'q2' and service 's1'</note>
+       <services>
+        <element>s1</element>
+       </services>
+       <queues>
+        <element>q1</element>
+        <element>q2</element>
+       </queues>
+      </element>
+     </connections>
+    </element>
+    <element>
+     <alias>out-B</alias>
+     <note>has the same order as out-A group -&gt; services found in out-A and out-B will be load balanced.</note>
+     <order>1</order>
+     <connections>
+      <element>
+       <address>a47.domain.host.org:7779</address>
+      </element>
+     </connections>
+    </element>
+    <element>
+     <alias>fallback</alias>
+     <order>10</order>
+     <connections>
+      <element>
+       <address>a99.domain.host.org:7780</address>
+       <note>will be chosen if _resources_ are not found at connections in the out-A or out-B group</note>
+      </element>
+     </connections>
+    </element>
+   </groups>
+  </outbound>
+  <reverse>
+   <inbound>
+    <groups>
+     <element>
+      <alias>in-C</alias>
+      <note>connect to other reverse outbound that is listening on this port - then treat it as a regular inbound</note>
+      <limit>
+       <messages>42</messages>
+      </limit>
+      <connections>
+       <element>
+        <address>localhost:7780</address>
+        <note>one of possible many addresses to connect to</note>
+       </element>
+      </connections>
+     </element>
+    </groups>
+   </inbound>
+   <outbound>
+    <groups>
+     <element>
+      <alias>out-C</alias>
+      <note>listen for connection from reverse inbound - then treat it as a regular outbound</note>
+      <order>1</order>
+      <connections>
+       <element>
+        <address>localhost:7780</address>
+        <note>one of possible many listening addresses.</note>
+       </element>
+      </connections>
+     </element>
+     <element>
+      <alias>out-D</alias>
+      <note>another instance (process) that handles (multiplexed) traffic on it's own</note>
+      <order>2</order>
+      <connections>
+       <element>
+        <address>localhost:7781</address>
+        <note>one of possible many listening addresses.</note>
+       </element>
+      </connections>
+     </element>
+    </groups>
+   </outbound>
+  </reverse>
+ </gateway>
+</domain>

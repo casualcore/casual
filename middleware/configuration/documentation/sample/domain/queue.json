@@ -1,0 +1,143 @@
+{
+    "domain": {
+        "queue": {
+            "note": "retry.count - if number of rollbacks is greater, message is moved to error-queue  retry.delay - the amount of time before the message is available for consumption, after rollback\n",
+            "default": {
+                "queue": {
+                    "retry": {
+                        "count": 3,
+                        "delay": "20s"
+                    }
+                },
+                "directory": "${CASUAL_DOMAIN_HOME}/queue/groups"
+            },
+            "groups": [
+                {
+                    "alias": "A",
+                    "note": "will get default queuebase: ${CASUAL_DOMAIN_HOME}/queue/groups/A.qb",
+                    "queues": [
+                        {
+                            "name": "a1",
+                            "enable": {
+                                "enqueue": true,
+                                "dequeue": false
+                            },
+                            "note": "dequeue is disabled -> dequeue will give no_queue error (unless the queue is found elsewhere)"
+                        },
+                        {
+                            "name": "a2",
+                            "retry": {
+                                "count": 10,
+                                "delay": "100ms"
+                            },
+                            "note": "after 10 rollbacked dequeues, message is moved to a2.error"
+                        },
+                        {
+                            "name": "a3"
+                        },
+                        {
+                            "name": "a4"
+                        }
+                    ]
+                },
+                {
+                    "alias": "B",
+                    "queuebase": "/some/fast/disk/queue/groupB.qb",
+                    "queues": [
+                        {
+                            "name": "b1"
+                        },
+                        {
+                            "name": "b2",
+                            "retry": {
+                                "count": 20
+                            },
+                            "note": "after 20 rollbacked dequeues, message is moved to b2.error. retry.delay is 'inherited' from default, if any"
+                        }
+                    ]
+                },
+                {
+                    "alias": "C",
+                    "queuebase": ":memory:",
+                    "note": "group is an in-memory queue, hence no persistence",
+                    "queues": [
+                        {
+                            "name": "c1"
+                        },
+                        {
+                            "name": "c2"
+                        }
+                    ]
+                },
+                {
+                    "alias": "D",
+                    "note": "group limited to a total message size of 10KiB, after which further enqueues will give no_queue error",
+                    "capacity": {
+                        "size": "10KiB"
+                    },
+                    "queues": [
+                        {
+                            "name": "d1"
+                        },
+                        {
+                            "name": "d2"
+                        }
+                    ]
+                }
+            ],
+            "forward": {
+                "default": {
+                    "service": {
+                        "instances": 3,
+                        "reply": {
+                            "delay": "2s"
+                        }
+                    },
+                    "queue": {
+                        "instances": 1,
+                        "target": {
+                            "delay": "500ms"
+                        }
+                    }
+                },
+                "groups": [
+                    {
+                        "alias": "forward-group-1",
+                        "services": [
+                            {
+                                "source": "b1",
+                                "instances": 4,
+                                "target": {
+                                    "service": "casual/example/echo"
+                                },
+                                "reply": {
+                                    "queue": "a3",
+                                    "delay": "10ms"
+                                }
+                            }
+                        ],
+                        "queues": [
+                            {
+                                "source": "c1",
+                                "target": {
+                                    "queue": "a4"
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "alias": "forward-group-2",
+                        "services": [
+                            {
+                                "source": "b2",
+                                "target": {
+                                    "service": "casual/example/echo"
+                                }
+                            }
+                        ]
+                    }
+                ]
+            }
+        }
+    }
+}

@@ -1,0 +1,31 @@
+<?xml version="1.0"?>
+<system>
+ <resources>
+  <element>
+   <key>db2</key>
+   <server>rm-proxy-db2-static</server>
+   <xa_struct_name>db2xa_switch_static_std</xa_struct_name>
+   <libraries>
+    <element>db2</element>
+   </libraries>
+   <paths>
+    <library>
+     <element>${DB2DIR}/lib64</element>
+    </library>
+   </paths>
+  </element>
+  <element>
+   <key>rm-mockup</key>
+   <server>rm-proxy-casual-mockup</server>
+   <xa_struct_name>casual_mockup_xa_switch_static</xa_struct_name>
+   <libraries>
+    <element>casual-mockup-rm</element>
+   </libraries>
+   <paths>
+    <library>
+     <element>${CASUAL_HOME}/lib</element>
+    </library>
+   </paths>
+  </element>
+ </resources>
+</system>

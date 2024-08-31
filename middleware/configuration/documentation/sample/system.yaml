@@ -1,0 +1,20 @@
+---
+system:
+  resources:
+    - key: "db2"
+      server: "rm-proxy-db2-static"
+      xa_struct_name: "db2xa_switch_static_std"
+      libraries:
+        - "db2"
+      paths:
+        library:
+          - "${DB2DIR}/lib64"
+    - key: "rm-mockup"
+      server: "rm-proxy-casual-mockup"
+      xa_struct_name: "casual_mockup_xa_switch_static"
+      libraries:
+        - "casual-mockup-rm"
+      paths:
+        library:
+          - "${CASUAL_HOME}/lib"
+...

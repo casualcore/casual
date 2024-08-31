@@ -26,67 +26,10 @@ server : `string`         | name of the _resource proxy server_ that `transactio
 [libraries : `[string]`]  | libraries that is used link with the resource _build time_ 
 [paths : `Path`]          | include and library paths, during _build time_
 
+## Examples
 
-## examples 
+* [system.yaml](sample/system.yaml)
+* [system.json](sample/system.json)
+* [system.xml](sample/system.xml)
+* [system.ini](sample/system.ini)
 
-Below follows examples in `yaml` and `json` _(casual can also handle `ini` and `xml`)_
-
-### yaml
-```` yaml
----
-system:
-  resources:
-    - key: "db2"
-      server: "rm-proxy-db2-static"
-      xa_struct_name: "db2xa_switch_static_std"
-      libraries:
-        - "db2"
-      paths:
-        library:
-          - "${DB2DIR}/lib64"
-    - key: "rm-mockup"
-      server: "rm-proxy-casual-mockup"
-      xa_struct_name: "casual_mockup_xa_switch_static"
-      libraries:
-        - "casual-mockup-rm"
-      paths:
-        library:
-          - "${CASUAL_HOME}/lib"
-...
-
-````
-### json
-```` json
-{
-    "system": {
-        "resources": [
-            {
-                "key": "db2",
-                "server": "rm-proxy-db2-static",
-                "xa_struct_name": "db2xa_switch_static_std",
-                "libraries": [
-                    "db2"
-                ],
-                "paths": {
-                    "library": [
-                        "${DB2DIR}/lib64"
-                    ]
-                }
-            },
-            {
-                "key": "rm-mockup",
-                "server": "rm-proxy-casual-mockup",
-                "xa_struct_name": "casual_mockup_xa_switch_static",
-                "libraries": [
-                    "casual-mockup-rm"
-                ],
-                "paths": {
-                    "library": [
-                        "${CASUAL_HOME}/lib"
-                    ]
-                }
-            }
-        ]
-    }
-}
-````

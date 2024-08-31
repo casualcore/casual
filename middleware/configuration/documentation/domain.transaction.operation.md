@@ -49,69 +49,10 @@ name : `string`         | a (unique) name to reference this resource |
 
 Note: `key` has to be present in `system.resources.key`
 
-## examples 
+## Examples
 
-Below follows examples in `yaml` and `json` _(casual can also handle `ini` and `xml`)_
+* [domain/transaction.yaml](sample/domain/transaction.yaml)
+* [domain/transaction.json](sample/domain/transaction.json)
+* [domain/transaction.xml](sample/domain/transaction.xml)
+* [domain/transaction.ini](sample/domain/transaction.ini)
 
-### yaml
-```` yaml
----
-domain:
-  transaction:
-    default:
-      resource:
-        key: "db2_rm"
-        instances: 3
-    log: "/some/fast/disk/domain.A42/transaction.log"
-    resources:
-      - name: "customer-db"
-        instances: 5
-        note: "this resource is named 'customer-db' - using the default rm-key (db_rm) - overrides the default rm-instances to 5"
-        openinfo: "db=customer,uid=db2,pwd=db2"
-      - name: "sales-db"
-        note: "this resource is named 'sales-db' - using the default rm-key (db_rm) - using default rm-instances"
-        openinfo: "db=sales,uid=db2,pwd=db2"
-      - name: "event-queue"
-        key: "mq_rm"
-        note: "this resource is named 'event-queue' - overrides rm-key - using default rm-instances"
-        openinfo: "some-mq-specific-stuff"
-        closeinfo: "some-mq-specific-stuff"
-...
-
-````
-### json
-```` json
-{
-    "domain": {
-        "transaction": {
-            "default": {
-                "resource": {
-                    "key": "db2_rm",
-                    "instances": 3
-                }
-            },
-            "log": "/some/fast/disk/domain.A42/transaction.log",
-            "resources": [
-                {
-                    "name": "customer-db",
-                    "instances": 5,
-                    "note": "this resource is named 'customer-db' - using the default rm-key (db_rm) - overrides the default rm-instances to 5",
-                    "openinfo": "db=customer,uid=db2,pwd=db2"
-                },
-                {
-                    "name": "sales-db",
-                    "note": "this resource is named 'sales-db' - using the default rm-key (db_rm) - using default rm-instances",
-                    "openinfo": "db=sales,uid=db2,pwd=db2"
-                },
-                {
-                    "name": "event-queue",
-                    "key": "mq_rm",
-                    "note": "this resource is named 'event-queue' - overrides rm-key - using default rm-instances",
-                    "openinfo": "some-mq-specific-stuff",
-                    "closeinfo": "some-mq-specific-stuff"
-                }
-            ]
-        }
-    }
-}
-````

@@ -1,0 +1,85 @@
+---
+domain:
+  gateway:
+    inbound:
+      default:
+        note: "discovery forward is disabled default."
+        connection:
+          discovery:
+            forward: false
+      groups:
+        - alias: "in-A"
+          note: "if threshold of 2MB of total payload 'in flight' is reach inbound will stop consume from socket until we're below"
+          limit:
+            size: 2097152
+          connections:
+            - address: "localhost:7778"
+              note: "can be several listening host:port per inbound instance"
+            - address: "some.host.org:7779"
+              discovery:
+                forward: true
+              note: "discovery will be forward to 'all' outbounds"
+        - alias: "in-B"
+          note: "threshold of either 10 messages OR 10MB - the first that is reach, inbound will stop consume"
+          limit:
+            size: 10485760
+            messages: 10
+          connections:
+            - address: "some.host.org:7780"
+            - address: "some.host.org:4242"
+        - note: "(generated alias) listeners - no limits"
+          connections:
+            - address: "some.host.org:4242"
+    outbound:
+      groups:
+        - alias: "out-A"
+          note: "casual will 'round-robin' between connections within a group for the same service/queue"
+          order: 1
+          connections:
+            - address: "a45.domain.host.org:7779"
+              note: "connection to domain 'a45' - we expect to find service 's1' and 's2' there."
+              services:
+                - "s1"
+                - "s2"
+            - address: "a46.domain.host.org:7779"
+              note: "we expect to find queues 'q1' and 'q2' and service 's1'"
+              services:
+                - "s1"
+              queues:
+                - "q1"
+                - "q2"
+        - alias: "out-B"
+          note: "has the same order as out-A group -> services found in out-A and out-B will be load balanced."
+          order: 1
+          connections:
+            - address: "a47.domain.host.org:7779"
+        - alias: "fallback"
+          order: 10
+          connections:
+            - address: "a99.domain.host.org:7780"
+              note: "will be chosen if _resources_ are not found at connections in the out-A or out-B group"
+    reverse:
+      inbound:
+        groups:
+          - alias: "in-C"
+            note: "connect to other reverse outbound that is listening on this port - then treat it as a regular inbound"
+            limit:
+              messages: 42
+            connections:
+              - address: "localhost:7780"
+                note: "one of possible many addresses to connect to"
+      outbound:
+        groups:
+          - alias: "out-C"
+            note: "listen for connection from reverse inbound - then treat it as a regular outbound"
+            order: 1
+            connections:
+              - address: "localhost:7780"
+                note: "one of possible many listening addresses."
+          - alias: "out-D"
+            note: "another instance (process) that handles (multiplexed) traffic on it's own"
+            order: 2
+            connections:
+              - address: "localhost:7781"
+                note: "one of possible many listening addresses."
+...

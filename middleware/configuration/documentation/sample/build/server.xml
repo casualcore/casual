@@ -1,0 +1,35 @@
+<?xml version="1.0"?>
+<server>
+ <default>
+  <service>
+   <transaction>join</transaction>
+   <category>some.category</category>
+  </service>
+ </default>
+ <resources>
+  <element>
+   <key>rm-mockup</key>
+   <name>resource-1</name>
+   <note>the runtime configuration for this resource is correlated with the name 'resource-1' - no group is needed for resource configuration</note>
+  </element>
+ </resources>
+ <services>
+  <element>
+   <name>s1</name>
+  </element>
+  <element>
+   <name>s2</name>
+   <transaction>auto</transaction>
+  </element>
+  <element>
+   <name>s3</name>
+   <function>f3</function>
+   <visibility>undiscoverable</visibility>
+  </element>
+  <element>
+   <name>s4</name>
+   <function>f4</function>
+   <category>some.other.category</category>
+  </element>
+ </services>
+</server>

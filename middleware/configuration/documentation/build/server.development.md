@@ -24,71 +24,10 @@ Defines which `xa` resources to link and use runtime. If a name is provided for 
 resource, then startup configuration phase will ask for resource configuration for that 
 given name. This is the preferred way, since it is a lot more explicit.
 
-## examples 
 
-Below follows examples in `yaml` and `json` _(casual can also handle `ini` and `xml`)_
+## Examples
 
-### yaml
-```` yaml
----
-server:
-  default:
-    service:
-      transaction: "join"
-      category: "some.category"
-  resources:
-    - key: "rm-mockup"
-      name: "resource-1"
-      note: "the runtime configuration for this resource is correlated with the name 'resource-1' - no group is needed for resource configuration"
-  services:
-    - name: "s1"
-    - name: "s2"
-      transaction: "auto"
-    - name: "s3"
-      function: "f3"
-      visibility: "undiscoverable"
-    - name: "s4"
-      function: "f4"
-      category: "some.other.category"
-...
-
-````
-### json
-```` json
-{
-    "server": {
-        "default": {
-            "service": {
-                "transaction": "join",
-                "category": "some.category"
-            }
-        },
-        "resources": [
-            {
-                "key": "rm-mockup",
-                "name": "resource-1",
-                "note": "the runtime configuration for this resource is correlated with the name 'resource-1' - no group is needed for resource configuration"
-            }
-        ],
-        "services": [
-            {
-                "name": "s1"
-            },
-            {
-                "name": "s2",
-                "transaction": "auto"
-            },
-            {
-                "name": "s3",
-                "function": "f3",
-                "visibility": "undiscoverable"
-            },
-            {
-                "name": "s4",
-                "function": "f4",
-                "category": "some.other.category"
-            }
-        ]
-    }
-}
-````
+* [build/server.yaml](../sample/build/server.yaml)
+* [build/server.json](../sample/build/server.json)
+* [build/server.xml](../sample/build/server.xml)
+* [build/server.ini](../sample/build/server.ini)

@@ -19,34 +19,10 @@ normal main function `int <entrypoint-name>( int argc, char** argv)`.
 resources and such, then invoke the `entrypoint`, and all the control is left to user. As if 
 the `entrypoint` was the `main` function.
 
-## examples 
 
-Below follows examples in `yaml` and `json` _(casual can also handle `ini` and `xml`)_
+## Examples
 
-### yaml
-```` yaml
----
-executable:
-  resources:
-    - key: "rm-mockup"
-      name: "resource-1"
-      note: "the runtime configuration for this resource is correlated with the name 'resource-1' - no group is needed for resource configuration"
-  entrypoint: "start"
-...
-
-````
-### json
-```` json
-{
-    "executable": {
-        "resources": [
-            {
-                "key": "rm-mockup",
-                "name": "resource-1",
-                "note": "the runtime configuration for this resource is correlated with the name 'resource-1' - no group is needed for resource configuration"
-            }
-        ],
-        "entrypoint": "start"
-    }
-}
-````
+* [build/executable.yaml](../sample/build/executable.yaml)
+* [build/executable.json](../sample/build/executable.json)
+* [build/executable.xml](../sample/build/executable.xml)
+* [build/executable.ini](../sample/build/executable.ini)

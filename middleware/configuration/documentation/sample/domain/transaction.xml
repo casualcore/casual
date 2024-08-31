@@ -1,0 +1,32 @@
+<?xml version="1.0"?>
+<domain>
+ <transaction>
+  <default>
+   <resource>
+    <key>db2_rm</key>
+    <instances>3</instances>
+   </resource>
+  </default>
+  <log>/some/fast/disk/domain.A42/transaction.log</log>
+  <resources>
+   <element>
+    <name>customer-db</name>
+    <instances>5</instances>
+    <note>this resource is named 'customer-db' - using the default rm-key (db_rm) - overrides the default rm-instances to 5</note>
+    <openinfo>db=customer,uid=db2,pwd=db2</openinfo>
+   </element>
+   <element>
+    <name>sales-db</name>
+    <note>this resource is named 'sales-db' - using the default rm-key (db_rm) - using default rm-instances</note>
+    <openinfo>db=sales,uid=db2,pwd=db2</openinfo>
+   </element>
+   <element>
+    <name>event-queue</name>
+    <key>mq_rm</key>
+    <note>this resource is named 'event-queue' - overrides rm-key - using default rm-instances</note>
+    <openinfo>some-mq-specific-stuff</openinfo>
+    <closeinfo>some-mq-specific-stuff</closeinfo>
+   </element>
+  </resources>
+ </transaction>
+</domain>
