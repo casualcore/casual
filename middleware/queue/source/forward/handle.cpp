@@ -453,6 +453,8 @@ namespace casual
 
                         comply::to::state( state);
 
+                        state.runlevel = decltype( state.runlevel())::running;
+
                         state.multiplex.send( message.process.ipc, common::message::reverse::type( message, process::handle()));
                      };
                   }
