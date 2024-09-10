@@ -20,6 +20,7 @@ namespace casual
          no_queue = 10,
          argument = 20,
          system = 30,
+         signaled = 40,
       };
       std::string_view description( code::queue value) noexcept;
 

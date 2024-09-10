@@ -66,6 +66,7 @@ namespace casual
             case code::queue::no_queue: return "no_queue";
             case code::queue::argument: return "argument";
             case code::queue::system: return "system";
+            case code::queue::signaled: return "signaled";
          }
          return "<unknown>";
       }

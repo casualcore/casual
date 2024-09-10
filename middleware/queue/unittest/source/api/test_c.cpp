@@ -10,6 +10,8 @@
 #include "queue/api/queue.h"
 
 #include "common/buffer/type.h"
+#include "common/signal.h"
+#include "common/code/signal.h"
 
 #include "domain/unittest/manager.h"
 
@@ -452,6 +454,25 @@ domain:
 
          EXPECT_TRUE( casual_queue_browse_peek( "non-existent-queue", handle_message, nullptr) == -1);
          EXPECT_TRUE( casual_qerrno == CASUAL_QE_NO_QUEUE) << "error: " << casual_queue_error_string( casual_qerrno);
+      }
+
+
+      TEST( casual_queue_c_api, dequeue__signal_interrupt__expect_signaled_error)
+      {
+         common::unittest::Trace trace;
+
+         auto domain = local::domain();
+
+         auto buffer = local::buffer::allocate();
+         auto message  = casual_queue_message_create( { buffer.get(), buffer.size()});
+         EXPECT_TRUE( casual_queue_enqueue( "A1", message) != -1) << "error: " << casual_queue_error_string( casual_qerrno);
+
+         common::signal::send( common::process::id(), common::code::signal::interrupt);
+
+         EXPECT_TRUE( casual_queue_dequeue( "A1", CASUAL_QUEUE_NO_SELECTOR) == -1);
+         EXPECT_TRUE( casual_qerrno == CASUAL_QE_SIGNALED) << "error: " << casual_queue_error_string( casual_qerrno);
+
+         EXPECT_TRUE( casual_queue_message_delete( message) != -1);
       }
    } // queue
 } // casual

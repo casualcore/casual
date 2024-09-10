@@ -39,6 +39,7 @@ typedef struct casual_buffer_t casual_buffer_t;
 #define CASUAL_QE_NO_QUEUE 10
 #define CASUAL_QE_INVALID_ARGUMENTS 20
 #define CASUAL_QE_SYSTEM 30
+#define CASUAL_QE_SIGNALED 40
 
 
 extern int casual_queue_get_errno();
