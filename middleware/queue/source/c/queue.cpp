@@ -22,6 +22,7 @@
 #include "common/buffer/pool.h"
 #include "common/execute.h"
 #include "common/code/queue.h"
+#include "common/code/signal.h"
 
 namespace casual
 {
@@ -51,6 +52,10 @@ namespace casual
                   if( common::code::is::category< common::code::queue>( error.code()))
                   {
                      global::code = static_cast< common::code::queue>( error.code().value());
+                  }
+                  else if( common::code::is::category< common::code::signal>( error.code()))
+                  {
+                     global::code = common::code::queue::signaled;
                   }
                   else
                   {
@@ -395,6 +400,7 @@ namespace casual
                case CASUAL_QE_NO_QUEUE : return "CASUAL_QE_NO_QUEUE";
                case CASUAL_QE_INVALID_ARGUMENTS: return "CASUAL_QE_INVALID_ARGUMENTS"; 
                case CASUAL_QE_SYSTEM: return "CASUAL_QE_SYSTEM";
+               case CASUAL_QE_SIGNALED: return "CASUAL_QE_SIGNALED";
             }
 
             return "<unknown>";
