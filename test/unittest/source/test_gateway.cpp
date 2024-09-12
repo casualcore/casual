@@ -1316,7 +1316,7 @@ domain:
 
             casual::domain::manager::admin::cli cli;
             common::argument::Parse parse{ "", cli.options()};
-            parse( { "domain", "--scale-instances", "casual-example-server", "0"});
+            parse( { "domain", "--scale-aliases", "casual-example-server", "0"});
          }
 
          a.activate();
@@ -1385,7 +1385,7 @@ domain:
 
          {
             casual::domain::manager::admin::cli cli;
-            common::argument::Parse{ "", cli.options()}( { "domain", "--scale-instances", "casual-example-server", "0"});
+            common::argument::Parse{ "", cli.options()}( { "domain", "--scale-aliases", "casual-example-server", "0"});
          }
 
          // wait for the unadvertise
@@ -3390,7 +3390,7 @@ domain:
             // scale up to 1 instance
             casual::domain::manager::admin::cli cli;
             common::argument::Parse parse{ "", cli.options()};
-            parse( { "domain", "--scale-instances", "casual-example-server", "1"});
+            parse( { "domain", "--scale-aliases", "casual-example-server", "1"});
             casual::service::unittest::fetch::until( casual::service::unittest::fetch::predicate::instances( "casual/example/echo", 1));
          }
 
@@ -3454,7 +3454,7 @@ domain:
             // scale up to 1 instance
             casual::domain::manager::admin::cli cli;
             common::argument::Parse parse{ "", cli.options()};
-            parse( { "domain", "--scale-instances", "casual-example-server", "1"});
+            parse( { "domain", "--scale-aliases", "casual-example-server", "1"});
             casual::service::unittest::fetch::until( casual::service::unittest::fetch::predicate::instances( "casual/example/echo", 1));
          }
 

@@ -345,7 +345,7 @@ namespace casual
          )
       };
 
-      namespace scale
+      namespace scale::resource::proxy
       {
          struct Instances
          {
@@ -362,7 +362,7 @@ namespace casual
          };
 
 
-      } // scale
+      } // scale::resource::proxy
    } // inline v1
 
    } // transaction::manager::admin::model

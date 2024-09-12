@@ -35,22 +35,22 @@ namespace casual
                      return protocol.finalize();
                   }
 
-                  namespace scale
+                  namespace scale::resource::proxy
                   {
                      common::service::invoke::Result instances( common::service::invoke::Parameter&& parameter, manager::State& state)
                      {
                         auto protocol = serviceframework::service::protocol::deduce( std::move( parameter));
 
-                        std::vector< admin::model::scale::Instances> instances;
+                        std::vector< admin::model::scale::resource::proxy::Instances> instances;
                         protocol >> CASUAL_NAMED_VALUE( instances);
 
-                        auto result = serviceframework::service::user( protocol, &action::resource::instances, state, std::move( instances));
+                        auto result = serviceframework::service::user( protocol, &action::resource::proxy::instances, state, std::move( instances));
 
                         protocol << CASUAL_NAMED_VALUE( result);
                         return protocol.finalize();
 
                      }
-                  } // update
+                  } // scale::resource::proxy
                } // <unnamed>
             } // local
 
@@ -64,8 +64,8 @@ namespace casual
                         common::service::visibility::Type::undiscoverable,
                         common::service::category::admin
                      },
-                     { service::name::scale::instances,
-                        std::bind( &local::scale::instances, std::placeholders::_1, std::ref( state)),
+                     { service::name::scale::resource::proxies,
+                        std::bind( &local::scale::resource::proxy::instances, std::placeholders::_1, std::ref( state)),
                         common::service::transaction::Type::none,
                         common::service::visibility::Type::undiscoverable,
                         common::service::category::admin

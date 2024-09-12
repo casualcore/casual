@@ -7,7 +7,6 @@
 #include "transaction/manager/state.h"
 #include "transaction/common.h"
 #include "transaction/manager/handle.h"
-#include "transaction/manager/action.h"
 #include "transaction/manager/transform.h"
 #include "transaction/manager/configuration.h"
 

@@ -18,7 +18,7 @@ namespace casual
 {
    namespace transaction::manager::action
    {
-      namespace resource
+      namespace resource::proxy
       {
          namespace scale
          {
@@ -26,9 +26,9 @@ namespace casual
             inline auto instances( State& state) { return [ &state]( auto& proxy){ scale::instances( state, proxy);};}
          } // scale
 
-         std::vector< admin::model::resource::Proxy> instances( State& state, std::vector< admin::model::scale::Instances> instances);
+         std::vector< admin::model::resource::Proxy> instances( State& state, std::vector< admin::model::scale::resource::proxy::Instances> instances);
 
-      } // resource
+      } // resource::proxy
    } // transaction::manager::action
 } // casual
 
