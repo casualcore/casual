@@ -19,9 +19,10 @@ namespace casual
          {
             constexpr std::string_view state = ".casual/transaction/state";
 
-            namespace scale
+            namespace scale::resource
             {
-               constexpr std::string_view instances = ".casual/transaction/scale/instances";
+               // TODO: rename this?
+               constexpr std::string_view proxies = ".casual/transaction/scale/instances";
             } // update
 
          } // service::name

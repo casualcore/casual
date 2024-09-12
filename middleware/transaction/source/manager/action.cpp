@@ -32,13 +32,13 @@ namespace casual
    namespace transaction::manager::action
    {
 
-      namespace resource
+      namespace resource::proxy
       {
          namespace scale
          {
             void instances( State& state, state::resource::Proxy& proxy)
             {
-               Trace trace( "resource::Instances::operator()");
+               Trace trace{ "transaction:manager::action::resource::proxy::scale::instances"};
                log::line( log, "update instances for resource: ", proxy);
             
                auto count = proxy.configuration.instances - range::size( proxy.instances);
@@ -82,7 +82,6 @@ namespace casual
 
                         case State::spawned:
                         {
-
                            log::line( log, "Instance has not register yet. We, kill it...: ", instance);
 
                            process::lifetime::terminate( { instance.process.pid});
@@ -108,7 +107,7 @@ namespace casual
          } // scale
 
 
-         std::vector< admin::model::resource::Proxy> instances( State& state, std::vector< admin::model::scale::Instances> instances)
+         std::vector< admin::model::resource::Proxy> instances( State& state, std::vector< admin::model::scale::resource::proxy::Instances> instances)
          {
             std::vector< admin::model::resource::Proxy> result;
 
@@ -131,7 +130,7 @@ namespace casual
             return result;
          }
 
-      } // resource
+      } // resource::proxy
          
    } //transaction::manager::action
 } // casual

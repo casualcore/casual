@@ -54,8 +54,10 @@ host# casual --help transaction
             
             @note: part of casual-pipe
 
-      -si, --scale-instances [0..1]  (rm-id, # instances) [0..* {2}]
+      --scale-resource-proxies [0..1]  (rm-id, # instances) [0..* {2}]
             scale resource proxy instances
+
+            deprecated: [--si, --scale-instances]
 
       -lp, --list-pending [0..1]
             list pending tasks

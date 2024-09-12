@@ -44,12 +44,12 @@ namespace casual
                   return call( service::name::state).extract< admin::model::State>();
                }
 
-               namespace scale
+               namespace scale::resource::proxy
                {
-                  auto instances( const std::vector< admin::model::scale::Instances>& instances)
+                  auto instances( const std::vector< admin::model::scale::resource::proxy::Instances>& instances)
                   {
                      serviceframework::service::protocol::binary::Call call;
-                     return call( service::name::scale::instances, instances).extract< std::vector< admin::model::resource::Proxy>>();
+                     return call( service::name::scale::resource::proxies, instances).extract< std::vector< admin::model::resource::Proxy>>();
                   }
                } // update
 
@@ -618,17 +618,15 @@ External resources only have one instance, hence resources and resource-instance
                      return argument::Option{
                         [](  std::vector< std::tuple< std::string, int>> values)
                         {
-                           auto resources = call::scale::instances( common::algorithm::transform( values, []( auto& value){
+                           call::scale::resource::proxy::instances( common::algorithm::transform( values, []( auto& value){
                               if( std::get< 1>( value) < 0)
                                  code::raise::error( code::casual::invalid_argument, "number of instances cannot be negative");
-                              
-                              admin::model::scale::Instances instance;
-                              instance.name = std::get< 0>( value);
-                              instance.instances = std::get< 1>( value);
-                              return instance;
-                           }));
 
-                           format::resource_proxy().print( std::cout, algorithm::sort( resources));
+                              return admin::model::scale::resource::proxy::Instances{ 
+                                 .name = std::get< 0>( value),
+                                 .instances = std::get< 1>( value)
+                              };
+                           }));
                         },
                         []( auto values, bool help) -> std::vector< std::string>
                         {
@@ -640,7 +638,7 @@ External resources only have one instance, hence resources and resource-instance
       
                            return { common::argument::reserved::name::suggestions::value()}; 
                         },
-                        { "-si", "--scale-instances"},
+                        argument::option::keys( { "--scale-resource-proxies"}, { "-si", "--scale-instances"}),
                         R"(scale resource proxy instances)"
                      };
                   }

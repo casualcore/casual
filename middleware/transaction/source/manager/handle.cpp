@@ -6,7 +6,6 @@
 
 
 #include "transaction/manager/handle.h"
-#include "transaction/manager/action.h"
 #include "transaction/common.h"
 #include "transaction/manager/admin/server.h"
 #include "transaction/manager/configuration.h"
