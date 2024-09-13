@@ -25,30 +25,31 @@ namespace casual
                namespace
                {
 
-                  common::service::invoke::Result state( common::service::invoke::Parameter&& parameter, manager::State& state)
+                  auto state( manager::State& state)
                   {
-                     auto protocol = serviceframework::service::protocol::deduce( std::move( parameter));
-
-                     auto result = serviceframework::service::user( protocol, &transform::state, state);
-
-                     protocol << CASUAL_NAMED_VALUE( result);
-                     return protocol.finalize();
+                     return [ &state]( common::service::invoke::Parameter&& parameter)
+                     {
+                        return serviceframework::service::user( 
+                           serviceframework::service::protocol::deduce( std::move( parameter)),
+                           &transform::state, state);
+                     };
                   }
 
                   namespace scale::resource::proxy
                   {
-                     common::service::invoke::Result instances( common::service::invoke::Parameter&& parameter, manager::State& state)
+                     auto instances( manager::State& state)
                      {
-                        auto protocol = serviceframework::service::protocol::deduce( std::move( parameter));
+                        return [ &state]( common::service::invoke::Parameter&& parameter)
+                        {
+                           auto protocol = serviceframework::service::protocol::deduce( std::move( parameter));
+                           auto instances = protocol.extract< std::vector< admin::model::scale::resource::proxy::Instances>>( "instances");
 
-                        std::vector< admin::model::scale::resource::proxy::Instances> instances;
-                        protocol >> CASUAL_NAMED_VALUE( instances);
-
-                        auto result = serviceframework::service::user( protocol, &action::resource::proxy::instances, state, std::move( instances));
-
-                        protocol << CASUAL_NAMED_VALUE( result);
-                        return protocol.finalize();
-
+                           return serviceframework::service::user(
+                              std::move( protocol),
+                              &action::resource::proxy::instances,
+                              state,
+                              std::move( instances));
+                        };
                      }
                   } // scale::resource::proxy
                } // <unnamed>
@@ -59,16 +60,23 @@ namespace casual
             {
                return { {
                      { service::name::state,
-                        std::bind( &local::state, std::placeholders::_1, std::ref( state)),
+                        local::state( state),
                         common::service::transaction::Type::none,
                         common::service::visibility::Type::undiscoverable,
                         common::service::category::admin
                      },
                      { service::name::scale::resource::proxies,
-                        std::bind( &local::scale::resource::proxy::instances, std::placeholders::_1, std::ref( state)),
+                        local::scale::resource::proxy::instances( state),
                         common::service::transaction::Type::none,
                         common::service::visibility::Type::undiscoverable,
                         common::service::category::admin
+                     },
+                     // deprecated
+                     { ".casual/transaction/scale/instances",
+                        local::scale::resource::proxy::instances( state),
+                        common::service::transaction::Type::none,
+                        common::service::visibility::Type::undiscoverable,
+                        common::service::category::deprecated
                      }
                }};
             }

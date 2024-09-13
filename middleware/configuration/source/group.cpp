@@ -63,11 +63,6 @@ namespace casual
          : m_groups{ local::transform_groups( configured_groups)}
       {}
 
-      void Coordinator::update( const std::vector< model::domain::Group>& configured_groups)
-      {
-         m_groups = local::transform_groups( configured_groups);
-      }
-
       bool Coordinator::enabled( const std::vector< std::string>& memberships) const
       {
          return local::enabled( memberships, m_groups);

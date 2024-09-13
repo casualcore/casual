@@ -25,8 +25,7 @@ namespace casual
             {
                auto path = unittest::file::temporary::content( ".yaml", std::move( content));
                auto model = configuration::model::load( { path});
-               auto coordinator = configuration::group::Coordinator{};
-               coordinator.update( model.domain.groups);
+               auto coordinator = configuration::group::Coordinator{ model.domain.groups};
                EXPECT_EQ( coordinator.config(), model.domain.groups);
                return coordinator;
             };

@@ -375,7 +375,7 @@ namespace casual
 
       void conform( State& state, casual::configuration::message::update::Request&& message)
       {
-         state.group_coordinator.update( message.model.domain.groups);
+         state.group_coordinator = { message.model.domain.groups};
 
          conform( state, transform::configuration( state), std::move( message.model.queue));
 
