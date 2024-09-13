@@ -14,6 +14,7 @@
 
 #include <iterator>
 #include <concepts>
+#include <span>
 #include <cassert>
 
 namespace casual 
@@ -81,6 +82,8 @@ namespace casual
 
          constexpr reference at( const difference_type index) { return at( m_first, m_last, index);}
          constexpr const reference at( const difference_type index) const { return at( m_first, m_last, index);}
+
+         operator std::span< value_type> () const noexcept { return std::span< value_type>( data(), size());}
 
       private:
 

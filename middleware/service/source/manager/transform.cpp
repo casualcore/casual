@@ -32,13 +32,10 @@ namespace casual
                };
             };
 
-            auto service()
+            void services( const manager::State& state, auto& target)
             {
-               return []( auto& pair)
+               state.services.for_each( [ &state, &target]( auto id, auto& name, auto& service)
                {
-                  auto& name = std::get< 0>( pair);
-                  auto& value = std::get< 1>( pair);
-
                   auto transform_metric = []( const auto& value)
                   {
                      manager::admin::model::Metric result;
@@ -49,55 +46,58 @@ namespace casual
                      return result;
                   };
 
-                  
-
                   manager::admin::model::Service result;
 
                   result.name = name;
-                  result.execution.timeout = value.timeout;                        
-                  result.metric.invoked = transform_metric( value.metric.invoked);
-                  result.metric.pending = transform_metric( value.metric.pending);
-                  result.metric.remote = value.metric.remote;
-                  result.category = value.category;
-                  result.transaction = value.transaction;
-                  result.visibility = value.visibility.value_or( common::service::visibility::Type::discoverable);
-                  result.metric.last = value.metric.last;
-
-                  auto transform_concurrent = []( const auto& value)
+                  result.execution.timeout = service.timeout;
+                  if( auto found = common::algorithm::find( state.services.metrics(), name))
                   {
+                     result.metric.invoked = transform_metric( found->second.invoked);
+                     result.metric.pending = transform_metric( found->second.pending);
+                     result.metric.remote = found->second.remote;
+                     result.metric.last = found->second.last;
+                  }
+                  result.category = service.category;
+                  result.transaction = service.transaction;
+                  result.visibility = service.visibility.value_or( common::service::visibility::Type::discoverable);
+                  
+
+                  auto transform_concurrent = [ &state]( auto concurrent)
+                  {
+                     auto& instance = state.instances.concurrent[ concurrent.id];
                      return manager::admin::model::service::instance::Concurrent{
-                        value.process(),
-                        value.property.hops,
-                        value.get().order
+                        instance.process,
+                        concurrent.hops
                      };
                   };
 
 
-                  auto transform_sequential = [&]( const auto& value)
+                  auto transform_sequential = [&]( auto instance_id)
                   {
+                     auto& instance = state.instances.sequential[ instance_id];
                      return manager::admin::model::service::instance::Sequential{
-                        value.process(),
+                        instance.process,
                      };
                   };
 
-                  common::algorithm::transform( value.instances.sequential(), result.instances.sequential, transform_sequential);
-                  common::algorithm::transform( value.instances.concurrent(), result.instances.concurrent, transform_concurrent);
+                  common::algorithm::transform( service.instances.sequential(), result.instances.sequential, transform_sequential);
+                  common::algorithm::transform( service.instances.concurrent(), result.instances.concurrent, transform_concurrent);
 
-                  return result;
-               };
+                  target.push_back( std::move( result));
+               });
             }
 
-            auto reservation()
+            auto reservation( const manager::State& state)
             {
-               return []( auto& pair)
-               {
-                  auto& instance = std::get< 1>( pair);
-
+               return [ &state]( auto& instance)
+               { 
                   manager::admin::model::Reservation result;
-                  result.service = instance.reserved_service().value_or( result.service);
+                  if( auto service_id = instance.reserved_service())
+                     result.service = state.services[ service_id].information.name;
+
                   result.callee = instance.process;
 
-                  if( auto caller = instance.caller())
+                  if( auto& caller = instance.caller())
                   {
                      result.caller = caller.process;
                      result.correlation = caller.correlation;
@@ -119,6 +119,9 @@ namespace casual
                      
                      using State = decltype( result.state);
                      result.state = instance.state() == decltype( instance.state())::busy ? State::busy : State::idle;
+
+                     common::log::line( verbose::log, "REMOVE - instance: ", instance);
+                     common::log::line( verbose::log, "REMOVE - result: ", result);
 
                      return result;
                   };
@@ -147,15 +150,19 @@ namespace casual
       {
          manager::admin::model::State result;
 
-         common::algorithm::transform( state.instances.sequential, result.instances.sequential,
-            common::predicate::composition( local::transform::instance::sequential(), common::predicate::adapter::second()));
+         auto transform_index = []( auto& index, auto& result, auto transformer)
+         {
+            index.for_each( [ &]( auto, auto, auto& instance){
+               result.push_back( transformer( instance));
+            });
+         };
 
-         common::algorithm::transform( state.instances.concurrent, result.instances.concurrent,
-            common::predicate::composition( local::transform::instance::concurrent(), common::predicate::adapter::second()));
+         transform_index( state.instances.sequential, result.instances.sequential, local::transform::instance::sequential());
+         transform_index( state.instances.concurrent, result.instances.concurrent, local::transform::instance::concurrent());
+
+         local::services( state, result.services);
 
          common::algorithm::transform( state.pending.lookups, result.pending, local::pending());
-
-         common::algorithm::transform( state.services, result.services, local::service());
 
          common::algorithm::for_each( state.routes, [&result]( auto& pair)
          {
@@ -169,9 +176,18 @@ namespace casual
             });
          });
 
-         common::algorithm::transform_if(
-            state.instances.sequential, std::back_inserter( result.reservations), local::reservation(), []( auto& pair){ return ! pair.second.idle();}
-         );
+         {
+            auto transform_reservation = local::reservation( state);
+
+            state.instances.sequential.for_each( [ transform_reservation, &result]( auto id, auto& ipc, auto& instance)
+            {
+               if( ! instance.idle())
+                  result.reservations.push_back( transform_reservation( instance));
+            });
+
+         }
+
+
 
          return result;
       }
@@ -194,9 +210,8 @@ namespace casual
             return result;
          }));
 
-         common::algorithm::for_each( state.services, [ &result]( auto& pair)
+         state.services.for_each( [ &result]( auto service_id, auto& name, auto& service)
          {
-            auto& service = pair.second;
             if( service.category == ".admin")
                return;
 

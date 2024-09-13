@@ -241,7 +241,7 @@ namespace casual::configuration
             std::optional< platform::time::unit> duration;
             std::optional< Contract> contract;
 
-            Timeout set_union( Timeout lhs, Timeout rhs);
+            friend Timeout set_union( Timeout lhs, Timeout rhs);
 
             friend auto operator <=> ( const Timeout&, const Timeout&) = default;
             inline explicit operator bool() const noexcept { return duration.has_value();}

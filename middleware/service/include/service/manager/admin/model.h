@@ -46,6 +46,16 @@ namespace casual
                busy,
             };
 
+            constexpr std::string_view description( State value) noexcept
+            {
+               switch( value)
+               {
+                  case State::idle: return "idle";
+                  case State::busy: return "busy";
+               }
+               return "<unknown>";
+            }
+
             State state = State::busy;
 
             CASUAL_CONST_CORRECT_SERIALIZE(

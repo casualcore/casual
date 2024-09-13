@@ -19,13 +19,13 @@
 #include "common/file.h"
 
 #include <type_traits>
-
-
+#include <ranges>
 
 #include <spawn.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <csignal>
+
 
 
 //
@@ -492,8 +492,6 @@ namespace casual
          }
 
       }
-
-
 
 
       /*

@@ -7,6 +7,7 @@
 
 #include "service/manager/state.h"
 #include "service/manager/handle.h"
+#include "service/manager/configuration.h"
 #include "service/forward/instance.h"
 #include "service/common.h"
 
@@ -52,7 +53,7 @@ namespace casual
                State state;
 
                // We ask the domain manager for configuration, and 'comply' to it...
-               handle::comply::configuration( state, casual::domain::configuration::fetch());
+               configuration::conform( state, {}, casual::domain::configuration::fetch().service);
 
                // register so domain-manager can fetch configuration from us, and indicate that we can handle
                // runtime configuration updates.

@@ -28,11 +28,6 @@ namespace casual
          common::communication::ipc::inbound::Device& device();
       } // ipc
 
-      namespace comply
-      {
-         void configuration( State& state, casual::configuration::Model model);
-      } // comply
-
       void timeout( State& state);
 
       namespace metric

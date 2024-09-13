@@ -81,14 +81,14 @@ namespace casual
 
          EXPECT_TRUE( state.instances.sequential.size() == 1);
          {
-            auto service = state.service( "service1");
-            ASSERT_TRUE( service);
-            EXPECT_TRUE( service->information.name == "service1");
-            ASSERT_TRUE( service->instances.sequential().size() == 1);
-            auto& instance = service->instances.sequential().at( 0);
-            EXPECT_TRUE( instance.process() == common::process::handle());
-            EXPECT_TRUE( instance.idle());
-            EXPECT_TRUE( instance.get().service( "service1"));
+            auto service_id = state.services.lookup( "service1");
+            ASSERT_TRUE( service_id) << CASUAL_NAMED_VALUE( state);
+            EXPECT_TRUE( state.services[ service_id].information.name == "service1");
+            ASSERT_TRUE( state.services[ service_id].instances.sequential().size() == 1);
+            auto instance_id = state.services[ service_id].instances.sequential().at( 0);
+            EXPECT_TRUE( state.instances.sequential[ instance_id].process == common::process::handle());
+            EXPECT_TRUE( state.instances.sequential[ instance_id].idle());
+            EXPECT_TRUE( state.instances.sequential[ instance_id].service( service_id));
          }
 
          EXPECT_TRUE( state.instances.concurrent.empty());
@@ -117,19 +117,19 @@ namespace casual
          }
 
          {
-            auto service = state.service( "service1");
-            ASSERT_TRUE( service);
-            EXPECT_TRUE( service->information.name == "service1");
-            EXPECT_TRUE( service->instances.sequential().size() == 0);
+            auto service_id = state.services.lookup( "service1");
+            ASSERT_TRUE( service_id);
+            EXPECT_TRUE( state.services[ service_id].information.name == "service1");
+            EXPECT_TRUE( state.services[ service_id].instances.sequential().size() == 0);
          }
 
          {
 
-            auto instance = state.sequential( common::process::handle().ipc);
-            ASSERT_TRUE( instance);
-            EXPECT_TRUE( instance->process == common::process::handle());
-            EXPECT_TRUE( instance->idle());
-            EXPECT_FALSE( instance->service( "service1"));
+            auto instance_id = state.instances.sequential.lookup( common::process::handle().ipc);
+            ASSERT_TRUE( instance_id);
+            EXPECT_TRUE( state.instances.sequential[ instance_id].process == common::process::handle());
+            EXPECT_TRUE( state.instances.sequential[ instance_id].idle());
+            EXPECT_FALSE( state.instances.sequential[ instance_id].service( state.services.lookup( "service1")));
          }
       }
 
@@ -156,11 +156,11 @@ namespace casual
          }
 
          {
-            auto instance = state.sequential( common::process::handle().ipc);
-            ASSERT_TRUE( instance);
+            auto instance_id = state.instances.sequential.lookup( common::process::handle().ipc);
+            ASSERT_TRUE( instance_id);
 
             for( auto& service : message.services.add)
-               ASSERT_TRUE( instance->service( service.name));
+               ASSERT_TRUE( state.instances.sequential[ instance_id].service( state.services.lookup( service.name)));
          }
 
 
@@ -196,20 +196,20 @@ namespace casual
             EXPECT_TRUE( state.update( std::move( message)).empty());
          }
          {
-            auto service = state.service( "s4");
-            ASSERT_TRUE( service);
-            EXPECT_TRUE( service->instances.sequential().empty());
-            service = state.service( "s7");
-            ASSERT_TRUE( service);
-            EXPECT_TRUE( service->instances.sequential().empty());
+            auto service_id = state.services.lookup( "s4");
+            ASSERT_TRUE( service_id);
+            EXPECT_TRUE( state.services[ service_id].instances.sequential().empty());
+            service_id = state.services.lookup( "s7");
+            ASSERT_TRUE( service_id);
+            EXPECT_TRUE( state.services[ service_id].instances.sequential().empty());
          }
 
          {
-            auto instance = state.sequential( common::process::handle().ipc);
-            ASSERT_TRUE( instance);
-            EXPECT_FALSE( instance->service( "s4"));
-            EXPECT_FALSE( instance->service( "s7"));
-            EXPECT_TRUE( instance->service( "s0"));
+            auto instance_id = state.instances.sequential.lookup( common::process::handle().ipc);
+            ASSERT_TRUE( instance_id);
+            EXPECT_FALSE( state.instances.sequential[ instance_id].service( state.services.lookup( "s4")));
+            EXPECT_FALSE( state.instances.sequential[ instance_id].service( state.services.lookup( "s7")));
+            EXPECT_TRUE( state.instances.sequential[ instance_id].service( state.services.lookup( "s0")));
 
          }
       }
@@ -218,7 +218,7 @@ namespace casual
       {
          common::unittest::Trace trace;
 
-         using Property = state::service::instance::Concurrent::Property;
+         using Property = state::instance::concurrent::Property;
 
          auto create_advertise = []( common::strong::process::id pid, platform::size::type order, Property property)
          {
@@ -244,17 +244,18 @@ namespace casual
          std::ignore = state.update( create_advertise( common::strong::process::id{ 102}, 2, Property{ 2}));
          std::ignore = state.update( create_advertise( common::strong::process::id{ 103}, 2, Property{ 1})); // we should get this. lowest order and lowest hops.
 
-         auto service = state.service( "a");
+         auto service_id = state.services.lookup( "a");
 
-         ASSERT_TRUE( service);
+         ASSERT_TRUE( service_id);
 
          // 103 should be prioritized
          {
-            auto process = service->reserve_concurrent( {});
+            auto instance_id = state.reserve_concurrent( service_id, {});
+            auto process = state.instances.concurrent[ instance_id].process;
             EXPECT_TRUE( process.pid == common::strong::process::id{ 103}) << CASUAL_NAMED_VALUE( process);
             
             // expect only 103 to be in the prioritized range
-            EXPECT_TRUE( process == service->reserve_concurrent( {}));
+            EXPECT_TRUE( instance_id == state.reserve_concurrent( service_id, {}));
          }
       }
 

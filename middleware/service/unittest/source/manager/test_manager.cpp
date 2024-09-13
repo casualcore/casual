@@ -205,7 +205,7 @@ domain:
 domain:
    services:
       -  name: b
-         routes: [ x, y, z]
+         routes: [ e, f, g]
          execution:
             timeout: 
                duration: 20ms
@@ -227,7 +227,7 @@ domain:
          auto updated = casual::configuration::model::transform( 
             casual::domain::unittest::configuration::post( casual::configuration::model::transform( wanted)));
 
-         EXPECT_TRUE( wanted.service == updated.service) << CASUAL_NAMED_VALUE( wanted.service) << '\n' << CASUAL_NAMED_VALUE( updated.service);
+         EXPECT_TRUE( wanted.service == updated.service) << " " << CASUAL_NAMED_VALUE( wanted.service) << '\n' << CASUAL_NAMED_VALUE( updated.service);
 
       }
 
@@ -512,7 +512,7 @@ domain:
          {
             auto instance = local::instance::find( state, common::process::id());
             ASSERT_TRUE( instance);
-            EXPECT_TRUE( instance->state == decltype( instance->state)::idle);
+            EXPECT_TRUE( instance->state == decltype( instance->state)::idle) << CASUAL_NAMED_VALUE( *instance);
          }
       }
 

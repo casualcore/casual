@@ -25,15 +25,18 @@ namespace casual
       {
          namespace
          {
-            void restrictions( State& state, 
-               casual::configuration::model::service::Restriction current, 
-               casual::configuration::model::service::Restriction wanted)
-            {
-               auto change = casual::configuration::model::change::calculate( current.servers, wanted.servers, []( auto& l, auto& r){ return l.alias == r.alias;});
-               log::line( verbose::log, "change: ", change);
+            namespace detail
+            {     
+               auto transform( auto& service, auto global_timeout)
+               {
+                  return state::Service{
+                     .information = { .name = service.name},
+                     .timeout = set_union( global_timeout, service.timeout),
+                     .visibility = service.visibility,
+                  };
+               }
 
-               state.restriction = std::move( wanted);
-            }
+            } // detail
 
 
             //! tries to conform to updated service configuration.
@@ -48,158 +51,72 @@ namespace casual
                auto change = casual::configuration::model::change::calculate( current, wanted, []( auto& l, auto& r){ return l.name == r.name;});
                log::line( verbose::log, "change: ", change);
 
-               auto find_services_with_origin_name = [&state]( auto& name)
+               // take care of routes
                {
-                  std::vector< decltype( std::begin( state.services))> result;
+                  // we replace the routes we've got.
+                  state.routes = {};
+                  state.reverse_routes = {};
 
-                  for( auto current = std::begin( state.services); current != std::end( state.services); ++current)
-                     if( current->second.information.name == name)
-                        result.push_back( current);
+                  auto add_routes = [ &state]( auto& service)
+                  {
+                     if( service.routes.empty())
+                        return;
 
-                  return result;
+                     for( auto& route : service.routes)
+                        state.reverse_routes.emplace( route, service.name);
+
+                     state.routes.emplace( service.name, service.routes);
+                  };
+
+                  algorithm::for_each( change.added, add_routes);
+                  algorithm::for_each( change.modified, add_routes);
+               }
+
+               auto remove = [ &state]( auto& service)
+               {
+                  auto origin = state.services.lookup_origin( service.name);
+
+                  if( state.services[ origin].instances.empty())
+                  {
+                     // we just remove the service
+                     state.services.erase( origin);
+                     return;
+                  }
+
+                  // otherwise we need to keep it but "unconfigure" some properties
+                  state.services[ origin].timeout = {};
+                  state.services[ origin].visibility = {};
+
+                  state.services.restore_origin_name( origin);
                };
 
-               auto remove = [&]( auto& configuration)
+               auto add = [ &state]( auto& service)
                {
-                  auto services = find_services_with_origin_name( configuration.name);
-
-                  auto [ origin, routes] = algorithm::partition( services, []( auto iterator)
-                  {
-                     return iterator->first == iterator->second.information.name;
-                  });
-
-                  
-                  // make sure we've got an origin service with no configuration.
-                  auto origin_service = [&]( auto& origin)
-                  {
-                     if( origin)
-                     {
-                        auto result = &(*origin)->second;
-                        result->timeout = {};
-                        return result;
-                     }
-
-                     state::Service result;
-                     result.information.name = configuration.name;
-
-                     auto iterator = std::get< 0>( state.services.emplace( configuration.name, std::move( result)));
-                     return &iterator->second;
-                  }( origin);
-
-
-                  algorithm::for_each( routes, [&state, origin_service]( auto iterator)
-                  {
-                     if( auto found = algorithm::find( state.reverse_routes, iterator->first))
-                        state.reverse_routes.erase( std::begin( found));
-
-                     auto service = &iterator->second;
-
-                     service->instances.remove( service, origin_service);
-
-                     origin_service->metric += service->metric;
-                      
-                     state.services.erase( iterator);
-                  });
-
-                  if( auto found = algorithm::find( state.routes, configuration.name))
-                     state.routes.erase( std::begin( found));
+                  if( service.routes.empty())
+                     state.services.insert( detail::transform( service, state.timeout));
+                  else 
+                     state.services.insert( detail::transform( service, state.timeout), service.routes);               
                };
-   
-               auto add = [&state]( auto& service)
+
+               auto modify = [ &state]( auto& service)
                {
-                  state::Service result;
-                  result.information.name = service.name;
-                  result.timeout = std::move( service.timeout);
-                  result.visibility = service.visibility;
+                  auto origin = state.services.lookup_origin( service.name);
+
+                  state.services[ origin].timeout = service.timeout;
+                  state.services[ origin].visibility = service.visibility;
 
                   if( service.routes.empty())
-                     state.services.try_emplace( std::move( service.name), std::move( result));
-                  else 
-                  {
-                     for( auto& route : service.routes)
-                     {
-                        state.services.try_emplace( route, result);
-                        state.reverse_routes.emplace( route, service.name);
-                     }
-
-                     state.routes.emplace( service.name, std::move( service.routes));
-                  }
+                     state.services.restore_origin_name( origin);
+                  else
+                     state.services.replace_routes( origin, service.routes);
                };
 
-               auto modify = [&]( auto& configuration)
-               {
-                  auto services = find_services_with_origin_name( configuration.name);
-
-                  for( auto iterator : services)
-                  {
-                     iterator->second.timeout = configuration.timeout;
-                     iterator->second.visibility = configuration.visibility;
-                  }
-
-                  auto [ origin, routes] = algorithm::partition( services, []( auto iterator)
-                  {
-                     return iterator->first == iterator->second.information.name;
-                  });
-
-                  auto existing = algorithm::coalesce( origin, routes);
-                  casual::assertion( existing, "should be existing services...");
-
-                  auto existing_service = &range::front( existing)->second;
-                  
-                  // add
-                  {
-                     auto add = std::get< 1>( algorithm::intersection( configuration.routes, routes, []( auto& name, auto& iterator)
-                     {
-                        return name == iterator->first;
-                     }));
-
-
-                     for( auto& route : add)
-                     {
-                        // add the route and use an existing service to keep possible instances.
-                        auto& service = state.services.try_emplace( route, *existing_service).first->second;
-                        service.metric.reset();
-                        state.reverse_routes.emplace( route, configuration.name);
-                     }
-
-                     if( auto found = algorithm::find( state.routes, configuration.name))
-                        algorithm::container::append( add, found->second);
-                     else 
-                        state.routes.emplace( configuration.name, algorithm::container::vector::create( add));
-                  }
-
-                  // remove
-                  {
-                     auto remove = std::get< 1>( algorithm::intersection( routes, configuration.routes, []( auto& iterator, auto& name)
-                     {
-                        return name == iterator->first;
-                     }));
-
-                     algorithm::for_each( remove, [&state, existing_service]( auto iterator)
-                     {
-                        if( auto found = algorithm::find( state.reverse_routes, iterator->first))
-                           state.reverse_routes.erase( std::begin( found));
-
-                        auto service = &iterator->second;
-
-                        service->instances.remove( service, existing_service);
-
-                        existing_service->metric += service->metric;
-
-                        if( auto found = algorithm::find( state.routes, service->information.name))
-                           algorithm::container::trim( found->second, algorithm::remove( found->second, iterator->first));
-                        
-                        state.services.erase( iterator);
-
-                     });
-                  }
-                  
-               };
 
                algorithm::for_each( change.removed, remove);
                algorithm::for_each( change.added, add);
                algorithm::for_each( change.modified, modify);
 
+           
             }
          } // <unnamed>
       } // local
@@ -212,10 +129,10 @@ namespace casual
          log::line( verbose::log, "wanted: ", wanted);
 
          state.timeout = std::move( wanted.global.timeout);
+         state.restriction = std::move( wanted.restriction);
 
-         local::restrictions( state, std::move( current.restriction), std::move( wanted.restriction));
          local::services( state, std::move( current.services), std::move( wanted.services));
-
       }
+
    } // service::manager::configuration 
 } // casual

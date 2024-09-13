@@ -470,7 +470,7 @@ domain:
          instances: 1
          arguments:
             - --sleep
-            - 2s
+            - 30s
    services:
       -  name: "casual/example/sleep"
          execution:
@@ -511,7 +511,7 @@ domain:
             auto len = tptypes( buffer, nullptr, nullptr);
             auto result = tpgetrply( &descriptor, &buffer, &len, 0);
             EXPECT_EQ( result, -1);
-            EXPECT_EQ( tperrno, TPESVCERR);
+            EXPECT_EQ( tperrno, TPETIME);
          }
 
          {

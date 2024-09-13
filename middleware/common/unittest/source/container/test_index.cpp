@@ -62,24 +62,32 @@ namespace casual
    {
       common::unittest::Trace trace;
 
+      auto count_values = []( auto& index)
+      {
+         return std::ranges::count_if( index, []( auto& value){ return value.has_value();});
+      };
+
       container::Index< char> data;
       auto a = data.insert( 'a');
       auto b = data.insert( 'b');
       auto c = data.insert( 'c');
 
+
       EXPECT_TRUE( b.value() == 1);
 
       data.erase( a);
-      EXPECT_TRUE( data.size() == 2);
+      EXPECT_TRUE( count_values( data) == 2);
 
       data.erase( c);
-      EXPECT_TRUE( data.size() == 1);
+      EXPECT_TRUE( count_values( data) == 1);
 
       auto x = data.insert( 'x');
       EXPECT_TRUE( x.value() == 0);
 
       auto y = data.insert( 'y');
       EXPECT_TRUE( y.value() == 2);
+
+      EXPECT_TRUE( count_values( data) == 3);
    }
 
    

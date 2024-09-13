@@ -220,6 +220,8 @@ unittest_objectfiles = [
     
     make.Compile( 'unittest/source/test_algorithm.cpp'),
 
+    make.Compile( 'unittest/source/container/test_index.cpp'),
+
     make.Compile( 'unittest/source/test_code.cpp'),
 
     make.Compile( 'unittest/source/test_range.cpp'),
