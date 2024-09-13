@@ -21,8 +21,7 @@ namespace casual
 
             namespace scale::resource
             {
-               // TODO: rename this?
-               constexpr std::string_view proxies = ".casual/transaction/scale/instances";
+               constexpr std::string_view proxies = ".casual/transaction/scale/resource/proxies";
             } // update
 
          } // service::name

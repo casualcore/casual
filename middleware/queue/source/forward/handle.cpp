@@ -430,7 +430,7 @@ namespace casual
 
                         state.alias = message.model.alias;
                         state.memberships = message.model.memberships;
-                        state.group_coordinator.update( message.groups);
+                        state.group_coordinator = { message.groups};
 
                         // TODO maintenance we only update instances
                         auto add_or_update = []( auto& source, auto& target, auto transform)

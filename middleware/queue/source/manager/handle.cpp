@@ -560,7 +560,7 @@ namespace casual
             log::line( verbose::log, "model: ", model);
 
             state.note = model.queue.note;
-            state.group_coordinator.update( model.domain.groups);
+            state.group_coordinator = { model.domain.groups};
 
             configuration::conform( state, {}, std::move( model.queue));
          }

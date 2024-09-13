@@ -40,9 +40,6 @@ namespace casual
             Coordinator() = default;
             Coordinator( const std::vector< model::domain::Group>& configured_groups);
 
-            //! updates the coordinator with the provided configuration
-            void update( const std::vector< model::domain::Group>& configured_groups);
-
             //! evaluates whether an entity with the provided memberships should be enabled
             //! @returns whether the entity is enabled 
             bool enabled( const std::vector< std::string>& memberships) const;
