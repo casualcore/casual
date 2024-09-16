@@ -152,7 +152,7 @@ namespace casual
                if( auto found = algorithm::find_first_of( m_prioritized_concurrent, preferred))
                   return found->id;
 
-               return std::ranges::rotate( m_prioritized_concurrent, std::next( std::begin( m_prioritized_concurrent))).front().id;
+               return algorithm::random::next( m_prioritized_concurrent)->id;
             }
 
             void Instances::update_prioritized()
@@ -171,8 +171,6 @@ namespace casual
 
                // find the range/end of the most prioritized group/partition.
                m_prioritized_concurrent = std::get< 0>( algorithm::sorted::upper_bound( m_concurrent, range::front( m_concurrent)));
-               algorithm::random::shuffle( m_prioritized_concurrent);
-
             }
 
             void Metric::update( const common::message::event::service::Metric& metric)
@@ -784,12 +782,12 @@ namespace casual
                if( service.timeout.duration > platform::time::unit::zero())
                   timeout.duration = service.timeout.duration;
 
-               auto add_service_to_instance = [ &]( auto service_id, auto instance_id)
+               auto relate_service_and_instance = [ &]( auto service_id, auto instance_id)
                {
                   services[ service_id].instances.add( instance_id, message.order, service.property);
                };
 
-               local::find_or_add_service( *this, service, timeout, instance_id, add_service_to_instance);
+               local::find_or_add_service( *this, service, timeout, instance_id, relate_service_and_instance);
             };
 
             algorithm::for_each( message.services.add, add_service);

@@ -1589,7 +1589,7 @@ domain:
          });
       }
 
-      TEST( test_gateway, domain_A_to__B_C_D__outbound_same_group___expect_round_robin_between_A_B_C)
+      TEST( test_gateway, domain_A_to__B_C_D__outbound_same_group___expect_random_between_A_B_C__could_fail)
       {
          common::unittest::Trace trace;
 
@@ -1629,16 +1629,21 @@ domain:
 
          std::map< std::string, int> domains;
 
-         algorithm::for_n< 9>( [ &domains]() mutable
+         algorithm::for_n< 100>( [ &domains]() mutable
          {
             auto buffer = local::call( "casual/example/domain/name");
             domains[ buffer.get()]++;
          });
 
-         // expect even distribution
-         EXPECT_TRUE( domains[ "B"] == 3);
-         EXPECT_TRUE( domains[ "C"] == 3);
-         EXPECT_TRUE( domains[ "D"] == 3);
+         // for a domain to have 0 calls after 100 events:
+         // ( 2 / 3 ) ^100 ~~ 1 in 4,065611775352153e17
+         // 1 in 400'000'000'000'000'000
+         // one in 400 million billions. 
+
+         // expect all to have at least one call.
+         EXPECT_TRUE( domains[ "B"] > 0) << CASUAL_NAMED_VALUE( domains);
+         EXPECT_TRUE( domains[ "C"] > 0) << CASUAL_NAMED_VALUE( domains);
+         EXPECT_TRUE( domains[ "D"] > 0) << CASUAL_NAMED_VALUE( domains);
       }
 
       TEST( test_gateway, domains_A_B__B_has_echo__call_echo_from_A__expect_discovery__shutdown_B__expect_no_ent__boot_B__expect_discovery)

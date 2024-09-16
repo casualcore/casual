@@ -7,6 +7,7 @@
 #pragma once
 
 #include "casual/concepts.h"
+#include "common/range.h"
 
 #include <random>
 #include <algorithm>
@@ -28,7 +29,7 @@ namespace casual
          return container;
       }
 
-      template< typename R>
+      template< concepts::range R>
       auto shuffle( R&& range)
       {
          std::ranges::shuffle( range, random::generator());
@@ -40,6 +41,18 @@ namespace casual
       T value()
       {
          return std::uniform_int_distribution< T>{ min, max}( random::generator());
+      }
+
+      //! @returns a range with size 1 where begin is a random place in `range`
+      auto next( concepts::range auto&& range) -> decltype( range::make( range))
+      {
+         if( std::empty( range))
+            return {};
+
+         auto distribution = std::uniform_int_distribution< platform::size::type>{ 0, std::ssize( range) - 1};
+         auto begin = std::next( std::begin( range), distribution( random::generator()));
+
+         return range::make( begin, std::next( begin));
       }
       
    } // common::algorithm::random
