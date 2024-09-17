@@ -1,0 +1,97 @@
+import casual.make.api as make
+import casual.middleware.make.api as dsl
+
+import os
+
+make.IncludePaths( [ 
+   'include',
+   'unittest/include',
+   '../common/include',
+   '../transaction/include',
+   '../serviceframework/include', 
+   '../xatmi/include',
+   '../domain/unittest/include',
+   ]
+   + dsl.paths().include.gtest
+)
+
+
+make.LibraryPaths( 
+   [ 
+      'bin',
+      '../common/bin',
+      '../domain/bin',
+      '../serviceframework/bin',
+      '../configuration/bin',
+      '../service/bin',
+      '../xatmi/bin',
+   ]
+   + make.optional_library_paths()
+   + dsl.paths().library.gtest
+)
+    
+
+install_lib = []
+install_bin = []
+
+# So we get the local build-rm
+make.Environment( 'PATH', '../tools/bin' + os.pathsep + os.getenv('PATH'))
+
+
+file_manager = make.LinkExecutable( 'bin/casual-file-manager', 
+   [
+      make.Compile( 'source/manager/main.cpp'),
+      make.Compile( 'source/manager/handle.cpp'),
+      make.Compile( 'source/manager/resource.cpp'),   
+      make.Compile( 'source/manager/state.cpp'),
+      make.Compile( 'source/manager/admin/server.cpp'),
+   ], 
+   [ 
+      'casual-common',
+      'casual-serviceframework',
+   ]
+)
+
+install_bin.append( file_manager)
+
+
+file_api = make.LinkLibrary( 'bin/casual-file-api', 
+   [
+      make.Compile( 'source/code.cpp'),
+      make.Compile( 'source/api/file.cpp'),
+   ],
+   [
+      'casual-common',
+   ])
+
+install_lib.append( file_api)
+
+file_c_api = make.LinkLibrary( 'bin/casual-file-c-api', 
+   [
+      make.Compile( 'source/api/c/file.cpp'),
+   ],
+   [
+      file_api,
+   ])
+
+install_lib.append( file_c_api)
+
+test_casual_file = make.LinkUnittest( 'unittest/bin/test-casual-file', 
+   [
+      make.Compile( 'unittest/source/resource/utility.cpp'),
+      make.Compile( 'unittest/source/resource/test_resource.cpp'),
+   ],
+   [
+      file_api,
+      'casual-common',
+      'casual-unittest',
+      'casual-domain-unittest',
+      'casual-xatmi',
+      'casual-serviceframework',
+   ]  
+)
+
+make.Dependencies( 
+   test_casual_file, 
+   install_bin,
+   )

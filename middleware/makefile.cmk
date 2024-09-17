@@ -16,6 +16,7 @@ make.Build( 'service/makefile.cmk')
 make.Build( 'transaction/makefile.cmk')
 
 make.Build( 'event/makefile.cmk')
+make.Build( 'file/makefile.cmk')
 make.Build( 'queue/makefile.cmk')
 make.Build( 'binding/makefile.cmk')
 make.Build( 'http/makefile.cmk')

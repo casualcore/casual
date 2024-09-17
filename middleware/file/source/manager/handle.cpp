@@ -1,0 +1,143 @@
+//!
+//! Copyright (c) 2024, The casual project
+//!
+//! This software is licensed under the MIT license, https://opensource.org/licenses/MIT
+//!
+
+#include "file/manager/handle.h"
+
+#include "file/message.h"
+#include "file/manager/resource.h"
+#include "file/manager/admin/server.h" 
+
+#include "common/message/type.h"
+#include "common/message/transaction.h"
+#include "common/event/listen.h"
+
+#include "common/server/handle/call.h"
+
+namespace casual
+{
+   namespace file::manager::handle
+   {
+      namespace local
+      {
+         namespace
+         {
+            namespace shutdown
+            {
+               auto request( State& state)
+               {
+                  return [ &state]( const common::message::shutdown::Request& message)
+                  {
+                     common::Trace trace{ "file::manager::handle::local::shutdown::request"};
+                     common::log::line( common::verbose::log, "message: ", message);
+                     common::log::line( common::verbose::log, "state: ", state);
+
+                     resource::shutdown( state, message);
+                  };
+               }
+            } // shutdown
+
+            namespace reserve
+            {
+               auto request( State& state)
+               {
+                  return [ &state]( const file::message::reserve::Request& message)
+                  {
+                     common::Trace trace{ "file::manager::handle::local::reserve::request"};
+                     common::log::line( common::verbose::log, "message: ", message);
+                     common::log::line( common::verbose::log, "state: ", state);
+
+                     resource::reserve( state, message);
+                  };
+               }
+            } // reserve
+
+            namespace transaction
+            {
+               namespace prepare
+               {
+                  auto request( State& state)
+                  {
+                     return [ &state]( const common::message::transaction::resource::prepare::Request& message)
+                     {
+                        common::Trace trace{ "file::manager::handle::local::transaction::prepare::request"};
+                        
+                        auto reply = common::message::reverse::type( message);
+                        state.multiplex.send( message.process.ipc, reply);
+                     };
+                  }
+               } // prepare
+
+               namespace commit
+               {
+                  auto request( State& state)
+                  {
+                     return [ &state]( const common::message::transaction::resource::commit::Request& message)
+                     {
+                        common::Trace trace{ "file::manager::handle::local::transaction::commit::request"};
+
+                        resource::commit( state, message);
+                     };
+                  }
+               } // commit
+
+               namespace rollback
+               {
+                  auto request( State& state)
+                  {
+                     return [ &state]( const common::message::transaction::resource::rollback::Request& message)
+                     {
+                        common::Trace trace{ "file::manager::handle::local::transaction::rollback::request"};
+
+                        resource::rollback( state, message);
+                     };
+                  }
+               } // rollback
+               
+            } // transaction
+
+            namespace event
+            {
+               namespace process
+               {
+                  auto exit( State& state)
+                  {
+                     return [ &state]( const common::message::event::process::Exit& message)
+                     {
+                        common::Trace trace{ "file::manager::handle::local::event::process::exit"};
+                        common::log::line( common::verbose::log, "message: ", message);
+                        common::log::line( common::verbose::log, "state: ", state);
+
+                        resource::mitigate( state, message);
+                     };
+                  }
+               } // process
+            } // event
+            
+         } // <unnamed>
+      } // local
+
+      dispatch_type create( State& state)
+      {
+         return dispatch_type{
+            common::event::listener( 
+               local::event::process::exit( state)),
+
+            common::message::dispatch::handle::defaults( state),
+            
+            local::shutdown::request( state),
+            local::reserve::request( state),
+            local::transaction::prepare::request( state),
+            local::transaction::commit::request( state),
+            local::transaction::rollback::request( state),
+
+            common::server::handle::admin::Call{
+               manager::admin::services( state)}
+         };
+      }
+
+   } // file::manager::handle
+   
+} // casual
