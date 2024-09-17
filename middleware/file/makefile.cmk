@@ -1,0 +1,51 @@
+import casual.make.api as make
+import casual.middleware.make.api as dsl
+
+import os
+
+make.IncludePaths( [ 
+    'include',
+    '../common/include',
+    '../transaction/include',
+    '../xatmi/include',
+    ]
+    + dsl.paths().include.gtest
+)
+
+
+make.LibraryPaths( [ 
+    'bin',
+    '../common/bin',
+    ]
+    + make.optional_library_paths()
+    + dsl.paths().library.gtest
+)
+    
+
+install_lib = []
+install_bin = []
+
+# So we get the local build-rm
+make.Environment( 'PATH', '../tools/bin' + os.pathsep + os.getenv('PATH'))
+
+
+resource_archive = make.LinkArchive( 'bin/casual-file-resource-archive',
+[
+    make.Compile( 'source/resource/logic.cpp'),   
+])
+
+
+
+file_manager = make.LinkExecutable( 'bin/casual-file-manager', 
+    [
+    make.Compile( 'source/manager/main.cpp'),
+    ], 
+    [ 
+    resource_archive,    
+    'casual-common',
+    ]
+)
+
+
+install_bin.append( file_manager)
+
