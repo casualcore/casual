@@ -1,6 +1,12 @@
 # Changelog
 This is the changelog for `casual` and all changes are listed in this document.
 
+## [1.6.20] - 2024-09-18
+### Fixes
+- build: handle nginx build on rhel (#381)
+- service: fix invisible route being created when updating service config
+- queue: enqueue/dequeue to multiple queues in example server
+
 ## [1.6.19] - 2024-04-25
 ### Fixes
 - http: improved error logging in http-outbound (#367)
