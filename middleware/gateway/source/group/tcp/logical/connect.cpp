@@ -23,11 +23,7 @@ namespace casual
          {
             auto path()
             {
-               if constexpr( message::protocol::compiled_for_version() == message::protocol::Version::v1_2)
-                  return process::path().parent_path() / "casual-gateway-group-tcp-logical-connect.1.2";
-               else
-                  return process::path().parent_path() / "casual-gateway-group-tcp-logical-connect";
-
+               return process::path().parent_path() / "casual-gateway-group-tcp-logical-connect";
             }
          } // <unnamed>
       } // local

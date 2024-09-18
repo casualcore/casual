@@ -61,8 +61,13 @@ domain:
 domain: 
    name: B
    servers:
-      - path: bin/casual-gateway-manager.1.2
-        memberships: [ gateway]
+      -  path: bin/casual-gateway-manager
+         memberships: [ gateway]
+         environment:
+            variables:
+               -  key: CASUAL_INTERNAL_GATEWAY_PROTOCOL_VERSION
+                  value: 1002
+      
    gateway:
       inbound:
          groups:
@@ -100,10 +105,15 @@ domain:
 domain: 
    name: B
    servers:
-      - path: bin/casual-gateway-manager.1.2
-        memberships: [ gateway]
-      - path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/queue/bin/casual-queue-manager
-        memberships: [ base]
+      -  path: bin/casual-gateway-manager
+         memberships: [ gateway]
+         environment:
+            variables:
+               -  key: CASUAL_INTERNAL_GATEWAY_PROTOCOL_VERSION
+                  value: 1002
+
+      -  path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/queue/bin/casual-queue-manager
+         memberships: [ base]
    queue:
       groups:
          -  alias: QB
@@ -176,10 +186,15 @@ domain:
 domain: 
    name: A
    servers:
-      - path: bin/casual-gateway-manager.1.2
-        memberships: [ gateway]
-      - path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/queue/bin/casual-queue-manager
-        memberships: [ base]
+      -  path: bin/casual-gateway-manager
+         memberships: [ gateway]
+         environment:
+            variables:
+               -  key: CASUAL_INTERNAL_GATEWAY_PROTOCOL_VERSION
+                  value: 1002
+
+      -  path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/queue/bin/casual-queue-manager
+         memberships: [ base]
    gateway:
       outbound:
          groups:
@@ -225,8 +240,12 @@ domain:
 domain: 
    name: A
    servers:
-      - path: bin/casual-gateway-manager.1.2
-        memberships: [ gateway]
+      -  path: bin/casual-gateway-manager
+         memberships: [ gateway]
+         environment:
+            variables:
+               -  key: CASUAL_INTERNAL_GATEWAY_PROTOCOL_VERSION
+                  value: 1002
    gateway:
       outbound:
          groups:

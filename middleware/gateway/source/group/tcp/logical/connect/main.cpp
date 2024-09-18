@@ -89,9 +89,9 @@ namespace casual
             namespace run
             {
                //! just an indirection for us to emulate an older protocol version
-               constexpr auto protocol_versions()
+               auto protocol_versions()
                {
-                  return algorithm::find( message::protocol::versions, message::protocol::compiled_for_version());
+                  return algorithm::find( message::protocol::versions, message::protocol::version());
                }
 
                void in( State state)

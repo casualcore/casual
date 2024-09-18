@@ -511,15 +511,13 @@ namespace casual
       {
          common::unittest::Trace trace;
 
-
-
          auto domain = unittest::manager( R"(
 domain:
    name: A
    environment:
       variables:
-         - { key: CASUAL_DISCOVERY_ACCUMULATE_REQUESTS, value: 10}
-         - { key: CASUAL_DISCOVERY_ACCUMULATE_TIMEOUT, value: 10ms}
+         - { key: CASUAL_INTERNAL_DISCOVERY_ACCUMULATE_REQUESTS, value: 10}
+         - { key: CASUAL_INTERNAL_DISCOVERY_ACCUMULATE_TIMEOUT, value: 10ms}
 )");
 
 
@@ -701,8 +699,8 @@ domain:
    name: A
    environment:
       variables:
-         - { key: CASUAL_DISCOVERY_ACCUMULATE_REQUESTS, value: 10}
-         - { key: CASUAL_DISCOVERY_ACCUMULATE_TIMEOUT, value: 10ms}
+         - { key: CASUAL_INTERNAL_DISCOVERY_ACCUMULATE_REQUESTS, value: 10}
+         - { key: CASUAL_INTERNAL_DISCOVERY_ACCUMULATE_TIMEOUT, value: 10ms}
 )");
 
          // crate a separate inbound for the "caller"

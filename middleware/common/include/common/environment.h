@@ -145,12 +145,31 @@ namespace casual
          {
             using namespace std::string_view_literals;
 
-            namespace unittest
+
+            //! stuff that is used for internal technical "configuration"
+            namespace internal
             {
-               //! if set, we're in a unittest context and can act differently
-               //! TODO we might want to have a #define from the compiler
-               constexpr auto context = "CASUAL_UNITTEST_CONTEXT"sv;
-            } // unittest
+               namespace unittest
+               {
+                  //! if set, we're in a unittest context and can act differently
+                  //! TODO we might want to have a #define from the compiler
+                  constexpr auto context = "CASUAL_INTERNAL_UNITTEST_CONTEXT"sv;
+               } // unittest
+
+               namespace discovery::accumulate
+               {
+                  constexpr auto requests = "CASUAL_INTERNAL_DISCOVERY_ACCUMULATE_REQUESTS"sv;
+                  constexpr auto timeout =  "CASUAL_INTERNAL_DISCOVERY_ACCUMULATE_TIMEOUT"sv;
+               } // discovery::accumulate
+
+               namespace gateway::protocol
+               {
+                  constexpr auto version = "CASUAL_INTERNAL_GATEWAY_PROTOCOL_VERSION"sv;
+                  
+               } // gateway::protocol
+               
+            } // internal
+
             
             namespace system
             {

@@ -28,7 +28,7 @@ namespace casual
          Scope::Scope() 
          { 
             // set that we're in _unittest-context_
-            common::environment::variable::set( common::environment::variable::name::unittest::context, "");
+            common::environment::variable::set( common::environment::variable::name::internal::unittest::context, "");
             
             execution::context::reset();
             signal::clear();
@@ -39,7 +39,7 @@ namespace casual
          Scope::~Scope() 
          { 
             signal::clear();
-            common::environment::variable::unset( common::environment::variable::name::unittest::context);
+            common::environment::variable::unset( common::environment::variable::name::internal::unittest::context);
             
             domain::identity( {}); 
          }

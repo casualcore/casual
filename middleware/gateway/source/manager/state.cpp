@@ -31,41 +31,23 @@ namespace casual
                }
             } // <unnamed>
          } // local
+         
          namespace state
          {
             namespace executable
             {
                std::filesystem::path path( const outbound::Group& value)
                {
-                  if constexpr( message::protocol::compiled_for_version() == message::protocol::Version::v1_2)
-                  {
-                     if( value.configuration.connect == decltype( value.configuration.connect)::reversed)
-                        return local::path( "casual-gateway-outbound-reverse-group.1.2");
-                     return local::path( "casual-gateway-outbound-group.1.2");
-                  }
-                  else
-                  {
-                     if( value.configuration.connect == decltype( value.configuration.connect)::reversed)
-                        return local::path( "casual-gateway-outbound-reverse-group");
-                     return local::path( "casual-gateway-outbound-group");
-                  }
-
+                  if( value.configuration.connect == decltype( value.configuration.connect)::reversed)
+                     return local::path( "casual-gateway-outbound-reverse-group");
+                  return local::path( "casual-gateway-outbound-group");
                }
 
-               std::filesystem::path path( const inbound::Group& value)
-               {
-                  if constexpr( message::protocol::compiled_for_version() == message::protocol::Version::v1_2)
-                  {
-                     if( value.configuration.connect == decltype( value.configuration.connect)::reversed)
-                        return local::path( "casual-gateway-inbound-reverse-group.1.2");
-                     return local::path( "casual-gateway-inbound-group.1.2");
-                  }
-                  else
-                  {
-                     if( value.configuration.connect == decltype( value.configuration.connect)::reversed)
-                        return local::path( "casual-gateway-inbound-reverse-group");
-                     return local::path( "casual-gateway-inbound-group");
-                  }
+               std::filesystem::path path( const inbound::Group& value)               {
+
+                  if( value.configuration.connect == decltype( value.configuration.connect)::reversed)
+                     return local::path( "casual-gateway-inbound-reverse-group");
+                  return local::path( "casual-gateway-inbound-group");
                }
             
             } // executable

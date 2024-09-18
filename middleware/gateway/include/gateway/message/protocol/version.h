@@ -45,18 +45,8 @@ namespace casual
       //! an array with all versions ordered by highest to lowest
       constexpr auto versions = common::array::make( Version::v1_4, Version::v1_3, Version::v1_2, Version::v1_1, Version::v1_0);
 
-      consteval Version compiled_for_version()
-      {
-         #ifdef CASUAL_PROTOCOL_VERSION
-            constexpr auto version = protocol::Version{ CASUAL_PROTOCOL_VERSION};
-
-            static_assert( common::algorithm::contains( protocol::versions, version));
-
-            return version;
-         #else
-            return Version::current;
-         #endif
-      }
+      //! @returns the version we're using. Version::current, unless it's overridden
+      Version version();
 
    } // gateway::message::protocol
    

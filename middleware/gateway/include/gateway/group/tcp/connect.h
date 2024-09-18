@@ -124,7 +124,7 @@ namespace casual
                static const auto duration = []() -> platform::time::unit
                {
                   // check if we're in unittest context or not.
-                  if( common::environment::variable::exists( common::environment::variable::name::unittest::context))
+                  if( common::environment::variable::exists( common::environment::variable::name::internal::unittest::context))
                      return std::chrono::milliseconds{ 10};
                   return platform::tcp::connect::attempts::delay;
                }();
