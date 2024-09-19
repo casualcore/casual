@@ -511,10 +511,10 @@ The protocol version value, that is sent over the wire, is just an integer that 
 The full table:
 
 version | protocol value
---------|----------------------------
+--------|-------------------
 )";
             for( auto version : common::range::reverse( message::protocol::versions))
-               common::stream::write( out, version, "    | ", std::to_underlying( version), '\n');
+               common::stream::write( out, version, "     | ", std::to_underlying( version), '\n');
 
 
             out << R"(

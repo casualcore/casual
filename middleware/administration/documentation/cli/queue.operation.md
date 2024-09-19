@@ -104,6 +104,13 @@ host# casual --help queue
 
       --remove-messages [0..1]  (<queue>, <id>) [2..*]
             removes specific messages from a given queue
+            
+            if used with `--force true` messages will be removed regardless of state.
+
+      --force [0..1]  (true, false) [1]
+            force removal of message regardless of state (default: false)
+            
+            used in conjunction with `--remove-messages`
 
       --recover-transactions-commit [0..1]  (<gtrid>) [1..*]
             recover specific messages from a given queue with commit

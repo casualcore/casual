@@ -58,7 +58,8 @@ domain:
       groups:
         - alias: "forward-group-1"
           services:
-            - source: "b1"
+            - alias: "fwd-b1"
+              source: "b1"
               instances: 4
               target:
                 service: "casual/example/echo"
@@ -66,12 +67,18 @@ domain:
                 queue: "a3"
                 delay: "10ms"
           queues:
-            - source: "c1"
+            - alias: "fwd-c1"
+              source: "c1"
               target:
                 queue: "a4"
         - alias: "forward-group-2"
           services:
             - source: "b2"
+              note: "will get alias b2"
               target:
                 service: "casual/example/echo"
+            - source: "b2"
+              note: "will get alias b2.2"
+              target:
+                service: "casual/example/sink"
 ...

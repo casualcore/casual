@@ -105,6 +105,7 @@
                         "alias": "forward-group-1",
                         "services": [
                             {
+                                "alias": "fwd-b1",
                                 "source": "b1",
                                 "instances": 4,
                                 "target": {
@@ -118,6 +119,7 @@
                         ],
                         "queues": [
                             {
+                                "alias": "fwd-c1",
                                 "source": "c1",
                                 "target": {
                                     "queue": "a4"
@@ -130,8 +132,16 @@
                         "services": [
                             {
                                 "source": "b2",
+                                "note": "will get alias b2",
                                 "target": {
                                     "service": "casual/example/echo"
+                                }
+                            },
+                            {
+                                "source": "b2",
+                                "note": "will get alias b2.2",
+                                "target": {
+                                    "service": "casual/example/sink"
                                 }
                             }
                         ]

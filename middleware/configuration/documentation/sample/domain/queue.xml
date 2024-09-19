@@ -106,6 +106,7 @@
      <alias>forward-group-1</alias>
      <services>
       <element>
+       <alias>fwd-b1</alias>
        <source>b1</source>
        <instances>4</instances>
        <target>
@@ -119,6 +120,7 @@
      </services>
      <queues>
       <element>
+       <alias>fwd-c1</alias>
        <source>c1</source>
        <target>
         <queue>a4</queue>
@@ -131,8 +133,16 @@
      <services>
       <element>
        <source>b2</source>
+       <note>will get alias b2</note>
        <target>
         <service>casual/example/echo</service>
+       </target>
+      </element>
+      <element>
+       <source>b2</source>
+       <note>will get alias b2.2</note>
+       <target>
+        <service>casual/example/sink</service>
        </target>
       </element>
      </services>

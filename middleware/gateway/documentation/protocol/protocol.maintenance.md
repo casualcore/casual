@@ -15,12 +15,12 @@ The protocol version value, that is sent over the wire, is just an integer that 
 The full table:
 
 version | protocol value
---------|----------------------------
-1.0    | 1000
-1.1    | 1001
-1.2    | 1002
-1.3    | 1003
-1.4    | 1004
+--------|-------------------
+1.0     | 1000
+1.1     | 1001
+1.2     | 1002
+1.3     | 1003
+1.4     | 1004
 
 ## definitions
 

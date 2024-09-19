@@ -280,7 +280,8 @@ domain:
          groups:
             -  alias: forward-group-1
                services:
-                  -  source: b1
+                  -  alias: fwd-b1
+                     source: b1
                      target: 
                         service: casual/example/echo
                      instances: 4
@@ -288,7 +289,8 @@ domain:
                         queue: a3
                         delay: 10ms
                queues:
-                  -  source: c1
+                  -  alias: fwd-c1
+                     source: c1
                      target:
                         queue: a4
             -  alias: forward-group-2
@@ -296,7 +298,11 @@ domain:
                   -  source: b2
                      target:
                         service: casual/example/echo
-
+                     note: will get alias b2
+                  -  source: b2
+                     target:
+                        service: casual/example/sink
+                     note: will get alias b2.2
 )");
             }
 
