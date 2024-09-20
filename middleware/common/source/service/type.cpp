@@ -6,6 +6,7 @@
 
 #include "common/service/type.h"
 #include "common/string.h"
+#include "common/algorithm/compare.h"
 
 #include "common/code/raise.h"
 #include "common/code/casual.h"
@@ -86,6 +87,11 @@ namespace casual
                case Type::abort: return "abort";
             }
             return "unknown";
+         }
+
+         bool fatal( Type value) noexcept
+         {
+            return algorithm::compare::any( value, Type::kill, Type::abort);
          }
 
       }

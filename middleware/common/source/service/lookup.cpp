@@ -12,49 +12,84 @@ namespace casual
 {
    namespace common::service
    {
-      namespace local
+      namespace lookup
       {
-         namespace
+         namespace local
          {
-            void discard( const strong::correlation::id& correlation) noexcept
+            namespace
             {
-               if( ! correlation)
-                  return;
-
-               exception::guard( [ &]()
+               void discard( const strong::correlation::id& correlation) noexcept
                {
-                  Trace trace{ "common::service::lookup::discard"};
-
-                  const auto request = [&]()
-                  {
-                     message::service::lookup::discard::Request result{ process::handle()};
-                     result.correlation = correlation;
-                     return result;
-                  }();
-
-                  auto reply = communication::ipc::call( communication::instance::outbound::service::manager::device(), request);
-
-                  if( reply.state == decltype( reply.state)::replied)
-                     communication::ipc::inbound::device().discard( correlation);
-               });
-            }
-
-            void validate( const lookup::Reply& reply, const std::string& service)
-            {
-               using Enum = decltype( reply.state);
-               switch( reply.state)
-               {
-                  case Enum::idle:
+                  if( ! correlation)
                      return;
-                  case Enum::absent:
-                     code::raise::error( code::xatmi::no_entry, "failed to lookup service: ", service);
-                  case Enum::timeout:
-                     code::raise::error( code::xatmi::timeout, "timeout during lookup of service: ", service);
-               };
+
+                  exception::guard( [ &]()
+                  {
+                     Trace trace{ "common::service::lookup::local::discard"};
+
+                     const auto request = [&]()
+                     {
+                        message::service::lookup::discard::Request result{ process::handle()};
+                        result.correlation = correlation;
+                        return result;
+                     }();
+
+                     auto reply = communication::ipc::call( communication::instance::outbound::service::manager::device(), request);
+
+                     if( reply.state == decltype( reply.state)::replied)
+                        communication::ipc::inbound::device().discard( correlation);
+                  });
+               }
+
+               void validate( const lookup::Reply& reply, const std::string& service)
+               {
+                  Trace trace{ "common::service::lookup::local::validate"};
+                  log::line( verbose::log , "reply: ", reply);
+
+                  using Enum = decltype( reply.state);
+                  switch( reply.state)
+                  {
+                     case Enum::idle:
+                        return;
+                     case Enum::absent:
+                        code::raise::error( code::xatmi::no_entry, "failed to lookup service: ", service);
+                     case Enum::timeout:
+                        code::raise::error( code::xatmi::timeout, "timeout during lookup of service: ", service);
+                  };
+               }
+               
+            } // <unnamed>
+         } // local
+         
+         lookup::Reply reply( Lookup&& lookup)
+         {
+            if( ! lookup.m_correlation)
+               code::raise::error( code::casual::invalid_argument, "lookup is already consumed: ", lookup);
+
+            auto reply = communication::ipc::receive< lookup::Reply>( std::exchange( lookup.m_correlation, {}));
+
+            local::validate( reply, lookup.m_service);
+            return reply;
+         }
+
+         namespace non::blocking
+         {
+            std::optional< lookup::Reply> reply( Lookup& lookup)
+            {
+               if( ! lookup.m_correlation)
+                  code::raise::error( code::casual::invalid_argument, "lookup is already consumed: ", lookup);
+
+               if( auto reply = communication::ipc::non::blocking::receive< lookup::Reply>( lookup.m_correlation))
+               {
+                  lookup.m_correlation = {};
+                  local::validate( *reply, lookup.m_service);
+                  return reply;
+               }
+               return std::nullopt;
             }
-            
-         } // <unnamed>
-      } // local
+         } // non::blocking
+  
+      } // lookup
 
       Lookup::Lookup( std::string service, lookup::Context context, std::optional< platform::time::point::type> deadline)
          : m_service( std::move( service))
@@ -77,7 +112,7 @@ namespace casual
       {
          // we have to discard if we're still pending with the service manager
          if( m_correlation)
-            local::discard( m_correlation);
+            lookup::local::discard( m_correlation);
       }
 
       Lookup::Lookup( Lookup&& other) noexcept
@@ -91,32 +126,6 @@ namespace casual
          m_correlation = std::exchange( other.m_correlation, {});
          return *this;
       }
-
-      namespace lookup
-      {
-         lookup::Reply reply( Lookup&& lookup)
-         {
-            auto reply = communication::ipc::receive< lookup::Reply>( std::exchange( lookup.m_correlation, {}));
-
-            local::validate( reply, lookup.m_service);
-            return reply;
-         }
-
-         namespace non::blocking
-         {
-            std::optional< lookup::Reply> reply( Lookup& lookup)
-            {
-               if( auto reply = communication::ipc::non::blocking::receive< lookup::Reply>( lookup.m_correlation))
-               {
-                  lookup.m_correlation = {};
-                  local::validate( *reply, lookup.m_service);
-                  return reply;
-               }
-               return std::nullopt;
-            }
-         } // non::blocking
-  
-      } // lookups
 
    } // common::service
 } // casual

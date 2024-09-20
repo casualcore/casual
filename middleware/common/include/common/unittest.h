@@ -200,13 +200,14 @@ namespace casual
          template< typename A, typename C> 
          auto expect_code( A&& action, C code) -> decltype( ::testing::AssertionSuccess())
          {
+            bool thrown = false;
             try 
             {
                action();
-               return ::testing::AssertionFailure() << "no std::error_code was throwned\n";
             }
             catch( ...)
             {
+               thrown = true;
                auto error = exception::capture();
 
                if( error.code() == code)
@@ -214,6 +215,12 @@ namespace casual
 
                return ::testing::AssertionFailure() << "expected: " << code << " - got: " << error.code() << '\n';
             }
+
+            if( thrown)
+               return ::testing::AssertionSuccess();
+            else
+               return ::testing::AssertionFailure() << "no std::error_code was thrown\n";
+            
          }
          
       } // detail
@@ -228,7 +235,7 @@ casual::common::unittest::detail::expect_code( [&](){ action;}, code_value)
 #define ASSERT_CODE( action, code_value)                                                  \
 try                                                                                       \
 {                                                                                         \
-   action                                                                                 \
+   action;                                                                                \
    FAIL() << "no std::error_code was throwned";                                           \
 }                                                                                         \
 catch( ...)                                                                               \

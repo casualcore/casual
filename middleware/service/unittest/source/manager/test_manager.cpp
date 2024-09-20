@@ -52,9 +52,15 @@ namespace casual
                constexpr auto base = R"(
 domain:
    name: service-domain
+   groups:
+      -  name: base
+      -  name: user
+         dependencies: [ base]
 
    servers:
-      - path: bin/casual-service-manager
+      -  path: bin/casual-service-manager
+         memberships: [ base]
+
 )";
 
 
@@ -382,6 +388,61 @@ domain:
          // the first reserve should give timeout reply
          auto reply = common::communication::ipc::receive< common::message::service::call::Reply>();
          EXPECT_TRUE( reply.code.result == decltype( reply.code.result)::timeout);
+      }
+
+      TEST( service_manager, service_a_b__lookups_a_b___timeout_a_kill__expect_timeout_on_a__absent_on_b)
+      {
+         common::unittest::Trace trace;
+
+         auto a = local::domain( R"(
+domain:
+   name: A
+   services:
+      -  name: a
+         execution:
+            timeout:
+               duration: "10ms"
+               contract: "kill"
+)");
+
+         // we need to register our self as whitelisted, to prevent DM from 
+         // killing us (just a random uuid)
+         common::communication::instance::whitelist::connect( 
+            common::communication::instance::Identity{ 0x9d8b34cc03dc49d9a4b36f696c5b4cd3_uuid, "DUMMY"});
+
+          service::unittest::advertise( { "a", "b"});
+
+         auto lookup_a = common::service::Lookup{ "a"};
+         // 'b' does not have any timeout
+         auto lookup_b = common::service::Lookup{ "b"};
+         
+         auto lookup_reply_a= common::service::lookup::reply( std::move( lookup_a));
+         EXPECT_TRUE( lookup_reply_a.state == decltype( lookup_reply_a.state)::idle);
+
+         // we expect an error service reply from SM. timeout
+         auto reply = common::communication::ipc::receive< common::message::service::call::Reply>();
+         EXPECT_TRUE( reply.code.result == decltype( reply.code.result)::timeout);
+        
+         // SM has got a timeout, sent error service call reply, sent assassination. If we send ACK for the 
+         // 'virtual' 'a' call, SM should not reserve instance for 'a' and send lookup reply. Since, we're about
+         // to get killed.
+         service::unittest::send::ack( lookup_reply_a);
+
+         // we should not get lookup reply, yet
+         common::algorithm::for_n< 10>( [ &lookup_b]()
+         {
+            common::process::sleep( std::chrono::milliseconds{ 2});
+            EXPECT_TRUE( ! common::service::lookup::non::blocking::reply( lookup_b));
+         });
+
+         // emulate that we've got killed
+         common::communication::device::blocking::send( 
+            common::communication::instance::outbound::service::manager::device(), 
+            common::message::event::process::Exit{ { .pid = common::process::id(), .status = 0, .reason = common::process::lifetime::exit::Reason::signaled}});
+
+
+         // we should get the lookup reply with no-entry
+         ASSERT_CODE( common::service::lookup::reply( std::move( lookup_b)), common::code::xatmi::no_entry);
       }
 
 

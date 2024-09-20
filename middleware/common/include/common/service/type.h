@@ -67,6 +67,9 @@ namespace casual
 
          Type transform( std::string_view contract);
          std::string transform( Type contract);
+
+         //! @returns true if timeout contract is fatal
+         bool fatal( Type value) noexcept;
       }
 
       namespace transaction

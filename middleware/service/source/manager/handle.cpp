@@ -126,16 +126,24 @@ namespace casual
 
          auto handle_timeout = [&state]( auto& entry)
          {
-            auto order_assassination = []( State& state, auto& entry, auto& target_instance)
+            auto order_assassination = []( State& state, auto& entry, auto instance_id)
             {
                auto& service = state.services[ entry.service];
 
                auto contract = service.timeout.contract.value_or( common::service::execution::timeout::contract::Type::linger);
                auto announcement = common::string::compose( "service ", service.information.name, " timed out");
 
+               // if the contract is fatal we need to 'disable' the instance. This to mitigate
+               // the possibility of we get an ack from the instance and we've got pending lookups
+               // on services that the instance has -> we reserve it, and it gets killed. 
+               // Hence, we need to know so we don't reserve instances that we know are going to
+               // get killed.
+               if( common::service::execution::timeout::contract::fatal( contract))
+                  state.disabled.push_back( instance_id);
+
                // send event, at least domain-manager want's to know...
                common::message::event::process::Assassination event{ common::process::handle()};
-               event.target = target_instance.process.pid;
+               event.target = state.instances.sequential[ instance_id].process.pid;
                event.contract = contract;
                event.announcement = announcement;
                common::event::send( event);
@@ -165,7 +173,7 @@ namespace casual
                   // We need to notify TM if this call was in transaction.
                   state.timeout_instances.push_back( instance.process.pid);
                   local::error::reply( state, caller, common::code::xatmi::timeout);
-                  order_assassination( state, entry, instance);
+                  order_assassination( state, entry, entry.target);
                }
                else
                {
