@@ -57,7 +57,7 @@ host# casual --help transaction
       --scale-resource-proxies [0..1]  (rm-id, # instances) [0..* {2}]
             scale resource proxy instances
 
-            deprecated: [--si, --scale-instances]
+            deprecated: [-si, --scale-instances]
 
       -lp, --list-pending [0..1]
             list pending tasks

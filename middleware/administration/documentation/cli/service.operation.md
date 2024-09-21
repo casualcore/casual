@@ -11,6 +11,14 @@ host# casual --help service
     SUB OPTIONS
       -ls, --list-services [0..1]
             list known services
+            
+            if used with `--all true` hidden services will be included
+
+      -a, --all [0..1]  (true, false) [1]
+            show all services (default: false)
+            
+            used in conjunction with `--list-services`
+            has same semantics as `-a` in unix `ls -a`.
 
       -li, --list-instances [0..1]
             list instances
@@ -20,9 +28,6 @@ host# casual --help service
 
       -mr, --metric-reset [0..1]  (<service>...) [0..*]
             reset metrics for provided services, if no services provided, all metrics will be reset
-
-      --list-admin-services [0..1]
-            list casual administration services
 
       --legend [0..1]  (<option>) [1]
             the legend for the supplied option
@@ -36,5 +41,8 @@ host# casual --help service
 
       --state [0..1]  (json, yaml, xml, ini, line) [0..1]
             prints state in the provided format to stdout
+
+      [deprecated] --list-admin-services [0..1]
+            @deprecated use --list-services --all true
 
 ```

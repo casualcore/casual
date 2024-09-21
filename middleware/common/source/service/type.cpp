@@ -20,6 +20,15 @@ namespace casual
 {
    namespace common::service
    {
+      namespace hidden
+      {
+         bool name( std::string_view service)
+         {
+            return service.starts_with( '.');
+         }
+
+      } // hidden
+
       namespace visibility
       {
          std::string_view description( Type value) noexcept

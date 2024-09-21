@@ -44,6 +44,11 @@ namespace casual
          {
             namespace
             {
+               struct State
+               {
+                  bool all = false;
+               };
+
                namespace call
                {
                   namespace metric
@@ -434,17 +439,20 @@ namespace casual
    last:
       the last time the service was requested    
 )";
-                     auto option()
+
+                     auto option( const State& state)
                      {
-                        auto invoke = []()
+                        auto invoke = [ &state]()
                         {
-                           auto is_not_admin = []( auto& service)
-                           { 
-                              return ! algorithm::compare::any( service.category, common::service::category::admin, common::service::category::deprecated);
+                           auto filter = [ &state]( auto& service)
+                           {
+                              if( state.all)
+                                 return true; 
+                              return ! common::service::hidden::name( service.name);
                            };
 
                            auto state = manager::admin::api::state();
-                           auto services = algorithm::sort( algorithm::filter( state.services, is_not_admin));
+                           auto services =  algorithm::sort( algorithm::filter( state.services, filter));
 
                            format::services().print( std::cout, services);
                         };
@@ -452,33 +460,32 @@ namespace casual
                         return common::argument::Option{ 
                            invoke,
                            { "-ls", "--list-services"}, 
-                           R"(list known services)"};
+                           R"(list known services
+
+if used with `--all true` hidden services will be included)"};
                      }
 
-                     namespace admin
+                     namespace all
                      {
-                        auto option()
+                        auto option( State& state)
                         {
-                           auto invoke = []()
+                           auto complete = []( auto&&, auto) -> std::vector< std::string>
                            {
-                              auto is_admin = []( auto& service)
-                              { 
-                                 return algorithm::compare::any( service.category, common::service::category::admin, common::service::category::deprecated);
-                              };
-
-                              auto state = manager::admin::api::state();
-                              auto services = algorithm::sort( algorithm::filter( state.services, is_admin));
-
-                              format::services().print( std::cout, services);
+                              return { "true", "false"};
                            };
 
-                           return common::argument::Option{ 
-                              invoke,
-                              { "--list-admin-services"}, 
-                              "list casual administration services"};
-                        }
+                           return argument::Option{
+                              std::tie( state.all),
+                              complete,
+                              { "-a", "--all"},
+                              R"(show all services (default: false)
 
-                     } // admin
+used in conjunction with `--list-services`
+has same semantics as `-a` in unix `ls -a`.
+)"
+                           };
+                        }
+                     } // all
 
                    } // services
 
@@ -601,11 +608,9 @@ note: not all options has legend, use 'auto complete' to find out which legends 
                   {
                      auto state = admin::api::state();
 
-                     auto category_predicate = []( auto category){ return [=]( auto& service){ return service.category == category;};};
+                     auto is_hidden = []( auto& service){ return common::service::hidden::name( service.name);};
 
-                     auto split = algorithm::partition( state.services, category_predicate( ".admin"));
-                     auto admin = std::get< 0>( split);
-                     auto services = std::get< 1>( split);
+                     auto [ hidden, services] = algorithm::partition( state.services, is_hidden);
 
                      auto accumulate = []( auto extract)
                      {
@@ -653,8 +658,8 @@ note: not all options has legend, use 'auto complete' to find out which legends 
 
                      return {
                         { "service.manager.service.route.count", string::compose( state.routes.size())},
-                        { "service.manager.service.admin.count", string::compose( admin.size())},
-                        { "service.manager.service.admin.metric.invoked.count", string::compose( invoked_count( admin))},
+                        { "service.manager.service.hidden.count", string::compose( hidden.size())},
+                        { "service.manager.service.hidden.metric.invoked.count", string::compose( invoked_count( hidden))},
                         { "service.manager.service.count", string::compose( services.size())},
                         { "service.manager.service.metric.invoked.count", string::compose( invoked_count( services))},
                         { "service.manager.service.metric.invoked.total", string::compose( invoked_total( services))},
@@ -663,6 +668,9 @@ note: not all options has legend, use 'auto complete' to find out which legends 
                         { "service.manager.service.metric.pending.count", string::compose( pending_count( services))},
                         { "service.manager.service.metric.pending.total", string::compose( pending_total( services))},
                         { "service.manager.service.metric.pending.average", string::compose( average( pending_total( services), pending_count( services)))},
+                        // deprecated
+                        { "service.manager.service.admin.count", string::compose( hidden.size())},
+                        { "service.manager.service.admin.metric.invoked.count", string::compose( invoked_count( hidden))},
                      };
                   };
 
@@ -681,6 +689,34 @@ note: not all options has legend, use 'auto complete' to find out which legends 
                   }
                } // information
 
+               namespace deprecated
+               {
+                  namespace admin_services
+                  {
+                     auto option()
+                     {
+                        auto invoke = []()
+                        {
+                           auto is_hidden = []( auto& service)
+                           { 
+                              return common::service::hidden::name( service.name);
+                           };
+
+                           auto state = manager::admin::api::state();
+                           auto services = algorithm::sort( algorithm::filter( state.services, is_hidden));
+
+                           format::services().print( std::cout, services);
+                        };
+
+                        return common::argument::Option{ 
+                           invoke,
+                           common::argument::option::keys( {},{ "--list-admin-services"}), 
+                           "@deprecated use --list-services --all true"};
+                     }
+
+                  } // admin_services
+               } // deprecated
+
             } // <unnamed>
          } // local
 
@@ -691,16 +727,20 @@ note: not all options has legend, use 'auto complete' to find out which legends 
                common::argument::Group options()
                {
                   return common::argument::Group{ [](){}, { "service"}, "service related administration",
-                     local::list::services::option(),
+                     local::list::services::option( m_state),
+                     local::list::services::all::option( m_state),
                      local::list::instances::option(),
                      local::list::routes::option(),
                      local::metric::reset::option(),
-                     local::list::services::admin::option(),
                      local::legend::option(),
                      local::information::option(),
                      casual::cli::state::option( &api::state),
+                     local::deprecated::admin_services::option(),
                   };
                }
+
+            private:
+               local::State m_state;
             };
 
             cli::cli() = default; 

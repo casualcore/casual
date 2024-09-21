@@ -71,6 +71,31 @@ domain:
                contract: kill
 )");
 
+
+
+/*
+casual service --list-services --all true
+
+name                               category     V  mode  timeout    contract  I  C  AT     min    max    P  PAT    RI  RC  last
+---------------------------------  -----------  -  ----  ---------  --------  -  -  -----  -----  -----  -  -----  --  --  ----
+.casual/discovery/state            .admin       U  none          -         -  1  0  0.000  0.000  0.000  0  0.000   0   0  -   
+.casual/domain/configuration/get   .admin       U  none          -         -  1  0  0.000  0.000  0.000  0  0.000   0   0  -   
+.casual/domain/configuration/post  .admin       U  none          -         -  1  0  0.000  0.000  0.000  0  0.000   0   0  -   
+.casual/domain/configuration/put   .admin       U  none          -         -  1  0  0.000  0.000  0.000  0  0.000   0   0  -   
+.casual/domain/environment/set     .admin       U  none          -         -  1  0  0.000  0.000  0.000  0  0.000   0   0  -   
+.casual/domain/environment/unset   .admin       U  none          -         -  1  0  0.000  0.000  0.000  0  0.000   0   0  -   
+.casual/domain/restart/aliases     .admin       U  none          -         -  1  0  0.000  0.000  0.000  0  0.000   0   0  -   
+.casual/domain/restart/groups      .admin       U  none          -         -  1  0  0.000  0.000  0.000  0  0.000   0   0  -   
+.casual/domain/restart/instances   .deprecated  U  none          -         -  1  0  0.000  0.000  0.000  0  0.000   0   0  -   
+.casual/domain/scale/aliases       .admin       U  none          -         -  1  0  0.000  0.000  0.000  0  0.000   0   0  -   
+.casual/domain/scale/instances     .deprecated  U  none          -         -  1  0  0.000  0.000  0.000  0  0.000   0   0  -   
+.casual/domain/shutdown            .admin       U  none          -         -  1  0  0.000  0.000  0.000  0  0.000   0   0  -   
+.casual/domain/state               .admin       U  none          -         -  1  0  0.000  0.000  0.000  0  0.000   0   0  -   
+.casual/service/metric/reset       .admin       U  none          -         -  1  0  0.000  0.000  0.000  0  0.000   0   0  -   
+.casual/service/state              .admin       U  none          -         -  1  0  0.000  0.000  0.000  0  0.000   0   0  -   
+some-service                       -            D  auto  90.000000      kill  0  0  0.000  0.000  0.000  0  0.000   0   0  -   
+*/
+
          // name
          {
             const auto capture = administration::unittest::cli::command::execute( R"(casual service --list-services --porcelain true | awk -F'|' '{printf $1}')");
@@ -200,7 +225,7 @@ domain:
          {  
             // list admin services to check oputput in contract column for a service
             // without contract. Admin services do not have contract specified. 
-            const auto capture = administration::unittest::cli::command::execute( R"(casual --color false service --list-admin-services | grep configuration/get | awk '{ print $6}' )");
+            const auto capture = administration::unittest::cli::command::execute( R"(casual --color false service --list-services --all true | grep configuration/get | awk '{ print $6}' )");
             EXPECT_EQ( capture.standard.out, "-\n");
          }
       }
