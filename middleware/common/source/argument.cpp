@@ -29,7 +29,7 @@ namespace casual
                {
                   using range_type = range::type_t< std::vector< detail::Representation>>;
 
-                  range_type find( range_type scope, const std::string& key)
+                  range_type find( range_type scope, std::string_view key)
                   {
                      auto found = algorithm::find_if( scope, [&]( auto& s){
                         return s.keys == key;
@@ -250,14 +250,14 @@ namespace casual
                   {
                      auto cardinality = value.invocable.cardinality();
 
-                     return value.values.size() >= cardinality.max();
+                     return std::ssize( value.values) >= cardinality.max();
                   }
 
                   bool value_optional( const detail::Invoked& value)
                   {
                      auto cardinality = value.invocable.cardinality();
 
-                     return value.values.size() >= cardinality.min();
+                     return std::ssize( value.values) >= cardinality.min();
                   }
 
                   struct Mapper
@@ -412,7 +412,7 @@ namespace casual
 
          namespace exception
          {  
-            void correlation( const std::string& key)
+            void correlation( std::string_view key)
             {
                code::raise::error( code::casual::invalid_argument, "failed to correlate option ", key);
             }
@@ -460,7 +460,7 @@ namespace casual
 
             namespace validate
             {
-               void cardinality( const std::string& key, const Cardinality& cardinality, size_type value)
+               void cardinality( std::string_view key, const Cardinality& cardinality, size_type value)
                {
                   if( ! cardinality.valid( value))
                      code::raise::error( code::casual::invalid_argument, "cardinality not satisfied for option: ", key);
@@ -468,7 +468,7 @@ namespace casual
 
                namespace value
                {
-                  void cardinality( const std::string& key, const Cardinality& cardinality, range_type values)
+                  void cardinality( std::string_view key, const Cardinality& cardinality, range_type values)
                   {
                      if( cardinality.valid( values.size()))
                         return;
@@ -493,7 +493,7 @@ namespace casual
                if( auto found = algorithm::find_first_of( arguments, local::help::global::keys.active()))
                {
                   algorithm::rotate( arguments, found);
-                  local::help::invoke( ++arguments, callback().representation(), description);
+                  local::help::invoke( arguments.subspan( 1), callback().representation(), description);
                   return true;
                }
                   
@@ -501,7 +501,7 @@ namespace casual
                if( auto found = algorithm::find_first_of( arguments, local::completion::keys()))
                {
                   algorithm::rotate( arguments, found);
-                  local::completion::invoke( ++arguments, callback());
+                  local::completion::invoke( arguments.subspan( 1), callback());
                   return true;
                }
                return false;
