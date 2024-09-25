@@ -200,10 +200,7 @@ namespace casual
          void add( const Transport& transport);
 
          friend inline bool operator == ( const Complete& lhs, const strong::correlation::id& rhs) { return lhs.m_correlation == rhs;};
-         friend inline bool operator == ( const strong::correlation::id& lhs, const Complete& rhs) { return rhs == lhs;}
-
          friend inline bool operator == ( const Complete& lhs, common::message::Type rhs) { return lhs.m_type == rhs;}
-         friend inline bool operator == ( common::message::Type lhs, const Complete& rhs) { return lhs == rhs.m_type;}
 
          //! So we can send complete messages as part of other
          //! messages

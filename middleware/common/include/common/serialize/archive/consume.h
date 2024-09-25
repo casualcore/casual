@@ -44,14 +44,14 @@ namespace casual
                template< concepts::string::like S>
                void value( S&& source, platform::binary::type& destination, common::traits::priority::tag< 3>)
                {
-                  algorithm::copy( view::binary::make( source), destination);
+                  algorithm::copy( binary::span::make( source), destination);
                }
 
                template< concepts::binary::like S>
                void value( S&& source, std::string& destination, common::traits::priority::tag< 2>)
                {
                   destination.resize( std::size( source));
-                  algorithm::copy( source, view::binary::make( destination));
+                  algorithm::copy( source, binary::span::make( destination));
                }
 
                template< concepts::string::like S>
@@ -63,7 +63,7 @@ namespace casual
                template< concepts::binary::like S>
                void value( S&& source, std::ostream& destination, common::traits::priority::tag< 0>)
                {
-                  auto span = view::binary::to_string_like( source);
+                  auto span = binary::span::to_string_like( source);
                   destination.write( span.data(), span.size());
                }
 

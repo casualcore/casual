@@ -95,7 +95,7 @@ domain:
             call::Request result;
             result.service = "casual/example/echo";
             result.payload.header = { call::header::Field{ "content-type:application/json"}};
-            algorithm::copy( view::binary::make( json), result.payload.body);
+            algorithm::copy( binary::span::make( json), result.payload.body);
             return result; 
          };
 
@@ -104,7 +104,7 @@ domain:
          ASSERT_TRUE( result);
          auto& reply = result.value();
          EXPECT_TRUE( reply.code == http::code::ok);
-         EXPECT_TRUE( algorithm::equal( reply.payload.body, view::binary::make( json)));
+         EXPECT_TRUE( algorithm::equal( reply.payload.body, binary::span::make( json)));
          EXPECT_TRUE( local::header::value( reply.payload.header, "content-type") == "application/json");
          EXPECT_TRUE( local::header::value( reply.payload.header, "content-length") == std::to_string( json.size()));
 
@@ -128,7 +128,7 @@ domain:
             call::Request result;
             result.service = service;
             result.payload.header = { call::header::Field{ "content-type:application/json"}};
-            algorithm::copy( view::binary::make( json), result.payload.body);
+            algorithm::copy( binary::span::make( json), result.payload.body);
             return result; 
          };
 
@@ -158,7 +158,7 @@ domain:
             call::Request result;
             result.service = "casual/example/rollback";
             result.payload.header = { call::header::Field{ "content-type:application/json"}};
-            algorithm::copy( view::binary::make( json), result.payload.body);
+            algorithm::copy( binary::span::make( json), result.payload.body);
             return result; 
          };
 
@@ -193,7 +193,7 @@ domain:
             call::Request result;
             result.service = service;
             result.payload.header = { call::header::Field{ "content-type:application/json"}};
-            algorithm::copy( view::binary::make( json), result.payload.body);
+            algorithm::copy( binary::span::make( json), result.payload.body);
             return result; 
          };
 

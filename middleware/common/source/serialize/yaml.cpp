@@ -65,7 +65,7 @@ namespace casual
 
                      YAML::Node document( const platform::binary::type& yaml)
                      {
-                        auto span = view::binary::to_string_like( yaml);
+                        auto span = binary::span::to_string_like( yaml);
                         return document( std::string( span.data(), span.size()));
                      }
 
@@ -301,14 +301,14 @@ namespace casual
                         YAML::Binary binary;
                         consume( node, binary);
 
-                        auto span = view::binary::make( binary.data(), binary.size());
+                        auto span = binary::span::make( binary.data(), binary.size());
                         value.assign( std::begin( span), std::end( span));
                      }
-                     static void read( const YAML::Node& node, view::Binary value)
+                     static void read( const YAML::Node& node, binary::span::Fixed< std::byte> value)
                      {
                         YAML::Binary binary;
                         consume( node, binary);
-                        auto span = view::binary::make( binary.data(), binary.size());
+                        auto span = binary::span::make( binary.data(), binary.size());
                         algorithm::copy( span, value);
                      }
 
@@ -371,7 +371,7 @@ namespace casual
                      }
 
                      template< typename T>
-                     void write( const T& value, const char* name)
+                     void write( T value, const char* name)
                      {
                         possible_implicit_map( name);
                         write( value);
@@ -415,35 +415,30 @@ namespace casual
                      }
 
 
-                     template< typename T>
-                     void write( const T& value)
+                     template< concepts::arithmetic T>
+                     void write( T value)
                      {
                         m_output << value;
                      }
 
                      // A few overloads
 
-                     void write( const char& value)
+                     void write( char value)
                      {
                         m_output << YAML::SingleQuoted << transcode::utf8::string::encode( std::string{ value});
                      }
 
-                     void write( const std::string& value)
+                     void write( std::string_view value)
                      {
                         m_output << YAML::DoubleQuoted << transcode::utf8::string::encode( value);
                      }
 
-                     void write( const std::u8string& value)
+                     void write( std::u8string_view value)
                      {
                         m_output << YAML::DoubleQuoted << std::string{ transcode::utf8::cast( value)};
                      }
 
-                     void write( const platform::binary::type& value)
-                     {
-                        write( view::binary::make( value));
-                     }
-
-                     void write( view::immutable::Binary value)
+                     void write( std::span< const std::byte> value)
                      {
                         // TODO: Is this conformant ?
                         const YAML::Binary binary( reinterpret_cast< const unsigned char*>( value.data()), value.size());

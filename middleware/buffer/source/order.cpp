@@ -226,7 +226,7 @@ namespace casual
 
                auto append( auto& memory, const char* const value)
                {
-                  common::algorithm::container::append( common::view::binary::make( value, std::strlen( value) + 1), memory);
+                  common::algorithm::container::append( common::binary::span::make( value, std::strlen( value) + 1), memory);
                }
 
                auto append( auto& memory, const char* const data, const size_type size)
@@ -238,7 +238,7 @@ namespace casual
                      // append first size chunk
                      append( memory, size);
                      // append other data chunk
-                     common::algorithm::container::append( common::view::binary::make( data, size), memory);
+                     common::algorithm::container::append( common::binary::span::make( data, size), memory);
                   }
                   catch(const std::exception& e)
                   {

@@ -12,7 +12,7 @@
 #include "casual/platform.h"
 #include "common/traits.h"
 #include "common/range.h"
-#include "common/view/binary.h"
+#include "common/binary/span.h"
 
 #include <string>
 
@@ -38,7 +38,7 @@ namespace casual
 
             platform::size::type encode( const Data source, Data target);
 
-            platform::size::type decode( std::string_view source, view::Binary destination);
+            platform::size::type decode( std::string_view source, std::span< std::byte> destination);
          } // detail
 
          namespace capacity
@@ -100,7 +100,7 @@ namespace casual
          template< concepts::binary::like T>
          inline auto decode( std::string_view source, T&& target)
          {
-            auto count = detail::decode( source, view::binary::make( target));
+            auto count = detail::decode( source, binary::span::make( target));
             return range::make( std::begin( target), count);
          }
 

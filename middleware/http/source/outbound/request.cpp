@@ -71,7 +71,7 @@ namespace casual
 
                      common::log::line( verbose::log, "size: ", size, " - source-size: ", source.size());
 
-                     auto output = view::binary::make( buffer, size);
+                     auto output = binary::span::make( buffer, size);
 
                      if( std::ssize( source) <= std::ssize( output))
                      {
@@ -135,7 +135,7 @@ namespace casual
                   {
                      Trace trace{ "http::outbound::request::local::receive::callback::write_payload"};
                      
-                     auto source = view::binary::make( buffer, size);
+                     auto source = binary::span::make( buffer, size);
 
                      algorithm::container::append( source, state.payload.data);
 
@@ -213,7 +213,7 @@ namespace casual
                      common::log::line( common::log::category::error, "failed to deduce buffer type for content-type: ", content->value());
 
                      if( std::regex_match( content->value().data(), local::global.loggable_content))
-                        common::log::line( common::log::category::verbose::error, "payload: ", view::binary::to_string_like( request.state().payload.data));
+                        common::log::line( common::log::category::verbose::error, "payload: ", binary::span::to_string_like( request.state().payload.data));
 
                      return {};
                   }

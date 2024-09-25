@@ -36,7 +36,7 @@ namespace casual
             {
                auto validate( const common::buffer::Payload& payload)
                {
-                  auto string_like = common::view::binary::to_string_like( payload.data);
+                  auto string_like = common::binary::span::to_string_like( payload.data);
                   const auto size = std::size( string_like);
                   const auto used = std::strlen( string_like.data()) + 1;
 
@@ -173,7 +173,7 @@ namespace casual
 
                   const auto count = std::strlen( value) + 1;
 
-                  casual::common::algorithm::copy( common::view::binary::make( value, count), buffer.payload.data);
+                  casual::common::algorithm::copy( common::binary::span::make( value, count), buffer.payload.data);
 
                   *handle = buffer.payload.handle().raw();
                }

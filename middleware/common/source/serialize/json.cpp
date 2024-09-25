@@ -114,7 +114,7 @@ namespace casual
 
                      const rapidjson::Document& parse( rapidjson::Document& document, const platform::binary::type& json)
                      {
-                        auto span = view::binary::to_string_like( json);
+                        auto span = binary::span::to_string_like( json);
 
                         if( ! span.empty() && span.back() == '\0')
                            return parse( document, span.data());
@@ -324,7 +324,7 @@ namespace casual
                         static void read( const rapidjson::Value* node, platform::binary::type& value)
                         { value = transcode::base64::decode( check::string( node)); }
 
-                        static void read( const rapidjson::Value* node, view::Binary value)
+                        static void read( const rapidjson::Value* node, binary::span::Fixed< std::byte> value)
                         { 
                            auto binary = transcode::base64::decode( check::string( node));
                            
@@ -427,19 +427,17 @@ namespace casual
                            m_stack.pop_back();
                         }
 
-
-                        void write( const bool value) { m_stack.back()->SetBool( value); }
-                        void write( const char value) { write( std::string{ value}); }
-                        void write( const short value) { m_stack.back()->SetInt( value); }
-                        void write( const int value) { m_stack.back()->SetInt( value); }
-                        void write( const long value) { m_stack.back()->SetInt64( value); }
-                        void write( const long long value) { m_stack.back()->SetInt64( value); }
-                        void write( const float value) { m_stack.back()->SetDouble( value); }
-                        void write( const double value) { m_stack.back()->SetDouble( value); }
-                        void write( const std::string& value) { m_stack.back()->SetString( transcode::utf8::string::encode( value), *m_allocator);}
-                        void write( const std::u8string& value) { m_stack.back()->SetString( reinterpret_cast< const char*>( value.data()), value.size(), *m_allocator);}
-                        void write( const platform::binary::type& value) { m_stack.back()->SetString( transcode::base64::encode( value), *m_allocator);}
-                        void write( view::immutable::Binary value) { m_stack.back()->SetString( transcode::base64::encode( value), *m_allocator);}
+                        void write( bool value) { m_stack.back()->SetBool( value); }
+                        void write( char value) { write( std::string{ value}); }
+                        void write( short value) { m_stack.back()->SetInt( value); }
+                        void write( int value) { m_stack.back()->SetInt( value); }
+                        void write( long value) { m_stack.back()->SetInt64( value); }
+                        void write( long long value) { m_stack.back()->SetInt64( value); }
+                        void write( float value) { m_stack.back()->SetDouble( value); }
+                        void write( double value) { m_stack.back()->SetDouble( value); }
+                        void write( std::string_view value) { m_stack.back()->SetString( transcode::utf8::string::encode( value), *m_allocator);}
+                        void write( std::u8string_view value) { m_stack.back()->SetString( reinterpret_cast< const char*>( value.data()), value.size(), *m_allocator);}
+                        void write( std::span< const std::byte> value) { m_stack.back()->SetString( transcode::base64::encode( value), *m_allocator);}
 
                         const rapidjson::Document& document() const { return m_document;}
 
@@ -450,7 +448,7 @@ namespace casual
 
                            if( m_document.Accept( writer))
                            {
-                              auto span = view::binary::make( buffer.GetString(), buffer.GetSize());
+                              auto span = binary::span::make( buffer.GetString(), buffer.GetSize());
                               destination.assign( std::begin( span), std::end( span));
                               reset();
                            }

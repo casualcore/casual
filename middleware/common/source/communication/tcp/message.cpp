@@ -40,7 +40,7 @@ namespace casual
          auto span = std::span{ &value, 1};
 
          return stream::write( out, "{ type: ", local::host::header::type( value),
-            ", correlation: ", view::binary::make( value.correlation),
+            ", correlation: ", binary::span::make( value.correlation),
             ", size: ", local::host::header::size( value), 
             ", hex: ", std::as_bytes( span), '}');
 
@@ -60,7 +60,7 @@ namespace casual
             return {};
 
          Uuid::uuid_type uuid{};
-         algorithm::copy_max( payload, view::binary::make( uuid));
+         algorithm::copy_max( payload, binary::span::make( uuid));
 
          return strong::execution::id{ uuid};
       }

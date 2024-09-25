@@ -19,7 +19,7 @@ namespace casual
          {
             return stream::write( out, 
                "{ type: ", description( value.type), 
-               ", correlation: ", view::binary::make( value.correlation),
+               ", correlation: ", binary::span::make( value.correlation),
                ", offset: ", value.offset, 
                ", count: ", value.count, 
                ", size: ", value.size, 
@@ -81,7 +81,7 @@ namespace casual
             return {};
 
          Uuid::uuid_type uuid{};
-         algorithm::copy_max( payload, view::binary::make( uuid));
+         algorithm::copy_max( payload, binary::span::make( uuid));
 
          return strong::execution::id{ uuid};
       }

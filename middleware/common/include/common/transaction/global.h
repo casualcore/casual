@@ -42,7 +42,7 @@ namespace casual::common
          
          CASUAL_CONST_CORRECT_SERIALIZE(
             CASUAL_SERIALIZE_NAME( m_size, "size");
-            CASUAL_SERIALIZE_NAME( view::binary::make( std::begin( m_gtrid), m_size), "gtrid");
+            CASUAL_SERIALIZE_NAME( binary::span::fixed::make( std::begin( m_gtrid), std::begin( m_gtrid) + m_size), "gtrid");
          )
 
          friend std::ostream& operator << ( std::ostream& out, const global::ID& value);
@@ -61,7 +61,7 @@ namespace casual::common
          
          inline std::size_t operator()( id::range range) const noexcept
          {
-            return hash_type{}( std::string_view( view::binary::to_string_like( range)));
+            return hash_type{}( std::string_view( binary::span::to_string_like( range)));
          }
 
          inline std::size_t operator()( const casual::common::transaction::global::ID& value) const noexcept { return hash{}( value.range());}

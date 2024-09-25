@@ -239,7 +239,7 @@ namespace casual
 
                      tree parse_flat( const platform::binary::type& ini)
                      {
-                        auto span = view::binary::to_string_like( ini);
+                        auto span = binary::span::to_string_like( ini);
                         return parse_flat( span.data(), span.size());
                      }
 
@@ -391,7 +391,7 @@ namespace casual
                            value = transcode::utf8::encode(*m_data_stack.back());
                         }
 
-                        void read( view::Binary value)
+                        void read( binary::span::Fixed< std::byte> value)
                         {
                            auto binary = transcode::base64::decode( *m_data_stack.back());
                            if( range::size( binary) != range::size( value))
@@ -517,7 +517,7 @@ namespace casual
                         }
 
                         template< typename T>
-                        void write( const T& data, const char* const name)
+                        void write( T data, const char* const name)
                         {
                            write( encode( data), name);
                         }
@@ -538,36 +538,36 @@ namespace casual
 
                      private:
 
-                        template<typename T>
-                        std::string encode( const T& value) const
+                        template< concepts::arithmetic T>
+                        std::string encode( T value) const
                         {
                            return std::to_string( value);
                         }
 
                         // A few overloads
-
-                        std::string encode( const bool& value) const
+                        
+                        std::string encode( bool value) const
                         {
                            return value ? "true" : "false";
                         }
 
-                        std::string encode( const char& value) const
+                        std::string encode( char value) const
                         {
                            return { value};
                         }
 
-                        std::string encode( view::immutable::Binary value) const
+                        std::string encode( std::string_view value) const
+                        {
+                           return std::string{ value};
+                        }
+
+                        std::string encode( std::span< const std::byte> value) const
                         {
                            // Binary data might be double-encoded
                            return transcode::base64::encode( value);
                         }
 
-                        std::string encode( const platform::binary::type& value) const
-                        {
-                           return encode( view::binary::make( value));
-                        }
-
-                        std::string encode( const std::u8string& value) const
+                        std::string encode( std::u8string_view value) const
                         {
                            return transcode::utf8::decode( value);
                         }

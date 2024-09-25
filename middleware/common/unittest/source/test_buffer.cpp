@@ -164,14 +164,14 @@ namespace casual
             const std::string info( "test string");
 
             auto handle = pool::holder().allocate( type, 128);
-            algorithm::copy( view::binary::make( info), handle.underlying());
+            algorithm::copy( binary::span::make( info), handle.underlying());
 
             auto holder = buffer::pool::holder().get( handle, 100);
 
             EXPECT_TRUE( holder.transport() == 100);
             EXPECT_TRUE( holder.payload().data.size() == 128) << "holder.payload.memory.size(): " << holder.payload().data.size();
 
-            EXPECT_TRUE( algorithm::equal( view::immutable::Binary{ holder.payload().data.data(), info.size()}, view::binary::make( info)));
+            EXPECT_TRUE( algorithm::equal( binary::span::make( holder.payload().data.data(), info.size()), binary::span::make( info)));
 
             buffer::pool::holder().deallocate( handle);
          }
@@ -188,13 +188,13 @@ namespace casual
             // marshal
             {
                auto handle = pool::holder().allocate( type, 128);
-               algorithm::copy( view::binary::make( info), handle.underlying());
+               algorithm::copy( binary::span::make( info), handle.underlying());
 
                message::service::call::caller::Request message( buffer::pool::holder().get( handle, 100));
 
                EXPECT_TRUE( message.buffer.transport() == 100);
                EXPECT_TRUE( message.buffer.payload().data.size() == 128) << "message.buffer.payload.memory.size(): " << message.buffer.payload().data.size();
-               EXPECT_TRUE( algorithm::equal( view::immutable::Binary{ message.buffer.payload().data.data(), info.size()}, view::binary::make( info)));
+               EXPECT_TRUE( algorithm::equal( binary::span::make( message.buffer.payload().data.data(), info.size()), binary::span::make( info)));
 
                serialize::native::binary::Writer output;
                output << message;
@@ -213,7 +213,7 @@ namespace casual
 
                EXPECT_TRUE( message.buffer.type == type);
                EXPECT_TRUE( message.buffer.data.size() == 100);
-               EXPECT_TRUE( algorithm::equal( view::immutable::Binary{ message.buffer.data.data(), info.size()}, view::binary::make( info)));
+               EXPECT_TRUE( algorithm::equal( binary::span::make( message.buffer.data.data(), info.size()), binary::span::make( info)));
             }
          }
 

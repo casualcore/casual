@@ -151,7 +151,7 @@ namespace casual
                   return call( manager::admin::service::name::state).extract< manager::admin::model::State>();
                }
 
-               std::vector< manager::admin::model::Message> messages( const std::string& queue)
+               std::vector< manager::admin::model::Message> messages( std::string_view queue)
                {
                   serviceframework::service::protocol::binary::Call call;
                   return call( manager::admin::service::name::messages::list, queue).extract< std::vector< manager::admin::model::Message>>();
@@ -1484,10 +1484,10 @@ casual queue --peek <queue-name> <id1> <id2> | <some other part of casual-pipe> 
                      if( values.size() % 2 == 0)
                         return algorithm::container::create< std::vector< std::string>>( attributes::names());   //{ "properties", "reply", "available"};
                      
-                     if( values && range::back( values) == "available")
+                     if( ! values.empty() && range::back( values) == "available")
                         return { chronology::to::string( std::chrono::duration_cast< std::chrono::seconds>( platform::time::clock::type::now().time_since_epoch()))};
 
-                     if( values && range::back( values) == "reply")
+                     if( ! values.empty() && range::back( values) == "reply")
                         return local::queues();
 
                       return { "<value>"};

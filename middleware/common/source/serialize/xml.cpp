@@ -326,7 +326,7 @@ namespace casual
                         { 
                            value = transcode::base64::decode( node.text().get()); 
                         }
-                        static void read( const pugi::xml_node& node, view::Binary value)
+                        static void read( const pugi::xml_node& node, binary::span::Fixed< std::byte> value)
                         { 
                            auto binary = transcode::base64::decode( node.text().get());
 
@@ -388,7 +388,7 @@ namespace casual
                         }
 
                         template< typename T>
-                        void write( const T& value, const char* name)
+                        void write( T value, const char* name)
                         {
                            start( name);
                            write( value);
@@ -418,48 +418,42 @@ namespace casual
                            m_stack.pop_back();
                         }
 
-                        template<typename T>
-                        void write( const T& value)
+                        template< concepts::arithmetic T>
+                        void write( T value)
                         {
                            set( std::to_string( value));
                         }
 
                         // A few overloads
 
-                        void write( const bool& value)
+                        void write( bool value)
                         {
                            std::ostringstream stream;
                            stream << std::boolalpha << value;
                            set( std::move( stream).str());
                         }
 
-                        void write( const char& value)
+                        void write( char value)
                         {
-                           write( std::string{ value});
+                           set( std::string{ value});
                         }
 
-                        void write( const std::string& value)
+                        void write( std::string_view value)
                         {
                            set( transcode::utf8::string::encode( value));
                         }
 
-                        void write( const std::u8string& value)
+                        void write( std::u8string_view value)
                         {
                            set( transcode::utf8::cast( value));
                         }
 
-                        void write( const platform::binary::type& value)
-                        {
-                           write( view::binary::make( value));
-                        }
-
-                        void write( view::immutable::Binary value)
+                        void write( std::span< const std::byte> value)
                         {
                            set( transcode::base64::encode( value));
                         }
 
-
-                        void set(const auto& value)
+                        void set( const auto& value)
                         {
                            m_stack.back().text().set( value.data(), value.size());
                         }

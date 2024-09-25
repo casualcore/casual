@@ -12,7 +12,7 @@
 
 #include "common/uuid.h"
 
-#include "common/view/binary.h"
+#include "common/binary/span.h"
 #include "common/algorithm.h"
 #include "common/process.h"
 
@@ -160,7 +160,7 @@ namespace casual
                   template< typename X>
                   auto data( X&& xid) 
                   {
-                     return view::binary::make( xid.data, xid.data + xid.gtrid_length + xid.bqual_length);
+                     return binary::span::fixed::make( xid.data, xid.data + xid.gtrid_length + xid.bqual_length);
                   }
                } // detail
 

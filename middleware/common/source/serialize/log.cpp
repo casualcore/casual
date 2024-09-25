@@ -63,7 +63,7 @@ namespace casual
                   end( "}\n");
                }
 
-               template<typename T>
+               template< concepts::arithmetic T>
                void write( T value, const char* name)
                {
                   prefix( name) << value << '\n';
@@ -79,27 +79,22 @@ namespace casual
                   prefix( name) << "'" << value << "'" << '\n';
                }
 
-               void write( const std::string& value, const char* name)
+               void write( std::string_view value, const char* name)
                {
                   prefix( name) << std::quoted( value) << '\n';
                }
 
-               void write( const std::u8string& value, const char* name)
+               void write( std::u8string_view value, const char* name)
                {
                   write( transcode::utf8::decode( value), name);
                }
 
-               void write( view::immutable::Binary value, const char* name)
+               void write( std::span< const std::byte> value, const char* name)
                {
                   if( value.size() > 32) 
-                     transcode::hex::encode( prefix( name), view::binary::make( std::begin( value), 32)) << "... (size: " << value.size() << ")\n";
+                     transcode::hex::encode( prefix( name), binary::span::make( std::begin( value), 32)) << "... (size: " << value.size() << ")\n";
                   else
                      transcode::hex::encode( prefix( name),value) << '\n';
-               }
-
-               void write( const platform::binary::type& value, const char* name)
-               {
-                  write( view::binary::make( value), name);
                }
 
                void consume( std::string& destination)

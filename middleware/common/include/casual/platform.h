@@ -56,6 +56,7 @@
 //
 #include <string>
 #include <vector>
+#include <span>
 #include <chrono>
 #include <iosfwd>
 
@@ -352,12 +353,6 @@ namespace casual
       {
          using type = std::vector< std::byte>;
          using pointer = decltype( std::declval< type>().data());
-
-         namespace value
-         {
-            using type = std::remove_reference_t< decltype( std::declval< binary::type>().at( 0))>;
-
-         } // value
 
          namespace immutable
          {

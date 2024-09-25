@@ -244,7 +244,14 @@ namespace casual
             template< typename C>
             static void stream( std::ostream& out, const C& value)
             {
-               out.write( std::data( value), std::size( value));
+               if constexpr( std::same_as< std::decay_t< std::ranges::range_value_t< C>>, char>)
+                  out.write( std::data( value), std::size( value));
+               else
+               {
+                  static_assert( sizeof( std::ranges::range_value_t< C>) == 1);
+                  auto data = reinterpret_cast< const char*>( std::data( value));
+                  out.write( data, std::size( value));
+               }
             };
          };
 

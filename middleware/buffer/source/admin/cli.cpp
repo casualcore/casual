@@ -216,7 +216,7 @@ if --verbose is provided the type of the buffer will be sent to stderr.
                         if( terminal::output::directive().verbose())
                            std::cerr << message.payload.type << '\n';
 
-                        auto string_like = view::binary::to_string_like( message.payload.data);
+                        auto string_like = binary::span::to_string_like( message.payload.data);
                         std::cout.write(string_like.data(), string_like.size());
                      }),
                   std::ref( done)

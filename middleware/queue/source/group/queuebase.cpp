@@ -15,7 +15,7 @@
 #include "common/execute.h"
 #include "common/event/send.h"
 #include "common/environment.h"
-#include "common/view/binary.h"
+#include "common/binary/span.h"
 
 
 #include "common/code/raise.h"

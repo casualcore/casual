@@ -995,9 +995,11 @@ namespace casual
             if( m_policy.overrides( arguments, [&](){ return m_options;}))
                return;
 
-            detail::traverse( m_options, arguments, []( auto& option, auto& key, auto argument){
+            detail::traverse( m_options, arguments, []( auto& option, auto& key, auto argument)
+            {
                option.assign( key, argument);
             });
+            
             m_options.validate();
             m_options.invoke();
          }
@@ -1021,26 +1023,6 @@ namespace casual
                value = ! value;
             };
          }
-
-         //! default true flag.
-         //! @returns a functor that takes an optional bool
-         //! argument and sets the provided bool `state` to true
-         //! if empty argument, or value of argument.
-         //! useful when providing flags with default semantic to
-         //! `true`.  --all, --force. User does not have to provide
-         //! the value of the option (implicit true), unless user
-         //! wants to be explicit.
-         inline auto flag( bool& state)
-         {
-            return [ &state]( std::optional< bool> argument)
-            {
-               if( argument)
-                  state = *argument;
-               else
-                  state = true;
-            };
-         }
-         
 
          namespace one
          {

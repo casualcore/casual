@@ -206,7 +206,7 @@ namespace casual::http::inbound
                }
 
                reply->code = std::to_underlying( context_holder->reply.code);
-               auto span = view::binary::to_string_like( context_holder->reply.payload.body);
+               auto span = binary::span::to_string_like( context_holder->reply.payload.body);
                reply->payload.data = span.data();
                reply->payload.size = span.size();
             }
@@ -222,7 +222,7 @@ namespace casual::http::inbound
                
                auto context_holder = context::cast( handle->context_holder);
 
-               algorithm::container::append( view::binary::make( data, size), context_holder->request.payload.body);
+               algorithm::container::append( binary::span::make( data, size), context_holder->request.payload.body);
             }
          } // payload
 

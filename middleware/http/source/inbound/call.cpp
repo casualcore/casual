@@ -283,7 +283,7 @@ namespace casual
 
             common::buffer::Payload payload{ m_protocol};
             {
-               auto view = view::binary::make( error.what(), std::strlen( error.what()));
+               auto view = binary::span::make( error.what(), std::strlen( error.what()));
                payload.data.assign( std::begin( view), std::end( view));
             }
 

@@ -295,12 +295,12 @@ namespace casual
 
             void insert( auto& buffer, const item_type id, const char* const value)
             {
-               append( buffer, id, common::view::binary::make( value, std::strlen( value) + 1));
+               append( buffer, id, common::binary::span::make( value, std::strlen( value) + 1));
             }
 
             void insert( auto& buffer, const item_type id, const_data_type data, const size_type size)
             {
-               append( buffer, id, common::view::binary::make( data, size));
+               append( buffer, id, common::binary::span::make( data, size));
             }
 
             template<typename... A>
@@ -507,13 +507,13 @@ namespace casual
 
             void update( auto& memory, auto& index, const item_type id, const size_type occurrence, const_data_type data, const size_type size)
             {
-               change( memory, index, id, occurrence, common::view::binary::make( data, size));
+               change( memory, index, id, occurrence, common::binary::span::make( data, size));
             }
 
             void update( auto& memory, auto& index, const item_type id, const size_type occurrence, const char* const value)
             {
                const auto count = std::strlen( value) + 1;
-               change( memory, index, id, occurrence, common::view::binary::make( value, count));
+               change( memory, index, id, occurrence, common::binary::span::make( value, count));
             }
 
 
@@ -1374,7 +1374,7 @@ namespace casual
 
                      using common::serialize::named::value::make;
 
-                     auto where = common::view::binary::make( occurrence, 1);
+                     auto where = common::binary::span::make( occurrence, 1);
 
                      const auto data = where.data() + data_offset;
                      const auto size = where.data() + size_offset;
@@ -1494,7 +1494,7 @@ namespace casual
                   {
                      std::string value;
                      archive >> CASUAL_NAMED_VALUE( value);
-                     common::algorithm::copy( common::view::binary::make( value), m_value);
+                     common::algorithm::copy( common::binary::span::make( value), m_value);
                   }
 
                   template< typename T, typename F>
@@ -1506,7 +1506,7 @@ namespace casual
                   template< typename F>
                   void dispatch_string( F& functor) const
                   {
-                     auto span = common::view::binary::to_string_like( m_value);
+                     auto span = common::binary::span::to_string_like( m_value);
                      std::string value( std::begin( span), std::end( span));
                      functor( m_id, value);
                   }
@@ -1536,7 +1536,7 @@ namespace casual
                   void operator() ( long id, const std::string& value) { casual_field_add_string( &m_buffer, id, value.c_str());}
                   void operator() ( long id, const platform::binary::type& value) 
                   {
-                     auto span = common::view::binary::to_string_like( value);
+                     auto span = common::binary::span::to_string_like( value);
                      casual_field_add_binary( &m_buffer, id, span.data(), span.size());
                   }
 

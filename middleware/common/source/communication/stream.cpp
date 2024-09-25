@@ -36,7 +36,7 @@ namespace casual
                   complete.offset +=  message::header::size;
                   complete.payload.resize( complete.size());
 
-                  auto span = view::binary::to_string_like( complete.payload);
+                  auto span = binary::span::to_string_like( complete.payload);
 
                   if( ! in.read( span.data(), span.size()))
                      code::raise::error( code::casual::communication_unavailable, "stream is unavailable - payload");
@@ -63,7 +63,7 @@ namespace casual
 
                   // write the complete message
                   {
-                     auto char_span = view::binary::to_string_like( complete.payload);
+                     auto char_span = binary::span::to_string_like( complete.payload);
                      if( ! out.write( char_span.data(), char_span.size()))
                         code::raise::error( code::casual::communication_unavailable, "stream is unavailable");
 

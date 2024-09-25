@@ -10,7 +10,7 @@
 #include "common/serialize/archive/property.h"
 
 #include "common/traits.h"
-#include "common/view/binary.h"
+#include "common/binary/span.h"
 #include "common/code/serialize.h"
 #include "common/flag.h"
 
@@ -252,7 +252,7 @@ namespace casual
          static void write( A& archive, const T& value, const char* name)
          {
             using conformant_type = decltype( detail::integral::archive::conformant::convert( value));
-            static_assert( concepts::serialize::archive::native::type< conformant_type>);
+            static_assert( concepts::serialize::archive::native::write< conformant_type>);
 
             archive.write( detail::integral::archive::conformant::convert( value), name);
          }
@@ -260,7 +260,7 @@ namespace casual
          static bool read( A& archive, T& value, const char* name)
          {
             using conformant_type = decltype( detail::integral::archive::conformant::convert( value));
-            static_assert( concepts::serialize::archive::native::type< conformant_type>);
+            static_assert( concepts::serialize::archive::native::read< conformant_type>);
 
             conformant_type conformant;
 
@@ -406,7 +406,8 @@ namespace casual
          template< typename T>
          concept container_like = concepts::container::like< std::remove_cvref_t< T>>
                && ! concepts::string::like< std::remove_cvref_t< T>>
-               && ! concepts::serialize::archive::native::type< std::remove_cvref_t< T>>;
+               && ! concepts::binary::like< std::remove_cvref_t< T>>
+               && ! concepts::serialize::archive::native::read_write< std::remove_cvref_t< T>>;
 
          namespace container
          {
@@ -486,7 +487,37 @@ namespace casual
          }
       };
 
-      //! Specialization for binary array likes
+      //! Specialization for The binary type, only for write. Write archives
+      //! only takes views, and the 'view' for binary type is std::span< const std::byte>;
+      template< typename A>
+      struct Value< platform::binary::type, A>
+      {
+         static void write( A& archive, const platform::binary::type& value, const char* name)
+         {
+            value::write( archive, binary::span::make( value), name);
+         }
+      };
+
+      template< concepts::derived_from< std::string> T, typename A>
+      struct Value< T, A>
+      {
+         static void write( A& archive, const T& value, const char* name)
+         {
+            value::write( archive, std::string_view( value), name);
+         }
+      };
+
+      template< concepts::derived_from< std::u8string> T, typename A>
+      struct Value< T, A>
+      {
+         static void write( A& archive, const T& value, const char* name)
+         {
+            value::write( archive, std::u8string_view( value), name);
+         }
+      };
+
+
+      //! Specialization for binary fixed arrays
       template< typename T, typename A>
       requires concepts::container::array< T> && concepts::binary::like< T>
       struct Value< T, A>
@@ -494,14 +525,16 @@ namespace casual
          template< typename V> 
          static void write( A& archive, V&& value, const char* name)
          {
-            value::write( archive, view::binary::make( value), name);
+            value::write( archive, binary::span::fixed::make( value), name);
          }
 
          static bool read( A& archive, T& value, const char* name)
          {
-            return value::read( archive, view::binary::make( value), name);
+            auto span = binary::span::fixed::make( value);
+            return value::read( archive, span, name);
          }
       };
+
 
       namespace detail
       {

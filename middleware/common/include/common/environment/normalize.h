@@ -45,7 +45,7 @@ namespace casual
             inline bool composite_start( const char*) { return true;}
             inline void composite_end(  const char*) {} // no-op
 
-            template< concepts::serialize::archive::native::type T> 
+            template< concepts::serialize::archive::native::read T> 
             auto read( T&& value, const char*)
             { 
                return read( std::forward< T>( value));

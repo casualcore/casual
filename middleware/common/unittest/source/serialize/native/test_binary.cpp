@@ -344,10 +344,10 @@ namespace casual
                {
 
                   buffer::Payload payload{ type, 128};
-                  algorithm::copy( view::binary::make( info), std::begin( payload.data));
+                  algorithm::copy( common::binary::span::make( info), std::begin( payload.data));
 
                   EXPECT_TRUE( payload.data.size() == 128) << " payload.data.size(): " <<  payload.data.size();
-                  EXPECT_TRUE( algorithm::equal( view::Binary{ std::begin( payload.data), info.size()}, view::binary::make( info))) << CASUAL_NAMED_VALUE( payload);
+                  EXPECT_TRUE( algorithm::equal( common::binary::span::Fixed< std::byte>{ std::begin( payload.data), info.size()}, common::binary::span::make( info))) << CASUAL_NAMED_VALUE( payload);
 
                   message::service::call::caller::Request message{ buffer::payload::Send{ payload, 100, 100}};
                   message.header.add( service::header::Field{ "casual.header.test.1: 42"});
@@ -373,7 +373,7 @@ namespace casual
 
                   EXPECT_TRUE( message.buffer.type == type);
                   EXPECT_TRUE( message.buffer.data.size() == 100) << "message.buffer.data.size(): " << message.buffer.data.size();
-                  EXPECT_TRUE( algorithm::equal( view::Binary{ std::begin( message.buffer.data), info.size()}, view::binary::make( info))) << CASUAL_NAMED_VALUE( message.buffer);
+                  EXPECT_TRUE( algorithm::equal( common::binary::span::make( std::begin( message.buffer.data), info.size()), common::binary::span::make( info))) << CASUAL_NAMED_VALUE( message.buffer);
 
                   // header
                   {

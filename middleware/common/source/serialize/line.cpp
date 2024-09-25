@@ -65,7 +65,7 @@ namespace casual
             maybe_name( name) << ( value ? "true" : "false"); 
          }
 
-         void Writer::save( view::immutable::Binary value, const char* name)
+         void Writer::save( std::span< const std::byte> value, const char* name)
          {
             maybe_name( name);
             
@@ -77,17 +77,12 @@ namespace casual
             }
          }
 
-         void Writer::save( const platform::binary::type& value, const char* name)
-         {
-            save( view::immutable::Binary{ value}, name);
-         }
-
-         void Writer::save( const std::string& value, const char* name)
+         void Writer::save( std::string_view value, const char* name)
          {
             maybe_name( name) << value;
          }
 
-         void Writer::save( const std::u8string& value, const char* name)
+         void Writer::save( std::u8string_view value, const char* name)
          {
             save( transcode::utf8::decode( value), name);
          }

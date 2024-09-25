@@ -17,7 +17,7 @@
 #include "common/message/transaction.h"
 #include "common/message/service.h"
 
-#include "common/view/binary.h"
+#include "common/binary/span.h"
 #include "common/terminal.h"
 #include "common/execute.h"
 #include "common/algorithm/sorted.h"
@@ -38,7 +38,7 @@ namespace casual
          static void serialize( A& archive, V&& value)
          {
             CASUAL_SERIALIZE_NAME( static_cast< communication::tcp::message::Header::host_type_type>( value.type), "type");
-            CASUAL_SERIALIZE_NAME( common::view::binary::make( value.correlation), "correlation");
+            CASUAL_SERIALIZE_NAME( common::binary::span::fixed::make( value.correlation), "correlation");
             CASUAL_SERIALIZE_NAME( static_cast< communication::tcp::message::Header::host_size_type>( value.size), "size");
          }
       };
@@ -182,8 +182,8 @@ namespace casual
                inline void composite_end(  const char*) { canonical.pop();}
 
 
-               template< typename T> 
-               auto write( const T& value, const char* name) requires concepts::serialize::archive::native::type< T> || concepts::arithmetic< T>
+               template< concepts::serialize::archive::native::write T> 
+               auto write( T value, const char* name)
                { 
                   canonical.push( name);
                   write( value);
@@ -226,7 +226,7 @@ namespace casual
                   type( value);
                }
 
-               void write( const std::string& value)
+               void write( std::string_view value)
                {
                   write_size( value.size());
                   canonical.push( "data");
@@ -234,7 +234,7 @@ namespace casual
                   canonical.pop();
                }
 
-               void write( const std::u8string& value)
+               void write( std::u8string_view value)
                {
                   write_size( value.size());
                   canonical.push( "data");
@@ -242,7 +242,7 @@ namespace casual
                   canonical.pop();
                }
 
-               void write( const platform::binary::type& value)
+               void write( std::span< const std::byte> value)
                {
                   write_size( value.size());
                   canonical.push( "data");
@@ -250,7 +250,7 @@ namespace casual
                   canonical.pop();
                }
 
-               void write( common::view::immutable::Binary value)
+               void write( common::binary::span::Fixed< const std::byte> value)
                {
                   //write_size( value.size());
                   dynamic( value.size(), value.size(), "(fixed) binary");
@@ -390,7 +390,7 @@ namespace casual
 
                   common::algorithm::for_each( result, [ current = min]( auto& byte) mutable
                   {
-                     byte = static_cast< platform::binary::value::type>( current);
+                     byte = static_cast< std::byte>( current);
 
                      if( current == max)
                         current = min;

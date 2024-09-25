@@ -7,6 +7,7 @@
 #pragma once
 
 #include <ranges>
+#include <type_traits>
 
 namespace casual
 {
@@ -134,7 +135,7 @@ namespace casual
          concept associative = concepts::range< T> && container::value::insert< T>;
 
          template< typename T>
-         concept array = std::is_array_v< T> || ( concepts::range< T> && requires 
+         concept array = std::is_bounded_array_v< T> || ( concepts::range< T> && requires 
          {            
             std::tuple_size< T>::value;
          });
@@ -147,7 +148,7 @@ namespace casual
       namespace string
       {
          template< typename T>
-         concept value_type = concepts::any_of< std::remove_cvref_t< T>, char>;
+         concept value_type = concepts::any_of< std::remove_cvref_t< T>, char, char8_t>;
 
          template< typename T>
          concept like = concepts::range< T> && requires( const T& a)

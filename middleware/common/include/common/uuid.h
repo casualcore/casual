@@ -11,7 +11,7 @@
 #include <uuid/uuid.h>
 
 #include "casual/platform.h"
-#include "common/view/binary.h"
+#include "common/binary/span.h"
 #include "common/range.h"
 #include "common/algorithm.h"
 
@@ -36,7 +36,7 @@ namespace casual
          inline const uuid_type& get() const { return m_uuid;}
          inline uuid_type& get() { return m_uuid;}
 
-         inline auto range() const noexcept { return  view::binary::make( m_uuid);}
+         inline auto range() const noexcept { return binary::span::fixed::make( m_uuid);}
 
          //! Copy to native uuid
          //!
@@ -48,7 +48,7 @@ namespace casual
          bool empty() const;
 
          // forward serialization
-         CASUAL_FORWARD_SERIALIZE( view::binary::make( m_uuid))
+         CASUAL_FORWARD_SERIALIZE( binary::span::fixed::make( m_uuid))
  
          friend inline bool operator == ( const Uuid& lhs, const Uuid::uuid_type& rhs) noexcept { return algorithm::equal( lhs.m_uuid, rhs);}
          inline friend bool operator == ( const Uuid&, const Uuid&) = default;  

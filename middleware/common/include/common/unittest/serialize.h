@@ -34,7 +34,7 @@ namespace casual
             auto value( std::string_view format, std::string_view information, traits::priority::tag< 0>)
             {
                // crete a binary type from the string and call the one above
-               auto span = view::binary::make( information);
+               auto span = binary::span::make( information);
                auto binary = platform::binary::type{ std::begin( span), std::end( span)};
                return value< T>( format, std::move( binary), traits::priority::tag< 1>{});
             }

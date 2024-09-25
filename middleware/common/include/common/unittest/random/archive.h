@@ -129,17 +129,12 @@ namespace casual
                bool read( platform::binary::type& value, const char*)
                {
                   value.resize( size( Policy::size::binary()));
-                  return read( view::binary::make( value), nullptr);
+                  return read( binary::span::make( value));
                }
 
-               bool read( view::Binary value, const char*)
+               bool read( binary::span::Fixed< std::byte> value, const char*)
                {
-                  static auto distribution = std::uniform_int_distribution< std::uint8_t>( std::numeric_limits< std::uint8_t>::min());
-                  
-                  for( auto& byte : value)
-                     byte = static_cast< std::byte>( distribution( detail::engine()));
-                  
-                  return true;
+                  return read( value);
                }
 
                template< typename T>
@@ -150,6 +145,16 @@ namespace casual
                }
 
             private:
+
+               bool read( std::span< std::byte> value)
+               {
+                  static auto distribution = std::uniform_int_distribution< std::uint8_t>( std::numeric_limits< std::uint8_t>::min());
+                  
+                  for( auto& byte : value)
+                     byte = static_cast< std::byte>( distribution( detail::engine()));
+                  
+                  return true;
+               }
 
                template< typename C>
                constexpr static platform::size::type size( C cardinality)

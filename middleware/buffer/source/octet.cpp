@@ -131,7 +131,7 @@ namespace casual
                {
                   auto& buffer = pool_type::pool().get( common::buffer::handle::type{ *handle});
 
-                  casual::common::algorithm::copy( casual::common::view::binary::make( data, size), buffer.payload.data);
+                  casual::common::algorithm::copy( casual::common::binary::span::make( data, size), buffer.payload.data);
 
                   *handle = buffer.payload.handle().raw();
                }

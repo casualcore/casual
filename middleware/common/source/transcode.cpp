@@ -51,11 +51,11 @@ namespace casual
                   source.bytes); 
             }
 
-            platform::size::type decode( std::string_view source, view::Binary destination)
+         platform::size::type decode( std::string_view source, std::span< std::byte> destination)
             {
                try
                {
-                  auto char_span = view::binary::to_string_like( destination);
+                  auto char_span = binary::span::to_string_like( destination);
 
                   // calls abort() if target size is insufficient
                   return cppcodec::base64_rfc4648::decode(

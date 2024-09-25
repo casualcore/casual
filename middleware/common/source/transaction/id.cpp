@@ -94,8 +94,8 @@ namespace casual
                xid.gtrid_length = std::size( gtrid);
                xid.bqual_length = std::size( bqual);
 
-               algorithm::copy( view::binary::to_string_like( gtrid), xid.data);
-               algorithm::copy( view::binary::to_string_like( bqual), xid.data + xid.gtrid_length);
+               algorithm::copy( gtrid, binary::span::make( xid.data, std::ssize( gtrid)));
+               algorithm::copy( bqual, binary::span::make( xid.data + xid.gtrid_length, std::ssize( bqual)));
 
                xid.formatID = ID::Format::casual;
             }
@@ -222,12 +222,12 @@ namespace casual
          {
             type::global global( const xid_type& xid)
             {
-               return type::global{ view::binary::make( xid.data, xid.gtrid_length)};
+               return type::global{ binary::span::make( xid.data, xid.gtrid_length)};
             }
 
             type::branch branch( const xid_type& xid)
             {
-               return type::branch{ view::binary::make( xid.data + xid.gtrid_length, xid.bqual_length)};
+               return type::branch{ binary::span::make( xid.data + xid.gtrid_length, xid.bqual_length)};
             }
 
             type::global global( const ID& id)

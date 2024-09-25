@@ -219,7 +219,7 @@ namespace casual
                      // make sure we've got null termination on payload...
                      payload.data.push_back( std::byte{ '\0'});
 
-                     auto view = view::binary::to_string_like( payload.data);
+                     auto view = binary::span::to_string_like( payload.data);
 
                      auto result = common::transcode::base64::decode( std::string_view{ view.data(), view.size()}, payload.data);
                      algorithm::container::trim( payload.data, result);

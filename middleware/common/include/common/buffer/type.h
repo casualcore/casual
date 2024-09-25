@@ -12,7 +12,7 @@
 
 #include "common/serialize/macro.h"
 #include "common/algorithm.h"
-#include "common/view/binary.h"
+#include "common/binary/span.h"
 #include "common/network/byteorder.h"
 #include "common/string.h"
 #include "common/strong/type.h"
@@ -157,7 +157,7 @@ namespace casual
             CASUAL_LOG_SERIALIZE(
                CASUAL_SERIALIZE_NAME( payload().type, "type");
                CASUAL_SERIALIZE_NAME( m_transport, "size"); // size of the memory
-               CASUAL_SERIALIZE_NAME( view::binary::make( std::begin( payload().data), m_transport), "memory");
+               CASUAL_SERIALIZE_NAME( binary::span::fixed::make( std::begin( payload().data), m_transport), "memory");
             )
 
             friend std::ostream& operator << ( std::ostream& out, const Send& value);

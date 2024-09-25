@@ -69,7 +69,7 @@ namespace casual
             casual_field_add_float( &buffer, FLD_FLOAT, value.v_float);
             casual_field_add_double( &buffer, FLD_DOUBLE, value.v_double);
             casual_field_add_string( &buffer, FLD_STRING, value.v_string.c_str());
-            auto string_like = common::view::binary::to_string_like( value.v_binary);
+            auto string_like = common::binary::span::to_string_like( value.v_binary);
             casual_field_add_binary( &buffer, FLD_BINARY, string_like.data(),  string_like.size());
 
             long size = 0;
@@ -119,7 +119,7 @@ Every field in the buffer has the following parts: `<field-id><size><data>`
                out << "float   | " << FLD_FLOAT      << "  |      " << sizeof( value.v_float) << " | "  << std::setprecision( std::numeric_limits<float>::digits10 + 1) << value.v_float << '\n';
                out << "double  | " << FLD_DOUBLE     << "  |      " << sizeof( value.v_double) << " | " << std::setprecision( std::numeric_limits<double>::digits10 + 1) << value.v_double << '\n';
                out << "string  | " << FLD_STRING     << "  |      " << value.v_string.size()  << " | " << value.v_string << '\n';
-               auto string_like = common::view::binary::to_string_like( value.v_binary);
+               auto string_like = common::binary::span::to_string_like( value.v_binary);
                out << "binary  | " << FLD_BINARY     << "  |      " << string_like.size()  << " | "; out.write( string_like.data(), string_like.size()) ;out << '\n';
 
                out << '\n';
@@ -141,7 +141,7 @@ Every field in the buffer has the following parts: `<field-id><size><data>`
                out << "float   | " << encode( FLD_FLOAT)   << "  |      " << encode( sizeof( value.net_float())) << " | " << value.net_float()  << '\n';
                out << "double  | " << encode( FLD_DOUBLE)  << "  |      " << encode( sizeof( value.net_double())) << " | " << value.net_double() << '\n';
                out << "string  | " << encode( FLD_STRING)  << "  |      " << encode( value.v_string.size())   << " | " << value.v_string << '\n';
-               auto string_like = common::view::binary::to_string_like( value.v_binary);
+               auto string_like = common::binary::span::to_string_like( value.v_binary);
                out << "binary  | " << encode( FLD_BINARY)  << "  |      " << encode( string_like.size())   << " | "; out.write( string_like.data(), string_like.size()); out << '\n';
 
                out << '\n';

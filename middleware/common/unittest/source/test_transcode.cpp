@@ -25,7 +25,7 @@ namespace casual
 
             platform::binary::type string_to_binary( std::string_view value)
             {
-               auto span = view::binary::make( value);
+               auto span = binary::span::make( value);
                return platform::binary::type( std::begin( span), std::end( span));
             }
 
@@ -60,11 +60,11 @@ namespace casual
 
          std::string encoded{ "QUJDRA=="};
 
-         auto binary = transcode::base64::decode( encoded, view::binary::make( encoded));
+         auto binary = transcode::base64::decode( encoded, binary::span::make( encoded));
 
          auto expected = std::string_view{ "ABCD"};
 
-         EXPECT_TRUE( algorithm::equal( binary, view::binary::make( expected))) << "decoded: " << encoded;
+         EXPECT_TRUE( algorithm::equal( binary, binary::span::make( expected))) << "decoded: " << encoded;
          EXPECT_TRUE( binary.size() == 4);
       }
 

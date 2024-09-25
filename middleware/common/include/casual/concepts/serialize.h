@@ -9,7 +9,7 @@
 #include "casual/concepts.h"
 
 #include "common/flag/enum.h"
-#include "common/view/binary.h"
+#include "common/binary/span.h"
 
 
 namespace casual
@@ -32,9 +32,16 @@ namespace casual
          {
             //! predicate which types an archive can read/write 'natively'
             template< typename T> 
-            concept type = concepts::decayed::any_of< T, bool, char, short, int, long, long long, float, double, 
-               common::view::immutable::Binary, common::view::Binary>
+            concept read = concepts::decayed::any_of< T, bool, char, short, int, long, long long, float, double, 
+               common::binary::span::Fixed< std::byte>>
                || concepts::derived_from< T, std::string, std::u8string, platform::binary::type>;
+
+            template< typename T> 
+            concept write = concepts::decayed::any_of< T, bool, char, short, int, long, long long, float, double, 
+               std::string_view, std::u8string_view, std::span< const std::byte>, common::binary::span::Fixed< const std::byte>>;
+
+            template< typename T> 
+            concept read_write = read< T> && write< T>;
          } // native
 
       } // archive

@@ -28,6 +28,8 @@ namespace casual
    {
       namespace binary
       {
+         static_assert( concepts::container::array< std::array< int, 4>>);
+
          struct Policy
          {
             constexpr static auto archive_properties() { return common::serialize::archive::Property::order;}
@@ -86,30 +88,30 @@ namespace casual
 
 
             template< concepts::arithmetic T>
-            auto write( const T& value, const char*)
+            auto write( T value, const char*)
             {
                policy_type::write( value, m_buffer);
             }
 
-            void write( const std::string& value, const char*) 
+            void write( std::string_view value, const char*) 
             { 
                write_size( value.size());
-               append( view::binary::make( value));
+               append( common::binary::span::make( value));
             }
 
-            void write( const std::u8string& value, const char*) 
+            void write( std::u8string_view value, const char*) 
             {
                write_size( value.size());
-               append( view::binary::make( value));
+               append( common::binary::span::make( value));
             }
 
-            void write( const platform::binary::type& value, const char*) 
+            void write( std::span< const std::byte> value, const char*) 
             { 
                write_size( value.size());
                append( value);
             }
             
-            void write( view::immutable::Binary value, const char*) 
+            void write( common::binary::span::Fixed< const std::byte> value, const char*) 
             {
                append( value);
             }
@@ -178,14 +180,14 @@ namespace casual
             bool read( std::string& value, const char*)
             {
                value.resize( read_size());
-               consume( view::binary::make( value));
+               consume( common::binary::span::make( value));
                return true;
             }
 
             bool read( std::u8string& value, const char*)
             {
                value.resize( read_size());
-               consume( view::binary::make( value));
+               consume( common::binary::span::make( value));
                return true;
             }
 
@@ -196,7 +198,7 @@ namespace casual
                return true;
             }
 
-            bool read( view::Binary value, const char*)
+            bool read( common::binary::span::Fixed< std::byte> value, const char*)
             {
                consume( value);
                return true;

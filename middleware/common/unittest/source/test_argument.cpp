@@ -71,7 +71,7 @@ namespace casual
 
          EXPECT_TRUE( option.representation().invocable.cardinality() == argument::cardinality::one_many{}) << "option.representation(): " << option.representation();
 
-         std::vector< std::string> arguments{ "1", "2", "3"};
+         std::vector< std::string_view> arguments{ "1", "2", "3"};
 
          option.assign( "-a", range::make( arguments));
          option.invoke();

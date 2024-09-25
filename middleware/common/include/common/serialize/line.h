@@ -41,10 +41,9 @@ namespace casual
          }
 
          void save( bool value, const char* name);
-         void save( view::immutable::Binary value, const char* name);
-         void save( const platform::binary::type& value, const char* name);
-         void save( const std::string& value, const char* name);
-         void save( const std::u8string& value, const char* name);
+         void save( std::string_view value, const char* name);
+         void save( std::u8string_view value, const char* name);
+         void save( std::span< const std::byte> value, const char* name);
 
          std::ostream& maybe_name( const char* name);
 
@@ -54,7 +53,7 @@ namespace casual
          std::ostringstream m_stream;
          const char* m_prefix = detail::first;
 
-         template< concepts::serialize::archive::native::type T>
+         template< concepts::serialize::archive::native::write T>
          auto dispatch( T&& value, const char* name, common::traits::priority::tag< 1>) 
          {
             save( std::forward< T>( value), name);

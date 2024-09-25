@@ -65,7 +65,7 @@ namespace casual
 
                      common::algorithm::for_each( result, [ current = min]( auto& byte) mutable
                      {
-                        byte = static_cast< platform::binary::value::type>( current);
+                        byte = static_cast< std::byte>( current);
 
                         if( current == max)
                            current = min;
