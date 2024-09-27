@@ -56,15 +56,6 @@ namespace casual
       template< typename T>
       concept copyable = std::is_copy_constructible_v< T> && std::is_copy_assignable_v< T>;
 
-      namespace tuple
-      {
-         template< typename T>
-         concept size = requires { std::tuple_size< T>::value; };
-
-         template< typename T>
-         concept like = tuple::size< T> && ! concepts::range< T>; 
-      } // tuple
-
       namespace compare
       {
          template< typename T> 
@@ -144,6 +135,17 @@ namespace casual
          concept like = container::sequence< T> || container::associative< T>;
 
       } // container
+
+      namespace tuple
+      {
+         template< typename T>
+         concept like = ! container::array< T> && requires( T value) 
+         { 
+            std::tuple_size< T>::value; 
+            std::get< 0>( value);
+            
+         };
+      } // tuple
 
       namespace string
       {

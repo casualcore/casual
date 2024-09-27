@@ -33,7 +33,7 @@ namespace casual
       //! @param delimiter the value to use as a splitter
       //!
       //! @return the splitted range.
-      std::vector< std::string> split( const std::string& line, typename std::string::value_type delimiter = ' ');
+      std::vector< std::string> split( std::string_view line, typename std::string::value_type delimiter = ' ');
 
 
       namespace adjacent
@@ -44,7 +44,7 @@ namespace casual
          //! @param delimiter the value to use as a splitter
          //!
          //! @return the splitted range.
-         std::vector< std::string> split( const std::string& line, typename std::string::value_type delimiter = ' ');
+         std::vector< std::string> split( std::string_view line, typename std::string::value_type delimiter = ' ');
 
       } // adjacent
 

@@ -823,6 +823,13 @@ namespace casual
          }            
       } // stable
 
+      //! @return a tuple with the two ranges
+      template< concepts::range R, typename Iter>
+      [[nodiscard]] auto divide_at( R&& range, Iter divider)
+      {
+         return std::make_tuple( range::make( std::begin( range), divider), range::make( divider, std::end( range)));
+      }
+
       //! Divide @p range in two parts [range-first, divider), [divider, range-last).
       //! where divider is the first occurrence that is equal to @p value
       //!
@@ -833,8 +840,8 @@ namespace casual
          auto divider = std::find(
                std::begin( range), std::end( range),
                value);
-
-         return std::make_tuple( range::make( std::begin( range), divider), range::make( divider, std::end( range)));
+         
+         return divide_at( range, divider);
       }
 
       //! Split @p range in two parts [range-first, divider), [divider + 1, range-last).

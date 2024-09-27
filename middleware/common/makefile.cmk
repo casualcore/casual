@@ -154,6 +154,7 @@ casual_common_objectfiles = [
     make.Compile( 'source/quantity.cpp'),
     
     make.Compile( 'source/argument.cpp'),
+    make.Compile( 'source/argument2.cpp'),
     make.Compile( 'source/argument/cardinality.cpp'),
     
     make.Compile( 'source/terminal.cpp'),
@@ -284,6 +285,9 @@ unittest_objectfiles = [
     make.Compile( 'unittest/source/test_functional.cpp'),
 
     make.Compile( 'unittest/source/test_argument.cpp'),
+    make.Compile( 'unittest/source/argument/test_cardinality.cpp'),
+    make.Compile( 'unittest/source/argument/test_option.cpp'),
+    make.Compile( 'unittest/source/argument/test_parse.cpp'),
     make.Compile( 'unittest/source/test_metric.cpp'),
 
     make.Compile( 'unittest/source/test_quantity.cpp'),

@@ -25,7 +25,7 @@ namespace casual
       namespace string
       {
 
-         std::vector< std::string> split( const std::string& line, typename std::string::value_type delimiter)
+         std::vector< std::string> split( std::string_view line, typename std::string::value_type delimiter)
          {
             auto next_range = [delimiter]( auto range){ return algorithm::split( range, delimiter);};
             auto transform_string = []( auto range){ return std::string{ std::begin( range), std::end( range)};};
@@ -38,7 +38,7 @@ namespace casual
          namespace adjacent
          {
 
-            std::vector< std::string> split( const std::string& line, typename std::string::value_type delimiter)
+            std::vector< std::string> split( std::string_view line, typename std::string::value_type delimiter)
             {
                auto next_range = [delimiter]( auto range)
                { 
