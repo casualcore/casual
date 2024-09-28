@@ -16,7 +16,7 @@ make.IncludePaths( [
 make.LibraryPaths( [ 
     'bin',
     '../common/bin',
-    ]
+        ]
     + make.optional_library_paths()
     + dsl.paths().library.gtest
 )
@@ -49,3 +49,14 @@ file_manager = make.LinkExecutable( 'bin/casual-file-manager',
 
 install_bin.append( file_manager)
 
+
+test_casual_file = make.LinkUnittest( 'unittest/bin/test-casual-file', 
+    [
+        make.Compile( 'unittest/source/resource/test_logic.cpp'),
+    ],
+    [
+    resource_archive,    
+    'casual-common',
+    'casual-unittest',
+    ]  
+)
