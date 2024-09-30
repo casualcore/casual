@@ -1887,6 +1887,210 @@ domain:
          }
       }
 
+      TEST( gateway_manager_outbound, enable_disabled_connection__expect_connected)
+      {
+         common::unittest::Trace trace;
+
+         auto a = local::domain( R"(
+domain:
+   name: a
+
+   gateway:
+      inbound:
+         groups:
+            -  alias: in
+               connections:
+                  -  address: 127.0.0.1:7600
+)");
+
+         auto b = local::domain( R"(
+domain:
+   name: b
+   groups:
+      -  name: some_group
+         enabled: false
+
+   gateway:
+      outbound:
+         groups:
+            -  alias: out
+               connections:
+                  -  address: 127.0.0.1:7600
+                     memberships: [ some_group]
+)");
+
+         {
+            auto state = unittest::state();
+
+            auto disabled_count = algorithm::count_if( state.connections, unittest::fetch::predicate::is::runlevel::disabled());
+            EXPECT_TRUE( disabled_count == 1) << "wanted: 1, actual: " << disabled_count;
+         }
+
+         auto wanted = local::configuration::load( R"(
+domain:
+   groups:
+      -  name: some_group
+         enabled: true
+)");
+         casual::domain::unittest::configuration::put( casual::configuration::model::transform( wanted));
+
+         {
+            auto state = unittest::fetch::until( unittest::fetch::predicate::outbound::connected());
+
+            auto connected_count = algorithm::count_if( state.connections, unittest::fetch::predicate::is::runlevel::connected());
+            EXPECT_TRUE( connected_count == 1) << "wanted: 1, actual: " << connected_count;
+         }
+      }
+
+      TEST( gateway_manager_inbound, enable_disabled_connection__expect_connected)
+      {
+         common::unittest::Trace trace;
+
+         auto a = local::domain( R"(
+domain:
+   name: a
+
+   gateway:
+      outbound:
+         groups:
+            -  alias: out
+               connections:
+                  -  address: 127.0.0.1:7600
+)");
+
+         auto b = local::domain( R"(
+domain:
+   name: b
+   groups:
+      -  name: some_group
+         enabled: false
+
+   gateway:
+      inbound:
+         groups:
+            -  alias: in
+               connections:
+                  -  address: 127.0.0.1:7600
+                     memberships: [ some_group]
+)");
+
+         {
+            auto state = unittest::state();
+
+            auto disabled_count = algorithm::count_if( state.listeners, unittest::fetch::predicate::is::runlevel::disabled());
+            EXPECT_TRUE( disabled_count == 1) << "wanted: 1, actual: " << disabled_count;
+         }
+
+         auto wanted = local::configuration::load( R"(
+domain:
+   groups:
+      -  name: some_group
+         enabled: true
+)");
+         casual::domain::unittest::configuration::put( casual::configuration::model::transform( wanted));
+
+         auto state = unittest::fetch::until( unittest::fetch::predicate::inbound::connected( 1));
+
+         auto connected_count = algorithm::count_if( state.connections, unittest::fetch::predicate::is::runlevel::connected());
+         EXPECT_TRUE( connected_count == 1) << "wanted: 1, actual: " << connected_count;
+      }
+
+      TEST( gateway_manager_outbound, disable_enabled_connection__expect_disconnected)
+      {
+         common::unittest::Trace trace;
+
+         auto a = local::domain( R"(
+domain:
+   name: a
+
+   gateway:
+      inbound:
+         groups:
+            -  alias: in
+               connections:
+                  -  address: 127.0.0.1:7600
+)");
+
+         auto b = local::domain( R"(
+domain:
+   name: b
+   groups:
+      -  name: some_group
+         enabled: true
+
+   gateway:
+      outbound:
+         groups:
+            -  alias: out
+               connections:
+                  -  address: 127.0.0.1:7600
+                     memberships: [ some_group]
+)");
+
+         unittest::fetch::until( unittest::fetch::predicate::outbound::connected( 1));
+
+         auto wanted = local::configuration::load( R"(
+domain:
+   groups:
+      -  name: some_group
+         enabled: false
+)");
+         casual::domain::unittest::configuration::put( casual::configuration::model::transform( wanted));
+
+         auto state = unittest::fetch::until( unittest::fetch::predicate::outbound::connected( 0));
+
+         auto disabled_count = algorithm::count_if( state.connections, unittest::fetch::predicate::is::runlevel::disabled());
+         EXPECT_TRUE( disabled_count == 1) << "wanted: 1, actual: " << disabled_count;
+      }
+
+      TEST( gateway_manager_inbound, disable_enabled_connection__expect_disconnected)
+      {
+         common::unittest::Trace trace;
+
+         auto a = local::domain( R"(
+domain:
+   name: a
+
+   gateway:
+      outbound:
+         groups:
+            -  alias: out
+               connections:
+                  -  address: 127.0.0.1:7600
+)");
+
+         auto b = local::domain( R"(
+domain:
+   name: b
+   groups:
+      -  name: some_group
+         enabled: true
+
+   gateway:
+      inbound:
+         groups:
+            -  alias: in
+               connections:
+                  -  address: 127.0.0.1:7600
+                     memberships: [ some_group]
+)");
+
+         unittest::fetch::until( unittest::fetch::predicate::inbound::connected( 1));
+
+         auto wanted = local::configuration::load( R"(
+domain:
+   groups:
+      -  name: some_group
+         enabled: false
+)");
+         casual::domain::unittest::configuration::put( casual::configuration::model::transform( wanted));
+
+         auto state = unittest::fetch::until( unittest::fetch::predicate::inbound::connected( 0));
+
+         auto disabled_count = algorithm::count_if( state.listeners, unittest::fetch::predicate::is::runlevel::disabled());
+         EXPECT_TRUE( disabled_count == 1) << "wanted: 1, actual: " << disabled_count;
+      }
+
    } // gateway
 
 } // casual

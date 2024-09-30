@@ -155,6 +155,7 @@ namespace casual
                            case Enum::pending: return 7;
                            case Enum::connected: return 9;
                            case Enum::failed: return 6;
+                           case Enum::disabled: return 8;
                         }
                         return 0;
                      }
@@ -170,6 +171,7 @@ namespace casual
                            case Enum::pending: common::stream::write( out, terminal::color::yellow, value.runlevel); break;
                            case Enum::connected: common::stream::write( out, terminal::color::green, value.runlevel); break;
                            case Enum::failed: common::stream::write( out, terminal::color::red, value.runlevel); break;
+                           case Enum::disabled: common::stream::write( out, terminal::color::white, value.runlevel); break;
                         }
                      }
                   };
@@ -203,6 +205,7 @@ namespace casual
                            case Enum::pending: return "pending";
                            case Enum::connected: return "online";
                            case Enum::failed: return "failed";
+                           case Enum::disabled: return "disabled";
                         }
                         return "<unknown>";
                      };
@@ -247,23 +250,22 @@ namespace casual
                            {
                               case Enum::listening: return 9;
                               case Enum::failed: return 6;
+                              case Enum::disabled: return 8;
                            }
                            return 0;
                         }
 
                         void print( std::ostream& out, const model::Listener& value, std::size_t width) const
                         {
-                           out << std::setfill( ' ');
+                           out << std::setfill( ' ') << std::left << std::setw( width);
 
-                           auto color = []( auto value)
+                           using Enum = decltype( value.runlevel);
+                           switch( value.runlevel)
                            {
-                              using Enum = decltype( value);
-                              if( value == Enum::listening)
-                                 return terminal::color::green;
-                              return terminal::color::red;
-                           };
-
-                           common::stream::write( out, std::left, std::setw( width), color( value.runlevel), value.runlevel);
+                              case Enum::listening: common::stream::write( out, terminal::color::green, value.runlevel); break;
+                              case Enum::failed: common::stream::write( out, terminal::color::red, value.runlevel); break;
+                              case Enum::disabled: common::stream::write( out, terminal::color::white, value.runlevel); break;
+                           }
                         }
                      };
 
@@ -302,6 +304,7 @@ namespace casual
                            using Enum = decltype( value.runlevel);
                            case Enum::listening: return "listening";
                            case Enum::failed: return "failed";
+                           case Enum::disabled: return "disabled";
                         }
                         return "<unknown>";
                      };

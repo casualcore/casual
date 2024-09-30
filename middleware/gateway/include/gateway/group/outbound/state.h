@@ -252,6 +252,7 @@ namespace casual
          common::communication::ipc::send::Coordinator multiplex{ directive};
 
          group::connection::Holder< casual::configuration::model::gateway::outbound::Connection> connections;
+         std::vector< casual::configuration::model::gateway::outbound::Connection> disabled_connections;
 
          state::task_coordinator_type tasks;
          

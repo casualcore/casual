@@ -366,11 +366,13 @@ namespace casual
                   std::string address;
                   std::optional< connection::Discovery> discovery;
                   std::optional< std::string> note;
+                  std::optional< std::vector< std::string>> memberships;
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
                      CASUAL_SERIALIZE( address);
                      CASUAL_SERIALIZE( discovery);
                      CASUAL_SERIALIZE( note);
+                     CASUAL_SERIALIZE( memberships);
                   )
                };
 
@@ -433,6 +435,7 @@ namespace casual
                   std::optional< std::vector< std::string>> services;
                   std::optional< std::vector< std::string>> queues;
                   std::optional< std::string> note;
+                  std::optional< std::vector< std::string>> memberships;
 
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
@@ -440,6 +443,7 @@ namespace casual
                      CASUAL_SERIALIZE( note);
                      CASUAL_SERIALIZE( services);
                      CASUAL_SERIALIZE( queues);
+                     CASUAL_SERIALIZE( memberships);
                   ) 
                };
 

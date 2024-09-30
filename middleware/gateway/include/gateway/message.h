@@ -110,6 +110,7 @@ namespace casual
             {
                listening,
                failed,
+               disabled,
             };
             constexpr std::string_view description( Runlevel value) noexcept
             {
@@ -117,6 +118,7 @@ namespace casual
                {
                   case Runlevel::listening: return "listening";
                   case Runlevel::failed: return "failed";
+                  case Runlevel::disabled: return "disabled";
                }
                return "<unknown>";
             }
@@ -145,6 +147,7 @@ namespace casual
                pending,
                connected,
                failed,
+               disabled,
             };
             constexpr std::string_view description( Runlevel value) noexcept
             {
@@ -154,6 +157,7 @@ namespace casual
                   case Runlevel::pending: return "pending";
                   case Runlevel::connected: return "connected";
                   case Runlevel::failed: return "failed";
+                  case Runlevel::disabled: return "disabled";
                }
                return "<unknown>";
             }

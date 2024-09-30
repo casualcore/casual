@@ -22,6 +22,8 @@ namespace casual
       //! the updated configuration state
       casual::configuration::user::Model post( casual::configuration::user::Model wanted);
 
+      casual::configuration::user::Model put( casual::configuration::user::Model wanted);
+
       namespace detail
       {
          casual::configuration::Model load( std::vector< std::string_view> contents);

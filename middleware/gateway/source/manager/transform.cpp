@@ -48,6 +48,7 @@ namespace casual
                            case Enum::pending: return manager::admin::model::connection::Runlevel::pending;
                            case Enum::connected: return manager::admin::model::connection::Runlevel::connected;
                            case Enum::failed: return manager::admin::model::connection::Runlevel::failed;
+                           case Enum::disabled: return manager::admin::model::connection::Runlevel::disabled;
                         }
                         return manager::admin::model::connection::Runlevel::failed;
                      };
@@ -65,8 +66,11 @@ namespace casual
                      result.ipc = connection.ipc;
                      result.remote = connection.domain;
                      result.created = connection.created;
+                     result.enabled = connection.configuration.enabled;
 
-                     if( result.address.local.empty())
+                     if( ! result.enabled)
+                        result.runlevel = manager::admin::model::connection::Runlevel::disabled;
+                     else if( result.address.local.empty())
                         result.runlevel = manager::admin::model::connection::Runlevel::connecting;
                      else
                         result.runlevel = manager::admin::model::connection::Runlevel::connected;
@@ -176,6 +180,7 @@ namespace casual
                         {
                            case Enum::listening: return manager::admin::model::listener::Runlevel::listening;
                            case Enum::failed: return manager::admin::model::listener::Runlevel::failed;
+                           case Enum::disabled: return manager::admin::model::listener::Runlevel::disabled;
                         }
                         return manager::admin::model::listener::Runlevel::failed;
                      };

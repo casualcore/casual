@@ -82,7 +82,15 @@ namespace casual
                      {
                         return connection.runlevel == decltype( connection.runlevel)::failed;
                      };
-                  } 
+                  }
+
+                  inline auto disabled()
+                  {
+                     return []( auto& connection)
+                     {
+                        return connection.runlevel == decltype( connection.runlevel)::disabled;
+                     };
+                  }
                } // runlevel
 
                namespace connected

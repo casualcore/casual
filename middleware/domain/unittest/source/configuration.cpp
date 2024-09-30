@@ -22,6 +22,41 @@ namespace casual
 
    namespace domain::unittest::configuration
    {
+      namespace local
+      {
+         namespace
+         {
+            auto call( casual::configuration::user::Model wanted, std::string_view service)
+            {
+               std::vector< common::strong::correlation::id> tasks;
+
+               auto condition = common::event::condition::compose(
+                  common::event::condition::prelude( [&]()
+                  {
+                     serviceframework::service::protocol::binary::Call call;
+                     tasks = call( service, wanted).extract< std::vector< common::strong::correlation::id>>();
+                  }),
+                  common::event::condition::done( [&tasks](){ return tasks.empty();})
+               );
+
+               // listen for events
+               common::event::listen( 
+                  condition,
+                  message::dispatch::handler( communication::ipc::inbound::device(),
+                     [ &tasks]( message::event::Task& event)
+                     {
+                        log::line( verbose::log, "event: ", event);
+
+                        if( event.done())
+                           if( algorithm::find( tasks, event.correlation))
+                              tasks.clear();
+                     })
+                  );
+
+               return configuration::get();
+            }
+         } // <unnamed>
+      } // local
 
       casual::configuration::user::Model get()
       {
@@ -34,32 +69,14 @@ namespace casual
       {
          Trace trace{ "domain::unittest::configuration::post"};
 
-         std::vector< common::strong::correlation::id> tasks;
+         return local::call( std::move( wanted), manager::admin::service::name::configuration::post);
+      }
 
-         auto condition = common::event::condition::compose(
-            common::event::condition::prelude( [&]()
-            {
-               serviceframework::service::protocol::binary::Call call;
-               tasks = call( manager::admin::service::name::configuration::post, wanted).extract< std::vector< common::strong::correlation::id>>();
-            }),
-            common::event::condition::done( [&tasks](){ return tasks.empty();})
-         );
+      casual::configuration::user::Model put( casual::configuration::user::Model wanted)
+      {
+         Trace trace{ "domain::unittest::configuration::put"};
 
-         // listen for events
-         common::event::listen( 
-            condition,
-            message::dispatch::handler( communication::ipc::inbound::device(),
-               [ &tasks]( message::event::Task& event)
-               {
-                  log::line( verbose::log, "event: ", event);
-
-                  if( event.done())
-                     if( algorithm::find( tasks, event.correlation))
-                        tasks.clear();
-               })
-            );
-
-         return configuration::get();
+         return local::call( std::move( wanted), manager::admin::service::name::configuration::put);
       }
 
    } // domain::unittest::configuration

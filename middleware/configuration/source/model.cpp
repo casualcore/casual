@@ -621,7 +621,7 @@ namespace casual
          }
 
          // take care of implicit disabled stuff from group memberships
-         {            
+         {
             auto update_enabled = [ coordinator = configuration::group::Coordinator{ model.domain.groups}]( auto& entity)
             {
                entity.enabled = coordinator.enabled( entity.memberships);
@@ -629,6 +629,14 @@ namespace casual
 
             algorithm::for_each( model.domain.servers, update_enabled);
             algorithm::for_each( model.domain.executables, update_enabled);
+
+            auto update_connections = [ &]( auto& group)
+            {
+               algorithm::for_each( group.connections, update_enabled);
+            };
+
+            algorithm::for_each( model.gateway.outbound.groups, update_connections);
+            algorithm::for_each( model.gateway.inbound.groups, update_connections);
          }
 
          return model;

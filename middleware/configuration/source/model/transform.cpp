@@ -341,6 +341,7 @@ namespace casual
                            gateway::inbound::Connection result;
                            result.note = connection.note.value_or( "");
                            result.address = connection.address;
+                           result.memberships = connection.memberships.value_or( result.memberships);
                            
                            if( connection.discovery && connection.discovery->forward)
                               result.discovery = decltype( result.discovery)::forward;
@@ -370,6 +371,7 @@ namespace casual
                            gateway::outbound::Connection result;
                            result.note = connection.note.value_or( "");
                            result.address = connection.address;
+                           result.memberships = connection.memberships.value_or( result.memberships);
                            result.services = local::empty_if_null( std::move( connection.services));
                            result.queues = local::empty_if_null( std::move( connection.queues));
                            return result;
@@ -779,6 +781,7 @@ namespace casual
                         configuration::user::domain::gateway::inbound::Connection result;
                         result.address = value.address;
                         result.note = null_if_empty( value.note);
+                        result.memberships = null_if_empty( value.memberships);
 
                         if( value.discovery == decltype( value.discovery)::forward)
                            result.discovery = configuration::user::domain::gateway::inbound::connection::Discovery{ true};
@@ -799,6 +802,7 @@ namespace casual
                         configuration::user::domain::gateway::outbound::Connection result;
                         result.address = value.address;
                         result.note = null_if_empty( value.note);
+                        result.memberships = null_if_empty( value.memberships);
                         result.services = null_if_empty( value.services);
                         result.queues = null_if_empty( value.queues);
                         return result;

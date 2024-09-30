@@ -164,6 +164,7 @@ namespace casual
          common::communication::ipc::send::Coordinator multiplex{ directive};
 
          group::connection::Holder< configuration::model::gateway::inbound::Connection> connections;
+         std::vector< configuration::model::gateway::inbound::Connection> disabled_connections;
 
          casual::task::concurrent::Coordinator< common::strong::socket::id> tasks;
 

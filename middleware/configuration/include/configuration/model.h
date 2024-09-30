@@ -426,6 +426,8 @@ namespace casual::configuration
                std::string address;
                connection::discovery::Directive discovery{};
                std::string note;
+               std::vector< std::string> memberships;
+               bool enabled = true;
 
                Connection set_union( Connection lhs, Connection rhs);
 
@@ -435,6 +437,8 @@ namespace casual::configuration
                   CASUAL_SERIALIZE( address);
                   CASUAL_SERIALIZE( discovery);
                   CASUAL_SERIALIZE( note);
+                  CASUAL_SERIALIZE( memberships);
+                  CASUAL_SERIALIZE( enabled);
                )
             };
 
@@ -504,6 +508,8 @@ namespace casual::configuration
                std::vector< std::string> services;
                std::vector< std::string> queues;
                std::string note;
+               std::vector< std::string> memberships;
+               bool enabled = true;
 
                Connection set_union( Connection lhs, Connection rhs);
                Connection set_difference( Connection lhs, Connection rhs);
@@ -518,6 +524,8 @@ namespace casual::configuration
                   CASUAL_SERIALIZE( address);
                   CASUAL_SERIALIZE( services);
                   CASUAL_SERIALIZE( queues);
+                  CASUAL_SERIALIZE( memberships);
+                  CASUAL_SERIALIZE( enabled);
                )
             };
 

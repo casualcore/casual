@@ -154,6 +154,16 @@ namespace casual
                return result;
             });
 
+            algorithm::transform( state.disabled_connections, std::back_inserter( reply.state.listeners), []( auto& disabled)
+            {
+               message::state::Listener result;
+               result.runlevel = decltype( result.runlevel)::disabled;
+               result.address = disabled.address;
+
+               return result;
+            });
+
+
             log::line( verbose::log, "reply: ", reply);
 
             return reply;

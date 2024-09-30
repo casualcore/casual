@@ -110,6 +110,15 @@ namespace casual
                return result;
             });
 
+            algorithm::transform( state.disabled_connections, std::back_inserter( reply.state.connections), []( auto& disabled)
+            {
+               Connection result;
+               result.runlevel = decltype( result.runlevel)::disabled;
+               result.configuration = disabled;
+               result.address.peer = disabled.address;
+               return result;
+            });
+
             return reply;
          }
       } // state

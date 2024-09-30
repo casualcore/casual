@@ -70,6 +70,7 @@ namespace casual
                pending = 4,
                connected = 2,
                failed = 3,
+               disabled = 5,
 
                //! @deprecated remove in 2.0
                online = connected,
@@ -82,6 +83,7 @@ namespace casual
                   case Runlevel::pending: return "pending";
                   case Runlevel::connected: return "connected";
                   case Runlevel::failed: return "failed";
+                  case Runlevel::disabled: return "disabled";
                }
                return "<unknown>";
             }
@@ -113,6 +115,7 @@ namespace casual
             connection::Address address;
             common::strong::ipc::id ipc;
             platform::time::point::type created{};
+            bool enabled = true;
             
             
             inline friend bool operator == ( const Connection& lhs, std::string_view rhs) { return lhs.remote == rhs;}
@@ -133,6 +136,7 @@ namespace casual
                CASUAL_SERIALIZE( address);
                CASUAL_SERIALIZE( ipc);
                CASUAL_SERIALIZE( created);
+               CASUAL_SERIALIZE( enabled);
             
                //! @deprecated remove in 2.0
                CASUAL_SERIALIZE( process);
@@ -280,6 +284,7 @@ namespace casual
             {
                listening = 1,
                failed = 2,
+               disabled = 3,
             };
 
             constexpr std::string_view description( Runlevel value) noexcept
@@ -288,6 +293,7 @@ namespace casual
                {
                   case Runlevel::listening: return "listening";
                   case Runlevel::failed: return "failed";
+                  case Runlevel::disabled: return "disabled";
                }
                return "<not used>";
             }

@@ -17,6 +17,8 @@
 #include "common/signal.h"
 #include "common/message/signal.h"
 #include "common/message/dispatch/handle.h"
+#include "common/algorithm.h"
+#include "common/algorithm/container.h"
 
 #include "common/communication/instance.h"
 #include "common/communication/select/ipc.h"
@@ -108,11 +110,16 @@ namespace casual
                            state.alias = message.model.alias;
                            state.limit = message.model.limit;
 
+                           auto is_enabled = []( auto& connection){ return connection.enabled;};
+                           auto [ enabled, disabled] = algorithm::stable::partition( message.model.connections, is_enabled);
+
+                           state.disabled_connections = algorithm::container::vector::create( disabled);
+
                            auto equal_address = []( auto& lhs, auto& rhs){ return lhs.address == rhs.address;};
 
                            auto change = casual::configuration::model::change::concrete::calculate( 
                               state.connections.configuration(), 
-                              message.model.connections, 
+                              algorithm::container::vector::create( enabled), 
                               equal_address);
 
                            log::line( verbose::log, "change: ", change);
