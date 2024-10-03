@@ -11,43 +11,33 @@ namespace casual::file::resource
    {
       namespace
       {
-         const auto& transaction()
-         {
-            return common::transaction::Context::instance().current().trid;
-         }
-
-         auto encode( const common::transaction::ID& transaction)
+         auto encode( const auto& transaction)
          {
             return (std::ostringstream{} << transaction).str();
          }
 
-         auto temporary( const std::filesystem::path& path, const common::transaction::ID& transaction)
+         auto temporary( const common::transaction::ID& transaction, const std::filesystem::path& path)
          {
             std::filesystem::path result{ path};
             result += ".casual.";
-            result += encode( transaction);
+            result += encode( transaction.xid);
             return result;
-         }
-
-         auto temporary( const std::filesystem::path& path)
-         {
-            return temporary( path, transaction());
          }
 
          std::unordered_map< common::transaction::ID, std::unordered_set< std::filesystem::path>> transactions;
       } //
    } // local
 
-   std::filesystem::path acquire( std::filesystem::path origin)
+   std::filesystem::path acquire( const common::transaction::ID& transaction, std::filesystem::path origin)
    {
-      auto result = local::temporary( origin);
+      auto result = local::temporary( transaction, origin);
 
       if (std::filesystem::exists( origin))
       {
          std::filesystem::copy_file( origin, result);
       }
 
-      local::transactions[ local::transaction()].insert( std::move( origin));
+      local::transactions[ transaction].insert( std::move( origin));
 
       return result;
    }
@@ -58,7 +48,7 @@ namespace casual::file::resource
       {
          for( const auto &origin : local::transactions[ transaction])
          {
-            const auto rushes = local::temporary( origin, transaction);
+            const auto rushes = local::temporary( transaction, origin);
 
             if (std::filesystem::exists( rushes))
             {
@@ -80,7 +70,7 @@ namespace casual::file::resource
       {
          for( const auto &origin : local::transactions[ transaction])
          {
-            const auto rushes = local::temporary( origin, transaction);
+            const auto rushes = local::temporary( transaction, origin);
 
             if( std::filesystem::exists( rushes))
             {

@@ -4,7 +4,7 @@
 
 namespace casual::file::resource
 {
-    std::filesystem::path acquire(std::filesystem::path origin);
+    std::filesystem::path acquire( const common::transaction::ID& transaction, std::filesystem::path origin);
 
     //! commit
     void perform( const common::transaction::ID& transaction);

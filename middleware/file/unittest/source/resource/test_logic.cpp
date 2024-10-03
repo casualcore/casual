@@ -18,14 +18,11 @@ namespace casual
 {
    namespace file::resource
    {
-      namespace local
-      {
-
-      } // local
-
       TEST( casual_file_resource_logic, update_file__perform__expect_updated_file)
       {
          common::unittest::Trace trace;
+
+         const auto trid = common::transaction::id::create();
 
          const std::string_view afore{ "aaa"};
          const std::string_view after{ "xxx"};
@@ -34,12 +31,12 @@ namespace casual
 
          std::ofstream{ temp} << afore;
 
-         const auto path = file::resource::acquire( temp);
+         const auto path = file::resource::acquire( trid, temp);
 
          std::ofstream{ path} << after;
 
          // commit
-         file::resource::perform( common::transaction::Context::instance().current().trid);
+         file::resource::perform( trid);
 
          std::string result;
 
@@ -52,6 +49,8 @@ namespace casual
       {
          common::unittest::Trace trace;
 
+         const auto trid = common::transaction::id::create();
+
          const std::string_view afore{ "aaa"};
          const std::string_view after{ "xxx"};
 
@@ -59,12 +58,12 @@ namespace casual
 
          std::ofstream{ temp} << afore;
 
-         const auto path = file::resource::acquire( temp);
+         const auto path = file::resource::acquire( trid, temp);
 
          std::ofstream{ path} << after;
 
          // rollback
-         file::resource::restore( common::transaction::Context::instance().current().trid);
+         file::resource::restore( trid);
 
          std::string result;
 
@@ -77,14 +76,17 @@ namespace casual
       {
          common::unittest::Trace trace;
 
+         const auto trid = common::transaction::id::create();
+
+
          const auto temp = common::unittest::file::temporary::content( ".txt", "aaa");
 
-         const auto path = file::resource::acquire( temp);
+         const auto path = file::resource::acquire( trid, temp);
 
          std::filesystem::remove( path);
 
          // commit
-         file::resource::perform( common::transaction::Context::instance().current().trid);
+         file::resource::perform( trid);
 
          EXPECT_FALSE( std::filesystem::exists( temp)) << temp;
       }
@@ -93,14 +95,16 @@ namespace casual
       {
          common::unittest::Trace trace;
 
+         const auto trid = common::transaction::id::create();
+
          const auto temp = common::unittest::file::temporary::content( ".txt", "aaa");
 
-         const auto path = file::resource::acquire( temp);
+         const auto path = file::resource::acquire( trid, temp);
 
          std::filesystem::remove( path);
 
          // rollback
-         file::resource::restore( common::transaction::Context::instance().current().trid);
+         file::resource::restore( trid);
 
          EXPECT_TRUE( std::filesystem::exists( temp)) << temp;
       }
@@ -109,15 +113,17 @@ namespace casual
       {
          common::unittest::Trace trace;
 
+         const auto trid = common::transaction::id::create();
+
          const auto source = common::unittest::file::temporary::name( ".txt");
          const auto target = common::unittest::file::temporary::name( ".txt");
 
          std::ofstream{ source} << "abc";
 
-         std::filesystem::rename( file::resource::acquire( source), file::resource::acquire( target));
+         std::filesystem::rename( file::resource::acquire( trid, source), file::resource::acquire( trid, target));
 
          // commit
-         file::resource::perform( common::transaction::Context::instance().current().trid);
+         file::resource::perform( trid);
 
          EXPECT_FALSE( std::filesystem::exists( source)) << source;
          EXPECT_TRUE( std::filesystem::exists( target)) << target;
@@ -127,15 +133,17 @@ namespace casual
       {
          common::unittest::Trace trace;
 
+         const auto trid = common::transaction::id::create();
+
          const auto source = common::unittest::file::temporary::name( ".txt");
          const auto target = common::unittest::file::temporary::name( ".txt");
 
          std::ofstream{ source} << "abc";
 
-         std::filesystem::rename( file::resource::acquire( source), file::resource::acquire( target));
+         std::filesystem::rename( file::resource::acquire( trid, source), file::resource::acquire( trid, target));
 
          // rollback
-         file::resource::restore( common::transaction::Context::instance().current().trid);
+         file::resource::restore( trid);
 
          EXPECT_TRUE( std::filesystem::exists( source)) << source;
          EXPECT_FALSE( std::filesystem::exists( target)) << target;
@@ -145,12 +153,14 @@ namespace casual
       {
          common::unittest::Trace trace;
 
+         const auto trid = common::transaction::id::create();
+
          const auto original = common::unittest::file::temporary::content( ".txt", "abc");
 
-         const auto acquired = file::resource::acquire( original);
+         const auto acquired = file::resource::acquire( trid, original);
 
          // commit
-         file::resource::perform( common::transaction::Context::instance().current().trid);
+         file::resource::perform( trid);
 
          EXPECT_TRUE( std::filesystem::exists( original)) << original;
          EXPECT_FALSE( std::filesystem::exists( acquired)) << acquired;
@@ -160,12 +170,14 @@ namespace casual
       {
          common::unittest::Trace trace;
 
+         const auto trid = common::transaction::id::create();
+
          const auto original = common::unittest::file::temporary::content( ".txt", "abc");
 
-         const auto acquired = file::resource::acquire( original);
+         const auto acquired = file::resource::acquire( trid, original);
 
          // rollback
-         file::resource::restore( common::transaction::Context::instance().current().trid);
+         file::resource::restore( trid);
 
          EXPECT_TRUE( std::filesystem::exists( original)) << original;
          EXPECT_FALSE( std::filesystem::exists( acquired)) << acquired;
