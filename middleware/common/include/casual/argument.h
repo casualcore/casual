@@ -106,7 +106,11 @@ namespace casual
                constexpr static auto cardinality() { return cardinality::one();}
                static range_type assign( range_type values, T& value) 
                { 
-                  value = common::string::from< T>( values.front());
+                  if constexpr( std::same_as< std::string_view, T>)
+                     value = values.front();
+                  else
+                     value = common::string::from< T>( values.front());
+
                   return values.subspan( 1);
                }
             };
@@ -340,9 +344,12 @@ namespace casual
 
          struct Policy
          {
-            static bool help( std::string_view description, std::span< Option> options, range_type arguments, std::span< std::string_view> keys);
 
-            static std::span< std::string_view> help_names();
+            static void help( std::string_view description, std::span< const Option> options, range_type arguments);
+
+            static std::vector< std::string> help_names();
+
+            static Option help_option( std::vector< std::string> names);
          };
 
       } // detail
@@ -441,7 +448,10 @@ namespace casual
          inline auto assigned() const { return m_invocable->assigned();}
 
          //! @returns completion/help information for the option
-         inline std::vector< std::string> complete( bool test, range_type values) { return m_invocable->complete( test, values);}
+         inline std::vector< std::string> complete( bool test, range_type values) const { return m_invocable->complete( test, values);}
+
+         //! @returns the cardinality of the values this option takes
+         inline Cardinality value_cardinality() const { return m_invocable->value_cardinality();}
 
          inline const auto& names() const { return m_names;}
          inline auto& suboptions() { return m_suboptions;}
@@ -459,6 +469,7 @@ namespace casual
             virtual std::optional< detail::option::Assigned> assign( std::string_view key, range_type values) = 0;
             virtual cardinality::value_type assigned() const = 0;
             virtual std::vector< std::string> complete( bool test, range_type values) const = 0;
+            virtual Cardinality value_cardinality() const = 0;
          };
 
          template< typename I, typename C>
@@ -491,6 +502,11 @@ namespace casual
                   return { m_completable( test, values)};
                else 
                   return m_completable( test, values);
+            }
+
+            Cardinality value_cardinality() const override
+            {
+               return m_invocable.cardinality();
             }
          
          private:
@@ -529,8 +545,16 @@ namespace casual
 
          static void operator () ( std::string_view description, std::vector< Option> options, std::vector< std::string_view> arguments)
          {
-            if( policy_type::help( description, options, arguments, policy_type::help_names()))
+            options.push_back( policy_type::help_option( policy_type::help_names()));
+            auto& help = options.back();
+
+            // special treatment for _help_
+            if( auto found = common::algorithm::find( arguments, help))
+            {
+               common::algorithm::rotate( arguments, found);
+               policy_type::help( description, options, range_type{ arguments}.subspan( 1));
                return;
+            }
 
             detail::parse( options, arguments);
          }

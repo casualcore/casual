@@ -160,6 +160,8 @@ namespace casual
 
             namespace help
             {
+               constexpr platform::size::type indent_increment = 2;
+
                template< typename... Ts>
                constexpr void output( platform::size::type indent, std::format_string< Ts...> format, Ts&&... ts)
                {
@@ -180,9 +182,20 @@ namespace casual
 
                std::string format_option_cardinality( const Cardinality& cardinality)
                {
-                  if( cardinality.many()) return std::format( "{}..*", cardinality.min());
-                  if( cardinality.fixed()) return string::to( cardinality.min());
+                  if( cardinality.many()) 
+                     return std::format( "{}..*", cardinality.min());
+                  if( cardinality.fixed()) 
+                     return string::to( cardinality.min());
                   return std::format( "{}..{}", cardinality.min(), cardinality.max());
+               }
+
+               std::string format_value_cardinality( const Cardinality& cardinality)
+               {
+                  if( cardinality.step() > 1)
+                     return std::format( "{} {{{}}}", format_option_cardinality( cardinality), cardinality.step());
+                  else
+                     return format_option_cardinality( cardinality);
+                     
                }
 
                void description( std::string_view description, platform::size::type indent)
@@ -195,14 +208,26 @@ namespace casual
                
                void print( const Option& option, platform::size::type indent = 0)
                {
-                  output( indent, "{} [{}]\n", string::join( option.names().active(), ", "), format_option_cardinality( option.cardinality()));
-                  description( option.description(), indent + 3);
+                  if( option.names().active().empty() && ! option.names().deprecated().empty())
+                     output( indent, "[deprecated] {} [{}]", string::join( option.names().deprecated(), ", "), format_option_cardinality( option.cardinality()));
+                  else
+                     output( indent, "{} [{}]", string::join( option.names().active(), ", "), format_option_cardinality( option.cardinality()));
+
+                  auto information = option.complete( true, {});
+
+                  if( ! information.empty())
+                  {
+                     output( " ({}) [{}]", string::join( information, ", "), format_value_cardinality( option.value_cardinality()));
+                  }
+
+                  output( "\n");
+                  description( option.description(), indent + indent_increment);
                   output( "\n");
 
                   if( ! option.suboptions().empty())
                   {
-                     output( indent + 3, "SUB OPTIONS:\n\n");
-                     help::print( option.suboptions(), indent + 6);
+                     output( indent + indent_increment, "SUB OPTIONS:\n\n");
+                     help::print( option.suboptions(), indent + ( indent_increment * 2));
                   }
 
 
@@ -216,12 +241,13 @@ namespace casual
 
                void print_all( std::string_view description, std::span< const Option> options)
                {
-                  output( "NAME\n   {}\n\n", process::path().filename().string());
+                  output( "NAME\n");
+                  output( indent_increment, "{}\n\n", process::path().filename().string());
                   output( "DESCRIPTION\n\n");
-                  help::description( description, 3);
+                  help::description( description, indent_increment);
 
                   output( "\nOPTIONS\n\n");
-                  print( options, 3);
+                  print( options, indent_increment);
                }
 
                void print( std::string_view description, std::span< const Option> options, range_type arguments)
@@ -290,22 +316,38 @@ namespace casual
             std::ranges::for_each( second, std::mem_fn( &detail::option::Assigned::invoke));
          }
 
-         bool Policy::help( std::string_view description, std::span< Option> options, range_type arguments, std::span< std::string_view> keys)
+         void Policy::help( std::string_view description, std::span< const Option> options, range_type arguments)
          {
-            if( auto found = algorithm::find_first_of( arguments, keys))
-            {
-               algorithm::rotate( arguments, found);
-               local::help::print( description, options, arguments.subspan( 1));
-               return true;
-            }
-
-            return false;
+            local::help::print( description, options, arguments);
          }
 
-         std::span< std::string_view> Policy::help_names()
+         Option Policy::help_option( std::vector< std::string> names)
          {
-            static std::array< std::string_view, 1> names{ reserved::name::help};
-            return names;
+            assert( ! names.empty());
+
+            auto invoke = []( std::vector< std::string_view> arguments)
+            {
+               // no op. will never be invoked...
+            };
+
+            auto key = names.back();
+
+            return Option{
+               std::move( invoke),
+               std::move( names),
+               string::compose( R"(shows this help information
+               
+Use )", key , R"( <option> to see selected details on <option>
+You can also use more precise help for deeply nested options
+`)", key, R"( -a -b -c -d -e`
+)")
+            };
+
+         }
+
+         std::vector< std::string> Policy::help_names()
+         {
+            return { std::string{ reserved::name::help}};
          }
          
 
