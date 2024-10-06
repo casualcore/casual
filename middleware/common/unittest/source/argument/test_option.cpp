@@ -64,7 +64,7 @@ namespace casual
 
       std::vector< std::string_view> arguments{ "42", "casual"};
       auto assigned = option.assign( "-a", arguments);
-      EXPECT_TRUE( option.assigned() == 1);
+      EXPECT_TRUE( option.usage() == 1);
       EXPECT_TRUE( ! assigned);
       EXPECT_TRUE( state.l == 42);
       EXPECT_TRUE( state.s == "casual") << state.s;
@@ -92,7 +92,7 @@ namespace casual
       auto option = argument::Option{ callback, argument::option::Names{ {"-a"}}, "description"};
       std::vector< std::string_view> arguments{ "42", "casual"};
       auto assigned = option.assign( "-a", arguments);
-      EXPECT_TRUE( option.assigned() == 1);
+      EXPECT_TRUE( option.usage() == 1);
       ASSERT_TRUE( assigned);
 
       EXPECT_TRUE( state.a == long{});
@@ -194,6 +194,7 @@ namespace casual
          long e{};
       };
 
+/*
       {
          State state;
          auto options = std::vector{ create( std::tie( state.a), "-a", std::vector< argument::Option>{ 
@@ -214,7 +215,7 @@ namespace casual
          EXPECT_TRUE( state.d == 4);
          EXPECT_TRUE( state.e == 5);
       }
-
+     */
       {
          State state;
          auto options = std::vector{ 

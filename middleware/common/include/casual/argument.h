@@ -340,6 +340,8 @@ namespace casual
          std::vector< detail::option::Assigned> assign( std::span< Option> options, range_type arguments);
 
          void parse( std::span< Option> options, range_type arguments);
+
+         void complete( std::span< Option> options, range_type arguments);
          
 
          struct Policy
@@ -435,20 +437,30 @@ namespace casual
             result.m_suboptions = std::move( suboptions);
             return result;
          }
+
+         //! explict "usage" of the option, used when "consuming" options during complete
+         void use()
+         {
+            ++m_usage;
+         }
          
          inline friend bool operator == ( const Option& lhs, std::string_view rhs) { return lhs.m_names == rhs;}
 
          //! assigns `values` to the option. @returns `Assigned` if the option can be invoked, otherwise std::nullopt. 
          inline std::optional< detail::option::Assigned> assign( std::string_view key, range_type values)
          {
+            ++m_usage;
             return m_invocable->assign( key, values);
          }
 
-         //! @returns number of assignment (usage) for the option. used to verify option cardinality
-         inline auto assigned() const { return m_invocable->assigned();}
+         //! @returns number of "usage" for the option. used to verify option cardinality
+         inline auto usage() const { return m_usage;}
 
          //! @returns completion/help information for the option
-         inline std::vector< std::string> complete( bool test, range_type values) const { return m_invocable->complete( test, values);}
+         inline std::vector< std::string> complete( bool test, range_type values) const 
+         { 
+            return m_invocable->complete( test, values);
+         }
 
          //! @returns the cardinality of the values this option takes
          inline Cardinality value_cardinality() const { return m_invocable->value_cardinality();}
@@ -460,6 +472,12 @@ namespace casual
          inline auto cardinality() const { return m_cardinality;}
          inline auto& description() const { return m_description;}
 
+         //! @returns true if another "usage" would invalidate option cardinality
+         inline bool exhausted() const
+         {
+            return ! m_cardinality.valid( m_usage + 1);
+         }
+
       private:
 
 
@@ -467,7 +485,6 @@ namespace casual
          {
             virtual ~Interface() = default;
             virtual std::optional< detail::option::Assigned> assign( std::string_view key, range_type values) = 0;
-            virtual cardinality::value_type assigned() const = 0;
             virtual std::vector< std::string> complete( bool test, range_type values) const = 0;
             virtual Cardinality value_cardinality() const = 0;
          };
@@ -483,18 +500,11 @@ namespace casual
                if constexpr( std::same_as< void, decltype( m_invocable.assign( key, values))>)
                {
                   m_invocable.assign( key, values);
-                  ++m_assigned;
                   return std::nullopt;
                }
                else
-               {
-                  auto result = m_invocable.assign( key, values);
-                  ++m_assigned;
-                  return result;
-               }
+                  return m_invocable.assign( key, values);
             }
-
-            cardinality::value_type assigned() const override { return m_assigned;}
 
             std::vector< std::string> complete( bool test, range_type values) const override
             {
@@ -512,7 +522,6 @@ namespace casual
          private:
             I m_invocable;
             C m_completable;
-            cardinality::value_type m_assigned{};
          };
 
          template< detail::concepts::invocable I>
@@ -534,6 +543,7 @@ namespace casual
          // the option cardinality
          Cardinality m_cardinality = cardinality::zero_one();
          std::vector< Option> m_suboptions;
+         platform::size::type m_usage{};
          std::string m_description;
 
       };
@@ -545,6 +555,14 @@ namespace casual
 
          static void operator () ( std::string_view description, std::vector< Option> options, std::vector< std::string_view> arguments)
          {
+            // special treatment for completion
+            if( auto found = common::algorithm::find( arguments, reserved::name::completion))
+            {
+               common::algorithm::rotate( arguments, found);
+               detail::complete( options, range_type{ arguments}.subspan( 1));
+               return;
+            }
+
             options.push_back( policy_type::help_option( policy_type::help_names()));
             auto& help = options.back();
 
@@ -556,6 +574,7 @@ namespace casual
                return;
             }
 
+            // the regular parse
             detail::parse( options, arguments);
          }
 

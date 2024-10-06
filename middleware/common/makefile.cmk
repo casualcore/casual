@@ -288,6 +288,7 @@ unittest_objectfiles = [
     make.Compile( 'unittest/source/argument/test_cardinality.cpp'),
     make.Compile( 'unittest/source/argument/test_option.cpp'),
     make.Compile( 'unittest/source/argument/test_parse.cpp'),
+    make.Compile( 'unittest/source/argument/test_complete.cpp'),
     make.Compile( 'unittest/source/test_metric.cpp'),
 
     make.Compile( 'unittest/source/test_quantity.cpp'),

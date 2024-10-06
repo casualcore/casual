@@ -26,17 +26,21 @@ namespace casual
                template< typename O>
                struct State
                {
-                  State suboptions( std::span< O> suboptions) const
+                  State( std::span< O> options)
+                     : hierarchy{ options}
+                  {}
+
+                  std::span< O> current() { return hierarchy.back();}
+
+                  std::span< std::span< O>> parents() { return std::span( std::begin( hierarchy), std::prev( std::end( hierarchy)));}
+
+                  friend State operator + ( State lhs, std::span< O> suboptions)
                   {
-                     State result;
-                     result.parents = parents;
-                     result.parents.push_back( options);
-                     result.options = suboptions;
-                     return result;
+                     lhs.hierarchy.push_back( suboptions);
+                     return lhs;
                   }
                   
-                  std::span< O> options;
-                  std::vector< std::span< O>> parents;
+                  std::vector< std::span< O>> hierarchy;
                };
             } // traverse
 
@@ -66,49 +70,48 @@ namespace casual
 
             inline range_type assign( auto state, range_type arguments, auto assign, auto assign_end)
             {
-
-               constexpr static auto option_assign = []( auto& option, std::string_view key, range_type current, range_type found, auto assign)
-               {
-                  // pinpoint the argument range that we'll assign
-                  auto [ chosen, left] = common::algorithm::divide_at( current, std::begin( found));
-
-                  assign( option, key, chosen);
-
-                  return left;
-               };
-
                while( ! arguments.empty())
                {
                   // first one has to be a key
                   auto key = arguments.front();
                   auto current = arguments.subspan( 1);
 
-                  if( auto option = common::algorithm::find( state.options, key))
+                  if( auto option = common::algorithm::find( state.current(), key))
                   {
                      // first we need to check the suboptions for the next "key"
                      if( auto found = find::next( option->suboptions(), current))
                      {
-                        auto left = option_assign( *option, key, current, found, assign);
+                        auto [ chosen, remains] = common::algorithm::divide_at( current, std::begin( found));
+
+                        assign( *option, key, chosen);
 
                         // continue with the suboption
-                        arguments = local::assign( state.suboptions( option->suboptions()), left, assign, assign_end);
+                        arguments = local::assign( state + option->suboptions(), remains, assign, assign_end);
                      }
                      // otherwise we check the siblings for the next "key"
-                     else if( auto found = find::next( state.options, current))
+                     else if( auto found = find::next( state.current(), current))
                      {
+                        auto [ chosen, remains] = common::algorithm::divide_at( current, std::begin( found));
+
+                        assign( *option, key, chosen);
+
                         // we've found the "next key" in this "level", we let the while loop continue
-                        arguments = option_assign( *option, key, current, found, assign);
+                        arguments = remains;
                      }
                      // otherwise we check parents for the next "key"
-                     else if( auto found = find::parent( state.parents, current))
+                     else if( auto found = find::parent( state.parents(), current))
                      {
+                        auto [ chosen, remains] = common::algorithm::divide_at( current, std::begin( found));
+
+                        assign( *option, key, chosen);
+
                         // we know that the key was found in some of the parents, let "parent assign" try to handle it
-                        return option_assign( *option, key, current, found, assign);
+                        return remains;
                      }
                      // otherwise, we haven't found any "next key", we assign all arguments to option
                      else 
                      {
-                        assign_end( *option, key, current);
+                        assign_end( *option, key, current, state);
                         return {};
                      }
                   }
@@ -123,7 +126,10 @@ namespace casual
 
             std::vector< detail::option::Assigned> assign( std::span< Option> options, range_type arguments)
             {
+               Trace trace{ "detail::assign"};
+
                std::vector< detail::option::Assigned> assigned;
+
 
                auto assign = [ &assigned]( auto& option, auto key, auto arguments)
                {
@@ -131,7 +137,12 @@ namespace casual
                      assigned.push_back( std::move( *invocable));
                };
 
-               auto left = local::assign( traverse::State< Option>{ .options = options}, arguments, assign, assign);
+               auto assign_end = [ assign]( auto& option, auto key, auto arguments, auto& state)
+               {           
+                  assign( option, key, arguments);
+               };
+
+               auto left = local::assign( traverse::State< Option>{ options}, arguments, assign, assign_end);
 
                if( ! left.empty())
                   common::code::raise::error( common::code::casual::invalid_argument, "failed to find option: ", left.front());
@@ -145,11 +156,11 @@ namespace casual
                {
                   auto validate = []( const auto& option)
                   {
-                     auto assigned = option.assigned();
-                     detail::validate::cardinality( option.cardinality(), option.names().canonical(), assigned);
+                     auto usage = option.usage();
+                     detail::validate::cardinality( option.cardinality(), option.names().canonical(), usage);
                      
                      // if the option is assigned/used, we need to validate the suboptions. 
-                     if( assigned > 0)
+                     if( usage > 0)
                         validate::options( option.suboptions());
                   };
 
@@ -229,8 +240,6 @@ namespace casual
                      output( indent + indent_increment, "SUB OPTIONS:\n\n");
                      help::print( option.suboptions(), indent + ( indent_increment * 2));
                   }
-
-
                }
 
                void print( std::span< const Option> options, platform::size::type indent = 0)
@@ -260,13 +269,13 @@ namespace casual
                   auto discard_assign = []( auto& option, auto key, auto arguments)
                   {};
 
-                  auto print_option = []( auto& option, auto key, auto arguments)
+                  auto print_option = []( auto& option, auto key, auto arguments, auto& state)
                   {
                      print( option);
                   };
 
                   //! if the assign algorithm didn't consume all of the arguments, we didn't find anything.
-                  if( ! local::assign( traverse::State< const Option>{ .options = options}, arguments, discard_assign, print_option).empty())
+                  if( ! local::assign( traverse::State< const Option>{ options}, arguments, discard_assign, print_option).empty())
                      print_all( description, options);
                }
             } // help
@@ -314,6 +323,68 @@ namespace casual
 
             std::ranges::for_each( first, std::mem_fn( &detail::option::Assigned::invoke));
             std::ranges::for_each( second, std::mem_fn( &detail::option::Assigned::invoke));
+         }
+
+         void complete( std::span< Option> options, range_type arguments)
+         {
+            // special case if no arguments provided -> first "level" of options are suggested
+            if( arguments.empty())
+            {
+               for( auto& option : options)
+                    std::cout << option.names().canonical() << '\n';
+               return;
+            }
+
+            auto complete_assign = []( auto& option, auto key, auto arguments)
+            {
+               // fake "usage" the option 
+               option.use();
+            };
+
+            auto complete_option = []( Option& option, auto key, range_type arguments, local::traverse::State< Option>& state)
+            {
+               // fake "usage" the option 
+               option.use();
+
+               auto cardinality = option.value_cardinality();
+
+               if( std::ssize( arguments) < cardinality.max())
+               {
+                  // we got a few situations we can be in.
+                  for( auto& suggestion : option.complete( false, arguments))
+                     std::cout << suggestion << '\n';
+
+                  // if we've not fullfil the min cardinality, only completion
+                  // for the specific option is needed.
+                  if( std::ssize( arguments) < cardinality.min())
+                     return;
+
+                  // if we're in mid cardinality step, only completion
+                  // for the specific option is needed.
+                  if( cardinality.mid_step( std::ssize( arguments)))
+                     return;
+
+                  // otherwise we traverse below...
+               }
+
+               auto print_suggestions = []( auto options)
+               {
+                  auto is_active = []( const auto& option){ return ! option.exhausted();};
+
+                  for( auto& active : options | std::ranges::views::filter( is_active))
+                    std::cout << active.names().canonical() << '\n';
+               };
+
+               // we need to add possible suboptions
+               print_suggestions( option.suboptions());
+
+               // traverse up in the option hierarchy and add all options that is not exhausted.
+               for( auto options : std::views::reverse( state.hierarchy))
+                  print_suggestions( options);
+            };
+
+            local::assign( local::traverse::State< Option>{ options}, arguments, complete_assign, complete_option);
+
          }
 
          void Policy::help( std::string_view description, std::span< const Option> options, range_type arguments)

@@ -47,6 +47,9 @@ namespace casual
                return value >= m_min && value <= m_max && ( value - m_min ) % m_step == 0;
          }
 
+         //! @return true if `value` is within step constraints
+         constexpr bool mid_step( value_type value) const { return m_step != 0 && ( value - m_min ) % m_step != 0;}
+
          constexpr auto min() const { return m_min;}
          constexpr auto max() const { return m_max;}
          constexpr auto step() const { return m_step;}
