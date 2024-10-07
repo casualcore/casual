@@ -5,27 +5,28 @@
 ```shell
 host# casual --help internal
 
-  internal [0..1]
-        internal casual stuff for troubleshooting etc...
+internal [0..1]
+     internal casual stuff for troubleshooting etc...
 
-    SUB OPTIONS
+   SUB OPTIONS:
+
       --state-dump [0..1]  (<value>) [0..*]
-            dump state to casual.log for the provided pids, if the pid is able
+           dump state to casual.log for the provided pids, if the pid is able
 
       --log-path [0..1]  (<path>, <pid>) [1..*]
-            relocate the log-file for provided pids
-            
-            Note: only works for 'servers' with a message pump
+           relocate the log-file for provided pids
+           
+           Note: only works for 'servers' with a message pump
 
       --log-expression-inclusive [0..1]  (<expression>, <pid>) [1..*]
-            updates the _inclusive category filter_ (regex) for provided pids
-            
-            Works the same as the `CASUAL_LOG` variable
-            Note: only works for 'servers' with a message pump
+           updates the _inclusive category filter_ (regex) for provided pids
+           
+           Works the same as the `CASUAL_LOG` variable
+           Note: only works for 'servers' with a message pump
 
       --message-count [0..1]  (<value>) [1]
-            lists message count metrics for a given pid
-            
-            The pid needs to be a casual server
+           lists message count metrics for a given pid
+           
+           The pid needs to be a casual server
 
 ```

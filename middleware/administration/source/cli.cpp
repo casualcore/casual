@@ -360,7 +360,6 @@ Where <option> is one of the listed below
       std::vector< argument::Option> options()
       {
          return algorithm::container::compose(
-            local::information::option(),
             casual::domain::manager::admin::cli::options(),
             casual::service::manager::admin::cli::options(),
             queue::manager::admin::cli::options(),
@@ -372,6 +371,7 @@ Where <option> is one of the listed below
             casual::buffer::admin::cli::options(),
             configuration::admin::cli::options(),
             local::pipe::option(),
+            local::information::option(),
             common::terminal::output::directive().options(),
             local::internal::options(),
             local::version::options()

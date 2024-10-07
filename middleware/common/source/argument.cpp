@@ -7,6 +7,7 @@
 #include "casual/argument.h"
 #include "common/log/line.h"
 #include "common/log.h"
+#include "common/terminal.h"
 
 #include <format>
 #include <iostream>
@@ -231,7 +232,7 @@ namespace casual
                   auto information = option.complete( true, {});
 
                   if( ! information.empty())
-                     output( " ({}) [{}]", string::join( information, ", "), format_value_cardinality( option.value_cardinality()));
+                     output( "  ({}) [{}]", string::join( information, ", "), format_value_cardinality( option.value_cardinality()));
 
                   output( "\n");
                   description( option.description(), indent + 5);
@@ -250,6 +251,29 @@ namespace casual
                      print( option, indent);
                }
 
+               auto print_all_formatter()
+               {
+                  auto format_name = []( const Option& option){ return option.names().canonical();};
+                  auto format_arguments = []( const Option& option)
+                  { 
+                     return terminal::format::guard_empty( string::join( option.complete( true, {}), ','));
+                  };
+
+                  auto format_description = []( const Option& option)
+                  {
+                     if( auto found = algorithm::find( option.description(), '\n'))
+                        return std::string{ std::begin( option.description()), std::begin( found)};
+                     return terminal::format::guard_empty( option.description());
+                  };
+
+                  return terminal::format::formatter< const Option>::construct(
+                     terminal::format::column( "name", format_name, terminal::color::no_color),
+                     terminal::format::column( "value(s)", format_arguments, terminal::color::no_color),
+                     terminal::format::column( "description", format_description, terminal::color::no_color)
+                  );
+               }
+
+
                void print_all( std::string_view description, std::span< const Option> options)
                {
                   output( "NAME\n");
@@ -258,7 +282,9 @@ namespace casual
                   help::description( description, indent_increment);
 
                   output( "\nOPTIONS\n\n");
-                  print( options, indent_increment);
+
+                  auto formatter = print_all_formatter();
+                  formatter.print( std::cout, options);
                }
 
                void print( std::string_view description, std::span< const Option> options, range_type arguments)

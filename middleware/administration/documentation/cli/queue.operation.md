@@ -5,147 +5,148 @@
 ```shell
 host# casual --help queue
 
-  queue [0..1]
-        queue related administration
+queue [0..1]
+     queue related administration
 
-    SUB OPTIONS
+   SUB OPTIONS:
+
       -q, --list-queues [0..1]
-            list information of all queues in current domain
+           list information of all queues in current domain
 
       -z, --list-zombies [0..1]
-            list information of all zombie queues in current domain
+           list information of all zombie queues in current domain
 
       -lqi, --list-queue-instances [0..1]
-            list instances for all queues, including external instances
+           list instances for all queues, including external instances
 
       -g, --list-groups [0..1]
-            list information of all groups in current domain
+           list information of all groups in current domain
 
       -m, --list-messages [0..1]  (<queue>) [1]
-            list information of all messages of the provided queue
+           list information of all messages of the provided queue
 
       --list-forward-services [0..1]
-            list information of all service forwards
+           list information of all service forwards
 
       --list-forward-queues [0..1]
-            list information of all queue forwards
+           list information of all queue forwards
 
       --list-forward-groups [0..1]
-            list (aggregated) information of forward groups
+           list (aggregated) information of forward groups
 
       --restore [0..1]  (<queue>) [0..*]
-            restores messages to queue
-            
-            Messages will be restored to the queue they first was enqueued to (within the same queue-group)
-            
-            Example:
-            casual queue --restore <queue-name>
+           restores messages to queue
+           
+           Messages will be restored to the queue they first was enqueued to (within the same queue-group)
+           
+           Example:
+           casual queue --restore <queue-name>
 
       -e, --enqueue [0..1]  (<queue>) [1]
-            enqueue buffer(s) to a queue from stdin
-            
-            Assumes a conformant buffer(s)
-            
-            Example:
-            cat somefile.bin | casual queue --enqueue <queue-name>
-            
-            @note: part of casual-pipe
+           enqueue buffer(s) to a queue from stdin
+           
+           Assumes a conformant buffer(s)
+           
+           Example:
+           cat somefile.bin | casual queue --enqueue <queue-name>
+           
+           @note: part of casual-pipe
 
       -d, --dequeue [0..1]  (<queue>, [<id>..]) [1..*]
-            dequeue message from a queue to `casual-pipe`
-            
-            if id is absent the oldest available message is dequeued. 
-            
-            Example:
-            casual queue --dequeue <queue> | <some other part in casual-pipe> | ... | <casual-pipe termination>
-            casual queue --dequeue <queue> <id> | <some other part in casual-pipe> | ... | <casual-pipe termination>
-            casual queue --dequeue <queue> <id> <id> <id> <id> | <some other part in casual-pipe> | ... | <casual-pipe termination>
-            
-            
-            @note: part of casual-pipe
+           dequeue message from a queue to `casual-pipe`
+           
+           if id is absent the oldest available message is dequeued. 
+           
+           Example:
+           casual queue --dequeue <queue> | <some other part in casual-pipe> | ... | <casual-pipe termination>
+           casual queue --dequeue <queue> <id> | <some other part in casual-pipe> | ... | <casual-pipe termination>
+           casual queue --dequeue <queue> <id> <id> <id> <id> | <some other part in casual-pipe> | ... | <casual-pipe termination>
+           
+           
+           @note: part of casual-pipe
 
       -p, --peek [0..1]  (<queue>, [<id>]) [1..*]
-            peeks messages from the give queue and streams them to casual-pipe
-            
-            Example:
-            casual queue --peek <queue-name> <id1> <id2> | <some other part of casual-pipe> | ... | <casual-pipe-termination>
-            
-            @note: part of casual-pipe
+           peeks messages from the give queue and streams them to casual-pipe
+           
+           Example:
+           casual queue --peek <queue-name> <id1> <id2> | <some other part of casual-pipe> | ... | <casual-pipe-termination>
+           
+           @note: part of casual-pipe
 
       --consume [0..1]  (<queue>, <count>) [1..2]
-            consumes up to `count` messages from the provided `queue` and send it downstream
-            
-            Example:
-            casual queue --consume <queue-name> [<count>] | <some other part of casual-pipe> | ... | <casual-pipe-termination>
-            
-            @note: part of casual-pipe
+           consumes up to `count` messages from the provided `queue` and send it downstream
+           
+           Example:
+           casual queue --consume <queue-name> [<count>] | <some other part of casual-pipe> | ... | <casual-pipe-termination>
+           
+           @note: part of casual-pipe
 
-      --attributes [0..1]  (<attribute-name>, <value>) [2..* {2}]
-            INCUBATION - adds or mutates queue message attributes on piped messages
-            
-            @attention INCUBATION - might change during. or in between minor version.
-            
-            Valid attributes:
-            * properties  | user defined string
-            * reply       | queue name
-            * available   | absolute time since epoch ([+]?<value>[h|min|s|ms|us|ns])+
-            
-            Example:
-            `$ casual queue --dequeue a | casual queue --attributes reply a.reply properties foo | casual queue --enqueue a`
-            
-            @note: Can be used to add queue attributes to a service reply_
-            @note: part of casual-pipe
+      --attributes [0..1]  (<attribute-name>, <value>) [2..*]
+           INCUBATION - adds or mutates queue message attributes on piped messages
+           
+           @attention INCUBATION - might change during. or in between minor version.
+           
+           Valid attributes:
+           * properties  | user defined string
+           * reply       | queue name
+           * available   | absolute time since epoch ([+]?<value>[h|min|s|ms|us|ns])+
+           
+           Example:
+           `$ casual queue --dequeue a | casual queue --attributes reply a.reply properties foo | casual queue --enqueue a`
+           
+           @note: Can be used to add queue attributes to a service reply_
+           @note: part of casual-pipe
 
       --clear [0..1]  (<queue>) [1..*]
-            clears all messages from provided queues
-            
-            Example:
-            casual queue --clear a b c
+           clears all messages from provided queues
+           
+           Example:
+           casual queue --clear a b c
 
       --remove-messages [0..1]  (<queue>, <id>) [2..*]
-            removes specific messages from a given queue
-            
-            if used with `--force true` messages will be removed regardless of state.
+           removes specific messages from a given queue
+           
+           if used with `--force true` messages will be removed regardless of state.
 
-      --force [0..1]  (true, false) [1]
-            force removal of message regardless of state (default: false)
-            
-            used in conjunction with `--remove-messages`
+         SUB OPTIONS:
+
+            --force [0..1]
+                 force removal of message regardless of state
 
       --recover-transactions-commit [0..1]  (<gtrid>) [1..*]
-            recover specific messages from a given queue with commit
+           recover specific messages from a given queue with commit
 
       --recover-transactions-rollback [0..1]  (<gtrid>) [1..*]
-            recover specific messages from a given queue with rollback
+           recover specific messages from a given queue with rollback
 
-      --forward-scale-aliases [0..1]  (<alias>, <# instances>) [2..* {2}]
-            scales forward aliases to the requested number of instances
-            
-            Example:
-            casual queue --forward-scale-aliases a 2 b 0 c 10
+      --forward-scale-aliases [0..1]  (<alias>, <# instances>) [2..*]
+           scales forward aliases to the requested number of instances
+           
+           Example:
+           casual queue --forward-scale-aliases a 2 b 0 c 10
 
       --metric-reset [0..1]  (<queue>) [1..*]
-            resets metrics for the provided queues
-            
-            if no queues are provided, metrics for all queues are reset.
-            
-            Example:
-            casual queue --metric-reset a b
+           resets metrics for the provided queues
+           
+           if no queues are provided, metrics for all queues are reset.
+           
+           Example:
+           casual queue --metric-reset a b
 
       --legend [0..1]  (list-queues, list-messages, list-forward-groups, list-forward-services, list-forward-queues) [1]
-            provide legend for the output for some of the options
-            
-            to view legend for --list-queues use casual queue --legend list-queues, and so on.
-            
-            use auto-complete to help which options has legends
+           provide legend for the output for some of the options
+           
+           to view legend for --list-queues use casual queue --legend list-queues, and so on.
+           
+           use auto-complete to help which options has legends
 
       --information [0..1]
-            collect aggregated information about queues in this domain
+           collect aggregated information about queues in this domain
 
       --state [0..1]  (json, yaml, xml, ini, line) [0..1]
-            prints state in the provided format to stdout
+           prints state in the provided format to stdout
 
       [deprecated] -r, --list-remote [0..1]
-            deprecated - use --list-instances
+           deprecated - use --list-instances
 
 ```

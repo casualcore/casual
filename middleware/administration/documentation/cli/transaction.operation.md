@@ -5,74 +5,71 @@
 ```shell
 host# casual --help transaction
 
-  transaction [0..1]
-        transaction related administration
+transaction [0..1]
+     transaction related administration
 
-    SUB OPTIONS
+   SUB OPTIONS:
+
       -lt, --list-transactions [0..1]
-            list current transactions
+           list current transactions
 
       -lr, --list-resources [0..1]
-            list all resources
+           list all resources
 
       -li, --list-instances [0..1]
-            list all resource instances, internal and external
+           list all resource instances, internal and external
 
       --list-internal-instances [0..1]
-            list details of all internal resource instances
+           list details of all internal resource instances
 
       --list-external-instances [0..1]
-            list external resource instances
-            
-            External resources only have one instance, hence resources and resource-instances are unambiguous.
-
-            deprecated: [--list-external-resources]
+           list external resource instances
+           
+           External resources only have one instance, hence resources and resource-instances are unambiguous.
 
       --begin [0..1]
-            creates a 'single' transaction directive
-            
-            * creates a new transaction and send it downstream.
-            * all downstream `actions` will be associated with this transaction, until commit/rollback.
-            * @attention there has to be a corresponding commit/rollback downstream for every 
-            --begin, otherwise the transaction(s) will be unresolved (indoubt).
-            
-            @note: part of casual-pipe
+           creates a 'single' transaction directive
+           
+           * creates a new transaction and send it downstream.
+           * all downstream `actions` will be associated with this transaction, until commit/rollback.
+           * @attention there has to be a corresponding commit/rollback downstream for every 
+           --begin, otherwise the transaction(s) will be unresolved (indoubt).
+           
+           @note: part of casual-pipe
 
       --commit [0..1]
-            tries to commit the upstream transaction
-            
-            * The current transaction will be committed (if error from upstream -> rollback)
-            * Downstream `actions` will not be associated with the current transaction.
-            
-            @note: part of casual-pipe
+           tries to commit the upstream transaction
+           
+           * The current transaction will be committed (if error from upstream -> rollback)
+           * Downstream `actions` will not be associated with the current transaction.
+           
+           @note: part of casual-pipe
 
       --rollback [0..1]
-            tries to rollback the upstream transaction
-            
-            * The current transaction will be rolled back.
-            * Downstream `actions` will not be associated with the current transaction.
-            
-            @note: part of casual-pipe
+           tries to rollback the upstream transaction
+           
+           * The current transaction will be rolled back.
+           * Downstream `actions` will not be associated with the current transaction.
+           
+           @note: part of casual-pipe
 
       --scale-resource-proxies [0..1]  (rm-id, # instances) [0..* {2}]
-            scale resource proxy instances
-
-            deprecated: [-si, --scale-instances]
+           scale resource proxy instances
 
       -lp, --list-pending [0..1]
-            list pending tasks
+           list pending tasks
 
       --legend [0..1]  (list-resources) [1]
-            the legend for the supplied option
-            
-            Documentation and description for abbreviations and acronyms used as columns in output
-            
-            note: not all options has legend, use 'auto complete' to find out which legends are supported.
+           the legend for the supplied option
+           
+           Documentation and description for abbreviations and acronyms used as columns in output
+           
+           note: not all options has legend, use 'auto complete' to find out which legends are supported.
 
       --information [0..1]
-            collect aggregated information about transactions in this domain
+           collect aggregated information about transactions in this domain
 
       --state [0..1]  (json, yaml, xml, ini, line) [0..1]
-            prints state in the provided format to stdout
+           prints state in the provided format to stdout
 
 ```

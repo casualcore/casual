@@ -5,102 +5,99 @@
 ```shell
 host# casual --help domain
 
-  domain [0..1]
-        local casual domain related administration
+domain [0..1]
+     local casual domain related administration
 
-    SUB OPTIONS
+   SUB OPTIONS:
+
       -ls, --list-servers [0..1]
-            list all servers
+           list all servers
 
       -le, --list-executables [0..1]
-            list all executables
+           list all executables
 
-      -sa, --scale-aliases [0..1]  (<alias>, <#>) [2..* {2}]
-            scale instances for the provided aliases
-
-            deprecated: [-si, --scale-instances]
+      -sa, --scale-aliases [0..1]  (<alias>, <#>) [2..*]
+           scale instances for the provided aliases
 
       -ra, --restart-aliases [0..1]  (<alias>) [1..*]
-            restart instances for the given aliases
-            
-            note: some aliases are unrestartable
-
-            deprecated: [-ri, --restart-instances]
+           restart instances for the given aliases
+           
+           note: some aliases are unrestartable
 
       -rg, --restart-groups [0..1]  (<group>) [0..*]
-            restart all instances for aliases that are members of the provided groups
-            
-            if no groups are provided, all groups are restated.
-            
-            note: some aliases are unrestartable
+           restart all instances for aliases that are members of the provided groups
+           
+           if no groups are provided, all groups are restated.
+           
+           note: some aliases are unrestartable
 
       -lis, --list-instances-server [0..1]
-            list all running server instances
+           list all running server instances
 
       -lie, --list-instances-executable [0..1]
-            list all running executable instances
+           list all running executable instances
 
       -b, --boot [0..1]  (<glob patterns>) [0..*]
-            boot domain
-            
-            With supplied configuration files, in the form of glob patterns.
+           boot domain
+           
+           With supplied configuration files, in the form of glob patterns.
 
       --boot-strict [0..1]  (<glob patterns>) [0..*]
-            boot domain
-            
-            With supplied configuration files, in the form of glob patterns.
-            
-            Fails if any configured server/executable fails to start or exits with an error during the boot sequence.
+           boot domain
+           
+           With supplied configuration files, in the form of glob patterns.
+           
+           Fails if any configured server/executable fails to start or exits with an error during the boot sequence.
 
       -s, --shutdown [0..1]
-            shutdown domain
+           shutdown domain
 
       --set-environment [0..*]  (<variable>, <value>, [<alias>*]) [2..*]
-            set an environment variable for explicit aliases
-                                 
-            if 0 aliases are provided, the environment variable will be set 
-            for all servers and executables 
-                                 
+           set an environment variable for explicit aliases
+                                
+           if 0 aliases are provided, the environment variable will be set 
+           for all servers and executables 
+                                
 
       --unset-environment [0..*]  (<variable>, [<alias>*]) [1..*]
-            unset an environment variable for explicit aliases
-                                 
-            if 0 aliases are provided, the environment variable will be unset 
-            for all servers and executables 
-                                 
+           unset an environment variable for explicit aliases
+                                
+           if 0 aliases are provided, the environment variable will be unset 
+           for all servers and executables 
+                                
 
       --ping [0..1]  (<alias>) [1..*]
-            ping all instances of the provided server alias
+           ping all instances of the provided server alias
 
       --instance-global-state [0..1]  (<pid>, [<format>]) [1..2]
-            get the 'global state' for the provided pid
+           get the 'global state' for the provided pid
 
       --legend [0..1]  (list-executables, list-servers, ping) [1]
-            the legend for the supplied option
-            
-            Documentation and description for abbreviations and acronyms used as columns in output
-            
-            note: not all options has legend, use 'auto complete' to find out which legends are supported.
+           the legend for the supplied option
+           
+           Documentation and description for abbreviations and acronyms used as columns in output
+           
+           note: not all options has legend, use 'auto complete' to find out which legends are supported.
 
       --information [0..1]
-            collect aggregated general information about this domain
+           collect aggregated general information about this domain
 
       --state [0..1]  (json, yaml, xml, ini, line) [0..1]
-            prints state in the provided format to stdout
+           prints state in the provided format to stdout
 
       --log-reopen [0..1]
-            reopen casual.log by sending SIGHUP to all servers, and outputs all running executables
+           reopen casual.log by sending SIGHUP to all servers, and outputs all running executables
 
       [deprecated] --configuration-get [0..1]  (json, yaml, xml, ini) [0..1]
-            @deprecated: use `casual configuration --get`
+           @deprecated: use `casual configuration --get`
 
       [deprecated] --configuration-post [0..1]  (json, yaml, xml, ini) [1]
-            @deprecated: use `casual configuration --post`
+           @deprecated: use `casual configuration --post`
 
       [deprecated] --configuration-edit [0..1]  (json, yaml, xml, ini) [0..1]
-            @deprecated: use `casual configuration --edit`
+           @deprecated: use `casual configuration --edit`
 
       [deprecated] --configuration-put [0..1]  (json, yaml, xml, ini) [1]
-            @deprecated: use `casual configuration --put`
+           @deprecated: use `casual configuration --put`
 
 ```

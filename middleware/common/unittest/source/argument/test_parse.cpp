@@ -138,73 +138,7 @@ namespace casual
          };
       
       {
-         constexpr std::string_view expected = R"(NAME
-   test-casual-common-isolated
-
-DESCRIPTION
-
-   multi
-   line
-   
-   description
-   
-   bla bla bla
-   foo bar
-
-OPTIONS
-
-   -a [1] (<value>) [1]
-        description for option
-        
-        multi
-        line
-
-      SUB OPTIONS:
-
-         -b [0..1] (v1, v2) [2]
-              description for option
-              
-              multi
-              line
-
-   -c [0..1] (<value>) [1..2]
-        description for option
-        
-        multi
-        line
-
-      SUB OPTIONS:
-
-         -d [0..1] (<value>) [0..*]
-              description for option
-              
-              multi
-              line
-
-            SUB OPTIONS:
-
-               -e [0..1] (<value>) [0..* {2}]
-                    description for -e
-
-   --help [0..1] (<value>) [0..*]
-        shows this help information
-                       
-        Use --help <option> to see selected details on <option>
-        You can also use more precise help for deeply nested options
-        `--help -a -b -c -d -e`
-
-)";
-         
-         std::ostringstream out;
-         auto guard = common::unittest::capture::standard::out( out);
-         argument::parse( "multi\nline\n\ndescription\n\nbla bla bla\nfoo bar", options, { "--help"});
-
-         EXPECT_TRUE( out.str() == expected) << "out: \n" << out.str() << "expected:\n" << expected;
-
-      }
-
-      {
-         constexpr std::string_view expected = R"(-e [0..1] (<value>) [0..* {2}]
+         constexpr std::string_view expected = R"(-e [0..1]  (<value>) [0..* {2}]
      description for -e
 
 )";

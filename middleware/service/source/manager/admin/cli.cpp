@@ -459,12 +459,10 @@ namespace casual
                            {
                               shared->all = true;
                               return argument::option::invoke::preemptive{};
-                           },  { "-a", "--all"}, "show all services"};
+                           },  { "-a", "--all"}, "include hidden services"};
 
 
-                        constexpr auto description = R"(list known services
-
-if used with `--all true` hidden services will be included)";
+                        constexpr auto description = R"(list known services)";
 
                         return argument::Option{ 
                            invoke,

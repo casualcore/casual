@@ -5,44 +5,42 @@
 ```shell
 host# casual --help service
 
-  service [0..1]
-        service related administration
+service [0..1]
+     service related administration
 
-    SUB OPTIONS
+   SUB OPTIONS:
+
       -ls, --list-services [0..1]
-            list known services
-            
-            if used with `--all true` hidden services will be included
+           list known services
 
-      -a, --all [0..1]  (true, false) [1]
-            show all services (default: false)
-            
-            used in conjunction with `--list-services`
-            has same semantics as `-a` in unix `ls -a`.
+         SUB OPTIONS:
+
+            -a, --all [0..1]
+                 include hidden services
 
       -li, --list-instances [0..1]
-            list instances
+           list instances
 
       --list-routes [0..1]
-            list service routes
+           list service routes
 
       -mr, --metric-reset [0..1]  (<service>...) [0..*]
-            reset metrics for provided services, if no services provided, all metrics will be reset
+           reset metrics for provided services, if no services provided, all metrics will be reset
 
       --legend [0..1]  (<option>) [1]
-            the legend for the supplied option
-            
-            Documentation and description for abbreviations and acronyms used as columns in output
-            
-            note: not all options has legend, use 'auto complete' to find out which legends are supported.
+           the legend for the supplied option
+           
+           Documentation and description for abbreviations and acronyms used as columns in output
+           
+           note: not all options has legend, use 'auto complete' to find out which legends are supported.
 
       --information [0..1]
-            collect aggregated information about known services
+           collect aggregated information about known services
 
       --state [0..1]  (json, yaml, xml, ini, line) [0..1]
-            prints state in the provided format to stdout
+           prints state in the provided format to stdout
 
       [deprecated] --list-admin-services [0..1]
-            @deprecated use --list-services --all true
+           @deprecated use --list-services --all
 
 ```
