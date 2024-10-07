@@ -169,10 +169,10 @@ domain:
          
          auto domain = local::domain();
 
-         auto output = unittest::cli::command::execute( R"(casual call --examples)").standard.out;
+         auto capture = unittest::cli::command::execute( R"(casual call --examples)");
 
          // don't really know how to test stuff like this. 
-         EXPECT_TRUE( algorithm::search( output, std::string_view( "examples:"))) << output;
+         EXPECT_TRUE( algorithm::search( capture.standard.out, std::string_view( "examples:"))) << CASUAL_NAMED_VALUE( capture);
          
       }
 

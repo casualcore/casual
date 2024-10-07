@@ -7,24 +7,14 @@
 #pragma once
 
 
-#include "common/argument.h"
+#include "casual/argument.h"
 #include "common/pimpl.h"
 
 namespace casual
 {
-   namespace domain::discovery::admin
+   namespace domain::discovery::admin::cli
    {
-      struct cli 
-      {
-         cli();
-         ~cli();
+      argument::Option options();
 
-         common::argument::Group options() &;
-
-      private:
-         struct Implementation;
-         common::move::Pimpl< Implementation> m_implementation;
-      };
-
-   } // domain::discovery::admin
+   } // domain::discovery::admin::cli
 } // casual

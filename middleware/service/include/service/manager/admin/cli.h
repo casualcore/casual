@@ -7,31 +7,16 @@
 #pragma once
 
 
-#include "common/argument.h"
+#include "casual/argument.h"
 #include "common/pimpl.h"
 
 namespace casual
 {
-   namespace service
+   namespace service::manager::admin::cli
    {
-      namespace manager
-      {
-         namespace admin
-         {
-            struct cli 
-            {
-               cli();
-               ~cli();
+      std::vector< std::tuple< std::string, std::string>> information();
 
-               common::argument::Group options() &;
+      argument::Option options();
 
-               std::vector< std::tuple< std::string, std::string>> information() &;
-
-            private:
-               struct Implementation;
-               common::move::Pimpl< Implementation> m_implementation;
-            };
-         } // admin
-      } // manager  
-   } // service
+   } // service::manager::admin::cli
 } // casual

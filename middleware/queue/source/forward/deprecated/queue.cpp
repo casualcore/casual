@@ -10,7 +10,7 @@
 #include "queue/api/queue.h"
 #include "queue/common/log.h"
 
-#include "common/argument.h"
+#include "casual/argument.h"
 #include "common/exception/guard.h"
 
 #include "common/buffer/pool.h"
@@ -60,16 +60,16 @@ namespace casual
             dispatch.execute();
          }
 
-         void main( int argc, char **argv)
+         void main( int argc, const char** argv)
          {
             Settings settings;
 
             common::log::line( common::log::category::warning, "casual-queue-forward-queue is deprecated - configure forwards under the queue section in domain configuration");
 
-            using namespace casual::common::argument;
-            Parse{ "queue forward to queue",
+            using namespace casual::argument;
+            parse( "queue forward to queue", {
                Option( settings.tie(), {"-f", "--forward"}, "--forward  <from-queue> <to-queue>")
-            }( argc, argv);
+            }, argc, argv);
 
             start( std::move( settings));
          }
@@ -79,7 +79,7 @@ namespace casual
 } // casual
 
 
-int main( int argc, char** argv)
+int main( int argc, const char** argv)
 {
    return casual::common::exception::main::log::guard( [=]()
    {

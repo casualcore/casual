@@ -63,7 +63,7 @@ namespace casual
                log::line( verbose::log, "state: ", state);
             }
 
-            void main( int argc, char** argv)
+            void main( int argc, const char** argv)
             {
                Trace trace{ "queue::forward::concurrent::service::local::main"};
 
@@ -78,7 +78,7 @@ namespace casual
 } // casual
 
 
-int main( int argc, char** argv)
+int main( int argc, const char** argv)
 {
    return casual::common::exception::main::log::guard( [=]()
    {

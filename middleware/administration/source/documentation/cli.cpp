@@ -9,7 +9,7 @@
 #include "common/file.h"
 #include "common/unittest.h"
 
-#include "common/argument.h"
+#include "casual/argument.h"
 #include "common/terminal.h"
 #include "common/exception/capture.h"
 
@@ -31,7 +31,7 @@ namespace casual
 
                template< typename H, typename F>
                void generate( 
-                  const std::vector< std::string>& options, 
+                  std::vector< std::string> arguments, 
                   const std::filesystem::path& path,
                   H&& header,
                   F&& footer)
@@ -45,9 +45,8 @@ namespace casual
                   header( out);
 
                   auto restore = unittest::capture::standard::out( out);
-      
-                  CLI cli;
-                  cli.parser()( options);
+
+                  administration::cli::parse( std::move( arguments));
                
                   footer( out);
                }
@@ -110,28 +109,26 @@ namespace casual
                }
 
                
-               void main( int argc, char** argv)
+               void main( int argc, const char** argv)
                {
                   std::filesystem::path root;
 
-                  argument::Parse{ "generate cli documentation",
-                     argument::Option{ std::tie( root), { "--root"}, "root for the generated markdown files"}
-                  }( argc, argv);
+                  argument::parse( "generate cli documentation", {
+                     argument::Option{ std::tie( root), { "--root"}, "root for the generated markdown files"}( argument::cardinality::one())
+                  }, argc, argv);
 
                   generate( root);
 
                }
             } // <unnamed>
          } // local
-
-
          
       } // documentation
    } // administration
 } // casual
 
 
-int main( int argc, char** argv)
+int main( int argc, const char** argv)
 {
    return casual::common::exception::main::log::guard( [=]()
    {

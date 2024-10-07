@@ -295,7 +295,7 @@ namespace casual
                abort_guard.release();
             }
 
-            void main( int argc, char** argv)
+            void main( int argc, const char** argv)
             {
                Arguments arguments;
 
@@ -310,7 +310,7 @@ namespace casual
 } // casual
 
 
-int main( int argc, char** argv)
+int main( int argc, const char** argv)
 {
    return casual::common::exception::main::log::guard( [=]()
    {

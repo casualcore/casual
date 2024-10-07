@@ -235,7 +235,7 @@ namespace casual
          }
 
 
-         int main( int argc, char **argv)
+         int main( int argc, const char** argv)
          {
             Settings settings;
             transform( settings, std::cin, std::cout);
@@ -250,7 +250,7 @@ namespace casual
 } // casual
 
 
-int main( int argc, char **argv)
+int main( int argc, const char** argv)
 {
    return casual::log::format::main( argc, argv);
 }

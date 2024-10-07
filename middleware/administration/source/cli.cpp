@@ -33,7 +33,7 @@ namespace casual
 {
    using namespace common;
 
-   namespace administration
+   namespace administration::cli
    {
       namespace local
       {
@@ -49,37 +49,36 @@ namespace casual
                   "information-queue"sv, 
                   "information-transaction"sv);}
 
-               template< typename CLI>
-               auto option( CLI& cli)
+               auto option()
                {
-                  auto complete = []( auto values, bool help) -> std::vector< std::string>
+                  auto complete = []( bool help, auto values) -> std::vector< std::string>
                   {
                      if( help)
                         return { "<value>"};
                      return algorithm::container::create< std::vector< std::string>>( information::names());
                   };
 
-                  auto invoke = [ &cli, complete]( std::vector< std::string> managers)
+                  auto invoke = [ complete]( std::vector< std::string> managers)
                   {
                      // if not provided we collect from all
                      if( managers.empty())
                         managers = complete( 0, false);
 
-                     using information_t = decltype( cli.domain.information());
+                     using information_t = decltype( casual::domain::manager::admin::cli::information());
 
-                     auto append_information = []( auto& cli)
+                     auto append_information = []( auto callback)
                      {
-                        return [&cli]( auto& information)
+                        return [ callback]( auto& information)
                         {
-                           algorithm::container::append( cli.information(), information);
+                           algorithm::container::append( callback(), information);
                         };
                      };
 
                      const std::vector< std::tuple< std::string_view, common::function< void( information_t&) const>>> mapping{
-                        { "information-domain", append_information( cli.domain)},
-                        { "information-service", append_information( cli.service)},
-                        { "information-queue", append_information( cli.queue)},
-                        { "information-transaction", append_information( cli.transaction)},
+                        { "information-domain", append_information( casual::domain::manager::admin::cli::information)},
+                        { "information-service", append_information( casual::service::manager::admin::cli::information)},
+                        { "information-queue", append_information( casual::queue::manager::admin::cli::information)},
+                        { "information-transaction", append_information( casual::transaction::manager::admin::cli::information)},
                      };
 
                      information_t information;
@@ -115,7 +114,7 @@ valid directives:
 
 )";
 
-                  return common::argument::Option{
+                  return argument::Option{
                      std::move( invoke),
                      complete,
                      { "--information"},
@@ -140,7 +139,7 @@ valid directives:
 
                      terminal::formatter::key::value().print( std::cout, version);
                   };
-                  return common::argument::Option{
+                  return argument::Option{
                      std::move( invoke),
                      { "--version"},
                      "display version information"};
@@ -178,7 +177,7 @@ valid directives:
                         algorithm::for_each( detail::fetch_handles( pids), send_message);
                      };
 
-                     return common::argument::Option{
+                     return argument::Option{
                         std::move( invoke),
                         { "--state-dump"},
                         "dump state to casual.log for the provided pids, if the pid is able"
@@ -200,14 +199,14 @@ valid directives:
                         algorithm::for_each( detail::fetch_handles( pids), send_message);
                      };
 
-                     auto complete = []( auto&&, auto help) -> std::vector< std::string>
+                     auto complete = []( bool help, auto values) -> std::vector< std::string>
                      {
                         if( help)
                            return { "<path>", "<pid>"};
                         return { "<value>"};
                      };
 
-                     return common::argument::Option{
+                     return argument::Option{
                         std::move( invoke),
                         complete,
                         { "--log-path"},
@@ -232,14 +231,14 @@ Note: only works for 'servers' with a message pump)"
                         algorithm::for_each( detail::fetch_handles( pids), send_message);
                      };
 
-                     auto complete = []( auto&&, auto help) -> std::vector< std::string>
+                     auto complete = []( auto help, auto values) -> std::vector< std::string>
                      {
                         if( help)
                            return { "<expression>", "<pid>"};
                         return { "<value>"};
                      };
 
-                     return common::argument::Option{
+                     return argument::Option{
                         std::move( invoke),
                         complete,
                         { "--log-expression-inclusive"},
@@ -270,7 +269,7 @@ Note: only works for 'servers' with a message pump)"
                         formatter.print( std::cout, reply.entries);
                      };
 
-                     return common::argument::Option{
+                     return argument::Option{
                         std::move( invoke),
                         { "--message-count"},
                         R"(lists message count metrics for a given pid
@@ -280,25 +279,25 @@ The pid needs to be a casual server)"
 
                   }
                   
-               } // option
+               } // options
 
 
-               auto group()
+               auto options()
                {
-                  return common::argument::Group{
-                     [](){}, { "internal"}, "internal casual stuff for troubleshooting etc...",
-                     option::state_dump(),
-                     option::log_path(),
-                     option::log_expression_inclusive(),
-                     option::message_count()
-                  };
+                  return argument::Option{
+                     [](){}, { "internal"}, "internal casual stuff for troubleshooting etc..."}( {
+                        option::state_dump(),
+                        option::log_path(),
+                        option::log_expression_inclusive(),
+                        option::message_count()
+                     });
                }
                
             } // internal
 
             namespace pipe
             {
-               namespace option
+               namespace options
                {
                   auto human_sink()
                   {
@@ -308,20 +307,20 @@ The pid needs to be a casual server)"
 
                         casual::cli::pipe::done::Detector done;
 
-                        auto handler = cli::message::dispatch::create(
+                        auto handler = casual::cli::message::dispatch::create(
                            // use all defaults, but force human readable
-                           cli::pipe::forward::handle::defaults( true),
+                           casual::cli::pipe::forward::handle::defaults( true),
                            std::ref( done)
                         );
 
                         // consume from casual-pipe
                         communication::stream::inbound::Device in{ std::cin};
                         common::message::dispatch::pump( 
-                           cli::pipe::condition::done( done), 
+                           casual::cli::pipe::condition::done( done), 
                            handler, in);
                      };
 
-                     return common::argument::Option{
+                     return argument::Option{
                         std::move( invoke),
                         { "--human-sink"},
                         R"(INCUBATION - serialize casual pipe messages to human readable form, and in practice sink the message 
@@ -332,40 +331,19 @@ The pid needs to be a casual server)"
    back to _real_ pipe messages. Use only for stuff that are supposed to be discarded.)"
                      };
                   }
-               } // option
+               } // options
 
-               auto group()
+               auto option()
                {
-                  return common::argument::Group{
-                     [](){}, { "pipe"}, "pipe related options",
-                     option::human_sink()
-                  };
+                  return argument::Option{
+                     [](){}, { "pipe"}, "pipe related options"}( { 
+                     options::human_sink()
+                  });
                }
                
             } // pipe
 
-         } // <unnamed>
-      } // local
-
-      struct CLI::Implementation
-      {
-         struct
-         {
-            casual::domain::manager::admin::cli domain;
-            casual::service::manager::admin::cli service;
-            queue::manager::admin::cli queue;
-            casual::transaction::manager::admin::CLI transaction;
-            gateway::manager::admin::cli gateway;
-            casual::domain::discovery::admin::cli discovery;
-            tools::service::call::cli service_call;
-            tools::service::describe::cli describe;
-            casual::buffer::admin::CLI buffer;
-            configuration::admin::CLI configuration;
-         } cli;
-
-         auto parser() 
-         {
-            return argument::Parse{ R"(
+            constexpr std::string_view description = R"(
 casual administration CLI
 
 To get more detailed help, use any of:
@@ -374,33 +352,41 @@ casual <option> --help
 casual --help <option> <option> 
 
 Where <option> is one of the listed below
-)",
-               local::information::option( cli),
-               cli.domain.options(),
-               cli.service.options(),
-               cli.queue.options(),
-               cli.transaction.options(),
-               cli.gateway.options(),
-               cli.discovery.options(),
-               cli.service_call.options(),
-               cli.describe.options(),
-               cli.buffer.options(),
-               cli.configuration.options(),
-               local::pipe::group(),
-               common::terminal::output::directive().options(),
-               local::internal::group(),
-               local::version::options(),
-            };
-         }
-      };
+)";
 
-      CLI::CLI() = default;
-      CLI::~CLI() = default;
+         } // <unnamed>
+      } // local
 
-      argument::Parse CLI::parser() &
+      std::vector< argument::Option> options()
       {
-         return m_implementation->parser();
+         return algorithm::container::compose(
+            local::information::option(),
+            casual::domain::manager::admin::cli::options(),
+            casual::service::manager::admin::cli::options(),
+            queue::manager::admin::cli::options(),
+            casual::transaction::manager::admin::cli::options(),
+            gateway::manager::admin::cli::options(),
+            casual::domain::discovery::admin::cli::options(),
+            tools::service::call::cli::options(),
+            tools::service::describe::cli::options(),
+            casual::buffer::admin::cli::options(),
+            configuration::admin::cli::options(),
+            local::pipe::option(),
+            common::terminal::output::directive().options(),
+            local::internal::options(),
+            local::version::options()
+         );
       }
 
-   } // administration
+      void parse( int argc, const char** argv)
+      {
+         argument::parse( local::description, administration::cli::options(), argc, argv);
+      }
+
+      void parse( std::vector< std::string> options)
+      {
+         argument::parse( local::description, administration::cli::options(), std::move( options));
+      }
+
+   } // administration::cli
 } // casual

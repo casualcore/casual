@@ -1412,7 +1412,7 @@ Sent to establish a conversation
    } // gateway::documentation::protocol
 } // casual
 
-int main( int argc, char **argv)
+int main( int argc, const char** argv)
 {
    return casual::common::exception::main::log::guard( []()
    {

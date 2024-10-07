@@ -7,7 +7,7 @@
 #include "tools/service/describe/cli.h"
 #include "tools/service/describe/invoke.h"
 
-#include "common/argument.h"
+#include "casual/argument.h"
 #include "common/terminal.h"
 #include "common/exception/capture.h"
 
@@ -23,12 +23,9 @@ namespace casual
 {
    using namespace common;
 
-   namespace tools
+   namespace tools::service::describe::cli
    {
-      namespace service
-      {
-         namespace describe
-         {
+
             namespace local
             {
                namespace
@@ -160,7 +157,7 @@ namespace casual
                   }
 
 
-                  auto describe_completion = []( auto values, bool help) -> std::vector< std::string> 
+                  auto describe_completion = []( bool help, auto values) -> std::vector< std::string> 
                   {
                      if( help)
                      {
@@ -188,29 +185,18 @@ namespace casual
             } // local
 
 
-            struct cli::Implementation
-            {
-               common::argument::Option options()
-               {
-                  return common::argument::Option{ &local::print, local::describe_completion, { "describe"}, R"(service describer
+      argument::Option options()
+      {
+         return argument::Option{ &local::print, local::describe_completion, { "describe"}, R"(service describer
 
    * service   name of the service to to describe
    * [format]  optional format of the output, if absent a _CLI format_ is used.
 
    attention: the service need to be a casual aware service)"};
-               }
-            };
 
-            cli::cli() = default; 
-            cli::~cli() = default; 
+      }
 
-            common::argument::Option cli::options() &
-            {
-               return m_implementation->options();
-            }
 
-         } // describe
-      } // service
-   } // tools
+   } // tools::service::describe::cli
 } // casual
 

@@ -11,7 +11,7 @@
 #include "queue/common/ipc.h"
 #include "queue/common/log.h"
 
-#include "common/argument.h"
+#include "casual/argument.h"
 #include "common/process.h"
 #include "common/exception/capture.h"
 #include "common/communication/instance.h"
@@ -155,13 +155,12 @@ namespace casual
                   abort_guard.release();
                }
 
-               void main( int argc, char **argv)
+               void main( int argc, const char** argv)
                {
                   Trace trace{ "queue::group::local::main"};
 
                   Settings settings;
-                  argument::Parse{ "queue group server",
-                  }( argc, argv);
+                  argument::parse( "queue group server", {}, argc, argv);
 
                   log::line( verbose::log, "settings: ", settings);
 
@@ -174,7 +173,7 @@ namespace casual
    } // queue::group
 } // casual
 
-int main( int argc, char **argv)
+int main( int argc, const char** argv)
 {
    return casual::common::exception::main::log::guard( [&]()
    {

@@ -14,7 +14,7 @@
 #include "common/serialize/native/complete.h"
 #include "common/serialize/create.h"
 
-#include "common/argument.h"
+#include "casual/argument.h"
 #include "common/string.h"
 #include "common/exception/guard.h"
 
@@ -122,19 +122,18 @@ namespace casual
                generator( example::message< common::message::transaction::resource::rollback::Reply>(), basename);
             }
 
-            void main(int argc, char **argv)
+            void main( int argc, const char** argv)
             {
                std::filesystem::path basename;
                std::string format;
 
                {
-                  auto complete = []( auto values, bool help)
+                  auto complete = []( bool help, auto values)
                   {
                      return std::vector< std::string>{ "yaml", "json", "xml", "ini"};
                   };
 
-                  using namespace casual::common::argument;
-                  Parse{ R"(binary dump examples for interdomain protocol
+                  argument::parse( R"(binary dump examples for interdomain protocol
 
 generated files will have the format:
 
@@ -142,9 +141,10 @@ bin-dump:    [<base-path>/]<message-name>.<protocol-version>.<message-type-id>.b
 descriptive: [<base-path>/]<message-name>.<protocol-version>.<message-type-id>.<format>
 
 )",
-                     Option( std::tie( basename), { "-b", "--base"}, "base path for the generated files"),
-                     Option( std::tie( format), complete, { "--format"}, "format for optional descriptive generated representation")
-                  }( argc, argv);
+                     {
+                        argument::Option( std::tie( basename), { "-b", "--base"}, "base path for the generated files"),
+                        argument::Option( std::tie( format), complete, { "--format"}, "format for optional descriptive generated representation")
+                     }, argc, argv);
                }
 
                // generate the binary blobs   
@@ -161,7 +161,7 @@ descriptive: [<base-path>/]<message-name>.<protocol-version>.<message-type-id>.<
 
 } // casual
 
-int main(int argc, char **argv)
+int main( int argc, const char** argv)
 {
    return casual::common::exception::main::cli::guard( [&]()
    {

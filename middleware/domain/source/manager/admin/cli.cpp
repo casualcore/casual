@@ -17,7 +17,7 @@
 
 #include "common/event/listen.h"
 #include "common/message/dispatch/handle.h"
-#include "common/argument.h"
+#include "casual/argument.h"
 #include "common/terminal.h"
 #include "common/environment.h"
 #include "common/exception/capture.h"
@@ -489,7 +489,7 @@ namespace casual
                         call::environment::set( environment);
                      }
 
-                     auto complete = []( auto values, bool help) -> std::vector< std::string>
+                     auto complete = []( bool help, auto values) -> std::vector< std::string>
                      {
                         if( help)
                            return { "<variable>", "<value>", "[<alias>*]"};
@@ -531,7 +531,7 @@ for all servers and executables
                         call::environment::unset( environment);
                      }
 
-                     auto complete = []( auto values, bool help) -> std::vector< std::string>
+                     auto complete = []( bool help, auto values) -> std::vector< std::string>
                      {
                         if( help)
                            return { "<variable>", "[<alias>*]"};
@@ -595,7 +595,7 @@ for all servers and executables
 
                   auto complete() 
                   {
-                     return []( auto values, auto help) -> std::vector< std::string>
+                     return []( bool help, auto values) -> std::vector< std::string>
                      {
                         if( help)
                            return { "<alias>"};
@@ -636,7 +636,7 @@ for all servers and executables
 
                      auto complete() 
                      {
-                        return []( auto values, auto help) -> std::vector< std::string>
+                        return []( bool help, auto values) -> std::vector< std::string>
                         {
                            if( help)
                               return { "<pid>", "[<format>]"};
@@ -772,7 +772,7 @@ for all servers and executables
                         local::event::handler( tasks));
                   };
 
-                  auto completion = []( auto values, auto help) -> std::vector< std::string>
+                  auto completion = []( bool help, auto values) -> std::vector< std::string>
                   {
                      if( help)
                         return { "<glob patterns>"};
@@ -837,7 +837,7 @@ With supplied configuration files, in the form of glob patterns.
                         std::move( handler));
                   };
 
-                  auto completion = []( auto values, auto help) -> std::vector< std::string>
+                  auto completion = []( bool help, auto values) -> std::vector< std::string>
                   {
                      if( help)
                         return { "<glob patterns>"};
@@ -956,7 +956,7 @@ Fails if any configured server/executable fails to start or exits with an error 
                         event::invoke( call::scale::aliases, common::algorithm::transform( values, transform));
                      };
                   
-                     auto completion = []( auto values, bool help) -> std::vector< std::string>
+                     auto completion = []( bool help, auto values) -> std::vector< std::string>
                      {
                         if( help)
                            return { "<alias>", "<#>"};
@@ -972,7 +972,7 @@ Fails if any configured server/executable fails to start or exits with an error 
                      return argument::Option{
                         argument::option::one::many( std::move( invoke)), 
                         std::move( completion), 
-                        argument::option::keys( { "-sa", "--scale-aliases"}, { "-si", "--scale-instances"}),
+                        argument::option::Names( { "-sa", "--scale-aliases"}, { "-si", "--scale-instances"}),
                         description};
 
                   } // aliases
@@ -993,7 +993,7 @@ Fails if any configured server/executable fails to start or exits with an error 
                         event::invoke( call::restart::aliases, common::algorithm::transform( values, transform));
                      };
 
-                     auto completion = []( auto values, bool help) -> std::vector< std::string>
+                     auto completion = []( bool help, auto values) -> std::vector< std::string>
                      {
                         if( help)
                            return { "<alias>"};
@@ -1008,7 +1008,7 @@ note: some aliases are unrestartable
                      return argument::Option{
                         argument::option::one::many( std::move( invoke)), 
                         std::move( completion), 
-                        argument::option::keys( { "-ra", "--restart-aliases"}, { "-ri", "--restart-instances"}),
+                        argument::option::Names( { "-ra", "--restart-aliases"}, { "-ri", "--restart-instances"}),
                         description};
 
                   } // restart
@@ -1024,7 +1024,7 @@ note: some aliases are unrestartable
                         event::invoke( call::restart::groups, common::algorithm::transform( values, transform));
                      };
 
-                     auto completion = []( auto values, bool help) -> std::vector< std::string>
+                     auto completion = []( bool help, auto values) -> std::vector< std::string>
                      {
                         if( help)
                            return { "<group>"};
@@ -1122,7 +1122,7 @@ note: some aliases are unrestartable
                         std::cout << found->second;
                   };
 
-                  auto complete = []( auto values, auto help)
+                  auto complete = []( bool help, auto values)
                   {
                      return algorithm::transform( legends, []( auto& pair){ return pair.first;});
                   };
@@ -1144,12 +1144,11 @@ note: not all options has legend, use 'auto complete' to find out which legends 
          } // <unnamed>
       } // local
 
-
-      struct cli::Implementation
+      namespace cli
       {
-         argument::Group options()
+         argument::Option options()
          {
-            return argument::Group{ [](){}, { "domain"}, "local casual domain related administration",
+            return argument::Option{ [](){}, { "domain"}, "local casual domain related administration"}({
                local::option::list::servers(),
                local::option::list::executables(),
                local::option::scale::aliases(),
@@ -1160,8 +1159,8 @@ note: not all options has legend, use 'auto complete' to find out which legends 
                local::option::boot(),
                local::option::boot_strict(),
                local::option::shutdown(),
-               argument::Option( &local::action::environment::set::call, local::action::environment::set::complete, { "--set-environment"}, local::action::environment::set::description)( argument::cardinality::any{}),
-               argument::Option( &local::action::environment::unset::call, local::action::environment::unset::complete, { "--unset-environment"}, local::action::environment::unset::description)( argument::cardinality::any{}),
+               argument::Option( &local::action::environment::set::call, local::action::environment::set::complete, { "--set-environment"}, local::action::environment::set::description)( argument::cardinality::any()),
+               argument::Option( &local::action::environment::unset::call, local::action::environment::unset::complete, { "--unset-environment"}, local::action::environment::unset::description)( argument::cardinality::any()),
             
                argument::Option( argument::option::one::many( &local::action::ping::invoke), local::action::ping::complete(), { "--ping"}, local::action::ping::description),
                argument::Option( &local::action::global::state::invoke, local::action::global::state::complete(), { "--instance-global-state"}, local::action::global::state::description),
@@ -1176,22 +1175,14 @@ note: not all options has legend, use 'auto complete' to find out which legends 
                configuration::admin::deprecated::post(),
                configuration::admin::deprecated::edit(),
                configuration::admin::deprecated::put(),
-            };
+            });
          }
-      };
 
-      cli::cli() = default; 
-      cli::~cli() = default; 
-
-      common::argument::Group cli::options() &
-      {
-         return m_implementation->options();
-      }
-
-      std::vector< std::tuple< std::string, std::string>> cli::information() &
-      {
-         return local::action::information::call();
-      }
+         std::vector< std::tuple< std::string, std::string>> information()
+         {
+            return local::action::information::call();
+         }
+      } // cli
             
 
    } // domain::manager::admin

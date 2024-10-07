@@ -10,7 +10,7 @@
 
 #include "common/move.h"
 #include "common/algorithm.h"
-#include "common/argument.h"
+#include "casual/argument.h"
 
 #include <string>
 #include <ostream>
@@ -43,9 +43,8 @@ namespace casual
             //! sets no color 
             void plain();
 
-            using options_type = decltype( std::declval< argument::Option>() + std::declval< argument::Option>());
 
-            options_type options() &;
+            std::vector< argument::Option> options() &;
 
             CASUAL_LOG_SERIALIZE(
                CASUAL_SERIALIZE( m_color);

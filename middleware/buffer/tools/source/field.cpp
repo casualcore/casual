@@ -10,7 +10,7 @@
 #include "casual/buffer/internal/field.h"
 
 #include "common/environment.h"
-#include "common/argument.h"
+#include "casual/argument.h"
 #include "common/exception/guard.h"
 
 #include <stdexcept>
@@ -43,15 +43,15 @@ namespace casual
                   });
                }
 
-               void main( int argc, char* argv[])
+               void main( int argc, const char* argv[])
                {
                   std::vector< std::string> tables;
-                  argument::Parse{ "generates a field definition header file",
+                  argument::parse( "generates a field definition header file", {
                      argument::Option{ std::tie( tables), { "--tables"}, R"(field table paths to generate from
 
 if not provided, environment variable CASUAL_FIELD_TABLE will be used.
 )"}
-                  }( argc, argv);
+                  }, argc, argv);
 
                   if( ! tables.empty())
                      casual::common::environment::variable::set( "CASUAL_FIELD_TABLE", string::join( tables, '|'));
@@ -67,7 +67,7 @@ if not provided, environment variable CASUAL_FIELD_TABLE will be used.
 } // casual
 
 
-int main( int argc, char* argv[])
+int main( int argc, const char* argv[])
 {
    return casual::exception::main::cli::guard( [=]()
    {

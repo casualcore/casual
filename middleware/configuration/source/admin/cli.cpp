@@ -8,7 +8,7 @@
 #include "configuration/model/transform.h"
 #include "configuration/model/load.h"
 
-#include "common/argument.h"
+#include "casual/argument.h"
 #include "common/file.h"
 #include "common/serialize/create.h"
 #include "common/environment.h"
@@ -34,7 +34,7 @@ namespace casual
          {
             namespace
             {
-               auto format_list = []( auto, bool){ return std::vector< std::string>{ "json", "yaml", "xml", "ini"};};
+               auto format_list = []( bool, auto){ return std::vector< std::string>{ "json", "yaml", "xml", "ini"};};
 
                namespace event
                {
@@ -152,13 +152,13 @@ On success exit with 0, on error not 0, and message printed to stderr)"
                   };
                }
 
-               auto normalize( State& state)
+               auto normalize( auto shared)
                {
-                  auto invoke = [&state]( std::vector< std::string> globs)
+                  auto invoke = [ shared]( std::vector< std::string> globs)
                   {
                      // load the model, transform back to user model...
                      auto domain = model::transform( local::load( std::move( globs)));
-                     auto writer = serialize::create::writer::from( state.format);
+                     auto writer = serialize::create::writer::from( shared->format);
                      writer << domain;
                      writer.consume( std::cout);
                   };
@@ -172,15 +172,22 @@ The format is default yaml, but could be supplied via the --format option)"
                   };
                }
 
-               auto format( State& state)
+               auto format( auto shared)
                {
-                  auto complete = []( auto values, auto help)
+                  auto complete = []( bool help, auto values)
                   {
                      return std::vector< std::string>{ "yaml", "json", "ini", "xml"};
                   };
 
+                  auto invoke = [ shared]( std::string format)
+                  {
+                     shared->format = std::move( format);
+                     return argument::option::invoke::preemptive{};
+                  };
+                  
+
                   return argument::Option{
-                     std::tie( state.format),
+                     std::move( invoke),
                      std::move( complete),
                      { "--format"},
                      R"(defines what format should be used)"
@@ -212,11 +219,11 @@ The format is default yaml, but could be supplied via the --format option)"
                      } // <unnamed>
                   } // local
 
-                  auto set_union( State& state)
+                  auto set_union( auto shared)
                   {
-                     auto invoke = [ &state]( std::vector< std::string> globs)
+                     auto invoke = [ shared]( std::vector< std::string> globs)
                      {
-                        local::set_operation( globs, state, []( auto lhs, auto rhs)
+                        local::set_operation( globs, *shared, []( auto lhs, auto rhs)
                         {
                            return set_union( lhs, std::move( rhs));
                         });
@@ -232,11 +239,11 @@ The format is default yaml, but could be supplied via the --format option)"
                      };
                   }
 
-                  auto set_difference( State& state)
+                  auto set_difference( auto shared)
                   {
-                     auto invoke = [ &state]( std::vector< std::string> globs)
+                     auto invoke = [ shared]( std::vector< std::string> globs)
                      {
-                        local::set_operation( globs, state, []( auto lhs, auto rhs)
+                        local::set_operation( globs, *shared, []( auto lhs, auto rhs)
                         {
                            return set_difference( lhs, std::move( rhs));
                         });
@@ -252,11 +259,11 @@ The format is default yaml, but could be supplied via the --format option)"
                      };
                   }
 
-                  auto set_intersection( State& state)
+                  auto set_intersection( auto shared)
                   {
-                     auto invoke = [ &state]( std::vector< std::string> globs)
+                     auto invoke = [ shared]( std::vector< std::string> globs)
                      {
-                        local::set_operation( globs, state, []( auto lhs, auto rhs)
+                        local::set_operation( globs, *shared, []( auto lhs, auto rhs)
                         {
                            return set_intersection( lhs, std::move( rhs));
                         });
@@ -396,7 +403,7 @@ The format is default yaml, but could be supplied via the --format option)"
 
                   auto get()
                   {
-                     return detail::get( argument::option::keys( { "--get"}, {}), "get current configuration");
+                     return detail::get( argument::option::Names( { "--get"}, {}), "get current configuration");
                   }
 
                   auto post()
@@ -407,7 +414,7 @@ casual will try to conform to the new configuration as smooth as possible. Altho
 depending on what parts are updated.
 )";
 
-                     return detail::post( argument::option::keys( { "--post"}, {}), description);  
+                     return detail::post( argument::option::Names( { "--post"}, {}), description);  
                   }
 
 
@@ -426,7 +433,7 @@ If no changes are detected, no update will take place.
 )";
 
 
-                     return detail::edit( argument::option::keys( { "--edit"}, {}), description);  
+                     return detail::edit( argument::option::Names( { "--edit"}, {}), description);  
                   }
 
                   auto put()
@@ -438,12 +445,12 @@ The semantics are similar to http PUT:
 * every key that is NOT found is treated as a new _entity_ and added to the current state 
 )";
 
-                     return detail::put( argument::option::keys( { "--put"}, {}), description);     
+                     return detail::put( argument::option::Names( { "--put"}, {}), description);     
                   }
 
                   namespace groups
                   {
-                     auto completer = []( auto values, bool help) -> std::vector< std::string>
+                     auto completer = []( bool help, auto values) -> std::vector< std::string>
                      {
                         if( help)
                            return { "<name>.."};
@@ -542,63 +549,53 @@ This effects entities that has memberships to enabled groups
 
          namespace deprecated
          {
-            common::argument::Option get() 
+            argument::Option get() 
             { 
-               return local::runtime::detail::get( argument::option::keys( {}, { "--configuration-get"}), "@deprecated: use `casual configuration --get`");
+               return local::runtime::detail::get( argument::option::Names( {}, { "--configuration-get"}), "@deprecated: use `casual configuration --get`");
             }
 
-            common::argument::Option post()
+            argument::Option post()
             { 
-               return local::runtime::detail::post( argument::option::keys( {}, { "--configuration-post"}), "@deprecated: use `casual configuration --post`");
+               return local::runtime::detail::post( argument::option::Names( {}, { "--configuration-post"}), "@deprecated: use `casual configuration --post`");
             }
 
-            common::argument::Option put()
+            argument::Option put()
             { 
-               return local::runtime::detail::put( argument::option::keys( {}, { "--configuration-put"}), "@deprecated: use `casual configuration --put`");
+               return local::runtime::detail::put( argument::option::Names( {}, { "--configuration-put"}), "@deprecated: use `casual configuration --put`");
             }
             
-            common::argument::Option edit()
+            argument::Option edit()
             { 
-               return local::runtime::detail::edit( argument::option::keys( {}, { "--configuration-edit"}), "@deprecated: use `casual configuration --edit`");
+               return local::runtime::detail::edit( argument::option::Names( {}, { "--configuration-edit"}), "@deprecated: use `casual configuration --edit`");
             }
          } // deprecated
 
-
-         struct CLI::Implementation
+         namespace cli
          {
-            
-            auto options()
+            argument::Option options()
             {
                constexpr auto description = R"(configuration utility - does NOT actively configure anything
                
 Used to check and normalize configuration
 )";
-               return argument::Group{ [](){}, { "configuration"}, description,
+               auto shared = std::make_shared< local::State>();
+
+               return argument::Option{ [](){}, { "configuration"}, description}({
                   local::runtime::get(),
                   local::runtime::post(),
                   local::runtime::put(),
                   local::runtime::edit(),
                   local::runtime::groups::enable(),
                   local::runtime::groups::disable(),
-                  local::normalize( state),
+                  local::normalize( shared),
                   local::validate(),
-                  local::format( state),
-                  local::set_operations::set_union( state),
-                  local::set_operations::set_difference( state),
-                  local::set_operations::set_intersection( state)
-               };
+                  local::format( shared),
+                  local::set_operations::set_union( shared),
+                  local::set_operations::set_difference( shared),
+                  local::set_operations::set_intersection( shared)
+               });
             }
-
-            local::State state;
-         };
-
-         CLI::CLI() = default; 
-         CLI::~CLI() = default; 
-
-         common::argument::Group CLI::options() &
-         {
-            return m_implementation->options();
-         }
+         } // cli
 
       } // admin
       

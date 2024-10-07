@@ -13,7 +13,7 @@
 
 #include "common/exception/guard.h"
 
-#include "common/argument.h"
+#include "casual/argument.h"
 #include "common/environment.h"
 
 
@@ -31,11 +31,11 @@ int casual_start_resource_proxy( struct casual_resource_proxy_service_argument* 
 
       casual::transaction::resource::proxy::Settings settings;
 
-      using namespace casual::common::argument;
+      using namespace casual::argument;
       
-      Parse{ "resource proxy server",
-         Option{ std::tie( settings.id), { "--id"}, "resource id "}( cardinality::one{})
-      }( serverArguments->argc, serverArguments->argv);
+      parse( "resource proxy server", {
+         Option{ std::tie( settings.id), { "--id"}, "resource id "}( cardinality::one())
+      }, serverArguments->argc, serverArguments->argv);
 
 
       casual::transaction::resource::Proxy{ std::move( settings), serverArguments->xaSwitches}.start();

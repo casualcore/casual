@@ -80,7 +80,7 @@ namespace casual
                   {
                      // Only if init has been called successfully then we call done, symmetry with ctor/dtor
                      if( done && init_called)
-                        common::invoke( done);
+                        std::invoke( done);
                   });
 
                   // We block child so users can spawn stuff without actions/errors from casual
@@ -94,7 +94,7 @@ namespace casual
                         if( ! argument.server_init)
                            return;
 
-                        if( common::invoke( argument.server_init, argument.argc, argument.argv) != -1)
+                        if( std::invoke( argument.server_init, argument.argc, argument.argv) != -1)
                            init_called = true;
                         else
                            common::event::error::raise( common::code::xatmi::argument, "server initialize failed - action: exit");

@@ -7,31 +7,14 @@
 #pragma once
 
 
-#include "common/argument.h"
+#include "casual/argument.h"
 #include "common/pimpl.h"
 
 namespace casual
 {
-   namespace tools 
+   namespace tools::service::describe::cli
    {
-      namespace service
-      {
-         namespace describe
-         {
+      argument::Option options();
 
-            struct cli 
-            {
-               cli();
-               ~cli();
-
-               common::argument::Option options() &;
-
-            private:
-               struct Implementation;
-               common::move::Pimpl< Implementation> m_implementation;
-            };
-
-         } // describe  
-      } // service
-   } // tools
+   } // tools::service::describe::cli
 } // casual

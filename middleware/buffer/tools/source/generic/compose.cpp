@@ -5,8 +5,10 @@
 //!
 
 #include "common/exception/guard.h"
-#include "common/argument.h"
+#include "casual/argument.h"
 #include "casual/buffer/admin/cli.h"
+
+#include <iostream>
 
 namespace casual
 {
@@ -22,15 +24,15 @@ namespace casual
             {
                namespace
                {
-                  void main( int argc, char** argv)
+                  void main( int argc, const char** argv)
                   {
                      auto type = std::string( common::buffer::type::x_octet);
 
                      constexpr auto information = R"([deprecated] use `casual buffer --compose` instead)";
 
-                     argument::Parse{ information,
+                     argument::parse( information, {
                         argument::Option{ std::tie( type), { "--type"}, "type of the composed buffer"}
-                     }( argc, argv);
+                     }, argc, argv);
 
                      std::cerr << information << '\n';
 
@@ -47,7 +49,7 @@ namespace casual
 } // casual
 
 
-int main( int argc, char** argv)
+int main( int argc, const char** argv)
 {
    return casual::common::exception::main::log::guard( [&]()
    {

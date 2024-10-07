@@ -10,7 +10,7 @@
 #include "tools/build/transform.h"
 #include "tools/common.h"
 
-#include "common/argument.h"
+#include "casual/argument.h"
 #include "common/environment.h"
 #include "common/execute.h"
 #include "common/file.h"
@@ -165,23 +165,23 @@ namespace casual
                      build::task( path, settings.directive);
                   }
                   
-                  void main( int argc, char* argv[])
+                  void main( int argc, const char** argv)
                   {
                      Settings settings;
 
                      {
-                        using namespace casual::common::argument;
+                        using namespace casual::argument;
 
-                        Parse{ "builds a casual executable",
+                        parse( "builds a casual executable", {
                            Option{ std::tie( settings.directive.output), { "-o", "--output"}, "name of executable to be built"},
                            Option{ std::tie( settings.executable.definition), { "-d", "--definition"}, "path of the definition file"},
                            Option( std::tie( settings.directive.compiler), { "-c", "--compiler"}, "compiler to use"),
-                           Option( build::Directive::split( settings.directive.directives), { "-b", "--build-directives", "-cl"}, "additional compile and link directives\n\ndeprecated: -cl")( argument::cardinality::any{}),
-                           Option{ option::toggle( settings.source.keep), { "-k", "--keep"}, "keep the intermediate file"},
-                           Option( option::toggle( settings.directive.use_defaults), { "--no-defaults"}, "do not add any default compiler/link directives\n\nuse --build-directives to add your own"),
+                           Option( build::Directive::split( settings.directive.directives), { "-b", "--build-directives", "-cl"}, "additional compile and link directives\n\ndeprecated: -cl")( argument::cardinality::any()),
+                           Option( option::flag( settings.source.keep), { "-k", "--keep"}, "keep the intermediate file"),
+                           Option( option::flag(  settings.directive.use_defaults), { "--no-defaults"}, "do not add any default compiler/link directives\n\nuse --build-directives to add your own"),
                            Option{ std::tie( settings.source.file), { "--source"}, "explicit name of the intermediate file"},
-                           Option{ option::toggle( settings.directive.verbose), { "-v", "--verbose"}, "verbose output"},
-                        }( argc, argv);
+                           Option( option::flag( settings.directive.verbose), { "-v", "--verbose"}, "verbose output"),
+                        }, argc, argv);
                      }
 
                      validate( settings);
@@ -195,7 +195,7 @@ namespace casual
    } // tools
 } // casual
 
-int main( int argc, char **argv)
+int main( int argc, const char** argv)
 {
    return casual::common::exception::main::cli::guard( [=]()
    {

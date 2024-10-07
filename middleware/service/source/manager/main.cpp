@@ -16,7 +16,7 @@
 
 #include "common/communication/select.h"
 #include "common/exception/capture.h"
-#include "common/argument.h"
+#include "casual/argument.h"
 #include "common/environment.h"
 #include "common/communication/instance.h"
 #include "common/communication/select/ipc.h"
@@ -131,14 +131,14 @@ namespace casual
                );
             }
 
-            void main( int argc, char** argv)
+            void main( int argc, const char** argv)
             {
                Trace trace( "service::manager:local::main");
 
                Settings settings;
 
-               argument::Parse{ "Responsible for service related informaiton, such as service lookups",
-               }( argc, argv);
+               argument::parse( "Responsible for service related informaiton, such as service lookups",
+                  {}, argc, argv);
 
                start( initialize( std::move( settings)));
 
@@ -151,7 +151,7 @@ namespace casual
 } // casual
 
 
-int main( int argc, char** argv)
+int main( int argc, const char** argv)
 {
    return casual::common::exception::main::log::guard( [=]()
    {  

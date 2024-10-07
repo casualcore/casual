@@ -31,6 +31,28 @@ namespace casual
       } // <unnamed>
    } // local
 
+   TEST( argument_complete, basic_completer)
+   {
+      {
+         auto invoke = [](){};
+
+         using invoke_type = decltype( invoke);
+         auto completer = argument::detail::option::default_completer< invoke_type>{};
+
+         EXPECT_TRUE( completer( false, {}).empty()) <<  CASUAL_NAMED_VALUE( completer( false, {}));
+      }
+
+      {
+         auto invoke = []( bool a){};
+
+         using invoke_type = decltype( invoke);
+         auto completer = argument::detail::option::default_completer< invoke_type>{};
+
+         EXPECT_TRUE( completer( false, {}).at( 0) == "<value>") << CASUAL_NAMED_VALUE( completer( false, {}));
+      }
+
+   }
+
    TEST( argument_complete, simple)
    {
       struct

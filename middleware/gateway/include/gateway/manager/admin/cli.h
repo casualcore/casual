@@ -7,24 +7,14 @@
 #pragma once
 
 
-#include "common/argument.h"
+#include "casual/argument.h"
 #include "common/pimpl.h"
 
 namespace casual
 {
-   namespace gateway::manager::admin
+   namespace gateway::manager::admin::cli
    {
-      struct cli 
-      {
-         cli();
-         ~cli();
+      argument::Option options();
 
-         common::argument::Group options() &;
-
-      private:
-         struct Implementation;
-         common::move::Pimpl< Implementation> m_implementation;
-      };
-
-   } // gateway::manager::admin
+   } // gateway::manager::admin::cli
 } // casual

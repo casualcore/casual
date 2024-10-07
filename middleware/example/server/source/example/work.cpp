@@ -11,7 +11,7 @@
 #include "common/process.h"
 #include "common/log/category.h"
 #include "common/exception/guard.h"
-#include "common/argument.h"
+#include "casual/argument.h"
 #include "common/environment/expand.h"
 #include "common/chronology.h"
 #include "common/domain.h"
@@ -58,12 +58,12 @@ namespace casual
                   };
                };
 
-               common::argument::Parse{ "Shows a few ways services can be develop",
-                  common::argument::Option{ time_value( local::global.startup), {"--startup"}, "startup time"},
-                  common::argument::Option{ time_value( local::global.sleep), {"--sleep"}, "sleep time"},
-                  common::argument::Option{ time_value( local::global.work), {"--work"}, "work time"},
-                  common::argument::Option{ std::tie( local::global.forward), {"--forward"}, "service that casual/example/forward should call"},
-               }( argc, argv);
+               argument::parse( "Shows a few ways services can be develop", {
+                  argument::Option{ time_value( local::global.startup), {"--startup"}, "startup time"},
+                  argument::Option{ time_value( local::global.sleep), {"--sleep"}, "sleep time"},
+                  argument::Option{ time_value( local::global.work), {"--work"}, "work time"},
+                  argument::Option{ std::tie( local::global.forward), {"--forward"}, "service that casual/example/forward should call"},
+               }, argc, argv);
 
                if( local::global.startup != platform::time::unit::zero())
                   common::process::sleep( local::global.startup);

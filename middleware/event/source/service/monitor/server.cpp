@@ -10,7 +10,7 @@
 #include "common/service/invoke.h"
 #include "common/service/type.h"
 #include "common/environment.h"
-#include "common/argument.h"
+#include "casual/argument.h"
 #include "common/log.h"
 #include "common/server/start.h"
 #include "common/exception/guard.h"
@@ -104,17 +104,14 @@ namespace casual
 
 
 
-            void main( int argc, char **argv)
+            void main( int argc, const char** argv)
             {
                // get database from arguments
 
                {
-                  using namespace casual::common::argument;
-                  Parse parse{ "service monitor server",
-                     Option( std::tie( local::database::name), { "-db", "--database"}, "path to monitor database log")
-                  };
-
-                  parse( argc, argv);
+                  argument::parse( "service monitor server",{
+                     argument::Option( std::tie( local::database::name), { "-db", "--database"}, "path to monitor database log")
+                  }, argc, argv);
                }
 
                common::server::start( {
@@ -134,7 +131,7 @@ namespace casual
 } // casual
 
 
-int main( int argc, char **argv)
+int main( int argc, const char** argv)
 {
    return casual::common::exception::main::log::guard( [&]()
    {

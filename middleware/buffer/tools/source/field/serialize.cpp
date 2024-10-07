@@ -11,7 +11,7 @@
 #include "common/serialize/macro.h"
 #include "common/serialize/create.h"
 #include "common/file.h"
-#include "common/argument.h"
+#include "casual/argument.h"
 #include "common/algorithm/container.h"
 
 #include <string>
@@ -167,15 +167,14 @@ namespace casual
 
             } // generate
 
-            void main( int argc, char** argv)
+            void main( int argc, const char** argv)
             {
                local::Settings settings;
 
-               argument::Parse{
-                  "generates implementation for buffer serialization/transformation to and from string representation",
-                  argument::Option{ argument::option::one::many( settings.files), { "-f", "--files"}, "file(s) with field to/from string mapping"}( argument::cardinality::one{}),
+               argument::parse( "generates implementation for buffer serialization/transformation to and from string representation", {
+                  argument::Option{ argument::option::one::many( settings.files), { "-f", "--files"}, "file(s) with field to/from string mapping"}( argument::cardinality::one()),
                   argument::Option{ std::tie( settings.output), { "-o", "--output"}, "output cpp file, if omitted stdout will be used"},
-               }( argc, argv);
+               }, argc, argv);
 
                auto mappings = model::get( settings.files);
 
@@ -197,7 +196,7 @@ namespace casual
 } // casual
 
 
-int main( int argc, char** argv)
+int main( int argc, const char** argv)
 {
    return casual::common::exception::main::cli::guard( [&]()
    {

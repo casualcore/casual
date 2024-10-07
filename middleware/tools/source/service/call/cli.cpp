@@ -8,7 +8,7 @@
 
 #include "tools/service/call/cli.h"
 
-#include "common/argument.h"
+#include "casual/argument.h"
 #include <optional>
 #include "common/service/call/context.h"
 #include "common/exception/capture.h"
@@ -38,7 +38,7 @@ namespace casual
 {
    using namespace common;
 
-   namespace tools::service::call
+   namespace tools::service::call::cli
    {
 
       namespace local
@@ -406,7 +406,7 @@ namespace casual
 
             namespace complete
             {
-               auto service = []( auto values, bool help) -> std::vector< std::string>
+               auto service = [] (bool help, auto values) -> std::vector< std::string>
                {
                   if( help) 
                      return { "<service>"};
@@ -452,63 +452,60 @@ from a dequeue
          } // <unnamed>
       } // local
    
-      struct cli::Implementation
+
+      argument::Option options()
       {
-         argument::Group options()
+         auto shared = std::make_shared< local::Arguments>();
+
+         auto invoked = [ shared]()
          {
-            auto invoked = [&]()
+            if( shared->show_examples)
             {
-               if( m_arguments.show_examples)
-               {
-                  local::show_examples();
-                  return;
-               }
+               local::show_examples();
+               return;
+            }
 
-               if( terminal::output::directive().block())
-                  local::blocking::call( std::move( m_arguments));
-               else
-                  local::call( std::move( m_arguments));
-            };
+            if( terminal::output::directive().block())
+               local::blocking::call( *shared);
+            else
+               local::call( *shared);
+         };
 
-            constexpr auto transaction_information = R"([removed] use `casual transaction --begin` instead)";
-            constexpr auto asynchronous_information = R"([removed] use `casual --block true|false call ...` instead)";
+         auto example = [ shared]()
+         {
+            shared->show_examples = true;
+            return argument::option::invoke::preemptive{};
+         };
 
-            auto deprecated = []( auto message)
-            {
-               return [message]( bool) { std::cerr << message << '\n';};
-            };
+         constexpr auto transaction_information = R"([removed] use `casual transaction --begin` instead)";
+         constexpr auto asynchronous_information = R"([removed] use `casual --block true|false call ...` instead)";
 
-            return argument::Group{ invoked, [](){}, { "call"}, R"(generic service call
+         auto deprecated = []( auto message)
+         {
+            return [message]( bool) { std::cerr << message << '\n';};
+         };
+
+         return argument::Option{ invoked, { "call"}, R"(generic service call
 
 Reads buffer(s) from stdin and call the provided service, prints the reply buffer(s) to stdout.
 Assumes that the input buffer to be in a conformant format, ie, created by casual.
 Errors will be printed to stderr
 
 @note: part of casual-pipe
-)",
-               argument::Option( std::tie( m_arguments.service), local::complete::service, { "-s", "--service"}, "service to call")( argument::cardinality::one{}),
-               argument::Option( std::tie( m_arguments.iterations), { "--iterations"}, "number of iterations (default: 1) - this could be helpful for testing load"),
-               argument::Option{ argument::option::toggle( m_arguments.show_examples), { "--examples"}, "prints several examples of how casual call can be used"},
-
+)"
+            }( {
+               argument::Option( std::tie( shared->service), local::complete::service, { "-s", "--service"}, "service to call"),
+               argument::Option( std::tie( shared->iterations), { "--iterations"}, "number of iterations (default: 1) - this could be helpful for testing load"),
+               argument::Option{ std::move( example), { "--examples"}, "prints several examples of how casual call can be used"},
 
                // deprecated
-               argument::Option( deprecated( asynchronous_information), argument::option::keys( {}, { "--asynchronous"}), asynchronous_information),
-               argument::Option( deprecated( transaction_information), argument::option::keys( {}, { "--transaction"}), transaction_information),
-            };
-         }
+               argument::Option( deprecated( asynchronous_information), argument::option::Names( {}, { "--asynchronous"}), asynchronous_information),
+               argument::Option( deprecated( transaction_information), argument::option::Names( {}, { "--transaction"}), transaction_information),
+         });
 
-         local::Arguments m_arguments;
-      };
-
-      cli::cli() = default; 
-      cli::~cli() = default; 
-
-      argument::Group cli::options() &
-      {
-         return m_implementation->options();
       }
 
-   } // tools::service::call
+   } // tools::service::call::cli
 } // casual
 
 

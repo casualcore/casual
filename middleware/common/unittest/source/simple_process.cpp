@@ -5,21 +5,21 @@
 //!
 
 
-#include "common/argument.h"
+#include "casual/argument.h"
 #include "common/process.h"
 
 #include "common/exception/guard.h"
 
 using namespace casual::common;
 
-int main( int argc, char** argv)
+int main( int argc, const char** argv)
 {
    try
    {
       int return_value = 0;
-      argument::Parse{ "", 
-         argument::Option( std::tie( return_value), {"-r"}, "bla")
-      }( argc, argv);
+      casual::argument::parse( "",{ 
+         casual::argument::Option( std::tie( return_value), {"-r"}, "bla")
+      }, argc, argv);
 
       process::sleep( std::chrono::milliseconds( 100));
 

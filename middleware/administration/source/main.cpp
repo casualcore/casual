@@ -54,17 +54,20 @@ namespace casual
                // TODO replace with std::filesystem::equivalent in 1.7
                // std::filesystem::equivalent is not implemented in the g++ version we
                // build casual 1.6 with
+               // 1.7 Update: std::filesystem::equivalent seems to fail randomly in some cases... (1 in 100 ish)
+               //    error: [generic:Operation not supported] in equivalent: Operation not supported
+               //    not sure why... Revert to our own stuff...
                if( detail::equivalent( environment::log::path(), "/dev/stdout"))
                   code::raise::error( code::casual::preconditions, "casual log can't be tied stdout when using cli");
             }
 
-            void main( int argc, char** argv)
+
+            void main( int argc, const char** argv)
             {
                validate_preconditions();
-
-               administration::CLI cli;
-               cli.parser()( argc, argv);
+               administration::cli::parse( argc, argv);
             }
+
          } // <unnamed>
       } // local
       
@@ -73,7 +76,7 @@ namespace casual
 } // casual
 
 
-int main( int argc, char** argv)
+int main( int argc, const char** argv)
 {
    return casual::common::exception::main::cli::guard( [=]()
    {

@@ -16,7 +16,7 @@
 #include "common/instance.h"
 #include "common/communication/device.h"
 #include "common/communication/instance.h"
-#include "common/argument.h"
+#include "casual/argument.h"
 #include "common/exception/guard.h"
 #include "common/serialize/macro.h"
 
@@ -103,15 +103,15 @@ namespace casual
                }
             }
 
-            void main( int argc, char **argv)
+            void main( int argc, const char** argv)
             {
                Trace trace{ "http::outbound::local::main"};
 
                Settings settings;
 
-               argument::Parse{ "http outbound",
-                  argument::Option( std::tie( settings.configurations), argument::option::keys( { "--configuration"}, { "--configuration-files"}), "configuration glob patterns")
-               }( argc, argv);
+               argument::parse( "http outbound", {
+                  argument::Option( std::tie( settings.configurations), argument::option::Names( { "--configuration"}, { "--configuration-files"}), "configuration glob patterns")
+               }, argc, argv);
 
                log::line( verbose::log, "settings: ", settings);
 
@@ -126,7 +126,7 @@ namespace casual
 
 } // casual
 
-int main( int argc, char **argv)
+int main( int argc, const char** argv)
 {
    return casual::common::exception::main::log::guard( [=]()
    {

@@ -10,7 +10,7 @@
 
 #include "common/exception/guard.h"
 
-#include "common/argument.h"
+#include "casual/argument.h"
 
 
 #include <iostream>
@@ -18,15 +18,15 @@
 namespace casual
 {
 
-   void main(int argc, char **argv)
+   void main(int argc, const char **argv)
    {
       std::string format;
 
       constexpr auto information = R"([deprecated] use `casual buffer --field-from-human` instead)";
 
-      common::argument::Parse{ information,
-         common::argument::Option( std::tie( format), buffer::admin::cli::detail::format::completion(), { "--format"}, "which format to expect on stdin"),
-      }( argc, argv);
+      argument::parse( information, {
+         argument::Option{ std::tie( format), buffer::admin::cli::detail::format::completion(), { "--format"}, "which format to expect on stdin"}
+      }, argc, argv);
 
       std::cerr << information << '\n';
 
@@ -37,7 +37,7 @@ namespace casual
 
 
 
-int main(int argc, char **argv)
+int main(int argc, const char **argv)
 {
    return casual::common::exception::main::log::guard( [&]()
    {

@@ -16,7 +16,7 @@
 #include "common/communication/ipc.h"
 #include "common/communication/select/ipc.h"
 #include "common/exception/capture.h"
-#include "common/argument.h"
+#include "casual/argument.h"
 #include "common/string/compose.h"
 
 
@@ -53,20 +53,20 @@ namespace casual
                )
             };
 
-            auto settings( int argc, char** argv)
+            auto settings( int argc, const char** argv)
             {
                Settings settings;
                { 
                   bool dummy{};
-                  argument::Parse{ "domain manager",
-                     argument::Option( std::tie( settings.configuration), argument::option::keys( { "-c", "--configuration"}, {"--configuration-files"}), "domain configuration 'glob' patterns"),
+                  argument::parse( "domain manager", {
+                     argument::Option( std::tie( settings.configuration), argument::option::Names( { "-c", "--configuration"}, {"--configuration-files"}), "domain configuration 'glob' patterns"),
                      argument::Option( std::tie( settings.bare), { "--bare"}, "if use 'bare' mode or not, ie, do not boot mandatory (broker, TM), mostly for unittest"),
                      argument::Option( std::tie( settings.parent.process.ipc.underlying()), { "--event-ipc"}, "ipc to send events to"),
                      argument::Option( std::tie( settings.parent.process.pid.underlying()), { "--event-pid"}, "the pid of the 'booter'"),
                      argument::Option( std::tie( settings.parent.correlation), { "--event-id"}, "id of the events to correlate"),
                      
-                     argument::Option( std::tie( dummy), argument::option::keys( {}, { "--persist"}), "not used"),
-                  }( argc, argv);
+                     argument::Option( std::tie( dummy), argument::option::Names( {}, { "--persist"}), "not used"),
+                  }, argc, argv);
                }
                return settings;
             }
@@ -183,7 +183,7 @@ namespace casual
             }
 
 
-            void main( int argc, char** argv)
+            void main( int argc, const char** argv)
             {
                common::process::Handle process;
 
@@ -221,7 +221,7 @@ namespace casual
 } // casual
 
 
-int main( int argc, char** argv)
+int main( int argc, const char** argv)
 {
    casual::common::exception::main::log::guard( [=]()
    {

@@ -139,59 +139,59 @@ namespace casual
       
       {
          constexpr std::string_view expected = R"(NAME
-  test-casual-common-isolated
+   test-casual-common-isolated
 
 DESCRIPTION
 
-  multi
-  line
-  
-  description
-  
-  bla bla bla
-  foo bar
+   multi
+   line
+   
+   description
+   
+   bla bla bla
+   foo bar
 
 OPTIONS
 
-  -a [1] (<value>) [1]
-    description for option
-    
-    multi
-    line
-
-    SUB OPTIONS:
-
-      -b [0..1] (v1, v2) [2]
+   -a [1] (<value>) [1]
         description for option
         
         multi
         line
 
-  -c [0..1] (<value>) [1..2]
-    description for option
-    
-    multi
-    line
+      SUB OPTIONS:
 
-    SUB OPTIONS:
+         -b [0..1] (v1, v2) [2]
+              description for option
+              
+              multi
+              line
 
-      -d [0..1] (<value>) [0..*]
+   -c [0..1] (<value>) [1..2]
         description for option
         
         multi
         line
 
-        SUB OPTIONS:
+      SUB OPTIONS:
 
-          -e [0..1] (<value>) [0..* {2}]
-            description for -e
+         -d [0..1] (<value>) [0..*]
+              description for option
+              
+              multi
+              line
 
-  --help [0..1] (<value>) [0..*]
-    shows this help information
-                   
-    Use --help <option> to see selected details on <option>
-    You can also use more precise help for deeply nested options
-    `--help -a -b -c -d -e`
+            SUB OPTIONS:
+
+               -e [0..1] (<value>) [0..* {2}]
+                    description for -e
+
+   --help [0..1] (<value>) [0..*]
+        shows this help information
+                       
+        Use --help <option> to see selected details on <option>
+        You can also use more precise help for deeply nested options
+        `--help -a -b -c -d -e`
 
 )";
          
@@ -205,7 +205,7 @@ OPTIONS
 
       {
          constexpr std::string_view expected = R"(-e [0..1] (<value>) [0..* {2}]
-  description for -e
+     description for -e
 
 )";
          {

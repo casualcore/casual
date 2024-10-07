@@ -6,24 +6,17 @@
 
 #pragma once
 
-#include "common/argument.h"
+#include "casual/argument.h"
 #include "common/pimpl.h"
 
 namespace casual
 {
-   namespace administration
+   namespace administration::cli
    {
-      struct CLI 
-      {
-         CLI();
-         ~CLI();
+      std::vector< argument::Option> options();
 
-         common::argument::Parse parser() &;
-
-      private:
-         struct Implementation;
-         common::move::Pimpl< Implementation> m_implementation;
-      };         
+      void parse( int argc, const char** argv);
+      void parse( std::vector< std::string> options);
 
    } // administration
 } // casual

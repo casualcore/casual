@@ -225,7 +225,7 @@ domain:
          {  
             // list admin services to check oputput in contract column for a service
             // without contract. Admin services do not have contract specified. 
-            const auto capture = administration::unittest::cli::command::execute( R"(casual --color false service --list-services --all true | grep configuration/get | awk '{ print $6}' )");
+            const auto capture = administration::unittest::cli::command::execute( R"(casual --color false service --list-services --all | grep configuration/get | awk '{ print $6}' )");
             EXPECT_EQ( capture.standard.out, "-\n");
          }
       }

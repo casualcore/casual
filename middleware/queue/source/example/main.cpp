@@ -1,4 +1,4 @@
-#include "common/argument.h"
+#include "casual/argument.h"
 #include "common/communication/ipc.h"
 #include "common/communication/instance.h"
 #include "common/exception/guard.h"
@@ -70,12 +70,12 @@ namespace casual
                }};
             }
 
-            void main( int argc, char **argv)
+            void main( int argc, const char** argv)
             {
-               common::argument::Parse{
-                  R"(Example server)",
-                  common::argument::Option{ std::tie( settings.queue), {"--queue"}, "queue that casual/example/{enqueue,dequeue} should use"},
-               }(argc, argv);
+               argument::parse(
+                  R"(Example server)", {
+                  argument::Option{ std::tie( settings.queue), {"--queue"}, "queue that casual/example/{enqueue,dequeue} should use"},
+               }, argc, argv);
 
                common::log::line( common::log::category::information, "queue: ", settings.queue);
 
@@ -95,7 +95,7 @@ namespace casual
    }
 }
 
-int main( int argc, char **argv)
+int main( int argc, const char** argv)
 {
    return casual::common::exception::main::log::guard([=]()
    {

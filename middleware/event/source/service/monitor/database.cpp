@@ -7,7 +7,7 @@
 
 
 #include "common/chronology.h"
-#include "common/argument.h"
+#include "casual/argument.h"
 #include "common/process.h"
 #include "common/algorithm.h"
 #include "common/event/listen.h"
@@ -103,16 +103,14 @@ namespace casual
             };
 
 
-            void main(int argc, char **argv)
+            void main(int argc, const char** argv)
             {
                // get database from arguments
                std::string database{"monitor.db"};
                {
-                  casual::common::argument::Parse parse{ "service monitor",
-                     casual::common::argument::Option( std::tie( database), { "-db", "--database"}, "path to monitor database log")
-                  };
-
-                  parse( argc, argv);
+                  argument::parse( "service monitor", {
+                     argument::Option( std::tie( database), { "-db", "--database"}, "path to monitor database log")
+                  }, argc, argv);
                }
 
                // connect to domain
@@ -142,7 +140,7 @@ namespace casual
 
 
 
-int main( int argc, char **argv)
+int main( int argc, const char** argv)
 {
    return casual::common::exception::main::log::guard( [=]()
    {

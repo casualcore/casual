@@ -7,8 +7,9 @@
 #include "casual/buffer/admin/cli.h"
 
 #include "common/exception/guard.h"
-#include "common/argument.h"
+#include "casual/argument.h"
 
+#include <iostream>
 
 namespace casual
 {
@@ -22,15 +23,15 @@ namespace casual
          {
             namespace
             {
-               void main( int argc, char** argv)
+               void main( int argc, const char** argv)
                {
                   platform::size::type count = 1;
 
                   constexpr auto information = R"([deprecated] use `casual buffer --duplicate` instead)";
 
-                  argument::Parse{ information,
+                  argument::parse( information, {
                      argument::Option{ std::tie( count), { "--count"}, "number of 'duplications', applied for each buffer"}
-                  }( argc, argv);
+                  }, argc, argv);
 
                   std::cerr << information << '\n';
                   
@@ -43,7 +44,7 @@ namespace casual
    } // buffer
 } // casual
 
-int main( int argc, char** argv)
+int main( int argc, const char** argv)
 {
    return casual::common::exception::main::log::guard( [&]()
    {

@@ -7,7 +7,7 @@
 #pragma once
 
 #include "common/log/stream.h"
-#include "common/argument.h"
+#include "casual/argument.h"
 
 #include <string>
 #include <optional>
@@ -42,9 +42,9 @@ namespace casual
             state::serialize( callback(), format);
          };
 
-         auto formats = []( auto, bool){ return std::vector< std::string>{ "json", "yaml", "xml", "ini", "line"};};
+         auto formats = []( bool, auto){ return std::vector< std::string>{ "json", "yaml", "xml", "ini", "line"};};
 
-         return common::argument::Option{
+         return argument::Option{
             std::move( invoke),
             std::move( formats),
             { "--state"},

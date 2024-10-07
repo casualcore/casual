@@ -11,10 +11,11 @@
 #include "configuration/build/model/load.h"
 #include "configuration/system.h"
 
-#include "common/argument.h"
+#include "casual/argument.h"
 #include "common/exception/guard.h"
 
 #include <fstream>
+#include <iostream>
 
 namespace casual
 {
@@ -100,18 +101,18 @@ namespace casual
 
 )";
 
-                     void main(int argc, char** argv)
+                     void main(int argc, const char** argv)
                      {
                         Trace trace{ "tools::build::server::generate::local::main"};
 
                         Settings settings;
 
-                        using namespace casual::common::argument;
-                        Parse{ description,
-                           Option( std::tie( settings.server.definition), { "-d", "--definition"}, "path to server definition file")( argument::cardinality::one{}),
+                        using namespace casual::argument;
+                        parse( description, {
+                           Option( std::tie( settings.server.definition), { "-d", "--definition"}, "path to server definition file")( argument::cardinality::one()),
                            Option( std::tie( settings.server.definition), { "-o", "--output"}, "output file name - if not provided 'stdout' will be used"),
-                           Option( std::tie( settings.files.system), argument::option::keys( { "--system-configuration"}, {"-p", "--properties-file"}), "path to system configuration file"),
-                        }( argc, argv);
+                           Option( std::tie( settings.files.system), argument::option::Names( { "--system-configuration"}, {"-p", "--properties-file"}), "path to system configuration file"),
+                        }, argc, argv);
 
                         local::generate( std::move( settings));
                      }
@@ -125,7 +126,7 @@ namespace casual
 } // casual
 
 
-int main(int argc, char** argv)
+int main(int argc, const char** argv)
 {
    return casual::common::exception::main::cli::guard( [=]()
    {

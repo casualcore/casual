@@ -8,12 +8,14 @@
 #include "queue/group/queuebase/schema.h"
 
 #include "common/exception/capture.h"
-#include "common/argument.h"
+#include "casual/argument.h"
 #include "common/algorithm.h"
 #include "common/algorithm/sorted.h"
 #include "common/execute.h"
 
 #include "sql/database.h"
+
+#include <iostream>
 
 namespace casual
 {
@@ -203,13 +205,13 @@ INSERT INTO queue
                   run_task);
             }
 
-            void main( int argc, char* argv[])
+            void main( int argc, const char** argv)
             {
                std::vector< std::string> files;
 
-               argument::Parse{ "upgrades queue-base files to latest version",
-                  argument::Option{ argument::option::one::many( files), { "-f", "--files"}, "queue-base files to upgrade" }( argument::cardinality::one{})
-               }( argc, argv);
+               argument::parse( "upgrades queue-base files to latest version", {
+                  argument::Option{ argument::option::one::many( files), { "-f", "--files"}, "queue-base files to upgrade" }( argument::cardinality::one())
+               }, argc, argv);
                
                algorithm::for_each( files, &local::file);
             }
@@ -221,7 +223,7 @@ INSERT INTO queue
 } // casual
 
 
-int main( int argc, char** argv)
+int main( int argc, const char** argv)
 {
    return casual::common::exception::main::cli::guard( [=]()
    {

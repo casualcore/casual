@@ -9,7 +9,7 @@
 #include "common/algorithm.h"
 #include "common/algorithm/sorted.h"
 #include "common/file.h"
-#include "common/argument.h"
+#include "casual/argument.h"
 #include "common/exception/guard.h"
 #include "common/server/start.h"
 #include "common/server/service.h"
@@ -156,13 +156,13 @@ namespace casual
 
                   } // transform
 
-                  void main( int argc, char** argv)
+                  void main( int argc, const char** argv)
                   {
                      std::string file;
 
-                     common::argument::Parse{ "description", 
-                        common::argument::Option{ std::tie( file), { "-c", "--configuration"}, "configuration file"}
-                     }( argc, argv);
+                     argument::parse( "mockup-string", {
+                        argument::Option{ std::tie( file), { "-c", "--configuration"}, "configuration file"}
+                     }, argc, argv);
 
                      // transform services and start server
                      common::server::start( transform::services( transform::configuration( file)));
@@ -177,7 +177,7 @@ namespace casual
    } // test
 } // casual
 
-int main( int argc, char** argv)
+int main( int argc, const char** argv)
 {
    return casual::common::exception::main::log::guard( [&]()
    {

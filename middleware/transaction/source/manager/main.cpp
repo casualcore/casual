@@ -13,7 +13,7 @@
 #include "domain/configuration.h"
 
 
-#include "common/argument.h"
+#include "casual/argument.h"
 #include "common/process.h"
 #include "common/exception/guard.h"
 #include "common/environment.h"
@@ -113,14 +113,13 @@ namespace casual
                abort_guard.release();
             }
 
-            void main( int argc, char** argv)
+            void main( int argc, const char** argv)
             {
                Trace trace( "transaction::manager:local::main");
 
                Settings settings;
                {
-                  argument::Parse{ "transaction manager",
-                  }( argc, argv);
+                  argument::parse( "transaction manager", {}, argc, argv);
                }
 
                start( initialize( std::move( settings)));
@@ -132,7 +131,7 @@ namespace casual
 } // casual
 
 
-int main( int argc, char** argv)
+int main( int argc, const char** argv)
 {
    return casual::common::exception::main::fatal::guard( [=]()
    {

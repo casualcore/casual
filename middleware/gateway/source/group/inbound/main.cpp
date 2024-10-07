@@ -15,7 +15,7 @@
 #include "common/log/stream.h"
 #include "common/communication/instance.h"
 #include "common/communication/select/ipc.h"
-#include "common/argument.h"
+#include "casual/argument.h"
 #include "common/message/dispatch/handle.h"
 
 #include "configuration/model/change.h"
@@ -247,14 +247,13 @@ namespace casual
                abort_guard.release();
             }
 
-            void main( int argc, char** argv)
+            void main( int argc, const char** argv)
             {
                Trace trace{ "gateway::group::inbound::local::main"};
 
                Arguments arguments;
 
-               argument::Parse{ "inbound",
-               }( argc, argv);
+               argument::parse( "inbound", {}, argc, argv);
 
                run( initialize( std::move( arguments)));
             } 
@@ -267,7 +266,7 @@ namespace casual
 } // casual
 
 
-int main( int argc, char** argv)
+int main( int argc, const char** argv)
 {
    return casual::common::exception::main::log::guard( [=]()
    {

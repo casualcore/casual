@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include "common/argument.h"
+#include "casual/argument.h"
 #include "common/pimpl.h"
 #include "common/buffer/type.h"
 
@@ -27,7 +27,7 @@ namespace casual
             {
                inline auto completion()
                {
-                  return []( auto values, bool) -> std::vector< std::string>
+                  return []( bool, auto values) -> std::vector< std::string>
                   {
                      return { "json", "yaml", "xml", "ini"};
                   };
@@ -67,19 +67,10 @@ namespace casual
             void extract();
 
          } // detail
+
+         argument::Option options();
       } // cli
 
-      struct CLI 
-      {
-         CLI();
-         ~CLI();
-
-         common::argument::Group options() &;
-
-      private:
-         struct Implementation;
-         common::move::Pimpl< Implementation> m_implementation;
-      };
 
    } // buffer::admin
 } // casual

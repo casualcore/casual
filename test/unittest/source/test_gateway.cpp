@@ -1314,9 +1314,8 @@ domain:
          {
             b.activate();
 
-            casual::domain::manager::admin::cli cli;
-            common::argument::Parse parse{ "", cli.options()};
-            parse( { "domain", "--scale-aliases", "casual-example-server", "0"});
+            argument::parse( "", { casual::domain::manager::admin::cli::options()},
+               { "domain", "--scale-aliases", "casual-example-server", "0"});
          }
 
          a.activate();
@@ -1384,8 +1383,8 @@ domain:
          b.activate();
 
          {
-            casual::domain::manager::admin::cli cli;
-            common::argument::Parse{ "", cli.options()}( { "domain", "--scale-aliases", "casual-example-server", "0"});
+            argument::parse( "", { casual::domain::manager::admin::cli::options()},
+               { "domain", "--scale-aliases", "casual-example-server", "0"});
          }
 
          // wait for the unadvertise
@@ -3388,9 +3387,9 @@ domain:
 
          {
             // scale up to 1 instance
-            casual::domain::manager::admin::cli cli;
-            common::argument::Parse parse{ "", cli.options()};
-            parse( { "domain", "--scale-aliases", "casual-example-server", "1"});
+            argument::parse( "", { casual::domain::manager::admin::cli::options()},
+               { "domain", "--scale-aliases", "casual-example-server", "1"});
+
             casual::service::unittest::fetch::until( casual::service::unittest::fetch::predicate::instances( "casual/example/echo", 1));
          }
 
@@ -3452,9 +3451,9 @@ domain:
          {
             new_b.activate();
             // scale up to 1 instance
-            casual::domain::manager::admin::cli cli;
-            common::argument::Parse parse{ "", cli.options()};
-            parse( { "domain", "--scale-aliases", "casual-example-server", "1"});
+            argument::parse( "", { casual::domain::manager::admin::cli::options()},
+               { "domain", "--scale-aliases", "casual-example-server", "1"});
+
             casual::service::unittest::fetch::until( casual::service::unittest::fetch::predicate::instances( "casual/example/echo", 1));
          }
 

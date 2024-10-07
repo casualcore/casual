@@ -107,7 +107,7 @@ B     b2793f25142543c19a42c3818fb779f5  outbound  out    connected  1.4  127.0.0
 */
 
 
-         const auto columns = string::adjacent::split( local::execute_get_lines( "casual gateway --color false --header false --list-connections").at( 0), ' ');
+         const auto columns = string::adjacent::split( local::execute_get_lines( "casual --color false --header false gateway --list-connections").at( 0), ' ');
 
          EXPECT_TRUE( algorithm::contains( columns, "B"));
          EXPECT_TRUE( algorithm::contains( columns, "outbound"));

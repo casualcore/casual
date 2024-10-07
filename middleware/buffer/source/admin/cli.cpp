@@ -227,30 +227,18 @@ if --verbose is provided the type of the buffer will be sent to stderr.
 
          } // detail
 
-      } // cli
-
-      struct CLI::Implementation
-      {
-         argument::Group options()
+         argument::Option options()
          {
-            return argument::Group{ [](){}, { "buffer"}, "buffer related 'tools'",
+            return argument::Option{ [](){}, { "buffer"}, "buffer related 'tools'"}( {
                cli::local::field::from_human(),
                cli::local::field::to_human(),
                cli::local::compose(),
                cli::local::duplicate(),
                cli::local::extract()
-            };
+            });
          }
-      };
 
-
-      CLI::CLI() = default;
-      CLI::~CLI() = default;
-
-      common::argument::Group CLI::options() &
-      {
-         return m_implementation->options();
-      }
+      } // cli
 
    } // buffer::admin
 } // casual

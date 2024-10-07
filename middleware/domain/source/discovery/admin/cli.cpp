@@ -29,7 +29,7 @@ namespace casual
 {
    using namespace common;
 
-   namespace domain::discovery::admin
+   namespace domain::discovery::admin::cli
    {
       namespace local
       {
@@ -286,7 +286,7 @@ List counts of _discovery tasks_ the domain-discovery has in-flight and complete
 
                      return argument::Option{
                         std::move( invoke),
-                        argument::option::keys( {}, { "--metric-message-count"}),
+                        argument::option::Names( {}, { "--metric-message-count"}),
                         R"(@removed use `casual internal --message-count <pid>` instead)"
                      };
                   }
@@ -296,30 +296,18 @@ List counts of _discovery tasks_ the domain-discovery has in-flight and complete
          } // <unnamed>
       } // local
 
-      struct cli::Implementation
+      argument::Option options()
       {
-         argument::Group options()
-         {
-            return { [](){}, { "discovery"}, "responsible for discovery stuff",
-               local::list::providers::option(),
-               local::discover::services::option(),
-               local::discover::queues::option(),
-               local::rediscovery::option(),
-               local::metric::option(),
-               local::metric::message::count::option(),
-               casual::cli::state::option( &local::call::state)
-            };
-         }
-
-      };
-
-      cli::cli() = default;
-      cli::~cli() = default;
-
-      argument::Group cli::options() &
-      {
-         return m_implementation->options();
+         return argument::Option{ [](){}, { "discovery"}, "responsible for discovery stuff"}({
+            local::list::providers::option(),
+            local::discover::services::option(),
+            local::discover::queues::option(),
+            local::rediscovery::option(),
+            local::metric::option(),
+            local::metric::message::count::option(),
+            casual::cli::state::option( &local::call::state)
+         });
       }
 
-   } // domain::discovery::admin
+   } // domain::discovery::admin::cli
 } // casual

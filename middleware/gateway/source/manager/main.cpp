@@ -16,7 +16,7 @@
 
 #include "domain/configuration.h"
 
-#include "common/argument.h"
+#include "casual/argument.h"
 #include "common/environment.h"
 #include "common/exception/capture.h"
 #include "common/communication/instance.h"
@@ -106,13 +106,11 @@ namespace casual
                abort_guard.release();
             }
 
-            void main( int argc, char **argv)
+            void main( int argc, const char** argv)
             {
                // to provide --help, only for consistency
-               common::argument::Parse{
-                  R"(Responsible for interdomain communications.
-)"
-               }( argc, argv);
+               argument::parse( "Responsible for interdomain communications", {
+                  }, argc, argv);
 
                start( initialize());
             }
@@ -126,7 +124,7 @@ namespace casual
 } // casual
 
 
-int main( int argc, char **argv)
+int main( int argc, const char** argv)
 {
    return casual::common::exception::main::log::guard( [=]()
    {

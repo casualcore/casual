@@ -7,38 +7,28 @@
 #pragma once
 
 
-#include "common/argument.h"
+#include "casual/argument.h"
 #include "common/pimpl.h"
 
 namespace casual
 {
-   namespace configuration
+   namespace configuration::admin
    {
-      namespace admin
+      //! exposed for domain cli, to keep compatibility... 
+      //! @remove in 2.0
+      namespace deprecated
       {
-         //! exposed for domain cli, to keep compatibility... 
-         //! @remove in 2.0
-         namespace deprecated
-         {
-            common::argument::Option get();
-            common::argument::Option post();
-            common::argument::Option put();
-            common::argument::Option edit();
+         argument::Option get();
+         argument::Option post();
+         argument::Option put();
+         argument::Option edit();
 
-         } // deprecated
+      } // deprecated
 
-
-         struct CLI 
-         {
-            CLI();
-            ~CLI();
-
-            common::argument::Group options() &;
-         private:
-            struct Implementation;
-            common::move::Pimpl< Implementation> m_implementation;
-         };
-      } // admin
+      namespace cli
+      {
+         argument::Option options();
+      } // cli
       
-   } // configuration
+   } // configuration::admin
 } // casual

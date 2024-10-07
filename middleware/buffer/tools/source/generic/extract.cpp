@@ -9,9 +9,10 @@
 
 #include "common/exception/guard.h"
 #include "casual/platform.h"
-#include "common/argument.h"
+#include "casual/argument.h"
 #include "common/terminal.h"
 
+#include <iostream>
 
 namespace casual
 {
@@ -27,15 +28,15 @@ namespace casual
             {
                namespace
                {
-                  void main( int argc, char** argv)
+                  void main( int argc, const char** argv)
                   {
                      bool print_type = false;
 
                      constexpr auto information = R"([deprecated] use `casual buffer --extract` instead)";
 
-                     argument::Parse{ information,
-                        argument::Option{ argument::option::toggle( print_type), { "--print-type"}, "prints the type of the buffer(s) to stderr"}
-                     }( argc, argv);
+                     argument::parse( information, {
+                        argument::Option{ argument::option::flag( print_type), { "--print-type"}, "prints the type of the buffer(s) to stderr"}
+                     }, argc, argv);
 
                      terminal::output::directive().verbose( print_type);
 
@@ -54,7 +55,7 @@ namespace casual
 } // casual
 
 
-int main( int argc, char** argv)
+int main( int argc, const char** argv)
 {
    return casual::common::exception::main::log::guard( [&]()
    {

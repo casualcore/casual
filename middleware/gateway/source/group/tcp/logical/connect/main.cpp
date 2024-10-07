@@ -9,7 +9,7 @@
 
 #include "common/exception/guard.h"
 
-#include "common/argument.h"
+#include "casual/argument.h"
 #include "common/strong/id.h"
 #include "common/communication/tcp.h"
 #include "common/communication/ipc.h"
@@ -145,17 +145,17 @@ namespace casual
             } // run
 
             
-            void main( int argc, char** argv)
+            void main( int argc, const char** argv)
             {
                Trace trace{ "gateway::group::tcp::connector::local::main"};
 
                Settings settings;
 
-               argument::Parse{ "responsible for the logical connection phase to another domain",
-                  argument::Option{ std::tie( settings.descriptor), { "--descriptor"}, "tcp descriptor"}( argument::cardinality::one{}),
-                  argument::Option{ std::tie( settings.ipc), { "--ipc"}, "where to send the completed reply"}( argument::cardinality::one{}),
-                  argument::Option{ std::tie( settings.bound), { "--bound"}, "[inbound|outbound] outbound instigate the connections phase, inbound the opposite"}( argument::cardinality::one{})
-               }( argc, argv);
+               argument::parse( "responsible for the logical connection phase to another domain", {
+                  argument::Option{ std::tie( settings.descriptor), { "--descriptor"}, "tcp descriptor"}( argument::cardinality::one()),
+                  argument::Option{ std::tie( settings.ipc), { "--ipc"}, "where to send the completed reply"}( argument::cardinality::one()),
+                  argument::Option{ std::tie( settings.bound), { "--bound"}, "[inbound|outbound] outbound instigate the connections phase, inbound the opposite"}( argument::cardinality::one())
+               }, argc, argv);
 
                if( settings.bound == "in")
                   run::in( initialize( std::move( settings)));
@@ -173,7 +173,7 @@ namespace casual
    
 } // casual
 
-int main( int argc, char** argv)
+int main( int argc, const char** argv)
 {
    return casual::common::exception::main::log::guard( [=]()
    {

@@ -148,7 +148,7 @@ Every field in the buffer has the following parts: `<field-id><size><data>`
             }
          }
 
-         int main( int argc, char **argv)
+         int main( int argc, const char** argv)
          {
             auto directory = std::filesystem::path( __FILE__).parent_path().parent_path();
 
@@ -167,7 +167,7 @@ Every field in the buffer has the following parts: `<field-id><size><data>`
 
 
 
-int main( int argc, char **argv)
+int main( int argc, const char** argv)
 {
    return casual::buffer::main( argc, argv);
 }

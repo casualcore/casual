@@ -7,7 +7,7 @@
 
 #include "casual/event/common.h"
 
-#include "common/argument.h"
+#include "casual/argument.h"
 #include "common/process.h"
 #include "common/uuid.h"
 #include "common/event/listen.h"
@@ -208,7 +208,7 @@ namespace casual
             {
                namespace filter
                {
-                  auto completer = []( auto&&, auto help) -> std::vector< std::string>
+                  auto completer = []( bool help, auto values) -> std::vector< std::string>
                   {
                      if( help)
                         return { "<regex>"};
@@ -217,20 +217,20 @@ namespace casual
 
                   auto exclusive( Settings& settings)
                   {                     
-                     return casual::common::argument::Option( 
+                     return casual::argument::Option( 
                         std::tie( settings.filter.exclusive), 
                         completer,
-                        common::argument::option::keys( { "--filter-exclusive"}, { "--discard"}),
+                        argument::option::Names( { "--filter-exclusive"}, { "--discard"}),
                         "only services that does NOT match the expression are logged\n\n"
                         "can be used in conjunction with --filter-inclusive");
                   }
 
                   auto inclusive( Settings& settings)
                   {                     
-                     return common::argument::Option( 
+                     return argument::Option( 
                         std::tie( settings.filter.inclusive),
                         completer,
-                        common::argument::option::keys( { "--filter-inclusive"}, { "--filter"}),
+                        argument::option::Names( { "--filter-inclusive"}, { "--filter"}),
                         "only services that matches the expression are logged\n\n"
                         "can be used in conjunction with --filter-exclusive");
                   }
@@ -238,13 +238,13 @@ namespace casual
 
                auto file( Settings& settings)
                {
-                  auto completer = []( auto&&, auto help) -> std::vector< std::string>
+                  auto completer = []( bool help, auto values) -> std::vector< std::string>
                   {
                      if( help)
                         return { "<path>"};
                      return { "<value>"};
                   };
-                  return common::argument::Option( 
+                  return argument::Option( 
                      std::tie( settings.file),
                      completer,
                      { "-f", "--file"},
@@ -253,13 +253,13 @@ namespace casual
 
                auto delimiter( Settings& settings)
                {
-                  auto completer = []( auto&&, auto help) -> std::vector< std::string>
+                  auto completer = []( bool help, auto values) -> std::vector< std::string>
                   {
                      if( help)
                         return { "<string>"};
                      return { "<value>"};
                   };
-                  return common::argument::Option( 
+                  return argument::Option( 
                      std::tie( settings.file),
                      completer,
                      { "-d", "--delimiter"},
@@ -268,18 +268,17 @@ namespace casual
 
             } // option
 
-            void main( int argc, char **argv)
+            void main( int argc, const char** argv)
             {
                Settings settings;
 
                {
-                  using namespace casual::common::argument;
-                  Parse{ "log service call metrics", 
+                  argument::parse( "log service call metrics", {
                      option::file( settings),
                      option::delimiter( settings),
                      option::filter::inclusive( settings),
                      option::filter::exclusive( settings),
-                  }( argc, argv);
+                  }, argc, argv);
                }
 
                pump( std::move( settings));
@@ -292,7 +291,7 @@ namespace casual
 
 
 
-int main( int argc, char **argv)
+int main( int argc, const char** argv)
 {
    return casual::common::exception::main::log::guard( [&]()
    {

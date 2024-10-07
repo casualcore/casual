@@ -9,7 +9,7 @@
 #include "queue/common/log.h"
 
 
-#include "common/argument.h"
+#include "casual/argument.h"
 #include "common/exception/capture.h"
 #include "common/message/dispatch.h"
 #include "common/environment.h"
@@ -96,13 +96,11 @@ namespace casual
                abort.release();
             }
 
-            void main( int argc, char **argv)
+            void main( int argc, const char **argv)
             {
                Settings settings;
                {
-                  using namespace casual::common::argument;
-                  Parse{ R"(Manages casual queue, the provided queue functionality)",
-                  }( argc, argv);
+                  argument::parse( R"(Manages casual queue, the provided queue functionality)", {}, argc, argv);
                }
 
                start( initialize( std::move( settings)));
@@ -114,7 +112,7 @@ namespace casual
    } // queue::manager
 } // casual
 
-int main( int argc, char **argv)
+int main( int argc, const char** argv)
 {
    return casual::common::exception::main::log::guard( [=]()
    {

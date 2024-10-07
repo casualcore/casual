@@ -103,7 +103,10 @@ namespace casual
             template< typename T> 
             struct traits
             {
+               static_assert( ! concepts::invocable< T>);
+
                constexpr static auto cardinality() { return cardinality::one();}
+
                static range_type assign( range_type values, T& value) 
                { 
                   if constexpr( std::same_as< std::string_view, T>)
@@ -152,12 +155,8 @@ namespace casual
                {
                   return std::apply( [ &values]( auto&&... args)
                   {
-                     auto indirection = [ &values]( auto& target)
-                     {
-                        values = traits_d< decltype( target)>::assign( values, target);
-                     };
-
-                     ( indirection( args) , ... );
+                     // fold on args
+                     ( ( values = traits_d< decltype( args)>::assign( values, args)) , ... );
 
                      return values;
 
@@ -320,15 +319,19 @@ namespace casual
             template< detail::concepts::invocable I> 
             struct default_completer 
             {
-               std::string operator() ( bool help, range_type values) const
-               {  
-                  if( help)
+               std::vector< std::string> operator() ( bool help, range_type values) const
+               {
+                  // if the invocable is callable, we need to check the argument cardinality
+                  if constexpr( concepts::callable_like< I>)
                   {
-                     if constexpr( value::traits_d< I>::cardinality() == cardinality::zero())
+                     using argument_type = typename common::traits::function< I>::decayed;
+                     if constexpr( value::traits_d< argument_type>::cardinality() == cardinality::zero())
                         return {};
-                     return std::string{ reserved::name::suggestions};
                   }
-                  return std::string{ reserved::name::suggestions};
+                  else if constexpr( value::traits_d< I>::cardinality() == cardinality::zero())
+                     return {};
+
+                  return { std::string{ reserved::name::suggestions}};
                }
             };
 
@@ -553,7 +556,29 @@ namespace casual
       {
          using policy_type = P;
 
-         static void operator () ( std::string_view description, std::vector< Option> options, std::vector< std::string_view> arguments)
+         template< detail::concepts::container_like A>
+         static void operator () ( std::string_view description, std::vector< Option> options, A arguments) 
+         {
+            if constexpr( std::same_as< A, std::vector< std::string_view>>)
+               parse( description, std::move( options), std::move( arguments));
+            else
+               parse( description, std::move( options), std::vector< std::string_view>{ std::begin( arguments), std::end( arguments)});
+         }
+
+         static void operator ()( std::string_view description, std::vector< Option> options, int argc, char const* const* argv)
+         {
+            assert( argc > 0);
+            parse( description, std::move( options), std::vector< std::string_view>{ argv + 1, argv + argc});
+         }
+
+         static void operator () ( std::string_view description, std::vector< Option> options,  std::initializer_list< std::string_view> arguments)
+         {
+            parse( description, std::move( options), std::vector< std::string_view>{ std::begin( arguments), std::end( arguments)});
+         }
+
+      private:
+
+         static void parse( std::string_view description, std::vector< Option> options, std::vector< std::string_view> arguments)
          {
             // special treatment for completion
             if( auto found = common::algorithm::find( arguments, reserved::name::completion))
@@ -578,15 +603,66 @@ namespace casual
             detail::parse( options, arguments);
          }
 
-         static void operator ()( std::string_view description, std::vector< Option> options, int argc, const char** argv)
-         {
-            assert( argc > 0);
-            basic_parse::operator()( description, std::move( options), std::vector< std::string_view>{ argv + 1, argv + argc});
-         }
       };
 
 
       constexpr auto parse = basic_parse< detail::Policy>{};
+
+      namespace option
+      {
+         //! return a functor that sets the provided `value`
+         //! to `true` when invoked
+         inline auto flag( bool& value)
+         {
+            return [&value]()
+            {
+               value = ! value;
+               return option::invoke::preemptive{};
+            };
+         }
+
+         namespace one
+         {
+            namespace detail
+            {
+               using namespace common;
+
+               template< argument::detail::concepts::callable_like T>
+               requires ( traits::function< T>::arguments() == 1 && std::same_as< typename traits::function< T>::result_type, void>)
+               auto many( T&& callable)
+               {
+                  using rest_type = std::remove_cvref_t< typename traits::function< T>::template argument< 0>::type>;
+                  using first_type = std::ranges::range_value_t< rest_type>;
+
+                  return [ callable = std::forward< T>( callable)]( first_type first, rest_type rest)
+                  {
+                     rest.insert( std::begin( rest), std::move( first));
+                     callable( std::move( rest));
+                  };
+               }
+
+               template< typename T>
+               auto many( std::vector< T>& values)
+               {
+                  return [&values]( T first, std::vector< T> rest)
+                  {
+                     values.reserve( values.size() + rest.size() + 1);
+                     values.push_back( std::move( first));
+                     algorithm::move( std::move( rest), values);
+                  };
+               }
+
+            } // detail
+
+            template< typename T> 
+            auto many( T&& dispatch) -> decltype( detail::many( std::forward< T>( dispatch)))
+            {
+               return detail::many( std::forward< T>( dispatch));
+            }
+
+         } // one
+
+      } // option
 
    } // argument
 } // casual

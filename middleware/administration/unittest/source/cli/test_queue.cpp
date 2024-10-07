@@ -177,7 +177,7 @@ c.error  A       0  0.000      0     0    0  ED   0   0   0  -
 d.error  A       0  0.000      0     0    0  ED   0   0   0  -   
 )";
 
-         auto capture = local::execute( R"(casual queue --color false --list-queues)");
+         auto capture = local::execute( R"(casual --color false queue --list-queues)");
 
          EXPECT_TRUE( capture.standard.out == expected) << capture.standard.out;
       }

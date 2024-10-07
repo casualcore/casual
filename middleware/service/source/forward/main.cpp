@@ -13,7 +13,7 @@
 
 #include "common/communication/select.h"
 #include "common/exception/guard.h"
-#include "common/argument.h"
+#include "casual/argument.h"
 
 namespace casual
 {
@@ -71,9 +71,9 @@ namespace casual
                );
             }
 
-            void main( int argc, char **argv)
+            void main( int argc, const char** argv)
             {
-               argument::Parse{ "service forward"}( argc, argv);
+               argument::parse( "service forward", {}, argc, argv);
          
                start( initialize());
             }
@@ -85,7 +85,7 @@ namespace casual
 
 
 
-int main( int argc, char **argv)
+int main( int argc, const char** argv)
 {
    return casual::common::exception::main::log::guard( [=]()
    {

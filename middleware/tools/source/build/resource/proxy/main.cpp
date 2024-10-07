@@ -6,7 +6,7 @@
 
 #include "tools/common.h"
 
-#include "common/argument.h"
+#include "casual/argument.h"
 #include "common/environment.h"
 #include "common/environment/expand.h"
 #include "common/file.h"
@@ -59,7 +59,7 @@ extern "C" {
                         out << "extern struct xa_switch_t " << resource.xa_struct_name << ";";
                         out << R"(
 
-int main( int argc, char** argv)
+int main( int argc, const char** argv)
 {
 
    struct casual_xa_switch_mapping xa_mapping[] = {
@@ -193,14 +193,14 @@ int main( int argc, char** argv)
                         common::code::raise::error( common::code::casual::invalid_argument, "resource-key: ", settings.key, " not found");
                      }
 
-                     void main( int argc, char* argv[])
+                     void main( int argc, const char** argv)
                      {
                         Settings settings;
 
                         {
-                           using namespace common::argument;
+                           using namespace argument;
 
-                           Parse{ "builds a resource proxy",
+                           parse( "builds a resource proxy", {
                               Option( std::tie( settings.output), { "-o", "--output"}, "name of the resulting resource proxy"),
                               Option( std::tie( settings.key), { "-k", "--resource-key"}, "key of the resource"),
                               Option( std::tie( settings.compiler), { "-c", "--compiler"}, "compiler to use"),
@@ -208,10 +208,10 @@ int main( int argc, char** argv)
                               Option( std::tie( settings.directives.compile), { "-c", "--compile-directives"}, "additional compile directives"),
                               Option( std::tie( settings.directives.link), { "-l", "--link-directives"}, "additional link directives"),
 
-                              Option( std::tie( settings.files.system), option::keys( { "--system-configuration"}, {"-p", "--properties-file"}), "path to system configuration file"),
+                              Option( std::tie( settings.files.system), option::Names( { "--system-configuration"}, {"-p", "--properties-file"}), "path to system configuration file"),
                               Option( std::tie( settings.verbose), { "-v", "--verbose"}, "verbose output"),
                               Option( std::tie( settings.keep_source), { "-s", "--keep-source"}, "keep the generated source file")
-                           }( argc, argv);
+                           }, argc, argv);
 
                            if( settings.verbose)
                               common::log::line( std::cout, CASUAL_NAMED_VALUE( settings));
@@ -251,7 +251,7 @@ int main( int argc, char** argv)
    } // tools
 } // casual
 
-int main( int argc, char **argv)
+int main( int argc, const char** argv)
 {
    return casual::common::exception::main::cli::guard( [=]()
    {

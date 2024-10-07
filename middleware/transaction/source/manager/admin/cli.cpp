@@ -9,7 +9,7 @@
 #include "transaction/manager/admin/server.h"
 
 
-#include "common/argument.h"
+#include "casual/argument.h"
 #include "common/environment.h"
 #include "common/terminal.h"
 #include "common/exception/capture.h"
@@ -30,8 +30,9 @@ namespace casual
 {
    using namespace common;
 
-   namespace transaction::manager::admin
+   namespace transaction::manager::admin::cli
    {
+
       namespace local
       {
          namespace
@@ -532,7 +533,7 @@ PAT:
 
                      return argument::Option{
                         invoke,
-                        argument::option::keys( { "--list-external-instances"}, { "--list-external-resources" }),
+                        argument::option::Names( { "--list-external-instances"}, { "--list-external-resources" }),
                         R"(list external resource instances
 
 External resources only have one instance, hence resources and resource-instances are unambiguous.
@@ -628,7 +629,7 @@ External resources only have one instance, hence resources and resource-instance
                               };
                            }));
                         },
-                        []( auto values, bool help) -> std::vector< std::string>
+                        []( bool help, auto values) -> std::vector< std::string>
                         {
                            if( help)
                               return { "rm-id", "# instances"};
@@ -636,9 +637,9 @@ External resources only have one instance, hence resources and resource-instance
                            if( values.size() % 2 == 0)
                               return algorithm::transform( call::state().resources, []( auto& r){ return r.name;});
       
-                           return { common::argument::reserved::name::suggestions::value()}; 
+                           return { std::string{ argument::reserved::name::suggestions}}; 
                         },
-                        argument::option::keys( { "--scale-resource-proxies"}, { "-si", "--scale-instances"}),
+                        argument::option::Names( { "--scale-resource-proxies"}, { "-si", "--scale-instances"}),
                         R"(scale resource proxy instances)"
                      };
                   }
@@ -740,12 +741,12 @@ External resources only have one instance, hence resources and resource-instance
                         casual::cli::message::transaction::Current message;
                         message.trid = common::transaction::id::create();
 
-                        cli::pipe::forward::message( message);
+                        casual::cli::pipe::forward::message( message);
                      }
 
                      communication::stream::inbound::Device in{ std::cin};
 
-                     cli::pipe::done::Scope done;
+                     casual::cli::pipe::done::Scope done;
 
                      auto handler = common::message::dispatch::handler( in, 
                         casual::cli::pipe::forward::handle::defaults(),
@@ -802,10 +803,10 @@ External resources only have one instance, hence resources and resource-instance
                   // other stuff downstream.
                   {
                      // snatch the first transaction, and forward the rest (if any)
-                     auto transcation_current = [ &state]( cli::message::transaction::Current& current)
+                     auto transcation_current = [ &state]( casual::cli::message::transaction::Current& current)
                      {
                         if( state.current)
-                           cli::pipe::forward::message( current);
+                           casual::cli::pipe::forward::message( current);
                         else
                               state.current = current.trid;
                      };
@@ -839,7 +840,7 @@ External resources only have one instance, hence resources and resource-instance
                   auto reply = communication::ipc::call( communication::instance::outbound::transaction::manager::device(), request);
 
                   if( reply.state != decltype( reply.state)::ok)                           
-                     cli::pipe::log::error( reply.state, " failed to rollback trid: ", trid);
+                     casual::cli::pipe::log::error( reply.state, " failed to rollback trid: ", trid);
                }
 
                auto option()
@@ -890,7 +891,7 @@ External resources only have one instance, hence resources and resource-instance
                         // check if we got errors upstream, and need to rollback.
                         if( state.done.pipe_error())
                         {
-                           cli::pipe::log::error( "transaction in rollback only state - rollback trid: ", state.current);
+                           casual::cli::pipe::log::error( "transaction in rollback only state - rollback trid: ", state.current);
                            rollback::apply( state.current);
                            return;
                         }
@@ -964,40 +965,30 @@ note: not all options has legend, use 'auto complete' to find out which legends 
          } // <unnamed>
       } // local
 
-      struct CLI::Implementation
+      argument::Option options()
       {
-         argument::Group options()
-         {
-            return argument::Group{ [](){}, { "transaction"}, "transaction related administration",
-               local::list::transactions::option(),
-               local::list::resources::option(),
-               local::list::instances::option(),
-               local::list::internal::instances::option(),
-               local::list::external::instances::option(),
-               local::begin::option(),
-               local::commit::option(),
-               local::rollback::option(),
-               local::scale::instances::option(),
-               local::list::pending::option(),
-               local::legend::option(),
-               local::information::option(),
-               casual::cli::state::option( &local::call::state),
-            };
-         }
-      };
-
-      CLI::CLI() = default; 
-      CLI::~CLI() = default; 
-
-      common::argument::Group CLI::options() &
-      {
-         return m_implementation->options();
+         return argument::Option{ [](){}, { "transaction"}, "transaction related administration"}( {
+            local::list::transactions::option(),
+            local::list::resources::option(),
+            local::list::instances::option(),
+            local::list::internal::instances::option(),
+            local::list::external::instances::option(),
+            local::begin::option(),
+            local::commit::option(),
+            local::rollback::option(),
+            local::scale::instances::option(),
+            local::list::pending::option(),
+            local::legend::option(),
+            local::information::option(),
+            casual::cli::state::option( &local::call::state),
+         });
       }
 
-      std::vector< std::tuple< std::string, std::string>> CLI::information() &
+      std::vector< std::tuple< std::string, std::string>> information()
       {
          return local::information::call();
       }
-   } // transaction::manager::admin
+
+   } // transaction::manager::admin::cli
 } // casual
 

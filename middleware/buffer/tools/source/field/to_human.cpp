@@ -10,7 +10,7 @@
 #include "casual/buffer/admin/cli.h"
 #include "common/exception/guard.h"
 
-#include "common/argument.h"
+#include "casual/argument.h"
 
 
 
@@ -22,16 +22,16 @@ namespace casual
    {
       namespace
       {
-         void main(int argc, char **argv)
+         void main(int argc, const char **argv)
          {
             std::string format;
 
             constexpr auto information = R"([deprecated] use `casual buffer --field-to-human` instead)";
 
             {
-               common::argument::Parse{ information,
-                  common::argument::Option( std::tie( format), { "--format"}, "which format to transform to")
-               }( argc, argv);
+               argument::parse( information, {
+                  argument::Option( std::tie( format), { "--format"}, "which format to transform to")
+               }, argc, argv);
             }
 
             std::cerr << information << '\n';
@@ -42,7 +42,7 @@ namespace casual
    } // local
 } // casual
 
-int main(int argc, char **argv)
+int main(int argc, const char **argv)
 {
    return casual::common::exception::main::log::guard( [&]()
    {

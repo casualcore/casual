@@ -10,7 +10,7 @@
 #include "common/domain.h"
 #include "common/exception/guard.h"
 #include "common/string/compose.h"
-#include "common/argument.h"
+#include "casual/argument.h"
 
 
 #include <locale>
@@ -77,9 +77,9 @@ namespace casual
          {
             return exception::main::log::guard( [&]()
             {
-               argument::Parse{ "Only? for unittests",
+               argument::parse( "Only? for unittests", {
                   argument::Option{ std::tie( local::global.nested.services), {"--nested-calls"}, "services that casual/example/resource/nested/calls/<domain-name> should call"}
-               }( argc, argv);
+               }, argc, argv);
 
                auto advertise_service = []( auto function, std::string_view name)
                {

@@ -14,7 +14,7 @@
 #include "common/serialize/macro.h"
 #include "common/file.h"
 
-#include "common/argument.h"
+#include "casual/argument.h"
 #include "common/exception/guard.h"
 
 #include <fstream>
@@ -96,21 +96,17 @@ namespace casual
             } // build
 
 
-            void main( int argc, char **argv)
+            void main( int argc, const char** argv)
             {
                std::string root;
 
-               {
-                  using namespace common::argument;
+               argument::parse( R"(Produces configuration documentation)", {
+                  argument::Option( std::tie( root), { "--root"}, "the root of where documentation will be generated"),
+               }, argc, argv);
 
-                  Parse{
-                     R"(Produces configuration documentation)",
-                     Option( std::tie( root), { "--root"}, "the root of where documentation will be generated"),
-                  }( argc, argv);
+               if( root.empty())
+                  return;
 
-                  if( root.empty())
-                     return;
-               }
 
                domain::general( root);
                domain::transaction( root);
@@ -128,7 +124,7 @@ namespace casual
 
 } // casual
 
-int main( int argc, char **argv)
+int main( int argc, const char** argv)
 {
    return casual::common::exception::main::cli::guard( [=]()
    {

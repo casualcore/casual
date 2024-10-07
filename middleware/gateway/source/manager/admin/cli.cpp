@@ -9,7 +9,7 @@
 #include "gateway/manager/admin/server.h"
 
 #include "common/algorithm.h"
-#include "common/argument.h"
+#include "casual/argument.h"
 #include "common/terminal.h"
 #include "common/chronology.h"
 #include "common/transcode.h"
@@ -30,7 +30,7 @@ namespace casual
 {
    using namespace common;
 
-   namespace gateway::manager::admin
+   namespace gateway::manager::admin::cli
    {
       namespace local
       {
@@ -392,7 +392,7 @@ namespace casual
 
                         return argument::Option{ 
                            std::move( invoke),
-                           argument::option::keys( { "-lc", "--list-connections"}, { "-c"}),
+                           argument::option::Names( { "-lc", "--list-connections"}, { "-c"}),
                            "list all connections"};
                      }
 
@@ -436,7 +436,7 @@ created
 
                      return argument::Option{ 
                         std::move( invoke), 
-                        argument::option::keys( { "-ll", "--list-listeners"}, { "-l"}), 
+                        argument::option::Names( { "-ll", "--list-listeners"}, { "-l"}), 
                         "list all listeners"};
                   }
 
@@ -475,26 +475,26 @@ created
                      {
                         auto invoke = []()
                         {
-                           code::raise::error( code::casual::invalid_argument, "--list-services is removed - use casual service --list-TODO");
+                           code::raise::error( code::casual::invalid_argument, "--list-services is removed - use casual service --list-instances");
                         };
 
                         return argument::Option{ 
                            std::move( invoke), 
-                           argument::option::keys( {}, { "-ls", "--list-services"}), 
-                           "removed - use casual service --list-TODO"};
+                           argument::option::Names( {}, { "-ls", "--list-services"}), 
+                           "removed - use casual service --list-instances"};
                      }
 
                      auto queues()
                      {
                         auto invoke = []()
                         {
-                           code::raise::error( code::casual::invalid_argument, "--list-queues is removed - use casual queue --list-TODO");
+                           code::raise::error( code::casual::invalid_argument, "--list-queues is removed - use casual queue --list-instances");
                         };
 
                         return argument::Option{ 
                            std::move( invoke), 
-                           argument::option::keys( {}, { "-ls", "--list-services"}), 
-                           "removed - use casual queue --list-TODO"};
+                           argument::option::Names( {}, { "-ls", "--list-services"}), 
+                           "removed - use casual queue --list-instance"};
                      }
                   }
                } // list
@@ -508,7 +508,7 @@ created
 
                   return argument::Option{ 
                      std::move( invoke),
-                     argument::option::keys( {}, { "--rediscover"}), 
+                     argument::option::Names( {}, { "--rediscover"}), 
                      "moved to casual discover --rediscover"};
                }
 
@@ -551,37 +551,25 @@ note: not all options has legend, use 'auto complete' to find out which legends 
          } // <unnamed>
       } // local
 
-
-
-      struct cli::Implementation
+      argument::Option options()
       {
-         common::argument::Group options()
-         {
-            return { [](){}, { "gateway"}, "gateway related administration",
-               local::option::list::connections::create(),
-               local::option::list::listeners(),
-               local::option::list::resource::services(),
-               local::option::list::resource::queues(),
-               local::option::list::groups::inbound(),
-               local::option::list::groups::outbound(),
-               local::option::legend::create(),
-               casual::cli::state::option( &local::call::state),
+         return argument::Option{ [](){}, { "gateway"}, "gateway related administration"}( {
+            local::option::list::connections::create(),
+            local::option::list::listeners(),
+            local::option::list::resource::services(),
+            local::option::list::resource::queues(),
+            local::option::list::groups::inbound(),
+            local::option::list::groups::outbound(),
+            local::option::legend::create(),
+            casual::cli::state::option( &local::call::state),
 
-               local::option::rediscover() // removed... TODO: remove in 2.0
-            };
-         }
-      };
+            local::option::rediscover() // removed... TODO: remove in 2.0
+         });
 
-      cli::cli() = default; 
-      cli::~cli() = default; 
-
-      common::argument::Group cli::options() &
-      {
-         return m_implementation->options();
       }
             
  
-   } // gateway::manager::admin
+   } // gateway::manager::admin::cli
 } // casual
 
 

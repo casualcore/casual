@@ -7,24 +7,14 @@
 #pragma once
 
 
-#include "common/argument.h"
+#include "casual/argument.h"
 #include "common/pimpl.h"
 
 namespace casual
 {
-   namespace tools::service::call
+   namespace tools::service::call::cli
    {
-      struct cli 
-      {
-         cli();
-         ~cli();
-
-         common::argument::Group options() &;
-
-      private:
-         struct Implementation;
-         common::move::Pimpl< Implementation> m_implementation;
-      };
+      argument::Option options();
  
-   } // tools::service::call
+   } // tools::service::call::cli
 } // casual

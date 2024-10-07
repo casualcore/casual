@@ -64,7 +64,10 @@ domain:
 
             auto execute_get_lines( auto command)
             {
-               return string::split( administration::unittest::cli::command::execute( command).standard.out, '\n');
+               auto capture = administration::unittest::cli::command::execute( command);
+               EXPECT_TRUE( capture) << CASUAL_NAMED_VALUE( capture);
+
+               return string::split( capture.standard.out, '\n');
             };
 
          } // <unnamed>      
@@ -134,7 +137,7 @@ casual-gateway-manager       1  1  enabled     false   0  "${CASUAL_MAKE_SOURCE_
 casual-service-manager       1  1  enabled     false   0  "${CASUAL_MAKE_SOURCE_ROOT}/middleware/service/bin/casual-service-manager"        
 casual-transaction-manager   1  1  enabled     false   0  "${CASUAL_MAKE_SOURCE_ROOT}/middleware/transaction/bin/casual-transaction-manager"
 */
-            auto lines = local::execute_get_lines(  "casual domain --header false --color false --list-servers");
+            auto lines = local::execute_get_lines(  "casual --header false --color false domain --list-servers");
 
             auto a = string::adjacent::split( lines.at( 0), ' ');
             EXPECT_TRUE( a.at( 0) == "a");
@@ -172,7 +175,7 @@ x       2  2  enabled     false   0  "sleep"
 y       2  0  disabled    false   0  "sleep"             
 z       2  0  error       false   0  "/non/existent/path"
 */
-            auto lines = local::execute_get_lines( "casual domain --header false --color false --list-executables");
+            auto lines = local::execute_get_lines( "casual --header false --color false domain --list-executables");
 
             auto t = string::adjacent::split( lines.at( 0), ' ');
             EXPECT_TRUE( t.at( 0) == "t");

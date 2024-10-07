@@ -11,7 +11,7 @@
 
 #include "common/string.h"
 #include "common/process.h"
-#include "common/argument.h"
+#include "casual/argument.h"
 #include "common/file.h"
 #include "common/execute.h"
 #include "common/environment.h"
@@ -103,7 +103,7 @@ namespace casual
                   {
                      auto mode()
                      {
-                        return []( auto&, bool) -> std::vector< std::string>
+                        return []( bool test, auto values) -> std::vector< std::string>
                         {
                            return { "automatic", "join", "none", "atomic"};
                         };
@@ -205,29 +205,27 @@ namespace casual
                   build::task( path, settings.directive);
                }
 
-               void main( int argc, char **argv)
+               void main( int argc, const char** argv)
                {
                   Settings settings;
 
                   {
                      trace::Exit log( "parse arguments", false);
 
-                     using namespace casual::common::argument;
-
-                     Parse{ "builds a casual xatmi server",
-                        Option( std::tie( settings.directive.output), { "-o", "--output"}, "name of server to be built"),
-                        Option( service::argument( settings.service.names), {"-s", "--service"}, "service names")( cardinality::any{}),
-                        Option( std::tie( settings.server.definition), { "-d", "--definition", "--server-definition"}, "path to server definition file\n\ndeprecated: --server-definition"),
-                        Option( option::one::many( settings.resource.keys), {"-r", "--resource-keys"}, "key of the resource")( cardinality::any{}),
-                        Option( std::tie( settings.directive.compiler), {"-c", "--compiler"}, "compiler to use"),
-                        Option( build::Directive::split( settings.directive.directives), {"-f", "--build-directives", "--link-directives"}, "additional compile and link directives\n\ndeprecated: --link-directives")( cardinality::any{}),
-                        Option( std::tie( settings.files.system), argument::option::keys( { "--system-configuration"}, {"-p", "--properties-file"}), "path to system configuration file"),
-                        Option( std::tie( settings.service.transaction.mode), complete::transaction::mode(), {  "--default-transaction-mode"}, "the transaction mode for services specified with --service|-s"),
-                        Option( option::toggle( settings.directive.use_defaults), { "--no-defaults"}, "do not add any default compiler/link directives\n\nuse --build-directives to add your own"),
-                        Option( std::tie( settings.source.file), { "--source-file"}, "name of the intermediate source file"),
-                        Option( option::toggle( settings.source.keep), {"-k", "--keep"}, "keep the intermediate source file"),
-                        Option( option::toggle( settings.directive.verbose), {"-v", "--verbose"}, "verbose output"),
-                     }( argc, argv);
+                     argument::parse( "builds a casual xatmi server", {
+                        argument::Option( std::tie( settings.directive.output), { "-o", "--output"}, "name of server to be built"),
+                        argument::Option( service::argument( settings.service.names), {"-s", "--service"}, "service names")( argument::cardinality::any()),
+                        argument::Option( std::tie( settings.server.definition), { "-d", "--definition", "--server-definition"}, "path to server definition file\n\ndeprecated: --server-definition"),
+                        argument::Option( argument::option::one::many( settings.resource.keys), {"-r", "--resource-keys"}, "key of the resource")( argument::cardinality::any()),
+                        argument::Option( std::tie( settings.directive.compiler), {"-c", "--compiler"}, "compiler to use"),
+                        argument::Option( build::Directive::split( settings.directive.directives), {"-f", "--build-directives", "--link-directives"}, "additional compile and link directives\n\ndeprecated: --link-directives")( argument::cardinality::any()),
+                        argument::Option( std::tie( settings.files.system), argument::option::Names( { "--system-configuration"}, {"-p", "--properties-file"}), "path to system configuration file"),
+                        argument::Option( std::tie( settings.service.transaction.mode), complete::transaction::mode(), {  "--default-transaction-mode"}, "the transaction mode for services specified with --service|-s"),
+                        argument::Option( argument::option::flag( settings.directive.use_defaults), { "--no-defaults"}, "do not add any default compiler/link directives\n\nuse --build-directives to add your own"),
+                        argument::Option( std::tie( settings.source.file), { "--source-file"}, "name of the intermediate source file"),
+                        argument::Option( argument::option::flag( settings.source.keep), {"-k", "--keep"}, "keep the intermediate source file"),
+                        argument::Option( argument::option::flag( settings.directive.verbose), {"-v", "--verbose"}, "verbose output"),
+                     }, argc, argv);
 
                   }
 
@@ -251,7 +249,7 @@ namespace casual
    } // tools
 } // casual
 
-int main( int argc, char **argv)
+int main( int argc, const char** argv)
 {
    return casual::common::exception::main::cli::guard( [=]()
    {

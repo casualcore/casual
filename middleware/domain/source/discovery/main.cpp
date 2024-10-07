@@ -13,7 +13,7 @@
 #include "common/communication/select.h"
 #include "common/communication/select/ipc.h"
 #include "common/exception/guard.h"
-#include "common/argument.h"
+#include "casual/argument.h"
 #include "common/communication/instance.h"
 #include "common/message/signal.h"
 
@@ -91,15 +91,14 @@ namespace casual
                log::line( verbose::log, "state: ", state);
             }
 
-            void main( int argc, char** argv)
+            void main( int argc, const char** argv)
             {
                Trace trace{ "domain::discovery::local::main"};
                
                Settings settings;
                {
-                  using namespace casual::common::argument;
-                  Parse{ R"(responsible for orchestrating discoveries to and from other domains.)",
-                  }( argc, argv);
+                  argument::parse( R"(responsible for orchestrating discoveries to and from other domains.)", {
+                  }, argc, argv);
                }
 
                start( initialize( std::move( settings)));
@@ -111,7 +110,7 @@ namespace casual
    } // domain::discovery
 } // casual
 
-int main( int argc, char** argv)
+int main( int argc, const char** argv)
 {
    casual::common::exception::main::log::guard( [=]()
    {

@@ -8,7 +8,7 @@
 
 #include "common/unittest/rm.h"
 #include "common/unittest/log.h"
-#include "common/argument.h"
+#include "casual/argument.h"
 #include "common/code/xa.h"
 
 
@@ -182,7 +182,7 @@ namespace casual
                };
             };
 
-            argument::Parse{ "mockup rm",
+            argument::parse( "mockup rm", {
                argument::Option( parse_result( state.result.open), { "--open"}, ""),
                argument::Option( parse_result( state.result.close), { "--close"}, ""),
                argument::Option( parse_result( state.result.start), { "--start"}, ""),
@@ -193,7 +193,7 @@ namespace casual
                argument::Option( sleep_option( state.sleep_prepare), { "--sleep-prepare"}, ""),
                argument::Option( sleep_option( state.sleep_commit), { "--sleep-commit"}, ""),
                argument::Option( sleep_option( state.sleep_rollback), { "--sleep-rollback"}, "")
-            }( common::string::split( openinfo));
+            }, common::string::split( openinfo));
          }
          catch( ...)
          {

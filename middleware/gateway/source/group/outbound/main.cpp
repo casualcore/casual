@@ -16,7 +16,7 @@
 #include "common/exception/guard.h"
 #include "common/signal/timer.h"
 #include "common/signal.h"
-#include "common/argument.h"
+#include "casual/argument.h"
 #include "common/message/signal.h"
 #include "common/message/dispatch/handle.h"
 
@@ -306,12 +306,11 @@ namespace casual
 
             }
 
-            void main( int argc, char** argv)
+            void main( int argc, const char** argv)
             {
                Arguments arguments;
                
-               argument::Parse{ "outbound",
-               }( argc, argv);
+               argument::parse( "outbound", {}, argc, argv);
 
                run( initialize( std::move( arguments)));
             } 
@@ -324,7 +323,7 @@ namespace casual
 } // casual
 
 
-int main( int argc, char** argv)
+int main( int argc, const char** argv)
 {
    return casual::common::exception::main::log::guard( [=]()
    {

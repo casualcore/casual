@@ -13,7 +13,7 @@
 #include "domain/manager/admin/model.h"
 #include "domain/manager/admin/server.h"
 
-#include "common/argument.h"
+#include "casual/argument.h"
 #include "common/chronology.h"
 #include "common/terminal.h"
 #include "common/server/service.h"
@@ -36,10 +36,8 @@ namespace casual
 
    using namespace common;
 
-   namespace service
+   namespace service::manager::admin::cli
    {
-      namespace manager
-      {
          namespace local
          {
             namespace
@@ -440,53 +438,39 @@ namespace casual
       the last time the service was requested    
 )";
 
-                     auto option( const State& state)
+                     auto option( auto shared)
                      {
-                        auto invoke = [ &state]()
+                        auto invoke = [ shared]()
                         {
-                           auto filter = [ &state]( auto& service)
+                           auto filter = [ &shared]( auto& service)
                            {
-                              if( state.all)
+                              if( shared->all)
                                  return true; 
                               return ! common::service::hidden::name( service.name);
                            };
 
                            auto state = manager::admin::api::state();
-                           auto services =  algorithm::sort( algorithm::filter( state.services, filter));
+                           auto services = algorithm::sort( algorithm::filter( state.services, filter));
 
                            format::services().print( std::cout, services);
                         };
 
-                        return common::argument::Option{ 
+                        auto flag = argument::Option{ [ shared]()
+                           {
+                              shared->all = true;
+                              return argument::option::invoke::preemptive{};
+                           },  { "-a", "--all"}, "show all services"};
+
+
+                        constexpr auto description = R"(list known services
+
+if used with `--all true` hidden services will be included)";
+
+                        return argument::Option{ 
                            invoke,
                            { "-ls", "--list-services"}, 
-                           R"(list known services
-
-if used with `--all true` hidden services will be included)"};
+                           description}( { std::move( flag)});
                      }
-
-                     namespace all
-                     {
-                        auto option( State& state)
-                        {
-                           auto complete = []( auto&&, auto) -> std::vector< std::string>
-                           {
-                              return { "true", "false"};
-                           };
-
-                           return argument::Option{
-                              std::tie( state.all),
-                              complete,
-                              { "-a", "--all"},
-                              R"(show all services (default: false)
-
-used in conjunction with `--list-services`
-has same semantics as `-a` in unix `ls -a`.
-)"
-                           };
-                        }
-                     } // all
-
                    } // services
 
                    namespace instances
@@ -504,7 +488,7 @@ has same semantics as `-a` in unix `ls -a`.
                            formatter.print( std::cout, instances);
                         };
                         
-                        return common::argument::Option{ 
+                        return argument::Option{ 
                            invoke,
                            { "-li", "--list-instances"}, 
                            "list instances"};
@@ -523,7 +507,7 @@ has same semantics as `-a` in unix `ls -a`.
                            formatter.print( std::cout, state.routes);
                         };
 
-                        return common::argument::Option{ 
+                        return argument::Option{ 
                            invoke,
                            { "--list-routes"}, 
                            "list service routes"};
@@ -541,7 +525,7 @@ has same semantics as `-a` in unix `ls -a`.
                         call::metric::reset( services);
                      };
 
-                     auto completer = []( auto value, bool help) -> std::vector< std::string>
+                     auto completer = []( bool help, auto value) -> std::vector< std::string>
                      {
                         if( help)
                            return { "<service>..."};
@@ -554,7 +538,7 @@ has same semantics as `-a` in unix `ls -a`.
                      };
                      
 
-                     return common::argument::Option{ 
+                     return argument::Option{ 
                         invoke,
                         completer,
                         { "-mr", "--metric-reset"}, 
@@ -580,7 +564,7 @@ has same semantics as `-a` in unix `ls -a`.
                            code::raise::error( code::casual::invalid_argument, "not a valid argument to --legend: ", value);
                      };
 
-                     auto completer = []( auto values, auto help) -> std::vector< std::string>
+                     auto completer = []( bool help, auto values) -> std::vector< std::string>
                      {
                         if( help)
                            return { "<option>"};
@@ -588,7 +572,7 @@ has same semantics as `-a` in unix `ls -a`.
                         return algorithm::transform( legends, []( auto& pair){ return pair.first;});
                      };
                      
-                     return common::argument::Option{ 
+                     return argument::Option{ 
                         invoke,
                         completer,
                         { "--legend"}, 
@@ -681,7 +665,7 @@ note: not all options has legend, use 'auto complete' to find out which legends 
                         terminal::formatter::key::value().print( std::cout, information::compose());
                      };
 
-                     return common::argument::Option{ 
+                     return argument::Option{ 
                         invoke,
                         { "--information"}, 
                         R"(collect aggregated information about known services)"};
@@ -708,10 +692,10 @@ note: not all options has legend, use 'auto complete' to find out which legends 
                            format::services().print( std::cout, services);
                         };
 
-                        return common::argument::Option{ 
+                        return argument::Option{ 
                            invoke,
-                           common::argument::option::keys( {},{ "--list-admin-services"}), 
-                           "@deprecated use --list-services --all true"};
+                           argument::option::Names( {},{ "--list-admin-services"}), 
+                           "@deprecated use --list-services --all"};
                      }
 
                   } // admin_services
@@ -720,46 +704,29 @@ note: not all options has legend, use 'auto complete' to find out which legends 
             } // <unnamed>
          } // local
 
-         namespace admin 
+         std::vector< std::tuple< std::string, std::string>> information()
          {
-            struct cli::Implementation
-            {
-               common::argument::Group options()
-               {
-                  return common::argument::Group{ [](){}, { "service"}, "service related administration",
-                     local::list::services::option( m_state),
-                     local::list::services::all::option( m_state),
-                     local::list::instances::option(),
-                     local::list::routes::option(),
-                     local::metric::reset::option(),
-                     local::legend::option(),
-                     local::information::option(),
-                     casual::cli::state::option( &api::state),
-                     local::deprecated::admin_services::option(),
-                  };
-               }
+            return local::information::compose();
+         }
 
-            private:
-               local::State m_state;
-            };
+         argument::Option options()
+         {  
+            auto shared = std::make_shared< local::State>();        
 
-            cli::cli() = default; 
-            cli::~cli() = default; 
+            return argument::Option{ [](){}, { "service"}, "service related administration"}( {
+               local::list::services::option( shared),
+               local::list::instances::option(),
+               local::list::routes::option(),
+               local::metric::reset::option(),
+               local::legend::option(),
+               local::information::option(),
+               casual::cli::state::option( &api::state),
+               local::deprecated::admin_services::option(),
+            });
+         }
 
-            common::argument::Group cli::options() &
-            {
-               return m_implementation->options();
-            }
-
-            std::vector< std::tuple< std::string, std::string>> cli::information() &
-            {
-               return local::information::compose();
-            }
             
-         } // admin 
-
-      } // manager
-   } // service
+   } // service::manager::admin::cli
 } // casual
 
 
