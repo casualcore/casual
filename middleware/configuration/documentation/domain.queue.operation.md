@@ -91,11 +91,22 @@ alias : `string`     | the (unique) alias of the group.
 property                   | description                         | default
 ---------------------------|-------------------------------------|----------------------------------------
 source : `string`          | the queue to dequeue from           |
+[alias : `string`]         | the (unique) alias of the forward   | `<source>`, on collisions `<source>.#`
 [instances : `integer`]    | number of multiplexing 'instances'  | `domain.queue.forward.default.service.instances`
 target.service : `string`  | service to call                     |
 [reply.queue : `string`]   | queue to enqueue reply to           |
 [reply.delay : `Duration`] | reply enqueue available delay       | 
 
+
+##### domain.queue.forward.groups.queues _(list)_
+
+property                    | description                         | default
+----------------------------|-------------------------------------|----------------------------------------
+source : `string`           | the queue to dequeue from           |
+[alias : `string`]          | the (unique) alias of the forward   | `<source>`, on collisions `<source>.#`
+[instances : `integer`]     | number of multiplexing 'instances'  | `domain.queue.forward.default.queue.instances`
+target.queue : `string`     | queue to enqueue to                 |
+[target.delay : `Duration`] | enqueued available delay            | `domain.queue.forward.default.queue.target.delay`
 
 ## examples 
 
@@ -152,7 +163,8 @@ domain:
       groups:
         - alias: "forward-group-1"
           services:
-            - source: "b1"
+            - alias: "foo"
+              source: "b1"
               instances: 4
               target:
                 service: "casual/example/echo"
@@ -161,11 +173,13 @@ domain:
                 delay: "10ms"
           queues:
             - source: "c1"
+              note: "gets the alias 'c1'"
               target:
                 queue: "a4"
         - alias: "forward-group-2"
           services:
-            - source: "b2"
+            - alias: "bar"
+              source: "b2"
               target:
                 service: "casual/example/echo"
 ...
@@ -260,6 +274,7 @@ domain:
                         "alias": "forward-group-1",
                         "services": [
                             {
+                                "alias": "foo",
                                 "source": "b1",
                                 "instances": 4,
                                 "target": {
@@ -274,6 +289,7 @@ domain:
                         "queues": [
                             {
                                 "source": "c1",
+                                "note": "gets the alias 'c1'",
                                 "target": {
                                     "queue": "a4"
                                 }
@@ -284,6 +300,7 @@ domain:
                         "alias": "forward-group-2",
                         "services": [
                             {
+                                "alias": "bar",
                                 "source": "b2",
                                 "target": {
                                     "service": "casual/example/echo"

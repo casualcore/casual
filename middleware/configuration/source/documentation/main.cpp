@@ -396,11 +396,22 @@ alias : `string`     | the (unique) alias of the group.
 property                   | description                         | default
 ---------------------------|-------------------------------------|----------------------------------------
 source : `string`          | the queue to dequeue from           |
+[alias : `string`]         | the (unique) alias of the forward   | `<source>`, on collisions `<source>.#`
 [instances : `integer`]    | number of multiplexing 'instances'  | `domain.queue.forward.default.service.instances`
 target.service : `string`  | service to call                     |
 [reply.queue : `string`]   | queue to enqueue reply to           |
 [reply.delay : `Duration`] | reply enqueue available delay       | 
 
+
+##### domain.queue.forward.groups.queues _(list)_
+
+property                    | description                         | default
+----------------------------|-------------------------------------|----------------------------------------
+source : `string`           | the queue to dequeue from           |
+[alias : `string`]          | the (unique) alias of the forward   | `<source>`, on collisions `<source>.#`
+[instances : `integer`]     | number of multiplexing 'instances'  | `domain.queue.forward.default.queue.instances`
+target.queue : `string`     | queue to enqueue to                 |
+[target.delay : `Duration`] | enqueued available delay            | `domain.queue.forward.default.queue.target.delay`
 
 )";
                   examples( out, example::user::part::domain::queue());

@@ -269,7 +269,8 @@ domain:
          groups:
             -  alias: forward-group-1
                services:
-                  -  source: b1
+                  -  alias: foo
+                     source: b1
                      target: 
                         service: casual/example/echo
                      instances: 4
@@ -280,9 +281,11 @@ domain:
                   -  source: c1
                      target:
                         queue: a4
+                     note: gets the alias 'c1'
             -  alias: forward-group-2
                services:
-                  -  source: b2
+                  -  alias: bar
+                     source: b2
                      target:
                         service: casual/example/echo
 
