@@ -22,7 +22,8 @@ make.IncludePaths( [
     '../gateway/unittest/include',
     '../tools/include',
     '../cli/include',
-    '../buffer/include']
+    '../buffer/include',
+    '../../thirdparty/database/include']
     + make.optional_include_paths()
     + dsl.paths().include.gtest
 )
@@ -126,6 +127,7 @@ make.LinkUnittest( 'unittest/bin/test-casual-administration',
       'casual-gateway-unittest',
       'casual-serviceframework',
       'casual-configuration',
+      'sqlite3',
    ])
 
 

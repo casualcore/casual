@@ -5,6 +5,8 @@
 //!
 
 #include "common/unittest.h"
+#include "common/unittest/file.h"
+#include "common/unittest/environment.h"
 
 #include "administration/unittest/cli/command.h"
 
@@ -14,6 +16,9 @@
 #include "gateway/unittest/utility.h"
 
 #include "common/string.h"
+#include "common/sink.h"
+
+#include "sql/database.h"
 
 #include <regex>
 
@@ -487,6 +492,125 @@ b2        external  50233  out    B
             EXPECT_TRUE( std::regex_match( rows.at( 1), std::regex{ R"(b2\|external\|[0-9]+\|out\|B)"}));
 
 
+         }
+      }
+
+      TEST( cli_queue, clear)
+      {
+         common::unittest::Trace trace;
+
+         auto domain = local::domain( R"(
+domain:
+   queue:
+      groups:
+         -  alias: Q
+            queues:
+               -  name: a
+)");
+
+         // enqueue 10 messages
+         {
+            auto capture = local::execute( R"(echo "casual" | casual buffer --compose | casual buffer --duplicate 10 | casual queue --enqueue a | casual pipe --human-sink | wc -l)");
+            EXPECT_TRUE( std::stoi( capture.standard.out) == 10) << CASUAL_NAMED_VALUE( capture);
+         }
+
+         // clear
+         {
+            auto capture = local::execute( R"(casual --porcelain true queue --clear a)");
+            constexpr std::string_view expected = R"(a|10
+)";
+            EXPECT_TRUE( capture.standard.out == expected) << CASUAL_NAMED_VALUE( capture);
+         }
+
+         // verify queue is empty
+         {
+            auto capture = local::execute( R"(casual --porcelain true queue --list-messages a)");
+            EXPECT_TRUE( capture.standard.out.empty()) << CASUAL_NAMED_VALUE( capture);
+         }
+      }
+
+      TEST( cli_queue, remove_messages)
+      {
+         common::unittest::Trace trace;
+
+         auto domain = local::domain( R"(
+domain:
+   queue:
+      groups:
+         -  alias: Q
+            queues:
+               -  name: a
+)");
+         {
+            constexpr auto enqueue_command = R"(echo "casual" | casual buffer --compose | casual buffer --duplicate 10 | casual queue --enqueue a | casual pipe --human-sink)";
+            constexpr auto remove_command = R"(xargs casual --porcelain true queue --remove-messages a)";
+            
+            auto capture = local::execute( enqueue_command, '|', remove_command, " | wc -l"); 
+            EXPECT_TRUE( std::stoi( capture.standard.out) == 10) << CASUAL_NAMED_VALUE( capture);
+         }
+
+         // verify queue is empty
+         {
+            auto capture = local::execute( R"(casual --porcelain true queue --list-messages a | wc -l)");
+            EXPECT_TRUE( std::stoi( capture.standard.out) == 0) << CASUAL_NAMED_VALUE( capture);
+         }
+      }
+
+      TEST( cli_queue, force_remove_messages)
+      {
+         common::unittest::Trace trace;
+
+         signal::callback::registration< code::signal::child>( [](){});
+
+         constexpr std::string_view configuration = R"(
+domain:
+   name: A
+   queue:
+      groups:
+         -  alias: Q
+            queuebase: ${CASUAL_UNITTEST_QUEUEBASE}
+            queues:
+               - name: a
+)";
+
+         auto directory = common::unittest::directory::temporary::Scoped{};
+         auto database_path = ( directory.path() / "q.qb").string();
+         auto guard = common::unittest::environment::scoped::variable( "CASUAL_UNITTEST_QUEUEBASE", database_path);
+
+         auto domain = local::domain( configuration);
+
+         // enqueue 10 messages
+         {
+            auto capture = local::execute( R"(echo "casual" | casual buffer --compose | casual buffer --duplicate 10 | casual queue --enqueue a | casual pipe --human-sink | wc -l)");
+            EXPECT_TRUE( std::stoi( capture.standard.out) == 10) << CASUAL_NAMED_VALUE( capture);
+         }
+
+         common::sink( std::move( domain));
+
+         // hack messages to state enqueued - not removeable without --force
+         {
+            auto connection = sql::database::Connection( database_path);
+            connection.query( "UPDATE message SET state = 3;").execute();
+         }
+
+         domain = local::domain( configuration);
+
+         constexpr auto list_message_ids = R"(casual --porcelain true queue --list-messages a | cut -d '|' -f 1)";
+         // try to remove messages without --force - expect none removed
+         {
+            auto capture = local::execute( list_message_ids, "| xargs casual --porcelain true queue --remove-messages a | wc -l"); 
+            EXPECT_TRUE( std::stoi( capture.standard.out) == 0) << CASUAL_NAMED_VALUE( capture);
+         }
+
+         // use (the) force - expect all to be removed
+         {
+            auto capture = local::execute( list_message_ids, "| xargs -I {} casual --porcelain true queue --remove-messages a {} --force | wc -l");
+            EXPECT_TRUE( std::stoi( capture.standard.out) == 10) << CASUAL_NAMED_VALUE( capture);
+         }
+
+         {
+            auto capture = local::execute( R"(casual --porcelain true queue --list-messages a | wc -l)");
+            EXPECT_TRUE( std::stoi( capture.standard.out) == 0) << CASUAL_NAMED_VALUE( capture);
          }
       }
 
