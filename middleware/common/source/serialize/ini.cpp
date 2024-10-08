@@ -40,8 +40,6 @@ namespace casual
                      return array::make( "ini"sv, ".ini"sv, buffer::type::ini);
                   };
 
-                  const std::string magic{ '@' };
-
                   struct tree
                   {
                      std::multimap<std::string,tree> children;
