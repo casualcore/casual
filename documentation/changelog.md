@@ -1,6 +1,11 @@
 # Changelog
 This is the changelog for `casual` and all changes are listed in this document.
 
+## [1.6.21] - 2024-10-09
+### Fixes
+- documentation: queue.forward.group.(services|queues).alias
+- transaction: error log when resource fail (#428)
+
 ## [1.6.20] - 2024-09-18
 ### Fixes
 - build: handle nginx build on rhel (#381)
