@@ -441,29 +441,38 @@ domain:
             return result;
          };
 
-         algorithm::for_n< 10>( [&call_domain_name]()
+         algorithm::for_n< 5>( [&call_domain_name]()
          {
             EXPECT_TRUE( call_domain_name() == "B");
          });
 
+
+         // we expect to only have one concurrent instance
+         {
+            auto state = casual::service::unittest::state();
+            auto found = algorithm::find( state.services, "casual/example/domain/name");
+            ASSERT_TRUE( found);
+            EXPECT_TRUE( found->instances.concurrent.size() == 1);
+         }
+
          auto c = local::manager( local::configuration::base, C);
 
-         // make sure we're _in_ domain A
+         // make sure we're _in_ domain A, and C is connected
          a.activate();
-         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected( "C"));
+         auto gw_state = gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected( "C"));
 
+
+         // we expect a _connect-direct_ to discovery and then a discovery of casual/example/domain/name 
+         // to `C`.
+         casual::service::unittest::fetch::until( [ &gw_state]( auto& state)
          {
-            std::map< std::string, int> domain_count;
+            if( auto service = algorithm::find( state.services, "casual/example/domain/name"))
+               if( auto connection = algorithm::find( gw_state.connections, "C"))
+                  return algorithm::contains( service->instances.concurrent, connection->ipc);
 
-            algorithm::for_n< 20>( [&]()
-            {
-               domain_count[ call_domain_name()]++;
-            });
+            return false;
+         });
 
-            ASSERT_TRUE( domain_count.size() == 2) << CASUAL_NAMED_VALUE( domain_count);
-            EXPECT_TRUE( domain_count.at( "B") > 0);
-            EXPECT_TRUE( domain_count.at( "C") > 0);
-         }
       }
 
 

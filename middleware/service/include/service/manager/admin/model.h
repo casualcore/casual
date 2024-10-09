@@ -134,6 +134,8 @@ namespace casual
                platform::size::type hops{};
                platform::size::type order{};
 
+               inline friend bool operator == ( const Concurrent& lhs, common::process::compare_equal_to_handle auto rhs) { return lhs.process == rhs;}
+
                CASUAL_CONST_CORRECT_SERIALIZE(
                   CASUAL_SERIALIZE( process);
                   CASUAL_SERIALIZE( hops);
