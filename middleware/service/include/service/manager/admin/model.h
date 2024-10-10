@@ -214,6 +214,8 @@ namespace casual
          //! the actual invoked service
          std::string target;
 
+         inline friend bool operator == ( const Route& lhs, const Route& rhs) = default;
+
          CASUAL_CONST_CORRECT_SERIALIZE(
             CASUAL_SERIALIZE( service);
             CASUAL_SERIALIZE( target);
