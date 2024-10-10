@@ -80,16 +80,6 @@ domain:
                return domain::unittest::manager( configuration::base, std::forward< C>( configurations)...);
             }
 
-            namespace call
-            {
-               auto state()
-               {
-                  return serviceframework::service::protocol::binary::Call{}( 
-                     manager::admin::service::name::state).extract< manager::admin::model::State>();
-               }
-
-            } // call
-
             namespace service
             {
                const manager::admin::model::Service* find( const manager::admin::model::State& state, const std::string& name)
@@ -262,7 +252,7 @@ domain:
 
          auto domain = local::domain();
 
-         auto state = local::call::state();
+         auto state = unittest::state();
 
          EXPECT_TRUE( local::has_services( state.services, { manager::admin::service::name::state}));
          EXPECT_FALSE( local::has_services( state.services, { "non/existent/service"}));
@@ -277,7 +267,7 @@ domain:
 
          service::unittest::advertise( { "service1", "service2"});
 
-         auto state = local::call::state();
+         auto state = unittest::state();
 
          ASSERT_TRUE( local::has_services( state.services, { manager::admin::service::name::state, "service1", "service2"}));
          
@@ -311,7 +301,7 @@ domain:
 
          service::unittest::advertise( { "A"});
 
-         auto state = local::call::state();
+         auto state = unittest::state();
 
          auto service = common::service::lookup::reply( common::service::Lookup{ "B"});
          // we expect the 'real-name' of the service to be replied
@@ -469,7 +459,7 @@ domain:
 
          service::unittest::advertise( { "A"});
 
-         auto state = local::call::state();
+         auto state = unittest::state();
 
 
          EXPECT_TRUE( local::has_services( state.services, { "B"})) << CASUAL_NAMED_VALUE( state.services);
@@ -567,7 +557,7 @@ domain:
 
          service::unittest::advertise( { "service1", "service2"});
 
-         auto state = local::call::state();
+         auto state = unittest::state();
          EXPECT_TRUE( local::has_services( state.services, { "service1", "service2"})) << CASUAL_NAMED_VALUE( state.services);
 
          {
@@ -588,7 +578,7 @@ domain:
 
 
          {
-            auto state = local::call::state();
+            auto state = unittest::state();
             auto service = local::service::find( state, "service1");
             ASSERT_TRUE( service);
             EXPECT_TRUE( service->instances.sequential.at( 0).process == common::process::handle());
@@ -605,7 +595,7 @@ domain:
          }
 
          {
-            auto state = local::call::state();
+            auto state = unittest::state();
             auto service = local::service::find( state, "service1");
             ASSERT_TRUE( service);
             EXPECT_TRUE( service->instances.sequential.empty());
@@ -1057,7 +1047,7 @@ domain:
                message);
          });
 
-         auto state = local::call::state();
+         auto state = unittest::state();
          auto service = local::service::find( state, "concurrent_a");
 
          ASSERT_TRUE( service);
@@ -1223,6 +1213,44 @@ domain:
             // we should be idle again
             auto service = common::service::lookup::reply( std::move( lookup));
             EXPECT_TRUE( service.state == decltype( service.state)::idle);
+         }
+      }
+
+      TEST( service_manager, runtime_update_routes)
+      {
+         common::unittest::Trace trace;
+
+         auto domain = local::domain( R"(
+domain:
+   services:
+      -  name: a
+         routes: [ b]
+)");
+
+         {
+            auto state = unittest::state();
+
+            EXPECT_TRUE( state.routes.size() == 1);
+            EXPECT_TRUE( common::algorithm::find( state.routes, manager::admin::model::Route{ .service = "b", .target = "a"}));
+         }
+
+         auto wanted = local::configuration::load( local::configuration::base, R"(
+domain:
+   services:
+      -  name: a
+         routes: [ b]
+      -  name: c
+         routes: [ d]
+)");
+
+         casual::domain::unittest::configuration::post( casual::configuration::model::transform( wanted));
+
+         {
+            auto state = unittest::state();
+
+            EXPECT_TRUE( state.routes.size() == 2);
+            EXPECT_TRUE( common::algorithm::find( state.routes, manager::admin::model::Route{ .service = "b", .target = "a"}));
+            EXPECT_TRUE( common::algorithm::find( state.routes, manager::admin::model::Route{ .service = "d", .target = "c"}));
          }
       }
 

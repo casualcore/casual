@@ -68,8 +68,7 @@ namespace casual
                      state.routes.emplace( service.name, service.routes);
                   };
 
-                  algorithm::for_each( change.added, add_routes);
-                  algorithm::for_each( change.modified, add_routes);
+                  algorithm::for_each( wanted, add_routes);
                }
 
                auto remove = [ &state]( auto& service)
