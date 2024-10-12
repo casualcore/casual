@@ -152,6 +152,69 @@ namespace casual
       }
    }
 
+   TEST( argument_complete, immediate_flags)
+   {
+      struct State
+      {
+         long a{};
+         std::vector< long> b;
+
+         bool f1 = false;
+         bool f2 = false;
+      };
+
+      static auto callback = []( State& state)
+      { 
+         return [ &state]( long a, std::vector< long> b)
+         {
+            state.a = a;
+            state.b = b;
+         };
+      };
+
+      auto options = []( State& state)
+      {
+         return std::vector< argument::Option>{ 
+            argument::Option{ callback( state), { "-a"}, ""}( {     
+               argument::Option{ argument::option::flag( state.f1), { "-f1"}, ""},
+               argument::Option{ argument::option::flag( state.f2), { "-f2"}, ""}
+            })};
+      };
+      
+      {
+         State state;
+         auto output = local::parse_complete( options( state), { "-a", "42"});
+         ASSERT_TRUE( output.size() == 3) << CASUAL_NAMED_VALUE( output);
+         EXPECT_TRUE( output.at( 0) == argument::reserved::name::suggestions);
+         EXPECT_TRUE( output.at( 1) == "-f1");
+         EXPECT_TRUE( output.at( 2) == "-f2");
+      }
+
+      {
+         State state;
+         auto output = local::parse_complete( options( state), { "-a", "-f1", "42"});
+         ASSERT_TRUE( output.size() == 2) << CASUAL_NAMED_VALUE( output);
+         EXPECT_TRUE( output.at( 0) == argument::reserved::name::suggestions);
+         EXPECT_TRUE( output.at( 1) == "-f2");
+      }
+
+      {
+         State state;
+         auto output = local::parse_complete( options( state), { "-a", "-f1", "-f2", "42"});
+         ASSERT_TRUE( output.size() == 1) << CASUAL_NAMED_VALUE( output);
+         EXPECT_TRUE( output.at( 0) == argument::reserved::name::suggestions);
+      }
+
+
+      {
+         State state;
+         auto output = local::parse_complete( options( state), { "-a", "42", "-f1"});
+         ASSERT_TRUE( output.size() == 1) << CASUAL_NAMED_VALUE( output);
+         EXPECT_TRUE( output.at( 0) == "-f2");
+      }
+   }
+
+
    TEST( argument_complete, nested_flags)
    {
       auto flag = []()

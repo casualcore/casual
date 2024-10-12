@@ -62,7 +62,81 @@ namespace casual
          }, 
          { "-b", "-b1", "-a", "-a1"});
 
-      EXPECT_TRUE(( invoked == std::vector< std::string>{ "b", "b1", "a", "a1" }));
+      EXPECT_TRUE(( invoked == std::vector< std::string>{ "b", "b1", "a", "a1" })) << CASUAL_NAMED_VALUE( invoked);
+   }
+
+   TEST( argument_parse, immediate_flag)
+   {
+      struct State
+      {
+         long a{};
+         std::vector< long> b;
+
+         bool f1 = false;
+         bool f2 = false;
+
+      } ;
+
+      auto callback = []( State& state)
+      { 
+         return [ &state]( long a, std::vector< long> b)
+         {
+            state.a = a;
+            state.b = b;
+         };
+      };
+
+      {
+         State state;
+         argument::parse( "", { 
+               argument::Option{ callback( state), { "-a"}, ""}( {
+                  argument::Option{ argument::option::flag( state.f1) , { "-f1"}, ""},
+                  argument::Option{ argument::option::flag( state.f2) , { "-f2"}, ""}
+               })
+            }, 
+            { "-a", "-f1", "1", "2", "3", "-f2"});
+
+         EXPECT_TRUE( state.a == 1);
+         EXPECT_TRUE( state.b.at( 0) == 2);
+         EXPECT_TRUE( state.b.at( 1) == 3);
+         EXPECT_TRUE( state.f1);
+         EXPECT_TRUE( state.f2);
+      }
+
+      {
+         State state;
+         argument::parse( "", { 
+               argument::Option{ callback( state), { "-a"}, ""}( {
+                  argument::Option{ argument::option::flag( state.f1) , { "-f1"}, ""},
+                  argument::Option{ argument::option::flag( state.f2) , { "-f2"}, ""}
+               })
+            }, 
+            { "-a", "-f2", "-f1", "1", "2", "3"});
+
+         EXPECT_TRUE( state.a == 1);
+         EXPECT_TRUE( state.b.at( 0) == 2);
+         EXPECT_TRUE( state.b.at( 1) == 3);
+         EXPECT_TRUE( state.f1);
+         EXPECT_TRUE( state.f2);
+      }
+
+
+      {
+         State state;
+         argument::parse( "", { 
+               argument::Option{ callback( state), { "-a"}, ""}( {
+                  argument::Option{ argument::option::flag( state.f1) , { "-f1"}, ""},
+                  argument::Option{ argument::option::flag( state.f2) , { "-f2"}, ""}
+               })
+            }, 
+            { "-a", "1", "2", "3", "-f2", "-f1"});
+
+         EXPECT_TRUE( state.a == 1);
+         EXPECT_TRUE( state.b.at( 0) == 2);
+         EXPECT_TRUE( state.b.at( 1) == 3);
+         EXPECT_TRUE( state.f1);
+         EXPECT_TRUE( state.f2);
+      }
    }
 
    TEST( argument_parse, invalid_value_cardinality)
