@@ -22,34 +22,34 @@ namespace casual
       {
          namespace
          {
-            namespace traverse
+            namespace hierarchy
             {
                template< typename O>
                struct State
                {
                   State( std::span< O> options)
-                     : hierarchy{ options}
+                     : m_hierarchy{ options}
                   {}
 
-                  std::span< O> current() { return hierarchy.back();}
-
-                  std::span< std::span< O>> parents() { return std::span( std::begin( hierarchy), std::prev( std::end( hierarchy)));}
+                  std::span< O> current() { return m_hierarchy.back();}
+                  std::span< std::span< O>> parents() { return std::span( std::begin( m_hierarchy), std::prev( std::end( m_hierarchy)));}
+                  std::span< std::span< O>> all() { return m_hierarchy;}
 
                   friend State operator + ( State lhs, std::span< O> suboptions)
                   {
-                     lhs.hierarchy.push_back( suboptions);
+                     lhs.m_hierarchy.push_back( suboptions);
                      return lhs;
                   }
+
+               private:
                   
-                  std::vector< std::span< O>> hierarchy;
+                  std::vector< std::span< O>> m_hierarchy;
                };
-            } // traverse
-
-
+            } // hierarchy
 
             namespace find
             {
-               auto next( std::span< const Option> options, range_type arguments)
+               auto next( range_type arguments, std::span< const Option> options)
                {
                   return common::algorithm::find_if( arguments, [ &options]( auto argument)
                   {
@@ -57,54 +57,91 @@ namespace casual
                   });
                };
 
-               auto parent( auto parents, range_type arguments)
+               auto parent( range_type arguments, auto parents)
                {
                   for( auto options : std::views::reverse( parents))
                   {
-                     if( auto found = next( options, arguments))
+                     if( auto found = next( arguments, options))
                         return found;
                   }
-                  return decltype( next( parents.front(), arguments)){};
+                  return decltype( next( arguments, parents.front())){};
                };
                
             } // find
 
-            inline range_type assign( auto state, range_type arguments, auto assign, auto assign_end)
+            //! Consumes all immediate/direct flags for suboptions to `option`
+            //!  --a -immediate-flag <arg-to-a> <arg-to-a> 
+            //!       consumes -immediate-flag and returns [ <arg-to-a>, <arg-to-a>] to 
+            //!       be assign/consumed to `--a` 
+            //! @returns arguments that are not consumed from `arguments`.
+            template< typename O>
+            range_type consume_immediate_flags( range_type arguments, O& option, auto callback)
             {
-               while( ! arguments.empty())
+               // if the current option takes no argument, we don't need to hustle with immediate flags.
+               // -> all suboptions are immediate, if any...
+               if( option.value_cardinality() == cardinality::zero())
+                  return arguments;
+
+               while( ! std::empty( arguments))
                {
-                  // first one has to be a key
                   auto key = arguments.front();
                   auto current = arguments.subspan( 1);
 
+                  // if we've got no more arguments, we don't need special treatment for immediate flags
+                  //  -> they can be treated as regular options, if any.
+                  if( std::empty( current))
+                     return arguments;
+                     
+                  if( auto found = algorithm::find( option.suboptions(), key); found && found->pure_flag())
+                  {
+                     // consume the immediate flag, and continue to search for more.
+                     callback( *found, key, range_type{});
+                     arguments = current;
+                  }
+                  else
+                     return arguments;
+               }
+               return arguments;
+            }
+
+
+            inline range_type traverse( auto state, range_type arguments, auto callback, auto callback_end)
+            {
+               while( ! std::empty( arguments))
+               {
+                  // first one has to be a key
+                  auto key = arguments.front();
+
                   if( auto option = common::algorithm::find( state.current(), key))
                   {
+                     auto current = consume_immediate_flags( arguments.subspan( 1), *option, callback);
+
                      // first we need to check the suboptions for the next "key"
-                     if( auto found = find::next( option->suboptions(), current))
+                     if( auto found = find::next( current, option->suboptions()))
                      {
                         auto [ chosen, remains] = common::algorithm::divide_at( current, std::begin( found));
 
-                        assign( *option, key, chosen);
+                        callback( *option, key, chosen);
 
                         // continue with the suboption
-                        arguments = local::assign( state + option->suboptions(), remains, assign, assign_end);
+                        arguments = local::traverse( state + option->suboptions(), remains, callback, callback_end);
                      }
                      // otherwise we check the siblings for the next "key"
-                     else if( auto found = find::next( state.current(), current))
+                     else if( auto found = find::next( current, state.current()))
                      {
                         auto [ chosen, remains] = common::algorithm::divide_at( current, std::begin( found));
 
-                        assign( *option, key, chosen);
+                        callback( *option, key, chosen);
 
                         // we've found the "next key" in this "level", we let the while loop continue
                         arguments = remains;
                      }
                      // otherwise we check parents for the next "key"
-                     else if( auto found = find::parent( state.parents(), current))
+                     else if( auto found = find::parent( current, state.parents()))
                      {
                         auto [ chosen, remains] = common::algorithm::divide_at( current, std::begin( found));
 
-                        assign( *option, key, chosen);
+                        callback( *option, key, chosen);
 
                         // we know that the key was found in some of the parents, let "parent assign" try to handle it
                         return remains;
@@ -112,7 +149,7 @@ namespace casual
                      // otherwise, we haven't found any "next key", we assign all arguments to option
                      else 
                      {
-                        assign_end( *option, key, current, state);
+                        callback_end( *option, key, current, state);
                         return {};
                      }
                   }
@@ -143,7 +180,7 @@ namespace casual
                   assign( option, key, arguments);
                };
 
-               auto left = local::assign( traverse::State< Option>{ options}, arguments, assign, assign_end);
+               auto left = local::traverse( hierarchy::State< Option>{ options}, arguments, assign, assign_end);
 
                if( ! left.empty())
                   common::code::raise::error( common::code::casual::invalid_argument, "failed to find option: ", left.front());
@@ -303,7 +340,7 @@ namespace casual
                   };
 
                   //! if the assign algorithm didn't consume all of the arguments, we didn't find anything.
-                  if( ! local::assign( traverse::State< const Option>{ options}, arguments, discard_assign, print_option).empty())
+                  if( ! local::traverse( hierarchy::State< const Option>{ options}, arguments, discard_assign, print_option).empty())
                      print_all( description, options);
                }
             } // help
@@ -372,7 +409,7 @@ namespace casual
                option.use();
             };
 
-            auto complete_option = []( Option& option, auto key, range_type arguments, local::traverse::State< Option>& state)
+            auto complete_option = []( Option& option, auto key, range_type arguments, local::hierarchy::State< Option>& state)
             {
                // fake "usage" the option 
                option.use();
@@ -410,11 +447,11 @@ namespace casual
                print_suggestions( option.suboptions());
 
                // traverse up in the option hierarchy and add all options that is not exhausted.
-               for( auto options : std::views::reverse( state.hierarchy))
+               for( auto options : std::views::reverse( state.all()))
                   print_suggestions( options);
             };
 
-            local::assign( local::traverse::State< Option>{ options}, arguments, complete_assign, complete_option);
+            local::traverse( local::hierarchy::State< Option>{ options}, arguments, complete_assign, complete_option);
 
          }
 

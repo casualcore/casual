@@ -475,6 +475,8 @@ namespace casual
          inline auto cardinality() const { return m_cardinality;}
          inline auto& description() const { return m_description;}
 
+         inline bool pure_flag() const { return value_cardinality() == cardinality::zero() && suboptions().empty();}
+
          //! @returns true if another "usage" would invalidate option cardinality
          inline bool exhausted() const
          {
