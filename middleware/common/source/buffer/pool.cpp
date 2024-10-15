@@ -66,9 +66,6 @@ namespace casual
          auto buffer = get_pool( handle).reallocate( handle, size);
          log::line( log::category::buffer, "reallocate: buffer: ", buffer);
 
-         if( handle == m_inbound)
-            m_inbound = buffer::handle::type{ buffer};
-
          return buffer;
       }
 
@@ -82,8 +79,7 @@ namespace casual
          Trace trace{ "buffer::pool::deallocate"};
          log::line( log::category::buffer, "deallocate ", handle);
 
-         // according to the XATMI-spec it's a no-op for tpfree for the inbound-buffer...
-         if( handle && handle != m_inbound)
+         if( handle)
             get_pool( handle).deallocate( handle);
       }
 
@@ -97,12 +93,8 @@ namespace casual
          // This is the only place where a buffer is consumed by the pool, hence can only happen
          // during service-invocation.
          //
-         // Keep track of the inbound buffer given to the user. This is a
-         // 'special' buffer according to the XATMI-spec.
-         auto& pool = get_pool( payload.type);
-         auto result = pool.adopt( std::move( payload), &m_inbound);
-         m_inbound = result;
-         return result;
+         // This is a 'special' buffer according to the XATMI-spec.
+         return get_pool( payload.type).adopt( std::move( payload));
       }
 
       std::tuple< buffer::handle::mutate::type, platform::buffer::raw::size::type> Holder::insert( Payload&& payload)
@@ -142,9 +134,6 @@ namespace casual
 
          auto result = get_pool( handle).release( handle);
 
-         if( m_inbound == handle) 
-            m_inbound = {};
-
          log::line( log::category::buffer, "released ", result);
 
          return result;
@@ -157,24 +146,22 @@ namespace casual
 
          auto result = get_pool( handle).release( handle, size);
 
-         if( m_inbound == handle) 
-            m_inbound = {};
-
          log::line( log::category::buffer, "released ", result);
 
          return result;
       }
 
+      bool Holder::inbound( buffer::handle::type handle) const
+      {
+         if( auto found = algorithm::find_if( m_pools, manage_buffer( handle)))
+            return (*found)->inbound( handle);
+            
+         return false;
+      }
+
 
       void Holder::clear()
       {
-         if( m_inbound)
-         {
-            exception::guard( [&]()
-            {
-               get_pool( m_inbound).deallocate( std::exchange( m_inbound, {}));
-            });
-         }
          algorithm::for_each( m_pools, std::mem_fn( &Holder::Concept::clear));
       }
 

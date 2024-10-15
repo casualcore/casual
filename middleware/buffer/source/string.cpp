@@ -96,12 +96,12 @@ namespace casual
                   return buffer.payload.handle();
                }
 
-               common::buffer::handle::mutate::type insert( common::buffer::Payload payload)
+               auto& insert( common::buffer::Payload payload)
                {
                   // Validate it before we move it
                   local::validate( payload);
 
-                  return allocator_base::emplace_back( std::move( payload)).payload.handle();
+                  return allocator_base::emplace_back( std::move( payload));
                }
 
             };

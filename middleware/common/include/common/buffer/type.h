@@ -30,7 +30,6 @@ namespace casual
 {
    namespace common::buffer
    {
-
       namespace handle
       {
          namespace detail
@@ -172,7 +171,12 @@ namespace casual
 
       struct Buffer
       {
+         // A tag for construction to indicate that the buffer is an "inbound"
+         struct Inbound {};
+
          Buffer( Payload payload);
+         //! construct an "inbound buffer".
+         Buffer( Payload payload, Inbound);
          Buffer( string::Argument type, platform::binary::size::type size);
 
          Buffer( Buffer&&) noexcept;
@@ -184,13 +188,15 @@ namespace casual
          inline buffer::handle::type handle() const noexcept { return payload.handle();}
          inline buffer::handle::mutate::type handle() noexcept { return payload.handle();}
 
-         //inline friend bool operator == ( const Buffer& lhs, buffer::handle::type rhs) { return lhs.handle() == rhs;}
+         bool inbound() const { return m_inbound;}
 
          CASUAL_LOG_SERIALIZE(
             CASUAL_SERIALIZE( payload);
          )
 
          Payload payload;
+      private:
+         bool m_inbound = false;
       };
 
    } // common::buffer

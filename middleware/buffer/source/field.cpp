@@ -94,19 +94,6 @@ namespace casual
                      throw std::invalid_argument{ "buffer is invalid"};
                }
 
-               // Invoked when a service is invoked with the "buffer from the wire"
-               //
-               // Since this type of buffer auto expands the memory during add and such, we need
-               // to let the 'buffer::pool::Holder' keep track of the handle to this buffer
-               //
-               // This is done through 'm_inbound', which need to be updated everywhere we change 
-               // the address of the buffer (allocate, shrink and so on)
-               Buffer( common::buffer::Payload payload, common::buffer::handle::type* inbound)
-                  : Buffer{ std::move( payload)}
-               {
-                  m_inbound = inbound;
-               }
-
                Buffer( Buffer&&) noexcept = default;
                Buffer& operator = ( Buffer&&) noexcept = default;
 
@@ -114,8 +101,6 @@ namespace casual
                auto append( const T& bytes)
                {
                   common::algorithm::container::append( bytes, payload.data);
-                  if( m_inbound)
-                     *m_inbound = handle();
                }
 
                void shrink() 
@@ -123,12 +108,7 @@ namespace casual
                   payload.data.shrink_to_fit();
 
                   if( ! payload.data.data())
-                  {
                      payload.data.reserve( 1);
-                  }
-
-                  if( m_inbound)
-                     *m_inbound = handle();
                }
 
                size_type capacity() const noexcept { return payload.data.capacity();}
@@ -136,8 +116,6 @@ namespace casual
                void capacity( platform::size::type value)
                { 
                   payload.data.reserve( value);
-                  if( m_inbound)
-                     *m_inbound = handle();
                }
 
                size_type utilized() const noexcept { return payload.data.size();}
@@ -158,8 +136,6 @@ namespace casual
                   common::buffer::Buffer::serialize( archive);
                   CASUAL_SERIALIZE( index);
                )
-
-               common::buffer::handle::type* m_inbound = nullptr;
             };
 
             // Might be named Pool as well
@@ -172,10 +148,9 @@ namespace casual
                };
 
                // called on service invocation
-               common::buffer::handle::mutate::type adopt( common::buffer::Payload&& payload, common::buffer::handle::type* inbound)
+               auto& adopt( common::buffer::Payload&& payload)
                {
-                  auto& buffer = allocator_base::emplace_back( std::move( payload), inbound);
-                  return buffer.handle();
+                  return allocator_base::emplace_back( std::move( payload), common::buffer::Buffer::Inbound{});
                }
 
                common::buffer::handle::mutate::type allocate( std::string_view type, platform::binary::size::type size)
@@ -213,8 +188,6 @@ namespace casual
                   return allocator_base::get( handle);
                }
             };
-
-            static_assert( common::buffer::pool::is::adoptable< Allocator>, "not adoptable"); 
 
          } //
       } // local
@@ -1554,7 +1527,7 @@ namespace casual
                {
                   Trace trace{ "field::internal::stream out"};
 
-                  const auto& buffer = pool_type::pool().get( pool_type::pool().insert( std::move( payload)));
+                  const auto& buffer = pool_type::pool().insert( std::move( payload));
 
                   common::log::line( verbose::log, "buffer.payload.type: ", buffer.payload.type, " - protocol: ", protocol);
 
@@ -1600,7 +1573,7 @@ namespace casual
             {
                try
                {
-                  return pool_type::pool().insert( payload::stream( stream, protocol)).raw();
+                  return pool_type::pool().insert( payload::stream( stream, protocol)).handle().raw();
                }
                catch( ...)
                {
@@ -1614,7 +1587,7 @@ namespace casual
             {
                Trace trace{ "field::internal::add"};
 
-               return pool_type::pool().insert( common::buffer::Payload{ key, std::move( buffer)}).raw();
+               return pool_type::pool().insert( common::buffer::Payload{ key, std::move( buffer)}).handle().raw();
             }
 
          } // internal

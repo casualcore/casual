@@ -1420,8 +1420,8 @@ namespace casual
 
          auto handle = common::buffer::pool::holder().adopt( { CASUAL_FIELD "/", 0l});
 
-         // holder().inbound() keeps track of the _special_ buffer.
-         EXPECT_TRUE( common::buffer::pool::holder().inbound() == handle);
+         // verify that we keep track of the _special_ buffer.
+         EXPECT_TRUE( common::buffer::pool::holder().inbound( handle));
 
          auto buffer = handle.raw();
 
@@ -1438,18 +1438,18 @@ namespace casual
          
          // the above should have expanded the buffer.
          EXPECT_TRUE( buffer != handle.raw());
-         EXPECT_TRUE( common::buffer::pool::holder().inbound() != handle);
+         EXPECT_TRUE( ! common::buffer::pool::holder().inbound( handle));
 
          // inbound "tracker" should correlate to the auto expanded buffer
-         EXPECT_TRUE( common::buffer::pool::holder().inbound().raw() == buffer);
+         EXPECT_TRUE( common::buffer::pool::holder().inbound( common::buffer::handle::type{ buffer}));
 
          buffer = ::tprealloc( buffer, 512);
-         EXPECT_TRUE( common::buffer::pool::holder().inbound().raw() == buffer);
+         EXPECT_TRUE( common::buffer::pool::holder().inbound( common::buffer::handle::type{ buffer}));
          
          // this should be a 'no-op' according to the spec...
          tpfree( buffer);
 
-         EXPECT_TRUE( common::buffer::pool::holder().inbound().raw() == buffer);
+         EXPECT_TRUE( common::buffer::pool::holder().inbound( common::buffer::handle::type{ buffer}));
 
          {
             short value{};

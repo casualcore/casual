@@ -87,6 +87,10 @@ namespace casual
          static_assert( concepts::nothrow::movable< Buffer>);
          static_assert( ! concepts::copyable< Buffer>);
 
+         Buffer::Buffer( Payload payload, Inbound)
+            : payload( std::move( payload)), m_inbound{ true}
+         {}
+
          Buffer::Buffer( Payload payload) : payload( std::move( payload)) {}
 
          Buffer::Buffer( string::Argument type, platform::binary::size::type size)

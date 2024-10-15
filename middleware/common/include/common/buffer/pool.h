@@ -35,12 +35,6 @@ namespace casual
          {
             common::stream::write( std::declval< std::ostream&>(), a);
          };
-
-         template< typename T>
-         concept adoptable = requires( T& a)
-         {
-            a.adopt( Payload{}, std::add_pointer_t< buffer::handle::type>{});
-         };
          
       } // is
 
@@ -73,9 +67,11 @@ namespace casual
          Payload release( buffer::handle::type handle, platform::binary::size::type user_size);
          Payload release( buffer::handle::type handle);
 
-         void clear();
+         //! @returns true if the `handle` is the _special inbound_ buffer
+         //! @note used only (?) in unittests
+         bool inbound( buffer::handle::type handle) const;
 
-         buffer::handle::type inbound() const noexcept { return m_inbound;}
+         void clear();
 
          CASUAL_FORWARD_SERIALIZE( m_pools);
 
@@ -91,14 +87,12 @@ namespace casual
             virtual buffer::handle::mutate::type allocate( std::string_view type, platform::binary::size::type size) = 0;
             virtual buffer::handle::mutate::type reallocate( buffer::handle::type handle, platform::binary::size::type size) = 0;
 
-
-
             virtual bool manage( buffer::handle::type handle) const noexcept = 0;
             virtual bool manage( std::string_view type) const noexcept = 0;
 
             virtual void deallocate( buffer::handle::type handle) = 0;
             virtual buffer::handle::mutate::type insert( Payload payload) = 0;
-            virtual buffer::handle::mutate::type adopt( Payload payload, buffer::handle::type* inbound) = 0;
+            virtual buffer::handle::mutate::type adopt( Payload payload) = 0;
 
             virtual payload::Send get( buffer::handle::type handle) = 0;
             virtual payload::Send get( buffer::handle::type handle, platform::binary::size::type user_size) = 0;
@@ -106,13 +100,15 @@ namespace casual
             virtual Payload release( buffer::handle::type handle, platform::binary::size::type user_size) = 0;
             virtual Payload release( buffer::handle::type handle) = 0;
 
+            virtual bool inbound( buffer::handle::type handle) const = 0;
+
             virtual void print( std::ostream& out) = 0;
 
             virtual void clear() = 0;
          };
 
          template< typename P>
-         struct model : Concept
+         struct model final : Concept
          {
             using pool_type = P;
 
@@ -133,14 +129,11 @@ namespace casual
             bool manage( buffer::handle::type handle) const noexcept override { return m_pool.manage( handle);}
             bool manage( std::string_view type) const noexcept override { return predicate::boolean( algorithm::find( pool_type::types(), type));}
             void deallocate( buffer::handle::type handle) override { m_pool.deallocate( handle);}
-            buffer::handle::mutate::type insert( Payload payload) override { return m_pool.insert( std::move( payload));}
+            buffer::handle::mutate::type insert( Payload payload) override { return m_pool.insert( std::move( payload)).handle();}
             
-            buffer::handle::mutate::type adopt( Payload payload, [[maybe_unused]] buffer::handle::type* inbound) override 
+            buffer::handle::mutate::type adopt( Payload payload) override 
             {
-               if constexpr( is::adoptable< pool_type>)
-                  return m_pool.adopt( std::move( payload), inbound);
-               else
-                  return m_pool.insert( std::move( payload));
+               return m_pool.adopt( std::move( payload)).handle();
             }
 
             payload::Send get( buffer::handle::type handle) override
@@ -169,6 +162,8 @@ namespace casual
                buffer.payload.data.erase( std::begin( buffer.payload.data) + buffer.transport( user_size), std::end( buffer.payload.data));
                return std::move( buffer.payload);
             }
+
+            bool inbound( buffer::handle::type handle) const override { return m_pool.inbound( handle);}
 
             void print( std::ostream& out) override
             {
@@ -217,7 +212,6 @@ namespace casual
 
          const Payload& null_payload() const;
 
-         buffer::handle::type m_inbound;
          std::vector< std::unique_ptr< Concept>> m_pools;
 
       };
@@ -264,9 +258,7 @@ namespace casual
                if( auto found = algorithm::find_if( m_buffers, is_buffer( handle)))
                {
                   auto& payload = found->payload;
-
                   payload.data.resize( size);
-
                   return payload.handle();
                }
                return {};
@@ -280,12 +272,22 @@ namespace casual
             void deallocate( buffer::handle::type handle)
             {
                if( auto found = algorithm::find_if( m_buffers, is_buffer( handle)))
-                  m_buffers.erase( std::begin( found));
+               {
+                  // according to the XATMI-spec it's a no-op for tpfree for the inbound-buffer...
+                  if( ! found->inbound())
+                     m_buffers.erase( std::begin( found));
+               }
             }
 
-            buffer::handle::mutate::type insert( Payload payload)
+            buffer_type& insert( Payload payload)
             {
-               return m_buffers.emplace_back( std::move( payload)).handle();
+               return m_buffers.emplace_back( std::move( payload));
+            }
+
+            buffer_type& adopt( Payload payload)
+            {
+               // make sure we create the _special inbound_
+               return m_buffers.emplace_back( std::move( payload), Buffer::Inbound{});
             }
 
             buffer_type& get( buffer::handle::type handle)
@@ -296,7 +298,6 @@ namespace casual
                code::raise::error( code::xatmi::argument, "failed to find buffer");
             }
 
-
             buffer_type release( buffer::handle::type handle)
             {
                if( auto found = algorithm::find_if( m_buffers, is_buffer( handle)))
@@ -305,14 +306,24 @@ namespace casual
                code::raise::error( code::xatmi::argument, "failed to find buffer");
             }
 
+            bool inbound( buffer::handle::type handle) const
+            {
+               if( auto found = algorithm::find_if( m_buffers, is_buffer( handle)))
+                  return found->inbound();
+               return false;
+            }
+
             void clear()
             {
                // We don't do any automatic cleanup, since the user could have a
                // global handle to some buffer.
+
+               // We do clean up potential 'inbound'
+               algorithm::container::erase_if( m_buffers, []( auto& buffer){ return buffer.inbound();});
             }
 
             template< typename... Args>
-            decltype( auto) emplace_back( Args&&... args)
+            buffer_type& emplace_back( Args&&... args)
             {
                return m_buffers.emplace_back( std::forward< Args>( args)...);
             }
