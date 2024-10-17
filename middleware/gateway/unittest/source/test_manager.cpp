@@ -1502,6 +1502,17 @@ domain:
 
          a.activate();
 
+         // we need to wait/verify that A has got the disconnect information from B.
+         {
+            auto disconnecting_mode = []( auto& state)
+            {
+               return state.connections.at( 0).runlevel == decltype( state.connections.at( 0).runlevel)::disconnecting;
+            };
+
+            unittest::fetch::until( disconnecting_mode);
+         }
+         
+
          // send direct::Explore to outbound-connection, outbound should not send discovery to
          // B since B is in disconnect mode.
          {
