@@ -561,13 +561,13 @@ namespace casual
 
             auto invoke_rollback = [ this]( const Transaction& transaction)
             {
-               return local::log::code( Context::rollback( transaction), "failed to rollback transaction: ", transaction.trid);
+               return local::log::code( Context::rollback( transaction), "failed to rollback trid: ", transaction.trid);
             };
 
             auto invoke_commit_rollback = [ this, invoke_rollback, commit]( const Transaction& transaction)
             {
                if( commit && transaction.state == Transaction::State::active)
-                  return Context::commit( transaction);
+                  return local::log::code( Context::commit( transaction), "failed to commit trid: ", transaction.trid);
                else
                   return invoke_rollback( transaction);
             };

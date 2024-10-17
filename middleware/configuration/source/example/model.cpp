@@ -293,9 +293,11 @@ domain:
                      source: c1
                      target:
                         queue: a4
+                     note: gets the alias 'c1'
             -  alias: forward-group-2
                services:
-                  -  source: b2
+                  -  alias: bar
+                     source: b2
                      target:
                         service: casual/example/echo
                      note: will get alias b2

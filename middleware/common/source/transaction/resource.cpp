@@ -189,6 +189,9 @@ namespace casual
             return local::convert( m_xa->xa_commit_entry( local::non_const_xid( transaction), m_id.value(), std::to_underlying( flags)));
          });
 
+         if( result != code::xa::ok)
+            log::line( log::category::error, result, " error during commit - xid: ", transaction.xid, ", rm: ", m_id);
+
          local::log::event( "resource-commit|", m_id, '|', transaction, '|', result);
 
          return result;
@@ -198,10 +201,13 @@ namespace casual
       {
          log::line( log::category::transaction, "rollback resource: ", m_id, " transaction: ", transaction, " flags: ", flags);
 
-         auto result =  reopen_guard( [&]()
+         auto result = reopen_guard( [&]()
          {
             return local::convert( m_xa->xa_rollback_entry( local::non_const_xid( transaction), m_id.value(), std::to_underlying( flags)));
          });
+
+         if( result != code::xa::ok)
+            log::line( log::category::error, result, " error during rollback - xid: ", transaction.xid, ", rm: ", m_id);
 
          local::log::event( "resource-rollback|", m_id, '|', transaction, '|', result);
 

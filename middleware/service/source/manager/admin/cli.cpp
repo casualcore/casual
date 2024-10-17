@@ -315,11 +315,12 @@ namespace casual
                      }
                   }
 
-                  auto routes( const admin::model::State& state)
+
+                  auto routes()
                   {
-                     return terminal::format::formatter< admin::model::Route>::construct( 
-                        terminal::format::column( "name", std::mem_fn( &admin::model::Route::service), terminal::color::yellow, terminal::format::Align::left),
-                        terminal::format::column( "target", std::mem_fn( &admin::model::Route::target), terminal::color::no_color, terminal::format::Align::left)
+                     return terminal::format::formatter< model::Route>::construct( 
+                        terminal::format::column( "name", std::mem_fn( &model::Route::service), terminal::color::yellow, terminal::format::Align::left),
+                        terminal::format::column( "target", std::mem_fn( &model::Route::target), terminal::color::no_color, terminal::format::Align::left)
                      );
                   }
 
@@ -501,7 +502,7 @@ namespace casual
                         {
                            auto state = admin::api::state();
 
-                           auto formatter = format::routes( state);
+                           auto formatter = format::routes();
                            formatter.print( std::cout, state.routes);
                         };
 

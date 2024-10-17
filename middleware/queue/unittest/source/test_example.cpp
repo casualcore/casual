@@ -48,6 +48,8 @@ domain:
            queuebase: ":memory:"
            queues:
             - name: example.q1
+            - name: example.q2
+            - name: example.q3
 
    servers:
       - path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/service/bin/casual-service-manager"
@@ -68,10 +70,10 @@ domain:
             }
 
             template< typename B>
-            int call_enqueue( B&& buffer)
+            int call_enqueue( B&& buffer, const std::string& queuename)
             {
                auto len = tptypes( buffer, nullptr, nullptr);
-               return tpcall( "casual/example/enqueue", buffer, len, &buffer, &len, 0);
+               return tpcall( common::string::compose("casual/example/enqueue/", queuename).data(), buffer, len, &buffer, &len, 0);
             }
 
          } // <unnamed> 
@@ -87,7 +89,7 @@ domain:
    servers:
       - path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/queue/bin/casual-queue-example-server"
         memberships: [ user]
-        arguments: [ --queue, non-existing]
+        arguments: [ --queues, non-existing]
 )";
          auto domain = local::domain( example_server);
 
@@ -95,7 +97,7 @@ domain:
          auto buffer = tpalloc( X_OCTET, nullptr, contents.size());
          common::algorithm::copy( contents, common::binary::span::make( buffer, contents.size()));
 
-         EXPECT_EQ( local::call_enqueue( buffer), -1);
+         EXPECT_EQ( local::call_enqueue( buffer, "non-existing"), -1);
          tpfree( buffer);
       }
 
@@ -108,7 +110,7 @@ domain:
    servers:
       - path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/queue/bin/casual-queue-example-server"
         memberships: [ user]
-        arguments: [ --queue, example.q1]
+        arguments: [ --queues, example.q1]
 )";
          auto domain = local::domain( example_server);
 
@@ -119,7 +121,7 @@ domain:
             auto buffer = tpalloc( X_OCTET, nullptr, contents.size());
             common::algorithm::copy( contents, common::binary::span::make( buffer, contents.size()));
 
-            EXPECT_EQ( local::call_enqueue( buffer), 0);
+            EXPECT_EQ( local::call_enqueue( buffer, "example.q1"), 0);
             tpfree( buffer);
          }
 
@@ -142,7 +144,7 @@ domain:
    servers:
       - path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/queue/bin/casual-queue-example-server"
         memberships: [ user]
-        arguments: [ --queue, example.q1]
+        arguments: [ --queues, example.q1]
 )";
          auto domain = local::domain( example_server);
 
@@ -155,7 +157,7 @@ domain:
             auto buffer = tpalloc( X_OCTET, nullptr, contents.size());
             common::algorithm::copy( contents, common::binary::span::make( buffer, contents.size()));
 
-            EXPECT_EQ( local::call_enqueue( buffer), 0);
+            EXPECT_EQ( local::call_enqueue( buffer, "example.q1"), 0);
             tpfree( buffer);
          }
 
@@ -175,14 +177,14 @@ domain:
    servers:
       - path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/queue/bin/casual-queue-example-server"
         memberships: [ user]
-        arguments: [ --queue, non-existing]
+        arguments: [ --queues, non-existing]
 )";
          auto domain = local::domain( example_server);
 
          auto buffer = tpalloc( X_OCTET, nullptr, 128);
          long olen = 999;
 
-         EXPECT_EQ( tpcall( "casual/example/dequeue", nullptr, 0, &buffer, &olen, 0), -1);
+         EXPECT_EQ( tpcall( "casual/example/dequeue/non-existing", nullptr, 0, &buffer, &olen, 0), -1);
       }
 
       TEST( casual_queue_example_server, dequeue_empty_queue__expect_empty_response)
@@ -194,14 +196,14 @@ domain:
    servers:
       - path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/queue/bin/casual-queue-example-server"
         memberships: [ user]
-        arguments: [ --queue, example.q1]
+        arguments: [ --queues, example.q1]
 )";
          auto domain = local::domain( example_server);
 
          auto buffer = tpalloc( X_OCTET, nullptr, 128);
          long olen = 999;
 
-         EXPECT_EQ( tpcall( "casual/example/dequeue", nullptr, 0, &buffer, &olen, 0), 0);
+         EXPECT_EQ( tpcall( "casual/example/dequeue/example.q1", nullptr, 0, &buffer, &olen, 0), 0);
          EXPECT_EQ( olen, 0);
       }
 
@@ -214,7 +216,7 @@ domain:
    servers:
       - path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/queue/bin/casual-queue-example-server"
         memberships: [ user]
-        arguments: [ --queue, example.q1]
+        arguments: [ --queues, example.q1]
 )";
          auto domain = local::domain( example_server);
 
@@ -233,7 +235,7 @@ domain:
             auto buffer = tpalloc( X_OCTET, nullptr, 256);
             long olen = 0;
 
-            EXPECT_EQ( tpcall( "casual/example/dequeue", nullptr, 0, &buffer, &olen, 0), 0);
+            EXPECT_EQ( tpcall( "casual/example/dequeue/example.q1", nullptr, 0, &buffer, &olen, 0), 0);
             EXPECT_EQ( olen, 128);
 
             char buf_type[9];
@@ -246,6 +248,56 @@ domain:
 
          EXPECT_EQ( queue::dequeue( "example.q1").size(), 0UL);
 
+      }
+
+      TEST( casual_queue_example_server, enqueue_multiple_queues)
+      {
+         common::unittest::Trace trace;
+         
+         constexpr auto example_server = R"(
+domain:
+   servers:
+      - path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/queue/bin/casual-queue-example-server"
+        memberships: [ user]
+        arguments: [ --queues, example.q1, example.q2, example.q3]
+)";
+         auto domain = local::domain( example_server);
+
+         auto contents = common::unittest::random::binary( 128);
+
+         // enqueue 1 message
+         {
+            auto buffer = tpalloc( X_OCTET, nullptr, contents.size());
+            common::algorithm::copy( contents, common::binary::span::make( buffer, contents.size()));
+
+            EXPECT_EQ( local::call_enqueue( buffer, "example.q1"), 0);
+            tpfree( buffer);
+         }
+         // dequeue 1 message
+         {
+            auto messages = queue::dequeue( "example.q1");
+            EXPECT_EQ( messages.size(), 1UL);
+
+            EXPECT_EQ( messages.front().payload.type, "X_OCTET/");
+            EXPECT_TRUE( common::algorithm::equal(messages.front().payload.data, contents));
+         }
+
+         // enqueue 1 message
+         {
+            auto buffer = tpalloc( X_OCTET, nullptr, contents.size());
+            common::algorithm::copy( contents, common::binary::span::make( buffer, contents.size()));
+
+            EXPECT_EQ( local::call_enqueue( buffer, "example.q2"), 0);
+            tpfree( buffer);
+         }
+         // dequeue 1 message
+         {
+            auto messages = queue::dequeue( "example.q2");
+            EXPECT_EQ( messages.size(), 1UL);
+
+            EXPECT_EQ( messages.front().payload.type, "X_OCTET/");
+            EXPECT_TRUE( common::algorithm::equal(messages.front().payload.data, contents));
+         }
       }
 
    } // queue::example

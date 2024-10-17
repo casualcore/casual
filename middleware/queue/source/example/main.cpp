@@ -18,28 +18,28 @@ namespace casual
          {
             struct
             {
-               std::string queue;
+               std::vector<std::string> queues;
             } settings;
 
             namespace service
             {
-               auto enqueue()
+               auto enqueue( const std::string& queue)
                {
-                  return []( common::service::invoke::Parameter&& parameter)
+                  return [queue]( common::service::invoke::Parameter&& parameter)
                   {
                      queue::Message message;
                      message.payload.data = std::move(parameter.payload.data);
                      message.payload.type = parameter.payload.type;
-                     queue::enqueue(settings.queue, message);
+                     queue::enqueue(queue, message);
                      return common::service::invoke::Result{ nullptr };
                   };
                }
 
-               auto dequeue()
+               auto dequeue( const std::string& queue)
                {
-                  return []( common::service::invoke::Parameter&& parameter)
+                  return [queue]( common::service::invoke::Parameter&& parameter)
                   {
-                     if (auto message = queue::dequeue( settings.queue); ! message.empty())
+                     if (auto message = queue::dequeue( queue); ! message.empty())
                      {
                         common::buffer::Payload payload { message.front().payload.type };
                         payload.data = std::move( message.front().payload.data);
@@ -50,41 +50,52 @@ namespace casual
                }
             }
 
-            common::server::Arguments services()
+            common::server::Arguments services( std::vector<std::string> queues)
             {
-               return {{
-                  {
-                     "casual/example/enqueue",
-                     service::enqueue(),
-                     common::service::transaction::Type::automatic,
-                     common::service::visibility::Type::discoverable,
-                     "example"
-                  },
-                  {
-                     "casual/example/dequeue",
-                     service::dequeue(),
-                     common::service::transaction::Type::automatic,
-                     common::service::visibility::Type::discoverable,
-                     "example"
-                  }
-               }};
+               auto to_services = [](const auto& queue) -> std::vector<common::server::Service>
+               {
+                  return {
+                     {
+                        common::string::compose( "casual/example/enqueue/", queue),
+                        service::enqueue( queue),
+                        common::service::transaction::Type::automatic,
+                        common::service::visibility::Type::discoverable,
+                        "example"
+                     },
+                     {
+                        common::string::compose( "casual/example/dequeue/", queue),
+                        service::dequeue( queue),
+                        common::service::transaction::Type::automatic,
+                        common::service::visibility::Type::discoverable,
+                        "example"
+                     },
+                  };
+               };
+
+               auto services = common::algorithm::accumulate(
+                  common::algorithm::transform( queues, to_services),
+                  std::vector<common::server::Service>{},
+                  [](auto&& a, auto&& b) {
+                     return common::algorithm::container::append( b, a);
+                  });
+
+               return {{ services }};
             }
 
             void main( int argc, const char** argv)
             {
                argument::parse(
                   R"(Example server)", {
-                  argument::Option{ std::tie( settings.queue), {"--queue"}, "queue that casual/example/{enqueue,dequeue} should use"},
+                  argument::Option{ std::tie( settings.queues), {"--queues"}, "queues that casual/example/{enqueue,dequeue} should use"},
                }, argc, argv);
 
-               common::log::line( common::log::category::information, "queue: ", settings.queue);
-
+               common::log::line( common::log::category::information, "queues: ", settings.queues);
                common::communication::instance::connect();
 
                auto handler = common::message::dispatch::handler(
                   common::communication::ipc::inbound::device(),
                   common::message::dispatch::handle::defaults(),
-                  common::server::handle::Call{services()}
+                  common::server::handle::Call{services(settings.queues)}
                );
 
                common::message::dispatch::pump( handler, common::communication::ipc::inbound::device());
