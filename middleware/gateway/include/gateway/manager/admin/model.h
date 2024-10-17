@@ -69,6 +69,7 @@ namespace casual
                connecting = 1,
                pending = 4,
                connected = 2,
+               disconnecting = 6,
                failed = 3,
                disabled = 5,
 
@@ -82,6 +83,7 @@ namespace casual
                   case Runlevel::connecting: return "connecting";
                   case Runlevel::pending: return "pending";
                   case Runlevel::connected: return "connected";
+                  case Runlevel::disconnecting: return "disconnecting";
                   case Runlevel::failed: return "failed";
                   case Runlevel::disabled: return "disabled";
                }
@@ -117,7 +119,7 @@ namespace casual
             platform::time::point::type created{};
             bool enabled = true;
             
-            
+            inline friend bool operator == ( const Connection& lhs, common::strong::socket::id rhs) { return lhs.descriptor == rhs;}
             inline friend bool operator == ( const Connection& lhs, std::string_view rhs) { return lhs.remote == rhs;}
             inline friend bool operator == ( const Connection&, const Connection&) = default;
             inline friend auto operator <=> ( const Connection&, const Connection&) = default;

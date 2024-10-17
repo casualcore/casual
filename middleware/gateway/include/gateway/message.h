@@ -146,6 +146,7 @@ namespace casual
                connecting,
                pending,
                connected,
+               disconnecting,
                failed,
                disabled,
             };
@@ -156,6 +157,7 @@ namespace casual
                   case Runlevel::connecting: return "connecting";
                   case Runlevel::pending: return "pending";
                   case Runlevel::connected: return "connected";
+                  case Runlevel::disconnecting: return "disconnecting";
                   case Runlevel::failed: return "failed";
                   case Runlevel::disabled: return "disabled";
                }
@@ -197,6 +199,8 @@ namespace casual
                )
                
             } metric;
+
+            inline friend bool operator == ( const basic_connection& lhs, common::strong::socket::id rhs) { return lhs.descriptor == rhs;}
 
             CASUAL_CONST_CORRECT_SERIALIZE(
                CASUAL_SERIALIZE( address);

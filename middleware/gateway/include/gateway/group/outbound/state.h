@@ -291,6 +291,11 @@ namespace casual
          {
             auto reply = connections.reply( request);
 
+            // update disconnect informaiton, if any
+            for( auto& disconnect : disconnecting)
+               if( auto found = common::algorithm::find( reply.state.connections, disconnect.descriptor))
+                  found->runlevel = decltype( found->runlevel)::disconnecting;
+
             reply.state.alias = alias;
             reply.state.order = order;
 
