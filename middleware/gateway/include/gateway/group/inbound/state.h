@@ -201,6 +201,11 @@ namespace casual
          {
             auto reply = connections.reply( request);
 
+            // update disconnect informaiton, if any
+            for( auto socket : pending.disconnects)
+               if( auto found = common::algorithm::find( reply.state.connections, socket))
+                  found->runlevel = decltype( found->runlevel)::disconnecting;
+
             reply.state.alias = alias;
             reply.state.note = note;
             reply.state.limit = limit;

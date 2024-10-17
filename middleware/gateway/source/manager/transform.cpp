@@ -47,6 +47,7 @@ namespace casual
                            case Enum::connecting: return manager::admin::model::connection::Runlevel::connecting;
                            case Enum::pending: return manager::admin::model::connection::Runlevel::pending;
                            case Enum::connected: return manager::admin::model::connection::Runlevel::connected;
+                           case Enum::disconnecting: return manager::admin::model::connection::Runlevel::disconnecting;
                            case Enum::failed: return manager::admin::model::connection::Runlevel::failed;
                            case Enum::disabled: return manager::admin::model::connection::Runlevel::disabled;
                         }
@@ -72,8 +73,6 @@ namespace casual
                         result.runlevel = manager::admin::model::connection::Runlevel::disabled;
                      else if( result.address.local.empty())
                         result.runlevel = manager::admin::model::connection::Runlevel::connecting;
-                     else
-                        result.runlevel = manager::admin::model::connection::Runlevel::connected;
 
                      // deprecated remove in 2.0
                      result.process = reply.process; 
