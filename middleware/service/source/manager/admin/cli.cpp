@@ -550,37 +550,27 @@ namespace casual
                {
                   auto option()
                   {
-                     static const std::map< std::string, std::string_view> legends{
-                        { "list-services", list::services::legend},
-                        { "list-admin-services", list::services::legend},
-                     };
-
-                     auto invoke = []( const std::string& value)
+                     auto legend_option = [](  std::string key, std::string_view legend)
                      {
-                        if( auto found = algorithm::find( legends, value))
-                           std::cout << found->second;
-                        else
-                           code::raise::error( code::casual::invalid_argument, "not a valid argument to --legend: ", value);
+                        return argument::Option{ [ key, legend]()
+                           {
+                              std::cout << legend;
+                           },
+                           { key},
+                           string::compose( "list legend for ", key)
+                        };
                      };
 
-                     auto completer = []( bool help, auto values) -> std::vector< std::string>
-                     {
-                        if( help)
-                           return { "<option>"};
-
-                        return algorithm::transform( legends, []( auto& pair){ return pair.first;});
-                     };
-                     
                      return argument::Option{ 
-                        invoke,
-                        completer,
+                        [](){},
                         { "--legend"}, 
                          R"(the legend for the supplied option
 
 Documentation and description for abbreviations and acronyms used as columns in output
 
-note: not all options has legend, use 'auto complete' to find out which legends are supported.
-)"};
+The following options has legend:
+)"
+                     }( { legend_option( "--list-services", list::services::legend)});
                   }
                   
                } // legend

@@ -898,35 +898,33 @@ namespace casual
 
                auto option()
                {
-                  auto invoke = []( const std::string& option)
+                  auto legend_option = [](  std::string key, std::string_view legend)
                   {
-                     if( option == "list-queues")
-                        std::cout << legend::list::queues;
-                     else if( option == "list-messages")
-                        std::cout << legend::list::messages;
-                     else if( option == "list-forward-groups")
-                        std::cout << legend::list::forward::groups;
-                     else if( option == "list-forward-services")
-                        std::cout << legend::list::forward::services;
-                     else if( option == "list-forward-queues")
-                        std::cout << legend::list::forward::queues;
-                  };
-
-                  auto complete = []( bool help, auto values) -> std::vector< std::string>
-                  {     
-                     return { "list-queues", "list-messages", "list-forward-groups", "list-forward-services", "list-forward-queues"};
+                     return argument::Option{ [ key, legend]()
+                        {
+                           std::cout << legend;
+                        },
+                        { key},
+                        string::compose( "list legend for ", key)
+                     };
                   };
 
                   return argument::Option{
-                     std::move( invoke),
-                     complete,
+                     [](){},
                      { "--legend"},
                      R"(provide legend for the output for some of the options
 
-to view legend for --list-queues use casual queue --legend list-queues, and so on.
+to view legend for --list-queues use casual queue --legend --list-queues, and so on.
 
-use auto-complete to help which options has legends)"
-                  };
+The following options has legend:
+)"
+                  }({
+                     legend_option( "--list-queues", legend::list::queues),
+                     legend_option( "--list-messages", legend::list::messages),
+                     legend_option( "--list-forward-groups", legend::list::forward::groups),
+                     legend_option( "--list-forward-services", legend::list::forward::services),
+                     legend_option( "--list-forward-queues", legend::list::forward::queues),
+                  });
                }
 
             } // legend 

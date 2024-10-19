@@ -59,12 +59,17 @@ transaction [0..1]
       -lp, --list-pending [0..1]
            list pending tasks
 
-      --legend [0..1]  (list-resources) [1]
+      --legend [0..1]
            the legend for the supplied option
            
            Documentation and description for abbreviations and acronyms used as columns in output
            
-           note: not all options has legend, use 'auto complete' to find out which legends are supported.
+           The following options has legend:
+
+         SUB OPTIONS:
+
+            --list-resources [0..1]
+                 list legend for --list-resources
 
       --information [0..1]
            collect aggregated information about transactions in this domain

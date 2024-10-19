@@ -72,12 +72,23 @@ domain [0..1]
       --instance-global-state [0..1]  (<pid>, [<format>]) [1..2]
            get the 'global state' for the provided pid
 
-      --legend [0..1]  (list-executables, list-servers, ping) [1]
+      --legend [0..1]
            the legend for the supplied option
            
            Documentation and description for abbreviations and acronyms used as columns in output
            
-           note: not all options has legend, use 'auto complete' to find out which legends are supported.
+           The following options has legend:
+
+         SUB OPTIONS:
+
+            --list-servers [0..1]
+                 list legend for --list-servers
+
+            --list-executables [0..1]
+                 list legend for --list-executables
+
+            --ping [0..1]
+                 list legend for --ping
 
       --information [0..1]
            collect aggregated general information about this domain

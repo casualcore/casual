@@ -122,6 +122,7 @@
       <element>
        <alias>fwd-c1</alias>
        <source>c1</source>
+       <note>gets the alias 'c1'</note>
        <target>
         <queue>a4</queue>
        </target>
@@ -132,6 +133,7 @@
      <alias>forward-group-2</alias>
      <services>
       <element>
+       <alias>bar</alias>
        <source>b2</source>
        <note>will get alias b2</note>
        <target>

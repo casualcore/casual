@@ -526,29 +526,29 @@ created
 
                   auto create()
                   {
-                     auto invoke = []( const std::string& option)
+                     auto legend_option = [](  std::string key, std::string_view legend)
                      {
-                        if( auto found = algorithm::find( legend::legends, option))
-                           std::cout << found->second;
-                        else
-                           code::raise::error( code::casual::invalid_argument, "not a valid argument to --legend: ", option);
-                     };
-
-                     auto complete = []( auto values, auto help)
-                     {
-                        return algorithm::transform( legends, []( auto& pair){ return std::string{ pair.first};});
+                        return argument::Option{ [ key, legend]()
+                           {
+                              std::cout << legend;
+                           },
+                           { key},
+                           string::compose( "list legend for ", key)
+                        };
                      };
 
                      return argument::Option{ 
-                        std::move( invoke),
-                        complete,
+                        [](){},
                         { "--legend"}, 
                         R"(show legend for the output of the supplied option
 
 Documentation and description for abbreviations and acronyms used as columns in output
 
-note: not all options has legend, use 'auto complete' to find out which legends are supported.                        
-)"};
+The following options has legend:                       
+)"
+                        }({
+                           legend_option( "--list-connections", option::list::connections::legend)
+                        });
                   }
 
                } // legend

@@ -1110,34 +1110,33 @@ note: some aliases are unrestartable
 
                auto legend()
                {
-                  static const std::map< std::string, std::string_view> legends{
-                     { "list-servers", option::list::servers_legend},
-                     { "list-executables", option::list::executables_legend},
-                     { "ping", action::ping::legend},
+
+                  auto legend_option = []( std::string key, std::string_view legend)
+                  {
+                     return argument::Option{ [ key, legend]()
+                        {
+                           std::cout << legend;
+                        },
+                        { key},
+                        string::compose( "list legend for ", key)
+                     };
                   };
                                     
-                  auto invoke = []( const std::string& option)
-                  {
-                     if( auto found = algorithm::find( legends, option))
-                        std::cout << found->second;
-                  };
-
-                  auto complete = []( bool help, auto values)
-                  {
-                     return algorithm::transform( legends, []( auto& pair){ return pair.first;});
-                  };
 
                   return argument::Option{
-                     std::move( invoke),
-                     std::move( complete),
+                     [](){},
                      { "--legend"},
                      R"(the legend for the supplied option
 
 Documentation and description for abbreviations and acronyms used as columns in output
 
-note: not all options has legend, use 'auto complete' to find out which legends are supported.
+The following options has legend:
 )"
-                  };
+                  }({
+                     legend_option( "--list-servers", option::list::servers_legend),
+                     legend_option( "--list-executables", option::list::executables_legend),
+                     legend_option( "--ping", action::ping::legend),
+                  });
                }
 
             } // option

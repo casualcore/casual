@@ -64,7 +64,7 @@ domain:
       {
          common::unittest::Trace trace;
          
-         auto capture = administration::unittest::cli::command::execute( "casual gateway --legend list-connections");
+         auto capture = administration::unittest::cli::command::execute( "casual gateway --legend --list-connections");
 
          EXPECT_TRUE( capture.standard.out.size() > 30) << CASUAL_NAMED_VALUE( capture);
       }
