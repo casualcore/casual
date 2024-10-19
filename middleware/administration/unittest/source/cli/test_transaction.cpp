@@ -200,7 +200,7 @@ domain:
       {
          auto a = local::cli::domain();
 
-         const auto capture = administration::unittest::cli::command::execute( R"(casual transaction --legend list-resources)");
+         const auto capture = administration::unittest::cli::command::execute( R"(casual transaction --legend --list-resources)");
 
          using namespace std::literals;
 

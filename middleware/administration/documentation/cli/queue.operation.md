@@ -133,12 +133,29 @@ queue [0..1]
            Example:
            casual queue --metric-reset a b
 
-      --legend [0..1]  (list-queues, list-messages, list-forward-groups, list-forward-services, list-forward-queues) [1]
+      --legend [0..1]
            provide legend for the output for some of the options
            
-           to view legend for --list-queues use casual queue --legend list-queues, and so on.
+           to view legend for --list-queues use casual queue --legend --list-queues, and so on.
            
-           use auto-complete to help which options has legends
+           The following options has legend:
+
+         SUB OPTIONS:
+
+            --list-queues [0..1]
+                 list legend for --list-queues
+
+            --list-messages [0..1]
+                 list legend for --list-messages
+
+            --list-forward-groups [0..1]
+                 list legend for --list-forward-groups
+
+            --list-forward-services [0..1]
+                 list legend for --list-forward-services
+
+            --list-forward-queues [0..1]
+                 list legend for --list-forward-queues
 
       --information [0..1]
            collect aggregated information about queues in this domain

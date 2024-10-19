@@ -27,12 +27,17 @@ service [0..1]
       -mr, --metric-reset [0..1]  (<service>...) [0..*]
            reset metrics for provided services, if no services provided, all metrics will be reset
 
-      --legend [0..1]  (<option>) [1]
+      --legend [0..1]
            the legend for the supplied option
            
            Documentation and description for abbreviations and acronyms used as columns in output
            
-           note: not all options has legend, use 'auto complete' to find out which legends are supported.
+           The following options has legend:
+
+         SUB OPTIONS:
+
+            --list-services [0..1]
+                 list legend for --list-services
 
       --information [0..1]
            collect aggregated information about known services

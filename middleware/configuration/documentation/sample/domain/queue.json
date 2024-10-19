@@ -121,6 +121,7 @@
                             {
                                 "alias": "fwd-c1",
                                 "source": "c1",
+                                "note": "gets the alias 'c1'",
                                 "target": {
                                     "queue": "a4"
                                 }
@@ -131,6 +132,7 @@
                         "alias": "forward-group-2",
                         "services": [
                             {
+                                "alias": "bar",
                                 "source": "b2",
                                 "note": "will get alias b2",
                                 "target": {
