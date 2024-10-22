@@ -118,14 +118,9 @@ namespace casual
                   {
                      auto pending = heuristic.pending_requests();
 
-                     // sanity check. We should never have reach this with low in-flights
+                     // this may happen since we always accumulate topology requests
                      if( pending <= heuristic.in_flight_window)
-                     {
-                        log::line( log::category::error, code::casual::invalid_semantics, " unexpected inflight: ", pending);
-                        log::line( log::category::verbose::error, "heuristic: ", heuristic );
-
                         return common::signal::timer::Deadline{ heuristic.duration};
-                     }
 
                      auto load_level = pending / heuristic.in_flight_window;
                      log::line( verbose::log, "load_level: ", load_level);
