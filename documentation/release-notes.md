@@ -11,10 +11,9 @@ restarted.
 
 A convenient way for a user to update configuration is to runtime edit.
 
-```bash
+```console
 $ casual configuration --edit
 ```
-
 
 ### branch on inbound
 
@@ -22,6 +21,14 @@ In `1.7` we branch a transaction on the way 'in' to the domain. This change is
 primarily because it gives technical advantages, but it could also benefit 
 business flows. It is more likely to access a resource with the same branch in 
 complex topologies. Sort of a poor mans _tightly coupled_ transactions.
+
+### gateway pair of ipc - tcp sockets
+
+`inbound` and `outbound` tcp connections now has it's own _ipc device_ associated.
+This is mostly to make the semantics easier and cleaner. Responsibilities lands 
+more naturally where they belong.
+
+This should increase throughput since more control is given to the operating system.
 
 ### disable enqueue/dequeue
 
@@ -47,6 +54,8 @@ domain:
 
 ```
 
+see [domain.queue.operation.md](../middleware/configuration/documentation/domain.queue.operation.md)
+
 ### enable/disable groups
 
 We've introduced enable/disable on configuration groups.
@@ -57,10 +66,35 @@ domain:
     - name: a
     - name: b
       dependencies: [ a]
-
+      enabled: false
+    - name: c
+      enabled: true
 ```
 
+This should help turn groups of stuff on and off. 
 
+see [domain.general.operation.md](../middleware/configuration/documentation/domain.general.operation.md)
+
+
+### CLI moved options
+
+old                                       |  new
+------------------------------------------|------------------------------
+`casual domain --configuration-get`       | `casual configuration --get`
+`casual domain --configuration-post`      | `casual configuration --post`
+`casual domain --configuration-edit`      | `casual configuration --edit`
+`casual domain --configuration-put`       | `casual configuration --put`
+
+
+
+removed                             |  use
+------------------------------------|------------------------------
+`casual gateway --list-services`    | `casual service --list-instances`
+`casual gateway --list-queues`      | `casual queue --list-instances`
+
+
+* see [service.operation.md](../middleware/administration/documentation/cli/service.operation.md)
+* see [queue.operation.md](../middleware/administration/documentation/cli/queue.operation.md)
 
 
 
