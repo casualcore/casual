@@ -499,7 +499,7 @@ created
 
                         return argument::Option{ 
                            std::move( invoke), 
-                           argument::option::Names( {}, { "-ls", "--list-services"}), 
+                           argument::option::Names( {}, { "-lq", "--list-queues"}), 
                            "removed - use casual queue --list-instance"};
                      }
                   }
@@ -562,14 +562,15 @@ The following options has legend:
          return argument::Option{ [](){}, { "gateway"}, "gateway related administration"}( {
             local::option::list::connections::create(),
             local::option::list::listeners(),
-            local::option::list::resource::services(),
-            local::option::list::resource::queues(),
             local::option::list::groups::inbound(),
             local::option::list::groups::outbound(),
             local::option::legend::create(),
             casual::cli::state::option( &local::call::state),
-
-            local::option::rediscover() // removed... TODO: remove in 2.0
+            
+            // removed... TODO: remove in 2.0
+            local::option::list::resource::services(),
+            local::option::list::resource::queues(),
+            local::option::rediscover() 
          });
 
       }
