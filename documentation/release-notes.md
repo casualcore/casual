@@ -24,7 +24,7 @@ complex topologies. Sort of a poor mans _tightly coupled_ transactions.
 
 ### gateway pair of ipc - tcp sockets
 
-`inbound` and `outbound` tcp connections now has it's own _ipc device_ associated.
+`inbound` and `outbound` tcp connections now have their own _ipc devices_ associated.
 This is mostly to make the semantics easier and cleaner. Responsibilities lands 
 more naturally where they belong.
 
