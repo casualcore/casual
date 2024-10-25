@@ -31,6 +31,51 @@ One, perhaps negative, consequence of this semantic is that services downstream
 could get timeouts after a fraction of the configured timeout of the downstream
 service.
 
+### gateway outbound group order
+
+We have added an _order_ configuration for `gateway.outbound.group`. 
+
+All connections within a group, and all groups with the same `order` ar treated 
+equal. Service calls will be load balanced with _randomization_.
+The lowest value for _order_ will be used for a given service.
+
+```yaml
+domain:
+  gateway:
+    outbound:
+      groups:
+        - order: 10
+          connections:
+            - address: "a.b.com:5000"
+        - order: 10
+          connections:
+            - address: "a.c.com:5000"
+        - order: 2
+          connections:
+            - address: "a.d.com:5000"
+```
+
+see [domain.gateway.operation.md](../middleware/configuration/documentation/domain.gateway.operation.md)
+
+### extended information in service event log
+
+added        | format    | description
+-------------|-----------|------------------------
+span         | hex       | 64b OpenTelemetry trace span
+parent.span  | hex       | 64b OpenTelemetry parent trace span
+code.user    | integer   | user return code from tpreturn
+
+We have added `span` and `parent.span` to _event-service-log_. These can be used 
+to feed an opentelemetry server to get span telemetry. 
+
+* see [service.log.md](../middleware/event/documentation/service.log.md) 
+* see [opentelemetry tracing](https://opentelemetry.io/docs/concepts/signals/traces/) 
+
+We have also added the code that users provide in `tpreturn` to _event-service-log_.
+This could be used to filter domain specific errors. For example, `code.result = TPEFAIL` 
+might be an expected outcome for a given service. In combination with `code.user` 
+additional filtering is possible. 
+
 ### branch on inbound
 
 In `1.7` we branch a transaction on the way 'in' to the domain. This change is
