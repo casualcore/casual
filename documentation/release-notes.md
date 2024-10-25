@@ -15,6 +15,8 @@ A convenient way for a user to update configuration is to runtime edit.
 $ casual configuration --edit
 ```
 
+see [configuration.operation.md](../middleware/administration/documentation/cli/configuration.operation.md)
+
 ### service timeout
 
 The service timeout semantics have change a bit.
@@ -168,6 +170,8 @@ old                                       |  new
 `casual transaction --scale-instances`    | `casual transaction --scale-resource-proxies`
 
 
+* see [configuration.operation.md](../middleware/administration/documentation/cli/configuration.operation.md)
+
 
 removed                             |  use
 ------------------------------------|------------------------------
@@ -177,6 +181,7 @@ removed                             |  use
 
 * see [service.operation.md](../middleware/administration/documentation/cli/service.operation.md)
 * see [queue.operation.md](../middleware/administration/documentation/cli/queue.operation.md)
+* see [transaction.operation.md](../middleware/administration/documentation/cli/transaction.operation.md)
 
 
 
