@@ -91,6 +91,26 @@ more naturally where they belong.
 
 This should increase throughput since more control is given to the operating system.
 
+### queue group capacity
+
+Queue groups can now be given a `capacity` property that defines the maximum total size
+of all messages on the queue. If a message about to be enqeueued is larger than the remaining
+capacity of the group to which the queue belongs, the enqueue will fail.
+All the queues can be dequeued even if the group is full.
+
+```yaml
+domain:
+  queue:
+    groups:
+      - alias: A
+        capacity:
+          size: "10KiB"
+        queues:
+          - name: a
+```
+
+see [domain.queue.operation.md](../middleware/configuration/documentation/domain.queue.operation.md)
+
 ### disable enqueue/dequeue
 
 This enable users to disable enqueue/dequeue for a given queue. The semantics 
@@ -159,20 +179,4 @@ removed                             |  use
 * see [queue.operation.md](../middleware/administration/documentation/cli/queue.operation.md)
 
 
-### queue group capacity
 
-Queue groups can now be given a `capacity` property that defines the maximum total size
-of all messages on the queue. If a message about to be enqeueued is larger than the remaining
-capacity of the group to which the queue belongs, the enqueue will fail.
-All the queues can be dequeued even if the group is full.
-
-```yaml
-domain:
-  queue:
-    groups:
-      - alias: A
-        capacity:
-          size: "10KiB"
-        queues:
-          - name: a
-```
