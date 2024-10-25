@@ -100,6 +100,7 @@ old                                       |  new
 `casual domain --configuration-post`      | `casual configuration --post`
 `casual domain --configuration-edit`      | `casual configuration --edit`
 `casual domain --configuration-put`       | `casual configuration --put`
+`casual transaction --scale-instances`    | `casual transaction --scale-resource-proxies`
 
 
 
@@ -113,6 +114,20 @@ removed                             |  use
 * see [queue.operation.md](../middleware/administration/documentation/cli/queue.operation.md)
 
 
+### queue group capacity
 
+Queue groups can now be given a `capacity` property that defines the maximum total size
+of all messages on the queue. If a message about to be enqeueued is larger than the remaining
+capacity of the group to which the queue belongs, the enqueue will fail.
+All the queues can be dequeued even if the group is full.
 
-
+```yaml
+domain:
+  queue:
+    groups:
+      - alias: A
+        capacity:
+          size: "10KiB"
+        queues:
+          - name: a
+```
