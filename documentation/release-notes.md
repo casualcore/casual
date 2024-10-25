@@ -15,6 +15,22 @@ A convenient way for a user to update configuration is to runtime edit.
 $ casual configuration --edit
 ```
 
+### service timeout
+
+The service timeout semantics have change a bit.
+
+When a service is called that has a timeout, a deadline is set based on the timeout.
+This deadline is propagated downstream to consecutive called services.
+If a service is invoked with an ongoing deadline, the earliest of the ongoing and 
+the timeout based deadline is set for the service. 
+
+Hence, the first service sets an _execution window_ that downstream service 
+invocations will conform to.
+
+One, perhaps negative, consequence of this semantic is that services downstream 
+could get timeouts after a fraction of the configured timeout of the downstream
+service.
+
 ### branch on inbound
 
 In `1.7` we branch a transaction on the way 'in' to the domain. This change is
