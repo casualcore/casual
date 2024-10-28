@@ -63,6 +63,7 @@
             {
                 "name": "customer-group",
                 "note": "group that logically groups 'customer' stuff",
+                "enabled": true,
                 "resources": [
                     "customer-db"
                 ],
@@ -73,6 +74,7 @@
             {
                 "name": "sales-group",
                 "note": "group that logically groups 'customer' stuff",
+                "enabled": false,
                 "resources": [
                     "sales-db",
                     "event-queue"

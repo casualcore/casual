@@ -63,6 +63,7 @@
   <element>
    <name>customer-group</name>
    <note>group that logically groups 'customer' stuff</note>
+   <enabled>true</enabled>
    <resources>
     <element>customer-db</element>
    </resources>
@@ -73,6 +74,7 @@
   <element>
    <name>sales-group</name>
    <note>group that logically groups 'customer' stuff</note>
+   <enabled>false</enabled>
    <resources>
     <element>sales-db</element>
     <element>event-queue</element>
