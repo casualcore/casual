@@ -184,6 +184,21 @@ namespace casual
                return state;
             };
          }
+
+         namespace message::counter
+         {
+            template< typename D, typename F>
+            auto until( D&& device, F predicate)
+            {
+               auto fetcher = fetch::until( [ &device]
+               {
+                  return communication::ipc::call( std::forward< D>( device), common::message::counter::Request{ common::process::handle()});
+               });
+
+               return fetcher( predicate);
+            }
+         } // message::counter
+
       } // fetch
 
       namespace regex

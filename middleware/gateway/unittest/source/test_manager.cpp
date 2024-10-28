@@ -1487,6 +1487,18 @@ domain:
          unittest::fetch::until( unittest::fetch::predicate::outbound::connected());
       
          const auto payload = common::unittest::random::binary( 128);
+
+         // we wait until the SM has received the fetch known request that casual-domain-discovery sends upon receiving the connection to B
+         {
+            auto received_fetch_known = []( auto& reply)
+            {
+               auto found = algorithm::find( reply.entries, common::message::Type::domain_discovery_fetch_known_request);
+               return found && found->received == 1;
+            };
+
+            common::unittest::fetch::message::counter::until( communication::instance::outbound::service::manager::device(), received_fetch_known);
+         }
+
          const auto correlation = common::unittest::service::send( "b", payload);
 
          b.activate();
@@ -1541,7 +1553,7 @@ domain:
                EXPECT_TRUE( found->received == 1) << CASUAL_NAMED_VALUE( *found);
             }
          });
-         
+
          // act a server and reply
          {
             EXPECT_TRUE( casual::service::unittest::server::echo( correlation));
