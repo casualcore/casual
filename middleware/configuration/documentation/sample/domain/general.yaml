@@ -39,12 +39,14 @@ domain:
       note: "group that logically groups 'common' stuff"
     - name: "customer-group"
       note: "group that logically groups 'customer' stuff"
+      enabled: true
       resources:
         - "customer-db"
       dependencies:
         - "common-group"
     - name: "sales-group"
       note: "group that logically groups 'customer' stuff"
+      enabled: false
       resources:
         - "sales-db"
         - "event-queue"

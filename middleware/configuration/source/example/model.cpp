@@ -95,6 +95,7 @@ domain:
             -  customer-db
          dependencies:
             -  common-group
+         enabled: true
       -  name: sales-group
          note: group that logically groups 'customer' stuff
          resources:
@@ -102,6 +103,7 @@ domain:
             -  event-queue
          dependencies:
             -  customer-group
+         enabled: false
    servers:
       -  path: /some/path/customer-server-1
          memberships:

@@ -40,7 +40,7 @@ gateway [0..1]
       [deprecated] -ls, --list-services [0..1]
            removed - use casual service --list-instances
 
-      [deprecated] -ls, --list-queues [0..1]
+      [deprecated] -lq, --list-queues [0..1]
            removed - use casual queue --list-instance
 
       [deprecated] --rediscover [0..1]
