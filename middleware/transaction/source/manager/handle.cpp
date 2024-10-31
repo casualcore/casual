@@ -42,61 +42,12 @@ namespace casual
       {
          namespace
          {
+
+            //! potentially rollback stale involved resources. Used as the last step in rollback as a cleanup.
+            void rollback_potential_stale_continuation( State& state, const common::transaction::ID& trid);
+
             namespace detail
             {
-               namespace transaction
-               {
-
-                  template< typename M, typename I>
-                  auto find_or_add_and_involve( State& state, M&& message, I&& involved)
-                  {
-                     // Find the transaction
-                     auto transaction = common::algorithm::find( state.transactions, message.trid);
-
-                     if( ! transaction)
-                     {
-                        state.transactions.emplace_back( message.trid);
-                        auto end = std::end( state.transactions);
-                        transaction = common::range::make( std::prev( end), end);
-                     }
-
-                     if( auto branch = common::algorithm::find( transaction->branches, message.trid))
-                        branch->involve( involved);
-                     else
-                        transaction->branches.emplace_back( message.trid).involve( involved);
-
-                     return transaction;
-                  }
-
-                  template< typename M>
-                  auto find_or_add_and_involve( State& state, M&& message)
-                  {
-                     return find_or_add_and_involve( state, std::forward< M>( message), message.involved);
-                  }
-
-               } // transaction
-
-               namespace branch
-               {
-                  template< typename M>
-                  state::transaction::Branch& find_or_add( State& state, M&& message)
-                  {
-                     // Find the transaction
-                     if( auto transaction = common::algorithm::find( state.transactions, message.trid))
-                     {
-                        // try find the branch
-                        auto branch = common::algorithm::find( transaction->branches, message.trid);
-
-                        if( branch)
-                           return *branch;
-
-                        return transaction->branches.emplace_back( message.trid);
-                     }
-
-                     return state.transactions.emplace_back( message.trid).branches.back();
-                  }
-
-               } // branch
 
                namespace persist
                {
@@ -108,7 +59,6 @@ namespace casual
                      state.persistent.replies.send( state.multiplex);
                   }
 
-
                   namespace batch
                   {
                      void send( State& state)
@@ -119,8 +69,6 @@ namespace casual
                      }
                      
                   } // batch
-
-
                   
                } // persist
 
@@ -191,38 +139,31 @@ namespace casual
 
                } // accumulate
 
-               namespace branch
+
+               namespace involve
                {
-                  template< typename M, typename I>
-                  auto involved( State& state, const M& message, I&& involved)
+                  void stale( State& state, const common::transaction::ID& trid, auto&& resources)
                   {
-                     auto transaction = common::algorithm::find( state.transactions, message.trid);
-
-                     if( ! transaction)
-                     {
-                        state.transactions.emplace_back( message.trid);
-                        auto end = std::end( state.transactions);
-                        transaction = common::range::make( std::prev( end), end);
-                     }
-
-                     if( auto branch = common::algorithm::find( transaction->branches, message.trid))
-                        branch->involve( involved);
+                     if( auto transaction = common::algorithm::find( state.stale, trid))
+                        transaction->involve( trid, resources);
                      else
-                        transaction->branches.emplace_back( message.trid).involve( involved);
-
-                     // remove all branches that is not associated with resources, if any.
-                     transaction->purge();
-
-                     return transaction;
+                        state.stale.emplace_back( trid).branches.back().involve( resources);
                   }
+               } // involve
 
-                  template< typename M>
-                  auto involved( State& state, const M& message)
+              namespace transaction
+               {
+                  state::Transaction& find_or_add( State& state, const common::transaction::ID& trid)
                   {
-                     return branch::involved( state, message, message.involved);
+                     if( auto transaction = common::algorithm::find( state.transactions, trid))
+                        return *transaction;
+
+                     return state.transactions.emplace_back( trid);
                   }
 
-               } // branch
+               } // transaction
+
+
 
                namespace push::resource::error
                {
@@ -324,6 +265,7 @@ namespace casual
                   } // resource
                      
                } // send
+               
 
                namespace coordinate
                {
@@ -439,6 +381,45 @@ namespace casual
                      });
                   }
 
+                  template< typename Reply>
+                  void rollback_send_reply( State& state, const common::transaction::ID& origin, const Reply& reply, const detail::coordinate::Destination& destination)
+                  {
+                     Trace trace{ "transaction::manager::handle::local::detail::coordinate::rollback_send_reply"};
+
+                     // There should almost always be a a caller to the rollback/commit, but we might have started a rollback our selves.
+                     if( destination.process != common::process::handle())
+                     {
+                        common::log::line( verbose::log, "reply: ", reply);
+                        state.multiplex.send( destination.process.ipc, reply);
+                     }
+                     else
+                     {
+                        // We only start rollbacks our selves.
+                        CASUAL_ASSERT( ( concepts::any_of< Reply, common::message::transaction::rollback::Reply>));
+
+                        if constexpr( concepts::any_of< Reply, common::message::transaction::rollback::Reply>)
+                        {
+                           // we've started the rollback our self. There might be a pending rollback request from
+                           // the user that we've received after we started the rollback (due to stale transaction).
+                           if( auto found = common::algorithm::find( state.pending.rollbacks, common::transaction::id::range::global( origin)))
+                           {
+                              common::log::line( verbose::log, "pending rollback request found: ", *found);
+
+                              auto user_request = common::algorithm::container::extract( state.pending.rollbacks, std::begin( found));
+                              auto user_reply = common::message::reverse::type( user_request);
+                              user_reply.trid = user_request.trid;
+                              user_reply.state = reply.state;
+
+                              state.multiplex.send( user_request.process.ipc, user_reply);
+                           }
+                           else if( reply.state != decltype( reply.state)::ok)
+                           {
+                              common::log::error( common::code::tx::fail, reply.state, " internal rollback failed for trid: ", origin);
+                           }
+                        }
+                     }
+                  }
+
                   template< typename Reply, typename Pending>
                   auto rollback( State& state, Pending pending, const common::transaction::ID& origin, detail::coordinate::Destination destination, common::code::xa code = common::code::xa::read_only)
                   {
@@ -450,24 +431,19 @@ namespace casual
                         
                         auto reply = create::reply< Reply>( origin, destination, detail::accumulate::code( replies, outcome, code));
 
-                        // check if we are the instigator for rollback (a process has _died_, and such)
-                        if( destination.process == common::process::handle())
-                        {
-                           common::log::line( verbose::log, "local rollback - reply: ", reply);
-                           if( reply.state == decltype( reply.state)::ok)
-                              remove::transaction( state, common::transaction::id::range::global( origin));
-                           else
-                              common::log::line( common::log::category::error, reply.state, " rollback from transaction-manager failed - action: keep transaction");
-                           return;
-                        }
-
                         if constexpr( concepts::any_of< Reply, common::message::transaction::commit::Reply>)
                            reply.stage = decltype( reply.stage)::rollback;
 
                         common::log::line( verbose::log, "reply: ", reply);
-                        state.multiplex.send( destination.process.ipc, reply);
 
+                        // remove transaction regardless
                         remove::transaction( state, common::transaction::id::range::global( origin));
+
+                        // send the reply, if we're not the originator of the transaction
+                        rollback_send_reply( state, origin, std::move( reply), destination);
+
+                        // take care of potential stale resources, that might been involved in the transaction during the rollback.
+                        rollback_potential_stale_continuation( state, origin);
                      });
                   }
 
@@ -586,16 +562,17 @@ namespace casual
             {  
                auto request( State& state)
                {
-                  return [&state]( const common::message::transaction::commit::Request& message)
+                  return [ &state]( const common::message::transaction::commit::Request& message)
                   {
                      Trace trace{ "transaction::manager::handle::local::commit::request"};
                      common::log::line( log, "message: ", message);
 
-                     auto transaction = detail::branch::involved( state, message);
-                     common::log::line( verbose::log, "transaction: ", *transaction);
-
-                     if( transaction->stage > state::transaction::Stage::involved)
+                     auto& transaction = detail::transaction::find_or_add( state, message.trid);
+                     
+                     if( transaction.stage > state::transaction::Stage::involved)
                      {
+                        common::log::error( common::code::tx::protocol, "commit request for transaction in stage ", transaction.stage, " trid: ", message.trid, " - action: reply with ", common::code::xa::protocol);
+
                         // transaction is not in the correct 'stage'
                         detail::send::reply( state, message, []( auto& reply)
                         { 
@@ -605,15 +582,16 @@ namespace casual
                         return;
                      }
 
-                     transaction->owner = message.process;
+                     // commits could come with a list of resources, if so, we need to involve them
+                     transaction.involve( message.trid, message.involved);
 
-                     // Only the owner of the transaction can fiddle with the transaction ?
+                     transaction.owner = message.process;
 
-                     switch( transaction->resource_count())
+                     switch( transaction.resource_count())
                      {
                         case 0:
                         {
-                           common::log::line( log, transaction->global, " no resources involved: ");
+                           common::log::line( log, transaction.global, " no resources involved: ");
 
                            detail::send::reply( state, message, []( auto& reply)
                            { 
@@ -622,20 +600,20 @@ namespace casual
                            });
 
                            // we can remove this transaction
-                           detail::remove::transaction( state, transaction->global.range());
+                           detail::remove::transaction( state, transaction.global.range());
 
                            break;
                         }
                         case 1:
                         {
                            // Only one resource involved, we do a one-phase-commit optimization.
-                           common::log::line( log, "global: ", transaction->global, " - only one resource involved");
+                           common::log::line( log, "global: ", transaction.global, " - only one resource involved");
 
                            // start the commit phase directly
-                           transaction->stage = state::transaction::Stage::commit;
+                           transaction.stage = state::transaction::Stage::commit;
 
                            auto pending = detail::coordinate::pending::branches< common::message::transaction::resource::commit::Request>( 
-                              state, transaction->branches, state.coordinate.commit.empty_pendings(), common::flag::xa::Flag::one_phase);
+                              state, transaction.branches, state.coordinate.commit.empty_pendings(), common::flag::xa::Flag::one_phase);
 
                            detail::coordinate::commit< common::message::transaction::commit::Reply>( 
                               state, std::move( pending), message.trid, detail::coordinate::destination( message));
@@ -645,13 +623,13 @@ namespace casual
                         default:
                         {
                            // More than one resource involved, we do the prepare stage
-                           common::log::line( log, "global: ", transaction->global, " more than one resource involved");
+                           common::log::line( log, "global: ", transaction.global, " more than one resource involved");
                            
                            // start the prepare phase
-                           transaction->stage = state::transaction::Stage::prepare;
+                           transaction.stage = state::transaction::Stage::prepare;
 
                            auto pending = detail::coordinate::pending::branches< common::message::transaction::resource::prepare::Request>( 
-                              state, transaction->branches, state.coordinate.prepare.empty_pendings());
+                              state, transaction.branches, state.coordinate.prepare.empty_pendings());
 
                            detail::coordinate::prepare< common::message::transaction::commit::Reply>( 
                               state, std::move( pending), message.trid, detail::coordinate::destination( message));
@@ -669,20 +647,45 @@ namespace casual
             {
                auto request( State& state)
                {
-                  return [&state]( const common::message::transaction::rollback::Request& message)
+                  return [ &state]( const common::message::transaction::rollback::Request& message)
                   {
                      Trace trace{ "transaction::manager::handle::local::rollback::request"};
                      common::log::line( verbose::log, "message: ", message);
 
-                     auto transaction = detail::branch::involved( state, message);
-                     common::log::line( verbose::log, "transaction: ", *transaction);
+                     auto& transaction = detail::transaction::find_or_add( state, message.trid);
+
+                     if( transaction.stage == state::transaction::Stage::rollback)
+                     {
+                        // transaction is already in rollback phase. We add the request to pending, and let the current rollback finish.
+                        // The current rollback will just reply to caller with the outcome of the current rollback.
+                        state.pending.rollbacks.push_back( std::move( message));
+                        return;
+                     }
+
+                     if( transaction.stage > state::transaction::Stage::involved)
+                     {
+                        common::log::error( common::code::tx::protocol, "rollback request for transaction in stage ", transaction.stage, " trid: ", message.trid, " - action: reply with ", common::code::xa::protocol);
+
+                        // transaction is not in the correct 'stage'
+                        detail::send::reply( state, message, []( auto& reply)
+                        { 
+                           reply.state = decltype( reply.state)::protocol;
+                           reply.stage = decltype( reply.stage)::rollback;
+                        });
+                        return;
+                     }
+
+                     // rollbacks could come with a list of resources, if so, we need to involve them
+                     transaction.involve( message.trid, message.involved);
+
+                     common::log::line( verbose::log, "transaction: ", transaction);
 
                      // start the rollback phase, directly
-                     transaction->stage = state::transaction::Stage::rollback;
-                     transaction->owner = message.process;
+                     transaction.stage = state::transaction::Stage::rollback;
+                     transaction.owner = message.process;
 
                      auto pending = detail::coordinate::pending::branches< common::message::transaction::resource::rollback::Request>( 
-                        state, transaction->branches, state.coordinate.rollback.empty_pendings());
+                        state, transaction.branches, state.coordinate.rollback.empty_pendings());
 
                      detail::coordinate::rollback< common::message::transaction::rollback::Reply>( 
                         state, std::move( pending), message.trid, detail::coordinate::destination( message));
@@ -690,6 +693,26 @@ namespace casual
                }
 
             } // rollback
+
+            void rollback_potential_stale_continuation( State& state, const common::transaction::ID& trid)
+            {
+               Trace trace{ "transaction::manager::handle::local::rollback_potential_stale_continuation"};
+
+               if( auto stale = common::algorithm::find( state.stale, trid))
+               {
+                  common::log::line( log, "stale rollback: ", *stale);
+                  CASUAL_ASSERT( stale->stage == state::transaction::Stage::involved);
+
+                  state.transactions.push_back( common::algorithm::container::extract( state.stale, std::begin( stale)));
+
+                  // we use the regular rollback handler, and our self as the process.
+                  common::message::transaction::rollback::Request request{ common::process::handle()};
+                  request.trid = trid;
+
+                  rollback::request( state)( request);
+               }
+
+            }
 
             namespace resource
             {
@@ -732,6 +755,21 @@ namespace casual
 
                namespace involved
                {
+                  namespace detail
+                  {
+                     void validate( State& state, auto& message)
+                     {
+                        auto [ valid, invalid] = common::algorithm::intersection( message.involved, state.resources);
+
+                        if( invalid)
+                        {
+                           common::algorithm::container::trim( message.involved, valid);
+                           common::log::error( common::code::casual::invalid_semantics, "unknown resources: ", invalid, " for trid: ", message.trid, " - action: discard");
+                        }
+                     }
+                     
+                  } // detail
+
                   auto request( State& state)
                   {
                      return [ &state]( common::message::transaction::resource::involved::Request& message)
@@ -739,37 +777,47 @@ namespace casual
                         Trace trace{ "transaction::manager::handle::local::resource::involved::request"};
                         common::log::line( verbose::log, "message: ",  message);
 
-                        auto& branch = local::detail::branch::find_or_add( state, message);
+                        // sanity check. TODO: is this needed?
+                        detail::validate( state, message);
 
-                        auto branch_resources = common::algorithm::transform( branch.resources, []( auto& resource){ return resource.id;});
+                        auto& transaction = local::detail::transaction::find_or_add( state, message.trid);
 
+                        // expected to be in the involved stage
+                        if( transaction.stage == state::transaction::Stage::involved)
+                        {
+                           auto& branch = transaction.branch( message.trid);
+
+                           if( message.reply)
+                           {
+                              auto reply = common::message::reverse::type( message);
+                              // we use the current involved resources in the reply, if any.
+                              // This helps caller deduce if start or join should be used for the resource.
+                              reply.involved = branch.involved();
+                              state.multiplex.send( message.process.ipc, reply);
+                           }
+
+                           branch.involve( message.involved);
+
+                           return;                
+                        }
+
+                        // otherwise we're in a stale state
+
+                        // send the reply regardless, if caller wants it
                         if( message.reply)
+                           state.multiplex.send( message.process.ipc, common::message::reverse::type( message));
+
+                        
+                        if( transaction.stage == state::transaction::Stage::rollback)
                         {
-                           // prepare and send the reply
-                           auto reply = common::message::reverse::type( message);
-                           reply.involved = branch_resources;
-                           state.multiplex.send( message.process.ipc, reply);
+                           common::log::line( verbose::log, "stale involved resources for transaction in rollback phase - resources: ", message.involved, " - trid: ", message.trid, " - action: add to stale");
+                           local::detail::involve::stale( state, message.trid, message.involved);
+                        }
+                        else
+                        {
+                           common::log::error( common::code::casual::invalid_semantics, "transaction is not in the correct phase for involved resources - trid: ", transaction, " - action: ignore");  
                         }
 
-                        // partition what we don't got since before
-                        auto involved = std::get< 1>( common::algorithm::intersection( message.involved, branch_resources));
-
-                        // partition the new involved based on which we've got configured resources for
-                        auto [ known, unknown] = common::algorithm::partition( involved, [&]( auto& resource)
-                        {
-                           return common::predicate::boolean( common::algorithm::find( state.resources, resource));
-                        });
-
-                        // add new involved resources, if any.
-                        branch.involve( known);
-
-                        // if we've got some resources that we don't know about.
-                        // TODO: should we set the transaction to rollback only?
-                        if( unknown)
-                        {
-                           common::log::line( common::log::category::error, "unknown resources: ", unknown, " - action: discard");
-                           common::log::line( common::log::category::verbose::error, "trid: ", message.trid);
-                        }
                      };
                   } 
                   
@@ -878,8 +926,22 @@ namespace casual
 
                         auto id = state::resource::external::instance::id( state, message.process);
 
-                        auto& transaction = *local::detail::transaction::find_or_add_and_involve( state, message, id);
-                        common::log::line( verbose::log, "transaction: ", transaction);
+                        auto& transaction = local::detail::transaction::find_or_add( state, message.trid);
+
+                        if( transaction.stage == state::transaction::Stage::involved)
+                        {
+                           common::log::line( verbose::log, "transaction: ", transaction);
+                           transaction.involve( message.trid, id);
+                        }
+                        else if( transaction.stage == state::transaction::Stage::rollback)
+                        {
+                           common::log::line( verbose::log, "transaction in rollback phase - possible stale resource: ", id, " - transaction: ", transaction);
+                           local::detail::involve::stale( state, message.trid, id);
+                        }
+                        else
+                        {
+                           common::log::error( common::code::casual::invalid_semantics, "transaction is not in the correct phase for involved resources - trid: ", transaction, " - action: ignore");  
+                        }
                      };
                   }
 
@@ -1163,8 +1225,7 @@ namespace casual
 
                      for( auto& trid : trids)
                      {
-                        common::message::transaction::rollback::Request request;
-                        request.process = common::process::handle();
+                        common::message::transaction::rollback::Request request{ common::process::handle()};
                         request.trid = trid;
 
                         // This could change the state, that's why we don't do it directly in the loop above.
@@ -1276,6 +1337,43 @@ namespace casual
 
             } // configuration
 
+            namespace potential
+            {
+               auto stale( State& state)
+               {
+                  return [ &state]( const common::message::transaction::potential::Stale& message)
+                  {
+                     Trace trace{ "transaction::manager::handle::local::potential::stale"};
+                     common::log::line( verbose::log, "message: ", message);
+
+                     if( auto transaction = common::algorithm::find( state.transactions, message.gtrid))
+                     {
+                        common::log::line( common::log::category::event::stale::transaction, message.gtrid);
+
+                        if( transaction->stage == state::transaction::Stage::involved)
+                        {
+                           common::log::line( verbose::log, "transaction: ", *transaction, " is involved - action: rollback");
+
+                           // we use the regular rollback handler
+                           common::message::transaction::rollback::Request request{ common::process::handle()};
+                           request.trid = common::transaction::ID{ message.gtrid.range()};
+                           local::rollback::request( state)( request);
+                        }
+                        else if( transaction->stage == state::transaction::Stage::rollback)
+                        {
+                           common::log::line( verbose::log, "transaction: ", *transaction, " is already in rollback - action: let rollback handler handle it");
+                        }
+                        else
+                        {
+                           common::log::error( common::code::casual::invalid_semantics, "potential stale transaction while transaction in phase: ", transaction->stage, ", gtrid: ", message.gtrid);
+                        }
+                        
+                     }
+                  };
+               }
+               
+            } // potential
+
             namespace active 
             {
                auto request( State& state)
@@ -1383,6 +1481,7 @@ namespace casual
             local::resource::external::rollback::request( state),
             local::inbound::branch::request( state),
             local::active::request( state),
+            local::potential::stale( state),
             local::shutdown::request( state),
             common::server::handle::admin::Call{
                manager::admin::services( state)}

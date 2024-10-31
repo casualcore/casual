@@ -34,6 +34,11 @@ namespace casual
          Stream server{ "casual.event.server"};
          Stream transaction{ "casual.event.transaction"};
 
+         namespace stale
+         {
+            Stream transaction{ "casual.event.transaction.stale"};
+         } // stale
+
          namespace message
          {
             namespace part

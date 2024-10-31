@@ -192,8 +192,6 @@ namespace casual
 
       } // pending
 
-
-
       namespace transaction
       {
          namespace branch
@@ -257,7 +255,6 @@ namespace casual
             return out << "<unknown>";
          }
 
-         
       } // transaction
 
       struct Transaction
@@ -334,6 +331,8 @@ namespace casual
 
          } pending;
 
+         std::vector< admin::model::Transaction> stale;
+
          Log log;
 
          CASUAL_CONST_CORRECT_SERIALIZE(
@@ -341,6 +340,7 @@ namespace casual
             CASUAL_SERIALIZE( externals);
             CASUAL_SERIALIZE( transactions);
             CASUAL_SERIALIZE( pending);
+            CASUAL_SERIALIZE( stale);
             CASUAL_SERIALIZE( log);
          )
       };

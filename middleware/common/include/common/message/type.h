@@ -220,6 +220,8 @@ namespace casual
          transaction_active_request,
          transaction_active_reply,
 
+         transaction_potential_stale,
+
          // casual queue
          QUEUE_BASE = 6000,
 

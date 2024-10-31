@@ -127,6 +127,7 @@ namespace casual
             case Type::transaction_inbound_branch_reply: return "transaction_inbound_branch_reply";
             case Type::transaction_active_request: return "transaction_active_request";
             case Type::transaction_active_reply: return "transaction_active_reply";
+            case Type::transaction_potential_stale: return "transaction_potential_stale";
             case Type::queue_manager_queue_advertise: return "queue_manager_queue_advertise";
             case Type::queue_manager_queue_lookup_request: return "queue_manager_queue_lookup_request";
             case Type::queue_manager_queue_lookup_reply: return "queue_manager_queue_lookup_reply";

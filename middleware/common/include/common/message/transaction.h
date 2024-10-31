@@ -30,6 +30,11 @@ namespace casual
 
          common::transaction::ID trid;
 
+         // this should work? everything that is comparable with common::transaction::ID should work as rhs. But g++ says no...
+         // bool operator == ( const basic_transaction& lhs, concepts::compare::equal_to< common::transaction::ID> auto&& rhs) { return lhs.trid == rhs;}
+         // We implement the specific case we need right now
+         inline friend bool operator == ( const basic_transaction& lhs, common::transaction::global::id::range rhs) { return lhs.trid == rhs;}
+
          CASUAL_CONST_CORRECT_SERIALIZE(
             basic_request< type>::serialize( archive);
             CASUAL_SERIALIZE( trid);
@@ -425,6 +430,21 @@ namespace casual
          using Request = basic_active< message::basic_request< message::Type::transaction_active_request>>;
          using Reply = basic_active< message::basic_reply< message::Type::transaction_active_reply>>;         
       } // active
+
+      namespace potential
+      {
+         using base_stale = message::basic_request< message::Type::transaction_potential_stale>;
+         struct Stale : base_stale
+         {
+            common::transaction::global::ID gtrid;
+
+            CASUAL_CONST_CORRECT_SERIALIZE(
+               base_stale::serialize( archive);
+               CASUAL_SERIALIZE( gtrid);
+            )
+         };
+         
+      } // potential
 
    } // common::message::transaction
 
