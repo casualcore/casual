@@ -49,6 +49,12 @@ namespace casual
          extern Stream server;
          extern Stream transaction;
 
+         namespace stale
+         {
+            extern Stream transaction;
+         } // stale
+
+
          namespace message
          {
             namespace part

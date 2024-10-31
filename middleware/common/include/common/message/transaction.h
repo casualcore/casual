@@ -426,6 +426,21 @@ namespace casual
          using Reply = basic_active< message::basic_reply< message::Type::transaction_active_reply>>;         
       } // active
 
+      namespace potential
+      {
+         using base_stale = message::basic_request< message::Type::transaction_potential_stale>;
+         struct Stale : base_stale
+         {
+            common::transaction::global::ID gtrid;
+
+            CASUAL_CONST_CORRECT_SERIALIZE(
+               base_stale::serialize( archive);
+               CASUAL_SERIALIZE( gtrid);
+            )
+         };
+         
+      } // potential
+
    } // common::message::transaction
 
    namespace common::message::reverse

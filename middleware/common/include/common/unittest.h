@@ -199,6 +199,30 @@ namespace casual
             }
          } // message::counter
 
+         namespace message
+         {
+            //! tries to fetch a message until we have received one
+            //! or we have reached 2k tries and a total time of ~16s, which should be enough for
+            //! "all" the systems we're building casual on.
+            template< typename M, typename D, typename... Ts>
+            auto until( D&& device, Ts&&... ts)
+            {
+               constexpr auto total_count = 2000;
+               auto count = total_count;
+
+               while( --count > 0)
+               {
+                  if( auto message = common::communication::device::non::blocking::receive< M>( device, std::forward< Ts>( ts)...))
+                     return *message;
+
+                  common::process::sleep( std::chrono::milliseconds{ 8});
+               }
+
+               code::raise::error( code::casual::invalid_semantics, "unittest::fetch::message::until failed to receive a message after ", total_count, " tries");
+            }
+            
+         } // message
+
       } // fetch
 
       namespace regex

@@ -468,7 +468,7 @@ domain:
             message.involved = { local::rm_1};
 
             auto reply = local::call::tm( message);
-            ASSERT_TRUE( reply.involved.size() == 1);
+            ASSERT_TRUE( reply.involved.size() == 1) << CASUAL_NAMED_VALUE( reply);
             EXPECT_TRUE( reply.involved.at( 0) == local::rm_1);
          }
 
@@ -2012,7 +2012,97 @@ domain:
             EXPECT_TRUE( message.trid == trid) << CASUAL_NAMED_VALUE( message);
             EXPECT_TRUE( message.state == decltype( message.state)::ok) << CASUAL_NAMED_VALUE( message.state);
          }
+      }
 
+      namespace local
+      {
+         namespace
+         {
+            void involve_resources( auto& resources, auto& trid)
+            {
+               for( auto& resource : resources)
+               {
+                  common::message::transaction::resource::external::Involved message;
+                  message.process = resource.process;
+                  message.trid = trid;
+                  local::send::tm( message);
+               }
+            };
+
+            void handle_rollback_request( auto& resources)
+            {
+               for( auto& resource : resources)
+               {
+                  auto request = common::unittest::fetch::message::until< common::message::transaction::resource::rollback::Request>( resource.inbound);
+                  auto reply = common::message::reverse::type( request);
+                  reply.trid = request.trid;
+                  reply.resource = request.resource;
+                  reply.state = common::code::xa::ok;
+                  local::send::tm( reply);
+               }
+            };
+
+            
+         } // <unnamed>
+      } // local
+
+      TEST( transaction_manager, two_resources_involved__send_potential_stale__expect_rollback)
+      {
+         common::unittest::Trace trace;
+
+         auto domain = local::domain( local::configuration::system, local::configuration::base);
+
+         auto resources = std::array< local::involved::Process, 2>();
+
+         auto trid = common::transaction::id::create( process::handle());
+
+         local::involve_resources( resources, trid);
+
+
+         // send the potentially stale message, this will trigger a rollback.
+         {
+            common::message::transaction::potential::Stale message{ process::handle()};
+            message.gtrid = common::transaction::id::range::global( trid);
+            local::send::tm( message);
+         }
+
+         local::handle_rollback_request( resources);
+
+      }
+
+      TEST( transaction_manager, ongoing_rollback__two_resources_involved___expect_stale_rollback)
+      {
+         common::unittest::Trace trace;
+
+         auto domain = local::domain( local::configuration::system, local::configuration::base);
+
+         auto resources = std::array< local::involved::Process, 2>();
+
+         auto trid = common::transaction::id::create( process::handle());
+
+         local::involve_resources( resources, trid);
+
+         {
+            common::message::transaction::rollback::Request message{ process::handle()};
+            message.trid = trid;
+            local::send::tm( message);
+         }
+
+         // TM will send rollback requests to our resources. We'll involve them agin -> they will be treated as stale.
+         local::involve_resources( resources, trid);
+
+         // verify that the resources are stale
+         {
+            auto state = unittest::state();
+            EXPECT_TRUE( state.stale.size() == 1);
+            EXPECT_TRUE( state.stale.at( 0).branches.at( 0).resources.size() == 2);
+         }
+
+         // handle the first ongoing rollback request
+         local::handle_rollback_request( resources);
+
+         // handle the second stale rollback request
+         local::handle_rollback_request( resources);
       }
    
    } // transaction
