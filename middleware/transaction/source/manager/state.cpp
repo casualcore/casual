@@ -207,6 +207,11 @@ namespace casual
                   found->code = common::code::xa::resource_fail;
             }
 
+            std::vector< common::strong::resource::id> Branch::involved() const
+            {
+               return common::algorithm::transform( resources, []( auto& resource){ return resource.id;});
+            }
+
          } // transaction
 
          platform::size::type Transaction::resource_count() const noexcept
@@ -229,6 +234,35 @@ namespace casual
          {
             for( auto& branch : branches)
                branch.failed( resource);
+         }
+
+         void Transaction::involve( const common::transaction::ID& trid, common::strong::resource::id resource)
+         {
+            CASUAL_ASSERT( global == trid);
+
+            if( auto branch = common::algorithm::find( branches, trid))
+               branch->involve( resource);
+            else
+               branches.emplace_back( trid).involve( resource);
+         }
+
+         void Transaction::involve( const common::transaction::ID& trid, const std::vector< common::strong::resource::id>& resources)
+         {
+            CASUAL_ASSERT( global == trid);
+
+            if( auto branch = common::algorithm::find( branches, trid))
+               branch->involve( resources);
+            else
+               branches.emplace_back( trid).involve( resources);
+
+         }
+
+         transaction::Branch& Transaction::branch( const common::transaction::ID& trid)
+         {
+            if( auto found = common::algorithm::find( branches, trid))
+               return *found;
+
+            return branches.emplace_back( trid);
          }
 
       } // state
@@ -421,7 +455,6 @@ namespace casual
 
          return result;
       }
-      
    } // transaction::manager
 } // casual
 

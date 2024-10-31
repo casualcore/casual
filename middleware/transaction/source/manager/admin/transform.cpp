@@ -105,23 +105,23 @@ namespace casual
                return result;
             }
 
+            auto trid( auto& id)
+            {
+               admin::model::transaction::Branch::ID result;
+
+               result.type = id.xid.formatID;
+               result.global = common::transcode::hex::encode( common::transaction::id::range::global( id));
+               result.branch = common::transcode::hex::encode( common::transaction::id::range::branch( id));
+
+               return result;
+            }
+
             auto transaction()
             {
                return []( const state::Transaction& transaction)
                {
                   auto branch = []( auto& branch)
                   {
-                     auto trid = []( auto& id)
-                     {
-                        admin::model::transaction::Branch::ID result;
-
-                        result.type = id.xid.formatID;
-                        result.global = common::transcode::hex::encode( common::transaction::id::range::global( id));
-                        result.branch = common::transcode::hex::encode( common::transaction::id::range::branch( id));
-
-                        return result;
-                     };
-
                      auto resource = []( auto& resource)
                      {
                         return admin::model::transaction::branch::Resource{ resource.id, resource.code};
@@ -240,6 +240,7 @@ namespace casual
 
          common::algorithm::transform( state.pending.requests, result.pending.requests, local::pending::request());
          common::algorithm::transform( state.persistent.replies, result.pending.persistent.replies, local::pending::reply());
+         common::algorithm::transform( state.stale, result.stale, local::transaction());
 
          result.log = local::log( state.persistent.log.statistics());
 

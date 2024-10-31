@@ -237,6 +237,8 @@ namespace casual
 
                void failed( common::strong::resource::id resource);
 
+               std::vector< common::strong::resource::id> involved() const;
+
                common::transaction::ID trid;
                std::vector< branch::Resource> resources;
 
@@ -259,6 +261,7 @@ namespace casual
             std::string_view description( Stage value) noexcept;
             
          } // transaction
+
 
          struct Transaction
          {
@@ -289,6 +292,12 @@ namespace casual
             }
 
             void failed( common::strong::resource::id resource);
+
+            void involve( const common::transaction::ID& trid, common::strong::resource::id resource);
+            void involve( const common::transaction::ID& trid, const std::vector< common::strong::resource::id>& resources);
+
+            //! @return an existing branch associated with the transaction id, or add a new one.
+            transaction::Branch& branch( const common::transaction::ID& trid);
 
             common::state::Machine< transaction::Stage> stage;
 
@@ -382,8 +391,12 @@ namespace casual
             //! that is, as soon as corresponding resources is done/idle
             common::communication::ipc::pending::basic_holder< common::strong::resource::id, state::pending::Request> requests;
 
+            //! pending rollback from user when we're already in the process of rolling back, due to potential stale transaction.
+            std::vector< common::message::transaction::rollback::Request> rollbacks;
+
             CASUAL_LOG_SERIALIZE(
                CASUAL_SERIALIZE( requests);
+               CASUAL_SERIALIZE( rollbacks);
             )
          };
 
@@ -441,6 +454,11 @@ namespace casual
          state::Pending pending;
 
          state::Task task;
+
+         std::vector< state::Transaction> stale;
+
+
+
          state::System system;
          state::Alias alias;
 
@@ -477,7 +495,6 @@ namespace casual
          casual::configuration::model::transaction::Model configuration() const;
 
 
-
          CASUAL_LOG_SERIALIZE(
             CASUAL_SERIALIZE( multiplex);
             CASUAL_SERIALIZE( transactions);
@@ -485,7 +502,9 @@ namespace casual
             CASUAL_SERIALIZE( externals);
             CASUAL_SERIALIZE( coordinate);
             CASUAL_SERIALIZE( persistent);
+            CASUAL_SERIALIZE( pending);
             CASUAL_SERIALIZE( task);
+            CASUAL_SERIALIZE( stale);
             CASUAL_SERIALIZE( system);
             CASUAL_SERIALIZE( alias);
          )
