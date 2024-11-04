@@ -472,6 +472,32 @@ domain:
          }
       }
 
+      TEST( service_manager, concurrent_advertise_a_b___b_undiscoverable__fetch_known__expect_a)
+      {
+         common::unittest::Trace trace;
+
+         constexpr auto configuration = R"(
+domain:
+   services:
+      -  name: a
+         visibility: discoverable
+      -  name: b
+         visibility: undiscoverable
+)";
+
+         auto domain = local::domain( configuration);
+         service::unittest::concurrent::advertise( { "a", "b"});
+
+         // emulate a fetch known from discovery
+         {            
+            domain::message::discovery::fetch::known::Request request{ common::process::handle()};
+            auto reply = common::communication::ipc::call( common::communication::instance::outbound::service::manager::device(), request);
+            
+            ASSERT_TRUE( reply.content.services.size() == 1) << CASUAL_NAMED_VALUE( reply);
+            EXPECT_TRUE( reply.content.services.at( 0) == "a") << CASUAL_NAMED_VALUE( reply);
+         }
+      }
+
       TEST( service_manager, advertise_2_services_for_1_server)
       {
          common::unittest::Trace trace;

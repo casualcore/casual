@@ -904,7 +904,7 @@ namespace casual
                         reply.content.services = algorithm::accumulate( state.services, std::move( reply.content.services), []( auto result, auto& pair)
                         {
                            const auto& [ name, service] = pair;
-                           if( ! service.is_sequential())
+                           if( ! service.is_sequential() && service.is_discoverable())
                               result.push_back( name);
 
                            return result;
