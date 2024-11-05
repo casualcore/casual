@@ -1,6 +1,10 @@
 # Changelog
 This is the changelog for `casual` and all changes are listed in this document.
 
+## [1.6.22] - 2024-11-05
+### Fixes
+- service: discovery-known-request only reply with known discoverable services (#454)
+
 ## [1.6.21] - 2024-10-09
 ### Fixes
 - documentation: queue.forward.group.(services|queues).alias
