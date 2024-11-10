@@ -31,7 +31,7 @@ invocations will conform.
 
 One, perhaps negative, consequence of this semantic is that services downstream 
 can get timeouts after a fraction of the configured timeout of the downstream
-service.
+service. However, the changed semantics is more logical for the caller and is easer to comprehend.
 
 ### gateway outbound group order
 
