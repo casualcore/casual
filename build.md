@@ -7,8 +7,8 @@ The following packages need to be installed:
 
  * git
  * python
- * gcc (version 8)
- * g++ (version 8)
+ * gcc (version >= 13.3)
+ * g++ (version >= 13.3)
 
 *Note: casual will not build on a 32-bit system*
 
@@ -25,27 +25,11 @@ if you're planning on trying some of the examples there might be a good idea to 
 the examples correspond exactly to your setup.
 
 ```bash
-$ git clone https://github.com/casualcore/casual-make.git
+$ git clone https://github.com/casualcore/casual-make.git && cd casual-make && git checkout 1.7 && cd ..
+$ git clone https://github.com/casualcore/casual-thirdparty.git && cd casual-thirdparty && git checkout 1.7 && cd ..
 $ git clone https://github.com/casualcore/casual.git
-$ git clone https://github.com/casualcore/casual-thirdparty.git
 ```
 
-
-
-## preperation
-
-platform specific preperations
-
-
-### CentOS
-
-Enable EPEL, Software Collections and install stuff
-
-```bash
-$ sudo yum install epel-release centos-release-scl
-$ sudo yum install libuuid-devel sqlite-devel python libcurl-devel devtoolset-9
-$ scl enable devtoolset-9 bash
-```
 
 ## set up the environment
 

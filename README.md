@@ -1,4 +1,5 @@
-<img src="resources/casual-box-left.png">
+
+# ![casual](/resources/casual-box-left.png)
 
 casual is a modern distributed application server that allows users to build large scale systems with minimal configuration.
 
