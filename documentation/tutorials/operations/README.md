@@ -16,9 +16,9 @@ Before we get started, we need to confirm that everything is installed and that 
 $ casual --version
 key       value
 --------  ----------------------------------------
-casual    1.6.16
+casual    1.7.0
 commit    aaa9becd066149dc7ea6cd93985ecfc4c39f3a51
-compiler  g++: 9.3.1
+compiler  g++: 13.3.0
 ```
 
 If you get an error, ensure that the `CASUAL_HOME` environment variable points to the location of your casual installation, that `$CASUAL_HOME/bin` is in your `PATH` and that `$CASUAL_HOME/lib` is in your `LD_LIBRARY_PATH`, for example:
@@ -71,7 +71,7 @@ We will return to this configuration file throughout this tutorial, but this is 
 
 Before we start our first domain we're going to take a brief detour into the casual CLI. This is your primary tool for interacting with casual and offers a convenient way for controlling pretty much every aspect of your domain.
 
-The CLI is divided into several different categories that covers the functionality related to that component. For example, `casual queue` holds all the options related to queues, `casual transaction` everything related to transactions, and so forth. At every level you can use the `--help` option to see all the options that are available along with a brief explanation. The CLI also offers convenient tab-completion (currently only for bash); try typing `casual s`and hitting tab for instance! Finally, some commands can be chained together by piping the output of one command into the next, more on that later. 
+The CLI is divided into several different categories that covers the functionality related to that component. For example, `casual queue` holds all the options related to queues, `casual transaction` everything related to transactions, and so forth. At every level you can use the `--help` option to see all the options that are available along with a brief explanation. The CLI also offers convenient tab-completion (currently only for bash); try typing `casual s`and hitting tab for instance! Finally, some commands can be chained together by piping the output of one command into the next, more on that later.
 
 ## 4 Getting started with servers
 
@@ -94,8 +94,8 @@ By running the command `casual domain --information`, you can see that your conf
 $ casual domain --information
 key                                             value
 ----------------------------------------------  --------------------------------
-version.casual                                  1.6.16
-version.compiler                                g++: 9.3.1
+version.casual                                  1.7.0
+version.compiler                                g++: 13.3.0
 domain.identity.name                            bobs-domain
 ...
 ```
@@ -124,7 +124,7 @@ domain:
     - alias: my-example-server
       # the path to the executable, note the use of environment variables
       path: ${CASUAL_HOME}/example/bin/casual-example-server
-      # servers can be scaled horizontally by adding instances 
+      # servers can be scaled horizontally by adding instances
       instances: 1
 ```
 
@@ -153,18 +153,19 @@ casual keeps track of all servers running in the domain, you can list them with 
 
 ```bash
 $ casual domain --list-servers
-alias                       CI  I  restart  #r  path
---------------------------  --  -  -------  --  ----------------------------------------------------------------------
-casual-domain-discovery      1  1     true   0  "/opt/casual/bin/casual-domain-discovery"
-casual-domain-manager        1  1    false   0  "casual-domain-manager"
-casual-gateway-manager       1  1     true   0  "/opt/casual/bin/casual-gateway-manager"
-casual-queue-manager         1  1     true   0  "/opt/casual/bin/casual-queue-manager"
-casual-service-manager       1  1     true   0  "/opt/casual/bin/casual-service-manager"
-casual-transaction-manager   1  1     true   0  "/opt/casual/bin/casual-transaction-manager"
-my-example-server            1  1    false   0  "${CASUAL_HOME}/example/bin/casual-example-server"
+alias                       CI  I  state    restart  #r  path
+--------------------------  --  -  -------  -------  --  ---------------------------------------------------------------
+casual-domain-discovery      1  1  enabled     true   0  "/opt/casual/bin/casual-domain-discovery"
+casual-domain-manager        1  1  enabled    false   0  "casual-domain-manager"
+casual-gateway-manager       1  1  enabled     true   0  "/opt/casual/bin/casual-gateway-manager"
+casual-queue-manager         1  1  enabled     true   0  "/opt/casual/bin/casual-queue-manager"
+casual-service-manager       1  1  enabled     true   0  "/opt/casual/bin/casual-service-manager"
+casual-transaction-manager   1  1  enabled     true   0  "/opt/casual/bin/casual-transaction-manager"
+my-example-server            1  1  enabled    false   0  "${CASUAL_HOME}/example/bin/casual-example-server"
+
 ```
 
-Do not be intimidated by all the abbreviations in the header, you can obtain a legend for this option by calling `casual domain --legend list-servers`. This feature is available for most options that output information.
+Do not be intimidated by all the abbreviations in the header, you can obtain a legend for this option by calling `casual domain --legend --list-servers`. This feature is available for most options that output information.
 
 As you can see, in addition to the server we told casual to start, there are a number of internal servers that expose various administration services. These are always present. Our server will automatically advertise its services, making them available to the domain. Check them out by calling `casual service --list-services`:
 
@@ -178,7 +179,7 @@ casual/example/auto/echo                                     example   D  auto  
 casual/example/conversation                                  example   D  join          -         -  1  0  0.000  0.000  0.000  0  0.000   0   0  -
 casual/example/conversation_recv_send                        example   D  join          -         -  1  0  0.000  0.000  0.000  0  0.000   0   0  -
 casual/example/conversation_recv_send_auto                   example   D  auto          -         -  1  0  0.000  0.000  0.000  0  0.000   0   0  -
-casual/example/domain/echo/78aa33c494134cbbb11b155a9b212c35  example   D  join          -         -  1  0  0.000  0.000  0.000  0  0.000   0   0  -
+casual/example/domain/echo/453580b7ed4e4e069665e8a4ff7e8197  example   D  join          -         -  1  0  0.000  0.000  0.000  0  0.000   0   0  -
 casual/example/domain/echo/bobs-domain                       example   D  join          -         -  1  0  0.000  0.000  0.000  0  0.000   0   0  -
 casual/example/domain/name                                   example   D  join          -         -  1  0  0.000  0.000  0.000  0  0.000   0   0  -
 casual/example/echo                                          example   D  join          -         -  1  0  0.000  0.000  0.000  0  0.000   0   0  -
@@ -196,7 +197,7 @@ casual/example/uppercase                                     example   D  join  
 casual/example/work                                          example   D  join          -         -  1  0  0.000  0.000  0.000  0  0.000   0   0  -
 ```
 
-Remember: you can use `casual service --legend list-services` to explain the columns of the output.
+Remember: you can use `casual service --legend --list-services` to explain the columns of the output.
 
 #### 4.2.1 Calling services from the CLI
 
@@ -213,7 +214,7 @@ domain:
 
 Let's dissect what we just did: first we piped the contents of our domain.yaml file to `casual buffer --compose`. This takes the input and creates a buffer in a casual-compatible format. Note that most services will have a more specific API, but `casual/example/echo` just returns whatever we give it. It is also worth mentioning that the slashes in the service name is just a naming convention, it could just as well have been called `casual_example_echo` or `steve` as far as casual is concerned.
 
-Next, we pass our buffer to `casual call --service` with `casual/example/echo` as the argument specifying which service to call (try changing it to `casual/example/uppercase` for a different result). This performs the actual service call and returns the reply in the form of another buffer. Finally, the reply is passed to `casual buffer --extract` which extracts the data from the buffer and passes it to stdout. 
+Next, we pass our buffer to `casual call --service` with `casual/example/echo` as the argument specifying which service to call (try changing it to `casual/example/uppercase` for a different result). This performs the actual service call and returns the reply in the form of another buffer. Finally, the reply is passed to `casual buffer --extract` which extracts the data from the buffer and passes it to stdout.
 
 #### 4.2.2 Scaling servers
 
@@ -231,15 +232,15 @@ List the servers again to see the change:
 
 ```bash
 $ casual domain --list-servers
-alias                       CI  I  restart  #r  path
---------------------------  --  -  -------  --  ----------------------------------------------------------------------
-casual-domain-discovery      1  1     true   0  "/opt/casual/bin/casual-domain-discovery"
-casual-domain-manager        1  1    false   0  "casual-domain-manager"
-casual-gateway-manager       1  1     true   0  "/opt/casual/bin/casual-gateway-manager"
-casual-queue-manager         1  1     true   0  "/opt/casual/bin/casual-queue-manager"
-casual-service-manager       1  1     true   0  "/opt/casual/bin/casual-service-manager"
-casual-transaction-manager   1  1     true   0  "/opt/casual/bin/casual-transaction-manager"
-my-example-server            2  2    false   0  "${CASUAL_HOME}/example/bin/casual-example-server"
+alias                       CI  I  state    restart  #r  path
+--------------------------  --  -  -------  -------  --  ---------------------------------------------------------------
+casual-domain-discovery      1  1  enabled     true   0  "/opt/casual/bin/casual-domain-discovery"
+casual-domain-manager        1  1  enabled    false   0  "casual-domain-manager"
+casual-gateway-manager       1  1  enabled     true   0  "/opt/casual/bin/casual-gateway-manager"
+casual-queue-manager         1  1  enabled     true   0  "/opt/casual/bin/casual-queue-manager"
+casual-service-manager       1  1  enabled     true   0  "/opt/casual/bin/casual-service-manager"
+casual-transaction-manager   1  1  enabled     true   0  "/opt/casual/bin/casual-transaction-manager"
+my-example-server            2  2  enabled    false   0  "${CASUAL_HOME}/example/bin/casual-example-server"
 ```
 
 That concludes our introduction to services, let's shut down our domain before we move on to queues:
@@ -262,7 +263,7 @@ Creating queues is as easy as adding a few lines of config. Append the following
 domain:
   # ...
   queue:
-    # each queue group is a single process and may have [0..n] queues 
+    # each queue group is a single process and may have [0..n] queues
     groups:
       # like services, aliases are used to refer to queue groups
       - alias: my-queue-group
@@ -306,14 +307,14 @@ Take a look at our brand-new queues by calling `casual queue --list-queues`:
 
 ```bash
 $ casual queue --list-queues
-name     group           rc  rd     count  size  avg  EQ  DQ  UC  last
--------  --------------  --  -----  -----  ----  ---  --  --  --  ----
-a        my-queue-group   0  0.000      0     0    0   0   0   0  -
-b        my-queue-group   0  0.000      0     0    0   0   0   0  -
-c        my-queue-group   0  0.000      0     0    0   0   0   0  -
-a.error  my-queue-group   0  0.000      0     0    0   0   0   0  -
-b.error  my-queue-group   0  0.000      0     0    0   0   0   0  -
-c.error  my-queue-group   0  0.000      0     0    0   0   0   0  -
+name     group           rc  rd     count  size  avg  E   EQ  DQ  UC  last
+-------  --------------  --  -----  -----  ----  ---  --  --  --  --  ----
+a        my-queue-group   0  0.000      0     0    0  ED   0   0   0  -
+b        my-queue-group   0  0.000      0     0    0  ED   0   0   0  -
+c        my-queue-group   0  0.000      0     0    0  ED   0   0   0  -
+a.error  my-queue-group   0  0.000      0     0    0  ED   0   0   0  -
+b.error  my-queue-group   0  0.000      0     0    0  ED   0   0   0  -
+c.error  my-queue-group   0  0.000      0     0    0  ED   0   0   0  -
 ```
 
 As you can see, casual has created corresponding error queues for all the queues we configured. This is where messages end up after a (configurable) number of failed dequeues from the "non-error" ditto.
@@ -331,14 +332,14 @@ If we list the queues again we can see that our message has been placed on the q
 
 ```bash
 $ casual queue --list-queues
-name     group           rc  rd     count  size  avg  EQ  DQ  UC  last
--------  --------------  --  -----  -----  ----  ---  --  --  --  --------------------------------
-a        my-queue-group   0  0.000      1    12   12   1   0   0  2023-12-04T11:14:53.474623+01:00
-b        my-queue-group   0  0.000      0     0    0   0   0   0  -
-c        my-queue-group   0  0.000      0     0    0   0   0   0  -
-a.error  my-queue-group   0  0.000      0     0    0   0   0   0  -
-b.error  my-queue-group   0  0.000      0     0    0   0   0   0  -
-c.error  my-queue-group   0  0.000      0     0    0   0   0   0  -
+name     group           rc  rd     count  size  avg  E   EQ  DQ  UC  last
+-------  --------------  --  -----  -----  ----  ---  --  --  --  --  --------------------------------
+a        my-queue-group   0  0.000      1    12   12  ED   1   0   0  2024-11-12T20:24:56.291389+01:00
+b        my-queue-group   0  0.000      0     0    0  ED   0   0   0  -
+c        my-queue-group   0  0.000      0     0    0  ED   0   0   0  -
+a.error  my-queue-group   0  0.000      0     0    0  ED   0   0   0  -
+b.error  my-queue-group   0  0.000      0     0    0  ED   0   0   0  -
+c.error  my-queue-group   0  0.000      0     0    0  ED   0   0   0  -
 ```
 
 We can also list all the messages of an individual queue:
@@ -347,7 +348,7 @@ We can also list all the messages of an individual queue:
 $ casual queue --list-messages a
 id                                S  size  trid  rd  type      reply  available  timestamp
 --------------------------------  -  ----  ----  --  --------  -----  ---------  --------------------------------
-7864a6f4ebf9472ca0992987b143935e  C    12         0  X_OCTET/                 -  2023-12-04T11:14:53.474623+01:00
+46b2bda5488b4a9cabbf2473c9476c78  C    12         0  X_OCTET/                 -  2024-11-12T20:24:56.291389+01:00
 ```
 
 Just as you can use the CLI to put a message on the queue, you can use it to take one off it:
@@ -464,24 +465,23 @@ Our new forward group should be up and running:
 
 ```bash
 $ casual queue --list-forward-groups
-alias             pid   services  queues  commits  rollbacks  last
-----------------  ----  --------  ------  -------  ---------  ----
-my-forward-group  1024         1       1        0          0  -
-
+alias             pid    S  services  queues  commits  rollbacks  last
+----------------  -----  -  --------  ------  -------  ---------  ----
+my-forward-group  79474  E         1       1        0          0  -
 ```
 
 We can also look at the individual forwards:
 
 ```bash
 $ casual queue --list-forward-queues
-alias             group             source  target  delay  CI  I  commits  rollbacks  last
-----------------  ----------------  ------  ------  -----  --  -  -------  ---------  ----
-my-forward-queue  my-forward-group  a       b       0.000  1   1        0          0  -
+alias             group             source  target  delay  S  CI  I  commits  rollbacks  last
+----------------  ----------------  ------  ------  -----  -  --  -  -------  ---------  ----
+my-forward-queue  my-forward-group  a       b       0.000  E   1  1        0          0  -
 
 $ casual queue --list-forward-services
-alias               group             source  target                    reply  delay     CI  I  commits  rollbacks  last
-------------------  ----------------  ------  ------------------------  -----  --------  --  -  -------  ---------  ----
-my-forward-service  my-forward-group  b       casual/example/uppercase  c      0.000000  1   1        0          0  -
+alias               group             source  target                    reply  delay     S  CI  I  commits  rollbacks  last
+------------------  ----------------  ------  ------------------------  -----  --------  -  --  -  -------  ---------  ----
+my-forward-service  my-forward-group  b       casual/example/uppercase  c      0.000000  E   1  1        0          0  -
 ```
 
 As you might have already noticed, the setup we have configured means that any message enqueued to the queue `a` will first be forwarded to `b` by the queue forward. From there the service forward will dequeue it, call `casual/example/uppercase` and put the reply on `c`. Let's try it out:
@@ -495,14 +495,14 @@ We can expect to find a message on `c`:
 
 ```bash
 $ casual queue --list-queues
-name     group           rc  rd     count  size  avg  EQ  DQ  UC  last
--------  --------------  --  -----  -----  ----  ---  --  --  --  --------------------------------
-a        my-queue-group   0  0.000      0     0    0   2   2   0  2023-12-04T16:23:05.747907+01:00
-b        my-queue-group   0  0.000      0     0    0   2   2   0  2023-12-04T16:23:05.784388+01:00
-c        my-queue-group   0  0.000      1    15   15   1   0   0  2023-12-04T16:23:05.797320+01:00
-a.error  my-queue-group   0  0.000      0     0    0   0   0   0  -
-b.error  my-queue-group   0  0.000      0     0    0   0   0   0  -
-c.error  my-queue-group   0  0.000      0     0    0   0   0   0  -
+name     group           rc  rd     count  size  avg  E   EQ  DQ  UC  last
+-------  --------------  --  -----  -----  ----  ---  --  --  --  --  --------------------------------
+a        my-queue-group   0  0.000      0     0    0  ED   2   2   0  2024-11-12T20:31:55.306181+01:00
+b        my-queue-group   0  0.000      0     0    0  ED   2   2   0  2024-11-12T20:31:55.306619+01:00
+c        my-queue-group   0  0.000      1    14   14  ED   1   0   0  2024-11-12T20:31:55.307367+01:00
+a.error  my-queue-group   0  0.000      0     0    0  ED   0   0   0  -
+b.error  my-queue-group   0  0.000      0     0    0  ED   0   0   0  -
+c.error  my-queue-group   0  0.000      0     0    0  ED   0   0   0  -
 ```
 
 Let's have a look at it:
@@ -522,9 +522,9 @@ We now have zero running instances of the forward:
 
 ```bash
 $ casual queue --list-forward-services
-alias               group             source  target                    reply  delay     CI  I  commits  rollbacks  last
-------------------  ----------------  ------  ------------------------  -----  --------  --  -  -------  ---------  --------------------------------
-my-forward-service  my-forward-group  b       casual/example/uppercase  c      0.000000  0   0        1          0  2023-12-04T16:23:05.799746+01:00
+alias               group             source  target                    reply  delay     S  CI  I  commits  rollbacks  last
+------------------  ----------------  ------  ------------------------  -----  --------  -  --  -  -------  ---------  --------------------------------
+my-forward-service  my-forward-group  b       casual/example/uppercase  c      0.000000  E   0  0        1          0  2024-11-12T20:31:55.307684+01:0
 ```
 
 Note that the forwards will try to complete any ongoing calls before scaling down, so it might take a while before they reach the configured number of instances.
@@ -558,13 +558,13 @@ Have a look at the services and queues available in this domain:
 $ casual service --list-services
 name            category  V  mode  timeout  contract  I  C  AT     min    max    P  PAT    RI  RC  last
 --------------  --------  -  ----  -------  --------  -  -  -----  -----  -----  -  -----  --  --  ----
-remote-service  example   D  join        -    linger  1  0  0.000  0.000  0.000  0  0.000   0   0  -
+remote-service  example   D  join        -         -  1  0  0.000  0.000  0.000  0  0.000   0   0  -
 
 $ casual queue --list-queues
-name                group               rc  rd     count  size  avg  EQ  DQ  UC  last
-------------------  ------------------  --  -----  -----  ----  ---  --  --  --  ----
-remote-queue        remote-queue-group   0  0.000      0     0    0   0   0   0  -
-remote-queue.error  remote-queue-group   0  0.000      0     0    0   0   0   0  -
+name                group               rc  rd     count  size  avg  E   EQ  DQ  UC  last
+------------------  ------------------  --  -----  -----  ----  ---  --  --  --  --  ----
+remote-queue        remote-queue-group   0  0.000      0     0    0  ED   0   0   0  -
+remote-queue.error  remote-queue-group   0  0.000      0     0    0  ED   0   0   0  -
 ```
 
 As you can see, this domain has its own queues and services that do not exist in our domain. But by establishing a connection to this remote domain, these resources will become available within our domain.
@@ -602,7 +602,7 @@ domain:
       groups:
         - alias: my-outbound
           note: connects to remote-domain
-          # An outbound group may connect to multiple inbound groups 
+          # An outbound group may connect to multiple inbound groups
           connections:
             # The ip and port combination to connect to, corresponds to the inbound group in the remote domain.
             - address: "127.0.0.1:7778"
@@ -667,9 +667,9 @@ Our new outbound group will establish a connection to the other domain. Use the 
 
 ```bash
 $ casual gateway --list-connections
-name           id                                group        bound  runlevel   local            peer            created
--------------  --------------------------------  -----------  -----  ---------  ---------------  --------------  --------------------------------
-remote-domain  c88befb7ac3c4d8a876b37606dadafc0  my-outbound  out    connected  127.0.0.1:35928  127.0.0.1:7778  2024-01-02T11:25:46.831204+01:00
+name           id                                group        bound  runlevel   P    local            peer            created
+-------------  --------------------------------  -----------  -----  ---------  ---  ---------------  --------------  --------------------------------
+remote-domain  f0dac037b2ff458985a82d349670cac3  my-outbound  out    connected  1.4  127.0.0.1:53933  127.0.0.1:7778  2024-11-12T20:43:41.977759+01:00
 ```
 
 However, if we look at the available services...
@@ -684,8 +684,8 @@ casual/example/auto/echo                                     example   D  auto  
 casual/example/conversation                                  example   D  join          -         -  1  0  0.000  0.000  0.000  0  0.000   0   0  -
 casual/example/conversation_recv_send                        example   D  join          -         -  1  0  0.000  0.000  0.000  0  0.000   0   0  -
 casual/example/conversation_recv_send_auto                   example   D  auto          -         -  1  0  0.000  0.000  0.000  0  0.000   0   0  -
-casual/example/domain/echo/bb7819224f8c4a9c8467db5fcccf8e89  example   D  join          -         -  1  0  0.000  0.000  0.000  0  0.000   0   0  -
 casual/example/domain/echo/bobs-domain                       example   D  join          -         -  1  0  0.000  0.000  0.000  0  0.000   0   0  -
+casual/example/domain/echo/d709b7faade84587b7e014415482a32c  example   D  join          -         -  1  0  0.000  0.000  0.000  0  0.000   0   0  -
 casual/example/domain/name                                   example   D  join          -         -  1  0  0.000  0.000  0.000  0  0.000   0   0  -
 casual/example/echo                                          example   D  join          -         -  1  0  0.000  0.000  0.000  0  0.000   0   0  -
 casual/example/error/system                                  example   D  join          -         -  1  0  0.000  0.000  0.000  0  0.000   0   0  -
@@ -724,13 +724,14 @@ remote-service                                               example   D  join  
 ...
 ```
 
-If we want to know where the service is actually "from", we can consult the gateway:
+If we want to know where the service is actually "from", we can list service instances:
 
 ```bash
-$ casual gateway --list-services
-service         name           id                                peer
---------------  -------------  --------------------------------  --------------
-remote-service  remote-domain  c88befb7ac3c4d8a876b37606dadafc0  127.0.0.1:7778
+$ casual service --list-instances
+service                                                      state     hops  pid    alias                       description
+-----------------------------------------------------------  --------  ----  -----  --------------------------  -------------
+...
+remote-service                                               external     0  79887  my-outbound                 remote-domain
 ```
 
 Here, `name` is the alias of the local outbound group that advertises the service, while `peer` is the actual connection (remember: an outbound group may have multiple connections) to the domain with the service.
@@ -756,10 +757,11 @@ an important message
 However, unlike services, remote queues will not be listed when using `casual queue --list-queues`. We can however ask the gateway whether it knows of any remote queues:
 
 ```bash
-$ casual gateway --list-queues
-queue         name           id                                peer
-------------  -------------  --------------------------------  --------------
-remote-queue  remote-domain  c88befb7ac3c4d8a876b37606dadafc0  127.0.0.1:7778
+$ casual queue --list-queue-instances
+queue         state     pid    alias           description
+------------  --------  -----  --------------  -------------
+...
+remote-queue  external  79887  my-outbound     remote-domain
 ```
 
 It is important to note that this outbound-inbound pairing is one way only. Try to call any of the services in our domain from the remote domain and all you'll get is an error. Of course, this could be remedied by configuring another connection but with the inbound group in this domain and the outbound group in the remote (using a different port).
@@ -794,7 +796,7 @@ domain:
         groups:
           - alias: "my-reverse-inbound"
             connections:
-              # Being a reverse inbound, the group will actively try to connect to this address, rather than passively listening for incoming connections. 
+              # Being a reverse inbound, the group will actively try to connect to this address, rather than passively listening for incoming connections.
               - address: "127.0.0.1:7779"
 ```
 
