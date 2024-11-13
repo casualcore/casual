@@ -20,7 +20,8 @@ namespace casual
          enum class casual : int
          {
             //ok = 0,
-            shutdown = 1,
+            error = 1, // general error 
+            shutdown,
             interrupted,
 
             preconditions,

@@ -73,6 +73,7 @@ namespace casual
       {
          switch( code)
          {
+            case casual::error: return "error";
             case casual::shutdown: return "shutdown";
             case casual::interrupted: return "interrupted";
             case casual::preconditions: return "preconditions";
