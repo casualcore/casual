@@ -16,6 +16,7 @@
 #include "common/message/domain.h"
 #include "common/message/event.h"
 #include "common/message/service.h"
+#include "common/message/transaction.h"
 
 #include "common/service/lookup.h"
 #include "common/communication/instance.h"
@@ -743,7 +744,7 @@ domain:
 
 
          {
-            auto service = common::service::lookup::reply( common::service::Lookup{ "service1", decltype( common::service::lookup::Context::semantic)::no_reply});
+            auto service = common::service::lookup::reply( common::service::Lookup{ "service1", decltype( common::service::lookup::Context::semantic)::no_reply, {}});
             EXPECT_TRUE( service.service.name == "service1");
 
             // service-manager will let us think that the service is idle, and send us the process-handle to the forward-cache
@@ -1113,6 +1114,7 @@ domain:
 
          auto create_discard_request = []( auto& correlation)
          {
+            common::message::event::service::Calls event;
             common::message::service::lookup::discard::Request message{ common::process::handle()};
             message.reply = true;
             message.requested = "a";
@@ -1251,6 +1253,346 @@ domain:
             EXPECT_TRUE( state.routes.size() == 2);
             EXPECT_TRUE( common::algorithm::find( state.routes, manager::admin::model::Route{ .service = "b", .target = "a"}));
             EXPECT_TRUE( common::algorithm::find( state.routes, manager::admin::model::Route{ .service = "d", .target = "c"}));
+         }
+      }
+
+      namespace local
+      {
+         namespace
+         {
+            auto act_as_tm()
+            {
+               common::communication::instance::whitelist::connect(
+                  common::communication::instance::identity::transaction::manager);
+            }
+         } // <unnamed>
+      } // local
+
+      // This is the normal happy path
+      TEST( service_manager, advertise_a__lookup_gtrid__ack__transaction_disassociate___expect_clean_state)
+      {
+         common::unittest::Trace trace;
+
+         auto domain = local::domain();
+
+         service::unittest::advertise( { "a"});
+
+         auto trid = common::transaction::id::create();
+
+         // we act as the transaction manager
+         local::act_as_tm();
+
+         // we reserve ourselves with the trid
+         auto lookup_reply = common::service::lookup::reply( common::service::Lookup{ "a", {}, common::transaction::id::range::global( trid)});
+
+         // we should have state
+         {
+            auto state = unittest::state();
+            EXPECT_TRUE( state.transactions.size() == 1);
+            EXPECT_TRUE( state.transactions.at( 0).gtrid == common::transaction::id::range::global( trid)) << CASUAL_NAMED_VALUE( state.transactions);
+            EXPECT_TRUE( state.transactions.at( 0).instances.concurrent.empty());
+            EXPECT_TRUE( state.transactions.at( 0).instances.sequential.at( 0).process == common::process::handle());
+         }
+
+         // we send ack for the lookup
+         unittest::send::ack( lookup_reply, trid);
+
+         // we send transaction disassociate for the gtrid to SM
+         {
+            common::message::event::transaction::Disassociate message;
+            message.gtrid = common::transaction::id::range::global( trid);
+            common::communication::device::blocking::send( common::communication::instance::outbound::service::manager::device(), message);
+         }
+
+         // we should have no transaction state
+         {
+            auto state = unittest::state();
+            EXPECT_TRUE( state.transactions.empty());
+         }
+
+         // we should NOT get a potential stale transaction message to TM (we act as TM)
+         EXPECT_TRUE( ! common::communication::ipc::non::blocking::receive< common::message::transaction::potential::Stale>());
+      }
+
+      // This is the normal happy path for concurrent lookups
+      TEST( service_manager, concurrent_advertise_a__lookup_gtrid__ack__transaction_disassociate___expect_clean_state)
+      {
+         common::unittest::Trace trace;
+
+         auto domain = local::domain();
+
+         service::unittest::concurrent::advertise( { "a"});
+
+         auto trid = common::transaction::id::create();
+
+         // we act as the transaction manager
+         local::act_as_tm();
+
+         // we reserve ourselves with the trid
+         auto lookup_reply = common::service::lookup::reply( common::service::Lookup{ "a", {}, common::transaction::id::range::global( trid)});
+
+         // we should have state
+         {
+            auto state = unittest::state();
+            EXPECT_TRUE( state.transactions.size() == 1);
+            EXPECT_TRUE( state.transactions.at( 0).gtrid == common::transaction::id::range::global( trid)) << CASUAL_NAMED_VALUE( state.transactions);
+            EXPECT_TRUE( state.transactions.at( 0).instances.sequential.empty());
+            EXPECT_TRUE( state.transactions.at( 0).instances.concurrent.at( 0).process == common::process::handle());
+         }
+
+         // we send ack for the lookup
+         unittest::send::concurrent::ack( lookup_reply, trid);
+
+         // we send transaction disassociate for the gtrid to SM
+         {
+            common::message::event::transaction::Disassociate message;
+            message.gtrid = common::transaction::id::range::global( trid);
+            common::communication::device::blocking::send( common::communication::instance::outbound::service::manager::device(), message);
+         }
+
+         // we should have no transaction state
+         {
+            auto state = unittest::state();
+            EXPECT_TRUE( state.transactions.empty());
+         }
+
+         // we should NOT get a potential stale transaction message to TM (we act as TM)
+         EXPECT_TRUE( ! common::communication::ipc::non::blocking::receive< common::message::transaction::potential::Stale>());
+      }
+
+      TEST( service_manager, advertise_a__lookup_gtrid__transaction_disassociate__ack__expect_potentially_stale__clean_state)
+      {
+         common::unittest::Trace trace;
+
+         auto domain = local::domain();
+
+         service::unittest::advertise( { "a"});
+
+         auto trid = common::transaction::id::create();
+
+         // we act as the transaction manager
+         local::act_as_tm();
+
+         // we reserve ourselves with the trid
+         auto lookup_reply = common::service::lookup::reply( common::service::Lookup{ "a", {}, common::transaction::id::range::global( trid)});
+
+         {
+            EXPECT_TRUE( lookup_reply.service.name == "a");
+            EXPECT_TRUE( lookup_reply.state == decltype( lookup_reply.state)::idle);
+         }
+
+         // we send transaction disassociate for the gtrid to SM
+         {
+            common::message::event::transaction::Disassociate message;
+            message.gtrid = common::transaction::id::range::global( trid);
+            common::communication::device::blocking::send( common::communication::instance::outbound::service::manager::device(), message);
+         }
+
+         {
+            auto state = unittest::state();
+            EXPECT_TRUE( state.transactions.size() == 1);
+            EXPECT_TRUE( state.transactions.at( 0).gtrid == common::transaction::id::range::global( trid)) << CASUAL_NAMED_VALUE( state.transactions);
+            EXPECT_TRUE( state.transactions.at( 0).instances.concurrent.empty());
+            EXPECT_TRUE( state.transactions.at( 0).instances.sequential.at( 0).process == common::process::handle());
+         }
+
+         // we send ack for the lookup
+         unittest::send::ack( lookup_reply, trid);
+
+         // we should get a potential stale transaction message to TM (we act as TM)
+         {
+            auto message = common::communication::ipc::receive< common::message::transaction::potential::Stale>();
+            EXPECT_TRUE( message.gtrid == common::transaction::id::range::global( trid));
+         }
+
+         // we should have no transaction state
+         {
+            auto state = unittest::state();
+            EXPECT_TRUE( state.transactions.empty());
+         }
+      }
+
+      TEST( service_manager, concurrent_advertise_a__lookup_gtrid__transaction_disassociate__ack__expect_potentially_stale__clean_state)
+      {
+         common::unittest::Trace trace;
+
+         auto domain = local::domain();
+
+         service::unittest::concurrent::advertise( { "a"});
+
+         auto trid = common::transaction::id::create();
+
+         // we act as the transaction manager
+         local::act_as_tm();
+
+         // we reserve ourselves with the trid
+         auto lookup_reply = common::service::lookup::reply( common::service::Lookup{ "a", {}, common::transaction::id::range::global( trid)});
+
+         {
+            EXPECT_TRUE( lookup_reply.service.name == "a");
+            EXPECT_TRUE( lookup_reply.state == decltype( lookup_reply.state)::idle);
+         }
+
+         // we send transaction disassociate for the gtrid to SM (we act as TM)
+         {
+            common::message::event::transaction::Disassociate message;
+            message.gtrid = common::transaction::id::range::global( trid);
+            common::communication::device::blocking::send( common::communication::instance::outbound::service::manager::device(), message);
+         }
+
+         {
+            auto state = unittest::state();
+            EXPECT_TRUE( state.transactions.size() == 1);
+            EXPECT_TRUE( state.transactions.at( 0).gtrid == common::transaction::id::range::global( trid)) << CASUAL_NAMED_VALUE( state.transactions);
+            EXPECT_TRUE( state.transactions.at( 0).instances.sequential.empty());
+            EXPECT_TRUE( state.transactions.at( 0).instances.concurrent.at( 0).process == common::process::handle());
+         }
+
+         // we send ack for the lookup
+         unittest::send::concurrent::ack( lookup_reply, trid);
+
+         // we should get a potential stale transaction message to TM (we act as TM)
+         {
+            auto message = common::communication::ipc::receive< common::message::transaction::potential::Stale>();
+            EXPECT_TRUE( message.gtrid == common::transaction::id::range::global( trid));
+         }
+
+         // we should have no transaction state
+         {
+            auto state = unittest::state();
+            EXPECT_TRUE( state.transactions.empty());
+         }
+      }
+
+      namespace local
+      {
+         namespace
+         {
+            struct Process
+            {
+               common::communication::ipc::inbound::Device device{};
+               common::strong::process::id id = []() {
+                  static platform::process::native::type id = common::process::id().valid() + 1000;
+                  return common::strong::process::id{ id++};
+               }();
+
+               common::process::Handle handle() const
+               {
+                  return common::process::Handle{ id, device.connector().handle().ipc()};
+               }
+
+               CASUAL_LOG_SERIALIZE(
+                  CASUAL_SERIALIZE( device);
+                  CASUAL_SERIALIZE( id);
+               )
+
+            };
+         } // <unnamed>
+      } // local
+
+      TEST( service_manager, advertise_a__lookup_gtrid__transaction_disassociate__process_exit__expect_potentially_stale__clean_state)
+      {
+         common::unittest::Trace trace;
+
+         auto domain = local::domain();
+
+         auto a = local::Process{};
+
+         service::unittest::advertise( { "a"}, a.handle());
+
+         auto trid = common::transaction::id::create();
+
+         // we act as the transaction manager
+         local::act_as_tm();
+
+         // we reserve ourselves with the trid
+         auto lookup_reply = common::service::lookup::reply( common::service::Lookup{ "a", {}, common::transaction::id::range::global( trid)});
+
+         {
+            EXPECT_TRUE( lookup_reply.service.name == "a");
+            EXPECT_TRUE( lookup_reply.state == decltype( lookup_reply.state)::idle);
+         }
+
+         // we send transaction disassociate for the gtrid to SM
+         {
+            common::message::event::transaction::Disassociate message;
+            message.gtrid = common::transaction::id::range::global( trid);
+            common::communication::device::blocking::send( common::communication::instance::outbound::service::manager::device(), message);
+         }
+
+         // we send process exit to SM
+         {
+            common::message::event::process::Exit message;
+            message.state.pid = a.id;
+            message.state.reason = decltype( message.state.reason)::exited;
+            common::communication::device::blocking::send( common::communication::instance::outbound::service::manager::device(), message);
+         }
+
+         // we should get a potential stale transaction message to TM (we act as TM)
+         {
+            auto message = common::communication::ipc::receive< common::message::transaction::potential::Stale>();
+            EXPECT_TRUE( message.gtrid == common::transaction::id::range::global( trid));
+         }
+
+         // we should have no transaction state
+         {
+            auto state = unittest::state();
+            EXPECT_TRUE( state.transactions.empty());
+         }
+      }
+
+      TEST( service_manager, concurrent_advertise_a__lookup_gtrid__transaction_disassociate__process_exit__expect_potentially_stale__clean_state)
+      {
+         common::unittest::Trace trace;
+
+         // This unittest tests the scenario where an gateway outbound process dies. This
+         // is not likely to happen in real life, but if it does, it's a serious problem in itself.
+         // Thus, this might be unnecessary to test...
+
+         auto domain = local::domain();
+
+         auto a = local::Process{};
+
+         service::unittest::concurrent::advertise( { "a"}, a.handle());
+
+         auto trid = common::transaction::id::create();
+
+         // we act as the transaction manager
+         local::act_as_tm();
+
+         // we reserve ourselves with the trid
+         auto lookup_reply = common::service::lookup::reply( common::service::Lookup{ "a", {}, common::transaction::id::range::global( trid)});
+
+         {
+            EXPECT_TRUE( lookup_reply.service.name == "a");
+            EXPECT_TRUE( lookup_reply.state == decltype( lookup_reply.state)::idle);
+         }
+
+         // we send transaction disassociate for the gtrid to SM (we act as TM)
+         {
+            common::message::event::transaction::Disassociate message;
+            message.gtrid = common::transaction::id::range::global( trid);
+            common::communication::device::blocking::send( common::communication::instance::outbound::service::manager::device(), message);
+         }
+
+         // we send process exit to SM
+         {
+            common::message::event::process::Exit message;
+            message.state.pid = a.id;
+            message.state.reason = decltype( message.state.reason)::exited;
+            common::communication::device::blocking::send( common::communication::instance::outbound::service::manager::device(), message);
+         }
+
+         // we should get a potential stale transaction message to TM (we act as TM)
+         {
+            auto message = common::communication::ipc::receive< common::message::transaction::potential::Stale>();
+            EXPECT_TRUE( message.gtrid == common::transaction::id::range::global( trid));
+         }
+
+         // we should have no transaction state
+         {
+            auto state = unittest::state();
+            EXPECT_TRUE( state.transactions.empty());
          }
       }
 

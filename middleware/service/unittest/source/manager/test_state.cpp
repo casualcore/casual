@@ -15,6 +15,8 @@
 
 namespace casual
 {
+   using namespace common;
+
    namespace service::manager
    {
 
@@ -52,7 +54,7 @@ namespace casual
 
          EXPECT_TRUE( state.instances.sequential.empty()) << CASUAL_NAMED_VALUE( state.instances.sequential);
          EXPECT_TRUE( state.instances.concurrent.empty());
-      }
+      }  
 
       TEST( service_manager_state, advertise_empty_invalid_concurrent__expect_no_op)
       {
@@ -259,5 +261,337 @@ namespace casual
          }
       }
 
+      namespace local
+      {
+         namespace
+         {
+            auto process()
+            {
+               static platform::process::native::type id = 10;
+               return common::process::Handle{ common::strong::process::id{ id++}, common::strong::ipc::id::generate()};
+            }
+
+            auto advertise( manager::State& state, const common::process::Handle& process, auto service)
+            {
+               common::message::service::Advertise message;
+               message.process = process;
+               message.services.add.push_back( { .name = service});
+
+               return state.update( std::move( message));
+            } 
+
+            auto reserve( manager::State& state, const process::Handle& caller, const std::string& service, const auto& trid, const auto& correlation)
+            {
+               auto service_id = state.services.lookup( service);
+               EXPECT_TRUE( service_id);
+               return state.reserve_sequential( service_id, caller, correlation, transaction::id::range::global( trid));
+            }
+
+            auto create_metric( const process::Handle& instance, const std::string& service, const transaction::ID& trid)
+            {
+               common::message::event::service::Metric metric;
+               metric.process = instance;
+               metric.service = service;
+               metric.trid = trid;
+               metric.code.result = decltype( metric.code.result)::ok;
+               return metric;
+            }
+
+            auto unreserve( manager::State& state, const process::Handle& instance, const std::string& service, const auto& trid, const auto& correlation)
+            {
+               common::message::service::call::ACK message;
+               message.metric = create_metric( instance, service, trid);
+               message.correlation = correlation;
+
+               auto instance_id = state.instances.sequential.lookup( instance.ipc);
+
+               return state.unreserve_sequential( instance_id, message);
+            }
+
+            namespace concurrent
+            {
+               auto advertise( manager::State& state, const common::process::Handle& process, auto service)
+               {
+                  common::message::service::concurrent::Advertise message;
+                  message.process = process;
+                  message.services.add.push_back( { .name = service});
+
+                  return state.update( std::move( message));
+               } 
+
+               auto reserve( manager::State& state, const std::string& service, const transaction::ID& trid)
+               {
+                  auto service_id = state.services.lookup( service);
+                  EXPECT_TRUE( service_id);
+                  return state.reserve_concurrent( service_id, transaction::id::range::global( trid));
+               }
+
+               auto unreserve( manager::State& state, const process::Handle& instance, const std::string& service, std::span< const transaction::ID> trids)
+               {
+                  common::message::event::service::Calls message;
+                  message.metrics = algorithm::transform( trids, [&]( const auto& trid)
+                  {
+                     return create_metric( instance, service, trid);
+                  });
+
+                  return state.unreserve_concurrent( message);
+               }
+               
+            } // concurrent
+
+         } // <unnamed>
+      } // local
+
+
+      TEST( service_manager_state, transaction_instance_reserve_unreserve__expect_empty_transaction_state)
+      {
+         common::unittest::Trace trace;
+
+         auto state = State{};
+
+         EXPECT_TRUE( state.transaction.empty());
+
+         auto a = local::process();
+         auto b = local::process();
+         auto c = local::process();
+
+         local::advertise( state, a, "a");
+         local::advertise( state, b, "b");
+         local::advertise( state, c, "c");
+
+         EXPECT_TRUE( state.instances.sequential.size() == 3);
+
+         auto trid = common::transaction::id::create();
+         auto correlation = common::strong::correlation::id::generate();
+
+         EXPECT_TRUE( local::reserve( state, process::handle(), "a", trid, correlation));
+         EXPECT_TRUE( local::reserve( state, process::handle(), "b", trid, correlation));
+         EXPECT_TRUE( local::reserve( state, process::handle(), "c", trid, correlation));
+
+         ASSERT_TRUE( state.transaction.find( transaction::id::range::global( trid)));
+         EXPECT_TRUE( state.transaction.find( transaction::id::range::global( trid))->sequential.size() == 3);
+
+         EXPECT_TRUE( ! std::get< 1>( local::unreserve( state, a, "a", trid, correlation)).has_value());
+         EXPECT_TRUE( ! std::get< 1>( local::unreserve( state, b, "b", trid, correlation)).has_value());
+         EXPECT_TRUE( ! std::get< 1>( local::unreserve( state, c, "c", trid, correlation)).has_value());
+
+         // we still keep track of the transaction. This might not be needed...
+         EXPECT_TRUE( state.transaction.find( transaction::id::range::global( trid)));
+
+         state.transaction.disassociate( transaction::id::range::global( trid));
+
+         // now the transaction should be gone
+         EXPECT_TRUE( state.transaction.empty());
+      }
+
+      TEST( service_manager_state, transaction_concurrent_instance_reserve_unreserve__expect_empty_transaction_state)
+      {
+         common::unittest::Trace trace;
+
+         auto state = State{};
+
+         EXPECT_TRUE( state.transaction.empty());
+
+         auto a = local::process();
+         auto b = local::process();
+         auto c = local::process();
+
+         local::concurrent::advertise( state, a, "a");
+         local::concurrent::advertise( state, b, "b");
+         local::concurrent::advertise( state, c, "c");
+
+         EXPECT_TRUE( state.instances.concurrent.size() == 3);
+
+         auto trid = common::transaction::id::create();
+
+         EXPECT_TRUE( local::concurrent::reserve( state, "a", trid));
+         EXPECT_TRUE( local::concurrent::reserve( state, "b", trid));
+         EXPECT_TRUE( local::concurrent::reserve( state, "c", trid));
+
+         ASSERT_TRUE( state.transaction.find( transaction::id::range::global( trid)));
+         EXPECT_TRUE( state.transaction.find( transaction::id::range::global( trid))->concurrent.size() == 3);
+
+         EXPECT_TRUE( local::concurrent::unreserve( state, a, "a", std::span{ &trid, 1}).empty());
+         EXPECT_TRUE( local::concurrent::unreserve( state, b, "b", std::span{ &trid, 1}).empty());
+         EXPECT_TRUE( local::concurrent::unreserve( state, c, "c", std::span{ &trid, 1}).empty());
+
+         // we still keep track of the transaction. This might not be needed...
+         EXPECT_TRUE( state.transaction.find( transaction::id::range::global( trid)));
+
+         state.transaction.disassociate( transaction::id::range::global( trid));
+
+         // now the transaction should be gone
+         EXPECT_TRUE( state.transaction.empty());
+      }
+
+
+
+
+      TEST( service_manager_state, transaction_instance_reserve__disassociate_trid__unreserve__expect_stale_transaction)
+      {
+         common::unittest::Trace trace;
+
+         auto state = State{};
+
+         EXPECT_TRUE( state.transaction.empty());
+
+         auto a = local::process();
+         auto b = local::process();
+         auto c = local::process();
+
+         local::advertise( state, a, "a");
+         local::advertise( state, b, "b");
+         local::advertise( state, c, "c");
+
+         EXPECT_TRUE( state.instances.sequential.size() == 3);
+
+         auto trid = common::transaction::id::create();
+         auto correlation = common::strong::correlation::id::generate();
+
+         EXPECT_TRUE( local::reserve( state, process::handle(), "a", trid, correlation));
+         EXPECT_TRUE( local::reserve( state, process::handle(), "b", trid, correlation));
+         EXPECT_TRUE( local::reserve( state, process::handle(), "c", trid, correlation));
+
+         EXPECT_TRUE( ! std::get< 1>( local::unreserve( state, a, "a", trid, correlation)).has_value());
+
+         // we get a disassociate message from TM -> the transaction is potentially stale
+         state.transaction.disassociate( transaction::id::range::global( trid));
+
+         // the transaction is potentially stale, but we "keep" it until we unreserve the last instance
+         EXPECT_TRUE( ! std::get< 1>( local::unreserve( state, b, "b", trid, correlation)).has_value());
+
+         // we should get the stale transaction, this would be sent to the transaction manager
+         auto gtrid = std::get< 1>( local::unreserve( state, c, "c", trid, correlation));
+         EXPECT_TRUE( gtrid);
+         EXPECT_TRUE( *gtrid == transaction::id::range::global( trid));         
+
+         // now the transaction should be gone
+         EXPECT_TRUE( state.transaction.empty()) << CASUAL_NAMED_VALUE( state.transaction);
+      }
+
+
+      TEST( service_manager_state, transaction_concurrent_instance_reserve__disassociate_trid__unreserve__expect_stale_transaction)
+      {
+         common::unittest::Trace trace;
+
+         auto state = State{};
+
+         EXPECT_TRUE( state.transaction.empty());
+
+         auto a = local::process();
+         auto b = local::process();
+         auto c = local::process();
+
+         local::concurrent::advertise( state, a, "a");
+         local::concurrent::advertise( state, b, "b");
+         local::concurrent::advertise( state, c, "c");
+
+         EXPECT_TRUE( state.instances.concurrent.size() == 3);
+
+         auto trids = std::array{ common::transaction::id::create(), common::transaction::id::create()};
+         algorithm::sort( trids);
+
+
+         // we reserve the services 'a', 'b', 'c' twice for each of the transactions
+         for( auto service : { "a", "b", "c"})
+         {
+            EXPECT_TRUE( local::concurrent::reserve( state, service, trids[ 0]));
+            EXPECT_TRUE( local::concurrent::reserve( state, service, trids[ 1]));
+            EXPECT_TRUE( local::concurrent::reserve( state, service, trids[ 0]));
+            EXPECT_TRUE( local::concurrent::reserve( state, service, trids[ 1]));
+         }
+
+         // we should have 2 "reservations" for each gtrid and instance (a, b, c)
+         for( auto& trid : trids)
+         {
+            auto transaction = state.transaction.find( transaction::id::range::global( trid));
+            ASSERT_TRUE( transaction);
+            EXPECT_TRUE( algorithm::all_of( transaction->concurrent, []( const auto& instance)
+            {
+               return instance.count == 2;
+            }));
+         }
+
+         EXPECT_TRUE( local::concurrent::unreserve( state, a, "a", trids).empty());
+         EXPECT_TRUE( local::concurrent::unreserve( state, a, "a", trids).empty());
+         EXPECT_TRUE( local::concurrent::unreserve( state, b, "b", trids).empty());
+
+         // we get a disassociate message from TM -> the transaction 0 is potentially stale
+         state.transaction.disassociate( transaction::id::range::global( trids[ 0]));
+         
+
+         EXPECT_TRUE( local::concurrent::unreserve( state, b, "b", trids).empty());
+
+         // we get a disassociate message from TM -> the transaction 1 is potentially stale
+         state.transaction.disassociate( transaction::id::range::global( trids[ 1]));
+
+         EXPECT_TRUE( local::concurrent::unreserve( state, c, "c", trids).empty());
+
+
+         EXPECT_TRUE( ! state.transaction.empty());
+
+         {
+            // the last unreserve should remove the transactions and return the stale transactions
+            auto gtrid = local::concurrent::unreserve( state, c, "c", trids);
+
+            // the transaction state should be empty
+            EXPECT_TRUE( state.transaction.empty()) << CASUAL_NAMED_VALUE( state.transaction);
+
+            EXPECT_TRUE( gtrid.size() == 2) << CASUAL_NAMED_VALUE( gtrid);
+
+            // the order of the gtrids is not guaranteed, we need to sort them
+            algorithm::sort( gtrid);
+
+            EXPECT_TRUE( gtrid.at( 0) == transaction::id::range::global( trids[ 0]));
+            EXPECT_TRUE( gtrid.at( 1) == transaction::id::range::global( trids[ 1]));
+         }
+
+         // now the transaction should be gone
+         EXPECT_TRUE( state.transaction.empty());
+      }
+
+     TEST( service_manager_state, transaction_instance_reserve__disassociate_trid__remove_instance__expect_stale_transaction)
+      {
+         common::unittest::Trace trace;
+
+         auto state = State{};
+
+         EXPECT_TRUE( state.transaction.empty());
+
+         auto a = local::process();
+         auto b = local::process();
+         auto c = local::process();
+
+         local::advertise( state, a, "a");
+         local::advertise( state, b, "b");
+         local::advertise( state, c, "c");
+
+         EXPECT_TRUE( state.instances.sequential.size() == 3);
+
+         auto trid = common::transaction::id::create();
+         auto correlation = common::strong::correlation::id::generate();
+
+         EXPECT_TRUE( local::reserve( state, process::handle(), "a", trid, correlation));
+         EXPECT_TRUE( local::reserve( state, process::handle(), "b", trid, correlation));
+         EXPECT_TRUE( local::reserve( state, process::handle(), "c", trid, correlation));
+
+         EXPECT_TRUE( ! std::get< 1>( local::unreserve( state, a, "a", trid, correlation)).has_value());
+
+         // we get a disassociate message from TM -> the transaction is potentially stale
+         state.transaction.disassociate( transaction::id::range::global( trid));
+
+         // the transaction is potentially stale, but we "keep" it until we unreserve the last instance
+         EXPECT_TRUE( ! std::get< 1>( local::unreserve( state, b, "b", trid, correlation)).has_value());
+
+         // we should get the stale transaction, this would be sent to the transaction manager
+         {
+            auto consequence = state.remove( c.pid);
+            EXPECT_TRUE( consequence.callers.at( 0).process == process::handle());
+            EXPECT_TRUE( consequence.stale.at( 0) == transaction::id::range::global( trid));
+         }
+
+         // now the transaction should be gone
+         EXPECT_TRUE( state.transaction.empty()) << CASUAL_NAMED_VALUE( state.transaction);
+      }
    } // service::manager
 } // casual

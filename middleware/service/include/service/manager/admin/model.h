@@ -12,6 +12,7 @@
 #include "common/serialize/macro.h"
 #include "common/process.h"
 #include "common/service/type.h"
+#include "common/transaction/global.h"
 
 #include "configuration/model.h"
 
@@ -237,6 +238,54 @@ namespace casual
          )
       };
 
+      namespace transaction
+      {
+         namespace instance
+         {
+            struct Concurrent
+            {
+               common::process::Handle process;
+               platform::size::type count{};
+
+               CASUAL_CONST_CORRECT_SERIALIZE(
+                  CASUAL_SERIALIZE( process);
+                  CASUAL_SERIALIZE( count);
+               )
+            };
+
+            struct Sequential
+            {
+               common::process::Handle process;
+
+               CASUAL_CONST_CORRECT_SERIALIZE(
+                  CASUAL_SERIALIZE( process);
+               )
+            };
+         } // instance
+      } // transaction
+
+      struct Transaction
+      {
+         common::transaction::global::ID gtrid;
+
+         struct
+         {
+            std::vector< transaction::instance::Sequential> sequential;
+            std::vector< transaction::instance::Concurrent> concurrent;
+
+            CASUAL_CONST_CORRECT_SERIALIZE(
+               CASUAL_SERIALIZE( sequential);
+               CASUAL_SERIALIZE( concurrent);
+            )
+         } instances;
+
+         CASUAL_CONST_CORRECT_SERIALIZE(
+            CASUAL_SERIALIZE( gtrid);
+            CASUAL_SERIALIZE( instances);
+         )
+
+      };
+
       struct State
       {
          struct
@@ -256,6 +305,7 @@ namespace casual
          std::vector< Pending> pending;
          std::vector< Route> routes;
          std::vector< Reservation> reservations;
+         std::vector< Transaction> transactions;
 
          CASUAL_CONST_CORRECT_SERIALIZE(
             CASUAL_SERIALIZE( instances);
@@ -263,6 +313,7 @@ namespace casual
             CASUAL_SERIALIZE( pending);
             CASUAL_SERIALIZE( routes);
             CASUAL_SERIALIZE( reservations);
+            CASUAL_SERIALIZE( transactions);
          )
       };
    

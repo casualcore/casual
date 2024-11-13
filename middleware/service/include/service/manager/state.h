@@ -196,6 +196,90 @@ namespace casual
 
          } // instance
 
+         namespace transaction
+         {
+            using gtrid_range = common::transaction::global::id::range;
+
+            namespace instance
+            {
+               struct Concurrent
+               {
+                  state::instance::concurrent::id::type id;
+                  platform::size::type count{};
+
+                  inline friend bool operator == ( const Concurrent& lhs, state::instance::concurrent::id::type rhs) { return lhs.id == rhs;}
+
+                  CASUAL_LOG_SERIALIZE(
+                     CASUAL_SERIALIZE( id);
+                     CASUAL_SERIALIZE( count);
+                  )
+               };
+
+               struct Sequential
+               {
+                  state::instance::sequential::id::type id;
+
+                  inline friend bool operator == ( const Sequential& lhs, state::instance::sequential::id::type rhs) { return lhs.id == rhs;}
+
+                  CASUAL_LOG_SERIALIZE(
+                     CASUAL_SERIALIZE( id);
+                  )
+               };
+               
+            } // instance
+
+            struct Instances
+            {
+               std::vector< instance::Concurrent> concurrent;
+               std::vector< instance::Sequential> sequential;
+               bool associated = true;
+
+               void reserve( state::instance::concurrent::id::type instance);
+               void reserve( state::instance::sequential::id::type instance);
+
+               bool unreserve( state::instance::concurrent::id::type instance);
+               bool unreserve( state::instance::sequential::id::type instance);
+
+               //! @return true if the transaction does not have any associated instances
+               bool empty() const;    
+
+               CASUAL_LOG_SERIALIZE(
+                  CASUAL_SERIALIZE( concurrent);
+                  CASUAL_SERIALIZE( sequential);
+                  CASUAL_SERIALIZE( associated);
+               )
+            };
+         } // transaction
+
+         struct Transaction
+         {
+            using gtrid_range = transaction::gtrid_range;
+
+            const transaction::Instances* find( gtrid_range gtrid) const;
+            transaction::Instances& find_or_add( gtrid_range gtrid);
+
+            //! erase the instance from all transactions
+            //! @return the gtrids that is potentially stale
+            [[nodiscard]] std::vector< common::transaction::global::ID> erase( state::instance::concurrent::id::type instance);
+            //! erase the instance from all transactions
+            [[nodiscard]] std::optional< common::transaction::global::ID> erase( state::instance::sequential::id::type instance);
+
+            bool unreserve( gtrid_range gtrid, state::instance::concurrent::id::type instance);
+            bool unreserve( gtrid_range gtrid, state::instance::sequential::id::type instance);
+
+            void disassociate( gtrid_range gtrid);
+
+            inline bool empty() const { return m_associations.empty();}
+            inline const auto& associations() const { return m_associations;}
+
+            CASUAL_LOG_SERIALIZE(
+               CASUAL_SERIALIZE( m_associations);
+            )
+
+         private:
+            std::unordered_map< common::transaction::global::ID, transaction::Instances> m_associations;
+         };
+
 
          namespace service
          {
@@ -282,6 +366,7 @@ namespace casual
 
                   inline friend bool operator < ( const Concurrent& lhs, const Concurrent& rhs) { return std::tie( lhs.order, lhs.hops) < std::tie( rhs.order, rhs.hops);}
                   inline friend bool operator == ( const Concurrent& lhs, instance::concurrent::id::type rhs) { return lhs.id == rhs;}
+                  inline friend bool operator == ( const Concurrent& lhs, const transaction::instance::Concurrent& rhs) { return lhs.id == rhs.id;}
 
                   CASUAL_LOG_SERIALIZE(
                      CASUAL_SERIALIZE( id);
@@ -311,7 +396,7 @@ namespace casual
 
                //! @returns the first concurrent instance that in the preferred range
                //!   Otherwise, the first instance, and rotate.
-               instance::concurrent::id::type next_concurrent( std::span< instance::concurrent::id::type> preferred) noexcept;
+               instance::concurrent::id::type next_concurrent( std::span< const state::transaction::instance::Concurrent> preferred) noexcept;
 
                void update_prioritized();
 
@@ -477,6 +562,7 @@ namespace casual
             )
          };
 
+
          enum struct Runlevel : short
          {
             running,
@@ -514,15 +600,7 @@ namespace casual
             )
          } pending;
 
-         struct
-         {
-            std::unordered_map< common::transaction::global::ID, std::vector< state::instance::concurrent::id::type>> associations;
-
-            CASUAL_LOG_SERIALIZE(
-               CASUAL_SERIALIZE( associations);
-            )
-         
-         } transaction;
+         state::Transaction transaction;
 
          common::event::dispatch::Collection< common::message::event::service::Calls> events;  
 
@@ -568,27 +646,44 @@ namespace casual
 
          //! @returns true if we're ready to shutdown
          bool done() const noexcept;
+
+         struct remove_result
+         {
+            std::vector< state::instance::Caller> callers;
+            std::vector< common::transaction::global::ID> stale;
+
+            CASUAL_LOG_SERIALIZE(
+               CASUAL_SERIALIZE( callers);
+               CASUAL_SERIALIZE( stale);
+            )
+         };
          
          //! removes the instance (deduced from `pid`) and remove the instance from all services 
          //! @returns possible callers to that waits for reply from the removed instance (in practice 0..1)
-         [[nodiscard]] std::vector< state::instance::Caller> remove( common::strong::process::id pid);
+         [[nodiscard]] remove_result remove( common::strong::process::id pid);
          //! @returns possible caller to the remove instance
-         std::vector< state::instance::Caller> remove( common::strong::ipc::id ipc);
+         [[nodiscard]] remove_result remove( common::strong::ipc::id ipc);
 
          //! Tries to reserve a sequential instance for the given `service`
          //! @return id of the instance, or 'nil-id' if no idle is found
          state::instance::sequential::id::type reserve_sequential( 
             state::service::id::type service,
             const common::process::Handle& caller, 
-            const common::strong::correlation::id& correlation);
+            const common::strong::correlation::id& correlation,
+            state::transaction::gtrid_range gtrid);
             
          //! @return a reserved instance for the given `service` 
          //!   or 'nil-id' if no one is found.
          state::instance::concurrent::id::type reserve_concurrent( 
             state::service::id::type service,
-            std::span< state::instance::concurrent::id::type> preferred);
+            state::transaction::gtrid_range gtrid);
 
-         void unreserve( state::instance::sequential::id::type instance, const common::message::event::service::Metric& metric);
+         [[nodiscard]] auto unreserve_sequential( state::instance::sequential::id::type instance, const common::message::service::call::ACK& message) 
+            -> std::tuple< std::optional< platform::time::point::type>, std::optional< common::transaction::global::ID>>;
+
+         //! unreserve all instances from the event. 
+         //! @return all potentially stale transactions
+         [[nodiscard]] std::vector< common::transaction::global::ID> unreserve_concurrent( const common::message::event::service::Calls& message);
 
 
          struct prepare_shutdown_result
@@ -613,9 +708,6 @@ namespace casual
          [[nodiscard]] std::vector< state::service::pending::Lookup> update( common::message::service::Advertise&& message);
          [[nodiscard]] std::vector< state::service::pending::Lookup> update( common::message::service::concurrent::Advertise&& message);
          //! @}
-
-         //! @returns the previously associated "instances" to the `gtrid`, if any.
-         std::vector< state::instance::concurrent::id::type> disassociate( common::transaction::global::id::range gtrid);
 
          //! Resets metrics for the provided services, if empty all metrics are reset.
          //! @param services

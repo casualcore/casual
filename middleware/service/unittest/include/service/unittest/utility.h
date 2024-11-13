@@ -18,19 +18,19 @@ namespace casual
 {
    namespace service::unittest
    {
-      //! advertise `services` to service-manager as current process
-      void advertise( std::vector< std::string> services);
+      //! advertise `services` to service-manager as `process`
+      void advertise( std::vector< std::string> services, const common::process::Handle& process = common::process::handle());
 
-      //! unadvertise `services` to service-manager as current process
-      void unadvertise( std::vector< std::string> services);
+      //! unadvertise `services` to service-manager as `process`
+      void unadvertise( std::vector< std::string> services, const common::process::Handle& process = common::process::handle());
 
       namespace concurrent
       {
-         //! advertise concurrent/remote `services` to service-manager as current process
-         void advertise( std::vector< std::string> services);
+         //! advertise concurrent/remote `services` to service-manager as `process`
+         void advertise( std::vector< std::string> services, const common::process::Handle& process = common::process::handle());
 
-         //! unadvertise concurrent/remote `services` to service-manager as current process
-         void unadvertise( std::vector< std::string> services);
+         //! unadvertise concurrent/remote `services` to service-manager as `process`
+         void unadvertise( std::vector< std::string> services, const common::process::Handle& process = common::process::handle());
       } // concurrent
 
       namespace send
@@ -39,7 +39,14 @@ namespace casual
          //! @{ 
          void ack( const common::message::service::call::callee::Request& request);
          void ack( const common::message::service::lookup::Reply& lookup);
+         void ack( const common::message::service::lookup::Reply& lookup, const common::transaction::ID& trid);
          //! @}
+
+         namespace concurrent
+         {
+            //! sends ack to service-manager for concurrent service
+            void ack( const common::message::service::lookup::Reply& lookup, const common::transaction::ID& trid);
+         } // concurrent
 
       } // send
 

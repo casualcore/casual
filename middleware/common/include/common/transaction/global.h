@@ -36,6 +36,7 @@ namespace casual::common
 
          inline friend bool operator == ( const ID& lhs, id::range rhs) { return algorithm::equal( lhs.range(), rhs);}
          inline friend bool operator == ( const ID& lhs, const ID& rhs) { return lhs == rhs.range();}
+         inline friend bool operator < ( const ID& lhs, const ID& rhs) { return algorithm::lexicographical::compare( lhs.range(), rhs.range());}
 
          inline explicit operator bool () const noexcept { return m_size != 0;}
 

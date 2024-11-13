@@ -44,7 +44,7 @@ namespace casual
 
          //! Lookup an entry point for the @p service
          //! using a specific context
-         Lookup( std::string service, lookup::Context context, std::optional< platform::time::point::type> deadline = {});
+         Lookup( std::string service, lookup::Context context, common::transaction::global::id::range gtrid, std::optional< platform::time::point::type> deadline = {});
 
          //! If pending lookup discard it.
          ~Lookup();

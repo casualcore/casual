@@ -29,9 +29,9 @@ namespace casual
          } // <unnamed>
       } // local
 
-      void advertise( std::vector< std::string> services)
+      void advertise( std::vector< std::string> services, const common::process::Handle& process)
       {
-         message::service::Advertise message{ process::handle()};
+         message::service::Advertise message{ process};
          message.alias = instance::alias();
          message.services.add = algorithm::transform( services, []( auto& service)
          {
@@ -41,9 +41,9 @@ namespace casual
          communication::device::blocking::send( local::ipc::manager(), message);
       }
 
-      void unadvertise( std::vector< std::string> services)
+      void unadvertise( std::vector< std::string> services, const common::process::Handle& process)
       {
-         message::service::Advertise message{ process::handle()};
+         message::service::Advertise message{ process};
          message.alias = instance::alias();
          message.services.remove = std::move( services);
          communication::device::blocking::send( local::ipc::manager(), message);
@@ -51,9 +51,9 @@ namespace casual
 
       namespace concurrent
       {
-         void advertise( std::vector< std::string> services)
+         void advertise( std::vector< std::string> services, const common::process::Handle& process)
          {
-            message::service::concurrent::Advertise message{ process::handle()};
+            message::service::concurrent::Advertise message{ process};
             message.alias = instance::alias();
             message.services.add = algorithm::transform( services, []( auto& service)
             {
@@ -63,9 +63,9 @@ namespace casual
             communication::device::blocking::send( local::ipc::manager(), message);
          }
 
-         void unadvertise( std::vector< std::string> services)
+         void unadvertise( std::vector< std::string> services, const common::process::Handle& process)
          {
-            message::service::concurrent::Advertise message{ process::handle()};
+            message::service::concurrent::Advertise message{ process};
             message.alias = instance::alias();
             message.services.remove = std::move( services);
             communication::device::blocking::send( local::ipc::manager(), message);
@@ -98,18 +98,44 @@ namespace casual
             communication::device::blocking::send( local::ipc::manager(), message);
          }
 
-         void ack( const message::service::lookup::Reply& lookup)
+         void ack( const common::message::service::lookup::Reply& lookup, const common::transaction::ID& trid)
          {
             message::service::call::ACK message;
             message.correlation = lookup.correlation;
             message.metric.pending = lookup.pending;
             message.metric.service = lookup.service.name;
+            message.metric.trid = trid;
 
             message.metric.process = process::handle();
             
             communication::device::blocking::send( local::ipc::manager(), message);
-
          }
+
+         void ack( const message::service::lookup::Reply& lookup)
+         {
+            ack( lookup, {});
+         }
+
+         namespace concurrent
+         {
+            void ack( const common::message::service::lookup::Reply& lookup, const common::transaction::ID& trid)
+            {
+               message::event::service::Metric metric;
+               metric.process = process::handle();
+               metric.correlation = lookup.correlation;
+               metric.service = lookup.service.name;
+               metric.trid = trid;
+               metric.code.result = decltype( metric.code.result)::ok;
+            
+
+               message::event::service::Calls message;
+               message.metrics.push_back( std::move( metric));
+
+               communication::device::blocking::send( local::ipc::manager(), message);
+            }
+            
+         } // concurrent
+
       } // send
 
       namespace server

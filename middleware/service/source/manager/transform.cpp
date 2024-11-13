@@ -120,9 +120,6 @@ namespace casual
                      using State = decltype( result.state);
                      result.state = instance.state() == decltype( instance.state())::busy ? State::busy : State::idle;
 
-                     common::log::line( verbose::log, "REMOVE - instance: ", instance);
-                     common::log::line( verbose::log, "REMOVE - result: ", result);
-
                      return result;
                   };
                }
@@ -187,7 +184,25 @@ namespace casual
 
          }
 
+         
+         result.transactions = common::algorithm::transform( state.transaction.associations(), [ &state]( auto& pair)
+         {
+            manager::admin::model::Transaction result;
+            result.gtrid = pair.first;
+            result.instances.sequential = common::algorithm::transform( pair.second.sequential, [ &state]( auto& instance)
+            {
+               auto& sequential = state.instances.sequential[ instance.id];
+               return manager::admin::model::transaction::instance::Sequential{ .process = sequential.process};
+            });
+            
+            result.instances.concurrent = common::algorithm::transform( pair.second.concurrent, [ &state]( auto& instance)
+            {
+               auto& concurrent = state.instances.concurrent[ instance.id];
+               return manager::admin::model::transaction::instance::Concurrent{ .process = concurrent.process, .count = instance.count};
+            });
 
+            return result;
+         });
 
          return result;
       }

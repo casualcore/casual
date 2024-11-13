@@ -78,11 +78,12 @@ namespace casual
                         if( flag::contains( flags, call::async::Flag::no_reply))
                            code::raise::error( code::xatmi::argument, "TPNOREPLY can only be used with TPNOTRAN");
 
-                        return service::Lookup{ std::move( service), transform_context( flags), current.deadline};
+                        // the lookup is associated with the current transaction
+                        return service::Lookup{ std::move( service), transform_context( flags), common::transaction::id::range::global( current.trid), current.deadline};
                      }
                   }
 
-                  return service::Lookup{ std::move( service), transform_context( flags), deadline};
+                  return service::Lookup{ std::move( service), transform_context( flags), {}, deadline};
                }
 
                inline Reply message(

@@ -112,6 +112,18 @@ namespace casual
                }
             }
 
+            namespace stale
+            {
+               auto send( State& state, const common::transaction::global::ID& gtrid)
+               {
+                  Trace trace{ "service::manager::handle::local::stale::send"};
+
+                  common::message::transaction::potential::Stale message{ common::process::handle()};
+                  message.gtrid = gtrid;
+                  state.multiplex.send( communication::instance::outbound::transaction::manager::device(), message);
+               }
+            } // stale
+
          } // <unnamed>
       } // local
 
@@ -247,13 +259,21 @@ namespace casual
 
                         state.pending.shutdown.failed( event.state.pid);
 
-                        // we need to check if the dead process has anyone waiting for a reply
-                        for( auto caller : state.remove( event.state.pid))
+                        // there might be stuff to compensate for the dead process
                         {
-                           log::error( code::casual::invalid_semantics, " callee terminated with pending reply to caller - callee: ", 
+                           auto outcome = state.remove( event.state.pid);
+
+                           // we need to check if the dead process has anyone waiting for a reply
+                           for( auto& caller : outcome.callers)
+                           {
+                              log::error( code::casual::error, "callee terminated with pending reply to caller - callee: ", 
                                  event.state.pid, " - caller: ", caller.process.pid);
 
-                           local::error::reply( state, caller, common::code::xatmi::service_error);
+                              local::error::reply( state, caller, common::code::xatmi::service_error);
+                           }
+
+                           for( auto& stale : outcome.stale)
+                              local::stale::send( state, stale);
                         }
 
                         // It might be an assassinated instance.
@@ -278,9 +298,7 @@ namespace casual
                         Trace trace{ "service::manager::handle::local::event::transaction::disassociate"};
                         log::line( verbose::log, "message: ", message);
 
-                        auto instances = state.disassociate( message.gtrid.range());
-
-                        log::line( verbose::log, "disassociated instances: ", instances);
+                        state.transaction.disassociate( message.gtrid.range());
                      };
                   }
                   
@@ -348,8 +366,8 @@ namespace casual
                         Trace trace{ "service::manager::handle::service::concurrent::metric"};
                         log::line( verbose::log, "message: ", message);
 
-                        for( auto& metric : message.metrics)
-                           state.services.metric( metric.service).update( metric);
+                        for( auto stale : state.unreserve_concurrent( message))
+                           local::stale::send( state, stale);
 
                         if( state.events)
                         {
@@ -551,7 +569,7 @@ namespace casual
                               return message.process;
                            };
 
-                           if( auto instance_id = state.reserve_sequential( service_id, get_caller( message), message.correlation))
+                           if( auto instance_id = state.reserve_sequential( service_id, get_caller( message), message.correlation, message.gtrid.range()))
                               dispatch::lookup::reply( state, service_id, instance_id, message, pending);
                            else
                               dispatch::lookup::pending( state, service_id, message);
@@ -567,36 +585,8 @@ namespace casual
                         if( dispatch::lookup::internal_only( state, service_id, message, pending))
                            return true;
 
-                        if( ! message.gtrid)
-                        {
-                           if( auto instance_id = state.reserve_concurrent( service_id, {}))
-                           {
-                              dispatch::lookup::reply( state, service_id, instance_id, message, pending);
-                              return true;
-                           }
-                           return false;
-                        }
-
-                        // check if the gtrid has associations before
-                        if( auto found = algorithm::find( state.transaction.associations, message.gtrid))
-                        {
-                           if( auto instance_id = state.reserve_concurrent( service_id, range::make( found->second)))
-                           {
-                              // if the "instance" is not associated before, add it.
-                              if( ! algorithm::contains( found->second, instance_id))
-                                 found->second.push_back( instance_id);
-                              
-                              dispatch::lookup::reply( state, service_id, instance_id, message, pending);
-                              return true;
-                           }
-                           return false;
-                        }
-
-                        // the gtrid is not associated before
-                        if( auto instance_id = state.reserve_concurrent( service_id, {}))
-                        {
-                           state.transaction.associations.emplace( message.gtrid, std::vector< state::instance::concurrent::id::type>{ instance_id});
-
+                        if( auto instance_id = state.reserve_concurrent( service_id, message.gtrid.range()))
+                        {  
                            dispatch::lookup::reply( state, service_id, instance_id, message, pending);
                            return true;
                         }
@@ -978,30 +968,6 @@ namespace casual
 
             } // domain::discovery
 
-            namespace detail
-            {
-               void check_timeout_and_notify_TM( State& state, const common::message::service::call::ACK& ack)
-               {
-                  log::line( verbose::log, "state.timeout_instances: ", state.timeout_instances);
-
-                  if( ! ack.metric.trid)
-                     return;
-                  
-                  if( auto found = algorithm::find( state.timeout_instances, ack.metric.process.pid))
-                  {
-                     state.timeout_instances.erase( std::begin( found));
-
-                     // Rollback the transaction (again). If TM got instances involved a rollback will be executed, 
-                     // otherwise it will be a "no-op".
-                     // TODO: we might want to have a dedicated message for this. SM should not order a rollback?
-                     message::transaction::rollback::Request message{ common::process::handle()};
-                     message.trid = ack.metric.trid;
-                     optional::send( state, communication::instance::outbound::transaction::manager::device(), message);
-                  }
-               }
-               
-            } // detail
-
 
             //! Handles ACK from services.
             //!
@@ -1013,14 +979,7 @@ namespace casual
                {
                   Trace trace{ "service::manager::handle::local::ack"};
                   log::line( verbose::log, "message: ", message);
-
-                  // we remove possible deadline first.
-                  if( auto deadline = state.pending.deadline.remove( message.correlation))
-                     signal::timer::set( deadline.value());
-
                   
-                  detail::check_timeout_and_notify_TM( state, message);
-
                   // add metric event regardless
                   if( state.events.active< common::message::event::service::Calls>())
                   {
@@ -1036,7 +995,18 @@ namespace casual
                      return;
                   }
 
-                  state.unreserve( instance_id, message.metric);
+                  // unreserve the instance -> could be a new timeout to set and/or a stale transaction to notify about
+                  {
+                     auto [ deadline, stale] = state.unreserve_sequential( instance_id, message);
+
+                     if( deadline)
+                        signal::timer::set( *deadline);
+                     else 
+                        signal::timer::unset();
+
+                     if( stale)
+                        local::stale::send( state, *stale);
+                  }
 
                   if( auto found = algorithm::find( state.disabled, instance_id))
                   {
@@ -1071,26 +1041,6 @@ namespace casual
  
                };
             }
-
-            namespace timeout::rollback
-            {
-               auto reply( State& state)
-               {
-                  return []( const message::transaction::rollback::Reply& message)
-                  {
-                     Trace trace{ "service::manager::handle::local::timeout::rollback::reply"};
-                     log::line( verbose::log, "message: ", message);
-                  
-                     if( message.state != decltype( message.state)::ok)
-                     {
-                        log::line( log::category::error, message.state, " timeout rollback failed for trid: ", message.trid);
-                        log::line( log::category::verbose::error, "message: ", message);
-                     }
-                  };
-               }
-               
-            } // timeout::rollback 
-
 
             namespace configuration
             {
@@ -1219,7 +1169,6 @@ namespace casual
             handle::local::service::concurrent::advertise( state),
             handle::local::service::concurrent::metric( state),
             handle::local::ack( state),
-            handle::local::timeout::rollback::reply( state),
             handle::local::event::subscription::begin( state),
             handle::local::event::subscription::end( state),
             handle::local::Call{ admin::services( state), state},

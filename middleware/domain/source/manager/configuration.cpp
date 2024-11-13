@@ -259,10 +259,6 @@ namespace casual
             {
                Trace trace{ "domain::manager::configuration::local::domain"};
 
-               log::line( verbose::log, "REMOVE state.configuration.model.domain.executables: ", state.configuration.model.domain.executables);
-               log::line( verbose::log, "REMOVE wanted.executables: ", wanted.executables);
-
-
                auto change = detail::change( state.configuration.model.domain, wanted);
                log::line( verbose::log, "change: ", change);
   

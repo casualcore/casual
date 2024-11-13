@@ -144,7 +144,7 @@ namespace casual
                return m_sequential.empty() && m_concurrent.empty();
             }
 
-            instance::concurrent::id::type Instances::next_concurrent( std::span< instance::concurrent::id::type> preferred) noexcept
+            instance::concurrent::id::type Instances::next_concurrent( std::span< const state::transaction::instance::Concurrent> preferred) noexcept
             {
                if( std::empty( m_prioritized_concurrent))
                   return {};
@@ -403,6 +403,160 @@ namespace casual
                sequential[ instance_id].remove( service_id);
          }
 
+         namespace transaction
+         {
+            void Instances::reserve( state::instance::concurrent::id::type instance)
+            {
+               if( auto found = algorithm::find( concurrent, instance))
+                  ++found->count;
+               else
+                  concurrent.push_back( { .id = instance, .count = 1});
+            }
+
+            void Instances::reserve( state::instance::sequential::id::type instance)
+            {
+               if( ! algorithm::contains( sequential, instance))
+                  sequential.push_back( { .id = instance});
+            }
+
+            bool Instances::unreserve( state::instance::concurrent::id::type instance)
+            {
+               if( auto found = algorithm::find( concurrent, instance))
+               {
+                  if( found->count == 0)
+                     log::error( code::casual::invalid_semantics, "instance already dissociated from transaction - ", instance); 
+                  else
+                     --found->count;
+               }
+               else
+                  log::error( code::casual::invalid_semantics, "instance not found in transaction - ", instance);
+
+               return empty() && ! associated;
+            }
+
+            bool Instances::unreserve( state::instance::sequential::id::type instance)
+            {
+               if( auto found = algorithm::find( sequential, instance))
+                  algorithm::container::erase( sequential, std::begin( found));
+               else
+                  log::error( code::casual::invalid_semantics, "instance not found in transaction - ", instance);
+
+               return empty() && ! associated;
+            }
+
+            bool Instances::empty() const
+            {
+               return std::empty( sequential) && algorithm::all_of( concurrent, []( auto& instance)
+               {
+                  return instance.count == 0;
+               });
+            }
+
+            
+         } // transaction
+
+
+         const transaction::Instances* Transaction::find( gtrid_range gtrid) const
+         {
+            if( auto found = algorithm::find( m_associations, gtrid))
+               return &found->second;
+
+            return nullptr;
+         }
+
+         transaction::Instances& Transaction::find_or_add( gtrid_range gtrid)
+         {
+            if( auto found = algorithm::find( m_associations, gtrid))
+               return found->second;
+
+            return m_associations.emplace( gtrid, transaction::Instances{}).first->second;
+         }
+
+         std::vector< common::transaction::global::ID> Transaction::erase( state::instance::concurrent::id::type instance)
+         {
+            Trace trace{ "service::manager::state::Transaction::erase"};
+
+            std::vector< common::transaction::global::ID> result;
+            
+            algorithm::container::erase_if( m_associations, [ &result, instance]( auto& pair)
+            {
+               if( pair.second.unreserve( instance))
+               {
+                  result.push_back( pair.first);
+                  return true;
+               }
+               
+               return false;
+            });
+
+            return result;
+         }
+         
+         std::optional< common::transaction::global::ID> Transaction::erase( state::instance::sequential::id::type instance)
+         {
+            Trace trace{ "service::manager::state::Transaction::erase"};
+
+            auto unreserve_instance = [ instance]( auto& pair)
+            {
+               return pair.second.unreserve( instance); 
+            };
+
+            if( auto found = algorithm::find_if( m_associations, unreserve_instance))
+            {
+               auto gtrid = found->first;
+               algorithm::container::erase( m_associations, std::begin( found));
+               return { gtrid};
+            }
+
+            return std::nullopt;
+         }
+
+         bool Transaction::unreserve( gtrid_range gtrid, state::instance::concurrent::id::type instance)
+         {
+            Trace trace{ "service::manager::state::Transaction::unreserve"};
+
+            if( auto transaction = algorithm::find( m_associations, gtrid))
+            {
+               if( transaction->second.unreserve( instance))
+               {
+                  algorithm::container::erase( m_associations, std::begin( transaction));
+                  return true;
+               }
+            }
+            return false;
+         }
+
+         bool Transaction::unreserve( gtrid_range gtrid, state::instance::sequential::id::type instance)
+         {
+            Trace trace{ "service::manager::state::Transaction::unreserve"};
+
+            if( auto transaction = algorithm::find( m_associations, gtrid))
+            {
+               if( transaction->second.unreserve( instance))
+               {
+                  algorithm::container::erase( m_associations, std::begin( transaction));
+                  return true;
+               }
+            }
+            return false;
+         }
+
+         void Transaction::disassociate( common::transaction::global::id::range gtrid)
+         {
+            Trace trace{ "service::manager::state::Transaction::disassociate"};
+
+            if( auto found = algorithm::find( m_associations, gtrid))
+            {
+               if( found->second.empty())
+                  algorithm::container::erase( m_associations, std::begin( found));
+               else
+               {
+                  found->second.associated = false;
+                  log::line( casual::service::log, "possible stale transaction: ", *found);
+               }
+            }
+         }
+
          std::string_view description( Runlevel value)
          {
             switch( value)
@@ -517,10 +671,11 @@ namespace casual
             }
 
 
-            std::vector< state::instance::Caller> remove( State& state, auto process)
+            State::remove_result remove( State& state, auto process)
             {
+               State::remove_result result;
 
-               auto find_indexes = []( auto& instances, auto process)
+               static auto find_indexes = []( auto& instances, auto process)
                {
                   return algorithm::transform_if( instances.indexes(), std::identity{}, [ &instances, process]( auto id)
                   {
@@ -528,14 +683,13 @@ namespace casual
                   });
                };
 
-               auto clean_instances_from_services = []( auto& instance_ids, auto& services)
+               static auto clean_instances_from_services = []( auto& instance_ids, auto& services)
                {
                   for( auto service_id : services.indexes())
                      for( auto instance_id : instance_ids)
                         services[ service_id].instances.remove( instance_id);
                };
 
-               std::vector< state::instance::Caller> result;
 
                state.events.remove( process);
                
@@ -544,7 +698,11 @@ namespace casual
                   clean_instances_from_services( concurrent, state.services);
                   
                   for( auto id : concurrent)
-                      state.instances.concurrent.erase( id);
+                  {
+                     state.instances.concurrent.erase( id);
+                     
+                     algorithm::container::append( state.transaction.erase( id), result.stale);
+                  }
                }
                {
                   auto sequential = find_indexes( state.instances.sequential, process);
@@ -553,9 +711,13 @@ namespace casual
                   for( auto id : sequential)
                   {
                      if( state.instances.sequential[ id].caller())
-                        result.push_back( state.instances.sequential[ id].caller());
+                        result.callers.push_back( state.instances.sequential[ id].caller());
 
                      state.instances.sequential.erase( id);
+                     
+                     if( auto gtrid =  state.transaction.erase( id))
+                        result.stale.push_back( *gtrid);
+
                      std::erase( state.disabled, id);
                   }
                }
@@ -566,7 +728,7 @@ namespace casual
          } // <unnamed>
       } // local
 
-      std::vector< state::instance::Caller> State::remove( common::strong::process::id pid)
+      State::remove_result State::remove( common::strong::process::id pid)
       {
          Trace trace{ "service::manager::State::remove"};
          log::line( verbose::log, "pid: ", pid);
@@ -577,7 +739,7 @@ namespace casual
          return local::remove( *this, pid);
       }
 
-      std::vector< state::instance::Caller> State::remove( common::strong::ipc::id ipc)
+      State::remove_result State::remove( common::strong::ipc::id ipc)
       {
          Trace trace{ "service::manager::State::remove"};
          log::line( verbose::log, "ipc: ", ipc);
@@ -588,7 +750,8 @@ namespace casual
       state::instance::sequential::id::type State::reserve_sequential( 
          state::service::id::type service_id,
          const common::process::Handle& caller, 
-         const common::strong::correlation::id& correlation)
+         const common::strong::correlation::id& correlation,
+         state::transaction::gtrid_range gtrid)
       {
          Trace trace{ "service::manager::State::reserve_sequential"};
 
@@ -602,6 +765,10 @@ namespace casual
          if( auto found = algorithm::find_if( service.instances.sequential(), is_idle))
          {
             instances.sequential[ *found].reserve( service_id, caller, correlation);
+            
+            if( ! gtrid.empty())
+               transaction.find_or_add( gtrid).reserve( *found);
+            
             return *found;
          }
 
@@ -610,24 +777,61 @@ namespace casual
             
       state::instance::concurrent::id::type State::reserve_concurrent( 
          state::service::id::type service_id,
-         std::span< state::instance::concurrent::id::type> preferred)
+         state::transaction::gtrid_range gtrid)
       {
          Trace trace{ "service::manager::State::reserve_concurrent"};
 
          auto& service = services[ service_id];
 
-         if( auto instance_id = service.instances.next_concurrent( preferred))
+         if( gtrid.empty())
+            return service.instances.next_concurrent( {});
+
+         auto& associate = transaction.find_or_add( gtrid);
+
+         if( auto instance_id = service.instances.next_concurrent( associate.concurrent))
+         {
+            associate.reserve( instance_id);
             return instance_id;
+         }
 
          return {};
       }
 
-      void State::unreserve( state::instance::sequential::id::type instance_id, const common::message::event::service::Metric& metric)
+      auto State::unreserve_sequential( state::instance::sequential::id::type instance_id, const common::message::service::call::ACK& message)
+         -> std::tuple< std::optional< platform::time::point::type>, std::optional< common::transaction::global::ID>>
       {
-         Trace trace{ "service::manager::State::unreserve"};
+         Trace trace{ "service::manager::State::unreserve_sequential"};
 
          instances.sequential[ instance_id].unreserve();
-         services.metric( metric.service).update( metric);
+         services.metric( message.metric.service).update( message.metric);
+         
+         if( message.metric.trid)
+         {
+            auto gtrid = common::transaction::id::range::global( message.metric.trid);
+
+            if( transaction.unreserve( gtrid, instance_id))
+               return { pending.deadline.remove( message.correlation), gtrid};
+         }
+
+         return { pending.deadline.remove( message.correlation), std::nullopt};
+      }
+
+      std::vector< common::transaction::global::ID> State::unreserve_concurrent( const common::message::event::service::Calls& message)
+      {
+         Trace trace{ "service::manager::State::unreserve_concurrent"};
+
+         return algorithm::accumulate( message.metrics, std::vector< common::transaction::global::ID>{}, [ this]( auto result, auto& metric)
+         {
+            services.metric( metric.service).update( metric);
+
+            // unreserve the instance from the transaction
+            if( metric.trid)
+               if( auto instance = instances.concurrent.lookup( metric.process.ipc))
+                  if( this->transaction.unreserve( common::transaction::id::range::global( metric.trid), instance))
+                     result.emplace_back( common::transaction::id::range::global( metric.trid));
+
+            return result;
+         });
       }
       
       State::prepare_shutdown_result State::prepare_shutdown( std::vector< common::process::Handle> processes)
@@ -740,7 +944,16 @@ namespace casual
          if( message.directive == decltype( message.directive)::reset)
          {
             // remove the instance and it's associations
-            remove( message.process.ipc);
+            auto consequence = remove( message.process.ipc);
+            
+            // TOOD - we need to take care of the pending lookups that might be enabled by the instance that was reset.
+            if( ! consequence.callers.empty())
+               log::error( code::casual::invalid_semantics, "found callers for instance that was reset - ", consequence.callers);
+
+            // TODO - we might need to take care of the transactions that might be stale due to the reset.
+            if( ! consequence.stale.empty())
+               log::error( code::casual::invalid_semantics, "found stale transactions for instance that was reset - ", consequence.stale);
+               
 
             // we're removing stuff, no new services can be available.
             return {};
@@ -812,16 +1025,6 @@ namespace casual
          }
       }
 
-      std::vector< state::instance::concurrent::id::type> State::disassociate( common::transaction::global::id::range gtrid)
-      {
-         Trace trace{ "service::manager::State::disassociate"};
-         log::line( verbose::log, "gtrid: ", gtrid);
-
-         if( auto found = algorithm::find( transaction.associations, gtrid))
-            return algorithm::container::extract( transaction.associations, std::begin( found)).second;
-
-         return {};
-      }
 
       std::vector< std::string> State::metric_reset( std::vector< std::string> lookup)
       {
