@@ -1,4 +1,5 @@
-# casual release notes
+![casual](/resources/casual-box-left.png)
+# release notes
 
 ## 1.7
 
@@ -176,7 +177,7 @@ old                                       |  new
 removed                             |  use
 ------------------------------------|------------------------------
 `casual gateway --list-services`    | `casual service --list-instances`
-`casual gateway --list-queues`      | `casual queue --list-instances`
+`casual gateway --list-queues`      | `casual queue --list-queue-instances`
 
 
 * see [service.operation.md](../middleware/administration/documentation/cli/service.operation.md)
