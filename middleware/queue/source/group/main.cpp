@@ -162,7 +162,7 @@ namespace casual
                   Settings settings;
                   argument::parse( "queue group server", {}, argc, argv);
 
-                  log::line( verbose::log, "settings: ", settings);
+                  log::debug( "settings: ", settings);
 
                   start( initialize( std::move( settings)));
                }

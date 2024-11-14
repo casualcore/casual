@@ -49,13 +49,13 @@ install_bin.append( target)
 
 target = make.LinkExecutable( 'bin/casual-build-server-generate',
    [ make.Compile( 'source/build/server/generate/main.cpp')],
-   [ common_a, build_task_a, 'casual-common', 'casual-configuration'])
+   [ build_task_a, common_a, 'casual-common', 'casual-configuration'])
 
 install_bin.append( target)
 
 target = make.LinkExecutable( 'bin/casual-build-executable',
    [ make.Compile( 'source/build/executable/main.cpp')],
-   [ common_a, build_task_a, 'casual-common', 'casual-configuration'])
+   [ build_task_a, common_a, 'casual-common', 'casual-configuration'])
 
 install_bin.append( target)
 

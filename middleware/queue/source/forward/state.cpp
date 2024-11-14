@@ -52,7 +52,7 @@ namespace casual
 
             void Service::invalidate() noexcept
             {
-               log::line( verbose::log, "invalidate: ", *this);
+               log::debug( "invalidate: ", *this);
 
                instances.running = 0;
                source.process = {};
@@ -83,7 +83,7 @@ namespace casual
 
             void Queue::invalidate() noexcept
             {
-               log::line( verbose::log, "invalidate: ", *this);
+               log::debug( "invalidate: ", *this);
 
                instances.running = 0;
                source.process = {};
@@ -106,7 +106,7 @@ namespace casual
       void State::invalidate( const std::vector< state::forward::id>& ids) noexcept
       {
          Trace trace{ "queue::forward::State::remove"};
-         log::line( verbose::log, "ids: ", ids);
+         log::debug( "ids: ", ids);
 
          for( auto id : ids)
             forward_apply( id, []( auto& forward){ forward.invalidate();});

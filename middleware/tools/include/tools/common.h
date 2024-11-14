@@ -9,19 +9,15 @@
 
 
 #include "common/log/stream.h"
-#include "common/log/trace.h"
+#include "common/log.h"
 
 
 namespace casual
 {
    namespace tools
    {
-      extern common::log::Stream log;
-
       namespace trace
       {
-         extern common::log::Stream log;
-
          struct Exit
          {
             template< typename T>
@@ -35,11 +31,7 @@ namespace casual
 
       } // trace
 
-      struct Trace : common::log::Trace
-      {
-         template< typename T>
-         Trace( T&& value) : common::log::Trace( std::forward< T>( value), trace::log) {}
-      };
+      using Trace = common::Trace;
 
       namespace license
       {

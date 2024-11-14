@@ -112,7 +112,7 @@ namespace casual
             if( ! path.empty())
             {
                if( std::filesystem::remove( path))
-                  log::line( log::debug, "removed file: ", path);
+                  log::debug( "removed file: ", path);
                else
                   log::line( log::category::error, code::casual::invalid_path, " failed to remove file: ", path);
             }
@@ -125,7 +125,7 @@ namespace casual
             if (ec)
                code::raise::error( code::casual::invalid_path, "failed to rename file, source: ", source, " -> target: ", target, ", error message: ", ec.message());
             
-            log::line( log::debug, "moved file source: ", source, " -> target: ", target);
+            log::debug( "moved file source: ", source, " -> target: ", target);
          }
 
          namespace scoped
@@ -154,7 +154,7 @@ namespace casual
          std::vector< std::filesystem::path> find( std::string_view pattern)
          {
             Trace trace{ "common::file::find"};
-            log::line( verbose::log, "pattern: ", pattern);
+            log::debug( "pattern: ", pattern);
 
             auto error_callback = []( const char* path, int error) -> int
             {

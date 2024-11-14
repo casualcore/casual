@@ -49,7 +49,7 @@ namespace casual
                std::vector< casual::configuration::model::service::Service> wanted)
             {
                auto change = casual::configuration::model::change::calculate( current, wanted, []( auto& l, auto& r){ return l.name == r.name;});
-               log::line( verbose::log, "change: ", change);
+               log::debug( "change: ", change);
 
                // take care of routes
                {
@@ -124,8 +124,8 @@ namespace casual
       {
          Trace trace{ "service::manager::configuration::conform"};
 
-         log::line( verbose::log, "current: ", current);
-         log::line( verbose::log, "wanted: ", wanted);
+         log::debug( "current: ", current);
+         log::debug( "wanted: ", wanted);
 
          state.timeout = std::move( wanted.global.timeout);
          state.restriction = std::move( wanted.restriction);

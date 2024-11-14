@@ -79,7 +79,7 @@ namespace casual
       {
          switch( code)
          {
-            default: return common::log::debug;
+            default: return common::log::category::debug;
          }
       }
    } // common::code

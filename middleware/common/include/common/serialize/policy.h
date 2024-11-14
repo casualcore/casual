@@ -216,8 +216,8 @@ namespace casual
 
             if( auto not_consumed = std::get< 1>( common::algorithm::intersection( source, consumed)))
             {
-               common::log::line( verbose::log, "source: ", source);
-               common::log::line( verbose::log, "consumed: ", consumed);
+               common::log::debug( "source: ", source);
+               common::log::debug( "consumed: ", consumed);
                code::raise::error( code::casual::invalid_configuration, "not all information consumed from source - ", not_consumed);
             }
          }

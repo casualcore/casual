@@ -14,15 +14,5 @@ namespace casual
    {
       common::log::Stream log{ "casual.event"};
 
-      namespace verbose
-      {
-         common::log::Stream log{ "casual.event.verbose"};
-      } // verbose
-
-      namespace trace
-      {
-         common::log::Stream log{ "casual.event.trace"};
-      } // verbose
-
    } // traffic
 } // casual

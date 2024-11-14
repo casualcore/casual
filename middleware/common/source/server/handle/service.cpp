@@ -118,7 +118,7 @@ namespace casual
          void reply( common::service::invoke::Result&& result, message::service::call::Reply& reply)
          {
             Trace trace{ "server::handle::service::complement::reply"};
-            log::line( log::debug, "result: ", result);
+            log::debug( "result: ", result);
 
             reply.code.user = result.code;
             reply.buffer = std::move( result.payload);
@@ -134,14 +134,14 @@ namespace casual
                reply.code.result = code::xatmi::service_fail;
             }
 
-            log::line( log::debug, "reply: ", reply);
+            log::debug( "reply: ", reply);
          }
 
 
          void reply( common::service::invoke::Result&& result, message::conversation::callee::Send& reply)
          {
             Trace trace{ "server::handle::service::complement::reply"};
-            log::line( log::debug, "result: ", result);
+            log::debug( "result: ", result);
 
             reply.code.user = result.code;
             reply.buffer = std::move( result.payload);
@@ -155,7 +155,7 @@ namespace casual
                reply.code.result = code::xatmi::service_fail;
 
 
-            log::line( log::debug, "reply: ", reply);
+            log::debug( "reply: ", reply);
          }
 
       } // complement

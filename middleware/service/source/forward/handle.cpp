@@ -61,7 +61,7 @@ namespace casual
                      return [&state]( const message::service::lookup::Reply& message)
                      {
                         Trace trace{ "service::forward::handle::local::service::name::lookup::reply"};
-                        log::line( verbose::log, "message: ", message);
+                        log::debug( "message: ", message);
 
                         auto found = algorithm::find( state.pending, message.correlation);
 
@@ -101,7 +101,7 @@ namespace casual
                      return [&state]( common::message::service::call::callee::Request& message)
                      {
                         Trace trace{ "service::forward::handle::local::service::request"};
-                        log::line( verbose::log, "message: ", message);
+                        log::debug( "message: ", message);
 
                         // lookup service
                         {
@@ -127,7 +127,7 @@ namespace casual
                   return [&state]( const common::message::shutdown::Request& message)
                   {
                      Trace trace{ "service::forward::handle::local::shutdown::request"};
-                     log::line( verbose::log, "message: ", message);
+                     log::debug( "message: ", message);
 
                      state.runlevel = state::Runlevel::shutdown;
 

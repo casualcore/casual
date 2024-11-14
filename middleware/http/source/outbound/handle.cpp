@@ -95,7 +95,7 @@ namespace casual
                      return [&state]( message::service::call::callee::Request& message)
                      {
                         Trace trace{ "http::outbound::handle::local::service::call::request"};
-                        log::line( verbose::log, "message: ", message);
+                        log::debug( "message: ", message);
 
                         auto found = algorithm::find( state.lookup, message.service.name);
 
@@ -136,7 +136,7 @@ namespace casual
                      return [&state]( casual::domain::message::discovery::Request& message)
                      {
                         Trace trace{ "http::outbound::handle::local::discovery::request"};
-                        log::line( verbose::log, "message: ", message);
+                        log::debug( "message: ", message);
 
                         auto reply = common::message::reverse::type( message);
                         reply.domain = state.identity;
@@ -187,8 +187,8 @@ namespace casual
             {
                Trace trace{ "http::outbound::manager::local::handle::Reply"};
 
-               log::line( verbose::log, "request: ", request);
-               log::line( verbose::log, "curl_code: ", curl_code);
+               log::debug( "request: ", request);
+               log::debug( "curl_code: ", curl_code);
                
                message::service::call::Reply message;
                message.correlation = request.state().correlation;
@@ -218,7 +218,7 @@ namespace casual
                   }
                }
 
-               log::line( verbose::log, "message: ", message);
+               log::debug( "message: ", message);
 
                communication::device::blocking::optional::send( destination.ipc, message);
 

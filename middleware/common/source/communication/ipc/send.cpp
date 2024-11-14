@@ -73,11 +73,11 @@ namespace casual
       bool Coordinator::operator () ( strong::file::descriptor::id descriptor, communication::select::tag::write) &
       {
          Trace trace{ "communication::ipc::send::Coordinator::operator <select>"};
-         log::line( verbose::log, "descriptor: ", descriptor);
+         log::debug( "descriptor: ", descriptor);
 
          if( auto found = algorithm::find( m_destinations, descriptor))
          {
-            log::line( verbose::log, "found: ", *found);
+            log::debug( "found: ", *found);
             if( found->send( *m_directive))
                m_destinations.erase( std::begin( found));
 

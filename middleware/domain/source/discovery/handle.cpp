@@ -42,7 +42,7 @@ namespace casual
                template< typename M>
                void entry( const M& message)
                {
-                  log::line( verbose::log, "message: ", message);
+                  log::debug( "message: ", message);
                }
             
             } // handler
@@ -61,12 +61,12 @@ namespace casual
                   auto requests( State& state, Result result, P&& providers, const M& message)
                   {
                      Trace trace{ "discovery::handle::local::detail::send::requests"};
-                     log::line( verbose::log, "providers: ", providers);
+                     log::debug( "providers: ", providers);
 
                      CASUAL_ASSERT( ! message.correlation);
                      CASUAL_ASSERT( message.process == process::handle());
 
-                     log::line( verbose::log, "message: ", message);
+                     log::debug( "message: ", message);
 
                      result = algorithm::accumulate( providers, std::move( result), [ &state, &message]( auto result, const auto& provider)
                      {
@@ -76,7 +76,7 @@ namespace casual
                         return result;
                      });
 
-                     log::line( verbose::log, "pending: ", result);
+                     log::debug( "pending: ", result);
                      return result;
                   }
 
@@ -345,7 +345,7 @@ namespace casual
                         state.coordinate.known( detail::collect::known::requests( state), [ &state, message]( auto&& replies, auto&& outcome)
                         {
                            Trace trace{ "discovery::handle::local::api::rediscovery::request known done"};
-                           log::line( verbose::log, "replies: ", replies, ", outcome: ", outcome);
+                           log::debug( "replies: ", replies, ", outcome: ", outcome);
 
                            auto pendings = [ &]()
                            {
@@ -414,7 +414,7 @@ namespace casual
                   state.coordinate.lookup( std::move( pendings), [ &state, request = std::move( message)]( auto replies, auto outcome)
                   {
                      Trace trace{ "discovery::handle::local::detail::handle_internal_lookup coordinate lookup"};
-                     log::line( verbose::log, "replies: ", replies);
+                     log::debug( "replies: ", replies);
 
                      auto message = common::message::reverse::type( request);
                      message.domain = common::domain::identity();
@@ -422,7 +422,7 @@ namespace casual
                      for( auto& reply : replies)
                         message.content += std::move( reply.content);
 
-                     log::line( verbose::log, "message: ", message);
+                     log::debug( "message: ", message);
 
                      detail::send::multiplex( state, request.process.ipc, message);
                   });
@@ -447,7 +447,7 @@ namespace casual
                   state.coordinate.lookup( std::move( pendings), [ &state, request = std::move( request)]( auto replies, auto outcome)
                   {
                      Trace trace{ "discovery::handle::local::detail::handle_extended_lookup coordinate lookup"};
-                     log::line( verbose::log, "replies: ", replies);
+                     log::debug( "replies: ", replies);
 
                      auto lookup_content = algorithm::accumulate( replies, message::discovery::reply::Content{}, []( auto result, auto& reply)
                      {
@@ -524,7 +524,7 @@ namespace casual
                   Trace trace{ "discovery::handle::local::reply"};
                   local::handler::entry( message);
 
-                  log::line( verbose::log, "state.coordinate.discovery: ", state.coordinate.discovery);
+                  log::debug( "state.coordinate.discovery: ", state.coordinate.discovery);
                   state.coordinate.discovery( std::move( message));
                   
                };
@@ -577,7 +577,7 @@ namespace casual
                      message::discovery::api::provider::registration::Ability topology_ability)
                   {
                      Trace trace{ "discovery::handle::local::accumulate::topology::send_direct_explore"};
-                     log::line( verbose::log, "direct: ", direct, ", implicit: ", implicit);
+                     log::debug( "direct: ", direct, ", implicit: ", implicit);
 
                      if( direct.empty() && implicit.empty())
                      {  
@@ -590,7 +590,7 @@ namespace casual
                      state.coordinate.known( detail::collect::known::requests( state), [ &state, direct = std::move( direct), implicit = std::move( implicit), topology_ability]( auto&& replies, auto&& outcome) mutable
                      {
                         Trace trace{ "discovery::handle::local::accumulate::topology::send_direct_explore coordinate"};
-                        log::line( verbose::log, "replies: ", replies, ", outcome: ", outcome);
+                        log::debug( "replies: ", replies, ", outcome: ", outcome);
 
                         message::discovery::topology::direct::Explore explore;
                         
@@ -606,7 +606,7 @@ namespace casual
                         // services/queues that the new connection might provide
                         explore.content += state.pending_content();
 
-                        log::line( verbose::log, "explore: ", explore);
+                        log::debug( "explore: ", explore);
 
                         if( explore.content)
                         {
@@ -709,10 +709,10 @@ namespace casual
                return [ &state]( const common::message::signal::Timeout& message)
                {
                   Trace trace{ "gateway::group::outbound::local::internal::handle::timeout"};
-                  log::line( verbose::log, "message: ", message);
+                  log::debug( "message: ", message);
 
                   auto result = state.accumulate.extract();
-                  log::line( verbose::log, "result: ", result);
+                  log::debug( "result: ", result);
 
                   if( result.advertised)
                      accumulate::topology::send_direct_explore( state, std::move( result.direct), std::move( result.implicit), state::provider::Ability::advertised);
@@ -734,7 +734,7 @@ namespace casual
                      return [ &state]( const common::message::event::process::Exit& event)
                      {
                         Trace trace{ "discovery::handle::local::event::process::exit"};
-                        log::line( verbose::log, "event: ", event);
+                        log::debug( "event: ", event);
 
                         state.failed( event.state.pid);
                      };
@@ -748,7 +748,7 @@ namespace casual
                      return [ &state]( const common::message::event::ipc::Destroyed& event)
                      {
                         Trace trace{ "discovery::handle::local::event::process::exit"};
-                        log::line( verbose::log, "event: ", event);
+                        log::debug( "event: ", event);
 
                         state.failed( event.process.ipc);
                      };
@@ -804,12 +804,12 @@ namespace casual
                   return [ &state, correlation = send_request()]( const common::message::domain::process::lookup::Reply& message)
                   {
                      Trace trace{ "discovery::handle::local::service::manager::lookup::reply"};
-                     log::line( verbose::log, "message: ", message);
+                     log::debug( "message: ", message);
 
                      if( message.correlation == correlation)
                      {
                         casual::assertion( communication::instance::identity::service::manager == message.identification, "message.identification is not service-manager ",  message.identification);
-                        log::line( verbose::log, "service-manager is online");
+                        log::debug( "service-manager is online");
 
                         common::server::handle::policy::advertise( admin::services( state).services);
                      }

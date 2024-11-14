@@ -11,7 +11,8 @@ namespace casual
 {
    namespace common::log::category
    {
-
+      Stream debug{ "casual.debug"};
+      Stream trace{ "casual.trace"};
       Stream parameter{ "parameter"};
       Stream information{ "information"};
       Stream warning{ "warning"};

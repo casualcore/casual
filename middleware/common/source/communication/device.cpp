@@ -25,7 +25,7 @@ namespace casual
             if( exception::capture().code() != code::casual::interrupted)
                throw;
 
-            log::line( verbose::log, "device interrupted");
+            log::debug( "device interrupted");
             signal::dispatch();
          }
       }

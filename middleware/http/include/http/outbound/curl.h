@@ -122,7 +122,7 @@ namespace casual
             template< typename Directive, typename Data>
             void option( const type::easy& easy, Directive directive, Data&& data)
             {
-               common::log::line( http::verbose::log, "directive: ", directive, " - data: ", data);
+               common::log::debug( "directive: ", directive, " - data: ", data);
                
                curl::check( curl_easy_setopt( easy.get(), directive, std::forward< Data>( data)));
             }

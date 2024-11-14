@@ -56,8 +56,8 @@ namespace casual
 
             validate( directive);
 
-            log::line( log, "input: ", input);
-            log::line( log, "directive: ", directive);
+            log::debug( "input: ", input);
+            log::debug( "directive: ", directive);
 
 
             auto arguments = [&]() ->  std::vector< std::string>

@@ -43,7 +43,7 @@ namespace casual
          {
             bool send( strong::process::id pid, code::signal signal)
             {
-               log::line( verbose::log, "local::signal::send ", signal, " -> pid: ", pid);
+               log::debug( "local::signal::send ", signal, " -> pid: ", pid);
 
                return posix::log::result( 
                   ::kill( pid.value(), std::to_underlying( signal)), 
@@ -229,7 +229,7 @@ namespace casual
                         if( ! current.exists( signal) && basic_pending< signal>::pending.exchange( false))
                         {
                            // Signal is not blocked
-                           log::line( log::debug, "signal: handling signal: ", signal);
+                           log::debug( "signal: handling signal: ", signal);
 
                            // if we don't have any handler we need to propagate the signal via exception.
                            if( ! callback)
@@ -460,7 +460,7 @@ namespace casual
       {
          void send( std::thread& thread, code::signal signal)
          {
-            log::line( log::debug, "signal::thread::send thread: ", thread.get_id(), " signal: ", signal);
+            log::debug( "signal::thread::send thread: ", thread.get_id(), " signal: ", signal);
 
             send( thread.native_handle(), signal);
          }
@@ -476,7 +476,7 @@ namespace casual
 
          void send( code::signal signal)
          {
-            log::line( log::debug, "signal::thread::send current thread - signal: ", signal);
+            log::debug( "signal::thread::send current thread - signal: ", signal);
             send( common::thread::native::current(), signal);
          }
 

@@ -23,7 +23,7 @@ namespace casual
          {
             auto&& event = event_creator();
 
-            common::log::line( verbose::log, "event: ", event);
+            common::log::debug( "event: ", event);
             state.event( state.multiplex, event);
          }
       }

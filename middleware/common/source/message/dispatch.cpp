@@ -21,7 +21,7 @@ namespace casual
             if( error.code() != code::casual::interrupted)
                return error;
 
-            log::line( verbose::log, "pump interrupted");
+            log::debug( "pump interrupted");
 
             try
             {

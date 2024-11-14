@@ -121,7 +121,7 @@ namespace casual
                communication::instance::whitelist::connect( communication::instance::identity::service::manager);
 
                log::line( common::log::category::information, "casual-service-manager is on-line");
-               log::line( verbose::log, "state: ", state);
+               log::debug( "state: ", state);
 
                communication::select::dispatch::pump(
                   local::condition( state),

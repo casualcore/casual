@@ -25,7 +25,7 @@ namespace casual
                std::vector< process::lifetime::Exit> shutdown( const std::vector< process::Handle>& servers, platform::time::unit timeout)
                {
                   Trace trace{ "common::server::lifetime::soft::shutdown"};
-                  log::line( log::debug, "servers: ", servers);
+                  log::debug( "servers: ", servers);
 
                   auto result = process::lifetime::ended();
 
@@ -38,7 +38,7 @@ namespace casual
 
                   algorithm::container::append( std::get< 0>( algorithm::intersection( terminated, requested)), result);
 
-                  log::line( log::debug, "soft off-line: ", result);
+                  log::debug( "soft off-line: ", result);
                   
                   return result;
                }
@@ -63,11 +63,11 @@ namespace casual
 
                   auto running = std::get< 1>( algorithm::intersection( origin, result));
 
-                  log::line( log::debug, "still on-line: ", running);
+                  log::debug( "still on-line: ", running);
 
                   algorithm::container::append( process::lifetime::terminate( algorithm::container::vector::create( running), timeout), result);
 
-                  log::line( log::debug, "hard off-line: ", std::get< 0>( algorithm::intersection( running, result)));
+                  log::debug( "hard off-line: ", std::get< 0>( algorithm::intersection( running, result)));
 
                   return result;
 

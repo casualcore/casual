@@ -167,7 +167,7 @@ domain:
                tpgetrply( &descriptor, &buffer, &len, 0);
                EXPECT_TRUE( code::xatmi{ tperrno} == code) << "tperrno: " << string::compose( code::xatmi{ tperrno});
 
-               common::log::line( verbose::log, "got reply from descriptor: ", descriptor);
+               common::log::debug( "got reply from descriptor: ", descriptor);
 
                platform::binary::type result;
                algorithm::copy( binary::span::make( buffer, len), std::back_inserter( result));
@@ -1691,18 +1691,18 @@ domain:
 
          local::call( "casual/example/echo", code::xatmi::ok);
 
-         log::line( verbose::log, "before shutdown of B");
+         log::debug( "before shutdown of B");
 
          // "shutdown" B
          common::sink( std::move( b));
          
          gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::disconnected());
 
-         log::line( verbose::log, "after shutdown of B");
+         log::debug( "after shutdown of B");
 
          local::call( "casual/example/echo", code::xatmi::no_entry);
 
-         log::line( verbose::log, "before boot of B");
+         log::debug( "before boot of B");
 
          // boot B again
          b = local::domain( B);
@@ -1710,7 +1710,7 @@ domain:
 
          gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected());
 
-         log::line( verbose::log, "after boot of B");
+         log::debug( "after boot of B");
 
          // expect to discover echo...
          local::call( "casual/example/echo", code::xatmi::ok);
@@ -1815,17 +1815,17 @@ domain:
 
          local::call( "foo", code::xatmi::ok);
 
-         log::line( verbose::log, "before shutdown of B");
+         log::debug( "before shutdown of B");
 
          // "shutdown" B
          common::sink( std::move( b));
          gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::disconnected());
 
-         log::line( verbose::log, "after shutdown of B");
+         log::debug( "after shutdown of B");
 
          local::call( "foo", code::xatmi::no_entry);
 
-         log::line( verbose::log, "before boot of B");
+         log::debug( "before boot of B");
 
          // boot B again
          b = local::domain( B);
@@ -1833,7 +1833,7 @@ domain:
 
          gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected());
 
-         log::line( verbose::log, "after boot of B");
+         log::debug( "after boot of B");
          
          // expect to discover echo...
          local::call( "foo", code::xatmi::ok);
@@ -1886,17 +1886,17 @@ domain:
 
          local::call( "foo", code::xatmi::ok);
 
-         log::line( verbose::log, "before shutdown of B");
+         log::debug( "before shutdown of B");
 
          // "shutdown" B
          common::sink( std::move( b));
          gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::disconnected());
 
-         log::line( verbose::log, "after shutdown of B");
+         log::debug( "after shutdown of B");
 
          local::call( "foo", code::xatmi::no_entry);
 
-         log::line( verbose::log, "before boot of B");
+         log::debug( "before boot of B");
 
          // boot B again
          b = local::domain( B);
@@ -1904,7 +1904,7 @@ domain:
 
          gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected());
 
-         log::line( verbose::log, "after boot of B");
+         log::debug( "after boot of B");
          
          // expect to discover echo...
          local::call( "foo", code::xatmi::ok);

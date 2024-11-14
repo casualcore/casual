@@ -55,7 +55,7 @@ namespace casual
                {
                   Trace trace{ "common::domain::singleton::read"};
 
-                  log::line( log::debug, "path: ", path);
+                  log::debug( "path: ", path);
 
                   std::ifstream file{ path};
 
@@ -70,7 +70,7 @@ namespace casual
 
                   environment::variable::set( environment::variable::name::ipc::domain::manager, model.process);
                   
-                  log::line( log::debug, "domain singleton model: ", model);
+                  log::debug( "domain singleton model: ", model);
 
                   return model; 
                }
@@ -123,7 +123,7 @@ namespace casual
                   code::raise::error( code::casual::invalid_file, "cannot write to domain lock file: ", temp_file.string(), ", errno: ", code::system::last::error());
             }
 
-            log::line( log::debug, "domain singleton model: ", model);
+            log::debug( "domain singleton model: ", model);
 
             common::file::rename( temp_file, path);
             temp_file.release();

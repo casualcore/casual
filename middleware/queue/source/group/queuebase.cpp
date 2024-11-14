@@ -209,7 +209,7 @@ namespace casual
          // log the actual pragma settings
          m_connection.pragma_information( queue::log);
 
-         log::line( verbose::log, "pre_statements_path: ", m_connection.pre_statements_path());
+         log::debug( "pre_statements_path: ", m_connection.pre_statements_path());
          m_connection.pre_statements( log::category::information);
 
 
@@ -268,7 +268,7 @@ namespace casual
       std::optional< queuebase::Queue> Queuebase::queue( common::strong::queue::id id)
       {
          Trace trace{ "queue::Queuebase::queue"};
-         log::line( verbose::log, "id: ", id);
+         log::debug( "id: ", id);
 
          auto query = m_connection.query(
             "SELECT q.id, q.name, q.retry_count, q.retry_delay, q.error FROM queue q WHERE q.id = :id", 
@@ -344,7 +344,7 @@ namespace casual
       {
          Trace trace{ "queue::Queuebase::update"};
 
-         common::log::line( verbose::log, "update: ", update, " - remove: ", remove);
+         common::log::debug( "update: ", update, " - remove: ", remove);
 
          // remove
          common::algorithm::for_each( remove, [&]( auto id){ this->remove( id);});
@@ -402,7 +402,7 @@ namespace casual
                platform::time::clock::type::now(),
                message.message.payload.data);
 
-         common::log::line( verbose::log, "reply: ", reply);
+         common::log::debug( "reply: ", reply);
          return reply;
       }
 
@@ -421,7 +421,7 @@ namespace casual
                if( ! message.selector.properties.empty())
                   return m_statement.dequeue.first_match.query( message.queue.value(), message.selector.properties, now);
                
-               log::line( verbose::log, "fifo dequeue query");
+               log::debug( "fifo dequeue query");
                return m_statement.dequeue.first.query( message.queue.value(), now);
             }();
 
@@ -446,7 +446,7 @@ namespace casual
             auto reply = common::message::reverse::type( message);
             reply.message = std::move( result.message);
 
-            common::log::line( verbose::log, "reply: ", reply);
+            common::log::debug( "reply: ", reply);
 
             return reply;
          }
@@ -533,7 +533,7 @@ namespace casual
       std::vector< queuebase::message::Available> Queuebase::available( std::vector< common::strong::queue::id> queues) const
       {
          Trace trace{ "queue::Queuebase::available"};
-         log::line( verbose::log, "queues: ", queues);
+         log::debug( "queues: ", queues);
 
          // TODO performance: use `queues`-range in the select to minimize resultset - might be hard on sqlite
 
@@ -550,7 +550,7 @@ namespace casual
             return message;
          });
 
-         log::line( verbose::log, "result: ", result);
+         log::debug( "result: ", result);
 
          // keep only the intersection between result and wanted queues
          algorithm::container::trim( result, std::get< 0>( algorithm::intersection( result, queues)));
@@ -565,7 +565,7 @@ namespace casual
       std::optional< platform::time::point::type> Queuebase::available( common::strong::queue::id queue) const
       {
          Trace trace{ "queue::Queuebase::available earliest"};
-         log::line( verbose::log, "queue: ", queue);
+         log::debug( "queue: ", queue);
 
          auto query = m_statement.available.message.query( queue.underlying());
          sql::database::Row row;
@@ -586,7 +586,7 @@ namespace casual
       platform::size::type Queuebase::restore( common::strong::queue::id queue)
       {
          Trace trace{ "queue::Queuebase::restore"};
-         log::line( verbose::log, "queue: ", queue);
+         log::debug( "queue: ", queue);
 
          m_statement.restore.execute( queue.value());
          return m_connection.affected();
@@ -595,7 +595,7 @@ namespace casual
       platform::size::type Queuebase::clear( common::strong::queue::id queue)
       {
          Trace trace{ "queue::Queuebase::clear"};
-         log::line( verbose::log, "queue: ", queue);
+         log::debug( "queue: ", queue);
 
          m_statement.clear.execute( queue.value());
          return m_connection.affected();

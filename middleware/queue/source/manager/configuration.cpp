@@ -41,7 +41,7 @@ namespace casual
                {
                   algorithm::container::erase( shared->pids, event.state.pid);
 
-                  log::line( verbose::log, "pids left: ", shared->pids);
+                  log::debug( "pids left: ", shared->pids);
 
                   if( shared->pids.empty())
                      return task::unit::Dispatch::done;
@@ -92,7 +92,7 @@ namespace casual
                      return task::unit::Dispatch::pending;
                };
 
-               log::line( verbose::log, "state.task.coordinator: ", state.task.coordinator);
+               log::debug( "state.task.coordinator: ", state.task.coordinator);
 
                state.task.coordinator.then( task::create::unit( 
                   task::create::action( "added_groups", std::move( spawn_action)),
@@ -146,9 +146,9 @@ namespace casual
             {
                Trace trace{ "queue::manager::configuration::conform::local::removed_groups"};
 
-               log::line( verbose::log, "state.task.coordinator: ", state.task.coordinator);
-               log::line( verbose::log, "groups: ", groups);
-               log::line( verbose::log, "state.groups: ", state.groups);
+               log::debug( "state.task.coordinator: ", state.task.coordinator);
+               log::debug( "groups: ", groups);
+               log::debug( "state.groups: ", state.groups);
 
                struct Shared
                {
@@ -201,8 +201,8 @@ namespace casual
                {
                   Trace trace{ "queue::manager::configuration::conform forward groups shutdown_action"};
 
-                  log::line( verbose::log, "configuration: ", configuration);
-                  log::line( verbose::log, "state.forward.groups: ", state.forward.groups);
+                  log::debug( "configuration: ", configuration);
+                  log::debug( "state.forward.groups: ", state.forward.groups);
 
                   auto send_shutdown = [ &state]( auto& entity)
                   { 
@@ -345,13 +345,13 @@ namespace casual
 
           state.note = wanted.note;
 
-          log::line( verbose::log, "state.task.coordinator: ", state.task.coordinator);
+          log::debug( "state.task.coordinator: ", state.task.coordinator);
 
           auto group_change = casual::configuration::model::change::concrete::calculate( current.groups, wanted.groups);
           auto forward_change = casual::configuration::model::change::concrete::calculate( current.forward.groups, wanted.forward.groups);
 
-          log::line( verbose::log, "group_change: ", group_change);
-          log::line( verbose::log, "forward_change: ", forward_change);
+          log::debug( "group_change: ", group_change);
+          log::debug( "forward_change: ", forward_change);
 
          // remove/shutdown first forwards, then groups
          {
@@ -378,7 +378,7 @@ namespace casual
          }
 
 
-         log::line( verbose::log, "state.task.coordinator: ", state.task.coordinator);
+         log::debug( "state.task.coordinator: ", state.task.coordinator);
 
       }
 

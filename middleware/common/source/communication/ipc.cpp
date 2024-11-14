@@ -174,12 +174,12 @@ namespace casual
                   if( ! error)
                   {
                      log::line( log::category::event::message::part::sent, transport.type(), '|', transcode::hex::stream::wrapper( binary::span::make( transport.correlation())), '|', transport.size(), '|', transport.payload_offset(), '|', transport.complete_size());
-                     log::line( verbose::log, "ipc ---> blocking send - socket: ", socket, ", destination: ", destination, ", transport: ", transport);
+                     log::debug( "ipc ---> blocking send - socket: ", socket, ", destination: ", destination, ", transport: ", transport);
                      return true;
                   }
 
                   local::check_error( std::errc{ error.value()});
-                  log::line( verbose::log, "ipc ---> blocking send - error: ", error, ", destination: ", destination);
+                  log::debug( "ipc ---> blocking send - error: ", error, ", destination: ", destination);
 
                }
             }
@@ -204,7 +204,7 @@ namespace casual
                   return local::check_error();
 
                log::line( log::category::event::message::part::received, transport.type(), '|', transcode::hex::stream::wrapper( binary::span::make( transport.correlation())), '|', result, '|', transport.payload_offset(), '|', transport.complete_size());
-               log::line( verbose::log, "ipc <--- blocking receive - handle: ", handle, ", transport: ", transport);
+               log::debug( "ipc <--- blocking receive - handle: ", handle, ", transport: ", transport);
                assert( result == transport.size());
 
                return true;                     
@@ -235,7 +235,7 @@ namespace casual
                      return local::check_error( std::errc{ error.value()});
 
                   log::line( log::category::event::message::part::sent, transport.type(), '|', transcode::hex::stream::wrapper( binary::span::make( transport.correlation())), '|', transport.size(), '|', transport.payload_offset(), '|', transport.complete_size());
-                  log::line( verbose::log, "ipc ---> non blocking send - socket: ", socket, ", destination: ", destination, ", transport: ", transport);
+                  log::debug( "ipc ---> non blocking send - socket: ", socket, ", destination: ", destination, ", transport: ", transport);
                   return true;
                }
 
@@ -253,7 +253,7 @@ namespace casual
                      return local::check_error();
 
                   log::line( log::category::event::message::part::received, transport.type(), '|', transcode::hex::stream::wrapper( binary::span::make( transport.correlation())), '|', result, '|', transport.payload_offset(), '|', transport.complete_size());
-                  log::line( verbose::log, "ipc <--- non blocking receive - handle: ", handle, ", transport: ", transport);
+                  log::debug( "ipc <--- non blocking receive - handle: ", handle, ", transport: ", transport);
 
                   assert( result == transport.size());
 
@@ -482,14 +482,14 @@ namespace casual
          bool send( const Destination& destination, message::complete::Send& complete)
          {
             Trace trace{ "common::communication::ipc::outbound::partial::send"};
-            log::line( verbose::log, "destination: ", destination, ", complete: ", complete);
+            log::debug( "destination: ", destination, ", complete: ", complete);
 
             auto transport = complete.transport();
 
             while( auto front = complete.front())
             {
                transport.assign( front.range, front.offset);
-               log::line( verbose::log, "transport: ", transport);
+               log::debug( "transport: ", transport);
 
                if( ! native::non::blocking::send( destination.socket(), destination.address(), transport))
                   return false;
@@ -511,7 +511,7 @@ namespace casual
          {
             bool exists( const std::filesystem::path& path) noexcept
             {
-               log::line( verbose::log, "path: ", path);
+               log::debug( "path: ", path);
                return std::filesystem::exists( path);
             }
             

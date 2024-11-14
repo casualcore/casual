@@ -62,7 +62,7 @@ namespace casual
                      return service;
                   });
 
-                  log::line( verbose::log, "advertise: ", message);
+                  log::debug( "advertise: ", message);
 
                   communication::device::blocking::send( communication::instance::outbound::service::manager::device(), message);
                }
@@ -92,7 +92,7 @@ namespace casual
                {
                   if( state.pending.requests)
                   {
-                     log::line( verbose::log, "state.pending.requests.size(): ", state.pending.requests.size());
+                     log::debug( "state.pending.requests.size(): ", state.pending.requests.size());
                      request::blocking::dispath( state, internal, external);
                   }
                   else
@@ -113,7 +113,7 @@ namespace casual
                   argument::Option( std::tie( settings.configurations), argument::option::Names( { "--configuration"}, { "--configuration-files"}), "configuration glob patterns")
                }, argc, argv);
 
-               log::line( verbose::log, "settings: ", settings);
+               log::debug( "settings: ", settings);
 
                run( initialize( std::move( settings)));
             }

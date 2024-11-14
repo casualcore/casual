@@ -136,7 +136,7 @@ namespace casual
          if( auto found = algorithm::find( groups, message.process.pid))
             update_group( *this, *found, message);
          else
-            log::line( log::category::error, "failed to correlate group", message.process, " - action: discard");
+            log::error( code::casual::internal_correlation, "failed to correlate group", message.process, " - action: discard");
             
       }
 
@@ -151,7 +151,7 @@ namespace casual
                   return common::algorithm::container::erase( pair.second, id).empty();
                });
 
-               log::line( log, "state.queues: ", state.queues);
+               log::debug( "state.queues: ", state.queues);
             }
 
          } // <unnamed>
@@ -160,7 +160,7 @@ namespace casual
       void State::remove_queues( common::strong::process::id pid)
       {
          Trace trace{ "queue::manager::State::remove_queues"};
-         log::line( log, "pid: ", pid);
+         log::debug( "pid: ", pid);
 
          local::remove_queues( *this, pid);
       }
@@ -168,7 +168,7 @@ namespace casual
       void State::remove_queues( common::strong::ipc::id ipc)
       {
          Trace trace{ "queue::manager::State::remove_queues"};
-         log::line( log, "ipc: ", ipc);
+         log::debug( "ipc: ", ipc);
 
          local::remove_queues( *this, ipc);
       }

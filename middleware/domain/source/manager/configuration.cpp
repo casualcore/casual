@@ -132,8 +132,8 @@ namespace casual
                      auto action = [ change]( State& state)
                      {
                         Trace trace{ "domain::manager::configuration::local::detail::entity::add action"};
-                        log::line( verbose::log, "change->servers.added: ", change->servers.added);
-                        log::line( verbose::log, "change->executables.added: ", change->executables.added);
+                        log::debug( "change->servers.added: ", change->servers.added);
+                        log::debug( "change->executables.added: ", change->executables.added);
 
                         auto servers = transform::alias( change->servers.added, state.groups);
                         auto executables = transform::alias( change->executables.added, state.groups);
@@ -162,8 +162,8 @@ namespace casual
                      {
                         Trace trace{ "domain::manager::configuration::local::detail::entity::remove action"};
 
-                        log::line( verbose::log, "change->servers.removed: ", change->servers.removed);
-                        log::line( verbose::log, "change->executables.removed: ", change->executables.removed);
+                        log::debug( "change->servers.removed: ", change->servers.removed);
+                        log::debug( "change->executables.removed: ", change->executables.removed);
 
                         auto scale_in = []( auto& entities, auto& removed)
                         {
@@ -184,8 +184,8 @@ namespace casual
                         group.servers = scale_in( state.servers, change->servers.removed);
                         group.executables = scale_in( state.executables, change->executables.removed);
 
-                        log::line( verbose::log, "change: ", *change);
-                        log::line( verbose::log, "group: ", group);
+                        log::debug( "change: ", *change);
+                        log::debug( "group: ", group);
 
                         return group;
                      };
@@ -223,8 +223,8 @@ namespace casual
                      {
                         Trace trace{ "domain::manager::configuration::local::detail::entity::modify action"};
 
-                        log::line( verbose::log, "change->servers.modified: ", change->servers.modified);
-                        log::line( verbose::log, "change->executables.modified: ", change->executables.modified);
+                        log::debug( "change->servers.modified: ", change->servers.modified);
+                        log::debug( "change->executables.modified: ", change->executables.modified);
 
                         auto modify_and_get_id = [ &state]( auto& entities, auto& modified)
                         { 
@@ -260,7 +260,7 @@ namespace casual
                Trace trace{ "domain::manager::configuration::local::domain"};
 
                auto change = detail::change( state.configuration.model.domain, wanted);
-               log::line( verbose::log, "change: ", change);
+               log::debug( "change: ", change);
   
                // groups
                {
@@ -270,7 +270,7 @@ namespace casual
                }
 
                auto shared = std::make_shared< const local::detail::Change>( std::move( change));
-               log::line( verbose::log, "shared: ", *shared);
+               log::debug( "shared: ", *shared);
 
                return algorithm::container::compose( 
                   detail::entity::add( state, shared),
@@ -287,7 +287,7 @@ namespace casual
                // handle the runtime configuration updates
                { 
                   auto stakeholders = algorithm::filter( state.configuration.stakeholders, state::configuration::stakeholder::runtime());
-                  log::line( verbose::log, "stakeholders: ", stakeholders);
+                  log::debug( "stakeholders: ", stakeholders);
                      
                   auto handles = algorithm::transform( stakeholders, []( auto& value){ return value.process;});
 
@@ -345,7 +345,7 @@ namespace casual
          auto result = casual::task::ids( tasks, done_event);
          state.tasks.then( std::move( tasks)).then( std::move( done_event));
 
-         log::line( verbose::log, "state.tasks: ", state.tasks);
+         log::debug( "state.tasks: ", state.tasks);
          
          return result;
       }

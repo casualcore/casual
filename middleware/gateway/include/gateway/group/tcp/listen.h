@@ -129,8 +129,8 @@ namespace casual
             Trace trace{ "gateway::group::tcp::listen::state::request"};
             using namespace common;
 
-            log::line( verbose::log, "message: ", message);
-            log::line( verbose::log, "state: ", state);
+            log::debug( "message: ", message);
+            log::debug( "state: ", state);
 
             auto reply = state.reply( message);
             
@@ -164,7 +164,7 @@ namespace casual
             });
 
 
-            log::line( verbose::log, "reply: ", reply);
+            log::debug( "reply: ", reply);
 
             return reply;
          };
@@ -213,7 +213,7 @@ namespace casual
 
                if( auto found = common::algorithm::find( state.listen.actives, descriptor))
                {
-                  common::log::line( verbose::log, "found: ", *found);
+                  common::log::debug( "found: ", *found);
 
                   auto accept = []( auto& socket)
                   {
@@ -232,10 +232,10 @@ namespace casual
                   {
                      // the socket needs to be 'no block'
                      socket.set( common::communication::socket::option::File::no_block);
-                     common::log::line( verbose::log, "socket: ", socket);
+                     common::log::debug( "socket: ", socket);
 
                      auto connector = logical::connect::spawn( bound, socket);
-                     common::log::line( verbose::log, "connector: ", connector);
+                     common::log::debug( "connector: ", connector);
 
                      state.connections.pending().add(
                         std::move( connector),

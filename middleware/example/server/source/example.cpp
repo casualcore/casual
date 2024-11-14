@@ -12,6 +12,9 @@
 #include "common/domain.h"
 #include "common/log.h"
 
+#define CASUAL_NO_XATMI_UNDEFINE
+#include "common/code/xatmi.h"
+
 #include <locale>
 
 #include <iostream>
@@ -228,7 +231,7 @@ namespace casual
                      // a called service does something reasonable when it
                      // gets a TPEV_DISCONIMM, but we log something to allow
                      // for manual checking
-                     log::line( log::debug, "casual_example_conversation_recv_send got TPEV_DISCONIMM");
+                     log::debug( "casual_example_conversation_recv_send got TPEV_DISCONIMM");
                      tpreturn( TPFAIL, 0, nullptr, 0, 0);
                   } 
                   else
@@ -239,7 +242,7 @@ namespace casual
                      // What to do if it happens? for now we return to casual
                      // with a "return" instead of tpreturn(). This is
                      // "abnormal".
-                     log::line( log::category::error, "casual_example_conversation_recv_send got unexpected event from tprecv - tperrno: ",
+                     log::error( common::code::xatmi::service_error, "casual_example_conversation_recv_send got unexpected event from tprecv - tperrno: ",
                         tperrnostring( result.error), " event: ", result.event);
 
                      return; // abnormal(!) service return
@@ -262,7 +265,7 @@ namespace casual
                   // forces an exit of the server process. I.e. no return
                   // to the Casual code. I expect caller to get a TPSVCERR in 
                   // this case. 
-                  log::line(log::debug, "casual_example_conversation_recv_send requested to execute \"exit\"");
+                  log::debug( "casual_example_conversation_recv_send requested to execute \"exit\"");
                   exit(1);
                }
 
@@ -271,7 +274,7 @@ namespace casual
                   // Also a "hack"for testing purposes.
                   // Do a return from service. That is an "intentional"
                   // break of the rules for how a service should behave.
-                  log::line(log::debug, "casual_example_conversation_recv_send requested to execute \"return\"");
+                  log::debug( "casual_example_conversation_recv_send requested to execute \"return\"");
                   return;
                }
                if( recent_data.find("execute tpreturn TPFAIL no data") != std::string::npos)
@@ -289,7 +292,7 @@ namespace casual
                   // it is legal/normal from a "protocol" point of view
                   // to return with a TPFAIL. In this case data is also
                   // allowed!
-                  log::line(log::debug, "casual_example_conversation_recv_send requested to execute \"tpreturn TPFAIL no data\"");
+                  log::debug( "casual_example_conversation_recv_send requested to execute \"tpreturn TPFAIL no data\"");
                   // use a "user return code(rcode" value of 2 to have something that is not equal
                   // o the default. Allows verification that the user return code is passed
                   // to caller even if no data is passed. Useful when testing calls to tpreturn
@@ -306,7 +309,7 @@ namespace casual
                   // See above for general comments on what is expected
                   // to happen as a result of the tpreturn.
                   //
-                  log::line(log::debug, "casual_example_conversation_recv_send requested to execute \"tpreturn TPFAIL with data\"");
+                  log::debug( "casual_example_conversation_recv_send requested to execute \"tpreturn TPFAIL with data\"");
                   std::string_view return_data{"tpreturn TPFAIL with data"};
                   auto tpreturn_buffer = tpalloc(X_OCTET, nullptr, return_data.length());
 
@@ -337,7 +340,7 @@ namespace casual
                   // conversation is is unlikely to be useful to the
                   // other end, but it will terminate the service call in
                   // and "orderly" fashion!
-                  log::line( log::debug, "conversation_recv_send: tpsend failed. tperrno: ", tperrno, " event: ", event);
+                  log::debug( "conversation_recv_send: tpsend failed. tperrno: ", tperrno, " event: ", event);
                   tpfree( send_buffer);
                   tpreturn( TPFAIL, 0, nullptr, 0, 0);              
                }

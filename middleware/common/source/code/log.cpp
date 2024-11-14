@@ -53,7 +53,7 @@ namespace casual
          std::ostream& stream( const std::error_code& code)
          {
             if( code == log::user || code == log::internal) 
-               return common::log::debug;
+               return common::log::category::debug;
             if( code == log::warning)
                return common::log::category::warning;
             if( code == log::information)

@@ -139,7 +139,7 @@ namespace casual
                         request.name = name;
                         request.context.semantic = decltype( request.context.semantic)::wait;
 
-                        common::log::line( verbose::log, "request: ", request);
+                        common::log::debug( "request: ", request);
 
                         state::pending::queue::Lookup pending;
                         pending.id = id;
@@ -184,7 +184,7 @@ namespace casual
                   if( auto found = common::algorithm::find( pending, correlation))
                      return algorithm::container::extract( pending, std::begin( found));
 
-                  common::log::line( verbose::log, "failed to extract correlation: ", correlation);
+                  common::log::debug( "failed to extract correlation: ", correlation);
                   return std::nullopt;
                }
 
@@ -198,7 +198,7 @@ namespace casual
                   void request( State& state, F& forward)
                   {
                      Trace trace{ "queue::forward::send::dequeue::request"};
-                     common::log::line( verbose::log, "forward: ", forward);
+                     common::log::debug( "forward: ", forward);
 
                      auto send_request =[ &]()
                      {
@@ -242,7 +242,7 @@ namespace casual
                      void request( State& state, P&& pending)
                      {
                         Trace trace{ "queue::forward::send::transaction::rollback::request"};
-                        common::log::line( verbose::log, "pending: ", pending);
+                        common::log::debug( "pending: ", pending);
 
                         common::message::transaction::rollback::Request request{ common::process::handle()};
                         request.correlation = pending.correlation;
@@ -260,7 +260,7 @@ namespace casual
                      void request( State& state, P&& pending)
                      {
                         Trace trace{ "queue::forward::send::transaction::commit::request"};
-                        common::log::line( verbose::log, "pending: ", pending);
+                        common::log::debug( "pending: ", pending);
 
                         common::message::transaction::commit::Request request{ common::process::handle()};
                         request.correlation = pending.correlation;
@@ -404,7 +404,7 @@ namespace casual
                   lookup_request( state, state.forward.services);
                   lookup_request( state, state.forward.queues);
 
-                  log::line( verbose::log, "state: ", state);
+                  log::debug( "state: ", state);
 
                }
             } // comply::to
@@ -418,7 +418,7 @@ namespace casual
                      return [&state]( const ipc::message::forward::group::configuration::update::Request& message)
                      { 
                         Trace trace{ "queue::forward::service::local::handle::configuration::update::request"};
-                        log::line( verbose::log, "message: ", message);
+                        log::debug( "message: ", message);
 
                         state.alias = message.model.alias;
                         state.memberships = message.model.memberships;
@@ -464,10 +464,10 @@ namespace casual
                      return [&state]( const ipc::message::lookup::Reply& message)
                      {
                         Trace trace{ "queue::forward::service::local::handle::queue::lookup::reply"};
-                        log::line( verbose::log, "message: ", message);
+                        log::debug( "message: ", message);
 
                         auto pending = pending::consume( state.pending.queue.lookups, message.correlation);
-                        log::line( verbose::log, "pending: ", pending);
+                        log::debug( "pending: ", pending);
 
                         if( ! pending)
                            return;
@@ -490,13 +490,13 @@ namespace casual
                         return [&state]( const ipc::message::lookup::discard::Reply& message)
                         {
                            Trace trace{ "queue::forward::handle::queue::lookup::discard::reply"};
-                           common::log::line( verbose::log, "message: ", message);
+                           common::log::debug( "message: ", message);
 
                            if( message.state == decltype( message.state)::replied)
                               return; // we've received the queue already, and we let the 'flow' do it's thing...
 
                            auto pending = pending::consume( state.pending.queue.lookups, message.correlation);
-                           common::log::line( verbose::log, "pending: ", pending);
+                           common::log::debug( "pending: ", pending);
 
                            // we don't need to do anything, since the forward instance can't possible be 
                            // started if we're waiting for lookup discards
@@ -515,7 +515,7 @@ namespace casual
                      return [&state]( ipc::message::group::dequeue::Reply& message)
                      {
                         Trace trace{ "queue::forward::service::local::handle::dequeue::reply"};
-                        log::line( verbose::log, "message: ", message);
+                        log::debug( "message: ", message);
 
                         auto pending = pending::consume( state.pending.dequeues, message.correlation);
 
@@ -553,7 +553,7 @@ namespace casual
 
                            state.pending.service.lookups.push_back( std::move( lookup));
 
-                           log::line( verbose::log, "state.pending.service.lookups: ", state.pending.service.lookups);
+                           log::debug( "state.pending.service.lookups: ", state.pending.service.lookups);
                         }
                         else if( auto forward = state.forward_queue( pending->id))
                         {
@@ -571,7 +571,7 @@ namespace casual
                            if( forward->target.delay > platform::time::unit::zero())
                               request.message.attributes.available = platform::time::clock::type::now() + forward->target.delay;
 
-                           log::line( verbose::log, "enqueue request: ", request);
+                           log::debug( "enqueue request: ", request);
 
                            state.multiplex.send( forward->target.process.ipc, request);
                            state.pending.enqueues.emplace_back( std::move( *pending));
@@ -591,17 +591,17 @@ namespace casual
 
                            if( auto found = algorithm::find( state.pending.dequeues, message.correlation))
                            {
-                              common::log::line( verbose::log, "found: ", *found);
+                              common::log::debug( "found: ", *found);
 
                               auto pending = algorithm::container::extract( state.pending.dequeues, std::begin( found));
 
                               state.forward_apply( pending.id, []( auto& forward)
                               {
                                  --forward;                                 
-                                 common::log::line( verbose::log, "forward: ", forward);
+                                 common::log::debug( "forward: ", forward);
                               });
 
-                              common::log::line( verbose::log, "state.pending.dequeues: ", state.pending.dequeues);
+                              common::log::debug( "state.pending.dequeues: ", state.pending.dequeues);
                            }
                         }
                         
@@ -615,7 +615,7 @@ namespace casual
                         return [&state]( const ipc::message::group::dequeue::forget::Request& message)
                         {                                 
                            Trace trace{ "queue::forward::handle::dequeue::forget::request"};
-                           common::log::line( verbose::log, "message: ", message);
+                           common::log::debug( "message: ", message);
 
                            detail::discard::pending::dequeue( state, message);
                         };
@@ -628,7 +628,7 @@ namespace casual
                         return [&state]( const ipc::message::group::dequeue::forget::Reply& message)
                         {                                 
                            Trace trace{ "queue::forward::handle::dequeue::forget::reply"};
-                           common::log::line( verbose::log, "message: ", message);
+                           common::log::debug( "message: ", message);
 
                            if( message.discarded)
                            {
@@ -641,7 +641,7 @@ namespace casual
                               state.forward_apply( pending->id, [ &state]( auto& forward)
                               {
                                  --forward;
-                                 common::log::line( verbose::log, "forward: ", forward);
+                                 common::log::debug( "forward: ", forward);
 
                                  // We try to restart the flow
                                  local::detail::machine::next( state, forward);
@@ -667,7 +667,7 @@ namespace casual
                         return [&state]( message::service::lookup::Reply& message)
                         {
                            Trace trace{ "queue::forward::service::local::handle::service::lookup::reply"};
-                           log::line( verbose::log, "message: ", message);
+                           log::debug( "message: ", message);
 
                            auto pending = pending::consume( state.pending.service.lookups, message.correlation);
                            
@@ -705,10 +705,10 @@ namespace casual
                            return [&state]( const message::service::lookup::discard::Reply& message)
                            {
                               Trace trace{ "queue::forward::service::local::handle::service::lookup::discard::reply"};
-                              log::line( verbose::log, "message: ", message);
+                              log::debug( "message: ", message);
 
                               auto pending = pending::consume( state.pending.service.lookup_discards, message.correlation);
-                              log::line( verbose::log, "pending lookup_discard: ", pending);
+                              log::debug( "pending lookup_discard: ", pending);
 
                               if( ! pending)
                                  return;
@@ -728,7 +728,7 @@ namespace casual
                         return [&state]( message::service::call::Reply& message)
                         {
                            Trace trace{ "queue::forward::service::local::handle::service::call::reply"};
-                           log::line( verbose::log, "message: ", message);
+                           log::debug( "message: ", message);
 
                            auto call = pending::consume( state.pending.service.calls, message.correlation);
 
@@ -759,7 +759,7 @@ namespace casual
                               if( reply.delay > platform::time::unit::zero())
                                  request.message.attributes.available = platform::time::clock::type::now() + reply.delay;
 
-                              log::line( verbose::log, "enqueue reply: ", request);
+                              log::debug( "enqueue reply: ", request);
                               
                               state.pending.enqueues.emplace_back( std::move( *call));
                               state.multiplex.send( reply.process.ipc, request, [ &state]( auto& ipc, auto& complete)
@@ -784,7 +784,7 @@ namespace casual
                      return [&state]( const ipc::message::group::enqueue::Reply& message)
                      {
                         Trace trace{ "queue::forward::handle::enqueue::reply"};
-                        common::log::line( verbose::log, "message: ", message);
+                        common::log::debug( "message: ", message);
 
                         auto pending = pending::consume( state.pending.enqueues, message.correlation);
 
@@ -819,7 +819,7 @@ namespace casual
                         return [&state]( const common::message::transaction::rollback::Reply& message)
                         {                                    
                            Trace trace{ "queue::forward::handle::transaction::rollback::reply"};
-                           common::log::line( verbose::log, "message: ", message);
+                           common::log::debug( "message: ", message);
 
                            auto pending = pending::consume( state.pending.transaction.rollbacks, message.correlation);
 
@@ -850,7 +850,7 @@ namespace casual
                         return [&state]( const common::message::transaction::commit::Reply& message)
                         {                                    
                            Trace trace{ "queue::forward::handle::transaction::commit::reply"};
-                           common::log::line( verbose::log, "message: ", message);
+                           common::log::debug( "message: ", message);
 
                            if( message.stage == decltype( message.stage)::prepare)
                               return; // we wait for the next message
@@ -885,7 +885,7 @@ namespace casual
                      return [&state]( const ipc::message::forward::group::state::Request& message)
                      { 
                         Trace trace{ "queue::forward::service::local::handle::state::request"};
-                        log::line( verbose::log, "message: ", message);
+                        log::debug( "message: ", message);
 
                         auto basic_assign = []( const auto& source, auto& target)
                         {
@@ -947,12 +947,12 @@ namespace casual
                      void reply( const forward::state::pending::Enqueue& pending)
                      {
                         Trace trace{ "queue::forward::service::local::handle::dead::detail::push::faked::reply"};
-                        log::line( verbose::log, "pending: ", pending);
+                        log::debug( "pending: ", pending);
 
                         ipc::message::group::enqueue::Reply message;
                         message.correlation = pending.correlation;
 
-                        log::line( verbose::log, "message: ", message);
+                        log::debug( "message: ", message);
                         
                         ipc::device().push( message);
                      }
@@ -967,7 +967,7 @@ namespace casual
                         //  * pending.service.calls : service-manager, gateway::outbound
                         //  * pending.transaction.(commit|rollback) : transaction-manager
 
-                        log::line( verbose::log, "state.pending: ", state.pending);
+                        log::debug( "state.pending: ", state.pending);
 
                         // g++13 incorrectly gives a warning "unused-but-set-variable"
                         // for is_forward. Bug reported
@@ -976,7 +976,7 @@ namespace casual
 
                         auto invalidate_queue_forward = [ &state, handle]( auto& forward)
                         {
-                           log::line( verbose::log, "forward: ", forward);
+                           log::debug( "forward: ", forward);
 
                            if( forward != handle)
                               return;
@@ -1034,7 +1034,7 @@ namespace casual
                      return [ &state]( const common::message::event::process::Exit& message)
                      {
                         Trace trace{ "queue::forward::service::local::handle::dead::process"};
-                        log::line( verbose::log, "message: ", message);
+                        log::debug( "message: ", message);
 
                         detail::dead_event( state, message.state.pid);
                      };                     
@@ -1046,7 +1046,7 @@ namespace casual
                      return [ &state]( const common::message::event::ipc::Destroyed& message)
                      {
                         Trace trace{ "queue::forward::service::local::handle::dead::ipc"};
-                        common::log::line( verbose::log, "message: ", message);
+                        common::log::debug( "message: ", message);
 
                         detail::dead_event( state, message.process.ipc);
                      };
@@ -1059,7 +1059,7 @@ namespace casual
                   return [&state]( const common::message::shutdown::Request& message)
                   {
                      Trace trace{ "queue::forward::service::local::handle::shutdown"};
-                     log::line( verbose::log, "message: ", message);
+                     log::debug( "message: ", message);
 
                      state.runlevel = decltype( state.runlevel())::shutdown;
 

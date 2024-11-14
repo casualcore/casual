@@ -62,7 +62,7 @@ namespace casual
       void Log::prepare( const state::Transaction& transaction)
       {
          Trace trace{ "transaction::Log::prepare"};
-         common::log::line( verbose::log, "transaction: ", transaction);
+         common::log::debug( "transaction: ", transaction);
 
          auto prepare_branch = [&]( auto& branch)
          {
@@ -80,7 +80,7 @@ namespace casual
 
          common::algorithm::for_each( transaction.branches, prepare_branch);
 
-         common::log::line( verbose::log, "total prepares: ", m_stats.update.prepare);
+         common::log::debug( "total prepares: ", m_stats.update.prepare);
       }
 
       void Log::remove( common::transaction::id::range::type::global global)
@@ -90,7 +90,7 @@ namespace casual
          m_statement.remove.execute( global);
          m_stats.update.remove += m_connection.affected();
 
-         common::log::line( verbose::log, "total removes: ", m_stats.update.remove);
+         common::log::debug( "total removes: ", m_stats.update.remove);
       }
 
       void Log::persist()
@@ -103,7 +103,7 @@ namespace casual
          ++m_stats.writes;
          m_connection.begin();
 
-         common::log::line( verbose::log, "total commits: ", m_stats.writes);
+         common::log::debug( "total commits: ", m_stats.writes);
       }
 
       const Log::Statistics& Log::statistics() const

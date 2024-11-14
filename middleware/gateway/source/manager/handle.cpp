@@ -49,7 +49,7 @@ namespace casual
             // conform to empty configuration
             configuration::conform( state, {});
 
-            log::line( verbose::log, "state: ", state);
+            log::debug( "state: ", state);
          }
 
 
@@ -84,7 +84,7 @@ namespace casual
                      return [ &state]( const common::message::event::process::Exit& message)
                      {
                         Trace trace{ "gateway::manager::handle::local::process::exit"};
-                        log::line( verbose::log, "state.runlevel: ", state.runlevel);
+                        log::debug( "state.runlevel: ", state.runlevel);
 
                         if( ! message.state.deceased())
                            return;
@@ -130,7 +130,7 @@ namespace casual
                      return [&state]( message::outbound::Connect& message)
                      {
                         Trace trace{ "gateway::manager::handle::local::outbound::connect"};
-                        log::line( verbose::log, "message: ", message);
+                        log::debug( "message: ", message);
 
                         if( auto found = algorithm::find( state.outbound.groups, message.process.pid))
                         {
@@ -152,7 +152,7 @@ namespace casual
                         return [ &state]( message::outbound::configuration::update::Reply& message)
                         {
                            Trace trace{ "gateway::manager::handle::local::outbound::configuration::update"};
-                           log::line( verbose::log, "message: ", message);
+                           log::debug( "message: ", message);
 
                            state.tasks( message);
                         };
@@ -168,7 +168,7 @@ namespace casual
                      return [&state]( message::inbound::Connect& message)
                      {
                         Trace trace{ "gateway::manager::handle::local::inbound::connect"};
-                        log::line( verbose::log, "message: ", message);
+                        log::debug( "message: ", message);
 
                         if( auto found = algorithm::find( state.inbound.groups, message.process.pid))
                         {
@@ -191,7 +191,7 @@ namespace casual
                         return [ &state]( message::inbound::configuration::update::Reply& message)
                         {
                            Trace trace{ "gateway::manager::handle::local::inbound::configuration::update"};
-                           log::line( verbose::log, "message: ", message);
+                           log::debug( "message: ", message);
 
                            state.tasks( message);
                         };
@@ -208,7 +208,7 @@ namespace casual
                      return [&state]( casual::configuration::message::Request& message)
                      {
                         Trace trace{ "gateway::manager::handle::local::configuration::request"};
-                        common::log::line( verbose::log, "message: ", message);
+                        common::log::debug( "message: ", message);
 
                         auto reply = common::message::reverse::type( message);
 
@@ -225,7 +225,7 @@ namespace casual
                         return [ &state]( casual::configuration::message::update::Request& message)
                         {
                            Trace trace{ "gateway::manager::handle::local::configuration::update::request"};
-                           log::line( verbose::log, "message: ", message);
+                           log::debug( "message: ", message);
 
                            if( state.runlevel == state::Runlevel::running)
                               state.runlevel.explict_set( state::Runlevel::configuring);
@@ -253,7 +253,7 @@ namespace casual
                      return [&state]( common::message::shutdown::Request& message)
                      {
                         Trace trace{ "gateway::manager::handle::local::shutdown::request"};
-                        log::line( verbose::log, "message: ", message);
+                        log::debug( "message: ", message);
 
                         handle::shutdown( state);
                      };

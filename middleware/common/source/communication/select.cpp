@@ -96,7 +96,7 @@ namespace casual
             directive::Ready select( const Directive& directive)
             {
                Trace trace{ "common::communication::select::dispatch::detail::select"};
-               log::line( verbose::log, "directive: ", directive);
+               log::debug( "directive: ", directive);
 
                ::fd_set read;
                ::fd_set write;

@@ -382,7 +382,7 @@ domain:
 
          auto domain = local::domain( local::configuration::system, local::configuration::base);
 
-         common::log::line( verbose::log, "domain: ", domain);
+         common::log::debug( "domain: ", domain);
 
 
          EXPECT_TRUE( local::begin() == common::code::tx::ok);

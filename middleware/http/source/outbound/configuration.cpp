@@ -34,7 +34,7 @@ namespace casual
                   {
                      Trace trace{ "http::outbound::configuration::local::load"};
 
-                     common::log::line( verbose::log, "file: ", name);
+                     common::log::debug( "file: ", name);
 
                      // Create the reader and deserialize configuration
                      Model model;
@@ -45,7 +45,7 @@ namespace casual
                      reader.validate();
                      common::environment::normalize( model);
 
-                     common::log::line( verbose::log, "model: ", model);
+                     common::log::debug( "model: ", model);
 
                      return current + model;
                   }
@@ -84,7 +84,7 @@ namespace casual
             Model load( const std::vector< std::string>& patterns)
             {
                Trace trace{ "http::outbound::configuration::load"};
-               common::log::line( verbose::log, "patterns: ", patterns);
+               common::log::debug( "patterns: ", patterns);
 
                return load( common::file::find( patterns));
             }

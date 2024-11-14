@@ -32,7 +32,7 @@ namespace casual
                template< typename Event>
                casual::task::Group create( State& state, std::string description, common::unique_function< void( State&)> done)
                {
-                  log::line( verbose::log, "description: ", description);
+                  log::debug( "description: ", description);
 
                   // create the task unit that will be returned
                   auto task = casual::task::create::unit( 
@@ -292,7 +292,7 @@ namespace casual
          std::vector< casual::task::Group> groups( State& state, std::vector< state::dependency::Group> groups, common::unique_function< void()> done)
          {
             Trace trace{ "domain::manager::task::create::restart::groups"};
-            log::line( verbose::log, "groups: ", groups);
+            log::debug( "groups: ", groups);
 
             auto result = algorithm::transform( groups, [ &state]( auto& group)
             {
@@ -325,7 +325,7 @@ namespace casual
          std::vector< casual::task::Group> groups( State& state, std::vector< state::dependency::Group> groups)
          {
             Trace trace{ "domain::manager::task::create::restart::groups"};
-            log::line( verbose::log, "groups: ", groups);
+            log::debug( "groups: ", groups);
 
             return algorithm::transform( groups, [ &state]( auto& group)
             {
@@ -355,14 +355,14 @@ namespace casual
                   auto scale( State& state, const state::dependency::Group& group)
                   {
                      Trace trace{ "domain::manager::task::create::scale::local::group::scale"};
-                     log::line( verbose::log, "group: ", group);
+                     log::debug( "group: ", group);
 
                      auto scale_entity = [&state]( auto id)
                      {
                         Trace trace{ "scale_entity"};
 
                         auto& entity = state.entity( id);
-                        log::line( verbose::log, "entity: ", entity);
+                        log::debug( "entity: ", entity);
 
                         // scale it
                         handle::scale::instances( state, entity);
@@ -396,12 +396,12 @@ namespace casual
                            event.state = decltype( event.state)::done;
                            return event;
                         });
-                        log::line( verbose::log, "group done: ", group);
+                        log::debug( "group done: ", group);
                         return casual::task::unit::Dispatch::done;
                      }
                      else
                      {
-                        log::line( verbose::log, "group pending: ", group);
+                        log::debug( "group pending: ", group);
                         return casual::task::unit::Dispatch::pending;
                      }
                   };
@@ -456,7 +456,7 @@ namespace casual
          std::vector< casual::task::Group> groups( State& state, std::vector< state::dependency::Group> groups)
          {
             Trace trace{ "domain::manager::task::create::scale::groups"};
-            log::line( verbose::log, "groups: ", groups);
+            log::debug( "groups: ", groups);
 
             // just a "wrapper" to hold the group to emulate an action callback
             constexpr static auto create_group_holder = []( auto& group)

@@ -45,7 +45,7 @@ namespace casual
                   message::dispatch::handler( communication::ipc::inbound::device(),
                      [ &tasks]( message::event::Task& event)
                      {
-                        log::line( verbose::log, "event: ", event);
+                        log::debug( "event: ", event);
 
                         if( event.done())
                            if( algorithm::find( tasks, event.correlation))

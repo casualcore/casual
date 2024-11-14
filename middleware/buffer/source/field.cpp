@@ -159,7 +159,7 @@ namespace casual
 
                   buffer.capacity( size);
 
-                  common::log::line( common::verbose::log, "allocated buffer: ", buffer);
+                  common::log::debug( "allocated buffer: ", buffer);
 
                   return buffer.handle();
                }
@@ -178,7 +178,7 @@ namespace casual
                      buffer.capacity( size);
                   }
 
-                  common::log::line( common::verbose::log, "reallocated buffer: ", buffer);
+                  common::log::debug( "reallocated buffer: ", buffer);
 
                   return buffer.handle();
                }
@@ -281,7 +281,7 @@ namespace casual
             {
                if( type != (id / CASUAL_FIELD_TYPE_BASE))
                {
-                  common::log::line( casual::buffer::verbose::log, "buffer::field::add::data: invalid argument - id: ", id, " - type: ", type);
+                  common::log::debug( "buffer::field::add::data: invalid argument - id: ", id, " - type: ", type);
                   return CASUAL_FIELD_INVALID_ARGUMENT;
                }
 
@@ -720,7 +720,7 @@ namespace casual
                {
                   auto& buffer = pool_type::pool().get( common::buffer::handle::type{ *handle});
 
-                  common::log::line( common::log::debug, "memory: ", buffer.payload);
+                  common::log::debug( "memory: ", buffer.payload);
 
 
                   const auto synchronize = common::execute::scope( [ handle, &buffer]() 
@@ -733,7 +733,7 @@ namespace casual
 
                   buffer = common::buffer::Payload{ buffer.payload.type, { data, data + size}};
 
-                  common::log::line( common::log::debug, "memory: ", buffer.payload);
+                  common::log::debug( "memory: ", buffer.payload);
                }
                catch( ...)
                {
@@ -821,7 +821,7 @@ int casual_field_occurrences_of_id( const char* const buffer, const long id, lon
       return casual::buffer::field::explore::count( buffer, id, *occurrences);
    }
 
-   casual::common::log::line( casual::buffer::verbose::log, "casual_field_occurrences_of_id: invalid argument - id: ", id, " - occurrences: ", occurrences);
+   casual::common::log::debug( "casual_field_occurrences_of_id: invalid argument - id: ", id, " - occurrences: ", occurrences);
    return CASUAL_FIELD_INVALID_ARGUMENT;
 }
 
@@ -986,7 +986,7 @@ int casual_field_get_value( const char* const buffer, const long id, const long 
    {
       if( *count < size)
       {
-         casual::common::log::line( casual::buffer::verbose::log, "casual_field_get_value: invalid argument - id: ", id, 
+         casual::common::log::debug( "casual_field_get_value: invalid argument - id: ", id, 
             " - index: ", index, " - count: ", *count,
             " - size: ", size);
          return CASUAL_FIELD_INVALID_ARGUMENT;
@@ -1193,7 +1193,7 @@ namespace casual
                   {   
                      auto groups( std::vector< std::filesystem::path> files)
                      {
-                        common::log::line( common::verbose::log, "files: ", files);
+                        common::log::debug( "files: ", files);
 
                         std::vector< model::group> result;
 
@@ -1529,7 +1529,7 @@ namespace casual
 
                   const auto& buffer = pool_type::pool().insert( std::move( payload));
 
-                  common::log::line( verbose::log, "buffer.payload.type: ", buffer.payload.type, " - protocol: ", protocol);
+                  common::log::debug( "buffer.payload.type: ", buffer.payload.type, " - protocol: ", protocol);
 
                   auto archive = common::serialize::create::writer::from( protocol);
 
@@ -1547,7 +1547,7 @@ namespace casual
                {
                   Trace trace{ "field::internal::stream in"};
 
-                  common::log::line( common::verbose::log, "protocol: ", protocol);
+                  common::log::debug( "protocol: ", protocol);
 
                   auto archive = common::serialize::create::reader::relaxed::from( protocol, stream);
 
@@ -1660,7 +1660,7 @@ int casual_field_type_of_id( const long id, int* const type)
       case CASUAL_FIELD_BINARY:
          break;
       default:
-         casual::common::log::line( casual::buffer::verbose::log, "invalid argument - id: ", id);
+         casual::common::log::debug( "invalid argument - id: ", id);
          return CASUAL_FIELD_INVALID_ARGUMENT;
    }
 

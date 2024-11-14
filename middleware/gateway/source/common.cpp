@@ -14,12 +14,6 @@ namespace casual
    {
       common::log::Stream log{ "casual.gateway"};
 
-      namespace verbose
-      {
-         common::log::Stream log{ "casual.gateway.verbose"};
-      } // verbose
-
    } // gateway
-
 
 } // casual

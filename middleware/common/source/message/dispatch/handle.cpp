@@ -38,7 +38,7 @@ namespace casual
                   return []( const server::ping::Request& message)
                   {
                      Trace trace{ "common::message::dispatch::handle::local::handle::ping"};
-                     log::line( log::debug, "message: ", message);
+                     log::debug( "message: ", message);
 
                      local::send( message.process, message::reverse::type( message, common::process::handle()));
                   };
@@ -49,7 +49,7 @@ namespace casual
                   return []( const message::shutdown::Request& message)
                   {
                      Trace trace{ "common::message::dispatch::handle::local::handle::shutdown"};
-                     log::line( log::debug, "message: ", message);
+                     log::debug( "message: ", message);
 
                      code::raise::error( code::casual::shutdown, "shutdown received from: ", message.process);
                   };
@@ -62,7 +62,7 @@ namespace casual
                      return []( const message::domain::instance::global::state::Request& message)
                      {
                         Trace trace{ "common::message::dispatch::handle::local::handle::global::state"};
-                        log::line( log::debug, "message: ", message);
+                        log::debug( "message: ", message);
 
                         auto reply = message::reverse::type( message);
                         reply.process.handle = common::process::handle();
@@ -74,7 +74,7 @@ namespace casual
                            reply.instance.index = instance.value().index;
                         }
 
-                        log::line( log::debug, "reply: ", reply);
+                        log::debug( "reply: ", reply);
                         
                         local::send( message.process, reply);
                      };
@@ -88,7 +88,7 @@ namespace casual
                      return []( message::internal::configure::Log& message)
                      {
                         Trace trace{ "common::message::dispatch::handle::local::handle::configure::log"};
-                        log::line( log::debug, "message: ", message);
+                        log::debug( "message: ", message);
 
                         log::stream::Configure configure;
                         configure.path = message.path;
@@ -104,12 +104,12 @@ namespace casual
                   return []( const message::counter::Request& message)
                   {
                      Trace trace{ "common::message::dispatch::handle::local::handle::counter"};
-                     log::line( log::debug, "message: ", message);
+                     log::debug( "message: ", message);
 
                      auto reply = message::reverse::type( message);
                      reply.entries = message::counter::entries();
 
-                     log::line( log::debug, "reply: ", reply);
+                     log::debug( "reply: ", reply);
                      local::send( message.process, reply);
                   };
                }

@@ -510,7 +510,7 @@ namespace casual
                      });
                   }));
 
-                  log::line( verbose::log, "advertise.services.add: ", advertise.services.add);
+                  log::debug( "advertise.services.add: ", advertise.services.add);
                }
             }
 
@@ -570,7 +570,7 @@ namespace casual
       std::vector< state::instance::Reservation> State::remove( common::strong::process::id pid)
       {
          Trace trace{ "service::manager::State::remove"};
-         log::line( verbose::log, "pid: ", pid);
+         log::debug( "pid: ", pid);
 
          if( forward.pid == pid)
             forward.clear();
@@ -581,7 +581,7 @@ namespace casual
       std::vector< state::instance::Reservation> State::remove( common::strong::ipc::id ipc)
       {
          Trace trace{ "service::manager::State::remove"};
-         log::line( verbose::log, "ipc: ", ipc);
+         log::debug( "ipc: ", ipc);
 
          return local::remove( *this, ipc);
       }
@@ -663,7 +663,7 @@ namespace casual
          if( ! message.process)
          {
             log::error( code::casual::internal_unexpected_value, " invalid process ", message.process, " tries to advertise services - action: ignore");
-            log::line( verbose::log, "message: ", message);
+            log::debug( "message: ", message);
             return {};
          }
 
@@ -736,7 +736,7 @@ namespace casual
          if( ! message.process)
          {
             log::error( code::casual::internal_unexpected_value, " invalid process ", message.process, " tries to advertise services - action: ignore");
-            log::line( verbose::log, "message: ", message);
+            log::debug( "message: ", message);
             return {};
          }
 
@@ -819,7 +819,7 @@ namespace casual
       std::vector< state::instance::concurrent::id::type> State::disassociate( common::transaction::global::id::range gtrid)
       {
          Trace trace{ "service::manager::State::disassociate"};
-         log::line( verbose::log, "gtrid: ", gtrid);
+         log::debug( "gtrid: ", gtrid);
 
          if( auto found = algorithm::find( transaction.associations, gtrid))
             return algorithm::container::extract( transaction.associations, std::begin( found)).second;

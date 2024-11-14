@@ -71,7 +71,7 @@ namespace casual
             m_state.jump.buffer.size = len;
             m_state.jump.forward.service.clear();
 
-            log::line( log::debug, "Context::jump_return - jump state: ", m_state.jump);
+            log::debug( "Context::jump_return - jump state: ", m_state.jump);
 
             std::longjmp( m_state.jump.environment, state::Jump::Location::c_return);
          }
@@ -93,7 +93,7 @@ namespace casual
 
             m_state.TPRETURN_called = true;
 
-            log::line( log::debug, "Context::normal_return - jump state: ", m_state.jump);
+            log::debug( "Context::normal_return - jump state: ", m_state.jump);
          }
 
 
@@ -106,7 +106,7 @@ namespace casual
 
             m_state.jump.forward.service = service ? service : "";
 
-            log::line( log::debug, "Context::forward - jump state: ", m_state.jump);
+            log::debug( "Context::forward - jump state: ", m_state.jump);
 
             std::longjmp( m_state.jump.environment, state::Jump::Location::c_forward);
          }
@@ -114,7 +114,7 @@ namespace casual
          void Context::advertise( const std::string& service, void (*address)( TPSVCINFO *))
          {
             Trace trace{ "server::Context::advertise"};
-            log::line( verbose::log, "service: ", service);
+            log::debug( "service: ", service);
 
             auto prospect = xatmi::service( service, address);
 
@@ -159,7 +159,7 @@ namespace casual
                   m_state.physical_services.push_back( prospect);
                   m_state.services.emplace( prospect.name, m_state.physical_services.back());
                }
-               log::line( verbose::log, "message: ", message);
+               log::debug( "message: ", message);
                communication::device::blocking::send( communication::instance::outbound::service::manager::device(), message);
             }
          }

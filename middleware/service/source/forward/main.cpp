@@ -61,7 +61,7 @@ namespace casual
             void start( State state)
             {
                Trace trace{ "service::forward::start"};
-               log::line( verbose::log, "state: ", state);
+               log::debug( "state: ", state);
 
                communication::select::dispatch::pump(
                   local::condition( state),

@@ -136,7 +136,7 @@ namespace casual
       state::extract::Result State::failed( common::strong::socket::id descriptor)
       {
          Trace trace{ "gateway::group::outbound::State::failed"};
-         log::line( verbose::log, "descriptor: ", descriptor);
+         log::debug( "descriptor: ", descriptor);
 
          // clean the disconnecting state.
          algorithm::container::erase( disconnecting, descriptor);

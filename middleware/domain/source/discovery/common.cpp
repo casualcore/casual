@@ -14,15 +14,6 @@ namespace casual
 
       common::log::Stream log{ "casual.domain.discovery"};
 
-      namespace trace
-      {
-         common::log::Stream log{ "casual.domain.discovery.trace"};
-      } // trace
-
-      namespace verbose
-      {
-         common::log::Stream log{ "casual.domain.discovery.verbose"};
-      } // verbose
 
    } // domain::discovery
 } // casual

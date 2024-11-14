@@ -26,8 +26,8 @@ namespace casual
          std::tuple< std::vector< message::outbound::state::Reply>, std::vector< message::outbound::reverse::state::Reply>> outbounds)
       {
          Trace trace{ "gateway::transform::state service"};
-         log::line( verbose::log, "inbounds: ", inbounds);
-         log::line( verbose::log, "outbounds: ", outbounds);
+         log::debug( "inbounds: ", inbounds);
+         log::debug( "outbounds: ", outbounds);
 
          manager::admin::model::State result;
 
@@ -219,7 +219,7 @@ namespace casual
          result.inbound.groups = algorithm::transform( state.inbound.groups, configuration);
          result.outbound.groups = algorithm::transform( state.outbound.groups, configuration);
 
-         log::line( verbose::log, "result: ", result);
+         log::debug( "result: ", result);
 
          return result;
       }

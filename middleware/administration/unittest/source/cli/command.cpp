@@ -32,7 +32,7 @@ namespace casual
                   {
                      return common::signal::callback::scoped::replace< code::signal::child>( []()
                      {
-                        log::line( verbose::log, "unittest::cli::command::execute - ", code::signal::child, " discarded");
+                        log::debug( "unittest::cli::command::execute - ", code::signal::child, " discarded");
                      });
 
                   }

@@ -112,7 +112,7 @@ namespace casual
                      communication::ipc::inbound::device().push( std::move( message));
                   }
 
-                  log::line( verbose::log, "entity: ", entity);
+                  log::debug( "entity: ", entity);
                }
 
                void in( const State& state, const state::Executable& executable)
@@ -175,7 +175,7 @@ namespace casual
                      state.servers.push_back( std::move( server));
                   }
 
-                  log::line( verbose::log, "state.servers: ", state.servers);
+                  log::debug( "state.servers: ", state.servers);
 
                }
             }
@@ -316,7 +316,7 @@ namespace casual
          std::vector< common::strong::correlation::id> aliases( State& state, std::vector< admin::model::scale::Alias> aliases)
          {
             Trace trace{ "domain::manager::handle::scale::aliases"};
-            log::line( verbose::log, "aliases: ", aliases);
+            log::debug( "aliases: ", aliases);
 
             auto done_event = task::create::event::parent( state, "scale aliases");
 
@@ -356,7 +356,7 @@ namespace casual
          void shutdown( State& state, std::vector< common::process::Handle> processes)
          {
             Trace trace{ "domain::manager::handle::scale::shutdown"};
-            log::line( verbose::log, "processes: ", processes);
+            log::debug( "processes: ", processes);
             
             // We only want child signals
             signal::thread::scope::Mask mask{ signal::set::filled( code::signal::child)};
@@ -376,7 +376,7 @@ namespace casual
             auto reply = common::message::reverse::type( request);
             reply.processes = std::move( request.processes);
 
-            log::line( log, "failed to reach service-manager - action: emulate reply: ", reply);
+            log::debug( "failed to reach service-manager - action: emulate reply: ", reply);
             communication::ipc::inbound::device().push( std::move( reply));
          }
 
@@ -404,7 +404,7 @@ namespace casual
          std::vector< common::strong::correlation::id> aliases( State& state, std::vector< std::string> aliases)
          {
             Trace trace{ "domain::manager::handle::restart::aliases"};
-            log::line( verbose::log, "aliases: ", aliases);
+            log::debug( "aliases: ", aliases);
 
             auto done_event = task::create::event::parent( state, "restart aliases");
 
@@ -427,7 +427,7 @@ namespace casual
          std::vector< common::strong::correlation::id> groups( State& state, std::vector< std::string> names)
          {
             Trace trace{ "domain::manager::handle::restart::groups"};
-            log::line( verbose::log, "names: ", names);
+            log::debug( "names: ", names);
 
             auto filter_groups = []( auto groups, const std::vector< std::string>& names)
             {
@@ -459,7 +459,7 @@ namespace casual
 
             // filter
             filter_untouchables( state, groups);
-            log::line( verbose::log, "groups: ", groups);
+            log::debug( "groups: ", groups);
 
             auto tasks = manager::task::create::restart::groups( state, std::move( groups));
 
@@ -493,7 +493,7 @@ namespace casual
                   return [&state]( common::message::shutdown::Request& message)
                   {
                      Trace trace{ "domain::manager::handle::shutdown"};
-                     log::line( verbose::log, "message: ", message);
+                     log::debug( "message: ", message);
 
                      handle::shutdown( state);
                   };
@@ -506,7 +506,7 @@ namespace casual
                      return [&state]( common::message::domain::manager::shutdown::Request& message)
                      {
                         Trace trace{ "domain::manager::handle::manager::shutdown"};
-                        log::line( verbose::log, "message: ", message);
+                        log::debug( "message: ", message);
 
                         state.runlevel = decltype( state.runlevel())::shutdown;
 
@@ -538,7 +538,7 @@ namespace casual
                      return [&state]( common::message::domain::process::prepare::shutdown::Reply& message)
                      {
                         Trace trace{ "domain::manager::handle::scale::prepare::shutdown::Reply"};
-                        log::line( verbose::log, "message: ", message);
+                        log::debug( "message: ", message);
 
                         for( auto& process : message.processes)
                         {
@@ -562,11 +562,11 @@ namespace casual
                      return [&state]( const common::message::event::subscription::Begin& message)
                      {
                         Trace trace{ "domain::manager::handle::event::subscription::Begin"};
-                        common::log::line( verbose::log, "message: ", message);
+                        common::log::debug( "message: ", message);
 
                         state.event.subscription( message);
 
-                        common::log::line( log, "event: ", state.event);
+                        common::log::debug( "event: ", state.event);
                      };
                   }
 
@@ -575,11 +575,11 @@ namespace casual
                      return [&state]( const common::message::event::subscription::End& message)
                      {
                         Trace trace{ "domain::manager::handle::event::subscription::End"};
-                        common::log::line( verbose::log, "message: ", message);
+                        common::log::debug( "message: ", message);
 
                         state.event.subscription( message);
    
-                        common::log::line( log, "event: ", state.event);
+                        common::log::debug( "event: ", state.event);
                      };
                   }
 
@@ -607,7 +607,7 @@ namespace casual
                      return [&state]( const common::message::event::process::Spawn& message)
                      {
                         Trace trace{ "domain::manager::handle::event::process::spawn"};
-                        log::line( verbose::log, "message: ", message);
+                        log::debug( "message: ", message);
 
                         // Are there any listeners to this event?
                         manager::task::event::dispatch( state, [&message]() -> decltype( message)
@@ -625,7 +625,7 @@ namespace casual
                      return [&state]( const common::message::event::process::Exit& message)
                      {
                         Trace trace{ "domain::manager::handle::event::process::exit"};
-                        log::line( verbose::log, "message: ", message);
+                        log::debug( "message: ", message);
 
                         if( message.state.deceased())
                         {
@@ -670,7 +670,7 @@ namespace casual
                      return [&state]( const common::message::event::process::Assassination& message)
                      {
                         Trace trace{ "domain::manager::handle::event::process::assassination"};
-                        log::line( verbose::log, "message: ", message);
+                        log::debug( "message: ", message);
 
                         // Are there any subscribers to this event?
                         manager::task::event::dispatch( state, [&message]() -> decltype( message)
@@ -682,7 +682,7 @@ namespace casual
 
                         if( message.contract == contract_type::linger)
                         {
-                           log::code( log, code::casual::domain_instance_assassinate, "event not severe enough, pid: ", message.target);
+                           log::debug( code::casual::domain_instance_assassinate, " event not severe enough, pid: ", message.target);
                            return;
                         } 
 
@@ -715,7 +715,7 @@ namespace casual
                   return [&state]( common::message::event::Error& message)
                   {
                      Trace trace{ "domain::manager::handle::event::error"};
-                     log::line( verbose::log, "message: ", message);
+                     log::debug( "message: ", message);
 
                      manager::task::event::dispatch( state, [&message](){ return message;});
 
@@ -733,7 +733,7 @@ namespace casual
                   return [&state]( common::message::event::Notification& message)
                   {
                      Trace trace{ "domain::manager::handle::event::notification"};
-                     log::line( verbose::log, "message: ", message);
+                     log::debug( "message: ", message);
 
                      manager::task::event::dispatch( state, [&message](){ return message;});
                   };
@@ -744,7 +744,7 @@ namespace casual
                   return [&state]( common::message::event::Task& message)
                   {
                      Trace trace{ "domain::manager::handle::local::event::task"};
-                     log::line( verbose::log, "message: ", message);
+                     log::debug( "message: ", message);
 
                      manager::task::event::dispatch( state, [&message](){ return message;});
                   };
@@ -757,7 +757,7 @@ namespace casual
                      return [&state]( common::message::event::sub::Task& message)
                      {
                         Trace trace{ "domain::manager::handle::local::event::sub::task"};
-                        log::line( verbose::log, "message: ", message);
+                        log::debug( "message: ", message);
 
                         manager::task::event::dispatch( state, [&message](){ return message;});
                      };
@@ -771,7 +771,7 @@ namespace casual
                      return [ &state]( common::message::event::ipc::Destroyed& message)
                      {
                         Trace trace{ "domain::manager::handle::local::event::ipc::destroyed"};
-                        log::line( verbose::log, "message: ", message);
+                        log::debug( "message: ", message);
 
                         manager::task::event::dispatch( state, [ &message](){ return message;});
                      };
@@ -785,7 +785,7 @@ namespace casual
                      return [ &state]( common::message::event::transaction::Disassociate& message)
                      {
                         Trace trace{ "domain::manager::handle::local::event::transaction::disassociate"};
-                        log::line( verbose::log, "message: ", message);
+                        log::debug( "message: ", message);
 
                         manager::task::event::dispatch( state, [ &message](){ return message;});
                      };
@@ -817,7 +817,7 @@ namespace casual
                         return [ &state]( const common::message::domain::process::lookup::Request& message)
                         {
                            Trace trace{ "domain::manager::handle::process::local::Lookup"};
-                           log::line( verbose::log, "message: ", message);
+                           log::debug( "message: ", message);
 
                            using Directive = decltype( message.directive);
 
@@ -881,7 +881,7 @@ namespace casual
                      if( auto server = state.server( message.information.handle.pid))
                      {
                         server->connect( message.information.handle);
-                        log::line( log, "added process: ", message.information.handle, " to ", *server);
+                        log::debug( "added process: ", message.information.handle, " to ", *server);
                      }
                      else // we assume it's a grandchild
                         state.grandchildren.emplace_back( message.information.handle, std::move( message.information.alias), std::move( message.information.path));
@@ -991,7 +991,7 @@ namespace casual
                   return [&state]( const common::message::domain::process::connect::Request& message)
                   {
                      Trace trace{ "domain::manager::handle::local::process::connect"};
-                     common::log::line( verbose::log, "message: ", message);
+                     common::log::debug( "message: ", message);
 
                      using Directive = decltype( common::message::reverse::type( message).directive);
 
@@ -1063,7 +1063,7 @@ namespace casual
                   return [ &state]( const casual::configuration::message::Request& message)
                   {
                      Trace trace{ "domain::manager::handle::configuration::request"};
-                     common::log::line( verbose::log, "message: ", message);
+                     common::log::debug( "message: ", message);
 
                      auto reply = common::message::reverse::type( message, common::process::handle());
                      reply.model = state.configuration.model;
@@ -1079,7 +1079,7 @@ namespace casual
                      return [ &state]( const casual::configuration::message::stakeholder::registration::Request& message)
                      {
                         Trace trace{ "domain::manager::handle::configuration::stakeholder::registration"};
-                        common::log::line( verbose::log, "message: ", message);
+                        common::log::debug( "message: ", message);
 
                         state::configuration::Stakeholder stakeholder;
                         stakeholder.process = message.process;
@@ -1100,7 +1100,7 @@ namespace casual
                      return [ &state]( const casual::configuration::message::update::Reply& message)
                      {
                         Trace trace{ "domain::manager::handle::configuration::update::reply"};
-                        common::log::line( verbose::log, "message: ", message);
+                        common::log::debug( "message: ", message);
 
                         state.tasks( message);
                      };
@@ -1130,7 +1130,7 @@ namespace casual
                      if( auto service_manager = m_state.singleton( common::communication::instance::identity::service::manager.id))
                          m_state.multiplex.send( service_manager.ipc, message);
                      else
-                        log::line( log, "failed to reach service-manager - action: discard sending ACK");
+                        log::debug( "failed to reach service-manager - action: discard sending ACK");
                   }
 
                private: 

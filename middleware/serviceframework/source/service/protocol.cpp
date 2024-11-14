@@ -64,7 +64,7 @@ namespace casual
             Protocol Factory::create( common::service::invoke::Parameter&& parameter)
             {
                Trace trace{ "service::protocol::Factory::create"};
-               common::log::line( log::debug, "parameter: ", parameter);
+               common::log::debug( "parameter: ", parameter);
 
                if( auto found = common::algorithm::find( m_creators, parameter.payload.type))
                {
@@ -77,7 +77,7 @@ namespace casual
                   if( local::describe())
                      protocol = Protocol::emplace< protocol::implementation::Describe>( std::move( protocol));
 
-                  common::log::line( log::debug, "protocol: ", protocol);
+                  common::log::debug( "protocol: ", protocol);
 
                   return protocol;
                }

@@ -350,7 +350,7 @@ The format is default yaml, but could be supplied via the --format option)"
                            auto start_editor = []( auto editor, const auto& file)
                            {
                               const auto command = string::compose( editor, ' ', file);
-                              common::log::line( verbose::log, "command: ", command);
+                              common::log::debug( "command: ", command);
 
                               posix::result( ::system( command.data()), "::system( ", command, ')');
                            };

@@ -33,7 +33,7 @@ namespace casual
                   {
                      connections.push_back( listener());
 
-                     log::line( log::debug, "connections: ", connections);
+                     log::debug( "connections: ", connections);
                   }
                }
                catch( ...)
@@ -161,7 +161,7 @@ namespace casual
                   }
                   catch( ...)
                   {
-                     log::line( log::debug, exception::capture());
+                     log::debug( exception::capture());
                   }
 
                }
@@ -179,7 +179,7 @@ namespace casual
                   }
                   catch( ...)
                   {
-                     log::line( log::debug, exception::capture());
+                     log::debug( exception::capture());
                   }
                }
 

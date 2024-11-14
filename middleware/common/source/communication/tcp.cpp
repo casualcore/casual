@@ -95,7 +95,7 @@ namespace casual
                      explicit Native( const tcp::Address& address, Flag flags = {})
                      {
                         Trace trace( "common::communication::tcp::local::socket::address::Native::Native");
-                        log::line( verbose::log, "address: ", address, ", flags: ", flags);
+                        log::debug( "address: ", address, ", flags: ", flags);
 
                         ::addrinfo hints{};
 
@@ -126,7 +126,7 @@ namespace casual
                               case EAI_AGAIN:
                               case EAI_NODATA:
                               case EAI_NONAME:
-                                 log::line( verbose::log, "address: ", address, " - recoverable error: ", compose_error( result));
+                                 log::debug( "address: ", address, " - recoverable error: ", compose_error( result));
                                  break;
 
                               // fatal
@@ -205,7 +205,7 @@ namespace casual
                   if( ! native)
                      return Socket{};
 
-                  log::line( verbose::log, "native: ", native);
+                  log::debug( "native: ", native);
 
                   for( auto& info : native)
                   {
@@ -251,7 +251,7 @@ namespace casual
                      if( error == std::errc::operation_in_progress)
                         return non::blocking::Pending{ std::move( socket)};
 
-                     log::line( verbose::log, "error: ", error);
+                     log::debug( "error: ", error);
 
                      if( non::blocking::error::recoverable( error))
                         return Socket{};
@@ -425,7 +425,7 @@ namespace casual
             []( Socket socket){ return socket;},
             []( const std::system_error& error) 
             {
-               log::line( verbose::log, "fatal error: ", error); 
+               log::debug( "fatal error: ", error); 
                throw error;
                // dummy return that will never be returned...
                // TODO c++20 add [[noreturn]] (not sure if std::visit will "understand" though..)
@@ -521,13 +521,13 @@ namespace casual
                auto send( const Socket& socket, policy::complete_type& complete)
                {
                   Trace trace{ "common::communication::tcp::policy::local::send"};
-                  log::line( verbose::log, "complete: ", complete);
+                  log::debug( "complete: ", complete);
 
                   try
                   {
                      auto send_message = []( auto& socket, const ::msghdr* message)
                      {
-                        log::line( verbose::log, "socket: ", socket);
+                        log::debug( "socket: ", socket);
 
                         return posix::alternative( 
                            ::sendmsg( socket.descriptor().value(), message, 0),
@@ -598,8 +598,8 @@ namespace casual
                auto receive( const Socket& socket, policy::complete_type& complete)
                {
                   Trace trace{ "common::communication::tcp::policy::local::receive"};
-                  log::line( verbose::log, "socket: ", socket);
-                  log::line( verbose::log, "complete: ", complete);
+                  log::debug( "socket: ", socket);
+                  log::debug( "complete: ", complete);
 
                   auto receive_message = []( auto& socket, auto first, auto count)
                   {

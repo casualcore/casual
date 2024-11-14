@@ -29,7 +29,7 @@ namespace casual
                auto load( Model current, const std::filesystem::path& file)
                {
                   Trace trace{ "configuration::user::local::load"};
-                  log::line( verbose::log, "file: ", file);
+                  log::debug( "file: ", file);
 
                   user::Model user;
 
@@ -48,12 +48,12 @@ namespace casual
          configuration::Model load( const std::vector< std::filesystem::path>& files)
          {
             Trace trace{ "configuration::model::load"};
-            log::line( verbose::log, "files: ", files);
+            log::debug( "files: ", files);
 
             auto model = normalize( algorithm::accumulate( files, Model{}, &local::load));
             validate( model);
 
-            log::line( verbose::log, "model: ", model);
+            log::debug( "model: ", model);
 
             return model;
          }

@@ -31,8 +31,8 @@ namespace casual
                   return [ &state]( const common::message::shutdown::Request& message)
                   {
                      common::Trace trace{ "file::manager::handle::local::shutdown::request"};
-                     common::log::line( common::verbose::log, "message: ", message);
-                     common::log::line( common::verbose::log, "state: ", state);
+                     common::log::debug( "message: ", message);
+                     common::log::debug( "state: ", state);
 
                      resource::shutdown( state, message);
                   };
@@ -46,8 +46,8 @@ namespace casual
                   return [ &state]( const file::message::reserve::Request& message)
                   {
                      common::Trace trace{ "file::manager::handle::local::reserve::request"};
-                     common::log::line( common::verbose::log, "message: ", message);
-                     common::log::line( common::verbose::log, "state: ", state);
+                     common::log::debug( "message: ", message);
+                     common::log::debug( "state: ", state);
 
                      resource::reserve( state, message);
                   };
@@ -106,8 +106,8 @@ namespace casual
                      return [ &state]( const common::message::event::process::Exit& message)
                      {
                         common::Trace trace{ "file::manager::handle::local::event::process::exit"};
-                        common::log::line( common::verbose::log, "message: ", message);
-                        common::log::line( common::verbose::log, "state: ", state);
+                        common::log::debug( "message: ", message);
+                        common::log::debug( "state: ", state);
 
                         resource::mitigate( state, message);
                      };

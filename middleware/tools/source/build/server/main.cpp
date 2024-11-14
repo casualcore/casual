@@ -146,7 +146,7 @@ namespace casual
                         settings.service.names,
                         settings.service.transaction.mode);
 
-                     log::line( verbose::log, "result: ", result);
+                     log::debug( "result: ", result);
 
                      return result;
                   };
@@ -174,7 +174,7 @@ namespace casual
                {
                   trace::Exit exit( "build server", settings.directive.verbose);
 
-                  common::log::line( log, "path: ", path);
+                  common::log::debug( "path: ", path);
 
                   auto state = local::transform::state( settings);
                   local::generate( path, state);

@@ -161,7 +161,7 @@ namespace casual
                      Trace trace{ "tools::service::call::local::handle::detail::call"};
 
                      auto lookup = detail::lookup( state.arguments.service);
-                     log::line( verbose::log, "lookup: ", lookup);
+                     log::debug( "lookup: ", lookup);
 
                      if( lookup.state == decltype( lookup.state)::absent)
                         code::raise::error( code::xatmi::no_entry);
@@ -183,7 +183,7 @@ namespace casual
                   void reply( State& state, common::message::service::call::Reply& message)
                   {
                      Trace trace{ "tools::service::call::local::handle::detail::reply"};
-                     log::line( verbose::log, "message: ", message);
+                     log::debug( "message: ", message);
                      
                      // only log error to stderr. 
                      // TODO: is this "enough"?.
@@ -200,7 +200,7 @@ namespace casual
                      result.payload = std::move( message.buffer);
                      result.code = message.code;
 
-                     log::line( verbose::log, "result: ", result);
+                     log::debug( "result: ", result);
 
                      casual::cli::pipe::forward::message( result);
                   }
@@ -212,7 +212,7 @@ namespace casual
                   auto handle_payload = [&state]( auto& message)
                   {
                      Trace trace{ "tools::service::call::local::handle::pipe"};
-                     log::line( verbose::log, "state: ", state);
+                     log::debug( "state: ", state);
 
                      if( state.arguments.iterations <= 0)
                         return;
@@ -226,7 +226,7 @@ namespace casual
                         state.machine |= State::Flag::ipc;
                      });
 
-                     log::line( verbose::log, "state: ", state);
+                     log::debug( "state: ", state);
                   };
 
                   return casual::cli::message::dispatch::create(
@@ -261,7 +261,7 @@ namespace casual
                         if( state.pending.empty())
                            state.machine -= State::Flag::ipc;
 
-                        log::line( verbose::log, "state: ", state);
+                        log::debug( "state: ", state);
                      }
                   );
                }
@@ -272,8 +272,8 @@ namespace casual
                void call( State state)
                {
                   Trace trace{ "tools::service::call::local::blocking::call"};
-                  log::line( verbose::log, "state: ", state);
-                  log::line( verbose::log, "state.machine == State::Flag::done: ", state.machine == State::Flag::done);
+                  log::debug( "state: ", state);
+                  log::debug( "state.machine == State::Flag::done: ", state.machine == State::Flag::done);
 
                   communication::stream::inbound::Device pipe{ std::cin};
 
@@ -291,7 +291,7 @@ namespace casual
                      auto handle_payload = [ &state]( auto& message)
                      {
                         Trace trace{ "tools::service::call::local::blocking::call handler"};
-                        common::log::line( verbose::log, "message: ", message);
+                        common::log::debug( "message: ", message);
 
                         if( state.arguments.iterations <= 0)
                            return;
@@ -316,7 +316,7 @@ namespace casual
                         casual::cli::pipe::handle::payloads( std::move( handle_payload)),
                         [ &state]( const casual::cli::message::pipe::Done& message)
                         {
-                           common::log::line( verbose::log, "done: ", message);
+                           common::log::debug( "done: ", message);
                            state.done( message);
                            state.machine = State::Flag::done;
                         }
@@ -335,7 +335,7 @@ namespace casual
             void call( State state)
             {
                Trace trace{ "tools::service::call::local::call"};
-               log::line( verbose::log, "state: ", state);
+               log::debug( "state: ", state);
 
                communication::stream::inbound::Device pipe{ std::cin};
                auto& ipc = communication::ipc::inbound::device();
@@ -356,7 +356,7 @@ namespace casual
 
                while( state.machine != State::Flag::done)
                {
-                  log::line( verbose::log, "state.machine: ", state.machine);
+                  log::debug( "state.machine: ", state.machine);
 
                   if( state.machine == State::Flag::pipe)
                   {

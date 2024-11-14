@@ -14,6 +14,11 @@ namespace casual
 {
    namespace common::log::category
    {
+      //! Log with category 'debug'
+      extern Stream debug;
+
+      //! Log with category 'trace'
+      extern Stream trace;
 
       //! Log with category 'parameter'
       extern Stream parameter;

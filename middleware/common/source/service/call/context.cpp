@@ -116,14 +116,14 @@ namespace casual
                      if( transaction && ! flag::contains( flags, async::Flag::no_transaction))
                         code::raise::error( code::xatmi::argument, "flag ", async::Flag::no_reply, " used within a transaction context without ", async::Flag::no_transaction);
 
-                     log::line( log::debug, "no_reply - no descriptor reservation");
+                     log::debug( "no_reply - no descriptor reservation");
 
                      // No reply, hence no descriptor and no transaction (we validated this before)
                      return Reply{ 0, std::move( message)};
                   }
                   else
                   {
-                     log::line( log::debug, "descriptor reservation - flags: ", flags);
+                     log::debug( "descriptor reservation - flags: ", flags);
 
                      auto& descriptor = state.pending.reserve( message.correlation);
 
@@ -145,7 +145,7 @@ namespace casual
       {
          Trace trace( "service::call::Context::async lookup");
 
-         log::line( log::debug, "service: ", service, ", buffer: ", buffer, " flags: ", flags);
+         log::debug( "service: ", service, ", buffer: ", buffer, " flags: ", flags);
 
          // TODO: Invoke pre-transport buffer modifiers
          //buffer::transport::Context::instance().dispatch( idata, ilen, service, buffer::transport::Lifecycle::pre_call);
@@ -168,7 +168,7 @@ namespace casual
             prepared.message.service = target.service;
             prepared.message.pending = target.pending;
 
-            log::line( log::debug, "async - message: ", prepared.message);
+            log::debug( "async - message: ", prepared.message);
 
             communication::device::blocking::send( target.process.ipc, prepared.message);
          }
@@ -216,7 +216,7 @@ namespace casual
       reply::Result Context::reply( descriptor_type descriptor, reply::Flag flags)
       {
          Trace trace( "calling::Context::reply");
-         log::line( log::debug, "descriptor: ", descriptor, " flags: ", flags);
+         log::debug( "descriptor: ", descriptor, " flags: ", flags);
 
          //
          // TODO: validate input...

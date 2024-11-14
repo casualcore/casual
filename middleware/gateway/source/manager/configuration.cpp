@@ -86,7 +86,7 @@ namespace casual
                   Trace trace{ "gateway::manager::configuration::conform::local::message_process"};
 
                   algorithm::container::erase( shared->pids, message.process.pid);
-                  log::line( verbose::log, "pids left: ", shared->pids);
+                  log::debug( "pids left: ", shared->pids);
 
                   if( shared->pids.empty())
                      return task::unit::Dispatch::done;
@@ -101,7 +101,7 @@ namespace casual
                {
                   algorithm::container::erase( shared->pids, event.state.pid);
 
-                  log::line( verbose::log, "pids left: ", shared->pids);
+                  log::debug( "pids left: ", shared->pids);
 
                   if( shared->pids.empty())
                      return task::unit::Dispatch::done;
@@ -113,7 +113,7 @@ namespace casual
             task::Unit modified_outbound_groups( State& state, std::vector< casual::configuration::model::gateway::outbound::Group> configuration)
             {
                Trace trace{ "gateway::manager::configuration::conform::local::modified_outbound_groups"};
-               log::line( verbose::log, "configuration: ", configuration);
+               log::debug( "configuration: ", configuration);
 
                struct Shared
                {
@@ -286,7 +286,7 @@ namespace casual
                auto action = [ &state, shared, configuration = std::move( configuration)]( task::unit::id)
                {
                   Trace trace{ "gateway::manager::configuration::conform::local::added_outbound_groups action"};
-                  log::line( verbose::log, "configuration: ", configuration);
+                  log::debug( "configuration: ", configuration);
 
                   auto groups = algorithm::transform( configuration, []( auto& group)
                   {
@@ -371,15 +371,15 @@ namespace casual
 
          if( current == wanted.gateway)
          {
-            log::line( verbose::log, "nothing to update");
+            log::debug( "nothing to update");
             return;   
          }
          
          auto outbound_change = casual::configuration::model::change::concrete::calculate( std::move( current.outbound.groups), std::move( wanted.gateway.outbound.groups));
          auto inbound_change = casual::configuration::model::change::concrete::calculate( std::move( current.inbound.groups), std::move( wanted.gateway.inbound.groups));
 
-         log::line( verbose::log, "outbound_change: ", outbound_change);
-         log::line( verbose::log, "inbound_change: ", inbound_change);
+         log::debug( "outbound_change: ", outbound_change);
+         log::debug( "inbound_change: ", inbound_change);
 
          // add - outbound, inbound
          {

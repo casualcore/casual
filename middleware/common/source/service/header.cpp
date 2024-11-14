@@ -117,7 +117,7 @@ namespace casual
 
          void fields( header::Fields header)
          {
-            log::line( verbose::log, "header: ", header);
+            log::debug( "header: ", header);
             fields() = std::move( header);
          }
 

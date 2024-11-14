@@ -34,7 +34,7 @@ namespace casual
                   advertise.alias = instance::alias();
                   advertise.services.add = std::move( services);
 
-                  log::line( log::debug, "advertise: ", advertise);
+                  log::debug( "advertise: ", advertise);
 
                   signal::thread::scope::Mask block{ signal::set::filled( code::signal::terminate, code::signal::interrupt)};
 
@@ -67,7 +67,7 @@ namespace casual
          void Default::configure( server::Arguments&& arguments)
          {
             Trace trace{ "server::handle::policy::Default::configure"};
-            log::line( verbose::log, "arguments: ", arguments);
+            log::debug( "arguments: ", arguments);
 
             // Connection to the domain has been done before...
 
@@ -83,7 +83,7 @@ namespace casual
          void Default::reply( strong::ipc::id id, message::service::call::Reply& message)
          {
             Trace trace{ "server::handle::policy::Default::reply"};
-            log::line( log::debug, "ipc: ", id, "reply: ", message);
+            log::debug( "ipc: ", id, "reply: ", message);
 
             communication::device::blocking::send( id, message);
 
@@ -93,7 +93,7 @@ namespace casual
          void Default::reply( strong::ipc::id id, message::conversation::callee::Send& message)
          {
             Trace trace{ "server::handle::policy::Default::conversation::reply"};
-            log::line( log::debug, "ipc: ", id, "reply: ", message);
+            log::debug( "ipc: ", id, "reply: ", message);
 
             communication::device::blocking::send( id, message);
 
@@ -104,7 +104,7 @@ namespace casual
          {
             Trace trace{ "server::handle::policy::Default::ack"};
 
-            log::line( verbose::log, "reply: ", message);
+            log::debug( "reply: ", message);
 
             communication::device::blocking::send( communication::instance::outbound::service::manager::device(), message);
 
@@ -115,7 +115,7 @@ namespace casual
          {
             Trace trace{ "server::handle::policy::Default::statistics"};
 
-            log::line( log::debug, "event:", event);
+            log::debug( "event:", event);
 
             try
             {
@@ -135,7 +135,7 @@ namespace casual
          {
             Trace trace{ "server::handle::policy::Default::transaction"};
 
-            log::line( log::debug, "trid: ", trid, " - service: ", service);
+            log::debug( "trid: ", trid, " - service: ", service);
 
             // We keep track of callers transaction (can be null-trid).
             transaction::context().caller = trid;
@@ -216,7 +216,7 @@ namespace casual
                   request.buffer = std::move( forward.parameter.payload);
                   request.service = target.service;
 
-                  log::line( log::debug, "policy::Default::forward - request:", request);
+                  log::debug( "policy::Default::forward - request:", request);
 
                   communication::device::blocking::send( target.process.ipc, request);
                }

@@ -72,6 +72,7 @@ file_c_api = make.LinkLibrary( 'bin/casual-file-c-api',
    ],
    [
       file_api,
+      'casual-common',
    ])
 
 install_lib.append( file_c_api)

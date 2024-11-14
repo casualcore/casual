@@ -143,7 +143,7 @@ namespace casual
                               // has been called, and pick upp the response it saved in context.
                               // This means doing the "same" as in the c_return case below.
                               if (state.TPRETURN_called) {
-                                 log::line( log::debug, "user called TPRETURN");
+                                 log::debug( "user called TPRETURN");
                                  return transform::result( state.jump);
                               } else {
                                  code::raise::error( code::xatmi::service_error, "service did not call tpreturn - ", argument.service.name);
@@ -151,7 +151,7 @@ namespace casual
                            }
                            case state::Jump::Location::c_forward:
                            {
-                              log::line( log::debug, "user called tpforward");
+                              log::debug( "user called tpforward");
                               throw transform::forward( state.jump);
                            }
                            default:
@@ -160,7 +160,7 @@ namespace casual
                            }
                            case state::Jump::Location::c_return:
                            {
-                              log::line( log::debug, "user called tpreturn");
+                              log::debug( "user called tpreturn");
                               return transform::result( state.jump);
                            }
                         }

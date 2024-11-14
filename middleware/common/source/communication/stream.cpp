@@ -43,7 +43,7 @@ namespace casual
 
                   complete.offset += complete.payload.size();
 
-                  log::line( verbose::log, "stream <-- ", complete);
+                  log::debug( "stream <-- ", complete);
 
                   return complete;
                }
@@ -70,7 +70,7 @@ namespace casual
                      complete.offset += complete.payload.size();
                   }
                      
-                  log::line( verbose::log, "stream --> ", complete);
+                  log::debug( "stream --> ", complete);
 
                   return complete.correlation();
                }

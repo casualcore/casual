@@ -124,7 +124,7 @@ namespace casual
 
          // find possible in-flight request. We deduce this by extracting the correlations that map to the `descriptor`
          auto lost = algorithm::transform_if( tasks.tasks(), transform_correlation, predicate::value::equal( descriptor));
-         log::line( verbose::log, "lost: ", lost);
+         log::debug( "lost: ", lost);
 
          // remove disconnects, if any
          algorithm::container::erase( pending.disconnects, descriptor);

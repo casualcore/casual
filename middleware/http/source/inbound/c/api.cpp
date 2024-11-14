@@ -115,7 +115,7 @@ namespace casual::http::inbound
 
             execution::id::set( context_holder->request.payload.header);
 
-            log::line( verbose::log, "request: ", context_holder->request);
+            log::debug( "request: ", context_holder->request);
 
             context_holder->context = http::inbound::call::Context{ 
                static_cast< http::inbound::call::Directive>( directive), std::move( context_holder->request)};

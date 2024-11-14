@@ -99,7 +99,7 @@ namespace casual
                   Trace trace{ "gateway::group::tcp::connector::local::run::in"};
 
                   auto request = communication::device::receive< gateway::message::domain::connect::Request>( state.device);
-                  log::line( verbose::log, "request: ", request);
+                  log::debug( "request: ", request);
 
                   auto reply = common::message::reverse::type( request);
 

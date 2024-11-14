@@ -111,7 +111,7 @@ namespace casual
                return [ shared]( task::unit::id, const common::message::event::process::Exit& event)
                {
                   algorithm::container::erase( shared->pids, event.state.pid);
-                  log::line( verbose::log, "pids left: ", shared->pids);
+                  log::debug( "pids left: ", shared->pids);
 
                   if( shared->pids.empty())
                      return task::unit::Dispatch::done;
@@ -135,7 +135,7 @@ namespace casual
                auto action = [ &state, id, shared]( task::unit::id)
                {
                   Trace trace{ "transaction::manager::configuration::local::scale_in_resource action"};
-                  log::line( verbose::log, "id: ", id);
+                  log::debug( "id: ", id);
 
                   auto proxy = state.find_resource( id);
 
@@ -144,7 +144,7 @@ namespace casual
 
                   auto shutdownable = proxy->shutdownable();
 
-                  log::line( verbose::log, "shutdownable: ", shutdownable);
+                  log::debug( "shutdownable: ", shutdownable);
 
                   if( std::empty( shutdownable))
                      return task::unit::action::Outcome::abort;
@@ -211,7 +211,7 @@ namespace casual
                   Trace trace{ "transaction::manager::configuration::local::scale_out_resource instance_ready"};
 
                   algorithm::container::erase( shared->pids, message.process.pid);
-                  log::line( verbose::log, "pids left: ", shared->pids);
+                  log::debug( "pids left: ", shared->pids);
 
                   if( shared->pids.empty())
                      return task::unit::Dispatch::done;
@@ -230,7 +230,7 @@ namespace casual
             task::Unit restart_resource( State& state, common::strong::resource::id id, std::vector< strong::process::id> restarts)
             {
                Trace trace{ "transaction::manager::configuration::local::restart_resource"};
-               log::line( verbose::log, "id: ", id);
+               log::debug( "id: ", id);
 
                struct Shared
                {
@@ -277,7 +277,7 @@ namespace casual
                   else
                      return shared->done() ? task::unit::Dispatch::done : task::unit::Dispatch::pending;
 
-                  log::line( verbose::log, "instances left: ", shared->restarts);
+                  log::debug( "instances left: ", shared->restarts);
 
                   if( shared->done())
                      return task::unit::Dispatch::done;
@@ -347,7 +347,7 @@ namespace casual
             [[maybe_unused]] task::Unit restart_resource( State& state, state::resource::Proxy& proxy)
             {
                Trace trace{ "transaction::manager::configuration::local::restart_resource"};
-               log::line( verbose::log, "proxy: ", proxy);
+               log::debug( "proxy: ", proxy);
 
                auto restart = algorithm::transform( proxy.instances, []( auto& instance){ return instance.process.pid;});
 
@@ -357,7 +357,7 @@ namespace casual
             task::Group scale_resources( State& state, std::vector< common::strong::resource::id> ids)
             {
                Trace trace{ "transaction::manager::configuration::local::scale_resources"};
-               log::line( verbose::log, "ids: ", ids);
+               log::debug( "ids: ", ids);
 
                std::vector< task::Unit> tasks;
 
@@ -463,7 +463,7 @@ namespace casual
                      return result;
                   });
 
-                  log::line( verbose::log, "scale tasks: ", tasks);
+                  log::debug( "scale tasks: ", tasks);
 
                   if( ! std::empty( tasks))
                      state.task.coordinator.then( task::Group{ std::move( tasks)});
@@ -479,7 +479,7 @@ namespace casual
                      return result;
                   });
 
-                  log::line( verbose::log, "restart tasks: ", tasks);
+                  log::debug( "restart tasks: ", tasks);
 
                   if( ! std::empty( tasks))
                      state.task.coordinator.then( task::Group{ std::move( tasks)});
@@ -513,7 +513,7 @@ namespace casual
                   {
                      if( auto found = algorithm::find( state.resources, id))
                      {
-                        log::line( verbose::log, "found: ", *found);
+                        log::debug( "found: ", *found);
 
                         if( std::empty( found->instances))
                            algorithm::container::erase( state.resources, std::begin( found));
@@ -539,7 +539,7 @@ namespace casual
                auto equal_name = []( auto& lhs, auto& rhs){ return lhs.name == rhs.name;};
 
                auto change = casual::configuration::model::change::calculate( current, wanted, equal_name);
-               common::log::line( verbose::log, "change: ", change);
+               common::log::debug( "change: ", change);
 
                if( change.added)
                   added_resources( state, change.added);
@@ -608,7 +608,7 @@ namespace casual
 
          if( current == wanted.transaction)
          {
-            common::log::line( verbose::log, "nothing to update");
+            common::log::debug( "nothing to update");
             return;
          }
 

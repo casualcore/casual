@@ -247,7 +247,7 @@ namespace casual
 
                         policy::canonical::Representation canonical()
                         {
-                           common::log::line( verbose::log, "stack.size(): ", m_stack.size());
+                           common::log::debug( "stack.size(): ", m_stack.size());
                            return canonical::parse( m_document);
                         }
 

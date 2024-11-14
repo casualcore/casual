@@ -68,7 +68,7 @@ namespace casual
                   void start( S services, std::vector< argument::transaction::Resource> resources, common::function<void()const> initialize)
                   {
                      Trace trace{ "common::server::start"};
-                     log::line( verbose::log, "services: ", services);
+                     log::debug( "services: ", services);
 
                      auto& inbound = communication::ipc::inbound::device();
 
@@ -84,7 +84,7 @@ namespace casual
                         server::handle::Conversation{},
                         [&state]( const common::message::shutdown::Request& message)
                         {
-                           log::line( verbose::log, "shutdown: ", message);
+                           log::debug( "shutdown: ", message);
                            state.done = true;
                         });
 

@@ -47,7 +47,7 @@ namespace casual
                common::Uuid enqueue( const queue::Lookup& lookup, M&& message)
                {
                   Trace trace( "casual::queue::enqueue");
-                  common::log::line( verbose::log, "message: ", message);
+                  common::log::debug( "message: ", message);
 
                   auto& transaction = common::transaction::context().current();
 
@@ -78,7 +78,7 @@ namespace casual
 
                   request.queue = group.queue;
 
-                  common::log::line( verbose::log, "request: ", request);
+                  common::log::debug( "request: ", request);
 
                   auto reply = common::communication::ipc::call( group.process.ipc, request);
 
@@ -102,7 +102,7 @@ namespace casual
                      request.selector.id = selector.id;
                      request.selector.properties = selector.properties;
 
-                     common::log::line( verbose::log, "request: ", request);
+                     common::log::debug( "request: ", request);
 
                      return request;
                   };
@@ -195,7 +195,7 @@ namespace casual
                      auto handle_dequeue_reply = [&]( ipc::message::group::dequeue::Reply& message)
                      {
                         Trace trace{ "casual::queue::local::dequeue::blocking handler - dequeue::Reply"};
-                        common::log::line( verbose::log, "message: ", message);
+                        common::log::debug( "message: ", message);
 
                         if( is_error( message.code))
                            common::code::raise::error( message.code);
@@ -232,7 +232,7 @@ namespace casual
                         [&]( ipc::message::group::dequeue::forget::Request& message)
                         {
                            Trace trace{ "casual::queue::local::dequeue::blocking handler - forget::Request"};
-                           common::log::line( verbose::log, "message: ", message);
+                           common::log::debug( "message: ", message);
 
                            state.done = true;
                         },
@@ -240,7 +240,7 @@ namespace casual
                         [&]( common::message::shutdown::Request& message)
                         {
                            Trace trace{ "casual::queue::local::dequeue::blocking handler - shutdown::Request"};
-                           common::log::line( verbose::log, "message: ", message);
+                           common::log::debug( "message: ", message);
 
                            // domain manager want this process to shutdown, we send forget-request
                            // AND make sure we 're-push' the shutdown request so casual can act on it later, hence
@@ -261,7 +261,7 @@ namespace casual
                                     [&state]( ipc::message::group::dequeue::forget::Reply& message)
                                     {
                                        Trace trace{ "casual::queue::local::dequeue::blocking handler - forget::Request - forget::Reply"};
-                                       common::log::line( verbose::log, "message: ", message);
+                                       common::log::debug( "message: ", message);
 
                                        // This is either way the 'last' message from the group in this
                                        // 'session', but the two below might have been consumed.
@@ -271,7 +271,7 @@ namespace casual
                                     [&]( ipc::message::group::dequeue::Reply& message)
                                     {
                                        Trace trace{ "casual::queue::local::dequeue::blocking handler - forget::Request - dequeue::Reply"};
-                                       common::log::line( verbose::log, "message: ", message);
+                                       common::log::debug( "message: ", message);
 
                                        handle_dequeue_reply( message);
                                        // we wait for the forget-reply
@@ -342,7 +342,7 @@ namespace casual
             Message dequeue( const std::string& queue, const Selector& selector)
             {
                Trace trace{ "casual::queue::blocking::dequeue"};
-               common::log::line( verbose::log, "queue: ", queue, ", selector: ", selector);
+               common::log::debug( "queue: ", queue, ", selector: ", selector);
 
                queue::Lookup lookup( queue, queue::Lookup::Action::dequeue);
 
@@ -533,7 +533,7 @@ namespace casual
             std::vector< Message> messages( const std::string& queuename, const std::vector< queue::Message::id_type>& ids)
             {
                Trace trace{ "casual::queue::peek::messages"};
-               common::log::line( verbose::log, "queue: ", queuename, ", ids: ", ids);
+               common::log::debug( "queue: ", queuename, ", ids: ", ids);
 
                queue::Lookup lookup{ queuename, queue::Lookup::Action::any};
 
@@ -568,7 +568,7 @@ namespace casual
              void peek( std::string name, common::unique_function< bool(Message&&)> callback)
             {
                Trace trace{ "casual::queue::browse::peek"};
-               common::log::line( verbose::log, "name: ", name);
+               common::log::debug( "name: ", name);
 
                queue::Lookup lookup{ std::move( name), queue::Lookup::Action::any};
 
@@ -586,7 +586,7 @@ namespace casual
 
                while( auto reply = common::communication::ipc::call( queue.process.ipc, request))
                {
-                  common::log::line( verbose::log, "reply: ", reply);
+                  common::log::debug( "reply: ", reply);
 
                   if( ! reply.message)
                      return;
@@ -608,7 +608,7 @@ namespace casual
             std::vector< Affected> queue( const std::vector< std::string>& queues)
             {
                Trace trace{ "casual::queue::restore::queue"};
-               common::log::line( verbose::log, "queues: ", queues);
+               common::log::debug( "queues: ", queues);
 
                std::vector< Affected> affected;
 
@@ -639,7 +639,7 @@ namespace casual
             std::vector< Affected> queue( const std::vector< std::string>& queues)
             {
                Trace trace{ "casual::queue::clear::queue"};
-               common::log::line( verbose::log, "queues: ", queues);
+               common::log::debug( "queues: ", queues);
 
                serviceframework::service::protocol::binary::Call call;
                call << CASUAL_NAMED_VALUE( queues);
@@ -664,7 +664,7 @@ namespace casual
             std::vector< common::Uuid> remove( const std::string& queue, const std::vector< common::Uuid>& messages, bool force)
             {
                Trace trace{ "casual::queue::messages::remove"};
-               common::log::line( verbose::log, "queue: ", queue, ", messages: ", messages);
+               common::log::debug( "queue: ", queue, ", messages: ", messages);
 
                serviceframework::service::protocol::binary::Call call;
                call << CASUAL_NAMED_VALUE( queue);

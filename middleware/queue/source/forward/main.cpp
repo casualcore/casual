@@ -60,7 +60,7 @@ namespace casual
                   state.multiplex,
                   communication::select::ipc::dispatch::create( state, &forward::handlers));
 
-               log::line( verbose::log, "state: ", state);
+               log::debug( "state: ", state);
             }
 
             void main( int argc, const char** argv)

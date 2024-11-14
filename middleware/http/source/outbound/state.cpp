@@ -39,7 +39,7 @@ namespace casual
 
             void Request::State::Header::Request::add( const std::string& value)
             {
-               log::line( verbose::log, "header: ", value);
+               log::debug( "header: ", value);
 
                auto handle = curl_slist_append( m_header.get(), value.c_str());
 

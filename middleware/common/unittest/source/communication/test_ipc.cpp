@@ -450,10 +450,10 @@ namespace casual
             return [&state]( strong::file::descriptor::id descriptor, communication::select::tag::read)
             {
                common::Trace trace{ "consumer operator()"};
-               common::log::line( common::verbose::log, "descriptor: ", descriptor);
+               common::log::debug( "descriptor: ", descriptor);
                if( auto found = algorithm::find( state.destinations, descriptor))
                {
-                  common::log::line( common::verbose::log, "found: ", *found);
+                  common::log::debug( "found: ", *found);
                   if( auto complete = communication::device::non::blocking::next( *found))
                      state.correlation.receive[ found->connector().handle().ipc()].push_back( complete.correlation());
                   return true;

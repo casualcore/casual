@@ -67,11 +67,11 @@ namespace casual
          void advertised( std::string_view name)
          {
             Trace trace{ "domain::unittest::wait::until::advertised"};
-            common::log::line( verbose::log, "name: ", name);
+            common::log::debug( "name: ", name);
 
             // wait until it's known...
             auto reply = queue::Lookup{ name, queue::Lookup::Action::any, queue::Lookup::Semantic::wait}();
-            common::log::line( verbose::log, "reply: ", reply);
+            common::log::debug( "reply: ", reply);
          }
       } // wait::until
 

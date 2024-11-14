@@ -7,7 +7,6 @@
 #pragma once
 
 #include "casual/cli/message.h"
-#include "casual/cli/common.h"
 
 namespace casual
 {
@@ -51,7 +50,7 @@ namespace casual
                cli::message::to::human< M>::stream( message);
             else
             {
-               common::log::line( verbose::log, "cli::pipe::forward::message: ", message);
+               common::log::debug( "cli::pipe::forward::message: ", message);
 
                common::communication::stream::outbound::Device out{ std::cout};
                common::communication::device::blocking::send( out, message);
@@ -91,7 +90,7 @@ namespace casual
          template< typename M>
          void message( const M& message)
          {
-            common::log::line( verbose::log, "cli::pipe::discard::message: ", message);
+            common::log::debug( "cli::pipe::discard::message: ", message);
          }
 
          namespace handle
@@ -126,7 +125,7 @@ namespace casual
             {
                if( predicate || cli::pipe::terminal::in() || std::cin.peek() == std::istream::traits_type::eof())
                {
-                  common::log::line( verbose::log, "cli::pipe::condition::done - is done");
+                  common::log::debug( "cli::pipe::condition::done - is done");
                   return true;
                }
                return false;

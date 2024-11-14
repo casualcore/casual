@@ -130,7 +130,7 @@ namespace casual
                      auto result = common::environment::normalize( 
                         communication::ipc::call( communication::instance::outbound::transaction::manager::device(), request)).resources;
 
-                     common::log::line( verbose::log, "result: ", result);
+                     common::log::debug( "result: ", result);
 
                      return result;
                   }
@@ -218,7 +218,7 @@ namespace casual
                   [[nodiscard]] auto code( Code code, Ts&&... ts)
                   {
                      if( code == Code::ok)
-                        common::log::line( verbose::log, code, ' ', std::forward< Ts>( ts)...);
+                        common::log::debug( code, ' ', std::forward< Ts>( ts)...);
                      else
                         common::log::line( common::log::category::error, code, ' ', std::forward< Ts>( ts)...);
 
@@ -409,7 +409,7 @@ namespace casual
                   [[nodiscard]] code::tx invoke( P&& policy, const Transaction& transaction, R& resources)
                   {
                      Trace trace{ "transaction::local::resources::end::invoke"};
-                     common::log::line( verbose::log, "transaction: ", transaction, ", resources: ", resources);
+                     common::log::debug( "transaction: ", transaction, ", resources: ", resources);
 
                      if( resources.empty())
                         return code::tx::ok; // nothing to do...
@@ -969,7 +969,7 @@ namespace casual
 
          code::tx Context::set_commit_return( commit::Return value) noexcept
          {
-            log::line( verbose::log, "set_commit_return: ", value);
+            log::debug( "set_commit_return: ", value);
             m_commit_return = value;
 
             return code::tx::ok;
@@ -982,7 +982,7 @@ namespace casual
 
          code::tx Context::set_transaction_control( transaction::Control control)
          {
-            log::line( verbose::log, "set_transaction_control: ", control);
+            log::debug( "set_transaction_control: ", control);
             m_control = control;
             return code::tx::ok;
          }
@@ -1150,7 +1150,7 @@ namespace casual
          code::tx Context::control_continuation( code::tx code)
          {
             Trace trace{ "transaction::Context::control_continuation"};
-            log::line( verbose::log, "code: ", code);
+            log::debug( "code: ", code);
 
             // Dependent on control we do different stuff
             switch( m_control)

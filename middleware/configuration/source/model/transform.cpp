@@ -316,7 +316,7 @@ namespace casual
 
                   auto& gateway = *domain.gateway;
 
-                  log::line( verbose::log, "gateway.reverse: ", gateway.reverse);
+                  log::debug( "gateway.reverse: ", gateway.reverse);
 
                   auto append_inbounds = []( auto& source, auto& target, auto connect)
                   { 
@@ -965,7 +965,7 @@ namespace casual
       configuration::Model transform( user::Model model)
       {
          Trace trace{ "configuration::model::transform model"};
-         log::line( verbose::log, "user model: ", model);
+         log::debug( "user model: ", model);
 
          configuration::Model result;
 
@@ -981,7 +981,7 @@ namespace casual
          }
 
 
-         log::line( verbose::log, "result: ", result);
+         log::debug( "result: ", result);
 
          return result;
       }
@@ -989,7 +989,7 @@ namespace casual
       user::Model transform( const configuration::Model& model)
       {
          Trace trace{ "configuration::model::transform model"};
-         log::line( verbose::log, "internal model: ", model);
+         log::debug( "internal model: ", model);
 
          user::Model result;
 

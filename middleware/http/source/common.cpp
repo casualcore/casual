@@ -25,17 +25,6 @@ namespace casual
    {
       log::Stream log{ "casual.http"};
 
-      namespace verbose
-      {
-         log::Stream log{ "casual.http.verbose"};
-      } // verbose
-
-      namespace trace
-      {
-         log::Stream log{ "casual.http.trace"};
-      } // trace
-
-
       namespace header
       {
          namespace value
@@ -112,7 +101,7 @@ namespace casual
                      if( found)
                         return std::string{ found->second};
 
-                     log::line( verbose::log, "failed to find key: ", key, " - using generic buffer type protocol");
+                     log::debug( "failed to find key: ", key, " - using generic buffer type protocol");
                      return generic( key);
                   }
 

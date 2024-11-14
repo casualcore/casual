@@ -74,8 +74,8 @@ namespace casual
          auto request( State& state, Message& message)
          {
             using namespace common;
-            log::line( verbose::log, "message: ", message);
-            log::line( verbose::log, "state: ", state);
+            log::debug( "message: ", message);
+            log::debug( "state: ", state);
 
             auto reply = state.reply( message);
 
@@ -207,7 +207,7 @@ namespace casual
 
          retry::alarm( state.connect);
 
-         log::line( verbose::log, "state.connect: ", state.connect);
+         log::debug( "state.connect: ", state.connect);
       }
 
       namespace dispatch
@@ -224,7 +224,7 @@ namespace casual
                if( auto found = algorithm::find( state.connect.pending, descriptor))
                {
                   auto pending = algorithm::container::extract( state.connect.pending, std::begin( found));
-                  log::line( verbose::log, "pending: ", pending);
+                  log::debug( "pending: ", pending);
 
                   // we don't multiplex any more
                   state.directive.write.remove( pending.socket.descriptor());
@@ -233,7 +233,7 @@ namespace casual
                   {
                      if( communication::tcp::non::blocking::error::recoverable( error.value()))
                      {
-                        log::line( verbose::log, "multiplex connect recoverable error for: ", pending.prospect, " - error: ", error, " - action: retry later");
+                        log::debug( "multiplex connect recoverable error for: ", pending.prospect, " - error: ", error, " - action: retry later");
                         state.connect.prospects.push_back( std::move( pending.prospect));
                         retry::alarm( state.connect);
                      }

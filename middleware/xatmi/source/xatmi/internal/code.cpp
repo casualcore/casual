@@ -39,7 +39,7 @@ namespace casual
             common::code::xatmi code() noexcept
             {
                auto exception = common::exception::capture();
-               common::log::line( common::verbose::log, "exception:  ", exception);
+               common::log::debug( "exception:  ", exception);
                return exception::code( exception.code());
             }
          } // exception

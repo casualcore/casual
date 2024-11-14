@@ -58,7 +58,7 @@ namespace casual
       {
          return []( const Message& message)
          {
-            log::line( log::debug, "discard message: ", message);
+            log::debug( "discard message: ", message);
          };
       }
 

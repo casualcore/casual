@@ -7,23 +7,12 @@
 
 #include "casual/buffer/internal/common.h"
 
-#include "common/log/category.h"
 
 namespace casual
 {
    namespace buffer
    {
-      common::log::Stream& log = common::log::category::buffer;
 
-      namespace verbose
-      {
-         common::log::Stream log{ "casual.buffer.verbose"};
-      } // verbose
-
-      namespace trace
-      {
-         common::log::Stream log{ "casual.buffer.trace"};
-      } // trace
 
    } // buffer
 } // casual

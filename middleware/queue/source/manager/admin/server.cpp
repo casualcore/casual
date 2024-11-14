@@ -231,7 +231,7 @@ namespace casual
                   void aliases( State& state, const std::vector< manager::admin::model::scale::Alias>& aliases)
                   {
                      Trace trace{ "queue::manager::admin::local::forward::scale::aliases"};
-                     log::line( verbose::log, "aliases: ", aliases);
+                     log::debug( "aliases: ", aliases);
 
 
                      auto origin = state.forward.groups;

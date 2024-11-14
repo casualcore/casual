@@ -252,7 +252,7 @@ namespace casual
 
             Context::~Context()
             {
-               log::line( verbose::log, "state: ", m_state);
+               log::debug( "state: ", m_state);
 
                if( pending())
                   log::line( log::category::error, code::casual::invalid_semantics,  " pending conversations: ", m_state.descriptors.size());
@@ -270,7 +270,7 @@ namespace casual
                local::validate::flags( flags);
 
                service::Lookup lookup{ service};
-               log::line( log::debug, "service: ", service, " buffer: ", buffer, " flags: ", flags);
+               log::debug( "service: ", service, " buffer: ", buffer, " flags: ", flags);
 
 
                auto start = platform::time::clock::type::now();
@@ -291,7 +291,7 @@ namespace casual
 
                auto& value = m_state.descriptors.at( descriptor);
 
-               log::line( log::debug, "descriptor: ", descriptor, ", value: ", value);
+               log::debug( "descriptor: ", descriptor, ", value: ", value);
 
                // If some thing goes wrong we unreserve the descriptor
                auto unreserve = common::execute::scope( [&](){ m_state.descriptors.unreserve( descriptor);});
@@ -339,17 +339,17 @@ namespace casual
 
                value.process = target.process;
 
-               log::line( verbose::log, "descriptor: ", descriptor, ", value: ", value);
+               log::debug( "descriptor: ", descriptor, ", value: ", value);
 
                // connect to the service
                {
                   message.service = target.service;
 
-                  log::line( log::debug, "connect - request: ", message);
+                  log::debug( "connect - request: ", message);
 
                   auto reply = communication::ipc::call( target.process.ipc, message);
 
-                  log::line( log::debug, "connect - reply: ", reply);
+                  log::debug( "connect - reply: ", reply);
 
                }
 
@@ -365,7 +365,7 @@ namespace casual
                Trace trace{ "common::service::conversation::Context::send"};
 
                auto& value = m_state.descriptors.at( descriptor);
-               log::line( verbose::log, "descriptor: ", descriptor, ", value: ", value);
+               log::debug( "descriptor: ", descriptor, ", value: ", value);
 
                local::validate::send( value);
 
@@ -432,7 +432,7 @@ namespace casual
                Trace trace{ "common::service::conversation::Context::receive"};
 
                auto& value = m_state.descriptors.at( descriptor);
-               log::line( verbose::log, "descriptor: ", descriptor, ", value: ", value);
+               log::debug( "descriptor: ", descriptor, ", value: ", value);
 
                local::validate::receive( value);
 
@@ -543,7 +543,7 @@ namespace casual
                };
 
                auto message = receive_message( value.correlation, flags);
-               log::line( verbose::log, "message: ", message);
+               log::debug( "message: ", message);
 
                receive::Result result;
                result.buffer = std::move( message.buffer);
@@ -613,8 +613,8 @@ namespace casual
                   result.event = decltype( result.event)::send_only;
                }
 
-               log::line( verbose::log, "value: ", value);
-               log::line( verbose::log, "result: ", result);
+               log::debug( "value: ", value);
+               log::debug( "result: ", result);
 
                unreserve.release(); // keep descriptor for conversation
 
@@ -626,7 +626,7 @@ namespace casual
                Trace trace{ "common::service::conversation::Context::disconnect"};
 
                auto& value = m_state.descriptors.at( handle);
-               log::line( verbose::log, "descriptor: ", handle, ", value: ", value);
+               log::debug( "descriptor: ", handle, ", value: ", value);
                
 
                local::validate::disconnect( value);

@@ -78,7 +78,7 @@ namespace casual
          strong::correlation::id request( strong::process::id pid, Directive directive)
          {
             Trace trace{ "common::communication::instance::fetch::handle (pid)"};
-            log::line( log::debug, "pid: ", pid, ", directive: ", directive);
+            log::debug( "pid: ", pid, ", directive: ", directive);
 
             return local::send( directive, [ pid]( auto& request)
             {
@@ -127,7 +127,7 @@ namespace casual
          process::Handle handle( strong::process::id pid, Directive directive)
          {
             Trace trace{ "common::communication::instance::fetch::handle (pid)"};
-            log::line( log::debug, "pid: ", pid, ", directive: ", directive);
+            log::debug( "pid: ", pid, ", directive: ", directive);
 
             return local::call( directive, [ pid]( auto& request)
             {
@@ -145,7 +145,7 @@ namespace casual
             void connect( M&& message)
             {
                Trace trace{ "communication::instance::local::connect"};
-               log::line( verbose::log, "message: ", message);
+               log::debug( "message: ", message);
 
                signal::thread::scope::Mask block{ signal::set::filled( code::signal::terminate, code::signal::interrupt)};
 
@@ -237,13 +237,13 @@ namespace casual
                   {
                      Trace trace{ "communication::instance::outbound::instance::local::fetch"};
 
-                     log::line( verbose::log, "identity: ", identity, ", directive: ", directive);
+                     log::debug( "identity: ", identity, ", directive: ", directive);
 
                      if( common::environment::variable::exists( identity.environment))
                      {
                         if( auto process = environment::variable::get< process::Handle>( identity.environment))
                         {
-                           log::line( verbose::log, "process: ", *process);
+                           log::debug( "process: ", *process);
 
                            if( ipc::exists( process->ipc))
                               return *process;
@@ -287,7 +287,7 @@ namespace casual
                : m_identity{ identity}
             {
                log::line( log, "instance created - identity: ", m_identity);
-               log::line( verbose::log, "connector: ", *this);
+               log::debug( "connector: ", *this);
             }
 
             template< lookup::Directive directive>
@@ -306,7 +306,7 @@ namespace casual
                Trace trace{ "communication::instance::outbound::Connector::connect"};
 
                reset( local::fetch( m_identity, directive));
-               log::line( verbose::log, "connector: ", *this);
+               log::debug( "connector: ", *this);
 
                return predicate::boolean( m_process);
             }
@@ -423,7 +423,7 @@ namespace casual
 
                         if( process.ipc)
                         {
-                           common::log::line( verbose::log, "process: ", process);
+                           common::log::debug( "process: ", process);
    
                            if( ipc::exists( process.ipc))
                            {
@@ -437,7 +437,7 @@ namespace casual
 
                         if( process.ipc)
                         {
-                           common::log::line( verbose::log, "process: ", process);
+                           common::log::debug( "process: ", process);
 
                            if( ipc::exists( process.ipc))
                            {
@@ -459,7 +459,7 @@ namespace casual
                   Trace trace{ "communication::instance::outbound::domain::manager::Connector::connect"};
 
                   reset( local::connect( [](){ return common::domain::singleton::read().process;}));
-                  log::line( verbose::log, "connector: ", *this);
+                  log::debug( "connector: ", *this);
 
                   return predicate::boolean( m_process);
                }
@@ -496,7 +496,7 @@ namespace casual
                         return common::domain::singleton::read().process;
                      }));
 
-                     log::line( verbose::log, "connector: ", *this);
+                     log::debug( "connector: ", *this);
 
                      return predicate::boolean( m_process);
                   }

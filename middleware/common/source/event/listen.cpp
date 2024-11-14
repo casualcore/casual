@@ -60,7 +60,7 @@ namespace casual
 
                void subscribe( const process::Handle& process, std::vector< message::Type> types)
                {
-                  log::line( log::debug, "subscribe - process: ", process, ", types: ", types);
+                  log::debug( "subscribe - process: ", process, ", types: ", types);
 
                   message::event::subscription::Begin request;
 
@@ -99,7 +99,7 @@ namespace casual
          {
             Trace trace{ "common::event::unsubscribe"};
 
-            log::line( log::debug, "unsubscribe - process: ", process, ", types: ", types);
+            log::debug( "unsubscribe - process: ", process, ", types: ", types);
 
             message::event::subscription::End request;
             request.process = process;

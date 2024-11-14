@@ -37,13 +37,13 @@ namespace casual
          ipc::message::group::dequeue::forget::Reply Pending::forget( const ipc::message::group::dequeue::forget::Request& message)
          {
             queue::Trace trace{ "queue::group::state::Pending::forget"};
-            log::line( verbose::log, "message: ", message);
+            log::debug( "message: ", message);
 
             auto result = common::message::reverse::type( message);
 
             if( auto found = algorithm::find( dequeues, message.correlation))
             {
-               log::line( verbose::log, "found: ", *found);
+               log::debug( "found: ", *found);
                result.discarded = true;
                dequeues.erase( std::begin( found));
             }
@@ -85,7 +85,7 @@ namespace casual
          void Pending::remove( common::strong::process::id pid)
          {
             queue::Trace trace{ "queue::group::state::Pending::remove"};
-            log::line( verbose::log, "pid: ", pid);
+            log::debug( "pid: ", pid);
 
             algorithm::container::erase( dequeues, pid);
             replies.remove( pid);
@@ -94,7 +94,7 @@ namespace casual
          void Pending::remove( common::strong::ipc::id ipc)
          {
             queue::Trace trace{ "queue::group::state::Pending::remove"};
-            log::line( verbose::log, "ipc: ", ipc);
+            log::debug( "ipc: ", ipc);
 
             algorithm::container::erase( dequeues, ipc);
             replies.remove( ipc);

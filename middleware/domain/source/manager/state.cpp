@@ -102,7 +102,7 @@ namespace casual
                   void scale( auto& entity, platform::size::type count)
                   {
                      Trace trace{ "domain::manager::state::local::scale"};
-                     log::line( verbose::log, "instances: ", entity.instances);
+                     log::debug( "instances: ", entity.instances);
 
                      auto set_scale_keep = [ enabled = entity.enabled]( auto& instance)
                      {
@@ -144,7 +144,7 @@ namespace casual
                         }));
                      }
 
-                     log::line( verbose::log, "instances: ", entity.instances);
+                     log::debug( "instances: ", entity.instances);
                   }
 
                } // instance
@@ -198,8 +198,8 @@ namespace casual
 
             if( auto found = algorithm::find( instances, pid))
             {
-               log::line( verbose::log, "found: ", *found);
-               log::line( verbose::log, "instances: ", instances);
+               log::debug( "found: ", *found);
+               log::debug( "instances: ", instances);
 
                found->handle = {};
 
@@ -258,8 +258,8 @@ namespace casual
 
             if( auto found = algorithm::find( instances, pid))
             {
-               log::line( verbose::log, "found: ", *found);
-               log::line( verbose::log, "instances: ", instances);
+               log::debug( "found: ", *found);
+               log::debug( "instances: ", instances);
 
                switch( found->wanted)
                {
@@ -355,7 +355,7 @@ namespace casual
 
          if( auto found = algorithm::find_if( singletons, is_singleton))
          {
-            log::line( log, "remove singleton: ", found->second);
+            log::debug( "remove singleton: ", found->second);
 
             // Try to remove ipc-queue (no-op if it's removed already)
             local::ipc::remove( found->second.ipc);
@@ -373,7 +373,7 @@ namespace casual
             // we know the instance exists...
             auto process = found->remove( pid);
             
-            log::line( log, "remove server instance: ", process);
+            log::debug( "remove server instance: ", process);
 
             // Try to remove ipc-queue (no-op if it's removed already)
             local::ipc::remove( process.ipc);
@@ -386,7 +386,7 @@ namespace casual
          if( auto found = executable( pid))
          {
             found->remove( pid);
-            log::line( log, "remove executable instance: ", pid);
+            log::debug( "remove executable instance: ", pid);
 
             if( found->restart && runlevel == decltype( runlevel())::running)
                return result_type{ nullptr, found};
@@ -395,7 +395,7 @@ namespace casual
          // check if it's a grandchild
          if( auto found = algorithm::find( grandchildren, pid))
          {
-            log::line( log, "remove grandchild: ", *found);
+            log::debug( "remove grandchild: ", *found);
             
             // Try to remove ipc-queue (no-op if it's removed already)
             local::ipc::remove( found->handle.ipc);
@@ -403,7 +403,7 @@ namespace casual
             grandchildren.erase( std::begin( found));
          }
 
-         log::line( log, "runlevel: ", runlevel);
+         log::debug( "runlevel: ", runlevel);
          return result_type{};
       }
 

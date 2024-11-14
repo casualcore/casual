@@ -88,7 +88,7 @@ namespace casual
                auto handle = [ callback = std::forward< T>( callback)]( common::message::event::service::Calls& message)
                {
                   Trace trace{ "event::detail::Dispatch::Implementation callback message::event::service::Calls"};
-                  log::line( verbose::log, "message: ", message);
+                  log::debug( "message: ", message);
                   
                   auto transform_metric = []( common::message::event::service::Metric& metric)
                   {
@@ -118,7 +118,7 @@ namespace casual
                auto handle = [ callback = std::forward< T>( callback)]( common::message::event::service::Calls& message)
                {
                   Trace trace{ "event::detail::Implementation::handle message::event::service::Calls"};
-                  log::line( verbose::log, "message: ", message);
+                  log::debug( "message: ", message);
                   
                   auto transform_metric = []( common::message::event::service::Metric& metric)
                   {

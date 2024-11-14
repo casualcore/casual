@@ -46,7 +46,7 @@ namespace casual
          template< typename M>
          void operator ()( M& multiplex, const Event& event) const
          {
-            log::line( verbose::log, "common::event::Dispatch: ", *this); 
+            log::debug( "common::event::Dispatch: ", *this); 
             for( auto subscriber : m_subscribers)
                multiplex.send( subscriber.ipc, event);
          }
@@ -90,7 +90,7 @@ namespace casual
             void subscription( const M& message)
             {
                Trace trace{ "common::event::Dispatch::subscription - begin"};
-               log::line( verbose::log, "message: ", message);
+               log::debug( "message: ", message);
                
                ( ... , event< Events>().subscription( message) );
             }

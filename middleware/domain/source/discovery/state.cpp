@@ -123,7 +123,7 @@ namespace casual
                         return common::signal::timer::Deadline{ heuristic.duration};
 
                      auto load_level = pending / heuristic.in_flight_window;
-                     log::line( verbose::log, "load_level: ", load_level);
+                     log::debug( "load_level: ", load_level);
                      return common::signal::timer::Deadline{ heuristic.duration * load_level};
                   }
 

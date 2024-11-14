@@ -86,7 +86,7 @@ namespace casual
                   common::communication::instance::identity::queue::manager.id,
                   common::communication::instance::fetch::Directive::wait);
 
-               common::log::line( verbose::log, "queue-manager is running: ", manager);
+               common::log::debug( "queue-manager is running: ", manager);
             }
 
          

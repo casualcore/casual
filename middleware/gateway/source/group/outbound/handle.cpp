@@ -71,7 +71,7 @@ namespace casual
                   void associate_and_involve( State& state, const M& message, strong::socket::id descriptor)
                   {
                      Trace trace{ "gateway::group::outbound::handle::local::internal::transaction::associate_and_involve"};
-                     log::line( verbose::log, "message: ", message);
+                     log::debug( "message: ", message);
 
                      if( message.trid)
                      {
@@ -102,7 +102,7 @@ namespace casual
                            return [ &state]( Message& message, strong::ipc::descriptor::id descriptor)
                            {
                               Trace trace{ "gateway::group::outbound::handle::local::internal::transaction::resource::basic_request"};
-                              log::line( verbose::log, "message: ", message);
+                              log::debug( "message: ", message);
 
                               auto tcp = state.connections.partner( descriptor);
 
@@ -217,7 +217,7 @@ namespace casual
                            [ &state, shared]( common::message::service::call::Reply& message, strong::socket::id descriptor)
                            {
                               Trace trace{ "gateway::group::outbound::handle::local::internal::detail::create::task call::Reply"};
-                              log::line( verbose::log, "message: ", message);
+                              log::debug( "message: ", message);
 
                               state.multiplex.send( shared->ipc, message);
 
@@ -248,7 +248,7 @@ namespace casual
                         return [ &state]( common::message::service::call::callee::Request& message, strong::ipc::descriptor::id descriptor)
                         {
                            Trace trace{ "gateway::group::outbound::handle::local::internal::service::call::request"};
-                           log::line( verbose::log, "message: ", message);
+                           log::debug( "message: ", message);
 
                            // Check if we've has been called with the same correlation id before, 
                            // hence we are in a loop between gateways.
@@ -355,7 +355,7 @@ namespace casual
                         return [ &state]( common::message::conversation::connect::callee::Request& message, strong::ipc::descriptor::id descriptor)
                         {
                            Trace trace{ "gateway::group::outbound::handle::local::internal::conversation::connect::request"};
-                           log::line( verbose::log, "message: ", message);
+                           log::debug( "message: ", message);
 
                            auto connection = state.connections.find_external( descriptor);
                            CASUAL_ASSERT( connection);
@@ -379,7 +379,7 @@ namespace casual
                      return [&state]( common::message::conversation::Disconnect& message, strong::ipc::descriptor::id descriptor)
                      {
                         Trace trace{ "gateway::group::outbound::handle::local::internal::conversation::disconnect"};
-                        log::line( verbose::log, "message: ", message);
+                        log::debug( "message: ", message);
 
                         // this should en the task
                         state.tasks( message);
@@ -391,7 +391,7 @@ namespace casual
                      return [&state]( common::message::conversation::callee::Send& message, strong::ipc::descriptor::id descriptor)
                      {
                         Trace trace{ "gateway::group::outbound::handle::local::internal::conversation::send"};
-                        log::line( verbose::log, "message: ", message);
+                        log::debug( "message: ", message);
 
                         auto tcp = state.connections.partner( descriptor);
                         tcp::send( state, tcp, message);
@@ -409,7 +409,7 @@ namespace casual
                         return [&state]( casual::domain::message::discovery::Request& message, strong::ipc::descriptor::id descriptor)
                         {
                            Trace trace{ "gateway::group::outbound::handle::local::internal::domain::discover::request"};
-                           log::line( verbose::log, "message: ", message);
+                           log::debug( "message: ", message);
 
                            auto default_reply = []( auto& message){ return common::message::reverse::type( message);};
 
@@ -436,7 +436,7 @@ namespace casual
                            return [ &state]( casual::domain::message::discovery::topology::direct::Explore& message, strong::ipc::descriptor::id descriptor)
                            {
                               Trace trace{ "gateway::group::outbound::handle::local::internal::domain::discover::topology::direct::explore"};
-                              log::line( verbose::log, "message: ", message);
+                              log::debug( "message: ", message);
 
                               auto tcp = state.connections.partner( descriptor);
 
@@ -473,7 +473,7 @@ namespace casual
                         [ &state, ipc = message.process.ipc]( reply_type& message, strong::socket::id descriptor)
                         {
                            Trace trace{ "gateway::group::outbound::handle::local::internal::queue::detail::create::task Reply"};
-                           log::line( verbose::log, "message: ", message);
+                           log::debug( "message: ", message);
 
                            state.multiplex.send( ipc, message);
                         },
@@ -498,7 +498,7 @@ namespace casual
                         return [&state]( Message& message, strong::ipc::descriptor::id descriptor)
                         {
                            Trace trace{ "gateway::outbound::local::handle::internal::queue::basic::request"};
-                           log::line( verbose::log, "message: ", message);
+                           log::debug( "message: ", message);
 
                            auto tcp = state.connections.partner( descriptor);
 
@@ -531,10 +531,10 @@ namespace casual
                   return [ &state]( Message& message)
                   {
                      Trace trace{ "gateway::group::outbound::handle::local::external::basic_task"};
-                     common::log::line( verbose::log, "message: ", message);
+                     common::log::debug( "message: ", message);
 
                      state.tasks( message);
-                     common::log::line( verbose::log, "state.tasks: ", state.tasks);
+                     common::log::debug( "state.tasks: ", state.tasks);
                   };
                }
                
@@ -546,7 +546,7 @@ namespace casual
                      return [&state]( const gateway::message::domain::disconnect::Request& message, strong::socket::id descriptor)
                      {
                         Trace trace{ "gateway::group::outbound::handle::local::external::disconnect::request"};
-                        log::line( verbose::log, "message: ", message);
+                        log::debug( "message: ", message);
 
                         handle::connection::disconnect( state, descriptor);
                         tcp::send( state, descriptor, common::message::reverse::type( message));
@@ -568,7 +568,7 @@ namespace casual
                            return [ &state]( common::message::service::call::v1_2::Reply message)
                            {
                               Trace trace{ "gateway::group::outbound::handle::local::external::service::call::v1_2::reply"};
-                              log::line( verbose::log, "message: ", message);
+                              log::debug( "message: ", message);
 
                               state.tasks( message::protocol::transform::from( std::move( message)));
                            };
@@ -603,7 +603,7 @@ namespace casual
                            return [ &state]( casual::queue::ipc::message::group::enqueue::v1_2::Reply& message, strong::socket::id descriptor)
                            {
                               Trace trace{ "gateway::group::outbound::handle::local::external::queue::enqueue::v1_2::reply"};
-                              log::line( verbose::log, "message: ", message);
+                              log::debug( "message: ", message);
 
                               state.tasks( message::protocol::transform::from( std::move( message)));
                            };
@@ -623,7 +623,7 @@ namespace casual
                            return [ &state]( casual::queue::ipc::message::group::dequeue::v1_2::Reply& message, strong::socket::id descriptor)
                            {
                               Trace trace{ "gateway::group::outbound::handle::local::external::queue::dequeue::v1_2::reply"};
-                              log::line( verbose::log, "message: ", message);
+                              log::debug( "message: ", message);
 
                               state.tasks( message::protocol::transform::from( std::move( message)));
                            };
@@ -643,7 +643,7 @@ namespace casual
                         return [ &state]( Message& message, strong::socket::id descriptor)
                         {
                            Trace trace{ "gateway::group::outbound::handle::local::external::transaction::resource::detail::basic_reply"};
-                           log::line( verbose::log, "message: ", message);
+                           log::debug( "message: ", message);
 
                            auto destination = state.reply_destination.extract( message.correlation);
                            state.multiplex.send( destination.ipc, message);
@@ -679,7 +679,7 @@ namespace casual
                      return [ &state]( casual::domain::message::discovery::Reply&& message, strong::socket::id descriptor)
                      {
                         Trace trace{ "gateway::group::outbound::handle::local::external::domain::discovery::reply"};
-                        log::line( verbose::log, "message: ", message);
+                        log::debug( "message: ", message);
 
                         auto handle = state.connections.process_handle( descriptor);
                         CASUAL_ASSERT( handle);
@@ -737,7 +737,7 @@ namespace casual
                         return [ &state]( casual::domain::message::discovery::v1_3::Reply&& message, strong::socket::id descriptor)
                         {
                            Trace trace{ "gateway::group::outbound::handle::local::external::domain::discovery::v1_3::reply"};
-                           log::line( verbose::log, "message: ", message);
+                           log::debug( "message: ", message);
 
                            discovery::reply( state)( message::protocol::transform::from( std::move( message)), descriptor);
                         };
@@ -754,7 +754,7 @@ namespace casual
                         return [ &state]( casual::domain::message::discovery::topology::implicit::Update&& message, strong::socket::id descriptor)
                         {
                            Trace trace{ "gateway::group::outbound::handle::local::external::domain::discover::topology::update"};
-                           log::line( verbose::log, "message: ", message);
+                           log::debug( "message: ", message);
 
                            // no need to send it if we've seen this message before
                            if( algorithm::find( message.domains, common::domain::identity()))
@@ -779,7 +779,7 @@ namespace casual
                      return [ &state]( const common::message::event::transaction::Disassociate& message)
                      {
                         Trace trace{ "gateway::outbound::handle:::event::transaction::disassociate"};
-                        log::line( verbose::log, "message: ", message);
+                        log::debug( "message: ", message);
 
                         state.pending.transactions.remove( message.gtrid.range());
                      };
@@ -793,7 +793,7 @@ namespace casual
                      return [ &state]( const gateway::message::domain::Connected& message)
                      {
                         Trace trace{ "gateway::group::outbound::handle::local::internal::domain::connected"};
-                        common::log::line( verbose::log, "message: ", message);
+                        common::log::debug( "message: ", message);
 
                         auto descriptors = state.connections.connected( state.directive, message);
 
@@ -912,7 +912,7 @@ namespace casual
       void unadvertise( State& state, strong::socket::id descriptor)
       {
          Trace trace{ "gateway::group::outbound::handle::unadvertise"};
-         log::line( verbose::log, "descriptor: ", descriptor);
+         log::debug( "descriptor: ", descriptor);
 
          auto handle = state.connections.process_handle( descriptor);
 
@@ -933,7 +933,7 @@ namespace casual
             casual::queue::ipc::message::Advertise request{ handle};
             request.directive = decltype( request.directive)::reset;
             if( ! state.multiplex.send( ipc::manager::optional::queue(), request))
-               log::line( verbose::log, "queue-manager is not on-line");
+               log::debug( "queue-manager is not on-line");
          }
       }
 
@@ -942,7 +942,7 @@ namespace casual
          message::outbound::connection::Lost lost( State& state, strong::socket::id descriptor)
          {
             Trace trace{ "gateway::group::outbound::handle::connection::lost"};
-            log::line( verbose::log, "descriptor: ", descriptor);
+            log::debug( "descriptor: ", descriptor);
 
             // might not be necessary since we send an ipc-destroyed event below.
             handle::unadvertise( state, descriptor);
@@ -955,7 +955,7 @@ namespace casual
 
             // extract all state associated with the descriptor
             auto extracted = state.failed( descriptor);
-            log::line( verbose::log, "extracted: ", extracted);
+            log::debug( "extracted: ", extracted);
 
             return { std::move( extracted.information.configuration), std::move( extracted.information.domain)};
          }
@@ -963,7 +963,7 @@ namespace casual
          void disconnect( State& state, common::strong::socket::id descriptor)
          {
             Trace trace{ "gateway::group::outbound::handle::connection::disconnect"};
-            log::line( verbose::log, "descriptor: ", descriptor);
+            log::debug( "descriptor: ", descriptor);
 
             // unadvertise all associated services and queues, if any.
             handle::unadvertise( state, descriptor);
@@ -974,7 +974,7 @@ namespace casual
          void remove( State& state, common::strong::socket::id descriptor)
          {
             Trace trace{ "gateway::group::outbound::handle::connection::remove"};
-            log::line( verbose::log, "descriptor: ", descriptor);
+            log::debug( "descriptor: ", descriptor);
 
             // unadvertise all associated services and queues, if any.
             handle::unadvertise( state, descriptor);
@@ -1051,7 +1051,7 @@ namespace casual
          // send metric for good measure
          state.service_metric.force_metric( state, &handle::metric::send);
 
-         log::line( verbose::log, "state: ", state);
+         log::debug( "state: ", state);
       }
 
       void abort( State& state)
@@ -1072,7 +1072,7 @@ namespace casual
          void send( State& state, const common::message::event::service::Calls& metric)
          {
             Trace trace{ "gateway::group::outbound::handle::metric::send"};
-            log::line( verbose::log, "metric: ", metric);
+            log::debug( "metric: ", metric);
 
             state.multiplex.send( ipc::manager::service(), metric);
          }

@@ -56,7 +56,7 @@ namespace casual
             State initialize( Arguments arguments)
             {
                Trace trace{ "gateway::group::outbound::reverse::local::initialize"};
-               log::line( verbose::log, "arguments: ", arguments);
+               log::debug( "arguments: ", arguments);
 
                State state;
 
@@ -82,7 +82,7 @@ namespace casual
                         return [ &state]( gateway::message::outbound::configuration::update::Request&& message)
                         {
                            Trace trace{ "gateway::group::outbound::reverse::local::internal::handle::configuration::update::request"};
-                           log::line( verbose::log, "message: ", message);
+                           log::debug( "message: ", message);
 
                            state.alias = message.model.alias;
                            
@@ -106,7 +106,7 @@ namespace casual
                               algorithm::container::vector::create( enabled), 
                               equal_address);
 
-                           log::line( verbose::log, "change: ", change);
+                           log::debug( "change: ", change);
                            
                            // add
                            {
@@ -164,7 +164,7 @@ namespace casual
                            return [&state]( common::message::event::process::Exit& message)
                            {
                               Trace trace{ "gateway::group::outbound::local::internal::handle::event::process::exit"};
-                              common::log::line( verbose::log, "message: ", message);
+                              common::log::debug( "message: ", message);
 
                               // the process might be from our spawned connector
                               state.connections.pending().exit( message.state);
@@ -181,7 +181,7 @@ namespace casual
                         return [&state]( const common::message::shutdown::Request& message)
                         {
                            Trace trace{ "gateway::group::outbound::reverse::local::internal::handle::shutdown::request"};
-                           log::line( verbose::log, "message: ", message);
+                           log::debug( "message: ", message);
 
                            state.listen.clear( state.directive);
 
@@ -197,7 +197,7 @@ namespace casual
                         return []( message::outbound::connection::Lost message)
                         {
                            Trace trace{ "gateway::group::outbound::reverse::local::internal::handle::connection::lost"};
-                           log::line( verbose::log, "message: ", message);
+                           log::debug( "message: ", message);
 
                            // we just log the 'event'
                            log::line( log::category::information, code::casual::communication_unavailable, " lost connection to domain: ", message.remote);
@@ -232,7 +232,7 @@ namespace casual
             void run( State state)
             {
                Trace trace{ "gateway::group::outbound::reverse::local::run"};
-               log::line( verbose::log, "state: ", state);
+               log::debug( "state: ", state);
 
                auto abort_guard = execute::scope( [&state]()
                {

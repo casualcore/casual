@@ -44,7 +44,7 @@ namespace casual
                void validate( const lookup::Reply& reply, const std::string& service)
                {
                   Trace trace{ "common::service::lookup::local::validate"};
-                  log::line( verbose::log , "reply: ", reply);
+                  log::debug( "reply: ", reply);
 
                   using Enum = decltype( reply.state);
                   switch( reply.state)

@@ -43,14 +43,14 @@ namespace casual
             {
                Trace trace{ "queue::forward::Caller::operator()"};
 
-               log::line( verbose::log, "message: ", message);
+               log::debug( "message: ", message);
 
                // Prepare the xatmi-buffer
                common::buffer::Payload payload{
                   std::move( message.payload.type),
                   std::move( message.payload.data)};
 
-               log::line( log, "payload: ", payload);
+               log::debug( "payload: ", payload);
 
                try
                {
@@ -70,7 +70,7 @@ namespace casual
                }
                catch( const common::service::call::Fail& exception)
                {
-                  log::line( queue::log, "service call failed - rollback - ", exception);
+                  log::debug( "service call failed - rollback - ", exception);
                }
                catch( ...)
                {

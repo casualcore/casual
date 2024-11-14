@@ -19,8 +19,8 @@ namespace casual
             std::vector< ipc::message::forward::group::state::Reply> forwards)
          {
             Trace trace{ "common::queue::manager::transform::model::state"};
-            log::line( verbose::log, "groups: ", groups);
-            log::line( verbose::log, "forwards: ", forwards);
+            log::debug( "groups: ", groups);
+            log::debug( "forwards: ", forwards);
 
             admin::model::State result;
 

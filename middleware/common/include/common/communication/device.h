@@ -87,7 +87,7 @@ namespace casual
             if( ! m_cache.empty() && log::category::warning)
                log::line( log::category::warning, "pending messages in cache - ", *this);
             else if( verbose::log)
-               log::line( verbose::log, "device: ", *this);
+               log::debug( "device: ", *this);
             */
          }
 

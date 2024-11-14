@@ -230,7 +230,7 @@ namespace casual
       admin::model::State state( const manager::State& state)
       {
          Trace trace{ "transaction::manager::admin::transform::state"};
-         common::log::line( verbose::log, "state: ", state);
+         common::log::debug( "state: ", state);
 
          admin::model::State result;
 

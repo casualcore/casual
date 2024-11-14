@@ -23,7 +23,6 @@ install_bin = []
 lib_cli = make.LinkLibrary( 'bin/casual-cli',
     [
         make.Compile( 'source/pipe.cpp'),
-        make.Compile( 'source/common.cpp'),
         make.Compile( 'source/message.cpp'),
     ],
     ['casual-common',

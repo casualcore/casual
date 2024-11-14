@@ -28,6 +28,12 @@ namespace casual
          log::write( out, std::forward< Args>( args)..., '\n');
       }
 
+      template< typename... Args>
+      void debug( Args&&... args)
+      {
+         log::line( category::debug, std::forward< Args>( args)...);
+      }
+
       template< detail::code_like Code, typename... Args>
       void code( std::ostream& out, Code code, Args&&... args)
       {

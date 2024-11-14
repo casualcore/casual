@@ -112,7 +112,7 @@ namespace casual
                      }),
                      common::event::condition::error( [&done]( auto& error) 
                      {
-                        common::log::line( event::verbose::log, "event listen - condition error: ", error);
+                        common::log::debug( "event listen - condition error: ", error);
                         
                         if( error.code() == common::code::signal::terminate)
                            done = true;
@@ -137,7 +137,7 @@ namespace casual
                            if( ! filter( metric))
                               return;
                            
-                           common::log::line( event::verbose::log, "metric: ", metric);
+                           common::log::debug( "metric: ", metric);
 
                            auto service_category = []( auto type){ return type == decltype( type)::sequential ? 'S' : 'C';};
 

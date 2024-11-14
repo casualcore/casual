@@ -75,7 +75,7 @@ namespace casual
                   Trace trace{ "gateway::group::outbound::local::external::connect"};
 
                   group::tcp::connect::attempt< group::tcp::logical::connect::Bound::out>( state);
-                  log::line( verbose::log, "state: ", state);
+                  log::debug( "state: ", state);
                }
 
                void reconnect( State& state, configuration::model::gateway::outbound::Connection configuration)
@@ -104,9 +104,9 @@ namespace casual
                         return [&state]( gateway::message::outbound::configuration::update::Request& message)
                         {
                            Trace trace{ "gateway::group::outbound::local::internal::handle::configuration::update::request"};
-                           log::line( verbose::log, "message: ", message);
+                           log::debug( "message: ", message);
 
-                           log::line( verbose::log, "state.connections: ", state.connections);
+                           log::debug( "state.connections: ", state.connections);
                            
                            state.alias = message.model.alias;
 
@@ -130,7 +130,7 @@ namespace casual
                               algorithm::container::vector::create( enabled), 
                               equal_address);
 
-                           log::line( verbose::log, "change: ", change);
+                           log::debug( "change: ", change);
                            
                            // add
                            {
@@ -184,7 +184,7 @@ namespace casual
                            return [&state]( common::message::event::process::Exit& message)
                            {
                               Trace trace{ "gateway::group::outbound::local::internal::handle::event::process::exit"};
-                              common::log::line( verbose::log, "message: ", message);
+                              common::log::debug( "message: ", message);
 
                               // the process might be from our spawned connector
                               if( auto configuration = state.connections.pending().exit( message.state))
@@ -202,7 +202,7 @@ namespace casual
                         return [&state]( const common::message::shutdown::Request& message)
                         {
                            Trace trace{ "gateway::group::outbound::local::internal::handle::shutdown::request"};
-                           log::line( verbose::log, "message: ", message);
+                           log::debug( "message: ", message);
 
                            // remove pending connections
                            state.connect.prospects.clear();
@@ -229,7 +229,7 @@ namespace casual
                         return [&state]( message::outbound::connection::Lost message)
                         {
                            Trace trace{ "gateway::group::outbound::local::internal::handle::connection::lost"};
-                           log::line( verbose::log, "message: ", message);
+                           log::debug( "message: ", message);
 
                            if( state.runlevel > outbound::state::Runlevel::running)
                               return;
@@ -283,7 +283,7 @@ namespace casual
             void run( State state)
             {
                Trace trace{ "gateway::group::outbound::local::run"};
-               log::line( verbose::log, "state: ", state);
+               log::debug( "state: ", state);
 
                auto abort_guard = execute::scope( [&state]()
                {

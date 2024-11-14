@@ -81,7 +81,7 @@ namespace casual
                {
                   Trace trace{ "server::handle::basic_call::operator()"};
 
-                  log::line( verbose::log, "message: ", message);
+                  log::debug( "message: ", message);
 
                   try
                   {

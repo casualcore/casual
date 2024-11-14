@@ -26,7 +26,7 @@ namespace casual
             void Conversation::operator () ( message::conversation::connect::callee::Request& message)
             {
                Trace trace{ "server::handle::Conversation::operator()"};
-               log::line( verbose::log, "message: ", message);
+               log::debug( "message: ", message);
 
                policy::call::Default policy;
 

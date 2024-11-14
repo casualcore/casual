@@ -84,7 +84,7 @@ namespace casual
                
 
                common::log::line( common::log::category::information, "casual-queue-manager is on-line");
-               common::log::line( verbose::log, "state: ", state);
+               common::log::debug( "state: ", state);
                
                communication::select::dispatch::pump(
                   local::condition( state),

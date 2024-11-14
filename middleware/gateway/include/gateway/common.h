@@ -8,8 +8,7 @@
 #pragma once
 
 
-#include "common/log/line.h"
-#include "common/log/trace.h"
+#include "common/log.h"
 
 namespace casual
 {
@@ -17,16 +16,7 @@ namespace casual
    {
       extern common::log::Stream log;
 
-      namespace verbose
-      {
-         extern common::log::Stream log;
-      } // verbose
-
-      struct Trace : common::log::Trace
-      {
-         template< typename T>
-         Trace( T&& value) : common::log::Trace( std::forward< T>( value), log) {}
-      };
+      using Trace = common::Trace;
 
    } // gateway
 } // casual

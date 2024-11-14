@@ -67,7 +67,7 @@ namespace casual
                   {
                      auto source = state.range();
 
-                     common::log::line( verbose::log, "size: ", size, " - source-size: ", source.size());
+                     common::log::debug( "size: ", size, " - source-size: ", source.size());
 
                      auto output = binary::span::make( buffer, size);
 
@@ -110,7 +110,7 @@ namespace casual
                      {
                         auto content = protocol::convert::from::buffer( result.state().payload.type);
 
-                        common::log::line( verbose::log, "content: ", content);
+                        common::log::debug( "content: ", content);
 
                         if( ! content.empty())
                            result.state().header.request.add( "content-type: " + content);
@@ -134,7 +134,7 @@ namespace casual
 
                      algorithm::container::append( source, state.payload.data);
 
-                     common::log::line( verbose::log, "wrote ", size, " bytes");
+                     common::log::debug( "wrote ", size, " bytes");
 
                      return size;
                   }
@@ -191,7 +191,7 @@ namespace casual
          common::buffer::Payload payload( state::pending::Request&& request)
          {
             Trace trace{ "http::outbound::request::detail::receive::payload"};
-            common::log::line( verbose::log, "request from wire: ", request);
+            common::log::debug( "request from wire: ", request);
 
             // set buffer type
             {
@@ -217,7 +217,7 @@ namespace casual
 
             auto payload = std::move( request.state().payload);
 
-            common::log::line( verbose::log, "payload: ", payload);
+            common::log::debug( "payload: ", payload);
 
             return payload;
          }
@@ -228,13 +228,13 @@ namespace casual
       {
          Trace trace{ "http::outbound::request::prepare"};
 
-         common::log::line( http::verbose::log, "node: ", node);
-         common::log::line( http::verbose::log, "configuration: ", local::configuration());
+         common::log::debug( "node: ", node);
+         common::log::debug( "configuration: ", local::configuration());
 
          auto now = platform::time::clock::type::now();
 
          auto request = local::send::prepare::request( std::move( message.buffer));
-         common::log::line( http::verbose::log, "request: ", request);
+         common::log::debug( "request: ", request);
 
          request.state().header.request.add( *node.headers);
          request.state().header.request.add( common::service::header::Field{ http::header::name::execution::id, common::uuid::string( message.execution.value())});
@@ -248,7 +248,7 @@ namespace casual
          request.state().start = now;
          request.state().url = node.url;
 
-         common::log::line( http::verbose::log, "request.state(): ", request.state());
+         common::log::debug( "request.state(): ", request.state());
 
          auto& easy = request.easy();
 
@@ -302,7 +302,7 @@ namespace casual
             curl::easy::set::option( easy, CURLOPT_VERBOSE, 1);
 
 
-         common::log::line( http::verbose::log, "request: ", request);
+         common::log::debug( "request: ", request);
 
          return request;
       }

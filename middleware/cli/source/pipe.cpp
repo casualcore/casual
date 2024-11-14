@@ -5,7 +5,6 @@
 //!
 
 #include "casual/cli/pipe.h"
-#include "casual/cli/common.h"
 
 #include "common/communication/ipc.h"
 
@@ -82,7 +81,7 @@ namespace casual
          {
             if( m_done || cli::pipe::terminal::in() || std::cin.peek() == std::istream::traits_type::eof())
             {
-               common::log::line( verbose::log, "cli::pipe::condition::done - is done");
+               common::log::debug( "cli::pipe::condition::done - is done");
                return true;
             }
             return false;

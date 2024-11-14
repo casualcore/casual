@@ -379,7 +379,7 @@ namespace casual
          void parse( std::span< Option> options, range_type arguments)
          {
             Trace trace{ "argument::parse"};
-            log::line( verbose::log, "arguments: ", arguments);
+            log::debug( "arguments: ", arguments);
 
             auto assigned = local::assign( options, arguments);
 

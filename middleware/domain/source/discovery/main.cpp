@@ -75,7 +75,7 @@ namespace casual
             void start( State state)
             {
                Trace trace{ "domain::discovery::local::start"};
-               log::line( verbose::log, "state: ", state);
+               log::debug( "state: ", state);
 
                // register the alarm callback.
                common::signal::callback::registration< code::signal::alarm>( signal::callback::timeout());
@@ -88,7 +88,7 @@ namespace casual
                   state.multiplex
                );
 
-               log::line( verbose::log, "state: ", state);
+               log::debug( "state: ", state);
             }
 
             void main( int argc, const char** argv)

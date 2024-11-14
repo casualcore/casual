@@ -30,7 +30,7 @@ namespace casual
                   {
                      try
                      {
-                        log::line( log::debug, "unittest::eventually::send::local::send");
+                        log::debug( "unittest::eventually::send::local::send");
 
                         signal::thread::scope::Block block{};
                         communication::device::blocking::send( destination, complete);

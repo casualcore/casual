@@ -183,7 +183,7 @@ namespace casual
                common::unique_function< std::optional< Reply>()> dispatch( communication::ipc::inbound::Device ipc, Directive directive, Request request)
                {
                   Trace trace{ "http::inbound::call::local::create::dispatch"};
-                  log::line( verbose::log, "ipc: ", ipc, " directive: ", directive, " request: ", request);
+                  log::debug( "ipc: ", ipc, " directive: ", directive, " request: ", request);
 
                   switch( directive)
                   {

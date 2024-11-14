@@ -90,7 +90,7 @@ namespace casual
 
          constexpr std::string_view token{ "c1e2b63a842049c496b0f476e5401621"};
          
-         log::line( verbose::log, token);
+         log::debug( token);
 
          // verify that we got the log to the new location.
          const auto content = unittest::file::fetch::content( path);
@@ -121,7 +121,7 @@ namespace casual
       {
          unittest::Trace trace;
 
-         auto scoped_inclusive = local::log::scoped::inclusive( "casual.common.verbose");
+         auto scoped_inclusive = local::log::scoped::inclusive( "warning");
 
          const auto path = unittest::file::temporary::name( "casual.log");
          auto scoped_path = local::log::scoped::path( path);
@@ -129,10 +129,10 @@ namespace casual
          log::line( log::category::information, "some logged line");
          EXPECT_TRUE( unittest::file::empty( path));
 
-         log::line( log::debug, "some logged line");
+         log::debug( "some logged line");
          EXPECT_TRUE( unittest::file::empty( path));
 
-         log::line( verbose::log, "some logged line");
+         log::line( log::category::warning, "some logged line");
          EXPECT_TRUE( ! unittest::file::empty( path));
       }
       

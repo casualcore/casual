@@ -117,7 +117,7 @@ namespace casual
 
          void sleep( platform::time::unit time)
          {
-            log::line( verbose::log, "process::sleep time: ", time);
+            log::debug( "process::sleep time: ", time);
 
             timespec posix_time;
             posix_time.tv_sec = std::chrono::duration_cast< std::chrono::seconds>( time).count();
@@ -276,8 +276,8 @@ namespace casual
                      if( ! common::file::permission::execution( path))
                         code::raise::error( code::casual::invalid_path, "spawn failed - path: ", path);
 
-                     log::line( log::debug, "process::spawn ", path, ' ', arguments);
-                     log::line( verbose::log, "environment: ", environment);
+                     log::debug( "process::spawn ", path, ' ', arguments);
+                     log::debug( "environment: ", environment);
 
                      // add current environment, provided `environment` will have precedence
                      environment = local::add::environment::current( std::move( environment));
@@ -307,7 +307,7 @@ namespace casual
                      // we sleep without handling signals
                      std::this_thread::sleep_for( 200us);
 
-                     log::line( log::debug, "process::spawned pid: ", pid );
+                     log::debug( "process::spawned pid: ", pid );
 
                      return pid;
                   }
@@ -528,7 +528,7 @@ namespace casual
 
          std::vector< strong::process::id> terminate( const std::vector< strong::process::id>& pids)
          {
-            log::line( verbose::log, "process::terminate pids: ", pids);
+            log::debug( "process::terminate pids: ", pids);
 
             return algorithm::transform_if( pids, 
                []( auto pid){ return pid;}, 
@@ -549,7 +549,7 @@ namespace casual
 
          std::vector< strong::process::id> terminate( const std::vector< Handle>& processes)
          {
-            log::line( verbose::log, "process::terminate processes: ", processes);
+            log::debug( "process::terminate processes: ", processes);
 
             auto result = algorithm::transform( processes, local::terminate);
             return algorithm::container::trim( result, algorithm::remove_if( result, []( auto pid){ return ! pid.valid();}));
@@ -602,7 +602,7 @@ namespace casual
                      terminations.push_back( exit);
                   else
                   {
-                     log::line( verbose::log, "terminations: ", terminations);
+                     log::debug( "terminations: ", terminations);
                      return terminations;
                   }
                }
@@ -612,7 +612,7 @@ namespace casual
 
             std::vector< Exit> wait( const std::vector< strong::process::id>& pids)
             {
-               log::line( verbose::log, "process::lifetime::wait pids: ", pids);
+               log::debug( "process::lifetime::wait pids: ", pids);
 
                std::vector< Exit> result;
 
@@ -625,7 +625,7 @@ namespace casual
             {
                Trace trace{ "common::process::lifetime::wait"};
 
-               log::line( verbose::log, "process::lifetime::wait pids: ", pids, " - timeout: ", timeout);
+               log::debug( "process::lifetime::wait pids: ", pids, " - timeout: ", timeout);
 
                if( pids.empty())
                   return {};
@@ -685,7 +685,7 @@ namespace casual
             exception::guard( [&]()
             {
                Trace trace{ "common::Process::~Process"};
-               log::line( verbose::log, "this: ", *this);
+               log::debug( "this: ", *this);
 
                 process::terminate( *this);
             });

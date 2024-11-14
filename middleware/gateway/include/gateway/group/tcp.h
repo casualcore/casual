@@ -211,7 +211,7 @@ namespace casual
                Trace trace{ "gateway::group::tcp::pending::send::dispatch"};
 
                auto descriptor = common::strong::socket::id{ fd};
-               common::log::line( verbose::log, "descriptor: ", descriptor);
+               common::log::debug( "descriptor: ", descriptor);
 
                if( auto connection = state.connections.find_external( descriptor))
                {

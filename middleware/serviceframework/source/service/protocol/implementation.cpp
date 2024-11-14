@@ -190,7 +190,7 @@ namespace casual
                   auto parameter_format = common::environment::variable::get( 
                      common::environment::variable::name::log::parameter::format).value_or( "line");
 
-                  common::log::line( common::verbose::log, "parameter format: ", parameter_format);
+                  common::log::debug( "parameter format: ", parameter_format);
 
                   return common::serialize::create::writer::from( parameter_format);
                }
@@ -202,7 +202,7 @@ namespace casual
             : m_protocol{ std::move( protocol)}, m_writer{ local::writer()}
          {
             Trace trace{ "protocol::parameter::Log::Log"};
-            common::log::line( common::verbose::log, "protocol: ", m_protocol);
+            common::log::debug( "protocol: ", m_protocol);
 
             m_protocol.input().writers.push_back( &m_writer);
             m_protocol.output().writers.push_back( &m_writer);
@@ -235,7 +235,7 @@ namespace casual
             :  m_writer( m_model), m_protocol( std::move( protocol))
       {
          Trace trace{ "protocol::Describe::Describe"};
-         common::log::line( common::verbose::log, "protocol: ", m_protocol);
+         common::log::debug( "protocol: ", m_protocol);
 
          m_model.service = common::execution::context::get().service;
 

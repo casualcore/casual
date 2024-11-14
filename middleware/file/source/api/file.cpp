@@ -19,7 +19,7 @@ namespace casual
 {
    namespace file
    {
-      namespace v1
+      inline namespace v1
       {
          namespace local
          {
@@ -29,7 +29,7 @@ namespace casual
             } //
          } // local
 
-         namespace blocking
+         inline namespace blocking
          {
             auto reserve( std::filesystem::path path) -> std::filesystem::path
             {

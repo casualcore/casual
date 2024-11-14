@@ -78,7 +78,7 @@ namespace casual
                   void reply( State& state, M&& message, const common::process::Handle& target)
                   {
                      Trace trace{ "transaction::manager::handle::local::detail::send::persist::reply"};
-                     common::log::line( verbose::log, "message: ", message);
+                     common::log::debug( "message: ", message);
 
                      state.persistent.replies.add( target, std::forward< M>( message));
                      detail::persist::batch::send( state);
@@ -208,7 +208,7 @@ namespace casual
                      
                      if( auto found = common::algorithm::find( state.transactions, global))
                      {
-                        common::log::line( verbose::log, "remove: ", *found);
+                        common::log::debug( "remove: ", *found);
                         common::algorithm::container::erase( state.transactions, std::begin( found));
 
                         // other "managers" might have state associated with the transaction, send an event
@@ -239,7 +239,7 @@ namespace casual
                      common::strong::correlation::id request( State& state, M&& request) requires std::is_rvalue_reference_v< decltype( request)>
                      {
                         Trace trace{ "transaction::manager::handle::local::detail::send::resource::request"};
-                        common::log::line( verbose::log, "request: ", request);
+                        common::log::debug( "request: ", request);
 
                         casual::assertion( request.resource, "invalid resource id: ", request.resource);
                         
@@ -367,14 +367,14 @@ namespace casual
                      state.coordinate.commit( std::move( pending), [ &state, origin, destination, code]( auto&& replies, auto&& outcome)
                      {
                         Trace trace{ "transaction::manager::handle::local::detail::coordinate::commit"};
-                        common::log::line( verbose::log, "replies: ", replies, ", outcome: ", outcome);
+                        common::log::debug( "replies: ", replies, ", outcome: ", outcome);
 
                         auto reply = create::reply< Reply>( origin, destination, detail::accumulate::code( replies, outcome, code));
 
                         if constexpr( concepts::any_of< Reply, common::message::transaction::commit::Reply>)
                            reply.stage = decltype( reply.stage)::commit;
 
-                        common::log::line( verbose::log, "reply: ", reply);   
+                        common::log::debug( "reply: ", reply);   
                         state.multiplex.send( destination.process.ipc, reply);
 
                         remove::transaction( state, common::transaction::id::range::global( origin));
@@ -389,7 +389,7 @@ namespace casual
                      // There should almost always be a a caller to the rollback/commit, but we might have started a rollback our selves.
                      if( destination.process != common::process::handle())
                      {
-                        common::log::line( verbose::log, "reply: ", reply);
+                        common::log::debug( "reply: ", reply);
                         state.multiplex.send( destination.process.ipc, reply);
                      }
                      else
@@ -403,7 +403,7 @@ namespace casual
                            // the user that we've received after we started the rollback (due to stale transaction).
                            if( auto found = common::algorithm::find( state.pending.rollbacks, common::transaction::id::range::global( origin)))
                            {
-                              common::log::line( verbose::log, "pending rollback request found: ", *found);
+                              common::log::debug( "pending rollback request found: ", *found);
 
                               auto user_request = common::algorithm::container::extract( state.pending.rollbacks, std::begin( found));
                               auto user_reply = common::message::reverse::type( user_request);
@@ -427,14 +427,14 @@ namespace casual
                      state.coordinate.rollback( std::move( pending), [ &state, origin, destination, code]( auto&& replies, auto&& outcome)
                      {
                         Trace trace{ "transaction::manager::handle::local::detail::coordinate::rollback"};
-                        common::log::line( verbose::log, "replies: ", replies, ", outcome: ", outcome, ", code: ", code);
+                        common::log::debug( "replies: ", replies, ", outcome: ", outcome, ", code: ", code);
                         
                         auto reply = create::reply< Reply>( origin, destination, detail::accumulate::code( replies, outcome, code));
 
                         if constexpr( concepts::any_of< Reply, common::message::transaction::commit::Reply>)
                            reply.stage = decltype( reply.stage)::rollback;
 
-                        common::log::line( verbose::log, "reply: ", reply);
+                        common::log::debug( "reply: ", reply);
 
                         // remove transaction regardless
                         remove::transaction( state, common::transaction::id::range::global( origin));
@@ -454,7 +454,7 @@ namespace casual
                      state.coordinate.prepare( std::move( pending), [ &state, origin, destination]( auto&& replies, auto&& outcome)
                      {
                         Trace trace{ "transaction::manager::handle::local::detail::coordinate::prepare"};
-                        common::log::line( verbose::log, "replies: ", replies, ", outcome: ", outcome);
+                        common::log::debug( "replies: ", replies, ", outcome: ", outcome);
 
                         auto transaction = common::algorithm::find( state.transactions, origin);
 
@@ -477,15 +477,15 @@ namespace casual
                         transaction->stage = state::transaction::Stage::post_prepare;
 
                         const auto code = detail::accumulate::code( replies, outcome);
-                        common::log::line( verbose::log, "code: ", code);
+                        common::log::debug( "code: ", code);
 
                         // filter away all read-only replies
                         auto [ active, read_only] = common::algorithm::partition( replies, []( auto& reply){ return reply.state != common::code::xa::read_only;});
-                        common::log::line( verbose::log, "read_only: ", read_only);
+                        common::log::debug( "read_only: ", read_only);
 
                         // purge/remove all resources that is read_only for each branch, and if a branch has 0 resources, remove it.
                         transaction->purge( read_only);
-                        common::log::line( verbose::log, "transaction: ", *transaction);
+                        common::log::debug( "transaction: ", *transaction);
 
                         if( code == common::code::xa::read_only)
                         {
@@ -650,7 +650,7 @@ namespace casual
                   return [ &state]( const common::message::transaction::rollback::Request& message)
                   {
                      Trace trace{ "transaction::manager::handle::local::rollback::request"};
-                     common::log::line( verbose::log, "message: ", message);
+                     common::log::debug( "message: ", message);
 
                      auto& transaction = detail::transaction::find_or_add( state, message.trid);
 
@@ -678,7 +678,7 @@ namespace casual
                      // rollbacks could come with a list of resources, if so, we need to involve them
                      transaction.involve( message.trid, message.involved);
 
-                     common::log::line( verbose::log, "transaction: ", transaction);
+                     common::log::debug( "transaction: ", transaction);
 
                      // start the rollback phase, directly
                      transaction.stage = state::transaction::Stage::rollback;
@@ -775,7 +775,7 @@ namespace casual
                      return [ &state]( common::message::transaction::resource::involved::Request& message)
                      {
                         Trace trace{ "transaction::manager::handle::local::resource::involved::request"};
-                        common::log::line( verbose::log, "message: ",  message);
+                        common::log::debug( "message: ",  message);
 
                         // sanity check. TODO: is this needed?
                         detail::validate( state, message);
@@ -810,7 +810,7 @@ namespace casual
                         
                         if( transaction.stage == state::transaction::Stage::rollback)
                         {
-                           common::log::line( verbose::log, "stale involved resources for transaction in rollback phase - resources: ", message.involved, " - trid: ", message.trid, " - action: add to stale");
+                           common::log::debug( "stale involved resources for transaction in rollback phase - resources: ", message.involved, " - trid: ", message.trid, " - action: add to stale");
                            local::detail::involve::stale( state, message.trid, message.involved);
                         }
                         else
@@ -830,7 +830,7 @@ namespace casual
                      return [&state]( const common::message::transaction::resource::prepare::Reply& message)
                      {
                         Trace trace{ "transaction::manager::handle::local::resource::prepare::reply"};
-                        common::log::line( verbose::log, "message: ", message);
+                        common::log::debug( "message: ", message);
 
                         detail::instance::replied( state, message);
                         state.coordinate.prepare( message);
@@ -846,7 +846,7 @@ namespace casual
                      return [&state]( const common::message::transaction::resource::commit::Reply& message)
                      {
                         Trace trace{ "transaction::manager::handle::local::resource::commit::reply"};
-                        common::log::line( verbose::log, "message: ", message);
+                        common::log::debug( "message: ", message);
 
                         detail::instance::replied( state, message);
                         state.coordinate.commit( message);
@@ -862,7 +862,7 @@ namespace casual
                      return [&state]( const common::message::transaction::resource::rollback::Reply& message)
                      {
                         Trace trace{ "transaction::manager::handle::local::resource::rollback::reply"};
-                        common::log::line( verbose::log, "message: ", message);
+                        common::log::debug( "message: ", message);
 
                         detail::instance::replied( state, message);
                         state.coordinate.rollback( message);
@@ -930,12 +930,12 @@ namespace casual
 
                         if( transaction.stage == state::transaction::Stage::involved)
                         {
-                           common::log::line( verbose::log, "transaction: ", transaction);
+                           common::log::debug( "transaction: ", transaction);
                            transaction.involve( message.trid, id);
                         }
                         else if( transaction.stage == state::transaction::Stage::rollback)
                         {
-                           common::log::line( verbose::log, "transaction in rollback phase - possible stale resource: ", id, " - transaction: ", transaction);
+                           common::log::debug( "transaction in rollback phase - possible stale resource: ", id, " - transaction: ", transaction);
                            local::detail::involve::stale( state, message.trid, id);
                         }
                         else
@@ -1069,7 +1069,7 @@ namespace casual
                         return [&state]( const common::message::transaction::resource::rollback::Request& message)
                         {
                            Trace trace{ "transaction::manager::handle::local::resource::external::rollback::request"};
-                           common::log::line( verbose::log, "message: ", message);
+                           common::log::debug( "message: ", message);
 
                            auto transaction = common::algorithm::find( state.transactions, message.trid);
 
@@ -1080,11 +1080,11 @@ namespace casual
                               return;
                            }
 
-                           common::log::line( verbose::log, "transaction: ", *transaction);
+                           common::log::debug( "transaction: ", *transaction);
 
                            if( ! common::algorithm::compare::any( transaction->stage, state::transaction::Stage::involved, state::transaction::Stage::post_prepare))
                            {
-                              common::log::line( verbose::log, "transaction is not in involved or post_prepare phase: ", *transaction, " - action: reply with read-only");
+                              common::log::debug( "transaction is not in involved or post_prepare phase: ", *transaction, " - action: reply with read-only");
                               detail::send::read::only::reply( state, message);
                               return;
                            }
@@ -1188,7 +1188,7 @@ namespace casual
                   return [ &state]( const common::message::event::process::Exit& message)
                   {
                      Trace trace{ "transaction::manager::handle::local::process::exit"};
-                     common::log::line( verbose::log, "message: ", message);
+                     common::log::debug( "message: ", message);
 
                      // Check if it's a resource proxy instance
                      if( state.remove_instance( message.state.pid))
@@ -1205,7 +1205,7 @@ namespace casual
                         if( resource.process.pid != pid)
                            return false;
 
-                        common::log::line( verbose::log, "found external process exit: ", resource);
+                        common::log::debug( "found external process exit: ", resource);
                         
                         state.coordinate.failed( resource.id);
                         state.multiplex.failed( resource.process.ipc);
@@ -1221,7 +1221,7 @@ namespace casual
                         return result;
                      });
 
-                     common::log::line( verbose::log, "trids: ", trids);
+                     common::log::debug( "trids: ", trids);
 
                      for( auto& trid : trids)
                      {
@@ -1245,13 +1245,13 @@ namespace casual
                   return [ &state]( const common::message::event::ipc::Destroyed& message)
                   {
                      Trace trace{ "transaction::manager::handle::local::event::ipc::destroyed"};
-                     common::log::line( verbose::log, "message: ", message);
+                     common::log::debug( "message: ", message);
                      
                      // this can't come from our own resource proxies, only external
 
                      if( auto found = common::algorithm::find( state.externals, message.process.ipc))
                      {
-                        common::log::line( verbose::log, "failed: ", *found);
+                        common::log::debug( "failed: ", *found);
 
                         // fail associated transaction resource state, if any
                         for( auto& transaction : state.transactions)
@@ -1278,10 +1278,10 @@ namespace casual
                      return [&state]( const common::message::transaction::configuration::alias::Request& message)
                      {
                         Trace trace{ "transaction::manager::handle::local::configuration::alias::request"};
-                        common::log::line( verbose::log, "message: ", message);
+                        common::log::debug( "message: ", message);
 
                         auto reply = state.configuration( message);
-                        common::log::line( verbose::log, "reply: ", reply);
+                        common::log::debug( "reply: ", reply);
 
                         state.multiplex.send( message.process.ipc, reply);
                      };
@@ -1295,7 +1295,7 @@ namespace casual
                      return [ &state]( casual::configuration::message::update::Request& message)
                      {
                         Trace trace{ "transaction::manager::handle::local::configuration::update::request"};
-                        common::log::line( verbose::log, "message: ", message);
+                        common::log::debug( "message: ", message);
 
                         if( state.runlevel == state::Runlevel::running)
                            state.runlevel.explict_set( state::Runlevel::configuring);
@@ -1327,7 +1327,7 @@ namespace casual
                   return [ &state]( const casual::configuration::message::Request& message)
                   {
                      Trace trace{ "transaction::manager::handle::local::configuration::request"};
-                     common::log::line( verbose::log, "message: ", message);
+                     common::log::debug( "message: ", message);
 
                      auto reply = common::message::reverse::type( message);
                      reply.model.transaction = state.configuration();
@@ -1344,7 +1344,7 @@ namespace casual
                   return [ &state]( const common::message::transaction::potential::Stale& message)
                   {
                      Trace trace{ "transaction::manager::handle::local::potential::stale"};
-                     common::log::line( verbose::log, "message: ", message);
+                     common::log::debug( "message: ", message);
 
                      if( auto transaction = common::algorithm::find( state.transactions, message.gtrid))
                      {
@@ -1352,7 +1352,7 @@ namespace casual
 
                         if( transaction->stage == state::transaction::Stage::involved)
                         {
-                           common::log::line( verbose::log, "transaction: ", *transaction, " is involved - action: rollback");
+                           common::log::debug( "transaction: ", *transaction, " is involved - action: rollback");
 
                            // we use the regular rollback handler
                            common::message::transaction::rollback::Request request{ common::process::handle()};
@@ -1361,7 +1361,7 @@ namespace casual
                         }
                         else if( transaction->stage == state::transaction::Stage::rollback)
                         {
-                           common::log::line( verbose::log, "transaction: ", *transaction, " is already in rollback - action: let rollback handler handle it");
+                           common::log::debug( "transaction: ", *transaction, " is already in rollback - action: let rollback handler handle it");
                         }
                         else
                         {
@@ -1381,7 +1381,7 @@ namespace casual
                   return [ &state]( common::message::transaction::active::Request& message)
                   {
                      Trace trace{ "transaction::manager::handle::local::active::request"};
-                     common::log::line( verbose::log, "message: ", message);
+                     common::log::debug( "message: ", message);
 
                      auto reply = common::message::reverse::type( message);
                      reply.gtrids = std::move( message.gtrids);
@@ -1392,9 +1392,9 @@ namespace casual
                         return ! common::algorithm::contains( state.transactions, gtrid);
                      });
 
-                     common::log::line( verbose::log, "reply: ", reply);
+                     common::log::debug( "reply: ", reply);
                      if( ! std::empty( reply.gtrids))
-                        common::log::line( verbose::log, "state.transactions: ", state.transactions);
+                        common::log::debug( "state.transactions: ", state.transactions);
 
 
                      state.multiplex.send( message.process.ipc, reply);
@@ -1419,7 +1419,7 @@ namespace casual
                   return [ &state]( common::message::shutdown::Request& message)
                   {
                      Trace trace{ "transaction::manager::handle::local::shutdown::request"};
-                     common::log::line( verbose::log, "message: ", message);
+                     common::log::debug( "message: ", message);
 
                      shutdown::apply( state);
                   };
@@ -1435,7 +1435,7 @@ namespace casual
          void exit( const common::process::lifetime::Exit& exit)
          {
             Trace trace{ "transaction::manager::handle::process::exit"};
-            common::log::line( verbose::log, "exit: ", exit);
+            common::log::debug( "exit: ", exit);
 
             // push it to handle it later together with other process exit events
             ipc::device().push( common::message::event::process::Exit{ exit});

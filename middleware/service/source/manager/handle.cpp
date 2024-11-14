@@ -62,7 +62,7 @@ namespace casual
                template< typename D, typename M>
                auto send( State& state, D&& device, M&& message)
                {
-                  log::line( verbose::log, "send message: ", message);
+                  log::debug( "send message: ", message);
                   return state.multiplex.send( device, message);
                }
             } // optional
@@ -72,7 +72,7 @@ namespace casual
                auto reply( State& state, const state::instance::Reservation& reservation, common::code::xatmi code)
                {
                   Trace trace{ "service::manager::handle::local::error::reply"};
-                  log::line( verbose::log, "caller: ", reservation.caller, ", code: ", code, ", service: ", reservation.caller.service);
+                  log::debug( "caller: ", reservation.caller, ", code: ", code, ", service: ", reservation.caller.service);
 
                   common::message::service::call::Reply message;
                   message.correlation = reservation.caller.correlation;
@@ -100,7 +100,7 @@ namespace casual
                auto timeout( State& state, state::service::pending::Lookup lookup)
                {
                   Trace trace{ "service::manager::handle::local::lookup::timeout"};
-                  log::line( verbose::log, "lookup: ", lookup);
+                  log::debug( "lookup: ", lookup);
 
                   auto reply = common::message::reverse::type( lookup.request);
                   reply.state = decltype( reply.state)::timeout;
@@ -135,7 +135,7 @@ namespace casual
          const auto now = platform::time::clock::type::now();
 
          auto expired = state.pending.deadline.expired( now);
-         log::line( verbose::log, "expired: ", expired);
+         log::debug( "expired: ", expired);
 
          auto handle_timeout = [&state]( auto& entry)
          {
@@ -254,7 +254,7 @@ namespace casual
                {
                   Trace trace{ "service::manager::handle::local::detail::check_timeout_and_notify_TM"};
 
-                  log::line( verbose::log, "state.timeout_instances: ", state.timeout_instances);
+                  log::debug( "state.timeout_instances: ", state.timeout_instances);
                   
                   if( auto found = algorithm::find( state.timeout_instances, pid))
                   {
@@ -281,7 +281,7 @@ namespace casual
                      return [&state]( common::message::event::process::Exit& event)
                      {
                         Trace trace{ "service::manager::handle::local::event::process::detail::exit"};
-                        log::line( verbose::log, "event: ", event);
+                        log::debug( "event: ", event);
 
                         state.pending.shutdown.failed( event.state.pid);
 
@@ -315,11 +315,11 @@ namespace casual
                      return [ &state]( const common::message::event::transaction::Disassociate& message)
                      {
                         Trace trace{ "service::manager::handle::local::event::transaction::disassociate"};
-                        log::line( verbose::log, "message: ", message);
+                        log::debug( "message: ", message);
 
                         auto instances = state.disassociate( message.gtrid.range());
 
-                        log::line( verbose::log, "disassociated instances: ", instances);
+                        log::debug( "disassociated instances: ", instances);
                      };
                   }
                   
@@ -332,7 +332,7 @@ namespace casual
                      return [&state]( common::message::event::subscription::Begin& message)
                      {
                         Trace trace{ "service::manager::handle::event::subscription::Begin"};
-                        log::line( verbose::log, "message: ", message);
+                        log::debug( "message: ", message);
 
                         state.events.subscription( message);
                      };
@@ -343,7 +343,7 @@ namespace casual
                      return [&state]( common::message::event::subscription::End& message)
                      {
                         Trace trace{ "service::manager::handle::event::subscription::End"};
-                        log::line( verbose::log, "message: ", message);
+                        log::debug( "message: ", message);
 
                         state.events.subscription( message);
                      };
@@ -359,7 +359,7 @@ namespace casual
                   return [&state]( common::message::service::Advertise& message)
                   {
                      Trace trace{ "service::manager::handle::service::advertise"};
-                     log::line( verbose::log, "message: ", message);
+                     log::debug( "message: ", message);
 
                      // some pending might got resolved, from the update
                      detail::handle::pending( state, state.update( std::move( message)));
@@ -373,7 +373,7 @@ namespace casual
                      return [&state]( common::message::service::concurrent::Advertise& message)
                      {
                         Trace trace{ "service::manager::handle::service::concurrent::advertise"};
-                        common::log::line( verbose::log, "message: ", message);
+                        common::log::debug( "message: ", message);
 
                         // some pending might got resolved.
                         detail::handle::pending( state, state.update( std::move( message)));
@@ -385,7 +385,7 @@ namespace casual
                      return [ &state]( common::message::event::service::Calls& message)
                      {
                         Trace trace{ "service::manager::handle::service::concurrent::metric"};
-                        log::line( verbose::log, "message: ", message);
+                        log::debug( "message: ", message);
 
                         for( auto& metric : message.metrics)
                            state.services.metric( metric.service).update( metric);
@@ -416,7 +416,7 @@ namespace casual
                   {
                      Trace trace{ "service::manager::handle::local::service::detail::discover"};
 
-                     log::line( verbose::log, "failed to find service: ", name, " - action: discover");
+                     log::debug( "failed to find service: ", name, " - action: discover");
 
                      auto send_reply = execute::scope( [&]()
                      {
@@ -449,7 +449,7 @@ namespace casual
                   {
                      void no_entry( State& state, common::message::service::lookup::Request& message)
                      {
-                        log::line( verbose::log, "failed to find service: ", message.requested, " - action: reply with ", code::xatmi::no_entry);
+                        log::debug( "failed to find service: ", message.requested, " - action: reply with ", code::xatmi::no_entry);
                         auto reply = common::message::reverse::type( message);
                         reply.service.name = message.requested;
                         reply.state = decltype( reply.state)::absent;
@@ -459,7 +459,7 @@ namespace casual
 
                      void reply( State& state, state::service::id::type service_id, auto instance_id, common::message::service::lookup::Request& message, platform::time::unit pending)
                      {
-                        log::line( verbose::log, "'reserved' instance: ", instance_id);
+                        log::debug( "'reserved' instance: ", instance_id);
 
                         static constexpr bool is_concurrent = std::same_as< state::instance::concurrent::id::type, decltype( instance_id)>;
 
@@ -488,7 +488,7 @@ namespace casual
                         {
                            if( auto deadline = detail::calculate_deadline( service, now, message.deadline))
                            {
-                              log::line( verbose::log, "deadline: ", deadline);
+                              log::debug( "deadline: ", deadline);
                               reply.deadline.remaining = *deadline - now;
                            }
                         }
@@ -505,8 +505,8 @@ namespace casual
                            // otherwise, check if we need to set a new deadline.
                            else if( auto deadline = detail::calculate_deadline( service, now, message.deadline))
                            {
-                              log::line( verbose::log, "deadline: ", deadline);
-                              log::line( verbose::log, "service_id: ", service_id);
+                              log::debug( "deadline: ", deadline);
+                              log::debug( "service_id: ", service_id);
                            
                               // no pending, the caller get's the whole duration of the deadline.
                               reply.deadline.remaining = *deadline - now;
@@ -650,13 +650,13 @@ namespace casual
                   void lookup( State& state, common::message::service::lookup::Request& message, platform::time::unit pending = {})
                   {
                      Trace trace{ "service::manager::handle::local::service::detail::lookup"};
-                     log::line( verbose::log, "message: ", message, ", pending: ", pending);
+                     log::debug( "message: ", message, ", pending: ", pending);
 
                      using Enum = decltype( message.context.requester);
 
                      if( auto service_id = state.services.lookup( message.requested))
                      {
-                        log::line( verbose::log, "service_id: ", service_id);
+                        log::debug( "service_id: ", service_id);
 
                         switch( message.context.requester)
                         {
@@ -703,14 +703,14 @@ namespace casual
                      return [&state]( common::message::service::lookup::discard::Request& message)
                      {
                         Trace trace{ "service::manager::handle::service::discard::Lookup"};
-                        log::line( verbose::log, "message: ", message);
+                        log::debug( "message: ", message);
 
                         auto reply = message::reverse::type( message);
 
                         if( auto found = algorithm::find( state.pending.lookups, message.correlation))
                         {
                            log::line( log, "found pending to discard");
-                           log::line( verbose::log, "pending: ", *found);
+                           log::debug( "pending: ", *found);
 
                            state.pending.lookups.erase( std::begin( found));
                            reply.state = decltype( reply.state)::discarded;
@@ -725,7 +725,7 @@ namespace casual
                            {
                               if( ! instance.idle() && instance.caller().correlation == correlation)
                               {
-                                 log::line( verbose::log, "found reserved instance: ", instance);
+                                 log::debug( "found reserved instance: ", instance);
                                  instance.discard();
                               }
                            });
@@ -749,7 +749,7 @@ namespace casual
                      void pending( State& state, std::vector< state::service::pending::Lookup> pending)
                      {
                         Trace trace{ "service::manager::handle::local::service::detail::handle::pending"};
-                        log::line( verbose::log, "pending: ", pending);
+                        log::debug( "pending: ", pending);
 
                         if( pending.empty())
                            return;
@@ -824,7 +824,7 @@ namespace casual
                      return [ &state]( common::message::domain::process::prepare::shutdown::Request& message)
                      {
                         Trace trace{ "service::manager::handle::local::process::prepare::shutdown"};
-                        log::line( verbose::log, "message: ", message);
+                        log::debug( "message: ", message);
 
                         // all requested processes need to be replied some way or another. We can split them
                         // to several replies if we need to, which we do. All processes that we don't know and the ones 
@@ -832,7 +832,7 @@ namespace casual
                         // 'reserved' need to be done/unreserved before we can reply them.
 
                         auto shutdown = state.prepare_shutdown( message.processes);
-                        log::line( verbose::log, "shutdown: ", shutdown);
+                        log::debug( "shutdown: ", shutdown);
 
                         // we might need to handle pending lookups for services with no instances (any more)...
                         if( ! shutdown.services.empty())
@@ -842,9 +842,9 @@ namespace casual
 
                         auto [ busy, idle] = algorithm::partition( shutdown.instances, is_busy);
                         
-                        log::line( verbose::log, "busy: ", busy);
-                        log::line( verbose::log, "idle: ", idle);
-                        log::line( verbose::log, "unknown: ", shutdown.unknown);
+                        log::debug( "busy: ", busy);
+                        log::debug( "idle: ", idle);
+                        log::debug( "unknown: ", shutdown.unknown);
                         
                         if( idle || ! shutdown.unknown.empty())
                         {
@@ -879,7 +879,7 @@ namespace casual
                               ( auto&& replies, auto&& outcome) mutable
                            {
                               Trace trace{ "service::manager::handle::local::process::prepare::shutdown callback"};
-                              log::line( verbose::log, "replies: ", replies);
+                              log::debug( "replies: ", replies);
 
                               // we don't need to take care of 'failed', these are taken care of by the regular process::exit
 
@@ -892,12 +892,12 @@ namespace casual
                                  return reply.metric.process;
                               });
    
-                              log::line( verbose::log, "message: ", message);
+                              log::debug( "message: ", message);
                               local::optional::send( state, destination.ipc, message);
                            };
 
                            state.pending.shutdown( std::move( pending), std::move( callback));
-                           log::line( verbose::log, "state.pending.shutdown: ", state.pending.shutdown);
+                           log::debug( "state.pending.shutdown: ", state.pending.shutdown);
                         }               
                      };
                   }
@@ -914,7 +914,7 @@ namespace casual
                      return [ &state]( casual::domain::message::discovery::lookup::Request& message)
                      {
                         Trace trace{ "service::manager::handle::domain::discovery::lookup::request"};
-                        common::log::line( verbose::log, "message: ", message);
+                        common::log::debug( "message: ", message);
                         
                         // check the preconditions
                         CASUAL_ASSERT( algorithm::is::sorted( message.content.services) && algorithm::is::unique( message.content.services));
@@ -947,7 +947,7 @@ namespace casual
                            }
                         }
 
-                        common::log::line( verbose::log, "reply: ", reply);
+                        common::log::debug( "reply: ", reply);
 
                         local::optional::send( state, message.process.ipc, reply);
                      };
@@ -961,7 +961,7 @@ namespace casual
                      return [&state]( casual::domain::message::discovery::api::Reply& message)
                      {
                         Trace trace{ "service::manager::handle::domain::discovery::api::reply"};
-                        common::log::line( verbose::log, "message: ", message);
+                        common::log::debug( "message: ", message);
 
                         if( auto found = algorithm::find( state.pending.lookups, message.correlation))
                         {
@@ -1000,7 +1000,7 @@ namespace casual
                      return [ &state]( casual::domain::message::discovery::fetch::known::Request& message)
                      {
                         Trace trace{ "service::manager::handle::domain::discovery::fetch::known::request"};
-                        log::line( verbose::log, "message: ", message);
+                        log::debug( "message: ", message);
 
                         auto reply = common::message::reverse::type( message, common::process::handle());
 
@@ -1019,7 +1019,7 @@ namespace casual
                         // make sure we respect the invariants
                         algorithm::container::sort::unique( reply.content.services);
 
-                        log::line( verbose::log, "reply: ", reply);
+                        log::debug( "reply: ", reply);
                         state.multiplex.send( message.process.ipc, reply);
                      };
                   }
@@ -1037,7 +1037,7 @@ namespace casual
                return [ &state]( const common::message::service::call::ACK& message)
                {
                   Trace trace{ "service::manager::handle::local::ack"};
-                  log::line( verbose::log, "message: ", message);
+                  log::debug( "message: ", message);
 
                   // we remove possible deadline first.
                   if( auto deadline = state.pending.deadline.remove( message.correlation))
@@ -1057,7 +1057,7 @@ namespace casual
 
                   if( ! instance_id)
                   {
-                     log::line( verbose::log, "failed to lookup instance for ipc: ", message.metric.process.ipc);
+                     log::debug( "failed to lookup instance for ipc: ", message.metric.process.ipc);
                      return;
                   }
 
@@ -1072,7 +1072,7 @@ namespace casual
 
                   auto& instance = state.instances.sequential[ instance_id];
 
-                  log::line( verbose::log, "instance: ", instance);
+                  log::debug( "instance: ", instance);
 
                   // Check if there are pending request for services that this
                   // instance has.
@@ -1084,7 +1084,7 @@ namespace casual
 
                   if( auto found = common::algorithm::find_if( state.pending.lookups, has_pending))
                   {
-                     log::line( verbose::log, "found pending: ", *found);
+                     log::debug( "found pending: ", *found);
 
                      auto pending = algorithm::container::extract( state.pending.lookups, std::begin( found));
 
@@ -1108,7 +1108,7 @@ namespace casual
                      return [&state]( casual::configuration::message::update::Request& message)
                      {
                         Trace trace{ "service::manager::handle::local::configuration::update::request"};
-                        log::line( verbose::log, "message: ", message);
+                        log::debug( "message: ", message);
 
                         manager::configuration::conform( state, transform::configuration( state), std::move( message.model.service));
 
@@ -1123,7 +1123,7 @@ namespace casual
                   return [&state]( casual::configuration::message::Request& message)
                   {
                      Trace trace{ "service::manager::handle::local::configuration::request"};
-                     log::line( verbose::log, "message: ", message);
+                     log::debug( "message: ", message);
 
                      auto reply = message::reverse::type( message);
 
@@ -1141,7 +1141,7 @@ namespace casual
                   return [&state]( const common::message::shutdown::Request& message)
                   {
                      Trace trace{ "service::manager::handle::local::shutdown::request"};
-                     log::line( verbose::log, "message: ", message);
+                     log::debug( "message: ", message);
 
                      state.runlevel = state::Runlevel::shutdown;
                      

@@ -1152,8 +1152,8 @@ The following options has legend:
                   return [ &state]( auto& message)
                   {
                      Trace trace{ "queue::local::enqueue::create_enqueue_handle"};
-                     log::line( verbose::log, "message: ", message);
-                     log::line( verbose::log, "state: ", state);
+                     log::debug( "message: ", message);
+                     log::debug( "state: ", state);
 
                      auto request = local::transform::enqueue( std::move( message));
 
@@ -1230,7 +1230,7 @@ cat somefile.bin | casual queue --enqueue <queue-name>
                   common::execution::context::reset();
 
                   Trace trace{ "queue::local::dequeue::action"};
-                  log::line( verbose::log, "state: ", state);
+                  log::debug( "state: ", state);
 
                   ipc::message::group::dequeue::Request request{ process::handle()};
                   request.name = state.destination.name;
@@ -1240,11 +1240,11 @@ cat somefile.bin | casual queue --enqueue <queue-name>
                   if( id)
                      request.selector.id = *id;
 
-                  log::line( verbose::log, "request: ", request);
+                  log::debug( "request: ", request);
 
                   if( auto reply = communication::ipc::call( state.destination.process.ipc, request))
                   {
-                     log::line( verbose::log, "reply: ", reply);
+                     log::debug( "reply: ", reply);
                      
                      if( ! reply.message)
                         return false;

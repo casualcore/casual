@@ -75,7 +75,7 @@ namespace casual
             auto initialize( Settings settings)
             {
                Trace trace{ "domain::manager::local::initialize"};
-               log::line( verbose::log, "settings: ", settings);
+               log::debug( "settings: ", settings);
 
                const auto files = common::file::find( settings.configuration);
                log::line( log::category::information, "configuration files used: ", files);
@@ -172,7 +172,7 @@ namespace casual
             void start( State state)
             {
                Trace trace{ "domain::manager::local::start"};
-               log::line( verbose::log, "state: ", state);
+               log::debug( "state: ", state);
 
                communication::select::dispatch::pump(
                   local::condition::create( state),

@@ -187,7 +187,7 @@ INSERT INTO queue
 
             void file( const std::string& file)
             {
-               common::log::line( queue::log, "file: ", file);
+               common::log::debug( "file: ", file);
 
                sql::database::Connection connection{ file};
                

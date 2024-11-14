@@ -70,7 +70,7 @@ namespace casual
                            std::make_tuple( algorithm::transform( inbounds, get_reply), algorithm::transform( reverse_inbounds, get_reply)),
                            std::make_tuple( algorithm::transform( outbounds, get_reply), algorithm::transform( reverse_outbounds, get_reply)));
 
-                        log::line( verbose::log, "result: ", result);
+                        log::debug( "result: ", result);
                         return result;
                      };
 

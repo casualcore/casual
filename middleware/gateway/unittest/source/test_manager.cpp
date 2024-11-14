@@ -795,7 +795,7 @@ domain:
                ),
                [&done]( const common::message::event::process::Spawn& event)
                {
-                  log::line( log::debug, "event: ", event);
+                  log::debug( "event: ", event);
                   done = event.alias == "casual-queue-manager";
                });
          }
@@ -849,7 +849,7 @@ domain:
                ),
                [&done]( const common::message::event::process::Spawn& event)
                {
-                  log::line( log::debug, "event: ", event);
+                  log::debug( "event: ", event);
                   // we're done if outbound spawns
                   done = event.alias == "outbound";
                });
@@ -992,7 +992,7 @@ domain:
                ),
                [&done]( const common::message::event::process::Spawn& event)
                {
-                  log::line( log::debug, "event: ", event);
+                  log::debug( "event: ", event);
 
                   done = event.alias == "inbound";
                });

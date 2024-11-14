@@ -62,7 +62,7 @@ namespace casual
 
                            state.involved.push_back( message.trid);
                         }
-                        log::line( verbose::log, "state.involve: ", state.involved);
+                        log::debug( "state.involve: ", state.involved);
                      }
 
                      template< typename M>
@@ -70,7 +70,7 @@ namespace casual
                      {
                         Trace trace{ "queue::group::handle::local::detail::transaction::done"};
                         algorithm::container::erase( state.involved, message.trid);
-                        log::line( verbose::log, "state.involved: ", state.involved);
+                        log::debug( "state.involved: ", state.involved);
                      }
 
                   } // transaction
@@ -105,7 +105,7 @@ namespace casual
                      return [ &state]( const common::message::event::process::Exit& message)
                      {
                         Trace trace{ "queue::handle::local::dead::process"};
-                        log::line( verbose::log, "message", message);
+                        log::debug( "message", message);
 
                         // we clear up our own pending state, TM will send us rollback if the
                         // process owned any transactions we have as pending enqueue/dequeue (this 
@@ -119,7 +119,7 @@ namespace casual
                      return [ &state]( const common::message::event::ipc::Destroyed& message)
                      {
                         Trace trace{ "queue::handle::local::dead::ipc"};
-                        log::line( verbose::log, "message", message);
+                        log::debug( "message", message);
 
                         // we clear up our own pending state, TM will send us rollback if the
                         // process owned any transactions we have as pending enqueue/dequeue (this 
@@ -137,7 +137,7 @@ namespace casual
                      return [ &state]( queue::ipc::message::group::state::Request& message)
                      {
                         Trace trace{ "queue::handle::local::state::request"};
-                        log::line( verbose::log, "message: ", message);
+                        log::debug( "message: ", message);
 
                         auto reply = common::message::reverse::type( message, common::process::handle());
                         reply.queues = state.queuebase.queues();
@@ -161,7 +161,7 @@ namespace casual
                         return [&state]( queue::ipc::message::group::message::meta::Request& message)
                         {
                            Trace trace{ "queue::handle::local::message::meta::request"};
-                           log::line( verbose::log, "message: ", message);
+                           log::debug( "message: ", message);
 
                            auto reply = common::message::reverse::type( message);
                            reply.messages = state.queuebase.meta( message.qid);
@@ -178,7 +178,7 @@ namespace casual
                         return [ &state]( const queue::ipc::message::group::message::remove::Request& message)
                         {
                            Trace trace{ "queue::handle::local::message::remove::request"};
-                           log::line( verbose::log, "message: ", message);
+                           log::debug( "message: ", message);
 
                            auto reply = common::message::reverse::type( message);
                            reply.ids = message.force ?
@@ -200,7 +200,7 @@ namespace casual
                         return [&state]( queue::ipc::message::group::message::recovery::Request& message)
                         {
                            Trace trace{ "queue::handle::local::message::recovery::request"};
-                           log::line( verbose::log, "message: ", message);
+                           log::debug( "message: ", message);
 
                            auto reply = common::message::reverse::type( message);
 
@@ -247,7 +247,7 @@ namespace casual
                      return [ &state]( queue::ipc::message::group::enqueue::Request& message)
                      {
                         Trace trace{ "queue::handle::enqueue::Request"};
-                        log::line( verbose::log, "message: ", message);
+                        log::debug( "message: ", message);
 
                         if( ! detail::has::sufficient::capacity( state, message))
                         {
@@ -308,7 +308,7 @@ namespace casual
                   bool handle( State& state, queue::ipc::message::group::dequeue::Request& message)
                   {
                      Trace trace{ "queue::handle::dequeue::Request::handle"};
-                     log::line( verbose::log, "message: ", message);
+                     log::debug( "message: ", message);
 
                      // Make sure we've got the quid.
                      message.queue = state.queuebase.id( message);
@@ -335,7 +335,7 @@ namespace casual
                         {
                            auto wanted = available.value() - now;
                            auto current = common::signal::timer::get();
-                           log::line( verbose::log, "wanted: ", wanted, ", current: ", current);
+                           log::debug( "wanted: ", wanted, ", current: ", current);
                            if( ! current || wanted < current)
                               common::signal::timer::set( wanted);
                         }
@@ -446,7 +446,7 @@ namespace casual
                         return [&state]( common::message::transaction::resource::commit::Request& message)
                         {
                            Trace trace{ "queue::handle::local::transaction::commit::Request"};
-                           log::line( verbose::log, "message: ", message);
+                           log::debug( "message: ", message);
 
                            local::detail::transaction::done( state, message);
 
@@ -480,7 +480,7 @@ namespace casual
                         return [ &state]( common::message::transaction::resource::prepare::Request& message)
                         {
                            Trace trace{ "queue::handle::local::transaction::prepare::Request"};
-                           log::line( verbose::log, "message: ", message);
+                           log::debug( "message: ", message);
 
                            auto reply = common::message::reverse::type( message, common::process::handle());
                            reply.resource = message.resource;
@@ -499,7 +499,7 @@ namespace casual
                         return [&state]( common::message::transaction::resource::rollback::Request& message)
                         {
                            Trace trace{ "queue::handle::local::transaction::rollback::Request"};
-                           log::line( verbose::log, "message: ", message);
+                           log::debug( "message: ", message);
 
                            local::detail::transaction::done( state, message);
 
@@ -536,7 +536,7 @@ namespace casual
                      return [&state]( const queue::ipc::message::group::queue::restore::Request& message)
                      {
                         Trace trace{ "queue::handle::local::restore::Request"};
-                        log::line( verbose::log, "message: ", message);
+                        log::debug( "message: ", message);
 
                         auto reply = common::message::reverse::type( message);
 
@@ -588,7 +588,7 @@ namespace casual
                      return [ &state]( const queue::ipc::message::group::queue::clear::Request& message)
                      {
                         Trace trace{ "queue::handle::local::local::clear::request"};
-                        log::line( verbose::log, "message: ", message);
+                        log::debug( "message: ", message);
 
                         auto clear_queue = [&state]( auto id)
                         {
@@ -618,7 +618,7 @@ namespace casual
                      return [ &state]( const queue::ipc::message::group::metric::reset::Request& message)
                      {
                         Trace trace{ "queue::handle::local::local::metric::reset::request"};
-                        log::line( verbose::log, "message: ", message);
+                        log::debug( "message: ", message);
 
                         state.queuebase.metric_reset( message.queues);
 
@@ -636,9 +636,9 @@ namespace casual
                         const std::vector<casual::common::strong::queue::id>& zombies = {})
                      {
                         Trace trace{ "queue::handle::local::local::configuration::update::request::detail::update"};
-                        log::line( verbose::log, "wanted: ", wanted);                     
-                        log::line( verbose::log, "remove: ", remove);
-                        log::line( verbose::log, "zombies: ", zombies);
+                        log::debug( "wanted: ", wanted);                     
+                        log::debug( "remove: ", remove);
+                        log::debug( "zombies: ", zombies);
 
                         // if the update created new queues, we need notify discovery since there could be some
                         // other domain that needs to know about the new queues.
@@ -700,7 +700,7 @@ namespace casual
                      return [&state]( const queue::ipc::message::group::configuration::update::Request& message)
                      {
                         Trace trace{ "queue::handle::local::configuration::update::request"};
-                        log::line( verbose::log, "message: ", message);
+                        log::debug( "message: ", message);
 
 
                         // this can't be updated if once set (yet)
@@ -720,12 +720,12 @@ namespace casual
                            return queuebase::Queue{ queue.name, { queue.retry.count, queue.retry.delay}};
                         });
 
-                        log::line( verbose::log, "wanted: ", wanted);
+                        log::debug( "wanted: ", wanted);
 
                         auto existing = state.queuebase.queues();
                         // correlate existing ids
                         {
-                           log::line( verbose::log, "existing: ", existing);
+                           log::debug( "existing: ", existing);
 
                            auto correlate_id = [&existing]( auto& queue)
                            {
@@ -763,8 +763,8 @@ namespace casual
 
                         auto [ nonempty_queues, empty_queues] = algorithm::partition( joined, has_messages);
 
-                        log::line( verbose::log, "nonempty_queues: ", nonempty_queues);
-                        log::line( verbose::log, "empty_queues: ", empty_queues);
+                        log::debug( "nonempty_queues: ", nonempty_queues);
+                        log::debug( "empty_queues: ", empty_queues);
 
                         std::vector<casual::common::strong::queue::id> remove;
 
@@ -780,7 +780,7 @@ namespace casual
                         populate( empty_queues, remove);
                         populate( nonempty_queues, state.zombies);
 
-                        log::line( verbose::log, "remove: ", remove);
+                        log::debug( "remove: ", remove);
 
                         {
                            // if something goes wrong we send fatal event
@@ -802,7 +802,7 @@ namespace casual
 
                         state.size.current = state.queuebase.size();
  
-                        log::line( verbose::log, "state: ", state);
+                        log::debug( "state: ", state);
 
                         // everything went ok, do not rollback.
                         rollback.release();
@@ -833,11 +833,11 @@ namespace casual
                      return [&state]( const common::message::shutdown::Request& message)
                      {
                         Trace trace{ "queue::handle::local::shutdown::request"};
-                        log::line( verbose::log, "message: ", message);
+                        log::debug( "message: ", message);
 
                         detail::perform( state);
 
-                        log::line( verbose::log, "state: ", state);
+                        log::debug( "state: ", state);
                      };
                   }
                } // shutdown
@@ -855,7 +855,7 @@ namespace casual
                         if( state.pending.dequeues.empty())
                            return; // nothing to do
 
-                        log::line( verbose::log, "state.pending.dequeues: ", state.pending.dequeues);
+                        log::debug( "state.pending.dequeues: ", state.pending.dequeues);
 
                         auto transform_id = []( auto& value){ return value.queue;};
                         
@@ -863,7 +863,7 @@ namespace casual
                         auto available = state.queuebase.available( 
                            algorithm::transform( state.pending.dequeues, transform_id));
                         
-                        log::line( verbose::log, "available: ", available);
+                        log::debug( "available: ", available);
 
                         const auto now = platform::time::clock::type::now();
 

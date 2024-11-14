@@ -886,7 +886,7 @@ External resources only have one instance, hence resources and resource-instance
                      handle::consume( state, []( const handle::State& state)
                      {  
                         Trace trace{ "transaction::manager::admin::local::commit::invoke consume"};
-                        log::line( verbose::log, "state: ", state); 
+                        log::debug( "state: ", state); 
 
                         // check if we got errors upstream, and need to rollback.
                         if( state.done.pipe_error())

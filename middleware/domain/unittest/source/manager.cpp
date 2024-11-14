@@ -100,20 +100,20 @@ namespace casual
 
             void shutdown( const process::Handle& manager)
             {
-               log::Trace trace{ "domain::unittest::local::shutdown", verbose::log};
-               log::line( verbose::log, "manager: ", manager);
+               Trace trace{ "domain::unittest::local::shutdown"};
+               log::debug( "manager: ", manager);
 
                auto create_handler = []( auto& tasks)
                {
                   return common::message::dispatch::handler( communication::ipc::inbound::device(),
                      [ &tasks]( const common::message::event::Task& event)
                      {
-                        log::line( verbose::log, "event: ", event);
+                        log::debug( "event: ", event);
                         if( event.done())
                            if( algorithm::find( tasks, event.correlation))
                               tasks.clear();
                         
-                        log::line( log::debug, "TODO shutdown tasks: ", tasks);
+                        log::debug( "TODO shutdown tasks: ", tasks);
                      },
                      []( const common::message::event::Error& event)
                      {
@@ -123,7 +123,7 @@ namespace casual
                };
 
                auto tasks = communication::ipc::call( manager.ipc, common::message::domain::manager::shutdown::Request{ process::handle()}).tasks;
-               log::line( verbose::log, "tasks: ", tasks);
+               log::debug( "tasks: ", tasks);
 
                auto condition = common::message::dispatch::condition::compose(
                   common::event::condition::done( [ &tasks]()
@@ -175,7 +175,7 @@ namespace casual
 
                void async_shutdown()
                {
-                  log::Trace trace{ "domain::unittest::Manager::local::Manager::async_shutdown", verbose::log};
+                  Trace trace{ "domain::unittest::Manager::local::Manager::async_shutdown"};
 
                   //! if the m_perform_shutdown is false already, we do nothing.
                   if( ! std::exchange( m_perform_shutdown, false))
@@ -207,7 +207,7 @@ namespace casual
                {
                   return common::signal::callback::scoped::replace< code::signal::child>( []()
                   {
-                     log::line( verbose::log, code::signal::child, " discarded");
+                     log::debug( code::signal::child, " discarded");
                   });
                }
             } // signal
@@ -248,7 +248,7 @@ namespace casual
             : scoped_signal_handler{ local::signal::handler()}, 
             files( local::configuration::files( configuration))
          {
-            log::Trace trace{ "domain::unittest::Manager::Implementation", verbose::log};
+            Trace trace{ "domain::unittest::Manager::Implementation"};
 
             common::domain::identity( {});
 
@@ -284,7 +284,7 @@ namespace casual
                   common::message::dispatch::handle::discard< common::message::event::sub::Task>(),
                   [ &state]( const manager::task::message::domain::Information& event)
                   {
-                     log::line( log::debug, "event: ", event);
+                     log::debug( "event: ", event);
                      state.domain = event.domain;
                      common::domain::identity( event.domain);
                      state.manager.handle( event.process);
@@ -297,18 +297,18 @@ namespace casual
                   },
                   [ &tasks]( const common::message::event::Task& event)
                   {
-                     log::line( log::debug, "event: ", event);
+                     log::debug( "event: ", event);
 
                      if( event.done())
                         if( algorithm::find( tasks, event.correlation))
                            tasks.clear();
 
-                     log::line( log::debug, "tasks: ", tasks);
+                     log::debug( "tasks: ", tasks);
 
                   },
                   []( const common::message::event::Error& event)
                   {
-                     log::line( log::debug, "event: ", event);
+                     log::debug( "event: ", event);
 
                      if( event.severity == decltype( event.severity)::fatal)
                         code::raise::error( code::casual::shutdown, "fatal error: ", event);
@@ -327,7 +327,7 @@ namespace casual
                handler( *this, tasks), 
                communication::ipc::inbound::device());
 
-            log::line( verbose::log, "domain-manager booted: ", manager);
+            log::debug( "domain-manager booted: ", manager);
             
          }
 
@@ -348,7 +348,7 @@ domain:
 
          void activate()
          {
-            log::Trace trace{ "domain::unittest::Manager::Implementation::activate", verbose::log};
+            Trace trace{ "domain::unittest::Manager::Implementation::activate"};
 
             common::domain::identity( domain);
 

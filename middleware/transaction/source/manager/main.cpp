@@ -40,7 +40,7 @@ namespace casual
             State initialize( Settings settings)
             {
                Trace trace( "transaction::manager:local::initialize");
-               log::line( verbose::log, "settings: ", settings);
+               log::debug( "settings: ", settings);
 
                // Set the process variables so children can find us easier.
                environment::variable::set(
@@ -67,7 +67,7 @@ namespace casual
                auto connect_task = [ &state]( task::unit::id)
                {
                   log::line( common::log::category::information, "casual-transaction-manager is on-line");
-                  log::line( verbose::log, "state: ", state);
+                  log::debug( "state: ", state);
 
                   // Connect to domain
                   communication::instance::whitelist::connect( communication::instance::identity::transaction::manager);

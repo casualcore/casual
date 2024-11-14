@@ -35,7 +35,7 @@ namespace casual
                template< typename M>
                void call( common::communication::ipc::inbound::Device& device, M&& request)
                {
-                  log::line( verbose::log, "request: ", request);
+                  log::debug( "request: ", request);
 
                   if( auto correlation = communication::ipc::flush::optional::send( device, local::instance::device(), request))
                   {
@@ -79,7 +79,7 @@ namespace casual
       common::strong::correlation::id request( const Request& request)
       {
          Trace trace{ "domain::discovery::request"};
-         log::line( verbose::log, "request: ", request);
+         log::debug( "request: ", request);
          
          return communication::ipc::flush::optional::send( local::instance::device(), request);
       }
@@ -87,7 +87,7 @@ namespace casual
       common::strong::correlation::id request( Send& multiplex, const Request& request)
       {
          Trace trace{ "domain::discovery::request"};
-         log::line( verbose::log, "request: ", request);
+         log::debug( "request: ", request);
          
          return multiplex.send( local::instance::device(), request);
       }
@@ -98,7 +98,7 @@ namespace casual
          common::strong::correlation::id correlation)
       {
          Trace trace{ "domain::discovery::request"};
-         log::line( verbose::log, "services: ", services, ", queues: ", queues);
+         log::debug( "services: ", services, ", queues: ", queues);
 
          return communication::ipc::flush::optional::send( local::instance::device(), local::request( std::move( services), std::move( queues), correlation));
       }
@@ -110,7 +110,7 @@ namespace casual
          common::strong::correlation::id correlation)
       {
          Trace trace{ "domain::discovery::request"};
-         log::line( verbose::log, "services: ", services, ", queues: ", queues);
+         log::debug( "services: ", services, ", queues: ", queues);
          
          return multiplex.send( local::instance::device(), local::request( std::move( services), std::move( queues), correlation));
       }

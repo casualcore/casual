@@ -13,11 +13,8 @@ namespace casual
 {
    namespace tools
    {
-      common::log::Stream log{ "casual.tools"};
-
       namespace trace
       {
-         common::log::Stream log{ "casual.tools.trace"};
          
          Exit::~Exit()
          {

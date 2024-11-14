@@ -56,7 +56,7 @@ namespace casual
                if( ::setitimer( ITIMER_REAL, &value, &old) != 0)
                   code::system::raise( "timer::set");
 
-               log::line( verbose::log, "timer::set new: ", value, " - old: ", old);
+               log::debug( "timer::set new: ", value, " - old: ", old);
 
                return convert( old);
             }
@@ -73,7 +73,7 @@ namespace casual
          if( microseconds <= std::chrono::microseconds::zero())
          {
             // We send the signal directly
-            log::line( log::debug, "timer - offset is less than zero: ", offset, " - send alarm directly");
+            log::debug( "timer - offset is less than zero: ", offset, " - send alarm directly");
             signal::send( process::id(), code::signal::alarm);
             return local::get();
          }
@@ -111,7 +111,7 @@ namespace casual
          if( old)
          {
             m_old = now + old.value();
-            log::line( verbose::log, "old timepoint: ", m_old.value().time_since_epoch());
+            log::debug( "old timepoint: ", m_old.value().time_since_epoch());
          }
       }
 
@@ -121,7 +121,7 @@ namespace casual
 
       Scoped::~Scoped()
       {
-         log::line( verbose::log, "Scoped::~Scoped(): ", *this);
+         log::debug( "Scoped::~Scoped(): ", *this);
 
          if( m_active)
          {

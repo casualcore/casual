@@ -319,7 +319,7 @@ namespace casual
       manager::State model( configuration::Model model)
       {
          Trace trace{ "domain::transform::state"};
-         log::line( verbose::log, "configuration: ", model);
+         log::debug( "configuration: ", model);
          
          // Set the domain
          common::domain::identity( common::domain::Identity{ environment::expand( model.domain.name)});

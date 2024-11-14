@@ -53,13 +53,13 @@ namespace casual
                void check( State& state)
                {
                   Trace trace{ "queue::manager::handle::local::pending::lookups::check"};
-                  log::line( verbose::log, "pending: ", state.pending.lookups);
+                  log::debug( "pending: ", state.pending.lookups);
 
                   auto lookup_replied = [ &state]( auto& lookup)
                   {
                      if( auto queue = state.queue( lookup.name, lookup.context.action))
                      {
-                        log::line( verbose::log, "queue: ", *queue);
+                        log::debug( "queue: ", *queue);
 
                         auto reply = common::message::reverse::type( lookup);
                         reply.name = lookup.name;
@@ -80,7 +80,7 @@ namespace casual
                   Trace trace{ "queue::manager::handle::local::pending::lookups::discard"};
 
                   auto pending = std::exchange( state.pending.lookups, {});
-                  log::line( verbose::log, "pending: ", pending);
+                  log::debug( "pending: ", pending);
 
                   auto discard_lookup = [ &state]( auto& lookup)
                   {
@@ -105,7 +105,7 @@ namespace casual
                      return [ &state]( const common::message::event::process::Exit& event)
                      {
                         Trace trace{ "queue::manager::handle::local::event::dead::process"};
-                        common::log::line( verbose::log, "event: ", event);
+                        common::log::debug( "event: ", event);
 
                         state.task.coordinator( event);
                         state.remove( event.state.pid);
@@ -117,7 +117,7 @@ namespace casual
                      return [ &state]( const common::message::event::ipc::Destroyed& event)
                      {
                         Trace trace{ "queue::manager::handle::local::event::dead::process"};
-                        common::log::line( verbose::log, "event: ", event);
+                        common::log::debug( "event: ", event);
 
                         state.remove_queues( event.process.ipc);
                      };
@@ -133,7 +133,7 @@ namespace casual
                   return [ &state]( common::message::shutdown::Request& message)
                   {
                      Trace trace{ "queue::manager::handle::local::shutdown::request"};
-                     common::log::line( verbose::log, "message: ", message);
+                     common::log::debug( "message: ", message);
 
                      state.runlevel = decltype( state.runlevel())::shutdown;
                      local::pending::lookups::discard( state);
@@ -230,7 +230,7 @@ namespace casual
                   return [ &state]( queue::ipc::message::lookup::Request& message)
                   {
                      Trace trace{ "queue::manager::local::handle::lookup::request"};
-                     common::log::line( verbose::log, "message: ", message);
+                     common::log::debug( "message: ", message);
 
                      if( state.runlevel > decltype( state.runlevel())::running)
                      {
@@ -267,7 +267,7 @@ namespace casual
                      return [&state]( const queue::ipc::message::lookup::discard::Request& message)
                      {
                         Trace trace{ "handle::lookup::discard::Request"};
-                        common::log::line( verbose::log, "message: ", message);
+                        common::log::debug( "message: ", message);
 
                         auto reply = message::reverse::type( message);
 
@@ -293,7 +293,7 @@ namespace casual
                   return [&state]( queue::ipc::message::group::Connect& message)
                   {
                      Trace trace{ "queue::manager::handle::local::group::connect"};
-                     log::line( verbose::log, "message: ", message);
+                     log::debug( "message: ", message);
 
                      state.task.coordinator( message);
 
@@ -319,7 +319,7 @@ namespace casual
                      return [&state]( queue::ipc::message::group::configuration::update::Reply&& message)
                      {
                         Trace trace{ "queue::manager::handle::local::group::configuration::update::reply"};
-                        log::line( verbose::log, "message: ", message);
+                        log::debug( "message: ", message);
 
                         state.task.coordinator( message);
 
@@ -339,13 +339,13 @@ namespace casual
                   return [&state]( queue::ipc::message::forward::group::Connect& message)
                   {
                      Trace trace{ "queue::manager::handle::local::forward::connect"};
-                     log::line( verbose::log, "message: ", message);
+                     log::debug( "message: ", message);
 
                      state.task.coordinator( message);
 
                      if( auto found = common::algorithm::find( state.forward.groups, message.process.pid))
                      {
-                        log::line( verbose::log, "found: ", *found);
+                        log::debug( "found: ", *found);
 
                         found->state = decltype( found->state())::connected;
                         found->process = message.process;
@@ -368,7 +368,7 @@ namespace casual
                      return [&state]( queue::ipc::message::forward::group::configuration::update::Reply&& message)
                      {
                         Trace trace{ "queue::manager::handle::local::forward::configuration::update::reply"};
-                        log::line( verbose::log, "message: ", message);
+                        log::debug( "message: ", message);
 
                         state.task.coordinator( message);
 
@@ -387,7 +387,7 @@ namespace casual
                return [&state]( queue::ipc::message::Advertise& message)
                {
                   Trace trace{ "queue::manager::handle::local::concurrent::advertise"};
-                  log::line( verbose::log, "message: ", message);
+                  log::debug( "message: ", message);
 
                   state.update( message);
 
@@ -404,7 +404,7 @@ namespace casual
                      return [ &state]( casual::domain::message::discovery::lookup::Request&& message)
                      {
                         Trace trace{ "queue::manager::handle::local::domain::discovery::internal::request"};
-                        common::log::line( verbose::log, "message: ", message);
+                        common::log::debug( "message: ", message);
 
                         CASUAL_ASSERT( algorithm::is::sorted( message.content.queues) && algorithm::is::unique( message.content.queues));
 
@@ -432,7 +432,7 @@ namespace casual
                               reply.absent.queues.push_back( std::move( name));
                         }
                         
-                        common::log::line( verbose::log, "reply: ", reply);
+                        common::log::debug( "reply: ", reply);
 
                         state.multiplex.send( message.process.ipc, reply);
                      };
@@ -446,7 +446,7 @@ namespace casual
                      return [&state]( casual::domain::message::discovery::api::Reply& message)
                      {
                         Trace trace{ "queue::manager::handle::local::domain::discovery::api::reply"};
-                        common::log::line( verbose::log, "message: ", message);
+                        common::log::debug( "message: ", message);
 
                         pending::lookups::check( state);
 
@@ -466,7 +466,7 @@ namespace casual
                      return [&state]( casual::domain::message::discovery::fetch::known::Request& message)
                      {
                         Trace trace{ "queue::manager::handle::local::domain::discover::fetch::known::request"};
-                        common::log::line( verbose::log, "message: ", message);
+                        common::log::debug( "message: ", message);
 
                         auto reply = common::message::reverse::type( message);
 
@@ -488,7 +488,7 @@ namespace casual
                         // make sure we respect invariants
                         algorithm::container::sort::unique( reply.content.queues);
 
-                        common::log::line( verbose::log, "reply: ", reply);
+                        common::log::debug( "reply: ", reply);
 
                         state.multiplex.send( message.process.ipc, reply);
                         
@@ -508,7 +508,7 @@ namespace casual
                      return [ &state]( casual::configuration::message::update::Request& message)
                      {
                         Trace trace{ "queue::manager::handle::local::configuration::update::request"};
-                        log::line( verbose::log, "message: ", message);
+                        log::debug( "message: ", message);
 
                         queue::manager::configuration::conform( state, std::move( message));
                      };
@@ -520,7 +520,7 @@ namespace casual
                   return [ &state]( casual::configuration::message::Request& message)
                   {
                      Trace trace{ "handle::domain::handle::local::configuration::request"};
-                     common::log::line( verbose::log, "message: ", message);
+                     common::log::debug( "message: ", message);
 
                      auto reply = common::message::reverse::type( message);
 
@@ -540,7 +540,7 @@ namespace casual
          void exit( State& state, const common::process::lifetime::Exit& exit)
          {
             Trace trace{ "handle::process::exit"};
-            common::log::line( verbose::log, "exit: ", exit);
+            common::log::debug( "exit: ", exit);
 
             // one of our own children has died, we send the event.
             // we'll later receive the event from domain-manager, since
@@ -557,7 +557,7 @@ namespace casual
          void configuration( State& state, casual::configuration::Model model)
          {
             Trace trace{ "queue::manager::handle::comply::configuration"};
-            log::line( verbose::log, "model: ", model);
+            log::debug( "model: ", model);
 
             state.note = model.queue.note;
             state.group_coordinator = { model.domain.groups};
@@ -582,7 +582,7 @@ namespace casual
       void abort( State& state)
       {
          Trace trace{ "queue::manager::handle::abort"};
-         log::line( verbose::log, "state: ", state);
+         log::debug( "state: ", state);
 
          state.runlevel = decltype( state.runlevel())::error;
 
