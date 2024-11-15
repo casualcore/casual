@@ -494,13 +494,13 @@ created
                      {
                         auto invoke = []()
                         {
-                           code::raise::error( code::casual::invalid_argument, "--list-queues is removed - use casual queue --list-instances");
+                           code::raise::error( code::casual::invalid_argument, "--list-queues is removed - use casual queue --list-queue-instances");
                         };
 
                         return argument::Option{ 
                            std::move( invoke), 
                            argument::option::Names( {}, { "-lq", "--list-queues"}), 
-                           "removed - use casual queue --list-instance"};
+                           "removed - use casual queue --list-queue-instances"};
                      }
                   }
                } // list
