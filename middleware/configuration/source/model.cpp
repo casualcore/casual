@@ -643,6 +643,16 @@ namespace casual
 
             algorithm::for_each( model.gateway.outbound.groups, update_connections);
             algorithm::for_each( model.gateway.inbound.groups, update_connections);
+
+            auto update_forward_groups = [ &]( auto& group)
+            {
+               update_enabled( group);
+
+               algorithm::for_each( group.services, update_enabled);
+               algorithm::for_each( group.queues, update_enabled);
+            };
+
+            algorithm::for_each( model.queue.forward.groups, update_forward_groups);
          }
 
          return model;
