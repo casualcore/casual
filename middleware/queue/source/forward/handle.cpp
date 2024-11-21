@@ -32,23 +32,24 @@ namespace casual
       {
          namespace
          {
+            namespace detail::forward
+            {
+               template< typename F>
+               bool enabled( State& state, const F& forward)
+               {
+                  return state.enabled && forward.enabled;
+               }
+            } // detail::forward
+
             namespace transform::forward
             {
-               namespace detail::forward
-               {
-                  bool enabled( State& state, const std::vector< std::string>& forward_memberships)
-                  {
-                     return state.group_coordinator.enabled( state.memberships) && state.group_coordinator.enabled( forward_memberships);
-                  }
-               } // detail::forward
-
                auto service( State& state)
                {
                   return [ &]( auto& service)
                   {
                      state::forward::Service result;
                      result.alias = service.alias;
-                     result.enabled = detail::forward::enabled( state, service.memberships);
+                     result.enabled = detail::forward::enabled( state, service);
                      result.source.queue = service.source;
                      
                      if( service.reply)
@@ -70,7 +71,7 @@ namespace casual
                   {
                      state::forward::Queue result;
                      result.alias = queue.alias;
-                     result.enabled = detail::forward::enabled( state, queue.memberships);
+                     result.enabled = detail::forward::enabled( state, queue);
                      result.source.queue = queue.source;
 
                      result.target.queue = queue.target.queue;
@@ -430,19 +431,24 @@ namespace casual
 
                         state.alias = message.model.alias;
                         state.memberships = message.model.memberships;
-                        state.group_coordinator = { message.groups};
+                        state.enabled = message.model.enabled;
 
                         // TODO maintenance we only update instances
-                        auto add_or_update = []( auto& source, auto& target, auto transform)
+                        auto add_or_update = [ &state]( auto& source, auto& target, auto transform)
                         {
                            auto handle_source = [&]( auto& forward)
                            {
-                              auto is_alias = [&alias = forward.alias]( auto& forward){ return forward.alias == alias;};
+                              auto is_alias = [ &alias = forward.alias]( auto& forward){ return forward.alias == alias;};
 
                               if( auto found = algorithm::find_if( target, is_alias))
+                              {
                                  found->instances.configured = forward.instances;
+                                 found->enabled = detail::forward::enabled( state, forward);
+                              }
                               else
+                              {
                                  target.push_back( transform( forward));
+                              }
                            };
 
                            algorithm::for_each( source, handle_source);
@@ -935,7 +941,7 @@ namespace casual
 
                         auto reply = common::message::reverse::type( message, process::handle());
                         reply.alias = state.alias;
-                        reply.enabled = state.group_coordinator.enabled( state.memberships);
+                        reply.enabled = state.enabled;
                         reply.services = algorithm::transform( state.forward.services, transform_service);
                         reply.queues = algorithm::transform( state.forward.queues, transform_queue);
 

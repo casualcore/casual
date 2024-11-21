@@ -303,7 +303,7 @@ namespace casual
 
                   for( auto& group : configuration)
                   {
-                     if( auto found = algorithm::find( state.groups, group.alias))
+                     if( auto found = algorithm::find( state.forward.groups, group.alias))
                      {
                         queue::ipc::message::forward::group::configuration::update::Request request{ common::process::handle()};
                         request.model = group;

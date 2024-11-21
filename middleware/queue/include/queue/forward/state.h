@@ -20,8 +20,6 @@
 #include "common/communication/select.h"
 #include "common/communication/ipc/send.h"
 
-#include "configuration/group.h"
-
 #include <vector>
 #include <string>
 #include <iosfwd>
@@ -446,7 +444,7 @@ namespace casual
 
          std::vector< std::string> memberships;
 
-         configuration::group::Coordinator group_coordinator;
+         bool enabled;
 
          //! we're done when we're in shutdown mode
          //! and all forwards has no concurrent stuff in flight.

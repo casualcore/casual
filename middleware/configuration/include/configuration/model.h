@@ -677,6 +677,7 @@ namespace casual::configuration
                std::string source;
                platform::size::type instances = 1;
                std::string note;
+               bool enabled = true;
                std::vector< std::string> memberships;
 
                friend auto operator <=> ( const forward_base&, const forward_base&) = default;
@@ -687,6 +688,7 @@ namespace casual::configuration
                   CASUAL_SERIALIZE( instances);
                   CASUAL_SERIALIZE( note);
                   CASUAL_SERIALIZE( memberships);
+                  CASUAL_SERIALIZE( enabled);
                )
             };
 
@@ -749,6 +751,7 @@ namespace casual::configuration
                std::vector< forward::Queue> queues;
                std::string note;
                std::vector< std::string> memberships;
+               bool enabled = true;
 
                Group set_union( Group lhs, Group rhs);
                Group set_difference( Group lhs, Group rhs);
@@ -764,6 +767,7 @@ namespace casual::configuration
                   CASUAL_SERIALIZE( queues);
                   CASUAL_SERIALIZE( note);
                   CASUAL_SERIALIZE( memberships);
+                  CASUAL_SERIALIZE( enabled);
                )
             };
          } // forward
