@@ -958,7 +958,7 @@ namespace casual
                         // all known "remote" (not "local") services
                         state.services.for_each( [ &reply]( auto id, auto& name, auto& service)
                         {
-                           if( ! service.has_sequential())
+                           if( ! service.has_sequential() && service.is_discoverable())
                               reply.content.services.push_back( name);
                         });
 
