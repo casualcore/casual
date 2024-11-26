@@ -1,10 +1,71 @@
 # Changelog
 This is the changelog for `casual` and all changes are listed in this document.
 
-## [1.7.0]
+## [1.7.0] - 2024-11-26
+
+### Added
+- xatmi: add function to reset execution_id from public api ([#239](https://github.com/casualcore/casual/issues/239))
+- queue: add --force flag to --remove-message cli ([#267](https://github.com/casualcore/casual/issues/267))
+- queue: casual queue --dequeue should take 0..* queue-ids
+- queue: introduce configurable 'capacity' property to groups ([#232](https://github.com/casualcore/casual/issues/232))
+- queue: runtime configuration
+- queue: local domain enable/disable enqueue/dequeue ([#253](https://github.com/casualcore/casual/issues/253))
+- queue: added --list-queue-instances -> where queues reside ([#354](https://github.com/casualcore/casual/issues/354))
+- queue: expand group concept to include forwards
+- configuration: documentation update for group.enabled
+- configuration: added CLI enable/disable groups
+- configuration: enabled on internal model server and executable
+- configuration: moved conf related cli from `domain` to `configuration` ([#112](https://github.com/casualcore/casual/issues/112))
+- service: replace `--list-admin-services` for `--list-services -all` ([#426](https://github.com/casualcore/casual/issues/426))
+- service: use random distribution for concurrent reservation ([#420](https://github.com/casualcore/casual/issues/420))
+- service: service timeout includes pending lookup time
+- service: show description for instances (remote domain name) ([#353](https://github.com/casualcore/casual/issues/353))
+- discovery: enable/disable enqueue/dequeue interdomain ([#253](https://github.com/casualcore/casual/issues/253))
+- discovery: prepared new 1.4 protocol version for discovery::Reply
+- transaction: rename cli option for scaling proxies ([#229](https://github.com/casualcore/casual/issues/229))
+- transaction: manager should wait for all spawned RM:s before on-line
+- transaction: runtime configuration ([#225](https://github.com/casualcore/casual/issues/225))
+- transaction: show description for instances (remote domain name) ([#350](https://github.com/casualcore/casual/issues/350))
+- code: conform to c++23
+- domain: cli add enabled to domain --list-servers/executables
+- domain: assassination contract lethal or non-lethal ([#304](https://github.com/casualcore/casual/issues/304))
+- gateway: honor group memberships on connections ([#323](https://github.com/casualcore/casual/issues/323))
+- gateway: runtime configuration
+- gateway: branch transaction in inbound ([#328](https://github.com/casualcore/casual/issues/328))
+- cli: improved `--legend <option>` to `--legend --<option>`
+- cli: add option to abort incomplete domain boot ([#254](https://github.com/casualcore/casual/issues/254))
+- cli: add keys for missing instances to casual domain --information
+- metric: propagate OTel parent span for service-call and conversation ([#321](https://github.com/casualcore/casual/issues/321))
+- event: log user return code in service metric event ([#399](https://github.com/casualcore/casual/issues/399))
+- documentation: added group enabled sample ([#445](https://github.com/casualcore/casual/issues/445))
+- documentation: overhaul README ([#441](https://github.com/casualcore/casual/issues/441))
+- conversation: execution span for conversation::connect::Request message ([#321](https://github.com/casualcore/casual/issues/321))
+- build: simplify install script for http-inbound ([#22](https://github.com/casualcore/casual/issues/22))
+- build: add dsl for documentation ([#355](https://github.com/casualcore/casual/issues/355))
+- build: use ubi8 isof centos
+- build: use local copy of nginx
+
+### Fixes
+- buffer: simplify the handling of the special 'inbound' buffer ([#411](https://github.com/casualcore/casual/issues/411))
+- buffer: zero sized buffers is not found in lookup table ([#302](https://github.com/casualcore/casual/issues/302))
+- queue: add 'signaled' error-code to queue api ([#291](https://github.com/casualcore/casual/issues/291))
+- queue: correct runlevel for queue-forward-group ([#221](https://github.com/casualcore/casual/issues/221))
+- service: fix routes dissapearing on config update ([#431](https://github.com/casualcore/casual/issues/431))
+- service: don't reserve instance after fatal assassination event ([#305](https://github.com/casualcore/casual/issues/305))
+- service: refactoring service-manager - reference based -> index based ([#407](https://github.com/casualcore/casual/issues/407))
+- discovery: remove invalid sanity check ([#443](https://github.com/casualcore/casual/issues/443))
+- discovery: short-circuit fan-out discoveries -> reply directly on found ([#372](https://github.com/casualcore/casual/issues/372))
+- domain: respect 'enabled' in executable and server configuration ([#324](https://github.com/casualcore/casual/issues/324))
+- gateway: correct cli hints ([#459](https://github.com/casualcore/casual/issues/459))
+- event: fix casual-event-service-log segfaulting ([#359](https://github.com/casualcore/casual/issues/359))
+- http: outbound always send metric on service call ([#397](https://github.com/casualcore/casual/issues/397))
+- http: inbound handles lookup timeout
+- documentation: fix tutorial after updated cli ([#453](https://github.com/casualcore/casual/issues/453))
+- documentation: generated cli help for configuration missing
+- common: resetting system environment variables leaks memory on linux
 
 ### Potentially breaking changes
-### CLI
+#### CLI
 - `service --list-instances` column `state`, value `remote` has changed to `external` 
    to be consistent with other CLI values. We use _internal_ and _external_, where 
    _internal_ is stuff that is known locally to the "manager", and _external_ is stuff
