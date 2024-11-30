@@ -489,7 +489,7 @@ b2        external  50233  out    B
             auto rows = string::split( capture.standard.out, '\n');
 
             EXPECT_TRUE( std::regex_match( rows.at( 0), std::regex{ R"(b1\|external\|[0-9]+\|out\|B)"})) << rows.at( 0);
-            EXPECT_TRUE( std::regex_match( rows.at( 1), std::regex{ R"(b2\|external\|[0-9]+\|out\|B)"}));
+            EXPECT_TRUE( std::regex_match( rows.at( 1), std::regex{ R"(b2\|external\|[0-9]+\|out\|B)"})) << CASUAL_NAMED_VALUE( rows);
 
 
          }

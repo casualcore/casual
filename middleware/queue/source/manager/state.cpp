@@ -229,12 +229,22 @@ namespace casual
          auto add_queue = [&]( auto& queue)
          {
             auto& instances = queues[ queue.name];
-            auto& instance = instances.emplace_back();// message.process, queue::remote::queue::id, order);
-            instance.process = message.process;
-            instance.queue = queue::remote::queue::id;
-            instance.order = order;
-            instance.enable.enqueue = queue.enable.enqueue;
-            instance.enable.dequeue = queue.enable.dequeue;
+
+            if( auto found = algorithm::find( instances, message.process.ipc))
+            {
+               found->order = order;
+               found->enable.enqueue = queue.enable.enqueue;
+               found->enable.dequeue = queue.enable.dequeue;
+            }
+            else
+            {
+               instances.push_back( state::Queue{
+                  .process = message.process,
+                  .queue = queue::remote::queue::id,
+                  .order = order,
+                  .enable{ .enqueue = queue.enable.enqueue, .dequeue = queue.enable.dequeue}
+               });
+            }
 
             // Make sure we prioritize local queue
             algorithm::stable_sort( instances);
