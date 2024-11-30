@@ -120,9 +120,6 @@ namespace casual
                      using State = decltype( result.state);
                      result.state = instance.state() == decltype( instance.state())::busy ? State::busy : State::idle;
 
-                     common::log::line( verbose::log, "REMOVE - instance: ", instance);
-                     common::log::line( verbose::log, "REMOVE - result: ", result);
-
                      return result;
                   };
                }
