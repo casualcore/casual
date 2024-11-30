@@ -24,10 +24,14 @@
 #include "gateway/unittest/utility.h"
 
 #include "domain/unittest/utility.h"
+#include "domain/unittest/configuration.h"
 
 #include "service/unittest/utility.h"
 
 #include "transaction/unittest/utility.h"
+
+#include "configuration/unittest/utility.h"
+#include "configuration/model/transform.h"
 
 #include "queue/api/queue.h"
 
@@ -3610,6 +3614,113 @@ domain:
          EXPECT_TRUE( platform::time::clock::type::now() - start > std::chrono::milliseconds{ 2});
 
          tpfree( buffer);
+
+      }
+
+      TEST( test_gateway, runtime_update_order__expect_loadbalance_to_be_updated)
+      {
+         common::unittest::Trace trace;
+
+         auto b = local::domain( R"(
+domain: 
+   name: B
+   servers:
+      -  alias: casual-example-server
+         path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-server"
+         memberships: [ user]
+   gateway:
+      inbound:
+         groups:
+            -  connections:
+                  -  address: 127.0.0.1:7000
+)");
+
+         auto c = local::domain( R"(
+domain: 
+   name: C
+   servers:
+      -  alias: casual-example-server
+         path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-server"
+         memberships: [ user]
+   gateway:
+      inbound:
+         groups:
+            -  connections:
+                  -  address: 127.0.0.1:7001
+)");
+
+
+         auto a = local::domain( R"(
+domain: 
+   name: A
+   gateway:
+      outbound:
+         groups:
+            -  alias: B
+               order: 1
+               connections:
+                  -  address: 127.0.0.1:7000
+            -  alias: C
+               order: 2
+               connections:
+                  -  address: 127.0.0.1:7001 
+)");
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected());
+
+         static auto can_call_domain = []( std::string_view domain)
+         {
+            auto buffer = local::call( "casual/example/domain/name");
+            return buffer.get() == domain;
+         };
+
+
+         // expect to be loadbalanced to B, but we could be loadbalanced to C
+         // a few times until discovery has been fully propagated
+         unittest::eventually::succeed( []()
+         {
+            return can_call_domain( "B");  
+         });
+
+         // after this, we should be loadbalanced to B
+         algorithm::for_n< 5>( []()
+         {
+            EXPECT_TRUE( can_call_domain( "B"));
+         });
+
+
+         // we invert the order of B and C
+         {
+            auto wanted = casual::configuration::unittest::load( local::configuration::base, R"(
+domain: 
+   name: A
+   gateway:
+      outbound:
+         groups:
+            -  alias: B
+               order: 2
+               connections:
+                  -  address: 127.0.0.1:7000
+            -  alias: C
+               order: 1
+               connections:
+                  -  address: 127.0.0.1:7001 
+)");
+
+            casual::domain::unittest::configuration::post( casual::configuration::model::transform( wanted));
+         }
+
+         // expect to be loadbalanced to C, but we could be loadbalanced to B
+         // a few times until discovery has been fully propagated
+         unittest::eventually::succeed( []()
+         {
+            return can_call_domain( "C");  
+         });
+
+         // after this, we should be loadbalanced to C
+         algorithm::for_n< 5>( []()
+         {
+            EXPECT_TRUE( can_call_domain( "C"));
+         });
 
       }
 

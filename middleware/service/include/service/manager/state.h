@@ -313,7 +313,8 @@ namespace casual
                //!   Otherwise, the first instance, and rotate.
                instance::concurrent::id::type next_concurrent( std::span< instance::concurrent::id::type> preferred) noexcept;
 
-               void update_prioritized();
+               //! update the `order` of the `instance`, if it exists
+               void update_order( state::instance::concurrent::id::type instance, platform::size::type order);
 
                inline const auto& sequential() const noexcept { return m_sequential;}
                inline const auto& concurrent() const noexcept { return m_concurrent;}
@@ -321,6 +322,7 @@ namespace casual
                CASUAL_LOG_SERIALIZE(
                   CASUAL_SERIALIZE( m_sequential);
                   CASUAL_SERIALIZE( m_concurrent);
+                  CASUAL_SERIALIZE( m_prioritized_concurrent);
                )
 
             private:

@@ -155,10 +155,14 @@ namespace casual
                return algorithm::random::next( m_prioritized_concurrent)->id;
             }
 
-            void Instances::update_prioritized()
+            void Instances::update_order( state::instance::concurrent::id::type instance, platform::size::type order)
             {
-               algorithm::stable_sort( m_concurrent);
-               prioritize();
+               if( auto found = algorithm::find( m_concurrent, instance))
+               {
+                  found->order = order;
+                  algorithm::stable_sort( m_concurrent);
+                  prioritize();
+               }
             }
 
             void Instances::prioritize() noexcept
@@ -758,8 +762,9 @@ namespace casual
             instances.concurrent[ id].description = message.description;
 
             // We need to go through all services and update order/prio
+
             for( auto service_id : services.indexes())
-               services[ service_id].instances.update_prioritized();
+               services[ service_id].instances.update_order( id, message.order);
 
             // nothing added, no new services available.
             return {};

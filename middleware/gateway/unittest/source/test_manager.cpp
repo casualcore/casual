@@ -38,6 +38,7 @@
 
 #include "configuration/model/load.h"
 #include "configuration/model/transform.h"
+#include "configuration/unittest/utility.h"
 
 
 namespace casual
@@ -113,11 +114,7 @@ domain:
                template< typename... C>
                auto load( C&&... contents)
                {
-                  auto files = common::unittest::file::temporary::contents( ".yaml", std::forward< C>( contents)...);
-
-                  auto get_path = []( auto& file){ return static_cast< std::filesystem::path>( file);};
-
-                  return casual::configuration::model::load( common::algorithm::transform( files, get_path));
+                  return casual::configuration::unittest::load( std::forward< C>( contents)...);
                }
 
             } // configuration
