@@ -67,7 +67,7 @@ exclude_patterns = ['**google**']
 pygments_style = "sphinx"
 
 smv_tag_whitelist = None
-smv_branch_whitelist = r'^(release/[0-9]\.[0-9]+|patch/1\.6/main|patch/1\.6/main|feature/1\.7/main)$'
+smv_branch_whitelist = r'^(release/[0-9]\.[0-9]+|patch/1\.[0-9]/main|patch/1\.[0-9]/main|feature/1\.[0-9]/main)$'
 smv_remote_whitelist = None 
 # -- Options for HTML output -------------------------------------------------
 
