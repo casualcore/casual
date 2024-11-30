@@ -21,10 +21,10 @@ casual
         </td>
         <td>
           <div style="display:inline-block;">
-            <h2 style="width:auto;">release notes</h2>
+            <h2 style="width:auto;">release information</h2>
           </div>
           <ul>
-          <li><a href="README.html#status">status</a></li>
+          <li><a href="documentation/release-notes.html">release notes</a></li>
           </ul>
         </td>
       </tr>
