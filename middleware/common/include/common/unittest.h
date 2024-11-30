@@ -158,6 +158,31 @@ namespace casual
          } // standard
       } // capture
 
+      namespace eventually
+      {
+         //! tries to fulfill the predicate until it returns true or we have 
+         //! reached 2k tries and a total time of ~16s -> an exception is raised.
+         //! This should be enough for "all" the systems we're building casual on.
+         template< typename P>
+         auto succeed( P predicate)
+         {
+            constexpr auto total_count = 2000;
+            auto count = total_count;
+
+            while( --count > 0)
+            {
+               if( predicate())
+                  return;
+
+               common::process::sleep( std::chrono::milliseconds{ 8});
+            }
+
+            if( count == 0)
+               code::raise::error( code::casual::invalid_semantics, "unittest::eventually failed to fulfill the predicate after ", total_count, " tries");
+         }  
+         
+      } // eventually
+
       namespace fetch
       {
          //! tries to fetch and compare the predicate until the predicate returns true
@@ -166,20 +191,18 @@ namespace casual
          template< typename F>
          constexpr auto until( F fetcher)
          {
-            return [fetcher]( auto&& predicate)
+            return [ fetcher]( auto&& predicate)
             {
-               constexpr auto total_count = 2000;
                auto state = fetcher();
-               auto count = total_count;
+               
+               if( predicate( state))
+                  return state;
 
-               while( ! predicate( state) && --count > 0)
+               unittest::eventually::succeed( [&state, &predicate, &fetcher]()
                {
-                  common::process::sleep( std::chrono::milliseconds{ 8});
                   state = fetcher();
-               }
-
-               if( count == 0)
-                  code::raise::error( code::casual::invalid_semantics, "unittest::fetch::until failed to fulfill the predicate after ", total_count, " tries - state: ", state);
+                  return predicate( state);
+               });
 
                return state;
             };
