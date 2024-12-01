@@ -90,40 +90,53 @@ namespace casual
          return nullptr;
       }
 
-      void State::update( queue::ipc::message::group::configuration::update::Reply reply)
+      void State::update( queue::ipc::message::group::configuration::update::Reply message)
       {
-         Trace trace{ "queue::manager::State::update"};
+         Trace trace{ "queue::manager::State::update configuration"};
 
          // we'll make it easy - first we remove all queues associated with the pid, then we'll add 
          // the 'configured' ones
 
-         remove_queues( reply.process.pid);
+         remove_queues( message.process.pid);
 
-         auto update_group = []( auto& state, auto& group, auto& reply)
+         auto update_group = []( auto& state, auto& group, auto& message)
          {
             group.state = decltype( group.state())::running;
 
-            for( auto& queue : reply.queues)
+            for( auto& queue : message.queues)
             {
                auto& instances = state.queues[ queue.name];
                {
-                  auto& instance = instances.emplace_back();
-                  instance.process = group.process;
-                  instance.queue = queue.id;
-                  
+                  auto instance = [ &]()
+                  {
+                     if( auto found = algorithm::find( instances, message.process.ipc))
+                        return found.data();
+                     return &instances.emplace_back();
+                     
+                  }();
+
+                  instance->process = group.process;
+                  instance->queue = queue.id;
+
+                  // TODO - the groups should have the responsibility for it's total configuration.
+                  //   I think we should move the configuration to the group, and let the group tell 
+                  //   us (the manager) what to do. This way we can have a more clear separation of
+                  //   concerns. The group should be the one that knows what queues it has and what 
+                  //   configuration they have.
+                  // 
                   // get the enable from configuration
                   if( auto found = algorithm::find( group.configuration.queues, queue.name))
-                     instance.enable = found->enable;
+                     instance->enable = found->enable;
                }
                
                algorithm::sort( instances);
             }
          };
 
-         if( auto found = algorithm::find( groups, reply.process.pid))
-            update_group( *this, *found, reply);
+         if( auto found = algorithm::find( groups, message.process.pid))
+            update_group( *this, *found, message);
          else
-            log::line( log::category::error, "failed to correlate group", reply.process, " - action: discard");
+            log::line( log::category::error, "failed to correlate group", message.process, " - action: discard");
             
       }
 

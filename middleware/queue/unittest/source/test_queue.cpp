@@ -31,10 +31,14 @@
 
 #include "domain/discovery/api.h"
 #include "domain/unittest/manager.h"
+#include "domain/unittest/configuration.h"
 
 #include "queue/manager/admin/services.h"
 #include "serviceframework/service/protocol.h"
 #include "serviceframework/service/protocol/call.h"
+
+#include "configuration/model/transform.h"
+#include "configuration/unittest/utility.h"
 
 #include <fstream>
 #include <future>
@@ -1457,6 +1461,42 @@ domain:
          EXPECT_TRUE( reply.code == decltype( reply.code)::no_queue) << CASUAL_NAMED_VALUE( reply);
       }
 
+      namespace local
+      {
+         namespace
+         {
+            auto error_code_enqueue( std::string name) -> std::error_code
+            {
+               try
+               {
+                  queue::Message message;
+                  queue::enqueue( name, message);
+                  return common::code::queue::ok;
+               }
+               catch( const std::system_error& error)
+               {
+                  return error.code();
+               }
+            };
+
+            auto error_code_dequeue( std::string name) -> std::error_code
+            {
+               try
+               {
+                  auto message = queue::dequeue( name);
+                  if( ! message.empty())
+                     return common::code::queue::ok;
+                  else 
+                     return common::code::queue::no_message;
+               }
+               catch( const std::system_error& error)
+               {
+                  return error.code();
+               }
+            };
+         } // <unnamed>
+      } // local
+
 
       TEST( casual_queue, enqueue_dequeue_enable)
       {
@@ -1482,47 +1522,87 @@ domain:
 
 )");
 
-         auto enqueue = []( std::string name) -> std::error_code
-         {
-            try
-            {
-               queue::Message message;
-               queue::enqueue( name, message);
-               return common::code::queue::ok;
-            }
-            catch( const std::system_error& error)
-            {
-               return error.code();
-            }
-         };
 
-         auto dequeue = []( std::string name) -> std::error_code
-         {
-            try
-            {
-               auto message = queue::dequeue( name);
-               if( ! message.empty())
-                  return common::code::queue::ok;
-               else 
-                  return common::code::queue::no_message;
-            }
-            catch( const std::system_error& error)
-            {
-               return error.code();
-            }
-         };
+         EXPECT_TRUE( local::error_code_enqueue( "a") == common::code::queue::no_queue);
+         EXPECT_TRUE( local::error_code_enqueue( "b") == common::code::queue::ok);
+         EXPECT_TRUE( local::error_code_enqueue( "c") == common::code::queue::no_queue);
+         EXPECT_TRUE( local::error_code_enqueue( "d") == common::code::queue::ok);
 
-
-         EXPECT_TRUE( enqueue( "a") == common::code::queue::no_queue);
-         EXPECT_TRUE( enqueue( "b") == common::code::queue::ok);
-         EXPECT_TRUE( enqueue( "c") == common::code::queue::no_queue);
-         EXPECT_TRUE( enqueue( "d") == common::code::queue::ok);
-
-         EXPECT_TRUE( dequeue( "a") == common::code::queue::no_message);
-         EXPECT_TRUE( dequeue( "b") == common::code::queue::no_queue);
-         EXPECT_TRUE( dequeue( "c") == common::code::queue::no_queue);
+         EXPECT_TRUE( local::error_code_dequeue( "a") == common::code::queue::no_message);
+         EXPECT_TRUE( local::error_code_dequeue( "b") == common::code::queue::no_queue);
+         EXPECT_TRUE( local::error_code_dequeue( "c") == common::code::queue::no_queue);
          // we've enqueued to d before
-         EXPECT_TRUE( dequeue( "d") == common::code::queue::ok);
+         EXPECT_TRUE( local::error_code_dequeue( "d") == common::code::queue::ok);
+      }
+
+      TEST( casual_queue, runtime_enqueue_dequeue_enable)
+      {
+         common::unittest::Trace trace;
+
+         auto a = local::domain( R"(
+domain:
+   name: A
+   queue:
+      groups:
+         -  alias: "QA"
+            queues:
+               -  name: a
+                  enable:
+                     enqueue: false
+               -  name: b
+                  enable:
+                     dequeue: false
+               -  name: c
+                  enable:
+                     enqueue: false
+                     dequeue: false
+         )");
+
+         constexpr std::string_view wanted = R"(
+domain:
+   name: A
+   queue:
+      groups:
+         -  alias: "QA"
+            queues:
+               -  name: a
+                  enable:
+                     dequeue: false
+               -  name: b
+                  enable:
+                     enqueue: false
+               -  name: c
+         )";
+         
+         // runtime update 
+         {
+            auto model = configuration::model::transform( domain::unittest::configuration::post( configuration::model::transform( configuration::unittest::load( local::configuration::servers, wanted))));
+
+            // check that the model is as expected
+            ASSERT_TRUE( model.queue.groups.size() == 1);
+            ASSERT_TRUE( model.queue.groups.at( 0).queues.size() == 3);
+            EXPECT_TRUE( model.queue.groups.at( 0).queues.at( 0).name == "a");
+            EXPECT_TRUE( model.queue.groups.at( 0).queues.at( 0).enable.enqueue == true);
+            EXPECT_TRUE( model.queue.groups.at( 0).queues.at( 0).enable.dequeue == false);
+            EXPECT_TRUE( model.queue.groups.at( 0).queues.at( 1).name == "b");
+            EXPECT_TRUE( model.queue.groups.at( 0).queues.at( 1).enable.enqueue == false);
+            EXPECT_TRUE( model.queue.groups.at( 0).queues.at( 1).enable.dequeue == true);
+            EXPECT_TRUE( model.queue.groups.at( 0).queues.at( 2).name == "c");
+            EXPECT_TRUE( model.queue.groups.at( 0).queues.at( 2).enable.enqueue == true);
+            EXPECT_TRUE( model.queue.groups.at( 0).queues.at( 2).enable.dequeue == true);
+         }
+
+         
+
+         EXPECT_TRUE( local::error_code_enqueue( "a") == common::code::queue::ok);
+         EXPECT_TRUE( local::error_code_dequeue( "a") == common::code::queue::no_queue);
+
+         EXPECT_TRUE( local::error_code_enqueue( "b") == common::code::queue::no_queue);
+         // enabled but nu message on the queue
+         EXPECT_TRUE( local::error_code_dequeue( "b") == common::code::queue::no_message);
+
+         EXPECT_TRUE( local::error_code_enqueue( "c") == common::code::queue::ok);
+         EXPECT_TRUE( local::error_code_dequeue( "c") == common::code::queue::ok);
 
       }
 

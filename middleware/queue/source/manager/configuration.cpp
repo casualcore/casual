@@ -243,12 +243,21 @@ namespace casual
 
                auto update_action = [ &state, shared, configuration = std::move( groups)]( task::unit::id)
                {
-                  Trace trace{ "queue::manager::configuration::conform groups shutdown_action"};
+                  Trace trace{ "queue::manager::configuration::conform::local::modified_groups update_action"};
 
                   for( auto& group : configuration)
                   {
                      if( auto found = algorithm::find( state.groups, group.alias))
                      {
+                        // TODO - the groups should have the responsibility for it's total configuration.
+                        //   I think we should move the configuration to the group, and let the group tell 
+                        //   us (the manager) what to do. This way we can have a more clear separation of
+                        //   concerns. The group should be the one that knows what queues it has and what 
+                        //   configuration they have.
+
+                        // set new configuration for the group
+                        found->configuration = group;
+
                         queue::ipc::message::group::configuration::update::Request request{ common::process::handle()};
                         request.model = group;
                         state.multiplex.send( found->process.ipc, request);
