@@ -567,13 +567,18 @@ namespace casual
             algorithm::for_each( model.domain.servers, normalizer);
          }
 
+         // normalize alias for queue-group and queue-forward
          {
             state.count = {};
-            auto forward_alias = alias::normalize::mutator( state, []( auto&){ return "forward";});
 
-            algorithm::for_each( model.queue.forward.groups, [&forward_alias, &state]( auto& group)
+            auto group_normalizer = alias::normalize::mutator( state, []( auto& value){ return "group";});
+            algorithm::for_each( model.queue.groups, group_normalizer);
+
+            auto forward_normalizer = alias::normalize::mutator( state, []( auto&){ return "forward";});
+
+            algorithm::for_each( model.queue.forward.groups, [&forward_normalizer, &state]( auto& group)
             {
-               forward_alias( group);
+               forward_normalizer( group);
                
                // normalize the forwards
                auto normalizer = alias::normalize::mutator( state, []( auto& value){ return value.source;});
@@ -582,6 +587,7 @@ namespace casual
             });;
          }
 
+         // normalize alias for gateway
          {
             state.count = {};
             

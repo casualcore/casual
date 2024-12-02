@@ -171,6 +171,33 @@ domain:
          EXPECT_TRUE( find_and_compare_queue( "b3", default_retry));
       }
 
+      TEST( casual_queue, no_queue_group_alias__expect__state__default_queue_group_alias)
+      {
+         common::unittest::Trace trace;
+
+         auto domain = local::domain( R"(
+domain:
+   name: A
+   queue:
+      groups:
+         -  queues:
+               -  name: a1
+         -  queues:
+               -  name: b1
+         -  alias: C
+            queues:
+               -  name: c1
+)");
+
+
+         auto state = unittest::state();
+
+         ASSERT_TRUE( state.groups.size() == 3) << CASUAL_NAMED_VALUE( state.groups);
+         EXPECT_TRUE( state.groups.at( 0).alias == "group") << CASUAL_NAMED_VALUE( state.groups);
+         EXPECT_TRUE( state.groups.at( 1).alias == "group.2") << CASUAL_NAMED_VALUE( state.groups);
+         EXPECT_TRUE( state.groups.at( 2).alias == "C") << CASUAL_NAMED_VALUE( state.groups);
+      }
+
 
       TEST( casual_queue, lookup_request_a1__expect_existence)
       {

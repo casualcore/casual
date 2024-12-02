@@ -252,6 +252,42 @@ domain:
 
       }
 
+      TEST( casual_queue_forward, no_queue_forward_alias__expect__state__default_queue_forward_alias)
+      {
+         common::unittest::Trace trace;
+
+         auto domain = local::domain( R"(
+domain:
+   name: A
+   queue:
+      forward:
+         groups:
+            -  services:
+                  -  alias: foo
+                     source: a1
+                     target: 
+                        service: queue/unittest/service
+            -  services:
+                  -  alias: bar
+                     source: a2
+                     target: 
+                        service: queue/unittest/service
+            -  alias: C
+               services:
+                  -  alias: baz
+                     source: a3
+                     target: 
+                        service: queue/unittest/service
+)");
+         auto state = unittest::state();
+
+         ASSERT_TRUE( state.forward.groups.size() == 3) << CASUAL_NAMED_VALUE( state.forward.groups);
+         EXPECT_TRUE( state.forward.groups.at( 0).alias == "forward") << CASUAL_NAMED_VALUE( state.forward.groups);
+         EXPECT_TRUE( state.forward.groups.at( 1).alias == "forward.2") << CASUAL_NAMED_VALUE( state.forward.groups);
+         EXPECT_TRUE( state.forward.groups.at( 2).alias == "C") << CASUAL_NAMED_VALUE( state.forward.groups);
+      }
+      
+
       TEST( casual_queue_forward, scale_all_aliases_to_5_instances)
       {
          common::unittest::Trace trace;
