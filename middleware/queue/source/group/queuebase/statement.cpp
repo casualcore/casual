@@ -293,5 +293,15 @@ WHERE queue = :queue AND state = 2 AND timestamp > :timestamp AND available < :a
          return result;
       }
 
+      namespace metric
+      {
+         std::string_view reset()
+         {
+            return R"( 
+            UPDATE queue
+            SET metric_dequeued = 0, metric_enqueued = 0; )";
+         }
+      } // metric
+
    } // queue::group::queuebase
 } // casual

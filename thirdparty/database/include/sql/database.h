@@ -551,9 +551,9 @@ namespace sql
             query( statement, std::forward< Params>( params)...).execute();
          }
 
-         inline void statement( const char* sql)
+         inline void statement( std::string_view sql)
          {
-            if( auto code = code::make( sqlite3_exec( m_handle.get(), sql, nullptr, nullptr, nullptr)))
+            if( auto code = code::make( sqlite3_exec( m_handle.get(), sql.data(), nullptr, nullptr, nullptr)))
                code::raise( code, m_handle);
          }
 

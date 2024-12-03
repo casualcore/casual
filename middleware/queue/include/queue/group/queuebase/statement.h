@@ -93,5 +93,12 @@ namespace casual
 
       Statement statement( sql::database::Connection& connection);
 
+      namespace metric
+      {
+         //! @return an sql statement that resets the metric counters for all queues
+         std::string_view reset();
+         
+      } // metric
+
    } // queue::group::queuebase
 } // casual

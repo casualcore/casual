@@ -19,7 +19,7 @@ namespace casual
       namespace fetch
       {
          constexpr auto until = common::unittest::fetch::until( &unittest::state);
-      }
+      } // fetch
 
       std::vector< manager::admin::model::Message> messages( const std::string& queue);
 

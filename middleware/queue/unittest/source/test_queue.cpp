@@ -198,6 +198,58 @@ domain:
          EXPECT_TRUE( state.groups.at( 2).alias == "C") << CASUAL_NAMED_VALUE( state.groups);
       }
 
+      TEST( casual_queue, enqueue_to_persistent_group__shutdown__boot_same_persistent_group__expect_metrics_reset)
+      {
+         common::unittest::Trace trace;
+
+         auto queuebase = common::unittest::file::temporary::name( ".qb"); 
+
+         auto guard = common::unittest::environment::scoped::variable( "CASUAL_TEST_QUEUEBASE", queuebase.string());
+
+         constexpr std::string_view queue_configuration = R"(
+domain:
+   name: A
+   queue:
+      groups:
+         -  queuebase: ${CASUAL_TEST_QUEUEBASE}
+            queues:
+               -  name: a
+)";
+         
+         {
+            auto domain = local::domain( queue_configuration);
+
+            // enqueue and dequeue a few times
+            common::algorithm::for_n< 5>( []()
+            {
+               queue::Message message;
+               queue::enqueue( "a", message);
+               std::ignore = queue::dequeue( "a");
+            });
+
+            auto state = unittest::state();
+
+            // expect 2 queues, a and a.error
+            ASSERT_TRUE( state.queues.size() == 2) << CASUAL_NAMED_VALUE( state.queues);
+            EXPECT_TRUE( state.queues.at( 1).name == "a");
+            EXPECT_TRUE( state.queues.at( 1).metric.enqueued == 5) << CASUAL_NAMED_VALUE( state.queues);
+            EXPECT_TRUE( state.queues.at( 1).metric.dequeued == 5) << CASUAL_NAMED_VALUE( state.queues);
+         }
+
+         {
+            auto domain = local::domain( queue_configuration);
+
+            auto state = unittest::state();
+
+            // expect 2 queues, a and a.error
+            ASSERT_TRUE( state.queues.size() == 2) << CASUAL_NAMED_VALUE( state.queues);
+            EXPECT_TRUE( state.queues.at( 1).name == "a");
+            // expect metrics to be reset
+            EXPECT_TRUE( state.queues.at( 1).metric.enqueued == 0) << CASUAL_NAMED_VALUE( state.queues);
+            EXPECT_TRUE( state.queues.at( 1).metric.dequeued == 0) << CASUAL_NAMED_VALUE( state.queues);
+         }
+      }
+
 
       TEST( casual_queue, lookup_request_a1__expect_existence)
       {

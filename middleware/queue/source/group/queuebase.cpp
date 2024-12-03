@@ -237,6 +237,11 @@ namespace casual
          // Precompile all other statements
          m_statement = queuebase::statement( m_connection);
 
+         {
+            Trace trace{ "queue::group::Queuebase::Queuebase reset metrics"};
+            m_connection.statement( queuebase::metric::reset());
+         }
+
          // start transaction
          m_connection.exclusive_begin();
       }

@@ -660,6 +660,10 @@ namespace casual
                         if( ! message.model.queuebase.empty())
                            return group::Queuebase{ message.model.queuebase};
 
+                        // sanity check
+                        if( message.model.alias.empty())
+                           common::event::error::raise( common::code::casual::internal_unexpected_value, "queuebase alias is empty");
+
                         if( ! message.model.directory.empty())
                            return group::Queuebase{ message.model.directory + "/" + message.model.alias + ".qb"};
                         

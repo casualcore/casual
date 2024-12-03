@@ -61,7 +61,7 @@ CREATE INDEX IF NOT EXISTS i_message_available ON message ( available ASC);
 CREATE INDEX IF NOT EXISTS i_gtrid_message  ON message ( gtrid, state);
 )";
             } // index
-         } // inline v2_0
+         } // inline v3_0
       } // table
 
       inline namespace v3_0
@@ -139,7 +139,7 @@ DROP TRIGGER IF EXISTS delete_message;
 )";
          } // drop
          
-      } // inline v2_0
+      } // inline v3_0
 
    } // queue::group::queuebase::schema
 } // casual
