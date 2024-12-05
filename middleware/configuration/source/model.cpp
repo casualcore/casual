@@ -646,8 +646,6 @@ namespace casual
 
             auto update_forward_groups = [ &]( auto& group)
             {
-               update_enabled( group);
-
                algorithm::for_each( group.services, update_enabled);
                algorithm::for_each( group.queues, update_enabled);
             };

@@ -459,7 +459,6 @@ namespace casual
                         queue::forward::Group result;
                         result.alias = group.alias.value_or( "");
                         result.note = group.note.value_or( "");
-                        result.memberships = group.memberships.value_or( result.memberships);
 
                         auto set_base_forward = []( auto& source, auto& target)
                         {
@@ -914,7 +913,6 @@ namespace casual
                         user::domain::queue::forward::Group result;
                         result.alias = group.alias;
                         result.note = null_if_empty( group.note);
-                        result.memberships = null_if_empty( group.memberships);
 
                         result.services = null_if_empty( algorithm::transform( group.services, []( auto& service)
                         {

@@ -1166,7 +1166,6 @@ namespace casual
                std::vector< Service> services;
                std::vector< Queue> queues;
                std::string note;
-               bool enabled = true;
 
                inline friend Reply operator + ( Reply lhs, Reply rhs)
                {
@@ -1182,7 +1181,6 @@ namespace casual
                   CASUAL_SERIALIZE( services);
                   CASUAL_SERIALIZE( queues);
                   CASUAL_SERIALIZE( note);
-                  CASUAL_SERIALIZE( enabled);
                )
             };
 

@@ -444,8 +444,6 @@ namespace casual
 
          std::vector< std::string> memberships;
 
-         bool enabled;
-
          //! we're done when we're in shutdown mode
          //! and all forwards has no concurrent stuff in flight.
          bool done() const noexcept;

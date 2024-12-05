@@ -808,7 +808,6 @@ namespace casual
                   std::optional< std::vector< forward::Service>> services;
                   std::optional< std::vector< forward::Queue>> queues;
                   std::optional< std::string> note;
-                  std::optional< std::vector< std::string>> memberships;
 
 
                   CASUAL_CONST_CORRECT_SERIALIZE(
@@ -816,7 +815,6 @@ namespace casual
                      CASUAL_SERIALIZE( note);
                      CASUAL_SERIALIZE( services);
                      CASUAL_SERIALIZE( queues);
-                     CASUAL_SERIALIZE( memberships);
                   )
                };
             } // forward

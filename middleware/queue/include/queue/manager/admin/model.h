@@ -292,7 +292,6 @@ namespace casual
             std::string alias;
             common::process::Handle process;
             std::string note;
-            bool enabled = true;
 
             inline friend bool operator == ( const Group& lhs, common::strong::process::id rhs) { return lhs.process.pid == rhs;}
 
@@ -300,7 +299,6 @@ namespace casual
                CASUAL_SERIALIZE( alias);
                CASUAL_SERIALIZE( process);
                CASUAL_SERIALIZE( note);
-               CASUAL_SERIALIZE( enabled);
             )
          };
 
