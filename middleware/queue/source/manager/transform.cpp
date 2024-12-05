@@ -92,7 +92,7 @@ namespace casual
                };
 
                result.forward.groups.push_back(
-                  admin::model::forward::Group{ std::move( forward.alias), forward.process, std::move( forward.note), forward.enabled}
+                  admin::model::forward::Group{ std::move( forward.alias), forward.process, std::move( forward.note)}
                );
 
                auto transform_service = [&forward, &transform_metric]( auto& service)

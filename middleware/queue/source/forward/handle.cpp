@@ -32,15 +32,6 @@ namespace casual
       {
          namespace
          {
-            namespace detail::forward
-            {
-               template< typename F>
-               bool enabled( State& state, const F& forward)
-               {
-                  return state.enabled && forward.enabled;
-               }
-            } // detail::forward
-
             namespace transform::forward
             {
                auto service( State& state)
@@ -49,7 +40,7 @@ namespace casual
                   {
                      state::forward::Service result;
                      result.alias = service.alias;
-                     result.enabled = detail::forward::enabled( state, service);
+                     result.enabled = service.enabled;
                      result.source.queue = service.source;
                      
                      if( service.reply)
@@ -71,7 +62,7 @@ namespace casual
                   {
                      state::forward::Queue result;
                      result.alias = queue.alias;
-                     result.enabled = detail::forward::enabled( state, queue);
+                     result.enabled = queue.enabled;
                      result.source.queue = queue.source;
 
                      result.target.queue = queue.target.queue;
@@ -431,10 +422,9 @@ namespace casual
 
                         state.alias = message.model.alias;
                         state.memberships = message.model.memberships;
-                        state.enabled = message.model.enabled;
 
                         // TODO maintenance we only update instances
-                        auto add_or_update = [ &state]( auto& source, auto& target, auto transform)
+                        auto add_or_update = []( auto& source, auto& target, auto transform)
                         {
                            auto handle_source = [&]( auto& forward)
                            {
@@ -443,7 +433,7 @@ namespace casual
                               if( auto found = algorithm::find_if( target, is_alias))
                               {
                                  found->instances.configured = forward.instances;
-                                 found->enabled = detail::forward::enabled( state, forward);
+                                 found->enabled = forward.enabled;
                               }
                               else
                               {
@@ -941,7 +931,6 @@ namespace casual
 
                         auto reply = common::message::reverse::type( message, process::handle());
                         reply.alias = state.alias;
-                        reply.enabled = state.enabled;
                         reply.services = algorithm::transform( state.forward.services, transform_service);
                         reply.queues = algorithm::transform( state.forward.queues, transform_queue);
 

@@ -202,8 +202,6 @@ domain:
       forward:
          groups:
             -  alias: forward-group
-               memberships:
-                  -  disabled-group
                services:
                   -  source: some-queue
                      target:
@@ -233,12 +231,6 @@ domain:
          {
             auto capture = local::execute( R"(casual queue --list-forward-groups --porcelain true | awk -F'|' '{printf $4}')");
             EXPECT_EQ( capture.standard.out, "2") << CASUAL_NAMED_VALUE( capture);
-         }
-
-         // enabled
-         {
-            auto capture = local::execute( R"(casual queue --list-forward-groups --porcelain true | awk -F'|' '{printf $8}')");
-            EXPECT_EQ( capture.standard.out, "D") << CASUAL_NAMED_VALUE( capture);
          }
       }
 
@@ -613,85 +605,6 @@ domain:
             EXPECT_TRUE( std::stoi( capture.standard.out) == 0) << CASUAL_NAMED_VALUE( capture);
          }
       }
-
-      TEST( cli_queue, enable_forward_group_membership__expect_enabled)
-      {
-         common::unittest::Trace trace;
-
-         auto domain = local::domain( R"(
-domain:
-   groups:
-      -  name: disabled-group
-         dependencies: [ queue]
-         enabled: false
-
-   queue:
-      forward:
-         groups:
-            -  alias: forward-group
-               memberships:
-                  - disabled-group
-               services:
-                  -  alias: disabled-forward-service
-                     instances: 1
-                     memberships:
-                        -  disabled-group
-                     source: some-queue
-                     target:
-                        service: some-service
-               queues:
-                  -  alias: disabled-forward-queue
-                     instances: 1
-                     memberships:
-                        -  disabled-group
-                     source: some-other-queue
-                     target:
-                        queue: yet-another-queue
-)");
-
-         // forward group
-         {
-            auto capture = local::execute( R"(casual queue --list-forward-groups --porcelain true | awk -F'|' '{printf $8}')");
-            EXPECT_EQ( capture.standard.out, "D") << CASUAL_NAMED_VALUE( capture);
-         }
-
-         // forward service
-         {
-            auto capture = local::execute( R"(casual queue --list-forward-services --porcelain true | awk -F'|' '{printf $12}')");
-            EXPECT_EQ( capture.standard.out, "D") << CASUAL_NAMED_VALUE( capture);
-         }
-
-         // forward queue
-         {
-            auto capture = local::execute( R"(casual queue --list-forward-queues --porcelain true | awk -F'|' '{printf $11}')");
-            EXPECT_EQ( capture.standard.out, "D") << CASUAL_NAMED_VALUE( capture);
-         }
-
-         // enable the group
-         {
-            auto capture = administration::unittest::cli::command::execute( "casual configuration --enable-groups disabled-group");
-            EXPECT_TRUE( capture.exit == 0);
-         }
-
-         // forward group
-         {
-            auto capture = local::execute( R"(casual queue --list-forward-groups --porcelain true | awk -F'|' '{printf $8}')");
-            EXPECT_EQ( capture.standard.out, "E") << CASUAL_NAMED_VALUE( capture);
-         }
-
-         // forward service
-         {
-            auto capture = local::execute( R"(casual queue --list-forward-services --porcelain true | awk -F'|' '{printf $12}')");
-            EXPECT_EQ( capture.standard.out, "E") << CASUAL_NAMED_VALUE( capture);
-         }
-
-         // forward queue
-         {
-            auto capture = local::execute( R"(casual queue --list-forward-queues --porcelain true | awk -F'|' '{printf $11}')");
-            EXPECT_EQ( capture.standard.out, "E") << CASUAL_NAMED_VALUE( capture);
-         }
-      }
-
 
       TEST( cli_queue, enable_forward_service_queue_membership__expect_enabled)
       {

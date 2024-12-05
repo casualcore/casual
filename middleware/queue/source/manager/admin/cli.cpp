@@ -659,7 +659,6 @@ namespace casual
                         return terminal::format::formatter< manager::admin::model::forward::Group>::construct(
                            column_alias(),
                            column_pid(),
-                           column_enabled(),
                            column_services(),
                            column_queues(),
                            column_commit(),
@@ -676,8 +675,7 @@ namespace casual
                            column_queues(),
                            column_commit(),
                            column_rollback(),
-                           column_last(),
-                           column_enabled()
+                           column_last()
                         );
                      }
                   }
