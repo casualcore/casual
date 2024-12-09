@@ -10,6 +10,7 @@
 #include "common/transaction/resource.h"
 #include "common/transaction/id.h"
 #include "common/environment/expand.h"
+#include "common/algorithm/compare.h"
 
 #include "common/log/line.h"
 #include "common/flag.h"
@@ -238,7 +239,7 @@ namespace casual
       {
          auto result = functor();
 
-         if( result != code::xa::resource_fail)
+         if( algorithm::compare::none( result, code::xa::resource_fail, code::xa::resource_error))
             return result;
          
          log::error( result, "failed to interact with resource ", m_id, " - action: try to reopen the resource");
