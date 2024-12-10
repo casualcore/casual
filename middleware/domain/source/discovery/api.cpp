@@ -141,6 +141,14 @@ namespace casual
          } // implicit
       } // topology
 
+      namespace discoverable
+      {
+         void advertised( Send& multiplex)
+         {
+            multiplex.send( local::instance::device(), message::discovery::discoverable::Advertised{});
+         }
+      } // discoverable
+
       namespace rediscovery
       {
          common::strong::correlation::id request()

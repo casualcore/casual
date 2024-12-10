@@ -110,6 +110,7 @@ namespace casual
                std::vector< message::discovery::topology::implicit::Update> implicit;
                std::vector< message::discovery::topology::direct::Update> direct;
                message::discovery::reply::Content lookup;
+               std::optional< message::discovery::discoverable::Advertised> advertised;
 
                CASUAL_LOG_SERIALIZE(
                   CASUAL_SERIALIZE( discovery);
@@ -117,6 +118,7 @@ namespace casual
                   CASUAL_SERIALIZE( implicit);
                   CASUAL_SERIALIZE( direct);
                   CASUAL_SERIALIZE( lookup);
+                  CASUAL_SERIALIZE( advertised);
                )
             };
 
@@ -177,6 +179,7 @@ namespace casual
             void add( message::discovery::topology::direct::Update message);
             void add( message::discovery::topology::implicit::Update message);
             void add( message::discovery::reply::Content lookup);
+            void add( message::discovery::discoverable::Advertised message);
 
             accumulate::Requests extract();
 

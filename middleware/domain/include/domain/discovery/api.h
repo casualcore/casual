@@ -63,6 +63,14 @@ namespace casual
             void update( Send& multiplex, const message::discovery::topology::implicit::Update& message);
          } // implicit
       } // topology
+
+      namespace discoverable
+      {
+         //! sends discovery::discoverable::Advertised to the _discovery_ to indicate that a 
+         //! new service/queue is discoverable.
+         void advertised( Send& multiplex);
+      } // discoverable
+
       
       namespace rediscovery
       {
