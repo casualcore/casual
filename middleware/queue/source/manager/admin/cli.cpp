@@ -33,6 +33,7 @@
 #include "serviceframework/log.h"
 
 #include <iostream>
+#include <string_view>
 
 namespace casual
 {
@@ -166,6 +167,19 @@ namespace casual
                      std::move( directive)).extract< std::vector< common::transaction::global::ID>>();
                }
             } // call
+
+            namespace lookup
+            {
+               auto queue( std::string_view queue, queue::Lookup::Action action)
+               {
+                  auto result = queue::Lookup{ queue, action}();
+
+                  if( ! result.process.ipc)
+                     code::raise::error( code::queue::no_queue, "failed to lookup queue: ", queue);
+
+                  return result;
+               }
+            }
 
 
             namespace format
@@ -1162,12 +1176,12 @@ The following options has legend:
 
                auto option()
                {
-                  auto invoke = []( std::string name)
+                  auto invoke = []( std::string queue)
                   {
                      Trace trace{ "queue::local::enqueue::invoke"};
 
                      pipe::State state;
-                     state.destination = queue::Lookup{ name, queue::Lookup::Action::enqueue}();
+                     state.destination = lookup::queue( queue, queue::Lookup::Action::enqueue);
 
                      auto handler = casual::cli::message::dispatch::create( 
                         casual::cli::pipe::forward::handle::defaults(),
@@ -1250,7 +1264,7 @@ cat somefile.bin | casual queue --enqueue <queue-name>
                      Trace trace{ "queue::local::dequeue::invoke"};
 
                      pipe::State state;
-                     state.destination = queue::Lookup{ std::move( queue), queue::Lookup::Action::dequeue}();
+                     state.destination = lookup::queue( queue, queue::Lookup::Action::enqueue);
 
                      auto handler = casual::cli::message::dispatch::create(
                         casual::cli::pipe::forward::handle::defaults(),
@@ -1317,7 +1331,7 @@ casual queue --dequeue <queue> <id> <id> <id> <id> | <some other part in casual-
                      Trace trace{ "queue::local::consume::invoke"};
 
                      pipe::State state;
-                     state.destination = queue::Lookup{ std::move( queue), queue::Lookup::Action::dequeue}();
+                     state.destination = lookup::queue( queue, queue::Lookup::Action::enqueue);
 
                      auto handler = casual::cli::message::dispatch::create(
                         casual::cli::pipe::forward::handle::defaults(),
