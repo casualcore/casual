@@ -53,6 +53,7 @@ namespace casual
             case Type::domain_discovery_lookup_reply: return "domain_discovery_lookup_reply";
             case Type::domain_discovery_fetch_known_request: return "domain_discovery_fetch_known_request";
             case Type::domain_discovery_fetch_known_reply: return "domain_discovery_fetch_known_reply";
+            case Type::domain_discovery_discoverable_advertised: return "domain_discovery_discoverable_advertised";
             case Type::server_connect_request: return "server_connect_request";
             case Type::server_connect_reply: return "server_connect_reply";
             case Type::server_disconnect: return "server_disconnect";

@@ -386,6 +386,13 @@ namespace casual
          
       } // fetch::known
 
+      namespace discoverable
+      {
+         //! sent from SM/QM to _discovery_ when a service/queue becomes discoverable
+         using Advertised = common::message::basic_message< common::message::Type::domain_discovery_discoverable_advertised>;
+
+      } // discoverable
+
       namespace api
       {
          namespace provider::registration
@@ -396,6 +403,7 @@ namespace casual
                lookup = 2,
                fetch_known = 4,
                topology = 8,
+               advertised = 16,
             };
 
             consteval void casual_enum_as_flag( Ability);
@@ -408,6 +416,7 @@ namespace casual
                   case Ability::lookup: return "lookup";
                   case Ability::fetch_known: return "fetch_known";
                   case Ability::topology: return "topology";
+                  case Ability::advertised: return "advertised";
                }
                return "<unknown>";
             }

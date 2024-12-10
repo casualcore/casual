@@ -91,6 +91,10 @@ namespace casual
          domain_discovery_fetch_known_request,
          domain_discovery_fetch_known_reply,
 
+         //! when a service/queue becomes discoverable SM/QM will send this to _discovery_
+         //! this will trigger a topology update to all upstream domains (eventually)
+         domain_discovery_discoverable_advertised,
+
          // Server
          SERVER_BASE = 2000,
          server_connect_request = SERVER_BASE,

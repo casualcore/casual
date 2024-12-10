@@ -27,10 +27,9 @@ namespace casual
       {
          namespace
          {
-            auto& device()
+            auto device()
             {
-               static communication::instance::outbound::detail::optional::Device device{ discovery::instance::identity};
-               return device;
+               return communication::instance::outbound::detail::optional::Device{ discovery::instance::identity};
             }
 
             struct Provider
@@ -566,13 +565,15 @@ domain:
             return request;
          };
 
+         auto discovery_device = local::device();
+
          // send 10 request for 'a'
          auto requests = algorithm::generate_n< 10>( [ &]()
          {
             auto request = create_request();
             request.content.services = { "a"};
 
-            request.correlation = communication::device::blocking::send( local::device(), request);
+            request.correlation = communication::device::blocking::send( discovery_device, request);
             lookup_reply_resources_as_absent();
             return request;
          });
@@ -587,7 +588,7 @@ domain:
          {
             auto request = create_request();
             request.content.services.push_back( service);
-            request.correlation = communication::device::blocking::send( local::device(), request);
+            request.correlation = communication::device::blocking::send( discovery_device, request);
             lookup_reply_resources_as_absent();
             result.push_back( std::move( request));
             return result;
@@ -597,7 +598,7 @@ domain:
          {
             auto request = create_request();
             request.content.queues.push_back( queue);
-            request.correlation = communication::device::blocking::send( local::device(), request);
+            request.correlation = communication::device::blocking::send( discovery_device, request);
             lookup_reply_resources_as_absent();
             result.push_back( std::move( request));
             return result;
@@ -692,8 +693,6 @@ domain:
       {
          common::unittest::Trace trace;
 
-
-
          auto domain = unittest::manager( R"(
 domain:
    name: A
@@ -745,6 +744,8 @@ domain:
 
          // Ok, lets start sending stuff.
 
+         auto discovery_device = local::device();
+
          // send request with s1, s2, q1, q2
          {
             message::discovery::Request request{ caller.process};
@@ -752,7 +753,7 @@ domain:
             request.content.services = { "s1", "s2"};
             request.content.queues = { "q1", "q2"};
             
-            communication::device::blocking::send( local::device(), request);
+            communication::device::blocking::send( discovery_device, request);
 
             // reply as "service/queue manager"
             lookup_reply_resources();
@@ -777,6 +778,46 @@ domain:
             EXPECT_TRUE( algorithm::equal( reply.content.queues, array::make( "q1", "q2"), equal_name));
          }
 
+      }
+
+      TEST( domain_discovery, act_as_inbound__send_2_discoverable_advertised___expect_1_topology_update_to_inbound)
+      {
+         common::unittest::Trace trace;
+
+         auto domain = unittest::manager( R"(
+domain:
+   name: A
+   environment:
+      variables:
+         - { key: CASUAL_INTERNAL_DISCOVERY_ACCUMULATE_REQUESTS, value: 10}
+         - { key: CASUAL_INTERNAL_DISCOVERY_ACCUMULATE_TIMEOUT, value: 100ms}
+)");
+
+
+         // we register our self as "inbound"
+         discovery::provider::registration( discovery::provider::Ability::advertised | discovery::provider::Ability::topology);
+
+         communication::select::Directive directive;
+         communication::ipc::send::Coordinator multiplex{ directive};
+
+         // send two messages
+         algorithm::for_n< 2>( [ &multiplex]()
+         {
+            discovery::discoverable::advertised( multiplex);
+         });
+
+         // expect one topology update
+         {
+            auto reply = communication::ipc::receive< message::discovery::topology::implicit::Update>();
+            ASSERT_TRUE( reply.domains.size() == 1);
+            EXPECT_TRUE( reply.domains.at( 0) == common::domain::identity());
+         }
+
+         // expect no more
+         {
+            auto reply = communication::ipc::non::blocking::receive< message::discovery::topology::implicit::Update>();
+            EXPECT_FALSE( reply);
+         }
       }
 
    } // domain::discovery

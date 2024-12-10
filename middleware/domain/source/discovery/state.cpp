@@ -172,6 +172,14 @@ namespace casual
             m_requests.lookup += std::move( lookup);
          }
 
+         void Accumulate::add( message::discovery::discoverable::Advertised message)
+         {
+            m_requests.advertised = std::move( message);
+
+            if( ! m_deadline)
+               m_deadline = accumulate::local::create_timer( m_heuristic);
+         }
+
 
          accumulate::Requests Accumulate::extract()
          {

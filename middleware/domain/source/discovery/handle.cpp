@@ -548,17 +548,46 @@ namespace casual
             {
                namespace topology
                { 
+                  void send_implicit_update( State& state, 
+                     const std::vector< message::discovery::topology::implicit::Update>& implicit, 
+                     message::discovery::api::provider::registration::Ability ability)
+                  {
+                     Trace trace{ "discovery::handle::local::accumulate::topology::send_implicit_update"};
+
+                     message::discovery::topology::implicit::Update message;
+
+                     // accumulate all downstream domains that has triggered us, if any. This is only used to terminate a 
+                     // a possible "topology ring", that will otherwise run forever...
+
+                     message.domains = algorithm::accumulate( implicit, message.domains, []( auto result, auto& message)
+                     {
+                        algorithm::append_unique( message.domains, result);
+                        return result;
+                     });
+
+                     algorithm::append_unique_value( common::domain::identity(), message.domains);                     
+
+                     for( auto& provider : state.providers.filter( ability))
+                        detail::send::multiplex( state, provider.process.ipc, message);
+                  }
+
                   void send_direct_explore( State& state, 
                      std::vector< message::discovery::topology::direct::Update> direct, 
-                     std::vector< message::discovery::topology::implicit::Update> implicit)
+                     std::vector< message::discovery::topology::implicit::Update> implicit,
+                     message::discovery::api::provider::registration::Ability topology_ability)
                   {
                      Trace trace{ "discovery::handle::local::accumulate::topology::send_direct_explore"};
                      log::line( verbose::log, "direct: ", direct, ", implicit: ", implicit);
 
                      if( direct.empty() && implicit.empty())
-                        return;
+                     {  
+                        if( topology_ability == state::provider::Ability::advertised)
+                           topology::send_implicit_update( state, {}, state::provider::Ability::advertised);
 
-                     state.coordinate.known( detail::collect::known::requests( state), [ &state, direct = std::move( direct), implicit = std::move( implicit)]( auto&& replies, auto&& outcome) mutable
+                        return;
+                     }
+                        
+                     state.coordinate.known( detail::collect::known::requests( state), [ &state, direct = std::move( direct), implicit = std::move( implicit), topology_ability]( auto&& replies, auto&& outcome) mutable
                      {
                         Trace trace{ "discovery::handle::local::accumulate::topology::send_direct_explore coordinate"};
                         log::line( verbose::log, "replies: ", replies, ", outcome: ", outcome);
@@ -595,21 +624,8 @@ namespace casual
                               detail::send::multiplex( state, target, explore);
                         }
 
-                        // always send the implicit topology update upstream
-                        message::discovery::topology::implicit::Update message;
+                        topology::send_implicit_update( state, std::move( implicit), topology_ability);
 
-                        // accumulate all downstream domains that has triggered us. This is only used to terminate a 
-                        // a possible "topology ring", that will otherwise run forever...
-                        message.domains = algorithm::accumulate( implicit, message.domains, []( auto result, auto& message)
-                        {
-                           algorithm::append_unique( message.domains, result);
-                           return result;
-                        });
-
-                        algorithm::append_unique_value( common::domain::identity(), message.domains);
-
-                        for( auto& provider : state.providers.filter( state::provider::Ability::topology))
-                           detail::send::multiplex( state, provider.process.ipc, message);
                      });
 
                   }
@@ -666,6 +682,27 @@ namespace casual
 
             } // topology
 
+            namespace discoverable
+            {
+               auto advertised( State& state)
+               {
+                  return [ &state]( const message::discovery::discoverable::Advertised& message)
+                  {
+                     Trace trace{ "discovery::handle::local::discoverable::advertised"};
+                     local::handler::entry( message);
+
+                     if( state.runlevel > decltype( state.runlevel())::running)
+                        return;
+
+                     // we only accumulate if we have providers that are interested in advertised discoverable (services/queues)
+                     if( state.providers.filter( state::provider::Ability::advertised))
+                        state.accumulate.add( message);
+                  };
+
+               }
+               
+            } // discoverable
+
 
             auto timeout( State& state)
             {
@@ -677,7 +714,12 @@ namespace casual
                   auto result = state.accumulate.extract();
                   log::line( verbose::log, "result: ", result);
 
-                  accumulate::topology::send_direct_explore( state, std::move( result.direct), std::move( result.implicit));
+                  if( result.advertised)
+                     accumulate::topology::send_direct_explore( state, std::move( result.direct), std::move( result.implicit), state::provider::Ability::advertised);
+                  else
+                     accumulate::topology::send_direct_explore( state, std::move( result.direct), std::move( result.implicit), state::provider::Ability::topology);
+
+
                   detail::send_aggregated_discovery( state, std::move( result.discovery), std::move( result.api), std::move( result.lookup));
                };
             }
@@ -826,6 +868,7 @@ namespace casual
             local::reply( state),
             local::topology::direct::update( state),
             local::topology::implicit::update( state),
+            local::discoverable::advertised( state),
             local::timeout( state),
             local::configuration::update::request( state),
             local::shutdown::request( state),

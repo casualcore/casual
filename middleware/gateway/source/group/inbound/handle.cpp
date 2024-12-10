@@ -467,15 +467,17 @@ namespace casual
                         auto information = state.connections.information( descriptors.tcp);
                         CASUAL_ASSERT( information);
 
-                        // if the connection is not configured with _forward_, there's no need to register to discovery
-                        if( information->configuration.discovery != decltype( information->configuration.discovery)::forward)
-                           return;
-
                         auto internal = state.connections.find_internal( descriptors.ipc);
                         CASUAL_ASSERT( internal);
 
+                        // we're always interested if something new is advertised
+                        auto ability = casual::domain::discovery::provider::Ability::advertised;
+
+                        if( information->configuration.discovery == decltype( information->configuration.discovery)::forward)
+                           ability |= casual::domain::discovery::provider::Ability::topology;
+
                         // a new connection has been established, we need to register this with discovery.
-                        casual::domain::discovery::provider::registration( *internal, casual::domain::discovery::provider::Ability::topology);
+                        casual::domain::discovery::provider::registration( *internal, ability);
 
                         common::log::line( verbose::log, "state.connections: ", state.connections);
       
