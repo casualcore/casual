@@ -566,6 +566,33 @@ namespace casual
          EXPECT_TRUE( algorithm::compare::any( 1, 5, 4, 3, 2, 1));
       }
 
+      TEST( common_algorithm_compare_none, value_1__to_2__expect_true)
+      {
+         common::unittest::Trace trace;
+
+         EXPECT_TRUE( algorithm::compare::none( 1, 2));
+      }
+
+      TEST( common_algorithm_compare_none, value_1__to_1__expect_false)
+      {
+         common::unittest::Trace trace;
+
+         EXPECT_FALSE( algorithm::compare::none( 1, 1));
+      }
+
+      TEST( common_algorithm_compare_none, value_1__to_5_3_2_0__expect_true)
+      {
+         common::unittest::Trace trace;
+
+         EXPECT_TRUE( algorithm::compare::none( 1, 5, 4, 3, 2, 0));
+      }
+
+      TEST( common_algorithm_compare_none, value_1__to_5_3_2_1__expect_false)
+      {
+         common::unittest::Trace trace;
+
+         EXPECT_FALSE( algorithm::compare::none( 1, 5, 4, 3, 2, 1));
+      }
 
       TEST( common_algorithm_remove, empty_empty__expect_empty)
       {

@@ -14,10 +14,14 @@ namespace casual
       template< typename V, typename... Vs>
       constexpr bool any( V&& value, Vs&&... values)
       {
-         auto equal = []( auto&& l, auto& r){ return l == r;}; // to mitigate g++ 9.3.1 bug
-         return ( equal( value, values) || ... ); 
+         return ( ( value == values) || ... ); 
       }
 
+      template< typename V, typename... Vs>
+      constexpr bool none( V&& value, Vs&&... values)
+      {
+         return ( ( value != values) && ... );
+      }
 
    } // common::algorithm::compare
 } // casual
