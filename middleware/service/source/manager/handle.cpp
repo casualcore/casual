@@ -230,7 +230,8 @@ namespace casual
             namespace service::detail::handle
             {
                // defined after lookup, below
-               void pending( State& state, std::vector< state::service::pending::Lookup>&& pending);
+               void pending( State& state, std::vector< state::service::pending::Lookup> pending);
+               void pending( State& state, State::update_result_t update);
                   
             } // service::detail::handle
 
@@ -706,7 +707,7 @@ namespace casual
                   namespace handle
                   {
                      // Used by advertised above, defined here to be able to use lookup...
-                     void pending( State& state, std::vector< state::service::pending::Lookup>&& pending)
+                     void pending( State& state, std::vector< state::service::pending::Lookup> pending)
                      {
                         Trace trace{ "service::manager::handle::local::service::detail::handle::pending"};
                         log::line( verbose::log, "pending: ", pending);
@@ -725,6 +726,15 @@ namespace casual
                         
                         algorithm::for_each( pending, lookup);
                      }
+
+                     void pending( State& state, State::update_result_t update)
+                     {
+                        handle::pending( state, std::move( update.pending));
+
+                        if( update.discoverable)
+                           casual::domain::discovery::discoverable::advertised( state.multiplex);
+                     }
+
                   } // handle
 
                   

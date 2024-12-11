@@ -3724,5 +3724,73 @@ domain:
 
       }
 
+      TEST( test_gateway, topology_update_when_new_discoverable_service_is_advertised)
+      {
+         common::unittest::Trace trace;
+
+         auto b = local::domain( R"(
+domain: 
+   name: B
+   servers:         
+      -  path: "${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-server"
+         alias: example
+         memberships: [ user]
+         instances: 0
+   gateway:
+      inbound:
+         groups:
+            -  connections:
+                  -  address: 127.0.0.1:7010
+)");
+
+         auto a = local::domain( R"(
+domain: 
+   name: A
+   gateway:
+      outbound:
+         groups:
+            -  connections:
+                  -  address: 127.0.0.1:7010
+)");
+
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected());
+
+         // a 'wait' lookup for casual/example/echo 
+         auto lookup = []()
+         {
+            auto context = common::service::lookup::Context{ common::message::service::lookup::request::context::Semantic::wait};
+            return common::service::Lookup{ "casual/example/echo", context};
+         }();
+
+         // expect no service to be found
+         EXPECT_TRUE( ! common::service::lookup::non::blocking::reply( lookup));
+         
+         // we scale example in b
+         {
+            b.activate();
+            
+            argument::parse( "", { casual::domain::manager::admin::cli::options()},
+               { "domain", "--scale-aliases", "example", "1"});
+
+            a.activate();
+         }
+
+         // we expect to get the lookup reply since SM has done a discovery when triggered by topology update
+         // from the scale operation
+         common::unittest::eventually::succeed( [ &lookup]()
+         {
+            if( auto reply = common::service::lookup::non::blocking::reply( lookup))
+            {
+               EXPECT_TRUE( reply->state == decltype( reply->state)::idle);
+
+               return true;
+            }
+
+            return false;
+         });
+
+
+      }
+
    } // test
 } // casual

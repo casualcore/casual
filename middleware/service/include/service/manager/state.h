@@ -294,7 +294,9 @@ namespace casual
           
             struct Instances
             {
-               void add( state::instance::sequential::id::type instance);
+               //! @return true if sequential instances where empty before the add
+               bool add( state::instance::sequential::id::type instance);
+
                void add( state::instance::concurrent::id::type instance, platform::size::type order, state::instance::concurrent::Property property);
 
                //! @return true if there are no instances left after the removal
@@ -609,10 +611,16 @@ namespace casual
          //! removes and extract all instances (deduced from `pid`) from all services
          [[nodiscard]] prepare_shutdown_result prepare_shutdown( std::vector< common::process::Handle> processes);
 
+         struct update_result_t
+         {
+            std::vector< state::service::pending::Lookup> pending;
+            bool discoverable = false;
+         };
+
          //! adds or "updates" service
          //! @returns pending request that has got services ready for reply
          //! @{ 
-         [[nodiscard]] std::vector< state::service::pending::Lookup> update( common::message::service::Advertise&& message);
+         [[nodiscard]] update_result_t update( common::message::service::Advertise&& message);
          [[nodiscard]] std::vector< state::service::pending::Lookup> update( common::message::service::concurrent::Advertise&& message);
          //! @}
 

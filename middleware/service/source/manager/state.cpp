@@ -100,15 +100,16 @@ namespace casual
 
          namespace service
          {
-            void Instances::add( state::instance::sequential::id::type instance)
+            bool Instances::add( state::instance::sequential::id::type instance)
             {
                if( algorithm::find( m_sequential, instance))
                {
                   log::line( casual::service::log, "instance already known to service - ", instance);
-                  return;
+                  return false;
                }
 
                m_sequential.push_back( instance);
+               return m_sequential.size() == 1;
             }
 
             void Instances::add( state::instance::concurrent::id::type instance, platform::size::type order, instance::concurrent::Property property)
@@ -662,7 +663,7 @@ namespace casual
          return result;
       }
 
-      std::vector< state::service::pending::Lookup> State::update( common::message::service::Advertise&& message)
+      State::update_result_t State::update( common::message::service::Advertise&& message)
       {
          Trace trace{ "service::manager::State::update sequential"};
 
@@ -694,14 +695,19 @@ namespace casual
             return {};
          }
 
+         State::update_result_t result;
+
          // add
          {
             auto add_service = [ &]( auto& service)
             {
-               auto relate_service_and_instance = [ this]( auto service_id, auto instance_id)
+               auto relate_service_and_instance = [ this, &result]( auto service_id, auto instance_id)
                {
                   instances.sequential[ instance_id].add( service_id);
-                  services[ service_id].instances.add( instance_id);
+
+                  // if the service just been callable and it's discoverable, we need to inform the discovery
+                  if( services[ service_id].instances.add( instance_id))
+                     result.discoverable = services[ service_id].is_discoverable();
                };
 
                local::find_or_add_service( *this, service, timeout, instance_id, relate_service_and_instance);
@@ -723,10 +729,10 @@ namespace casual
             };
  
             if( auto found = algorithm::find_if( pending.lookups, requested_service))
-               return { algorithm::container::extract( pending.lookups, std::begin( found))};
+               result.pending.push_back( algorithm::container::extract( pending.lookups, std::begin( found)));
          }
 
-         return {};
+         return result;
       }
 
 

@@ -570,6 +570,9 @@ domain:
          EXPECT_EQ( service->execution.timeout.contract, common::service::execution::timeout::contract::Type::kill);
       }
 
+
+     
+
    } // test::domain::service
 
 } // casual
