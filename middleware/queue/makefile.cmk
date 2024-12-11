@@ -80,6 +80,7 @@ queue_group = make.LinkExecutable( 'bin/casual-queue-group',
     common,
     'casual-domain-utility',
     'casual-common',
+    'casual-domain-discovery',
     'sqlite3',
 ])
      
