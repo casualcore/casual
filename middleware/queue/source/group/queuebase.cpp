@@ -349,15 +349,13 @@ namespace casual
          // remove
          common::algorithm::for_each( remove, [&]( auto id){ this->remove( id);});
 
-         auto split = algorithm::partition( update, []( auto& queue){ return queue.id.valid();});
+         auto [ updated, created] = algorithm::partition( update, []( auto& queue){ return queue.id.valid();});
 
          // update 
-         common::algorithm::for_each( std::get< 0>( split), [&]( auto& queue){ this->update( queue);});
+         common::algorithm::for_each( updated, [&]( auto& queue){ this->update( queue);});
       
          // create
-         auto result = algorithm::transform( std::get< 1>( split), [&]( auto& queue){ return this->create( queue);});
-
-         return result;
+         return algorithm::transform( created, [&]( auto& queue){ return this->create( queue);});
       }
 
       common::strong::queue::id Queuebase::id( std::string_view name) const

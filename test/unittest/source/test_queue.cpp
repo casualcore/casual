@@ -10,6 +10,7 @@
 #include "queue/unittest/utility.h"
 
 #include "domain/unittest/manager.h"
+#include "domain/unittest/configuration.h"
 
 #include "gateway/unittest/utility.h"
 
@@ -353,6 +354,78 @@ domain:
          EXPECT_TRUE( dequeue( "c") == common::code::queue::no_queue);
          // we've enqueued to d before
          EXPECT_TRUE( dequeue( "d") == common::code::queue::ok);
+
+      }
+
+      TEST( test_queue, domain_A_B__in_A__queue_forward_a_to_b__in_B__no_b___runtime_configure_B_add_b__expect_forward_to_b)
+      {
+         common::unittest::Trace trace;
+
+         auto b = local::domain( R"(
+domain: 
+   name: B
+   queue:
+      groups:
+         -  alias: B
+            queuebase: ':memory:'
+            queues:
+               -  name: x                  
+   gateway:
+      inbound:
+         groups:
+            -  connections:
+                  -  address: 127.0.0.1:7010
+)");
+
+         auto a = local::domain( R"(
+domain: 
+   name: A
+   queue:
+      groups:
+         -  alias: A
+            queuebase: ':memory:'
+            queues:
+               -  name: a
+      forward:
+         groups:
+            -  alias: FA
+               queues:
+                  -  source: a
+                     target: 
+                        queue: b
+   gateway:
+      outbound:
+         groups:
+            -  connections:
+                  -  address: 127.0.0.1:7010
+)");
+         gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected());
+
+         // enqueue message to a
+         queue::enqueue( "a", local::message());
+
+         // add queue b in domain B
+         {
+            b.activate();
+
+            auto user = casual::domain::unittest::configuration::get();
+
+            ASSERT_TRUE( user.domain);
+            ASSERT_TRUE( user.domain->queue);
+            ASSERT_TRUE( user.domain->queue->groups);
+            ASSERT_TRUE( user.domain->queue->groups->size() == 1);
+
+            user.domain->queue->groups->at( 0).queues.push_back( casual::configuration::user::domain::queue::Queue{ .name = "b"});
+
+            casual::domain::unittest::configuration::post( std::move( user));
+         }
+
+         // we're still in B
+         // We expect the forward to kick in via topology update
+         {
+            auto message = local::dequeue::until( "b");
+            EXPECT_TRUE( ! message.empty());
+         }
 
       }
       

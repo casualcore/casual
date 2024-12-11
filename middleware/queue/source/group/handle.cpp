@@ -26,6 +26,8 @@
 
 #include "common/environment.h"
 
+#include "domain/discovery/api.h"
+
 
 namespace casual
 {
@@ -638,8 +640,10 @@ namespace casual
                         log::line( verbose::log, "remove: ", remove);
                         log::line( verbose::log, "zombies: ", zombies);
 
-
-                        state.queuebase.update( wanted, remove);
+                        // if the update created new queues, we need notify discovery since there could be some
+                        // other domain that needs to know about the new queues.
+                        if( ! state.queuebase.update( wanted, remove).empty())
+                           casual::domain::discovery::discoverable::advertised( state.multiplex);
 
                         // ok, wanted queues are added, if any. Take care of reply.
                         // TODO remove queues, if any, if possible.

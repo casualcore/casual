@@ -2030,5 +2030,94 @@ domain:
          }
       }
 
+
+      TEST( casual_queue, runtime_configure_new_queue__expect_discoverable_advertised)
+      {
+         common::unittest::Trace trace;
+
+         auto a = local::domain( R"(
+domain:
+   name: A
+   queue:
+      groups:
+         -  alias: "QA"
+            queuebase: ':memory:'
+            queues:
+               -  name: a
+               -  name: b
+         )");
+
+
+         constexpr std::string_view wanted = R"(
+domain:
+   name: A
+   queue:
+      groups:
+         -  alias: "QA"
+            queuebase: ':memory:'
+            queues:
+               -  name: a
+               -  name: b
+               -  name: c
+         )";
+
+         // register our self to discovery
+         domain::discovery::provider::registration( domain::discovery::provider::Ability::advertised);
+  
+         // runtime update, a new queue 'c' is added, should render let discovery know.
+         domain::unittest::configuration::post( configuration::model::transform( configuration::unittest::load( local::configuration::servers, wanted)));
+
+         // expect topology update
+         common::unittest::eventually::succeed( []()
+         {
+            return common::predicate::boolean( common::communication::ipc::non::blocking::receive< domain::message::discovery::topology::implicit::Update>());
+         });
+      }
+
+      TEST( casual_queue, runtime_configure_no_new_queue__expect_no_discoverable_advertised)
+      {
+         common::unittest::Trace trace;
+
+         auto a = local::domain( R"(
+domain:
+   name: A
+   queue:
+      groups:
+         -  alias: "QA"
+            queuebase: ':memory:'
+            queues:
+               -  name: a
+               -  name: b
+               -  name: c
+         )");
+
+
+         constexpr std::string_view wanted = R"(
+domain:
+   name: A
+   queue:
+      groups:
+         -  alias: "QA"
+            queuebase: ':memory:'
+            queues:
+               -  name: a
+               -  name: b
+         )";
+
+         // register our self to discovery
+         domain::discovery::provider::registration( domain::discovery::provider::Ability::advertised);
+  
+         // runtime update, a new queue 'c' is added, should render let discovery know.
+         domain::unittest::configuration::post( configuration::model::transform( configuration::unittest::load( local::configuration::servers, wanted)));
+
+         // expect no topology update. We try a few times to make sure
+         common::algorithm::for_n< 5>( []()
+         {
+            EXPECT_FALSE( common::communication::ipc::non::blocking::receive< domain::message::discovery::topology::implicit::Update>());
+            common::process::sleep( std::chrono::milliseconds{ 10});
+         });
+
+      }
+
    } // queue
 } // casual
