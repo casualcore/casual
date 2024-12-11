@@ -48,7 +48,7 @@ namespace casual
 
          auto state = local::state();
 
-         EXPECT_TRUE( state.update( common::message::service::Advertise{}).empty());
+         EXPECT_TRUE( state.update( common::message::service::Advertise{}).pending.empty());
 
          EXPECT_TRUE( state.instances.sequential.empty()) << CASUAL_NAMED_VALUE( state.instances.sequential);
          EXPECT_TRUE( state.instances.concurrent.empty());
@@ -76,7 +76,7 @@ namespace casual
             common::message::service::Advertise message;
             message.process = common::process::handle();
             message.services.add.push_back( { .name = "service1"});
-            EXPECT_TRUE( state.update( std::move( message)).empty());
+            EXPECT_TRUE( state.update( std::move( message)).pending.empty());
          }
 
          EXPECT_TRUE( state.instances.sequential.size() == 1);
@@ -94,6 +94,34 @@ namespace casual
          EXPECT_TRUE( state.instances.concurrent.empty());
       }
 
+      TEST( service_manager_state, advertise_local_service__2_instances__expect_discoverable_for_the_first)
+      {
+         common::unittest::Trace trace;
+
+         auto state = local::state();
+
+         auto advertise_message = []( common::strong::process::id pid)
+         {
+            common::message::service::Advertise message;
+            message.process.pid = pid;
+            message.process.ipc = common::process::handle().ipc;
+            message.services.add.push_back( { .name = "a"});
+            return message;
+         };
+
+         {
+            auto result = state.update( advertise_message( common::strong::process::id{ 1}));
+            EXPECT_TRUE( result.pending.empty());
+            EXPECT_TRUE( result.discoverable);
+         }
+
+         {
+            auto result = state.update( advertise_message( common::strong::process::id{ 2}));
+            EXPECT_TRUE( result.pending.empty());
+            EXPECT_FALSE( result.discoverable);
+         }
+      }
+
       TEST( service_manager_state, advertise_local_service__unadvertise___expect__service_instance_relation__removed)
       {
          common::unittest::Trace trace;
@@ -105,7 +133,7 @@ namespace casual
             common::message::service::Advertise message;
             message.process = common::process::handle();
             message.services.add.push_back( { .name = "service1"});
-            EXPECT_TRUE( state.update( std::move( message)).empty());
+            EXPECT_TRUE( state.update( std::move( message)).pending.empty());
          }
 
          // unadvertise
@@ -113,7 +141,7 @@ namespace casual
             common::message::service::Advertise message;
             message.process = common::process::handle();
             message.services.remove.emplace_back( "service1");
-            EXPECT_TRUE( state.update( std::move( message)).empty());
+            EXPECT_TRUE( state.update( std::move( message)).pending.empty());
          }
 
          {
@@ -152,7 +180,7 @@ namespace casual
                std::shuffle( std::begin( message.services.add), std::end( message.services.add), generator);
             }
 
-            EXPECT_TRUE( state.update( std::move( message)).empty());
+            EXPECT_TRUE( state.update( std::move( message)).pending.empty());
          }
 
          {
@@ -185,7 +213,7 @@ namespace casual
                std::shuffle( std::begin( message.services.add), std::end( message.services.add), generator);
             }
 
-            EXPECT_TRUE( state.update( std::move( message)).empty());
+            EXPECT_TRUE( state.update( std::move( message)).pending.empty());
          }
 
          // unadvertise
@@ -193,7 +221,7 @@ namespace casual
             common::message::service::Advertise message;
             message.process = common::process::handle();
             message.services.remove = { "s4", "s7"};
-            EXPECT_TRUE( state.update( std::move( message)).empty());
+            EXPECT_TRUE( state.update( std::move( message)).pending.empty());
          }
          {
             auto service_id = state.services.lookup( "s4");
