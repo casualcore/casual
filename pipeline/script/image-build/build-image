@@ -1,0 +1,95 @@
+#! /bin/bash
+
+set -e
+
+function usage()
+{
+    echo "usage: $0 [ -v version ] [ -f filename ] [ -b ] [ -t ] [ -p ]"
+    exit -1
+}
+
+if (( $# < 1 ))
+then
+    usage
+fi
+
+POSITIONAL_ARGS=()
+
+while [[ $# -gt 0 ]]; do
+  case $1 in
+    -v|--version)
+      VERSION="$2"
+      shift # past argument
+      shift # past value
+      ;;
+    -f|--rpm)
+      FILENAME="$2"
+      shift # past argument
+      shift # past value
+      ;;
+    -b|--build)
+      BUILD_IMAGE=true
+      shift # past argument
+      ;;
+    -t|--tag)
+      TAG_IMAGE=true
+      shift # past argument
+      ;;
+    -p|--push)
+      PUSH_IMAGE=true
+      shift # past argument
+      ;;
+    -*|--*)
+      echo "Unknown option $1"
+      exit 1
+      ;;
+    *)
+      POSITIONAL_ARGS+=("$1") # save positional arg
+      shift # past argument
+      ;;
+  esac
+done
+
+set -- "${POSITIONAL_ARGS[@]}" # restore positional parameters
+
+echo "VERSION=$VERSION"
+echo "FILENAME=$FILENAME"
+
+if [[ ! -f ${FILENAME} ]]
+then
+    echo "${FILENAME}: No such file"
+
+    usage
+
+    exit -1
+fi
+
+SCRIPT_ROOT=$(temp=$( realpath "$0"  ) && dirname "$temp")
+pushd ${SCRIPT_ROOT}
+
+# copy to temporary location inside docker context
+if [[ -f ${FILENAME} ]]
+then
+    cp ${FILENAME} .
+fi
+
+if [[ ${BUILD_IMAGE} == true ]]
+then
+    # build image
+    docker build -t casual/middleware-ubi8 --build-arg CASUAL_RPM=$( basename ${FILENAME} ) -f Dockerfile .
+fi
+
+if [[ ${TAG_IMAGE} == true ]]
+then
+    # tag
+    docker tag casual/middleware-ubi8:latest casual/middleware:${VERSION}
+fi
+
+if [[ ${PUSH_IMAGE} == true ]]
+then
+    # push
+    docker push casual/middleware:${VERSION}
+fi
+
+# cleanup
+rm ${FILENAME}
