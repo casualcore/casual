@@ -257,9 +257,40 @@ jobs:
           mv /var/www/release/casual/*.rpm /var/www/release/
           rmdir /var/www/release/casual
 
+  build-casual-image:
+    runs-on: [self-hosted, builder]
+    needs: [calculate-version,build-ubi,publish-version]
+    if: ${{ success() }}
+    steps:
+      - name: check out repository casual
+        uses: actions/checkout@v4
+        with:
+          path: 'casual'
+          fetch-depth: 0
+      - name: Download ubi
+        uses: actions/download-artifact@v4
+        with:
+          name: ubi_rpm
+          path: ${{ github.workspace }}/casual/pipeline/script/image-build/
+      - name: set rpmfile name
+        id: rpmfile
+        run: echo "value=$( ls -1t ${{ github.workspace }}/casual/pipeline/script/image-build/casual | head -1 )" >> $GITHUB_OUTPUT
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ vars.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Build Image
+        uses: docker/build-push-action@v6
+        with:
+          push: true
+          build-args: CASUAL_RPM=casual/${{steps.rpmfile.outputs.value}}
+          context: ${{ github.workspace }}/casual/pipeline/script/image-build/
+          tags: casual/middleware:${{ needs.calculate-version.outputs.build_version }}
+
   notification-end:
     runs-on: ubuntu-latest
-    needs: [calculate-version,build-ubi,build-suse,tag-repo,publish-version]
+    needs: [calculate-version,build-ubi,build-suse,tag-repo,publish-version,build-casual-image]
     if: ${{ always() }}
     steps: 
       - uses: martialonline/workflow-status@v4
