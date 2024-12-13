@@ -38,6 +38,11 @@ namespace casual
             namespace
             {
 
+               bool is_error( common::code::queue code)
+               {
+                  return code != common::code::queue::ok;
+               }
+
                template< typename M>
                common::Uuid enqueue( const queue::Lookup& lookup, M&& message)
                {
@@ -75,15 +80,14 @@ namespace casual
 
                   common::log::line( verbose::log, "request: ", request);
 
-                  auto id = common::communication::ipc::call( group.process.ipc, request).id;
+                  auto reply = common::communication::ipc::call( group.process.ipc, request);
 
-                  // a 'nil' queue id indicate error...
-                  if( ! id)
-                     common::code::raise::error( common::code::queue::no_queue, "failed to lookup queue: ", lookup.name());
+                  if( is_error( reply.code))
+                     common::code::raise::error( reply.code, "failed to enqeue to queue: ", lookup.name());
 
-                  common::log::line( queue::event::log, "enqueue|", id);
+                  common::log::line( queue::event::log, "enqueue|", reply.id);
 
-                  return id;
+                  return reply.id;
                }
 
                namespace dequeue
@@ -138,6 +142,14 @@ namespace casual
                            group.process.ipc,  
                            dequeue::request( group, selector, transaction.trid, false));
 
+                        if( is_error( reply.code))
+                        {
+                           if( reply.code == common::code::queue::no_message)
+                              return {};
+                           else
+                              common::code::raise::error( reply.code);
+                        }
+
                         if( reply.message)
                         {
                            if( transaction)
@@ -184,6 +196,9 @@ namespace casual
                      {
                         Trace trace{ "casual::queue::local::dequeue::blocking handler - dequeue::Reply"};
                         common::log::line( verbose::log, "message: ", message);
+
+                        if( is_error( message.code))
+                           common::code::raise::error( message.code);
 
                         if( message.message)
                         {
