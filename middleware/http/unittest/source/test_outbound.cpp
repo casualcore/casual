@@ -45,13 +45,13 @@ namespace casual
 http:
    services:
       -  name: do/not/discard/transaction
-         url: a.example/do/not/discard/transaction
+         url: localhost/do/not/discard/transaction
          discard_transaction: false
       -  name: discard/transaction
-         url: a.example/discard/transaction
+         url: localhost/discard/transaction
          discard_transaction: true
       -  name: foo
-         url: foo.example
+         url: localhost/foo
 
 )");
                   common::environment::variable::set( "CASUAL_UNITTEST_HTTP_CONFIGURATION", result.string());
