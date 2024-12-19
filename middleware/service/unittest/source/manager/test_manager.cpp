@@ -1169,5 +1169,54 @@ domain:
          }
       }
 
+      TEST( service_manager, callee_dies_during_service_call__expect_metric)
+      {
+         common::unittest::Trace trace;
+
+         auto domain = local::domain();
+
+         // a fake process that advertises some arbitrary service
+         auto callee_inbound = common::communication::ipc::inbound::Device{};
+         auto callee = common::process::Handle{ common::strong::process::id{ -5}, callee_inbound.connector().handle().ipc()};
+         service::unittest::advertise( { "a"}, callee);
+
+         // reserve the service
+         {
+            auto service = common::service::Lookup{ "a"}();
+            EXPECT_TRUE( service.service.name == "a");
+            EXPECT_TRUE( service.process == callee);
+            EXPECT_TRUE( service.state == decltype( service.state)::idle);
+         }
+
+         // subscribe to metric event
+         common::message::event::service::Calls event;
+         common::event::subscribe( common::process::handle(), { event.type()});
+
+         // the callee dies
+         {
+            common::message::event::process::Exit message;
+            message.state.pid = callee.pid;
+            message.state.reason = decltype( message.state.reason)::core;
+
+            common::communication::device::blocking::send( 
+               common::communication::instance::outbound::service::manager::device(),
+               message);
+         }
+
+         // wait for event
+         {
+            common::communication::device::blocking::receive( 
+               common::communication::ipc::inbound::device(),
+               event);
+            
+            ASSERT_TRUE( event.metrics.size() == 1);
+            auto& metric = event.metrics.at( 0);
+            EXPECT_TRUE( metric.service == "a");
+            EXPECT_TRUE( metric.parent == "");
+            EXPECT_TRUE( metric.process == callee);
+            EXPECT_TRUE( metric.code == common::code::xatmi::service_error);
+         }
+      }
+
    } // service
 } // casual

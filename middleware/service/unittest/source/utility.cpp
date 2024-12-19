@@ -31,7 +31,12 @@ namespace casual
 
       void advertise( std::vector< std::string> services)
       {
-         message::service::Advertise message{ process::handle()};
+         advertise( services, process::handle());
+      }
+
+      void advertise( std::vector< std::string> services, const common::process::Handle& handle)
+      {
+         message::service::Advertise message{ handle};
          message.alias = instance::alias();
          message.services.add = algorithm::transform( services, []( auto& service)
          {

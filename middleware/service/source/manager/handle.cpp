@@ -69,16 +69,28 @@ namespace casual
 
             namespace error
             {
-               auto reply( State& state, const state::instance::Caller& caller, common::code::xatmi code)
+               auto reply( State& state, const state::instance::Caller& caller, common::code::xatmi code, std::string_view service, const common::process::Handle& callee)
                {
                   Trace trace{ "service::manager::handle::local::error::reply"};
-                  log::line( verbose::log, "caller: ", caller, ", code: ", code);
+                  log::line( verbose::log, "caller: ", caller, ", code: ", code, ", service: ", service);
 
                   common::message::service::call::Reply message;
                   message.correlation = caller.correlation;
                   message.code.result = code; 
 
                   state.multiplex.send( caller.process.ipc, std::move( message));
+
+                  if( state.events.active< common::message::event::service::Calls>())
+                  {
+                     common::message::event::service::Metric metric;
+                     metric.code = code;
+                     metric.correlation = caller.correlation;
+                     metric.service = service;
+                     metric.process = callee;
+
+                     state.metric.add( metric);
+                     handle::metric::batch::send( state);
+                  }
                }
             } // error
 
@@ -179,7 +191,7 @@ namespace casual
                // keep track of instance until we get an ACK, or the server dies
                // We need to notify TM if this call was in transaction.
                state.timeout_instances.push_back( entry.target);
-               local::error::reply( state, caller, common::code::xatmi::timeout);
+               local::error::reply( state, caller, common::code::xatmi::timeout, entry.service->information.name, common::process::Handle{ entry.target});
                order_assassination( entry.target, contract, announcement);
             }
             else
@@ -266,7 +278,7 @@ namespace casual
 
                               log::line( common::log::category::verbose::error, "instance: ", instance);
 
-                              local::error::reply( state, instance.caller(), common::code::xatmi::service_error);
+                              local::error::reply( state, instance.caller(), common::code::xatmi::service_error, instance.reserved_service().value_or( "<unknown>"), instance.process);
                            }
                         }
 
@@ -782,7 +794,7 @@ namespace casual
                               // take care of failed, if any
                               for( auto& failed : failed)
                                  if( auto found = algorithm::find( instances, failed.id))
-                                    local::error::reply( state, found->caller(), code::xatmi::service_error);
+                                    local::error::reply( state, found->caller(), code::xatmi::service_error, found->reserved_service().value_or( "<unknown>"), found->process);
 
                               // take care of replies
                               algorithm::for_each( replies, [&]( auto& reply)
