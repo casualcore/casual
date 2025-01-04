@@ -32,6 +32,15 @@ namespace casual
 
          }
 
+         TEST( common_service_header, case_insensitive_equality)
+         {
+            auto field = header::Field{ "a:b"};
+
+            EXPECT_TRUE( field == "a");
+            EXPECT_TRUE( field == "A");
+            EXPECT_TRUE( field != "b");
+         }
+
          TEST( common_service_header, clear)
          {
             common::unittest::Trace trace;

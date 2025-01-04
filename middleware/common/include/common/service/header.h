@@ -25,24 +25,21 @@ namespace casual
          struct Field 
          {
             Field() = default;
-            Field( std::string variable);
+            explicit Field( std::string variable);
             Field( std::string_view name, std::string_view value);
 
-            inline std::string_view name() const noexcept
-            { 
-               return { std::begin( m_data), std::find( std::begin( m_data), std::end( m_data), ':')};
-            }
-            inline std::string_view value() const noexcept
-            {  
-               if( auto found = algorithm::find( m_data, ':'))
-                  return { std::begin( found) + 1, std::end( found)};
+            //! @returns the name part of the field
+            std::string_view name() const;
+            //! @returns the value part of the field
+            std::string_view value() const;
 
-               return {};
-            }
+            //! @returns true of the name of the field is case-insensitive equal to @p rhs
+            friend bool operator == ( const Field& lhs, std::string_view rhs);
 
-            inline friend bool operator == ( const Field& lhs, std::string_view rhs) { return lhs.name() == rhs;}
+            //! @returns true of the lhs.name() is case-insensitive equal to rhs.name()
+            friend bool operator == ( const Field& lhs, const Field& rhs);
 
-            inline const std::string& string() const noexcept { return m_data;}
+            inline const std::string& string() const & { return m_data;}
 
             CASUAL_FORWARD_SERIALIZE( m_data);
 
@@ -64,9 +61,10 @@ namespace casual
          
             //! @param name to be found
             //! @return the value associated with the name
-            //! @throws exception::system::invalid::Argument if name is not found.
+            //! @throws casual::common::code::casual::invalid_argument if the name is not found
             const header::Field& at( std::string_view name) const;
 
+            //! @returns the field with @p name or nullptr if not found
             const header::Field* find( std::string_view name) const;
 
             friend Fields operator + ( Fields lhs, const Fields& rhs);

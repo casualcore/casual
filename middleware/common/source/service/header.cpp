@@ -34,6 +34,34 @@ namespace casual
             : Field{ string::compose( name, ':', value)}
          {}
 
+         std::string_view Field::name() const
+         { 
+            return { std::begin( m_data), std::find( std::begin( m_data), std::end( m_data), ':')};
+         }
+
+         std::string_view Field::value() const
+         {  
+            if( auto found = algorithm::find( m_data, ':'))
+               return { std::begin( found) + 1, std::end( found)};
+
+            return {};
+         }
+
+         bool operator == ( const Field& lhs, std::string_view rhs) 
+         {
+            auto case_insensitive_equal = []( auto lhs, auto rhs)
+            {
+               return std::tolower( lhs) == std::tolower( rhs);
+            };
+
+            return algorithm::equal( lhs.name(), rhs, case_insensitive_equal);
+         }
+
+         bool operator == ( const Field& lhs, const Field& rhs)
+         {
+            return lhs == rhs.name();
+         }
+
          Fields::Fields( std::vector< header::Field> fields)
             : m_fields{ std::move( fields)}
          {}
