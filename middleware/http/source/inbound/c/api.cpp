@@ -11,6 +11,7 @@
 #include "common/algorithm.h"
 #include "common/algorithm/container.h"
 #include "common/execution/context.h"
+#include "common/exception/capture.h"
 #include "casual/assert.h"
 
 
@@ -124,7 +125,7 @@ namespace casual::http::inbound
             handle->fd = context_holder->context.descriptor().value(); 
          }
 
-         int receive( casual_http_inbound_handle_t* handle)
+         Cycle receive( casual_http_inbound_handle_t* handle)
          {
             Trace trace{ "casual::http::inbound::local::receive"};
             auto context_holder = context::cast( handle->context_holder);
@@ -136,10 +137,10 @@ namespace casual::http::inbound
                   reply->payload.body.assign( { std::byte{ 'N'}, std::byte{ 'U'}, std::byte{ 'L'}, std::byte{ 'L'}});
 
                context_holder->reply = std::move( reply.value());
-               return Cycle::done;
+               return Cycle::cycle_done;
             }
             else
-               return Cycle::again;
+               return Cycle::cycle_again;
          }
 
          namespace request
@@ -182,12 +183,12 @@ namespace casual::http::inbound
                size_t header_number = 0;
                common::algorithm::for_each_if( context_holder->reply.payload.header, [&header_number, &context_holder]( auto header)
                {
-                  auto& item = context_holder->guard.headers.data[header_number];
+                  auto& item = context_holder->guard.headers.data[ header_number];
                   item.key = memory::copy( header.name());
                   item.value = memory::copy( header.value());
                   header_number++;
                },
-               user_defined_headers
+                  user_defined_headers
                );
 
                reply->headers.data = context_holder->guard.headers.data;
@@ -226,31 +227,48 @@ namespace casual::http::inbound
             }
          } // payload
 
-      }
-   }
-}
+         int exception_guard( auto function, auto... args)
+         {
+            try
+            {
+               std::invoke( function, args...);
+               return 0;
+            }
+            catch( ...)
+            {
+               auto error = common::exception::capture();
+               log::error( error.code(), "caught error: ", error.what());
+               return error.code().value();  
+            }
+         }
+      } // <unnamed>
+   } // local
+} // casual::http::inbound
 
 extern void casual_http_inbound_request_set( casual_http_inbound_handle_t* handle, casual_http_inbound_request_t* request)
 {
+   // TODO wrap with exception guard
    casual::http::inbound::local::request::set( handle, request);
 }
 
 extern void casual_http_inbound_reply_get( casual_http_inbound_handle_t* handle, casual_http_inbound_reply_t* reply)
 {
+   // TODO wrap with exception guard
    casual::http::inbound::local::reply::get( handle, reply);
 }
 
 extern void casual_http_inbound_push_payload( casual_http_inbound_handle_t* handle, const unsigned char* ptr, size_t size)
 {
+   // TODO wrap with exception guard
    casual::http::inbound::local::payload::push( handle, ptr, size);
 }
 
-extern void casual_http_inbound_call( casual_http_inbound_handle_t* handle, Directive directive)
+extern int casual_http_inbound_call( casual_http_inbound_handle_t* handle, Directive directive)
 {
-   casual::http::inbound::local::call( handle, directive);
+   return casual::http::inbound::local::exception_guard( casual::http::inbound::local::call, handle, directive);
 }
 
-extern int casual_http_inbound_receive( casual_http_inbound_handle_t* handle)
+extern Cycle casual_http_inbound_receive( casual_http_inbound_handle_t* handle)
 {
    return casual::http::inbound::local::receive( handle);
 }
