@@ -365,7 +365,11 @@ static ngx_int_t send_request_to_casual( ngx_http_casual_ctx_t* context)
    // if active choosen forward then forward else service
    ngx_int_t directive = ngx_strcmp( location_configuration->directive.data, "forward") == 0 ? forward : service;
 
-   casual_http_inbound_call( &context->casual_handle, directive); // Context(directive, request)
+   if( casual_http_inbound_call( &context->casual_handle, directive) != 0)
+   {
+      ngx_log_error( NGX_LOG_ERR, context->http_request->connection->log, 0, "casual: %s, %s", __FUNCTION__, "casual_http_inbound_call");
+      return NGX_ERROR;
+   }
 
    // if response not immediately available
    ngx_connection_t* connection = &context->casual_connection;
@@ -398,8 +402,8 @@ static void fetch_response_from_casual( ngx_http_casual_ctx_t* context)
 {
    ngx_log_error( NGX_LOG_NOTICE, context->http_request->connection->log, 0, "casual: %s", __FUNCTION__);
 
-   int return_code = casual_http_inbound_receive( &context->casual_handle);
-   if( return_code == NGX_OK)
+   enum Cycle cycle = casual_http_inbound_receive( &context->casual_handle);
+   if( cycle == cycle_done)
    {
       // remove event handler for read event
       if( context->read_event.active)

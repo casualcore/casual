@@ -76,7 +76,7 @@ unittest_object = [
 ]
 
 # only build http test cases if the enviornment is set up
-if "CASUAL_UNITTEST_HTTP_INBOUND_CONFIG" in os.environ and "CASUAL_UNITTEST_HTTP_INBOUND_PATH" in os.environ:
+if "CASUAL_UNITTEST_HTTP_INBOUND_PATH" in os.environ:
    unittest_object.append( make.Compile( 'unittest/source/test_http.cpp'))
 
 make.LinkUnittest( 'unittest/bin/test-casual',
