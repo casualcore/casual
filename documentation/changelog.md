@@ -1,6 +1,10 @@
 # Changelog
 This is the changelog for `casual` and all changes are listed in this document.
 
+## [1.6.23] - 2025-01-08
+### Fixes
+- service: always send metric event on server exit (#486)
+
 ## [1.6.22] - 2024-11-05
 ### Fixes
 - service: discovery-known-request only reply with known discoverable services (#454)
