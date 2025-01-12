@@ -94,22 +94,6 @@ namespace casual
          } // convert
       } //protocol
 
-      namespace buffer::transcode
-      {
-         namespace from
-         {
-            //! might base64 decode, based on buffer.type
-            void wire( common::buffer::Payload& buffer);
-         } // from
-
-         namespace to
-         {
-            //! might base64 encode, based on buffer.type
-            void wire( common::buffer::Payload& buffer);
-         } // from 
-
-      } // buffer::transcode
-
    } // http
 } // casual
 

@@ -39,12 +39,10 @@ namespace casual
             struct Configuration
             {
                const bool force_fresh_connect = common::environment::variable::get< bool>( "CASUAL_HTTP_CURL_FORCE_FRESH_CONNECT").value_or( false);
-               const bool force_binary_base64 = common::environment::variable::get< bool>( "CASUAL_HTTP_FORCE_BINARY_BASE64").value_or( false);
                const bool verbose = common::environment::variable::get< bool>( "CASUAL_HTTP_CURL_VERBOSE").value_or( false);
 
                CASUAL_LOG_SERIALIZE(
                   CASUAL_SERIALIZE( force_fresh_connect);
-                  CASUAL_SERIALIZE( force_binary_base64);
                   CASUAL_SERIALIZE( verbose);
                )
             };
@@ -108,9 +106,6 @@ namespace casual
                      state::pending::Request result;
                      result.state().payload = std::move( payload);
 
-                     if( local::configuration().force_binary_base64)
-                        http::buffer::transcode::to::wire( result.state().payload);
-                     
                      // add content header
                      {
                         auto content = protocol::convert::from::buffer( result.state().payload.type);
@@ -222,9 +217,6 @@ namespace casual
 
             auto payload = std::move( request.state().payload);
 
-            if( local::configuration().force_binary_base64)
-               http::buffer::transcode::from::wire( payload);
-            
             common::log::line( verbose::log, "payload: ", payload);
 
             return payload;

@@ -12,7 +12,6 @@
 #include "common/communication/ipc.h"
 #include "common/communication/instance.h"
 #include "common/code/category.h"
-#include "common/environment.h"
 
 
 namespace casual
@@ -25,16 +24,6 @@ namespace casual
       {
          namespace
          {
-            auto& configuration()
-            {
-               static struct Configuration
-               {
-                  const bool force_binary_base64 = environment::variable::get< bool>( "CASUAL_HTTP_FORCE_BINARY_BASE64").value_or( false);
-               } result;
-
-               return result;
-            }
-
             auto handle( const communication::ipc::inbound::Device& ipc)
             {
                return process::Handle{ process::id(), ipc.connector().handle().ipc()};
@@ -151,17 +140,11 @@ namespace casual
                      result.buffer.data = std::move( request.payload.body);
                      result.header = std::move( request.payload.header);
 
-                     if( local::configuration().force_binary_base64)
-                        http::buffer::transcode::from::wire( result.buffer);
-
                      return result;
                   }
 
                   static Reply transform( message::service::call::Reply reply)
                   {
-                     if( local::configuration().force_binary_base64)
-                        http::buffer::transcode::to::wire( reply.buffer);
-  
                      Reply result;
                      result.payload.body = std::move( reply.buffer.data);
                      result.payload.header.emplace_back( "content-length", std::to_string( result.payload.body.size()));
@@ -287,9 +270,6 @@ namespace casual
                payload.data.assign( std::begin( view), std::end( view));
             }
 
-            if( local::configuration().force_binary_base64)
-                  http::buffer::transcode::to::wire( payload);
-            
             result.payload.body = std::move( payload.data);
             result.payload.header.emplace_back( "content-length", std::to_string( result.payload.body.size()));
             result.payload.header.emplace_back( http::header::name::result::code, http::header::value::result::code( static_cast< common::code::xatmi>( error.code().value())));
