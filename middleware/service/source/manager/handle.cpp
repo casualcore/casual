@@ -235,6 +235,30 @@ namespace casual
                   
             } // service::detail::handle
 
+            namespace detail
+            {
+               void check_timeout_and_notify_TM( State& state, common::strong::process::id pid, common::transaction::global::id::range gtrid)
+               {
+                  Trace trace{ "service::manager::handle::local::detail::check_timeout_and_notify_TM"};
+
+                  log::line( verbose::log, "state.timeout_instances: ", state.timeout_instances);
+                  
+                  if( auto found = algorithm::find( state.timeout_instances, pid))
+                  {
+                     state.timeout_instances.erase( std::begin( found));
+
+                     if( gtrid.empty())
+                        return;
+
+                     // notify TM about the potential stale transaction.
+                     message::transaction::potential::Stale message{ common::process::handle()};
+                     message.gtrid = gtrid;
+                     optional::send( state, communication::instance::outbound::transaction::manager::device(), message);
+                  }
+               }
+               
+            } // detail
+
             namespace event
             { 
                namespace process
@@ -255,12 +279,13 @@ namespace casual
                                  event.state.pid, " - caller: ", caller.process.pid);
 
                            local::error::reply( state, caller, common::code::xatmi::service_error);
+
+                           // we might need to notify TM about a potential stale transaction
+                           detail::check_timeout_and_notify_TM( state, event.state.pid, caller.gtrid.range());
                         }
 
-                        // It might be an assassinated instance.
-                        // TODO: this is a glitch - the dead instance could have been involved with
-                        // a resource after the timeout (reply to caller -> rollback) and before it's
-                        // death.
+                        // It might be an assassinated instance. This should be taken care of by check_timeout_and_notify_TM
+                        // but just to be sure we do it here as well.
                         algorithm::container::erase( state.timeout_instances, event.state.pid);
 
                         // The dead process might be the last instance that supplied a given set of services. 
@@ -545,14 +570,14 @@ namespace casual
 
                         if( state.services[ service_id].has_sequential())
                         {
-                           auto get_caller = []( const auto& message) -> common::process::Handle
+                           auto get_caller = []( const auto& message) -> state::instance::Caller
                            {
                               if( message.no_reply())
                                  return {};
-                              return message.process;
+                              return { .process = message.process, .correlation = message.correlation, .gtrid = message.gtrid};
                            };
 
-                           if( auto instance_id = state.reserve_sequential( service_id, get_caller( message), message.correlation))
+                           if( auto instance_id = state.reserve_sequential( service_id, get_caller( message)))
                               dispatch::lookup::reply( state, service_id, instance_id, message, pending);
                            else
                               dispatch::lookup::pending( state, service_id, message);
@@ -988,30 +1013,6 @@ namespace casual
 
             } // domain::discovery
 
-            namespace detail
-            {
-               void check_timeout_and_notify_TM( State& state, const common::message::service::call::ACK& ack)
-               {
-                  log::line( verbose::log, "state.timeout_instances: ", state.timeout_instances);
-
-                  if( ! ack.metric.trid)
-                     return;
-                  
-                  if( auto found = algorithm::find( state.timeout_instances, ack.metric.process.pid))
-                  {
-                     state.timeout_instances.erase( std::begin( found));
-
-                     // Rollback the transaction (again). If TM got instances involved a rollback will be executed, 
-                     // otherwise it will be a "no-op".
-                     // TODO: we might want to have a dedicated message for this. SM should not order a rollback?
-                     message::transaction::rollback::Request message{ common::process::handle()};
-                     message.trid = ack.metric.trid;
-                     optional::send( state, communication::instance::outbound::transaction::manager::device(), message);
-                  }
-               }
-               
-            } // detail
-
 
             //! Handles ACK from services.
             //!
@@ -1029,7 +1030,7 @@ namespace casual
                      signal::timer::set( deadline.value());
 
                   
-                  detail::check_timeout_and_notify_TM( state, message);
+                  detail::check_timeout_and_notify_TM( state, message.metric.process.pid, common::transaction::id::range::global( message.metric.trid));
 
                   // add metric event regardless
                   if( state.events.active< common::message::event::service::Calls>())
@@ -1081,25 +1082,6 @@ namespace casual
  
                };
             }
-
-            namespace timeout::rollback
-            {
-               auto reply( State& state)
-               {
-                  return []( const message::transaction::rollback::Reply& message)
-                  {
-                     Trace trace{ "service::manager::handle::local::timeout::rollback::reply"};
-                     log::line( verbose::log, "message: ", message);
-                  
-                     if( message.state != decltype( message.state)::ok)
-                     {
-                        log::line( log::category::error, message.state, " timeout rollback failed for trid: ", message.trid);
-                        log::line( log::category::verbose::error, "message: ", message);
-                     }
-                  };
-               }
-               
-            } // timeout::rollback 
 
 
             namespace configuration
@@ -1229,7 +1211,6 @@ namespace casual
             handle::local::service::concurrent::advertise( state),
             handle::local::service::concurrent::metric( state),
             handle::local::ack( state),
-            handle::local::timeout::rollback::reply( state),
             handle::local::event::subscription::begin( state),
             handle::local::event::subscription::end( state),
             handle::local::Call{ admin::services( state), state},

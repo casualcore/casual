@@ -47,16 +47,12 @@ namespace casual
                }
             } // sequential
 
-            void Sequential::reserve(
-               service::id::type service,
-               const common::process::Handle& caller,
-               const strong::correlation::id& correlation)
+            void Sequential::reserve( service::id::type service, Caller caller)
             {
                assert( ! m_reserved_service);
 
                m_reserved_service = service;
-               m_caller.process = caller;
-               m_caller.correlation = correlation;
+               m_caller = std::move( caller);
             }
 
             service::id::type Sequential::unreserve()
@@ -590,10 +586,7 @@ namespace casual
          return local::remove( *this, ipc);
       }
 
-      state::instance::sequential::id::type State::reserve_sequential( 
-         state::service::id::type service_id,
-         const common::process::Handle& caller, 
-         const common::strong::correlation::id& correlation)
+      state::instance::sequential::id::type State::reserve_sequential( state::service::id::type service_id, state::instance::Caller caller)
       {
          Trace trace{ "service::manager::State::reserve_sequential"};
 
@@ -606,7 +599,7 @@ namespace casual
 
          if( auto found = algorithm::find_if( service.instances.sequential(), is_idle))
          {
-            instances.sequential[ *found].reserve( service_id, caller, correlation);
+            instances.sequential[ *found].reserve( service_id, std::move( caller));
             return *found;
          }
 
