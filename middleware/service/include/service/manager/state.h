@@ -96,6 +96,7 @@ namespace casual
             {
                common::process::Handle process;
                common::strong::correlation::id correlation;
+               common::transaction::global::ID gtrid;
 
                inline explicit operator bool() const noexcept { return common::predicate::boolean( process);}
                inline friend bool operator == ( const Caller& lhs, const common::strong::correlation::id& rhs) { return lhs.correlation == rhs;}
@@ -103,6 +104,7 @@ namespace casual
                CASUAL_LOG_SERIALIZE(
                   CASUAL_SERIALIZE( process);
                   CASUAL_SERIALIZE( correlation);
+                  CASUAL_SERIALIZE( gtrid);
                )
             };
 
@@ -127,10 +129,7 @@ namespace casual
             {
                using base_instance::base_instance;
 
-               void reserve( 
-                  service::id::type service,
-                  const common::process::Handle& caller,
-                  const common::strong::correlation::id& correlation);
+               void reserve( service::id::type service, Caller caller);
 
                //! unreserve the instance, @return the service that was used
                service::id::type unreserve();
@@ -581,10 +580,7 @@ namespace casual
 
          //! Tries to reserve a sequential instance for the given `service`
          //! @return id of the instance, or 'nil-id' if no idle is found
-         state::instance::sequential::id::type reserve_sequential( 
-            state::service::id::type service,
-            const common::process::Handle& caller, 
-            const common::strong::correlation::id& correlation);
+         state::instance::sequential::id::type reserve_sequential( state::service::id::type service, state::instance::Caller caller);
             
          //! @return a reserved instance for the given `service` 
          //!   or 'nil-id' if no one is found.
