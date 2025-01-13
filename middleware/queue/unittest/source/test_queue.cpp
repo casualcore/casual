@@ -717,8 +717,8 @@ domain:
 
          auto message = queue::blocking::dequeue( name);
 
-         // we expect at least 100ms has passed, 
-         EXPECT_TRUE( platform::time::clock::type::now() - start > std::chrono::milliseconds{ 100});
+         // we expect at least 100ms has passed.
+         EXPECT_TRUE( platform::time::clock::type::now() - start >= std::chrono::milliseconds{ 100});
          EXPECT_TRUE( common::algorithm::equal( message.payload.data, payload));
       }
 

@@ -646,11 +646,12 @@ namespace casual
       std::tuple< platform::size::type, std::vector< common::transaction::global::ID>> Queuebase::recovery_rollback( common::strong::queue::id queue, std::vector< common::transaction::global::ID> gtrids)
       {
          std::vector< platform::size::type> deleted_sizes{};
-         auto missing_message = [&]( auto& id)
+         
+         auto missing_message = [&, now = platform::time::clock::type::now()]( auto& id)
          {
             algorithm::container::append( sql::database::query::fetch( m_statement.rollback1.query( id.range()), local::transform::size()), deleted_sizes);
             const auto rollback1_affected = m_connection.affected();
-            m_statement.rollback2.execute( id.range());
+            m_statement.rollback2.execute( id.range(), now);
             const auto rollback2_affected = m_connection.affected();
             m_statement.rollback3.execute( id.range());
 
@@ -685,7 +686,7 @@ namespace casual
 
          auto sizes = sql::database::query::fetch( m_statement.rollback1.query( gtrid), local::transform::size());
 
-         m_statement.rollback2.execute( gtrid);
+         m_statement.rollback2.execute( gtrid, platform::time::clock::type::now());
          m_statement.rollback3.execute( gtrid);
 
          return std::reduce( std::begin( sizes), std::end( sizes));

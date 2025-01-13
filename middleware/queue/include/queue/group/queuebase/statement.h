@@ -37,6 +37,8 @@ namespace casual
          sql::database::Statement commit3;
 
          sql::database::Statement rollback1;
+
+         //! arguments: gtrid, now
          sql::database::Statement rollback2;
          sql::database::Statement rollback3;
 
