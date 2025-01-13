@@ -98,15 +98,15 @@ WHERE queue = :queue AND state = 2 AND properties = :properties AND available < 
 
             result.rollback1 = connection.precompile( "DELETE FROM message WHERE gtrid = :gtrid AND state = 1 RETURNING length( payload);");
 
-            // this only mutates if availiable has passed, otherwise state would not be 'dequeued' (3)
-            result.rollback2 = connection.precompile( 
-               "UPDATE message SET state = 2, redelivered = redelivered + 1,"
-               " available = ( SELECT CASE WHEN retry_delay = 0 THEN 0"  // no retry delay - we set 0
-                  // julianday('now') - 2440587.5) *86400.0 <- some magic that sqlite recommend for fraction of seconds
-                  // we multiply by 1'000'000 to get microseconds, and we add retry_delay which is in us already.
-                  " ELSE ( ( julianday('now') - 2440587.5) *86400 * 1000 * 1000) + retry_delay END" 
-                  " FROM queue WHERE id = message.queue)"
-               " WHERE gtrid = :gtrid AND state = 3");   
+            result.rollback2 = connection.precompile( R"(
+               UPDATE message SET state = 2, redelivered = redelivered + 1,
+                 available = ( 
+                    SELECT CASE WHEN retry_delay = 0 
+                       THEN 0                       /* no retry delay - we set 0 */
+                       ELSE ( ?2 + retry_delay )   /* otherwise we set the current time + retry delay */
+                     END 
+                    FROM queue WHERE id = message.queue)
+               WHERE gtrid = ?1 AND state = 3)");   
 
             // increment redelivered and "move" messages to error-queue iff we've passed retry_count and the queue has an error-queue.
             // also clear available iff message is moved to error-queue
