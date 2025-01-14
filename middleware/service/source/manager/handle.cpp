@@ -69,16 +69,28 @@ namespace casual
 
             namespace error
             {
-               auto reply( State& state, const state::instance::Caller& caller, common::code::xatmi code)
+               auto reply( State& state, const state::instance::Caller& caller, common::code::xatmi code, const common::process::Handle& callee)
                {
                   Trace trace{ "service::manager::handle::local::error::reply"};
-                  log::line( verbose::log, "caller: ", caller, ", code: ", code);
+                  log::line( verbose::log, "caller: ", caller, ", code: ", code, ", service: ", caller.service);
 
                   common::message::service::call::Reply message;
                   message.correlation = caller.correlation;
                   message.code.result = code; 
 
                   state.multiplex.send( caller.process.ipc, std::move( message));
+
+                  if( state.events.active< common::message::event::service::Calls>())
+                  {
+                     common::message::event::service::Metric metric;
+                     metric.code.result = code;
+                     metric.correlation = caller.correlation;
+                     metric.service = caller.service;
+                     metric.process = callee;
+
+                     state.metric.add( metric);
+                     handle::metric::batch::send( state);
+                  }
                }
             } // error
 
@@ -172,7 +184,7 @@ namespace casual
                   // keep track of instance until we get an ACK, or the server dies
                   // We need to notify TM if this call was in transaction.
                   state.timeout_instances.push_back( instance.process.pid);
-                  local::error::reply( state, caller, common::code::xatmi::timeout);
+                  local::error::reply( state, caller, common::code::xatmi::timeout, instance.process);
                   order_assassination( state, entry, entry.target);
                }
                else
@@ -278,7 +290,7 @@ namespace casual
                            log::error( code::casual::invalid_semantics, " callee terminated with pending reply to caller - callee: ", 
                                  event.state.pid, " - caller: ", caller.process.pid);
 
-                           local::error::reply( state, caller, common::code::xatmi::service_error);
+                           local::error::reply( state, caller, common::code::xatmi::service_error, common::process::Handle{ event.state.pid});
 
                            // we might need to notify TM about a potential stale transaction
                            detail::check_timeout_and_notify_TM( state, event.state.pid, caller.gtrid.range());
@@ -574,7 +586,7 @@ namespace casual
                            {
                               if( message.no_reply())
                                  return {};
-                              return { .process = message.process, .correlation = message.correlation, .gtrid = message.gtrid};
+                              return { .process = message.process, .correlation = message.correlation, .gtrid = message.gtrid, .service = message.requested};
                            };
 
                            if( auto instance_id = state.reserve_sequential( service_id, get_caller( message)))

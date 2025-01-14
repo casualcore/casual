@@ -436,6 +436,7 @@ namespace casual
          using base_stale = message::basic_request< message::Type::transaction_potential_stale>;
          struct Stale : base_stale
          {
+            using base_stale::base_stale;
             common::transaction::global::ID gtrid;
 
             CASUAL_CONST_CORRECT_SERIALIZE(

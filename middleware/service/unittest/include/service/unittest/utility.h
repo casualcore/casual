@@ -9,6 +9,7 @@
 #include "common/unittest.h"
 
 #include "common/message/service.h"
+#include "common/process.h"
 #include "service/manager/admin/model.h"
 
 #include <string>
@@ -20,6 +21,9 @@ namespace casual
    {
       //! advertise `services` to service-manager as current process
       void advertise( std::vector< std::string> services);
+
+      //! advertise `services` to service-manager as provided process
+      void advertise( std::vector< std::string> services, const common::process::Handle& handle);
 
       //! unadvertise `services` to service-manager as current process
       void unadvertise( std::vector< std::string> services);
