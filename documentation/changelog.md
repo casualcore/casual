@@ -74,6 +74,10 @@ This is the changelog for `casual` and all changes are listed in this document.
    `transaction --list-instances` now lists all instances of all resources, _internal_
    and _external_. This makes it consistent with _service --list-instances_. 
 
+## [1.6.23] - 2025-01-08
+### Fixes
+- service: always send metric event on server exit (#486)
+
 ## [1.6.22] - 2024-11-05
 ### Fixes
 - service: discovery-known-request only reply with known discoverable services (#454)

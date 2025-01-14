@@ -97,6 +97,7 @@ namespace casual
                common::process::Handle process;
                common::strong::correlation::id correlation;
                common::transaction::global::ID gtrid;
+               std::string service;
 
                inline explicit operator bool() const noexcept { return common::predicate::boolean( process);}
                inline friend bool operator == ( const Caller& lhs, const common::strong::correlation::id& rhs) { return lhs.correlation == rhs;}
@@ -105,6 +106,7 @@ namespace casual
                   CASUAL_SERIALIZE( process);
                   CASUAL_SERIALIZE( correlation);
                   CASUAL_SERIALIZE( gtrid);
+                  CASUAL_SERIALIZE( service);
                )
             };
 
