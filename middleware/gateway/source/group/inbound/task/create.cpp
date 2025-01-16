@@ -70,7 +70,7 @@ namespace casual
                      request.context.semantic = Semantic::regular;
 
                   if( message.trid)
-                     request.gtrid = transaction::id::range::global( message.trid);
+                     request.trid = message.trid;
 
                   // Send lookup
                   state.multiplex.send( ipc::manager::service(), request);

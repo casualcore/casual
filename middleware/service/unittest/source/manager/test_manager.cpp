@@ -1326,6 +1326,7 @@ domain:
             EXPECT_TRUE( metric.parent.service == "");
             EXPECT_TRUE( metric.process.pid == callee.pid);
             EXPECT_TRUE( metric.code.result == common::code::xatmi::service_error);
+            EXPECT_TRUE( metric.trid == common::transaction::context().current().trid);
          }
       }
 

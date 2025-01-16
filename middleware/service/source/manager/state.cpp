@@ -47,29 +47,26 @@ namespace casual
                }
             } // sequential
 
-            void Sequential::reserve( service::id::type service, Caller caller)
+            void Sequential::reserve( Caller caller)
             {
-               assert( ! m_reserved_service);
+               assert( ! m_caller);
 
-               m_reserved_service = service;
                m_caller = std::move( caller);
             }
 
             service::id::type Sequential::unreserve()
             {
-               m_caller = {};
-               return std::exchange( m_reserved_service, {});
+               return std::exchange( m_caller, {}).service;
             }
 
             void Sequential::discard()
             {
-               m_reserved_service = {};
                m_caller = {};
             }
 
             sequential::State Sequential::state() const
             {
-               return m_reserved_service ? sequential::State::busy : sequential::State::idle;
+               return m_caller ? sequential::State::busy : sequential::State::idle;
             }
 
             bool Sequential::service( service::id::type service) const
@@ -518,7 +515,7 @@ namespace casual
             }
 
 
-            std::vector< state::instance::Caller> remove( State& state, auto process)
+            std::vector< state::instance::Reservation> remove( State& state, auto process)
             {
 
                auto find_indexes = []( auto& instances, auto process)
@@ -536,7 +533,7 @@ namespace casual
                         services[ service_id].instances.remove( instance_id);
                };
 
-               std::vector< state::instance::Caller> result;
+               std::vector< state::instance::Reservation> result;
 
                state.events.remove( process);
                
@@ -554,7 +551,10 @@ namespace casual
                   for( auto id : sequential)
                   {
                      if( state.instances.sequential[ id].caller())
-                        result.push_back( state.instances.sequential[ id].caller());
+                     {
+                        auto& instance = state.instances.sequential[ id];
+                        result.push_back( { .caller = instance.caller(), .callee = instance.process});
+                     }
 
                      state.instances.sequential.erase( id);
                      std::erase( state.disabled, id);
@@ -567,7 +567,7 @@ namespace casual
          } // <unnamed>
       } // local
 
-      std::vector< state::instance::Caller> State::remove( common::strong::process::id pid)
+      std::vector< state::instance::Reservation> State::remove( common::strong::process::id pid)
       {
          Trace trace{ "service::manager::State::remove"};
          log::line( verbose::log, "pid: ", pid);
@@ -578,7 +578,7 @@ namespace casual
          return local::remove( *this, pid);
       }
 
-      std::vector< state::instance::Caller> State::remove( common::strong::ipc::id ipc)
+      std::vector< state::instance::Reservation> State::remove( common::strong::ipc::id ipc)
       {
          Trace trace{ "service::manager::State::remove"};
          log::line( verbose::log, "ipc: ", ipc);
@@ -586,7 +586,7 @@ namespace casual
          return local::remove( *this, ipc);
       }
 
-      state::instance::sequential::id::type State::reserve_sequential( state::service::id::type service_id, state::instance::Caller caller)
+      state::instance::sequential::id::type State::reserve_sequential( state::instance::Caller caller)
       {
          Trace trace{ "service::manager::State::reserve_sequential"};
 
@@ -595,11 +595,11 @@ namespace casual
             return instances.sequential[ instance_id].idle();
          };
 
-         auto& service = services[ service_id];
+         auto& service = services[ caller.service];
 
          if( auto found = algorithm::find_if( service.instances.sequential(), is_idle))
          {
-            instances.sequential[ *found].reserve( service_id, std::move( caller));
+            instances.sequential[ *found].reserve( std::move( caller));
             return *found;
          }
 

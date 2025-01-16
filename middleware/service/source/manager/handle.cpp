@@ -69,26 +69,27 @@ namespace casual
 
             namespace error
             {
-               auto reply( State& state, const state::instance::Caller& caller, common::code::xatmi code, const common::process::Handle& callee)
+               auto reply( State& state, const state::instance::Reservation& reservation, common::code::xatmi code)
                {
                   Trace trace{ "service::manager::handle::local::error::reply"};
-                  log::line( verbose::log, "caller: ", caller, ", code: ", code, ", service: ", caller.service);
+                  log::line( verbose::log, "caller: ", reservation.caller, ", code: ", code, ", service: ", reservation.caller.service);
 
                   common::message::service::call::Reply message;
-                  message.correlation = caller.correlation;
+                  message.correlation = reservation.caller.correlation;
                   message.code.result = code; 
 
-                  state.multiplex.send( caller.process.ipc, std::move( message));
+                  state.multiplex.send( reservation.caller.process.ipc, std::move( message));
 
                   if( state.events.active< common::message::event::service::Calls>())
                   {
                      common::message::event::service::Metric metric;
                      metric.code.result = code;
-                     metric.correlation = caller.correlation;
-                     metric.service = caller.service;
-                     metric.process = callee;
+                     metric.correlation = reservation.caller.correlation;
+                     metric.service = state.services[ reservation.caller.service].information.logical_name();
+                     metric.process = reservation.callee;
+                     metric.trid = reservation.caller.trid;
 
-                     state.metric.add( metric);
+                     state.metric.add( std::move( metric));
                      handle::metric::batch::send( state);
                   }
                }
@@ -184,7 +185,7 @@ namespace casual
                   // keep track of instance until we get an ACK, or the server dies
                   // We need to notify TM if this call was in transaction.
                   state.timeout_instances.push_back( instance.process.pid);
-                  local::error::reply( state, caller, common::code::xatmi::timeout, instance.process);
+                  local::error::reply( state, { .caller = caller, .callee = instance.process}, common::code::xatmi::timeout);
                   order_assassination( state, entry, entry.target);
                }
                else
@@ -285,15 +286,15 @@ namespace casual
                         state.pending.shutdown.failed( event.state.pid);
 
                         // we need to check if the dead process has anyone waiting for a reply
-                        for( auto caller : state.remove( event.state.pid))
+                        for( auto reservation : state.remove( event.state.pid))
                         {
                            log::error( code::casual::invalid_semantics, " callee terminated with pending reply to caller - callee: ", 
-                                 event.state.pid, " - caller: ", caller.process.pid);
+                                 event.state.pid, " - caller: ", reservation.caller.process.pid);
 
-                           local::error::reply( state, caller, common::code::xatmi::service_error, common::process::Handle{ event.state.pid});
+                           local::error::reply( state, reservation, common::code::xatmi::service_error);
 
                            // we might need to notify TM about a potential stale transaction
-                           detail::check_timeout_and_notify_TM( state, event.state.pid, caller.gtrid.range());
+                           detail::check_timeout_and_notify_TM( state, event.state.pid, common::transaction::id::range::global( reservation.caller.trid));
                         }
 
                         // It might be an assassinated instance. This should be taken care of by check_timeout_and_notify_TM
@@ -582,14 +583,14 @@ namespace casual
 
                         if( state.services[ service_id].has_sequential())
                         {
-                           auto get_caller = []( const auto& message) -> state::instance::Caller
+                           auto get_caller = [ service_id]( const auto& message) -> state::instance::Caller
                            {
                               if( message.no_reply())
-                                 return {};
-                              return { .process = message.process, .correlation = message.correlation, .gtrid = message.gtrid, .service = message.requested};
+                                 return { .service = service_id}; // this is maybe a bit silly...
+                              return { .process = message.process, .correlation = message.correlation, .trid = message.trid, .service = service_id};
                            };
 
-                           if( auto instance_id = state.reserve_sequential( service_id, get_caller( message)))
+                           if( auto instance_id = state.reserve_sequential( get_caller( message)))
                               dispatch::lookup::reply( state, service_id, instance_id, message, pending);
                            else
                               dispatch::lookup::pending( state, service_id, message);
@@ -605,7 +606,7 @@ namespace casual
                         if( dispatch::lookup::internal_only( state, service_id, message, pending))
                            return true;
 
-                        if( ! message.gtrid)
+                        if( ! message.trid)
                         {
                            if( auto instance_id = state.reserve_concurrent( service_id, {}))
                            {
@@ -616,7 +617,7 @@ namespace casual
                         }
 
                         // check if the gtrid has associations before
-                        if( auto found = algorithm::find( state.transaction.associations, message.gtrid))
+                        if( auto found = algorithm::find( state.transaction.associations, common::transaction::id::range::global( message.trid)))
                         {
                            if( auto instance_id = state.reserve_concurrent( service_id, range::make( found->second)))
                            {
@@ -633,7 +634,8 @@ namespace casual
                         // the gtrid is not associated before
                         if( auto instance_id = state.reserve_concurrent( service_id, {}))
                         {
-                           state.transaction.associations.emplace( message.gtrid, std::vector< state::instance::concurrent::id::type>{ instance_id});
+                           state.transaction.associations.emplace(
+                              common::transaction::id::range::global( message.trid), std::vector< state::instance::concurrent::id::type>{ instance_id});
 
                            dispatch::lookup::reply( state, service_id, instance_id, message, pending);
                            return true;

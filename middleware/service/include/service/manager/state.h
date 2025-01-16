@@ -96,8 +96,8 @@ namespace casual
             {
                common::process::Handle process;
                common::strong::correlation::id correlation;
-               common::transaction::global::ID gtrid;
-               std::string service;
+               common::transaction::ID trid;
+               service::id::type service;
 
                inline explicit operator bool() const noexcept { return common::predicate::boolean( process);}
                inline friend bool operator == ( const Caller& lhs, const common::strong::correlation::id& rhs) { return lhs.correlation == rhs;}
@@ -105,8 +105,19 @@ namespace casual
                CASUAL_LOG_SERIALIZE(
                   CASUAL_SERIALIZE( process);
                   CASUAL_SERIALIZE( correlation);
-                  CASUAL_SERIALIZE( gtrid);
+                  CASUAL_SERIALIZE( trid);
                   CASUAL_SERIALIZE( service);
+               )
+            };
+
+            struct Reservation
+            {
+               Caller caller;
+               common::process::Handle callee;
+
+               CASUAL_LOG_SERIALIZE(
+                  CASUAL_SERIALIZE( caller);
+                  CASUAL_SERIALIZE( callee);
                )
             };
 
@@ -131,7 +142,7 @@ namespace casual
             {
                using base_instance::base_instance;
 
-               void reserve( service::id::type service, Caller caller);
+               void reserve( Caller caller);
 
                //! unreserve the instance, @return the service that was used
                service::id::type unreserve();
@@ -140,7 +151,7 @@ namespace casual
                void discard();
 
                sequential::State state() const;
-               inline bool idle() const { return ! common::predicate::boolean( m_reserved_service);}
+               inline bool idle() const { return ! m_caller;}
 
                //! Return true if this instance exposes the service
                bool service( service::id::type service) const;
@@ -159,20 +170,18 @@ namespace casual
                //! caller of last reserve
                inline const auto& caller() const noexcept { return m_caller;}
 
-               //! @returns the name of the reserved service if a reservation exists
-               inline service::id::type reserved_service() const noexcept { return m_reserved_service;}
+               //! @returns the id of the reserved service if a reservation exists
+               inline service::id::type reserved_service() const noexcept { return m_caller.service;}
 
                const auto& services() const noexcept { return m_services;}
 
                CASUAL_LOG_SERIALIZE(
                   base_instance::serialize( archive);
-                  CASUAL_SERIALIZE( m_reserved_service);
                   CASUAL_SERIALIZE( m_caller);
                   CASUAL_SERIALIZE( m_services);
                )
 
             private:
-               service::id::type m_reserved_service{};
                instance::Caller m_caller;
                // all associated services
                std::vector< service::id::type> m_services;
@@ -575,14 +584,14 @@ namespace casual
          bool done() const noexcept;
          
          //! removes the instance (deduced from `pid`) and remove the instance from all services 
-         //! @returns possible callers to that waits for reply from the removed instance (in practice 0..1)
-         [[nodiscard]] std::vector< state::instance::Caller> remove( common::strong::process::id pid);
-         //! @returns possible caller to the remove instance
-         std::vector< state::instance::Caller> remove( common::strong::ipc::id ipc);
+         //! @returns possible reservations of the removed instance (in practice 0..1)
+         [[nodiscard]] std::vector< state::instance::Reservation> remove( common::strong::process::id pid);
+         //! @returns possible reservations of the removed instance
+         std::vector< state::instance::Reservation> remove( common::strong::ipc::id ipc);
 
          //! Tries to reserve a sequential instance for the given `service`
          //! @return id of the instance, or 'nil-id' if no idle is found
-         state::instance::sequential::id::type reserve_sequential( state::service::id::type service, state::instance::Caller caller);
+         state::instance::sequential::id::type reserve_sequential( state::instance::Caller caller);
             
          //! @return a reserved instance for the given `service` 
          //!   or 'nil-id' if no one is found.
