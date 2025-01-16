@@ -1,6 +1,30 @@
 # Changelog
 This is the changelog for `casual` and all changes are listed in this document.
 
+## [1.7.1] - 2025-01-16
+
+### Fixes
+- service: simplify removal of reserved instances
+- queue: better available update during rollback ([#497](https://github.com/casualcore/casual/issues/497))
+- service: send potential::Stale instead of rollback to TM
+- transaction: functionality to handle stale involved resources ([#440](https://github.com/casualcore/casual/issues/440))
+- http: exception wrapper -> return code within C-boundary for xatmi call ([#487](https://github.com/casualcore/casual/issues/487))
+- common: made header::Field case insensitive equal to key ([#487](https://github.com/casualcore/casual/issues/487))
+- queue: use queue error code in api
+- cli: better error if lookup fails on (en|de)queue ([#463](https://github.com/casualcore/casual/issues/463))
+- queue: notify discovery when new queue is created ([#479](https://github.com/casualcore/casual/issues/479))
+- service: notify discovery when new service is advertised ([#479](https://github.com/casualcore/casual/issues/479))
+- discovery: handle discoverable::Advertised message -> topology::Update ([#479](https://github.com/casualcore/casual/issues/479))
+- transaction: reopen resource on resource error ([#476](https://github.com/casualcore/casual/issues/476))
+- queue: remove memberships from forward-group
+- queue: fix forwards ignoring group memberships ([#465](https://github.com/casualcore/casual/issues/465))
+- queue: reset queue group metric on startup ([#469](https://github.com/casualcore/casual/issues/469))
+- queue: default queue-group alias missing ([#474](https://github.com/casualcore/casual/issues/474))
+- queue: manager could have same instance to queue multiple times ([#466](https://github.com/casualcore/casual/issues/466))
+- service: update load balancing for concurrent instances ([#468](https://github.com/casualcore/casual/issues/468))
+- queue: fix runtime configuration for (en|dis)able (en|de)queue ([#464](https://github.com/casualcore/casual/issues/464))
+
+
 ## [1.7.0] - 2024-11-26
 
 ### Added
