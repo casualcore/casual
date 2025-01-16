@@ -317,7 +317,7 @@ namespace casual
                {
                   origin.execution = strong::execution::id::generate();
                   origin.correlation = strong::correlation::id::generate();
-                  origin.gtrid = transaction::global::ID{ "aabbccddeeff0011223344"};
+                  origin.trid = transaction::id::create();
                   origin.requested = "some/service";
                }
 

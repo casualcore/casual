@@ -48,7 +48,7 @@ namespace casual
          {
             auto send_lookup = []( auto service, auto& trid){
                common::message::service::lookup::Request request{ process::handle()};
-               request.gtrid = transaction::id::range::global( trid);
+               request.trid = trid;
                request.requested = std::move( service);
                request.context.semantic = decltype( request.context.semantic)::regular;
                return communication::device::blocking::send( communication::instance::outbound::service::manager::device(), request);
