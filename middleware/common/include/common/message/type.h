@@ -361,6 +361,10 @@ namespace casual
          internal_dump_state = INTERNAL_BASE,
          internal_configure_log,
 
+         FILE_BASE = 12000,
+         file_reserve_request = FILE_BASE,
+         file_reserve_reply,
+
          UNITTEST_BASE = 10000000, // avoid conflict with real messages
          unittest_message = UNITTEST_BASE,
       };

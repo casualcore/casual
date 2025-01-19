@@ -214,6 +214,8 @@ namespace casual
             case Type::cli_transaction_current: return "cli_transaction_current";
             case Type::internal_dump_state: return "internal_dump_state";
             case Type::internal_configure_log: return "internal_configure_log";
+            case Type::file_reserve_request: return "file_reserve_request";
+            case Type::file_reserve_reply: return "file_reserve_reply";
             case Type::unittest_message: return "unittest_message";
 
             // end markers...
