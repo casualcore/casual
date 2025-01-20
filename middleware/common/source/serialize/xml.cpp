@@ -324,11 +324,11 @@ namespace casual
                         }
                         static void read( const pugi::xml_node& node, platform::binary::type& value)
                         { 
-                           value = transcode::base64::decode( node.text().get()); 
+                           value = transcode::base64::decode( std::string_view{ node.text().get()}); 
                         }
                         static void read( const pugi::xml_node& node, binary::span::Fixed< std::byte> value)
                         { 
-                           auto binary = transcode::base64::decode( node.text().get());
+                           auto binary = transcode::base64::decode( std::string_view{ node.text().get()});
 
                            if( range::size( binary) != range::size( value))
                               code::raise::error( code::casual::invalid_node, "binary size mismatch - wanted: ", range::size( value), " got: ", range::size( binary));

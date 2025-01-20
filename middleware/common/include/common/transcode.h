@@ -24,86 +24,43 @@ namespace casual
       {
          namespace detail
          {
-            struct Data 
-            {
-               void* memory;
-               platform::size::type bytes;
-            };
-
-            template< typename C> 
-            auto data( C& container)
-            {
-               return Data{ (void*)( container.data()), static_cast< platform::size::type>( container.size())};
-            }
-
-            platform::size::type encode( const Data source, Data target);
-
-            platform::size::type decode( std::string_view source, std::span< std::byte> destination);
+            platform::size::type encode( std::span< const std::byte> source, std::span< std::byte> target);
+            platform::size::type decode( std::span< const std::byte> source, std::span< std::byte> target);
          } // detail
 
-         namespace capacity
+         //! @note only supports byte sized source (so far) (target is naturally byte sized)
+         template< concepts::container::bytes S, concepts::container::bytes T>
+         void encode( const S& source, T& target)
          {
-            constexpr platform::size::type encoded( platform::size::type bytes) 
-            {
-               return ( ( bytes + 2) / 3) * 4;
-            }
-         } // capacity
-
-
-
-         template< concepts::binary::like C1, concepts::container::resize C2>
-         void encode( C1&& source, C2& target)
-         {
-            static_assert( sizeof( std::ranges::range_value_t< C1>) == sizeof( std::ranges::range_value_t< C2>), "not the same value type size");
-
-            target.resize( capacity::encoded( source.size()));
-
-            target.resize( detail::encode( detail::data( source), detail::data( target)));
+            target.resize( ( std::size( source) + 2) / 3 * 4);
+            target.resize( detail::encode( std::as_bytes( std::span{ source}), std::as_writable_bytes( std::span{ target})));
          }
 
-         //! @return Base64-encoded binary data of @p container
-         //!
-         //! @throw exception::Casual on failure
-         template< concepts::binary::like C>
-         std::string encode( C&& container)
+         //! @note only supports byte sized target (so far) (source is naturally byte sized)
+         template< concepts::container::bytes S, concepts::container::bytes T>
+         void decode( const S& source, T& target)
+         {
+            target.resize( ( std::size( source) / 4) * 3);
+            target.resize( detail::decode( std::as_bytes( std::span{ source}), std::as_writable_bytes( std::span{ target})));
+         }
+
+         //! @return Base64-encoded data
+         std::string encode( const auto& value)
          {
             std::string result;
-            encode( container, result);
+            encode( value, result);
             return result;
          }
 
-         //! @return Base64-encoded binary data of [first, last)
-         //!
-         //! @pre @p Iter has to be a random access iterator
+         //! @return Base64-decoded data
          //!
          //! @throw exception::Casual on failure
-         template< concepts::binary::iterator Iter>
-         std::string encode( Iter first, Iter last)
+         platform::binary::type decode( const auto& value)
          {
-            return encode( range::make( first, last));
+            platform::binary::type result;
+            decode( value, result);
+            return result;
          }
-
-         //! @return Base64-decoded binary data
-         //!
-         //! @throw exception::Casual on failure
-         platform::binary::type decode( std::string_view value);
-
-         // TODO performance: make it possible to decode to fixed memory
-         //  `b64_pton` seems to need additional space during decode, hence it's
-         //  not symmetric. Roll our own?
-
-
-         //!
-         //! decode Base64 to a binary representation
-         //! @attention [first, last) needs to be bigger than the [first, result) (by some bytes...)
-         //! @returns the exact binary view of the decoded target
-         template< concepts::binary::like T>
-         inline auto decode( std::string_view source, T&& target)
-         {
-            auto count = detail::decode( source, binary::span::make( target));
-            return range::make( std::begin( target), count);
-         }
-
       } // base64
 
       namespace utf8

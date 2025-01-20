@@ -134,6 +134,10 @@ namespace casual
          template< typename T>
          concept like = container::sequence< T> || container::associative< T>;
 
+
+         template< typename T>
+         concept bytes = concepts::range< T> && sizeof( decltype( *std::declval<T>().begin())) == 1;
+
       } // container
 
       namespace tuple
