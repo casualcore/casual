@@ -32,7 +32,7 @@ namespace casual
          } // <unnamed>
       } // local
 
-      TEST( casual_common_transcode_base64, encode_binary)
+      TEST( casual_common_transcode_base64, encode)
       {
          common::unittest::Trace trace;
 
@@ -47,25 +47,13 @@ namespace casual
       {
          common::unittest::Trace trace;
 
-         EXPECT_TRUE( transcode::base64::decode( "") == local::string_to_binary( ""));
-         EXPECT_TRUE( transcode::base64::decode( "QQ==") == local::string_to_binary( "A"));
-         EXPECT_TRUE( transcode::base64::decode( "QUI=") == local::string_to_binary( "AB"));
-         EXPECT_TRUE( transcode::base64::decode( "QUJD") == local::string_to_binary( "ABC"));
-         EXPECT_TRUE( transcode::base64::decode( "QUJDRA==") == local::string_to_binary( "ABCD"));
-      }
+         using namespace std::string_view_literals;
 
-      TEST( casual_common_transcode_base64, decode_to_same_as_source)
-      {
-         common::unittest::Trace trace;
-
-         std::string encoded{ "QUJDRA=="};
-
-         auto binary = transcode::base64::decode( encoded, binary::span::make( encoded));
-
-         auto expected = std::string_view{ "ABCD"};
-
-         EXPECT_TRUE( algorithm::equal( binary, binary::span::make( expected))) << "decoded: " << encoded;
-         EXPECT_TRUE( binary.size() == 4);
+         EXPECT_TRUE( transcode::base64::decode( ""sv) == local::string_to_binary( ""));
+         EXPECT_TRUE( transcode::base64::decode( "QQ=="sv) == local::string_to_binary( "A"));
+         EXPECT_TRUE( transcode::base64::decode( "QUI="sv) == local::string_to_binary( "AB"));
+         EXPECT_TRUE( transcode::base64::decode( "QUJD"sv) == local::string_to_binary( "ABC"));
+         EXPECT_TRUE( transcode::base64::decode( "QUJDRA=="sv) == local::string_to_binary( "ABCD"));
       }
 
       TEST( casual_common_transcode_utf8, test_existene_of_bogus_codeset__expecting_false)

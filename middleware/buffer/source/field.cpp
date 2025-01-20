@@ -1901,7 +1901,7 @@ namespace casual
                            case CASUAL_FIELD_BINARY:
                            default:
                               const auto size = offset + size_offset;
-                              stream << common::transcode::base64::encode( data, data + local::decode< long>( size));
+                              stream << common::transcode::base64::encode( common::range::make( data, data + local::decode< long>( size)));
                               break;
                            }
 

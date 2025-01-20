@@ -22,14 +22,12 @@
 #include <iomanip>
 #include <iostream>
 #include <sstream>
-// codecvt is not part of GCC yet ...
-//#include <codecvt>
-// ... so we have to use the cumbersome iconv instead
-#include <iconv.h>
 #include <clocale>
 #include <cerrno>
 #include <cstdlib>
 #include <cassert>
+
+#include <iconv.h>
 
 
 namespace casual
@@ -41,28 +39,22 @@ namespace casual
       {
          namespace detail
          {
-            platform::size::type encode( const Data source, Data target)
+            platform::size::type encode( std::span< const std::byte> source, std::span< std::byte> target)
             {
                // calls abort() if target size is insufficient
                return cppcodec::base64_rfc4648::encode(
-                  static_cast<char*>(target.memory),
-                  target.bytes,
-                  static_cast<const char*>(source.memory),
-                  source.bytes); 
+                  reinterpret_cast<char*>(target.data()), target.size(), 
+                  reinterpret_cast<const char*>(source.data()), source.size());
             }
 
-         platform::size::type decode( std::string_view source, std::span< std::byte> destination)
+            platform::size::type decode( std::span< const std::byte> source, std::span< std::byte> target)
             {
                try
                {
-                  auto char_span = binary::span::to_string_like( destination);
-
                   // calls abort() if target size is insufficient
                   return cppcodec::base64_rfc4648::decode(
-                     char_span.data(),
-                     char_span.size(),
-                     source.data(),
-                     source.size());
+                     reinterpret_cast<char*>(target.data()), target.size(), 
+                     reinterpret_cast<const char*>(source.data()), source.size());
                }
                catch( const std::exception& e)
                {
@@ -71,16 +63,6 @@ namespace casual
             }
 
          } // detail
-
-
-         platform::binary::type decode( std::string_view value)
-         {
-            platform::binary::type result( (value.size() / 4) * 3);
-
-            result.resize( detail::decode( value, result));
-
-            return result;
-         }
 
       } // base64
 
