@@ -270,10 +270,11 @@ namespace casual
                      path = environment::expand( std::move( path), environment);
                      environment::normalize( arguments, environment);
                      
+                     // if a path is provided (i.e. not a command like `sleep`)
                      // check if path exist and process has permission to execute it.
                      // could still go wrong, since we don't know if the path will actually execute,
                      // but we'll probably get rid of most of the errors (due to bad configuration and such)
-                     if( ! common::file::permission::execution( path))
+                     if( common::path::has_parent( path) && ! common::file::permission::execution( path))
                         code::raise::error( code::casual::invalid_path, "spawn failed - path: ", path);
 
                      log::line( log::debug, "process::spawn ", path, ' ', arguments);

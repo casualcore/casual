@@ -194,7 +194,11 @@ namespace casual
             bool execution( const std::filesystem::path& path)
             {
                namespace fs = std::filesystem;
-               return ( fs::status( path).permissions() & fs::perms::owner_exec) != fs::perms::none;
+               auto status = fs::status( path);
+               if( status == fs::file_status( fs::file_type::not_found))
+                  return false;
+
+               return ( status.permissions() & fs::perms::owner_exec) == fs::perms::owner_exec;
             }
          } // permission
 
@@ -237,6 +241,14 @@ namespace casual
             }
          } // shared
       } // directory
+
+      namespace path
+      {
+         bool has_parent( const std::filesystem::path& path)
+         {
+            return path.has_parent_path();
+         }
+      }
 
    } // common
 } // casual

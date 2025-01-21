@@ -166,6 +166,12 @@ namespace casual
 
       } // directory
 
+      namespace path
+      {
+         //! @returns true if the provided path has a parent path
+         bool has_parent( const std::filesystem::path& path);
+      }
+
    } // common
 } // casual
 
