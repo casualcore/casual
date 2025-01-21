@@ -41,7 +41,7 @@ gateway [0..1]
            removed - use casual service --list-instances
 
       [deprecated] -lq, --list-queues [0..1]
-           removed - use casual queue --list-instance
+           removed - use casual queue --list-queue-instances
 
       [deprecated] --rediscover [0..1]
            moved to casual discover --rediscover
