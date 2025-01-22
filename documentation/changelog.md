@@ -1,6 +1,11 @@
 # Changelog
 This is the changelog for `casual` and all changes are listed in this document.
 
+## [1.7.2] - 2025-01-22
+
+### Fixes
+- domain: check if file (with path) exists before spawn
+
 ## [1.7.1] - 2025-01-16
 
 ### Fixes
