@@ -41,6 +41,11 @@ namespace casual
                global::done = true;
             }
 
+            extern "C" void xatmi_echo( TPSVCINFO* info)
+            {
+               tpreturn( TPSUCCESS, 0, info->data, info->len, 0);
+            }
+
             auto domain()
             {
                return casual::domain::unittest::manager(
@@ -127,6 +132,36 @@ domain:
          };
    
          casual_run_server( &arguments);         
+         EXPECT_FALSE( local::global::done);
+      }
+
+      TEST( test_xatmi_start, casual_run_server_v2_visibility_0)
+      {
+         common::unittest::Trace trace;
+         
+         auto domain = local::domain();
+
+         local::global::init = false;
+         local::global::done = false;
+
+         // prepare the shutdown, since we block in casual_run_server
+         common::communication::ipc::inbound::device().push( common::message::shutdown::Request{ process::handle()});
+
+         casual_service_definition service_mapping[] = { 
+            { .function_pointer = &local::xatmi_echo, .name = "xatmi_echo", .category = "", .transaction = 0, .visibility = 0},
+            { 0, 0, 0, 0, 0}};
+
+         casual_xa_switch_map xa_mapping[] = {{ 0, 0, 0}};
+         casual_server_arguments_v2 arguments{
+            service_mapping,
+            nullptr,
+            &local::server_done,
+            0,
+            nullptr,
+            xa_mapping
+         };
+   
+         casual_run_server_v2( &arguments);         
          EXPECT_FALSE( local::global::done);
       }
 

@@ -19,6 +19,9 @@ extern "C" {
 #endif
 
 
+#define CASUAL_SERVICE_VISIBILITY_DISCOVERABLE 0
+#define CASUAL_SERVICE_VISIBILITY_UNDISCOVERABLE 1
+
 struct casual_service_definition
 {
    tpservice function_pointer;
@@ -30,7 +33,10 @@ struct casual_service_definition
    /* transaction policy */
    uint64_t transaction;
 
-   /* service visibilit*/
+   //! service visibility
+   //! 0 = discoverable
+   //! 1 = undiscoverable
+   //! @note these values does not directly map to the casual::common::service::visibility::Type 
    uint64_t visibility;
 };
 

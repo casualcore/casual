@@ -67,7 +67,7 @@ namespace casual
                   template< typename S>
                   void start( S services, std::vector< argument::transaction::Resource> resources, common::function<void()const> initialize)
                   {
-                     Trace trace{ "common::server::start"};
+                     Trace trace{ "common::server::local::start"};
                      log::line( verbose::log, "services: ", services);
 
                      auto& inbound = communication::ipc::inbound::device();

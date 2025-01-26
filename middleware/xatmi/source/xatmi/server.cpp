@@ -36,18 +36,22 @@ namespace casual
          {
             namespace transform
             {
-               template< typename S>
-               auto visibility( S& service, common::traits::priority::tag< 1>) -> decltype( common::service::visibility::transform( service.visibility))
+
+               common::service::visibility::Type visibility( const casual_service_definition& service)
                {
-                  return common::service::visibility::transform( service.visibility);
+                  return common::service::visibility::build::transform( service.visibility);
                }
 
-               template< typename S>
-               auto visibility( S&, common::traits::priority::tag< 0>) { return common::service::visibility::Type::discoverable;}
+               common::service::visibility::Type visibility( const casual_service_name_mapping& service)
+               {
+                  return common::service::visibility::Type::discoverable;
+               }
 
                template< typename A>
                auto services( A& value)
                {
+                  casual::xatmi::Trace trace{ "casual::xatmi::server::local::transform::services"};
+
                   std::vector< common::server::argument::xatmi::Service> result;
 
                   auto service = value.services;
@@ -58,8 +62,8 @@ namespace casual
                         service->name,
                         service->function_pointer,
                         common::service::transaction::mode( service->transaction),
-                        transform::visibility( *service, common::traits::priority::tag< 1>{}),
-                        service->category);
+                        transform::visibility( *service),
+                        service->category ? service->category : "");
                   }
 
                   return result;

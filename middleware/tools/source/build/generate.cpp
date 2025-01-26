@@ -87,7 +87,7 @@ namespace casual
                   for( auto& service : services)
                   {
                      out << R"(
-      {&)" << service.function << R"(, ")" << service.name << R"(", ")" << service.category << R"(", )" << std::to_underlying( service.transaction) << R"(, )" << std::to_underlying( service.visibility) << "},";
+      {&)" << service.function << R"(, ")" << service.name << R"(", ")" << service.category << R"(", )" << std::to_underlying( service.transaction) << R"(, )" << common::service::visibility::build::transform( service.visibility) << "},";
                   }
 
                   out << R"(
