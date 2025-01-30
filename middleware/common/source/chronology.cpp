@@ -16,13 +16,29 @@
 #include <functional>
 #include <algorithm>
 
+
 namespace casual
 {
    namespace common::chronology
    {
 
-// os x doesn't have  std::chrono::zoned_time yet, we keep the old crap until we get it
-#ifdef __APPLE__
+// we use std::format if the compiler supports it, otherwise we use the extremely convoluted way.
+#if defined( __cpp_lib_format_path) && __cpp_lib_format_path >= 202403L
+
+      namespace utc
+      {
+         std::string offset( platform::time::point::type timepoint)
+         {
+            return std::format("{:%FT%T%Ez}", std::chrono::zoned_time{ std::chrono::current_zone(), std::chrono::floor< std::chrono::microseconds>( timepoint)});
+         }
+
+         void offset( std::ostream& out, platform::time::point::type timepoint)
+         {
+            out << offset( timepoint);
+         }
+      } // utc
+
+#else
 
       namespace local
       {
@@ -112,20 +128,6 @@ namespace casual
          }
       } // utc
 
-#else
-      namespace utc
-      {
-         std::string offset( platform::time::point::type timepoint)
-         {
-            return std::format("{:%FT%T%Ez}", std::chrono::zoned_time{ std::chrono::current_zone(), std::chrono::floor< std::chrono::microseconds>( timepoint)});
-         }
-
-         void offset( std::ostream& out, platform::time::point::type timepoint)
-         {
-            out << offset( timepoint);
-         }
-      } // utc
-           
 #endif
 
       namespace from
