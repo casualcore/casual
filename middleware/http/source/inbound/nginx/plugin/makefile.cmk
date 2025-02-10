@@ -1,22 +1,130 @@
 from casual.make.entity.target import Recipe
 import casual.make.entity.model as model
 import casual.make.api as make
+import casual.middleware.make.api as dsl
 
 import subprocess
 import os
+from shutil import copyfile
+
+SOURCE_ROOT = os.getenv("CASUAL_MAKE_SOURCE_ROOT")
+CASUAL_THIRDPARTY = os.getenv("CASUAL_THIRDPARTY")
+INSTALLDIR = os.getenv('CASUAL_HOME', '/opt/casual')
+BUILDDIR = SOURCE_ROOT + '/middleware/http/inbound/bin'
+# TODO: upgrade when casual-thirdparty is updated
+#NGINX_VERSION = '1.27.4'
+NGINX_VERSION = '1.22.1'
+NGINX_SOURCE_DIR = CASUAL_THIRDPARTY + '/nginx/nginx-' + NGINX_VERSION
+
+def check_preconditions():
+   if not CASUAL_THIRDPARTY:
+      raise SystemError("CASUAL_THIRDPARTY need to be set")
+
+def nginx_makefile_exists():
+   return os.path.isfile(NGINX_SOURCE_DIR + '/Makefile')
+
+def make_symlink(src, dest):
+   if not os.path.islink(dest):
+      os.symlink(src, dest)
+
+def configure():
+   if nginx_makefile_exists():
+      print('Makefile already exists, skipping configure')
+      return
+
+   prefix = os.getenv('CASUAL_HOME', '/opt/casual') + '/nginx'
+   print("nginx - running configure")
+   print( subprocess.check_output(['./configure',
+      '--with-debug',
+      '--prefix=' + prefix,
+      '--builddir=' + BUILDDIR,
+      '--error-log-path=error.log',
+      '--http-log-path=access.log',
+      '--with-cc-opt=-Wno-deprecated',
+      '--add-module=' + SOURCE_ROOT + '/middleware/http/source/inbound/nginx/plugin',
+      '--without-http_rewrite_module'],
+      cwd = NGINX_SOURCE_DIR
+      ).decode())
 
 def perform_build(dummy):
-   print( "building and installing nginx - source root: ", os.getenv("CASUAL_MAKE_SOURCE_ROOT"))
-   filename = os.path.join( os.getenv("CASUAL_MAKE_SOURCE_ROOT"), 'thirdparty/setup/install_nginx.py')
-   try:
-      out = subprocess.check_output(["python3", filename])
-   except subprocess.CalledProcessError as e:
-      print(e)
-      raise
+   check_preconditions()
+   configure()
+   print('nginx - running make, source root: ' + SOURCE_ROOT)
 
-   print(out.decode())
+   print( subprocess.check_output(['make'], cwd = NGINX_SOURCE_DIR).decode())
+   # we cant just rename the file or make will be out of date
+   copyfile(BUILDDIR + '/nginx', BUILDDIR + '/casual-http-inbound')
+   os.chmod(BUILDDIR + '/casual-http-inbound', 0o755)
+
+def perform_install(dummy):
+   check_preconditions()
+   print('nginx - running install')
+
+   copyfile(BUILDDIR + '/casual-http-inbound', INSTALLDIR + '/bin/casual-http-inbound')
+   os.chmod(INSTALLDIR + '/bin/casual-http-inbound', 0o755)
+   os.makedirs(INSTALLDIR + '/nginx/sbin', exist_ok=True)
+   # link from <= 1.7 location to maintain backwards compatiblity
+   make_symlink(INSTALLDIR + '/bin/casual-http-inbound', INSTALLDIR + '/nginx/sbin/nginx')
+
+   os.makedirs(INSTALLDIR + '/example/conf', exist_ok=True)
+   copyfile(SOURCE_ROOT + '/thirdparty/nginx/nginx.conf', INSTALLDIR + '/example/conf/nginx.conf')
+   os.makedirs(INSTALLDIR + '/nginx/conf', exist_ok=True)
+   make_symlink(INSTALLDIR + '/example/conf/nginx.conf', INSTALLDIR + '/nginx/conf/nginx.conf')
+
+def perform_clean(dummy):
+   check_preconditions()
+   if nginx_makefile_exists():
+      print('nginx - running clean')
+      print( subprocess.check_output(['make', 'clean'], cwd = NGINX_SOURCE_DIR).decode())
+
+make.IncludePaths( [ '../../../../../common/include',
+    '../../../../../configuration/include',
+    '../../../../../configuration/unittest/include',
+    '../../../../../domain/include',
+    '../../../../../domain/unittest/include',
+    '../../../../../xatmi/include',
+    '../../../../../administration/unittest/include']
+    + make.optional_include_paths()
+    + dsl.paths().include.gtest
+   )
+
+make.LibraryPaths( [ '../../../../../xatmi/bin',
+    '../../../../../common/bin',
+    '../../../../../domain/bin',
+    '../../../../../configuration/bin',
+    '../../../../../http/bin',
+    '../../../../../administration/bin',
+    '../../../../../serviceframework/bin']
+    + make.optional_library_paths()
+    + dsl.paths().library.gtest
+   )
+
+unittest_target = make.LinkUnittest( 'unittest/bin/test-http',
+   [
+      make.Compile( 'unittest/source/test_http.cpp')
+   ],
+   [ 
+      'casual-common',
+      'casual-xatmi',
+      'casual-unittest',
+      'casual-domain-unittest',
+      'casual-configuration',
+      'casual-administration-unittest'
+   ])
 
 # main - register function
-model.register( 'nginx').execute(True).serial(True).add_recipe( Recipe( perform_build, None))
+inbound_build_target = model.register('nginx-build').execute(True).serial(True).add_recipe( Recipe( perform_build, None))
+inbound_build_target.add_dependency(make.link_library_target)
 
+# workaround for issue with pickle and 
+unittest_target.serial(True)
+model.get('clean_' + unittest_target.name()).serial(True)
 
+unittest_target.add_dependency(inbound_build_target)
+
+inbound_install_target = model.register('nginx-install').execute(True).serial(True).add_recipe( Recipe( perform_install, None))
+inbound_install_target.add_dependency(inbound_build_target)
+make.install_target.add_dependency(inbound_install_target)
+
+inbound_clean_target = model.register('nginx-clean').execute(True).serial(True).add_recipe( Recipe( perform_clean, None))
+make.clean_target.add_dependency(inbound_clean_target)

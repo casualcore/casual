@@ -40,7 +40,7 @@ domain:
       log: ":memory:"
 
    executables:
-      -  path: ${CASUAL_UNITTEST_HTTP_INBOUND_PATH}
+      -  path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/http/inbound/bin/casual-http-inbound
          alias: casual-http-inbound
          arguments: [ -p, "${CASUAL_DOMAIN_HOME}", -c, "${CASUAL_UNITTEST_HTTP_INBOUND_CONFIG}", -e, "${CASUAL_DOMAIN_HOME}/error.log"]
 
