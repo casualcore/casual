@@ -73,7 +73,8 @@ namespace casual
 
          namespace wait::until
          {
-            //! blocks until `service` has been advertised
+            //! Waits until the service has been advertised. 
+            //! It is using `eventually::succeed` to try a bunch of times, but not forever.
             void advertised( std::string_view service);
          } // wait::until
 

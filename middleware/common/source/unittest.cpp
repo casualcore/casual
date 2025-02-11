@@ -87,18 +87,32 @@ namespace casual
          {
             void advertised( std::string_view service)
             {
-               common::message::service::lookup::Request lookup_request{ process::handle()};
-               lookup_request.requested = service;
-               lookup_request.context.semantic = decltype( lookup_request.context.semantic)::wait;
-               auto correlation = communication::device::blocking::send( communication::instance::outbound::service::manager::device(), lookup_request);
-               communication::ipc::receive< common::message::service::lookup::Reply>( correlation);
+               auto lookup = [ service]()
+               {
+                  common::message::service::lookup::Request request{ process::handle()};
+                  request.requested = service;
 
-               common::message::service::lookup::discard::Request discard_request{ process::handle()};
-               discard_request.correlation = correlation;
-               discard_request.requested = service;
-               discard_request.reply = false;
-               communication::device::blocking::send( communication::instance::outbound::service::manager::device(), discard_request);
+                  auto reply = communication::ipc::call( communication::instance::outbound::service::manager::device(), request);
+
+                  if( reply.absent())
+                     return false;
+                  
+                  // the service is advertised, we need to discard the reservation.
+                  {
+                     common::message::service::lookup::discard::Request discard{ process::handle()};
+                     discard.correlation = reply.correlation;
+                     discard.requested = service;
+                     discard.reply = false;
+                     communication::device::blocking::send( communication::instance::outbound::service::manager::device(), discard);
+                  }
+                  
+                  return true;
+               };
+               
+               // we try a bunch of times, but we don't wait forever.
+               eventually::succeed( lookup);
             }
+
          } // wait::until
 
       } // service
