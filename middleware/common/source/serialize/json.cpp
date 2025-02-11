@@ -18,10 +18,7 @@
 // TODO: Move this to makefile
 #define RAPIDJSON_HAS_STDSTRING 1
 
-#include <rapidjson/document.h>
-#include <rapidjson/error/en.h>
-#include <rapidjson/stringbuffer.h>
-#include <rapidjson/prettywriter.h>
+
 
 #include <iterator>
 #include <istream>
@@ -29,9 +26,22 @@
 
 #include <iostream>
 
+//! An inline naamespace to guard the abi for our use of rapidjson
+//! The symbols will be less prone to clash with casual users use of their own rapidjson
+inline namespace casual_abi
+{
+#include <rapidjson/document.h>
+#include <rapidjson/error/en.h>
+#include <rapidjson/stringbuffer.h>
+#include <rapidjson/prettywriter.h>
+         
+} // casual_abi
+
 
 namespace casual
 {
+
+
    namespace common
    {
       namespace serialize

@@ -1,6 +1,15 @@
 # Changelog
 This is the changelog for `casual` and all changes are listed in this document.
 
+## [1.7.3] - 2025-01-28
+- common: include rapidjson within inline ns for ABI
+- xatmi: build-server uses [0,1] as values for service visibility ([#506](https://github.com/casualcore/casual/issues/506))
+
+## [1.7.2] - 2025-01-22
+
+### Fixes
+- domain: check if file (with path) exists before spawn
+
 ## [1.7.1] - 2025-01-16
 
 ### Fixes

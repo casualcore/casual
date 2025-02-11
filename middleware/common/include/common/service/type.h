@@ -55,7 +55,14 @@ namespace casual
 
          Type transform( std::string_view contract);
          std::string transform( Type contract);
-         Type transform( short mode);
+
+         namespace build
+         {
+            //! transform from Type to the _build-server_ generated representation
+            std::uint64_t transform( Type value);
+            //! transform from the _build-server_ generated representation to Type
+            Type transform( std::uint64_t value);
+         } // build
          
       } // visibility
 

@@ -1561,7 +1561,7 @@ domain:
          dependencies: [ A]
    executables:
       -  alias: a
-         path: non-existent-path
+         path: non-existent-path/non-existent-executable
          arguments: [60]
          instances: 2
          memberships: [ A]

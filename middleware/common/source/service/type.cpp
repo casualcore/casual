@@ -13,6 +13,8 @@
 
 #include "casual/assert.h"
 
+#include "casual/xatmi/server.h"
+
 #include <map>
 #include <ostream>
 
@@ -54,12 +56,28 @@ namespace casual
             return std::string{ description( value)};
          }
 
-         Type transform( short value)
+         namespace build
          {
-            CASUAL_ASSERT( value >= std::to_underlying( Type::discoverable) && value <= std::to_underlying( Type::undiscoverable));
+            std::uint64_t transform( Type value)
+            {
+               switch( value)
+               {
+                  case Type::discoverable: return CASUAL_SERVICE_VISIBILITY_DISCOVERABLE;
+                  case Type::undiscoverable: return CASUAL_SERVICE_VISIBILITY_UNDISCOVERABLE;
+               }
+               code::raise::error( code::casual::invalid_configuration, "unexpected visibility value: ", value);
+            }
 
-            return static_cast< Type>( value);
-         }
+            Type transform( std::uint64_t value)
+            {
+               switch( value)
+               {
+                  case CASUAL_SERVICE_VISIBILITY_DISCOVERABLE: return Type::discoverable;
+                  case CASUAL_SERVICE_VISIBILITY_UNDISCOVERABLE: return Type::undiscoverable;
+               }
+               code::raise::error( code::casual::invalid_configuration, "unexpected visibility value: ", value);
+            }
+         } // build
          
       } // visibility
 
