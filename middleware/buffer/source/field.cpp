@@ -38,7 +38,7 @@
 #include <regex>
 #include <iostream>
 #include <sstream>
-
+#include <tuple>
 namespace casual
 {
    namespace buffer::field
@@ -571,7 +571,7 @@ namespace casual
                   const auto& buffer = pool_type::pool().get( common::buffer::handle::type{ handle});
 
                   // Just to force an exception if not present
-                  buffer.index.at( id).at( occurrence);
+                  std::ignore = buffer.index.at( id).at( occurrence);
 
                   return CASUAL_FIELD_SUCCESS;
                }
