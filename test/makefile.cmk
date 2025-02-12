@@ -1,5 +1,6 @@
 import casual.make.api as make
 import casual.middleware.make.api as dsl
+import casual.make.entity.model as model
 
 import os
 
@@ -73,13 +74,10 @@ unittest_object = [
     make.Compile( 'unittest/source/test_queue.cpp'),
     make.Compile( 'unittest/source/test_assassinate.cpp'),
     make.Compile( 'unittest/source/xatmi/test_conversation.cpp'),
+    make.Compile( 'unittest/source/test_http.cpp')
 ]
 
-# only build http test cases if the enviornment is set up
-if "CASUAL_UNITTEST_HTTP_INBOUND_PATH" in os.environ:
-   unittest_object.append( make.Compile( 'unittest/source/test_http.cpp'))
-
-make.LinkUnittest( 'unittest/bin/test-casual',
+unittest_target = make.LinkUnittest( 'unittest/bin/test-casual',
    unittest_object,
    [ 
       'casual-common', 
@@ -100,7 +98,12 @@ make.LinkUnittest( 'unittest/bin/test-casual',
       'casual-domain-admin-cli',
       'casual-serviceframework',
    ])
-	
+
+# 
+unittest_target.add_dependency(model.get('nginx-build'))
+# hack to get around issue with pickle and multiprocess
+unittest_target.serial(True)
+model.get('clean_' + unittest_target.name()).serial(True)
 
 # Install
 make.Install( install_bin, dsl.paths().install + '/bin')

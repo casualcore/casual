@@ -77,50 +77,9 @@ def perform_clean(dummy):
       print('nginx - running clean')
       print( subprocess.check_output(['make', 'clean'], cwd = NGINX_SOURCE_DIR).decode())
 
-make.IncludePaths( [ '../../../../../common/include',
-    '../../../../../configuration/include',
-    '../../../../../configuration/unittest/include',
-    '../../../../../domain/include',
-    '../../../../../domain/unittest/include',
-    '../../../../../xatmi/include',
-    '../../../../../administration/unittest/include']
-    + make.optional_include_paths()
-    + dsl.paths().include.gtest
-   )
-
-make.LibraryPaths( [ '../../../../../xatmi/bin',
-    '../../../../../common/bin',
-    '../../../../../domain/bin',
-    '../../../../../configuration/bin',
-    '../../../../../http/bin',
-    '../../../../../administration/bin',
-    '../../../../../serviceframework/bin']
-    + make.optional_library_paths()
-    + dsl.paths().library.gtest
-   )
-
-unittest_target = make.LinkUnittest( 'unittest/bin/test-http',
-   [
-      make.Compile( 'unittest/source/test_http.cpp')
-   ],
-   [ 
-      'casual-common',
-      'casual-xatmi',
-      'casual-unittest',
-      'casual-domain-unittest',
-      'casual-configuration',
-      'casual-administration-unittest'
-   ])
-
 # main - register function
 inbound_build_target = model.register('nginx-build').execute(True).serial(True).add_recipe( Recipe( perform_build, None))
 inbound_build_target.add_dependency(make.link_library_target)
-
-# workaround for issue with pickle and 
-unittest_target.serial(True)
-model.get('clean_' + unittest_target.name()).serial(True)
-
-unittest_target.add_dependency(inbound_build_target)
 
 inbound_install_target = model.register('nginx-install').execute(True).serial(True).add_recipe( Recipe( perform_install, None))
 inbound_install_target.add_dependency(inbound_build_target)
