@@ -86,7 +86,7 @@ namespace casual
 
          auto scope = local::log::scoped::path( path);
 
-         log::stream::activate( "casual.common.verbose");
+         log::stream::activate( "casual.debug");
 
          constexpr std::string_view token{ "c1e2b63a842049c496b0f476e5401621"};
          
