@@ -80,6 +80,7 @@ def perform_clean(dummy):
 # main - register function
 inbound_build_target = model.register('nginx-build').execute(True).serial(True).add_recipe( Recipe( perform_build, None))
 inbound_build_target.add_dependency(make.link_library_target)
+make.link_target.add_dependency(inbound_build_target)
 
 inbound_install_target = model.register('nginx-install').execute(True).serial(True).add_recipe( Recipe( perform_install, None))
 inbound_install_target.add_dependency(inbound_build_target)

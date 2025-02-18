@@ -13,6 +13,7 @@
 #include "common/communication/instance.h"
 #include "common/transcode.h"
 #include "common/environment.h"
+#include "common/process.h"
 
 // to be able to use curl with ease
 #include "administration/unittest/cli/command.h"
@@ -67,7 +68,7 @@ domain:
 http:
    services:
       -  name: casual/example/echo
-         url: http://localhost:8042/casual/casual/example/echo
+         url: http://localhost:7042/casual/example/echo
 )");
                      
                      common::environment::variable::set( "CASUAL_UNITTEST_HTTP_OUTBOUND_CONFIG", file.string());
@@ -98,13 +99,13 @@ http {
    client_max_body_size 500M;
 
    server {
-      listen       8042;
+      listen       7042;
       server_name  localhost;
       access_log   access.log;
 
 
-      location /casual {
-            casual_url_prefix /casual/;
+      location / {
+            casual_url_prefix /;
             casual_pass;
       }
    }
@@ -116,12 +117,29 @@ http {
                   
                } // configuration
 
+               void block_until_inbound_ready()
+               {
+                  constexpr auto curl = R"(curl -s -X POST -d 'ping' -H "Content-Type: text/plain" http://localhost:7042/casual/example/echo)";
+
+                  for( int i = 0; i < 1000; ++i)
+                  {
+                     auto capture = administration::unittest::cli::command::execute( curl);
+                     if( capture)
+                        return;
+                     
+                     common::process::sleep( std::chrono::milliseconds{ 10});
+                  }
+
+                  common::code::raise::error( code::casual::invalid_semantics, "failed to get a response from inbound after 1000 attempts");
+               }
+
                void call_echo_in_other_domain( const std::string& buffer_type)
                {
                   auto outbound_guard = configuration::outbound_config_file();
                   auto nginx_guard = configuration::nginx_config_file();
 
                   auto a = casual::domain::unittest::manager( local::configuration::a);
+                  block_until_inbound_ready();
                   auto b = casual::domain::unittest::manager( local::configuration::b);
 
                   {
@@ -173,7 +191,9 @@ http {
 
             auto a = casual::domain::unittest::manager( local::configuration::a);
 
-            constexpr auto curl = R"(curl -s -X POST -d '{"a": 42}' -H "Content-Type: application/json" http://localhost:8042/casual/casual/example/echo)";
+            local::block_until_inbound_ready();
+
+            constexpr auto curl = R"(curl -s -X POST -d '{"a": 42}' -H "Content-Type: application/json" http://localhost:7042/casual/example/echo)";
 
             auto capture = administration::unittest::cli::command::execute( curl);
 
@@ -188,12 +208,14 @@ http {
 
             auto a = casual::domain::unittest::manager( local::configuration::a);
 
-            constexpr auto curl = R"(curl -sS --fail-with-body -H "Content-Type: unknown/content" -X POST -d '{"a": 42}' http://localhost:8042/casual/casual/example/echo)";
+            local::block_until_inbound_ready();
+
+            constexpr auto curl = R"(curl -sS -o /dev/stderr -w "%{response_code}" -H "Content-Type: unknown/content" -X POST -d '{"a": 42}' http://localhost:7042/casual/example/echo)";
 
             auto capture = administration::unittest::cli::command::execute( curl);
 
             // this might be a bit fragile, but we're looking for a 500 error
-            EXPECT_TRUE( common::unittest::regex::match( capture.standard.error, R"(.*error: 500\n)")) << CASUAL_NAMED_VALUE( capture);
+            EXPECT_EQ( capture.standard.out, "500") << CASUAL_NAMED_VALUE( capture);
          
          }
 
@@ -227,6 +249,7 @@ http {
             auto nginx_guard = local::configuration::nginx_config_file();
 
             auto a = casual::domain::unittest::manager( local::configuration::a);
+            local::block_until_inbound_ready();
             auto b = casual::domain::unittest::manager( local::configuration::b);
 
             {
