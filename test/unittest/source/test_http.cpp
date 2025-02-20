@@ -119,18 +119,11 @@ http {
 
                void block_until_inbound_ready()
                {
-                  constexpr auto curl = R"(curl -s -X POST -d 'ping' -H "Content-Type: text/plain" http://localhost:7042/casual/example/echo)";
-
-                  for( int i = 0; i < 1000; ++i)
+                  static constexpr std::string_view curl = R"(curl -s -X POST -d 'ping' -H "Content-Type: text/plain" http://localhost:7042/casual/example/echo)";
+                  unittest::eventually::succeed( []
                   {
-                     auto capture = administration::unittest::cli::command::execute( curl);
-                     if( capture)
-                        return;
-                     
-                     common::process::sleep( std::chrono::milliseconds{ 10});
-                  }
-
-                  common::code::raise::error( code::casual::invalid_semantics, "failed to get a response from inbound after 1000 attempts");
+                     return predicate::boolean( administration::unittest::cli::command::execute( curl));
+                  });
                }
 
                void call_echo_in_other_domain( const std::string& buffer_type)
