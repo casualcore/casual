@@ -8,9 +8,11 @@
 
 #include "common/unittest.h"
 
+#include "service/manager/admin/model.h"
+
 #include "common/message/service.h"
 #include "common/process.h"
-#include "service/manager/admin/model.h"
+#include "common/service/lookup.h"
 
 #include <string>
 #include <vector>
@@ -37,8 +39,19 @@ namespace casual
          void unadvertise( std::vector< std::string> services);
       } // concurrent
 
+      common::message::service::lookup::Reply lookup( std::string service);
+
       namespace send
       {
+         namespace wait
+         {
+            //! sends lookup with _wait_ that will block until the service is available, then 
+            //! sends a request to the service.
+            [[nodiscard]] auto request( std::string service, platform::binary::type payload) -> common::strong::correlation::id;
+            
+         } // wait
+         
+
          //! sends ack to service-manager
          //! @{ 
          void ack( const common::message::service::call::callee::Request& request);

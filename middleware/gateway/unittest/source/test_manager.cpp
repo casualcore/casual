@@ -1485,20 +1485,15 @@ domain:
       
          const auto payload = common::unittest::random::binary( 128);
 
-         // we wait until the SM has received the fetch known request that casual-domain-discovery sends upon receiving the connection to B
-         {
-            auto received_fetch_known = []( auto& reply)
-            {
-               auto found = algorithm::find( reply.entries, common::message::Type::domain_discovery_fetch_known_request);
-               return found && found->received == 1;
-            };
-
-            common::unittest::fetch::message::counter::until( communication::instance::outbound::service::manager::device(), received_fetch_known);
-         }
-
-         const auto correlation = common::unittest::service::send( "b", payload);
+         
+         // the service call request will wait until the `b` is available.
+         const auto correlation = casual::service::unittest::send::wait::request( "b", payload);
 
          b.activate();
+
+         // make sure we receive the service call request, to guarantee that the call is in flight
+         const auto b_request = communication::ipc::receive< common::message::service::call::callee::Request>( correlation);
+
 
          const auto inbound = unittest::inbound::group( unittest::state(), "in-b").value();
 
@@ -1511,7 +1506,7 @@ domain:
 
          a.activate();
 
-         // we need to wait/verify that A has got the disconnect information from B.
+         // Wait/verify that the outbound has received the disconnect message
          {
             auto disconnecting_mode = []( auto& state)
             {
@@ -1520,42 +1515,23 @@ domain:
 
             unittest::fetch::until( disconnecting_mode);
          }
-         
 
-         // send direct::Explore to outbound-connection, outbound should not send discovery to
-         // B since B is in disconnect mode.
+         // lookup for 'x' should be absent
          {
-            casual::domain::message::discovery::topology::direct::Explore request;
-            request.content.services = { "b", "x", "y"};
-            auto connections = unittest::state().connections;
-            ASSERT_TRUE( connections.size() == 1);
-            auto ipc = connections.at( 0).ipc;
-
-            EXPECT_TRUE( common::communication::device::non::blocking::send( ipc, request));
+            auto reply = casual::service::unittest::lookup( "x");
+            EXPECT_TRUE( reply.absent());
          }
-
+         
          b.activate();
 
-         // verify that B has not got any (more) discoveries. We need to verify the absent of 
-         // a discovery request. Sadly, we need to loop a while.
-         algorithm::for_n< 5>( [ &inbound]()
+         // send the reply from B to A
          {
-            common::process::sleep( std::chrono::milliseconds{ 1});
-
-            // we expect the inbound to have received 1 discovery_request for the call to "b", it should not 
-            // get any more.
-            auto reply = communication::ipc::call( inbound.process.ipc, common::message::counter::Request{ common::process::handle()});
-            if( auto found = algorithm::find( reply.entries, common::message::Type::domain_discovery_request))
-            {
-               EXPECT_TRUE( found->received == 1) << CASUAL_NAMED_VALUE( *found);
-            }
-         });
-
-         // act a server and reply
-         {
-            EXPECT_TRUE( casual::service::unittest::server::echo( correlation));
+            auto reply = common::message::reverse::type( b_request);
+            reply.buffer = b_request.buffer;
+            communication::device::blocking::send( b_request.process.ipc, reply);
          }
 
+    
          // for good measure, receive the reply
          {
             a.activate();
