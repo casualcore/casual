@@ -77,6 +77,18 @@ namespace casual
          }
       } // concurrent
 
+
+      common::message::service::lookup::Reply lookup( std::string service)
+      {
+         Trace trace{ "service::unittest::lookup"};
+
+         common::message::service::lookup::Request lookup{ process::handle()};
+         lookup.requested = std::move( service);
+         lookup.context.semantic = decltype( lookup.context.semantic)::regular;
+         
+         return communication::ipc::call( local::ipc::manager(), lookup);
+      }
+
       manager::admin::model::State state()
       {
          common::unittest::service::wait::until::advertised( manager::admin::service::name::state);
@@ -90,6 +102,35 @@ namespace casual
 
       namespace send
       {
+         namespace wait
+         {
+            auto request( std::string service, platform::binary::type payload) -> common::strong::correlation::id
+            {
+               Trace trace{ "service::unittest::send::wait::request"};
+
+               common::message::service::lookup::Request lookup{ process::handle()};
+               lookup.requested = std::move( service);
+               lookup.context.semantic = decltype( lookup.context.semantic)::wait;
+
+               auto lookup_reply = communication::ipc::call( local::ipc::manager(), lookup);
+
+               if( lookup_reply.state != decltype( lookup_reply.state)::idle)
+                  code::raise::error( code::casual::internal_unexpected_value, "failed to lookup service: ", lookup.requested, " - ", lookup_reply.state);
+
+               {
+                  message::service::call::callee::Request message{ process::handle()};
+                  message.correlation = lookup_reply.correlation;
+                  message.service = std::move( lookup_reply.service);
+                  message.buffer.data = std::move( payload);
+                  message.buffer.type = common::buffer::type::x_octet;
+
+                  return communication::device::blocking::send( lookup_reply.process.ipc, message);
+               }
+
+            }
+            
+         } // wait
+
          void ack( const message::service::call::callee::Request& request)
          {
             message::service::call::ACK message;
