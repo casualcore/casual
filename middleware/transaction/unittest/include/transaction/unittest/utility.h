@@ -10,11 +10,16 @@
 
 #include "transaction/manager/admin/model.h"
 
+#include "common/code/tx.h"
+
 namespace casual
 {
    namespace transaction::unittest
    {
       manager::admin::model::State state();
+
+      //! performs a commit (request/reply) to TM for the given `trid`
+      common::code::tx commit( const common::transaction::ID& trid);
 
       namespace fetch
       {
