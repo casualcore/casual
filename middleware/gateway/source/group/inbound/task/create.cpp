@@ -510,6 +510,8 @@ namespace casual
 
                using reply_type = common::message::reverse::type_t< M>;
 
+               const auto origin_trid = message.trid;
+
                // map to the internal trid, we expect to find this in cache
                if( auto found = state.transaction_cache.find( common::transaction::id::range::global( message.trid)))
                {
@@ -524,7 +526,7 @@ namespace casual
                }
 
                return task_unit{ descriptor, message.correlation,
-                  [ &state, origin_trid = message.trid]( reply_type& reply, strong::socket::id descriptor)
+                  [ &state, origin_trid]( reply_type& reply, strong::socket::id descriptor)
                   {
                      Trace trace{ "gateway::group::inbound::task::create::local::handle_transaction task"};
 

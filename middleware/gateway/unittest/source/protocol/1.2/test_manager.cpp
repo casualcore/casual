@@ -336,7 +336,6 @@ domain:
          {
             common::message::service::call::v1_2::callee::Request request;
             request.service.name = "non/existing/service";
-            request.correlation = strong::correlation::id::generate();
             request.buffer.type = common::buffer::type::binary;
             request.buffer.data = unittest::random::binary( 50);
             request.trid = trid;
@@ -350,6 +349,58 @@ domain:
 
          // for good measure
          EXPECT_TRUE( casual::transaction::unittest::commit( trid) == code::tx::ok);
+      }
+
+      TEST( gateway_protocol_1_2_manager, resource_commit)
+      {
+
+         auto b = local::domain( R"(
+domain:
+   name: B
+   servers:
+      - path: bin/casual-gateway-manager
+        memberships: [ gateway]
+      - path: ${CASUAL_MAKE_SOURCE_ROOT}/middleware/example/server/bin/casual-example-server
+        memberships: [ user]
+   gateway:
+      inbound:
+         groups:
+            -  connections: 
+                  -  address: 127.0.0.1:7010
+         )");
+
+        
+         auto device = local::tcp::connect::out( "127.0.0.1:7010", message::protocol::Version::v1_2);
+         EXPECT_TRUE( device.connector().socket());
+
+         const auto trid = common::transaction::id::create();
+         
+         // we do a call to involve the trid
+         {
+            common::message::service::call::v1_2::callee::Request request;
+            request.service.name = "casual/example/echo";
+            request.buffer.type = common::buffer::type::binary;
+            request.buffer.data = unittest::random::binary( 50);
+            request.trid = trid;
+         
+            auto reply = communication::device::call( device, request, device);
+
+            EXPECT_TRUE( reply.code.result == code::xatmi::ok) << CASUAL_NAMED_VALUE( reply);
+         }
+
+         // check resoure commit message, we do a _one-phase_.
+         {
+            common::message::transaction::resource::commit::Request request;
+            request.trid = trid;
+            request.flags =  decltype( request.flags)::one_phase;     
+
+            auto reply = communication::device::call( device, request, device);
+
+            // NOTE: I'm not sure if read_only is the correct state here... 
+            EXPECT_TRUE( reply.state == code::xa::read_only) << CASUAL_NAMED_VALUE( reply);
+            EXPECT_TRUE( reply.trid == trid);
+         }
+
       }
 
    } // gateway
