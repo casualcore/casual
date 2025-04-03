@@ -209,12 +209,14 @@ namespace casual
                      if( auto found = common::algorithm::find( state.transactions, global))
                      {
                         common::log::line( verbose::log, "remove: ", *found);
-                        common::algorithm::container::erase( state.transactions, std::begin( found));
 
                         // other "managers" might have state associated with the transaction, send an event
                         // to help them get rid of it.
                         common::message::event::transaction::Disassociate event{ common::process::handle()};
                         event.gtrid = global;
+
+                        common::algorithm::container::erase( state.transactions, std::begin( found));
+
                         common::event::send( state.multiplex, event);
                      }
                   }
