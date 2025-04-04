@@ -58,7 +58,7 @@ domain:
             {
                return casual::domain::unittest::manager( configuration::servers, std::forward< C>( configurations)...);
             }
-            
+ 
          } // <unnamed>
       } // local
 
@@ -370,7 +370,7 @@ domain:
          )");
 
         
-         auto device = local::tcp::connect::out( "127.0.0.1:7010", message::protocol::Version::v1_2);
+         auto device = unittest::tcp::connect::out( "127.0.0.1:7010", message::protocol::Version::v1_2);
          EXPECT_TRUE( device.connector().socket());
 
          const auto trid = common::transaction::id::create();

@@ -503,45 +503,6 @@ namespace casual
                };
             }
 
-            template< typename M>
-            auto handle_transaction( State& state, strong::socket::id descriptor, M&& message)
-            {
-               Trace trace{ "gateway::group::inbound::task::create::local::handle_transaction"};
-
-               using reply_type = common::message::reverse::type_t< M>;
-
-               const auto origin_trid = message.trid;
-
-               // map to the internal trid, we expect to find this in cache
-               if( auto found = state.transaction_cache.find( common::transaction::id::range::global( message.trid)))
-               {
-                  message.trid = *found;
-                  message.process = state.connections.process_handle( descriptor);
-                  state.multiplex.send( ipc::manager::transaction(), message);
-               }
-               else
-               {
-                  log::error( code::casual::invalid_semantics, "failed map to internal trid: ", message, " - action: reply with: ", code::xa::protocol);
-                  local::fake_transaction_error_reply( state, descriptor, message, code::xa::protocol);
-               }
-
-               return task_unit{ descriptor, message.correlation,
-                  [ &state, origin_trid]( reply_type& reply, strong::socket::id descriptor)
-                  {
-                     Trace trace{ "gateway::group::inbound::task::create::local::handle_transaction task"};
-
-                     // map back to the external trid.
-                     reply.trid = origin_trid;
-
-                     // we don't clean transaction_cache, TM will tell us when it's done
-
-                     inbound::tcp::send( state, descriptor, reply);
-                     
-                     // we're done regardless
-                     return casual::task::concurrent::unit::Dispatch::done;
-                  }
-               };
-            }
          } // <unnamed>
       } // local
 
@@ -578,22 +539,6 @@ namespace casual
          }
 
       } // queue
-
-   
-      task_unit transaction( State& state, strong::socket::id descriptor, common::message::transaction::resource::prepare::Request&& message)
-      {
-         return local::handle_transaction( state, descriptor, message);
-      }
-
-      task_unit transaction( State& state, strong::socket::id descriptor, common::message::transaction::resource::commit::Request&& message)
-      {
-         return local::handle_transaction( state, descriptor, message);
-      }
-
-      task_unit transaction( State& state, strong::socket::id descriptor, common::message::transaction::resource::rollback::Request&& message)
-      {
-         return local::handle_transaction( state, descriptor, message);
-      }
 
    } // gateway::group::inbound::task::create
    

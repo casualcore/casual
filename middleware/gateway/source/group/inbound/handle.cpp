@@ -201,19 +201,33 @@ namespace casual
                {
                   namespace resource
                   {
+                     template< typename Message>
+                     auto basic_reply( State& state)
+                     {
+                        return [ &state]( Message& message, strong::ipc::descriptor::id descriptor)
+                        {
+                           Trace trace{ "gateway::group::inbound::handle::local::internal::transaction::resource::basic_reply"};
+                           common::log::line( verbose::log, "message: ", message);
+                           
+                           // just send the message to the tcp partner
+                           auto tcp = state.connections.partner( descriptor);
+                           inbound::tcp::send( state, tcp, message);
+                        };
+                     }
+
                      namespace prepare
                      {
-                        auto reply = internal::basic_task< common::message::transaction::resource::prepare::Reply>;
+                        auto reply = basic_reply< common::message::transaction::resource::prepare::Reply>;
                      } // prepare
                      namespace commit
                      {
                         //! when we get this reply, we know the transaction is 'done', at least in this domain (and downstream)
-                        auto reply = internal::basic_task< common::message::transaction::resource::commit::Reply>;
+                        auto reply = basic_reply< common::message::transaction::resource::commit::Reply>;
                      } // commit
                      namespace rollback
                      {
                         //! when we get this reply, we know the transaction is 'done', at least in this domain (and downstream)
-                        auto reply = internal::basic_task< common::message::transaction::resource::rollback::Reply>;
+                        auto reply = basic_reply< common::message::transaction::resource::rollback::Reply>;
                      } // commit
                   } // resource
 
@@ -424,7 +438,10 @@ namespace casual
                            Trace trace{ "gateway::inbound::handle::local::external::transaction::basic_request"};
                            common::log::line( verbose::log, "message: ", message);
 
-                           state.tasks.add( task::create::transaction( state, descriptor, std::move( message)));
+                           // just forward the message to TM, and make sure we set the correct process(ipc) to get the reply.
+                           // NOTE: we don't map the trid to the internal branched. TM will know what to do with it (it only uses the gtrid)
+                           message.process = state.connections.process_handle( descriptor);
+                           state.multiplex.send( ipc::manager::transaction(), message);
                         };
                      }
 
