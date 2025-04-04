@@ -108,7 +108,10 @@ namespace casual
                   log::error( code::casual::internal_correlation, "failed to correlate the ipc partner for tcp descriptor:  ", descriptor);
             }
          
-
+            // We emulate an error reply to the request, and send it to the partner ipc. This will then be handled as if it was a real reply
+            // from the service.
+            // NOTE: this helps us to keep the 'task' a bit cleaner. Also, this only happen in the _error path_, which we don't care about performance
+            // as much as the happy path.
             template< typename M>
             void fake_service_error_reply( State& state, strong::socket::id descriptor, M&& request, common::code::xatmi code)
             {
@@ -286,7 +289,12 @@ namespace casual
                      if( message::protocol::compatible< common::message::service::call::Reply>( connection->protocol()))
                         tcp::send( state, connection->descriptor(), reply);
                      else
-                        tcp::send( state, connection->descriptor(), message::protocol::transform::to< common::message::service::call::v1_2::Reply>( std::move( reply)));
+                     {
+                        // we need to transform the reply to the protocol version of the tcp connection
+                        auto message = message::protocol::transform::to< common::message::service::call::v1_2::Reply>( std::move( reply));
+                        message.transaction.trid = shared->origin_trid;
+                        tcp::send( state, connection->descriptor(), message);
+                     }
                      
                      // We're done
                      return casual::task::concurrent::unit::Dispatch::done;
