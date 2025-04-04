@@ -6,6 +6,7 @@
 
 #include "gateway/unittest/utility.h"
 #include "gateway/manager/admin/server.h"
+#include "gateway/message.h"
 
 #include "serviceframework/service/protocol/call.h"
 
@@ -58,6 +59,38 @@ namespace casual
 
          return {};         
       }
+
+      namespace tcp::connect
+      {
+         common::communication::tcp::Duplex out( std::string_view address, message::protocol::Version version)
+         {
+            auto eventually_connect = []( auto address)
+            {
+               communication::Socket socket;
+               common::unittest::eventually::succeed( [ &socket, address]()
+               {
+                  socket = communication::tcp::connect( std::string{ address});
+                  return predicate::boolean( socket);
+               });
+               return socket;
+            };
+
+            common::communication::tcp::Duplex device{ eventually_connect( address)};
+
+            {
+               gateway::message::domain::connect::Request request;
+               request.domain = common::domain::identity();
+               request.versions.push_back( version);
+
+               auto reply = communication::device::call( device, request, device);
+
+               EXPECT_TRUE( reply.version == version);
+            }
+
+            return device;
+         }
+         
+      } // tcp::connect
       
    } // gateway::unittest
    

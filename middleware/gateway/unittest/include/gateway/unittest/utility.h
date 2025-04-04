@@ -10,6 +10,8 @@
 
 #include "gateway/manager/admin/model.h"
 
+#include "common/communication/tcp.h"
+
 #include <vector>
 #include <string>
 #include <optional>
@@ -191,6 +193,14 @@ namespace casual
                
          } // predicate
       } // fetch
+
+      namespace tcp::connect
+      {
+         // connect to an ìnbound at address as `version`.
+         common::communication::tcp::Duplex out( std::string_view address, message::protocol::Version version);
+         
+         
+      } // tcp::connect
       
    } // gateway::unittest
 } // casual
