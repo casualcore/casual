@@ -1,7 +1,17 @@
 # Changelog
 This is the changelog for `casual` and all changes are listed in this document.
 
+## [1.7.4] - 2025-04-07
+
+### Fixes
+- gateway: inbound removed trid branch mapping for transaction messages
+- transaction: used view to removed gtrid
+- gateway: transaction message reply with origin trid
+- gateway: compatibility with 1.6 (protocol 1.2) service call ([#533](https://github.com/casualcore/casual/issues/533))
+
 ## [1.7.3] - 2025-01-28
+
+### Fixes
 - common: include rapidjson within inline ns for ABI
 - xatmi: build-server uses [0,1] as values for service visibility ([#506](https://github.com/casualcore/casual/issues/506))
 
