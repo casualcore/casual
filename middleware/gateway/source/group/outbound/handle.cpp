@@ -160,6 +160,7 @@ namespace casual
                         metric.process = common::process::handle();
                         metric.correlation = message.correlation;
                         metric.execution = message.execution;
+                        metric.span =  destination.span;
                         metric.service = std::move( destination.service);
                         metric.parent = std::move( destination.parent);
                         metric.type = decltype( metric.type)::concurrent;
@@ -177,13 +178,14 @@ namespace casual
                   {
                      namespace detail::send::error
                      {
-                        void reply( State& state, const common::message::service::call::callee::Request& message, code::xatmi code)
+                        void reply( State& state, const common::message::service::call::callee::Request& message, strong::execution::span::id parent, code::xatmi code)
                         {
                            auto reply = common::message::reverse::type( message);
                            reply.code.result = code;
                            
                            struct Destination
                            {
+                              strong::execution::span::id span;
                               std::string service;
                               execution::context::Parent parent;
                               common::transaction::ID trid;
@@ -192,7 +194,16 @@ namespace casual
 
                            state.multiplex.send( message.process.ipc, reply);
 
-                           service::metric( state, reply, Destination{ message.service.name, message.parent, message.trid, platform::time::clock::type::now()}, { .result = code});
+                           // NOTE: the parent span in the message is our current actual span. The provided parent is the one from the caller (was in the message).
+
+                           service::metric( state, reply, 
+                              Destination{ 
+                                 .span = message.parent.span, 
+                                 .service = message.service.name, 
+                                 .parent = { .span = parent, .service = message.parent.service}, 
+                                 .trid = message.trid,
+                                 .start = platform::time::clock::type::now()},
+                              { .result = code});
 
                         }
                         
@@ -200,10 +211,11 @@ namespace casual
 
                      namespace detail::create
                      {
-                        auto task( State& state, const common::message::service::call::callee::Request& message, strong::socket::id descriptor)
+                        auto task( State& state, const common::message::service::call::callee::Request& message, strong::execution::span::id parent, strong::socket::id descriptor)
                         {
                            struct Destination
                            {
+                              strong::execution::span::id span;
                               std::string service;
                               execution::context::Parent parent;
                               strong::ipc::id ipc;
@@ -211,7 +223,15 @@ namespace casual
                               platform::time::point::type start;
                            };
 
-                           auto shared = std::make_shared< Destination>( Destination{ message.service.name, message.parent, message.process.ipc, message.trid, platform::time::clock::type::now()});
+                           // NOTE: the parent span in the message is our current actual span. The provided parent is the one from the caller (was in the message).
+
+                           auto shared = std::make_shared< Destination>( Destination{ 
+                              .span = message.parent.span, 
+                              .service = message.service.name, 
+                              .parent = { .span = parent, .service = message.parent.service},
+                              .ipc = message.process.ipc, 
+                              .trid = message.trid, 
+                              .start = platform::time::clock::type::now()});
                            
                            return typename state::task_coordinator_type::unit_type{ descriptor, message.correlation, 
                            [ &state, shared]( common::message::service::call::Reply& message, strong::socket::id descriptor)
@@ -250,12 +270,16 @@ namespace casual
                            Trace trace{ "gateway::group::outbound::handle::local::internal::service::call::request"};
                            log::line( verbose::log, "message: ", message);
 
+                           // create an otel span for the call
+                           const auto span = common::strong::execution::span::id::generate();
+                           const auto parent = std::exchange( message.parent.span, span);
+
                            // Check if we've has been called with the same correlation id before, 
                            // hence we are in a loop between gateways.
                            if( state.tasks.contains( message.correlation))
                            {
                               log::line( log::category::error, code::casual::invalid_semantics, " a call with the same correlation id is in flight - ", message.correlation, " - action: reply with ", code::xatmi::system   );
-                              detail::send::error::reply( state, message, code::xatmi::system);
+                              detail::send::error::reply( state, message, parent, code::xatmi::system);
                               return;
                            }
 
@@ -266,13 +290,13 @@ namespace casual
                            {
                               tcp::send( state, connection->descriptor(), message);
 
-                              state.tasks.add( detail::create::task( state, message, connection->descriptor()));
+                              state.tasks.add( detail::create::task( state, message, parent, connection->descriptor()));
                               transaction::associate_and_involve( state, message, connection->descriptor());
                            }
                            else
                            {
                               // we need to do this first, since we're doing a destructive transform on the message (we cant use after moved)
-                              state.tasks.add( detail::create::task( state, message, connection->descriptor()));
+                              state.tasks.add( detail::create::task( state, message, parent, connection->descriptor()));
                               transaction::associate_and_involve( state, message, connection->descriptor());
 
                               tcp::send( state, connection->descriptor(), message::protocol::transform::to< common::message::service::call::v1_2::callee::Request>( std::move( message)));
@@ -290,10 +314,11 @@ namespace casual
                   {
                      namespace detail::create
                      {
-                        auto task( State& state, common::message::conversation::connect::callee::Request& message, strong::socket::id descriptor)
+                        auto task( State& state, common::message::conversation::connect::callee::Request& message, strong::execution::span::id parent, strong::socket::id descriptor)
                         {
                            struct Shared
                            {
+                              strong::execution::span::id span;
                               std::string service;
                               execution::context::Parent parent;
                               strong::ipc::id ipc;
@@ -302,7 +327,13 @@ namespace casual
 
                            };
 
-                           auto shared = std::make_shared< Shared>( Shared{ message.service.name, message.parent, message.process.ipc, platform::time::clock::type::now(), message.trid});
+                           auto shared = std::make_shared< Shared>( Shared{ 
+                              .span = message.parent.span, 
+                              .service = message.service.name,
+                              .parent = { .span = parent, .service = message.parent.service},
+                              .ipc = message.process.ipc, 
+                              .start = platform::time::clock::type::now(), 
+                              .trid = message.trid});
 
 
                            return typename state::task_coordinator_type::unit_type{ descriptor, message.correlation, 
@@ -360,7 +391,11 @@ namespace casual
                            auto connection = state.connections.find_external( descriptor);
                            CASUAL_ASSERT( connection);
 
-                           state.tasks.add( detail::create::task( state, message, connection->descriptor()));
+                           // create an otel span for the call
+                           const auto span = common::strong::execution::span::id::generate();
+                           const auto parent = std::exchange( message.parent.span, span);
+
+                           state.tasks.add( detail::create::task( state, message, parent, connection->descriptor()));
                            transaction::associate_and_involve( state, message, connection->descriptor());
 
                            if( message::protocol::compatible< common::message::conversation::connect::callee::Request>( connection->protocol()))
