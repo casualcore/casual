@@ -955,7 +955,7 @@ Sent to and received from other domains when one domain wants to discover inform
 
                local::message::section< message_type>( out, "##") << R"(
 
-Sent to and received from other domains when one domain wants to discover information abut the other.
+Sent to and received from other domains when one domain wants to discover information about the other.
 
 )";            
                auto message = protocol::example::message< message_type>();
@@ -985,6 +985,40 @@ Sent to and received from other domains when one domain wants to discover inform
 
                local::example_and_base64< message_type>( out);
             }
+
+            {
+               using message_type = casual::domain::message::discovery::v1_3::Reply;
+
+               local::message::section< message_type>( out, "##") << R"(
+
+Sent to and received from other domains when one domain wants to discover information about the other.
+
+)";            
+               auto message = protocol::example::message< message_type>();
+
+               local::format::type( out, message, {
+                        { "execution", "uuid of the current execution context (breadcrumb)"},
+                        // { "version", "the chosen version - 0 if no compatible version was possible"},
+                        { "domain.id", "uuid of the caller domain"},
+                        { "domain.name.size", "size of the caller domain name"},
+                        { "domain.name.data", "dynamic byte array with the caller domain name"},
+                        { "content.services.size", "number of services to follow (an array of services)"},
+                        { "content.services.element.name.size", "size of the current service name"},
+                        { "content.services.element.name.data", "dynamic byte array of the current service name"},
+                        { "content.services.element.category.size", "size of the current service category"},
+                        { "content.services.element.category.data", "dynamic byte array of the current service category"},
+                        { "content.services.element.transaction", "service transaction mode (auto, atomic, join, none)"},
+                        { "content.services.element.timeout.duration", "service timeout (ns)"},
+                        { "content.services.element.hops", "number of domain hops to the service (local services has 0 hops)"},
+                        { "content.queues.size", "number of requested queues to follow (an array of queues)"},
+                        { "content.queues.element.name.size", "size of the current queue name"},
+                        { "content.queues.element.name.data", "dynamic byte array of the current queue name"},
+                        { "content.queues.element.retries", "how many 'retries' the queue has"},
+                     });
+
+               local::example_and_base64< message_type>( out);
+            }
+
 
             {
                using message_type = casual::domain::message::discovery::topology::implicit::Update;
