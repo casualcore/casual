@@ -91,29 +91,32 @@ namespace casual
                };
             } // generator
 
-
             template< typename G>
             void generate( G&& generator, const std::filesystem::path& basename)
             {
                generator( example::message< gateway::message::domain::connect::Request>(), basename);
                generator( example::message< gateway::message::domain::connect::Reply>(), basename);
-               generator( example::message< casual::gateway::message::domain::disconnect::Request>(), basename);
-               generator( example::message< casual::gateway::message::domain::disconnect::Reply>(), basename);
                generator( example::message< gateway::message::domain::disconnect::Request>(), basename);
                generator( example::message< gateway::message::domain::disconnect::Reply>(), basename);
                generator( example::message< casual::domain::message::discovery::Request>(), basename);
+               generator( example::message< casual::domain::message::discovery::v1_3::Reply>(), basename);
                generator( example::message< casual::domain::message::discovery::Reply>(), basename);
                generator( example::message< casual::domain::message::discovery::topology::implicit::Update>(), basename);
                generator( example::message< common::message::service::call::callee::Request>(), basename);
+               generator( example::message< common::message::service::call::v1_2::callee::Request>(), basename);
                generator( example::message< common::message::service::call::Reply>(), basename);
+               generator( example::message< common::message::service::call::v1_2::Reply>(), basename);
                generator( example::message< common::message::conversation::connect::callee::Request>(), basename);
+               generator( example::message< common::message::conversation::connect::v1_2::callee::Request>(), basename);
                generator( example::message< common::message::conversation::connect::Reply>(), basename);
                generator( example::message< common::message::conversation::callee::Send>(), basename);
                generator( example::message< common::message::conversation::Disconnect>(), basename);
                generator( example::message< queue::ipc::message::group::enqueue::Request>(), basename);
                generator( example::message< queue::ipc::message::group::enqueue::Reply>(), basename);
+               generator( example::message< queue::ipc::message::group::enqueue::v1_2::Reply>(), basename);
                generator( example::message< queue::ipc::message::group::dequeue::Request>(), basename);
                generator( example::message< queue::ipc::message::group::dequeue::Reply>(), basename);
+               generator( example::message< queue::ipc::message::group::dequeue::v1_2::Reply>(), basename);
                generator( example::message< common::message::transaction::resource::prepare::Request>(), basename);
                generator( example::message< common::message::transaction::resource::prepare::Reply>(), basename);
                generator( example::message< common::message::transaction::resource::commit::Request>(), basename);
