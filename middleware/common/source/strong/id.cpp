@@ -41,7 +41,7 @@ namespace casual
             policy::value_type policy::generate() 
             {
                value_type result;
-               auto random = algorithm::random::value< std::uint64_t>();
+               auto random = algorithm::random::value< std::uint64_t, 1>();
                algorithm::copy( std::as_bytes( std::span{ &random, 1}), result);
                return result;
             }
