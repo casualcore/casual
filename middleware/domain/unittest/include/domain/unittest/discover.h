@@ -6,19 +6,34 @@
 
 #pragma once
 
+#include "domain/discovery/admin/model.h"
+
+#include "common/unittest.h"
+
 #include <vector>
 #include <string>
 
 namespace casual
 {
-   namespace domain::unittest
+   namespace domain::unittest::discover
    {
-      namespace service
-      {
-         std::vector< std::string> discover( std::vector< std::string> services);
-      } // service
+      casual::domain::discovery::admin::model::State state();
 
-      void discover( std::vector< std::string> services, std::vector< std::string> queues);
+      std::vector< std::string> services( std::vector< std::string> services);
+
+      void request( std::vector< std::string> services, std::vector< std::string> queues);
+
+      namespace fetch
+      {
+         constexpr auto until = common::unittest::fetch::until( &discover::state);
+
+         namespace predicate
+         {
+            // returns true when `count` providers match the `ability`
+            auto provider( message::discovery::api::provider::registration::Ability ability, platform::size::type count) -> common::unique_function< bool( const casual::domain::discovery::admin::model::State&)>;
+            
+         } // predicate
+      } // fetch
       
-   } // domain::unittest
+   } // domain::unittest::
 } // casual
