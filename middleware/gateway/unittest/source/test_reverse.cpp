@@ -125,7 +125,7 @@ domain:
 
          gateway::unittest::fetch::until( gateway::unittest::fetch::predicate::outbound::connected( "B"));
 
-         casual::domain::unittest::discover( { "b"}, {});
+         casual::domain::unittest::discover::services( { "b"});
 
          // check that service has concurrent instances
          {

@@ -7,6 +7,8 @@
 #pragma once
 
 #include "common/transcode.h"
+#include "common/strong/type.h"
+#include "common/algorithm.h"
 
 #include <span>
 #include <concepts>
@@ -22,6 +24,11 @@ namespace casual
          using base_type::base_type;
 
          explicit Span( std::span< T> value) : base_type( value) {}
+
+         friend inline bool operator == ( const Span& lhs, const Span& rhs)
+         {
+            return algorithm::equal( lhs, rhs);
+         }
       };
 
       template< concepts::binary::value_type T, typename Tag>
