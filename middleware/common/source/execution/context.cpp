@@ -28,8 +28,6 @@ namespace casual
                else 
                   result.id = execution::type::generate();
 
-               result.span = strong::execution::span::id::generate();
-
                return result;
             }
 
@@ -53,13 +51,17 @@ namespace casual
 
          void clear()
          {
-            local::context() = {};
+            // we don't clear the execution::id to keep internal loging and such correlated.
+
+            local::context().span = {};
+            local::context().service = {};
+            local::context().parent = {};
          }
 
          void reset()
          {
             id::reset();
-            local::context().span = strong::execution::span::id::generate();
+            local::context().span = {};
             local::context().service = {};
             local::context().parent = {};
          };
