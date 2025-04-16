@@ -123,6 +123,7 @@ namespace casual
 
                      return result;
                   }
+
                } // prepare
        
             } // send
@@ -244,12 +245,16 @@ namespace casual
          auto request = local::send::prepare::request( std::move( message.buffer));
          common::log::line( http::verbose::log, "request: ", request);
 
+         const auto span = common::strong::execution::span::id::generate();
+
          request.state().header.request.add( *node.headers);
          request.state().header.request.add( common::service::header::Field{ http::header::name::execution::id, common::uuid::string( message.execution.value())});
+         request.state().header.request.add( detail::header::prepare::trace( message.execution, span));
 
          request.state().destination = message.process;
          request.state().correlation = message.correlation;
          request.state().execution = message.execution;
+         request.state().span = span;
          request.state().service = message.service.logical_name();
          request.state().parent = std::move( message.parent);
          request.state().trid = message.trid;
@@ -412,6 +417,21 @@ namespace casual
             return resolve_state( code.result);
          }
       } // transform
+
+      namespace detail::header::prepare
+      {
+         common::service::header::Field trace( const common::strong::execution::id& execution, const common::strong::execution::span::id& span)
+         {
+            // https://www.w3.org/TR/trace-context/#examples-of-http-traceparent-headers
+            // example:
+            // 00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-00
+
+            return common::service::header::Field{
+               http::header::name::execution::trace::parent,
+               string::compose( "00-", execution.underlying().range(), "-" ,span.underlying(), "-00")};
+         }
+
+      } // detail::header::prepare
 
    } // http::outbound::request
 } // casual

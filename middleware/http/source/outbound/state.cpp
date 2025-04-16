@@ -113,6 +113,7 @@ namespace casual
             metric.correlation = request.state().correlation;
             metric.execution = request.state().execution;
             metric.service = request.state().service;
+            metric.span = request.state().span;
             metric.parent = request.state().parent;
             metric.type = decltype( metric.type)::concurrent;
             metric.process = common::process::handle();
