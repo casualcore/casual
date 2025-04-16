@@ -14,6 +14,8 @@
 
 #include "domain/unittest/manager.h"
 
+#include "service/unittest/utility.h"
+
 
 namespace casual
 {
@@ -96,7 +98,63 @@ domain:
          send_resource_message( common::message::transaction::resource::prepare::Request{});
          send_resource_message( common::message::transaction::resource::commit::Request{});
          send_resource_message( common::message::transaction::resource::rollback::Request{}); 
+      }
 
+      TEST( gateway_protocol_1_4_manager, service_call__with_exact_trid_that_is_already_branched)
+      {
+         common::unittest::Trace trace;
+
+         auto b = local::domain( R"(
+domain:
+   name: B
+   servers:
+      - path: bin/casual-gateway-manager
+        memberships: [ gateway]
+   gateway:
+      inbound:
+         groups:
+            -  connections: 
+                  -  address: 127.0.0.1:7010
+                     discovery: 
+                        forward: true
+         )");
+
+
+         casual::service::unittest::concurrent::advertise( {  "b"});
+
+        
+         auto device = unittest::tcp::connect::out( "127.0.0.1:7010", message::protocol::Version::v1_4);
+         EXPECT_TRUE( device.connector().socket());
+
+         const auto trid = common::transaction::id::create();
+
+         static constexpr auto send_call = []( auto& device, const auto& trid)
+         {
+            common::message::service::call::callee::Request request;
+            request.service.name = "b";
+            request.trid = trid;
+            request.correlation = common::strong::correlation::id::generate();
+            request.buffer.data = common::unittest::random::binary( 128);
+            request.buffer.type = "X_OCTET/";
+
+            return common::communication::device::blocking::send( device, request);
+         };
+
+         // send the first call to b with a new trid, via inbound
+         auto correlation_a = send_call( device, trid);
+         
+         // receive the call to a from within 'B' domain
+         auto request_a = communication::ipc::receive< common::message::service::call::callee::Request>( correlation_a);
+         // check that the gtrid are the same and the branch differs
+         EXPECT_TRUE( common::transaction::id::range::global( request_a.trid) == common::transaction::id::range::global( trid)) << CASUAL_NAMED_VALUE( request_a.trid) << '\n' << CASUAL_NAMED_VALUE( trid);
+         EXPECT_TRUE( common::transaction::id::range::branch( request_a.trid) != common::transaction::id::range::branch( trid)) << CASUAL_NAMED_VALUE( trid);
+
+         // send another call to b with the exact same branched trid.
+         auto correlation_b = send_call( device, request_a.trid);
+
+         // receive the call to b from within 'B' domain
+         auto request_b = communication::ipc::receive< common::message::service::call::callee::Request>( correlation_b);
+         EXPECT_TRUE( request_b.trid == request_a.trid) << CASUAL_NAMED_VALUE( request_b.trid);
       }
 
    } // gateway  
