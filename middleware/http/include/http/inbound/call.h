@@ -26,6 +26,18 @@ namespace casual
          using Field = common::service::header::Field;
       } // header
 
+      namespace detail
+      {
+         namespace transform
+         {
+            //! tries to transform execution and parent span from the `value`
+            // `value` is expected to be in the format of a traceparent header value
+            //! @note exposed for testing purposes
+            auto span( std::string_view value) -> std::tuple< common::strong::execution::id, common::strong::execution::span::id>;
+         } // transform
+         
+      } // detail
+
       struct Payload
       {
          std::vector< header::Field> header;
@@ -89,7 +101,7 @@ namespace casual
 
       //! the call context that holds the state machine for a service call
       //! 
-      //! possible initialization: `nginx_context->casual_call_context = http::inbound::call::Context{ http::inbound::call::Directivce::service, std::move( request)};
+      //! possible initialization: `nginx_context->casual_call_context = http::inbound::call::Context{ http::inbound::call::Directive::service, std::move( request)};
       struct Context
       {
          Context() = default;

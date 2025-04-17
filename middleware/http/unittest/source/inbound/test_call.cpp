@@ -6,9 +6,10 @@
 
 #include "common/unittest.h"
 
-#include "domain/unittest/manager.h"
-
 #include "http/inbound/call.h"
+#include "http/outbound/request.h"
+
+#include "domain/unittest/manager.h"
 
 #include "service/unittest/utility.h"
 
@@ -45,9 +46,10 @@ domain:
 
             } // configuration
 
-            auto domain()
+            template< typename... Ts>
+            auto domain( Ts&&... ts)
             {
-               return casual::domain::unittest::manager( configuration::base);
+               return casual::domain::unittest::manager( configuration::base, std::forward< Ts>( ts)...);
             }
 
 
@@ -177,6 +179,8 @@ domain:
 
       TEST( http_inbound_call, call_service__expect_same_correlation_for_lookup_and_call)
       {
+         common::unittest::Trace trace;
+
          auto domain = local::domain();
 
          constexpr std::string_view json = R"(
@@ -207,7 +211,9 @@ domain:
          auto correlation = found->correlation;
 
          // Advance the call state-machine from lookup to call
-         // TODO: can we guarantee that the lookup reply has been received here?
+         // TODO: we cant guarantee that the lookup reply is ready to be received here,
+         // we wait a bit to up the chances
+         process::sleep( std::chrono::milliseconds{ 5});
          context.receive();
 
          // Expect the call to have the same correlation as the reservation
@@ -230,6 +236,91 @@ domain:
             EXPECT_TRUE( local::header::value( reply.payload.header, "casual-result-code") == "OK");
             EXPECT_TRUE( local::header::value( reply.payload.header, "casual-result-user-code") == "0");
          }
+      }
+
+      TEST( http_inbound_call, transform_span)
+      {
+         common::unittest::Trace trace;
+
+         struct
+         {
+            const strong::execution::id execution = strong::execution::id::generate();
+            const strong::execution::span::id span = strong::execution::span::id::generate();
+         } origin;
+
+         // use outbound to create the traceparent header
+         auto field = outbound::request::detail::header::prepare::trace( origin.execution, origin.span);
+
+         auto [ execution, span] = call::detail::transform::span( field.value());
+         EXPECT_TRUE( execution == origin.execution);
+         EXPECT_TRUE( span == origin.span);
+      }
+
+      TEST( http_inbound_call, transform_invalid_span__expect_nil_execution_and_span)
+      {
+         common::unittest::Trace trace;
+
+         auto [ execution, span] = call::detail::transform::span( "00-foo.bar-1234567890123456");
+         EXPECT_TRUE( execution == strong::execution::id{});
+         EXPECT_TRUE( span == strong::execution::span::id{});
+      }
+
+
+      TEST( http_inbound_call, http_with_header_traceparent__expect__execution_and_span)
+      {
+         common::unittest::Trace trace;
+
+         auto a = local::domain( R"(
+domain:
+   name: A
+      
+)");
+
+
+         constexpr std::string_view json = R"(
+{
+   "a" : 42
+}
+)";
+
+         casual::service::unittest::advertise( { "a"});
+
+         const auto execution = common::strong::execution::id::generate();
+         const auto span = common::strong::execution::span::id::generate();
+
+         auto request = [ &]()
+         {
+            call::Request result;
+            result.service = "a";
+            result.payload.header = { 
+               call::header::Field{ "content-type:application/json"},
+               // use outbound to create the traceparent header
+               outbound::request::detail::header::prepare::trace( execution, span)
+            };
+            algorithm::copy( binary::span::make( json), result.payload.body);
+            return result; 
+         };
+
+         // Triggers a lookup and reservation of the service
+         auto context = call::Context{ call::Directive::service, request()};
+
+         // Advance the call state-machine from lookup to call
+         // TODO: we cant guarantee that the lookup reply is ready to be received here,
+         // we wait a bit to up the chances
+         process::sleep( std::chrono::milliseconds{ 5});
+         EXPECT_TRUE( ! context.receive());
+
+         // Expect the call to have the same execution and parent span
+         {
+            auto request = communication::ipc::receive< message::service::call::callee::Request>();
+
+            EXPECT_TRUE( request.execution == execution);
+            EXPECT_TRUE( request.parent.span  == span);
+
+            communication::device::blocking::send( request.process.ipc, message::reverse::type( request));
+         }
+
+  
       }
 
    } // http::inbound
