@@ -8,6 +8,7 @@
 
 #include <stdarg.h>
 #include <uuid/uuid.h>
+#include <stdint.h>
 
 
 #define CASUAL_BUFFER_BINARY_TYPE ".binary"
@@ -38,6 +39,14 @@ extern int casual_user_log( const char* category, const char* const message);
 extern void casual_execution_id_set( const uuid_t* id);
 extern const uuid_t* casual_execution_id_get();
 extern const uuid_t* casual_execution_id_reset();
+
+//! set the execution span id, @return the previous value
+extern uint64_t casual_execution_span_id_set( uint64_t id);
+extern uint64_t casual_execution_span_id_get();
+
+//! set the execution parent span id, @return the previous value
+extern uint64_t casual_execution_parent_span_id_set( uint64_t id);
+extern uint64_t casual_execution_parent_span_id_get();
 
 /**
  * @returns the name of current execution service name
