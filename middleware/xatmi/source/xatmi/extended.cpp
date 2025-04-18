@@ -150,6 +150,50 @@ const uuid_t* casual_execution_id_reset()
    return casual_execution_id_get();
 }
 
+
+namespace local
+{
+   namespace
+   {
+      casual::common::strong::execution::span::id transform( uint64_t id)
+      {
+         std::array< std::byte, 8> bytes;
+         casual::common::algorithm::copy( std::as_bytes( std::span{ &id, 1}), bytes);
+         return casual::common::strong::execution::span::id{ bytes};
+      }
+
+      uint64_t transform( casual::common::strong::execution::span::id id)
+      {
+         uint64_t result{};
+         casual::common::algorithm::copy( id.underlying(), std::as_writable_bytes( std::span{ &result, 1}));
+         return result;
+      }  
+      
+   } // <unnamed>
+} // local
+
+
+uint64_t casual_execution_span_id_set( uint64_t id)
+{
+   return local::transform( casual::common::execution::context::span::set( local::transform( id)));
+}
+
+uint64_t casual_execution_span_id_get()
+{
+   return local::transform( casual::common::execution::context::get().span);
+}
+
+uint64_t casual_execution_parent_span_id_set( uint64_t id)
+{
+   return local::transform( casual::common::execution::context::parent::span::set( local::transform( id)));
+}
+
+uint64_t casual_execution_parent_span_id_get()
+{
+   return local::transform( casual::common::execution::context::get().parent.span);
+}
+
+
 void casual_instance_browse_services( casual_instance_browse_callback callback, void* context)
 {
    using namespace casual;

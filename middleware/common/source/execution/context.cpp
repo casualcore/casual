@@ -123,9 +123,9 @@ namespace casual
 
             namespace span
             {
-               void set( strong::execution::span::id id)
+               strong::execution::span::id set( strong::execution::span::id id)
                {
-                  local::context().parent.span = id;
+                  return std::exchange( local::context().parent.span, id);
                }
             } // span
             
