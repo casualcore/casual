@@ -21,6 +21,7 @@
 #include "common/event/listen.h"
 #include "common/service/lookup.h"
 #include "common/communication/ipc/send.h"
+#include "common/service/call/context.h"
 
 #include "configuration/unittest/utility.h"
 #include "configuration/model/transform.h"
@@ -61,6 +62,13 @@ domain:
          memberships: [ gateway]
 )";
             } // configuration
+
+
+            template< typename... C>
+            auto domain( C&&... configurations)
+            {
+               return casual::domain::unittest::manager( configuration::base, std::forward< C>( configurations)...);
+            }
 
             namespace is
             {
@@ -499,6 +507,7 @@ domain:
             auto buffer = tpalloc( X_OCTET, nullptr, 128);
             auto len = tptypes( buffer, nullptr, nullptr);
             descriptor = tpacall( "casual/example/sleep", buffer, len, 0);
+            tpfree( buffer);
          }
 
          {
@@ -517,6 +526,7 @@ domain:
             auto result = tpgetrply( &descriptor, &buffer, &len, 0);
             EXPECT_EQ( result, -1);
             EXPECT_EQ( tperrno, TPETIME);
+            tpfree( buffer);
          }
 
          {
@@ -571,7 +581,54 @@ domain:
       }
 
 
-     
+      TEST( test_service, advertise_a__10_acall_no_reply_to_a___ack_to_SM__expect__clean_SM_state)
+      {
+         common::unittest::Trace trace;
+
+         auto a = local::domain( R"(
+domain:
+   name: A
+   services:
+      -  name: a
+         execution:
+            timeout:
+               duration: 2ms
+
+)");
+         casual::service::unittest::advertise( { "a"});
+
+         static constexpr auto acall_a = []()
+         {
+            auto buffer = tpalloc( X_OCTET, nullptr, 128);
+            auto len = tptypes( buffer, nullptr, nullptr);
+            EXPECT_TRUE( tpacall( "a", buffer, len, TPNOREPLY) != -1) << "tperrno: " << tperrnostring( tperrno);
+            tpfree( buffer);
+         };
+
+         // do the first call
+         acall_a();
+
+         algorithm::for_n( 10, []()
+         {
+            auto request = communication::ipc::receive< common::message::service::call::callee::Request>();
+            // should always be the timeout of the service
+            EXPECT_TRUE( request.deadline.remaining == std::chrono::milliseconds{ 2}) << CASUAL_NAMED_VALUE( request);
+
+            // we fake that we are a real service, and set some stuff that a real service would do
+            {
+               // set deadline (if any) for further service calls downstream
+               common::service::call::context().deadline( platform::time::clock::type::now(), request.deadline.remaining);
+            }
+
+            // do another nested call to our self
+            acall_a();
+
+            // send ack to SM
+            casual::service::unittest::send::ack( request);
+         });
+
+
+      }
 
    } // test::domain::service
 
