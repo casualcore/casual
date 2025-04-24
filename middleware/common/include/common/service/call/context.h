@@ -75,7 +75,7 @@ namespace casual
 
          void cancel( descriptor_type descriptor);
 
-         void clean();
+         void clear();
 
          //! @returns true if there are pending replies or associated transactions.
          //!  Hence, it's ok to do a service-forward if false is return

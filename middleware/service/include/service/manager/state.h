@@ -91,6 +91,17 @@ namespace casual
             template< typename T>
             constexpr bool is_concurrent = std::same_as< concurrent::id::type, T>;
 
+            namespace caller
+            {
+               enum struct Semantic : short
+               {
+                  reply,
+                  no_reply,
+               };
+               std::string_view description( Semantic value) noexcept;
+               
+            } // caller
+
 
             struct Caller
             {
@@ -98,6 +109,7 @@ namespace casual
                common::strong::correlation::id correlation;
                common::transaction::ID trid;
                service::id::type service;
+               caller::Semantic semantic = caller::Semantic::reply;
 
                inline explicit operator bool() const noexcept { return common::predicate::boolean( process);}
                inline friend bool operator == ( const Caller& lhs, const common::strong::correlation::id& rhs) { return lhs.correlation == rhs;}
@@ -107,6 +119,7 @@ namespace casual
                   CASUAL_SERIALIZE( correlation);
                   CASUAL_SERIALIZE( trid);
                   CASUAL_SERIALIZE( service);
+                  CASUAL_SERIALIZE( semantic);
                )
             };
 

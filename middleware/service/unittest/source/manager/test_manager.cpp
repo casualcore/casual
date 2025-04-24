@@ -779,6 +779,71 @@ domain:
          }
       }
 
+      TEST( service_manager, advertise_a__reply_lookup_to_a___expect_reservation)
+      {
+         common::unittest::Trace trace;
+
+         auto a = local::domain( R"(
+domain:
+   name: A
+   services:
+      -  name: a
+         execution:
+            timeout:
+               duration: 2ms
+)");
+
+         
+         service::unittest::advertise( { "a"});
+
+         // setup subscription to verify that we get a timeout, to know when to check that we DONT get any error reply from SM
+         common::event::subscribe( common::process::handle(), { common::message::event::process::Assassination::type()});
+         
+         // lookup 'a' with no reply
+         {
+            common::message::service::lookup::Request lookup{ common::process::handle()};
+            lookup.requested = "a";
+            lookup.context.semantic = decltype( lookup.context.semantic)::no_reply;
+
+            auto reply = common::communication::ipc::call( 
+               common::communication::instance::outbound::service::manager::device(),
+               lookup);
+
+            EXPECT_TRUE( reply.process == common::process::handle());
+         };
+
+         // check service manager state, expect our self to be reserved, from our self
+         {
+            auto state = unittest::state();
+            EXPECT_TRUE( state.pending.size() == 0) << CASUAL_NAMED_VALUE( state.pending);
+
+            // we should have two reservation, the state call and the lookup
+            EXPECT_TRUE( state.reservations.size() == 2) << CASUAL_NAMED_VALUE( state.reservations);
+
+            auto found = common::algorithm::find( state.reservations, "a");
+            ASSERT_TRUE( found) << CASUAL_NAMED_VALUE( state.reservations);
+
+            EXPECT_TRUE( found->callee == common::process::handle()) << CASUAL_NAMED_VALUE( *found);
+            EXPECT_TRUE( found->caller == common::process::handle()) << CASUAL_NAMED_VALUE( *found);
+         }
+
+         // wait for the assassination event
+         {
+            auto event = common::communication::ipc::receive< common::message::event::process::Assassination>();
+
+            EXPECT_TRUE( event.target == common::process::id());
+            EXPECT_TRUE( event.contract == decltype( event.contract)::linger);
+         }
+
+         // check that we don't get any error reply from SM
+         {
+            auto reply = common::communication::ipc::non::blocking::receive< common::message::service::call::Reply>();
+
+            EXPECT_TRUE( ! reply) << CASUAL_NAMED_VALUE( *reply);
+         }
+
+      }
+
       TEST( service_manager, service_lookup_service1__server_terminate__expect__service_error_reply)
       {
          common::unittest::Trace trace;

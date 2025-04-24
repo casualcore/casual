@@ -229,6 +229,8 @@ namespace casual
          common::process::Handle callee;
          common::strong::correlation::id correlation;
 
+         inline friend bool operator == ( const Reservation& lhs, std::string_view rhs) { return lhs.service == rhs;}
+
          CASUAL_CONST_CORRECT_SERIALIZE(
             CASUAL_SERIALIZE( service);
             CASUAL_SERIALIZE( caller);

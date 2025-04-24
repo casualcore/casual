@@ -363,8 +363,9 @@ namespace casual
       }
 
 
-      void Context::clean()
+      void Context::clear()
       {
+         m_state.deadline = {}; 
          // TODO: Do some cleaning on buffers, pending replies and such...
       }
 

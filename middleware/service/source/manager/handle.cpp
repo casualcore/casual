@@ -180,12 +180,17 @@ namespace casual
             if( state.instances.sequential.contains( entry.target))
             {
                auto& instance = state.instances.sequential[ entry.target];
+
                if( auto caller = instance.consume( entry.correlation))
                {
                   // keep track of instance until we get an ACK, or the server dies
                   // We need to notify TM if this call was in transaction.
                   state.timeout_instances.push_back( instance.process.pid);
-                  local::error::reply( state, { .caller = caller, .callee = instance.process}, common::code::xatmi::timeout);
+
+                  // we only send error reply if the caller wants one.
+                  if( caller.semantic == state::instance::caller::Semantic::reply)
+                     local::error::reply( state, { .caller = caller, .callee = instance.process}, common::code::xatmi::timeout);
+                  
                   order_assassination( state, entry, entry.target);
                }
                else
@@ -459,6 +464,8 @@ namespace casual
 
                      void reply( State& state, state::service::id::type service_id, auto instance_id, common::message::service::lookup::Request& message, platform::time::unit pending)
                      {
+                        Trace trace{ "service::manager::handle::local::service::detail::dispatch::lookup::reply"};
+
                         log::line( verbose::log, "'reserved' instance: ", instance_id);
 
                         static constexpr bool is_concurrent = std::same_as< state::instance::concurrent::id::type, decltype( instance_id)>;
@@ -585,9 +592,9 @@ namespace casual
                         {
                            auto get_caller = [ service_id]( const auto& message) -> state::instance::Caller
                            {
-                              if( message.no_reply())
-                                 return { .service = service_id}; // this is maybe a bit silly...
-                              return { .process = message.process, .correlation = message.correlation, .trid = message.trid, .service = service_id};
+                              auto semantic = message.no_reply() ? state::instance::caller::Semantic::no_reply : state::instance::caller::Semantic::reply;
+
+                              return { .process = message.process, .correlation = message.correlation, .trid = message.trid, .service = service_id, .semantic = semantic};
                            };
 
                            if( auto instance_id = state.reserve_sequential( get_caller( message)))

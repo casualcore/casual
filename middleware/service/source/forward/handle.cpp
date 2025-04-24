@@ -75,6 +75,7 @@ namespace casual
 
                         auto request = algorithm::container::extract( state.pending, std::begin( found));
                         request.service = message.service;
+                        request.deadline = message.deadline;
 
                         if( message.state == decltype( message.state)::absent)
                         {

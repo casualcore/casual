@@ -581,7 +581,7 @@ domain:
       }
 
 
-      TEST( test_service, advertise_a__10_acall_no_reply_to_a___ack_to_SM__expect__clean_SM_state)
+      TEST( test_service, advertise_a__10_acall_no_reply_to_a___ack_to_SM__expect__deadline_remaining_to_be_2ms_as_the_service_timeout)
       {
          common::unittest::Trace trace;
 
