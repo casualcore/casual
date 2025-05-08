@@ -530,8 +530,22 @@ namespace casual
                   };
 
                }
-
             } // configuration
+
+            namespace process
+            {
+               auto lookup( State& state)
+               {
+                  return [ &state]( const common::message::domain::process::lookup::Reply& message)
+                  {
+                     Trace trace{ "queue::manager::handle::local::configuration::process::lookup"};
+                     common::log::debug( "message: ", message);
+
+                     state.services.advertise( message);
+                  };
+               }
+            } // process
+
          } // <unnamed>
       } // local
 
@@ -602,32 +616,26 @@ namespace casual
       {
          return common::message::dispatch::handler( ipc::device(),
             common::message::dispatch::handle::defaults( state),
-            
             handle::local::group::connect( state),
             handle::local::group::configuration::update::reply( state),
-
             handle::local::forward::connect( state),
             handle::local::forward::configuration::update::reply( state),
-
             handle::local::configuration::update::request( state),
             handle::local::configuration::request( state),
-            
             handle::local::lookup::request( state),
             handle::local::lookup::discard::request( state),
-            
             handle::local::advertise( state),
-            
             handle::local::domain::discover::lookup::request( state),
             handle::local::domain::discover::api::reply( state),
             handle::local::domain::discover::fetch::known::request( state),
-
             handle::local::shutdown::request( state),
             common::event::listener( 
                handle::local::event::dead::process( state),
                handle::local::event::dead::ipc( state)),
-
-            common::server::handle::admin::Call{
-               manager::admin::services( state)}
+            // send lookup for SM
+            state.services.initialize( manager::admin::services( state)),
+            // receive lookup for SM
+            handle::local::process::lookup( state)
          );  
       }
 

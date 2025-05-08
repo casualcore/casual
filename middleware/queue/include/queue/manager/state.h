@@ -16,6 +16,8 @@
 #include "common/domain.h"
 #include "common/state/machine.h"
 
+#include "casual/manager/service/context.h"
+#include "casual/manager/service/policy.h"
 
 #include "configuration/model.h"
 #include "configuration/group.h"
@@ -178,6 +180,9 @@ namespace casual
          std::vector< state::Remote> remotes;
 
          state::Task task;
+
+         casual::manager::service::Context< casual::manager::service::policy::Default> services;
+
 
          //! @returns 0..1 queue (providers) that provides the queue
          //! @{

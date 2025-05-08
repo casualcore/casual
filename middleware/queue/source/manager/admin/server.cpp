@@ -12,7 +12,7 @@
 
 #include "queue/common/log.h"
 
-#include "serviceframework/service/protocol.h"
+#include "casual/manager/service/protocol.h"
 
 
 namespace casual
@@ -275,10 +275,10 @@ namespace casual
             {
                auto state( manager::State& state)
                {
-                  return [&state]( common::service::invoke::Parameter&& parameter)
+                  return [&state]( casual::manager::service::invoke::Parameter&& parameter)
                   {
-                     return serviceframework::service::user( 
-                        serviceframework::service::protocol::deduce( std::move( parameter)), 
+                     return casual::manager::service::protocol::dispatch( 
+                        std::move( parameter), 
                         &local::state, state);
                   };
                };
@@ -288,13 +288,13 @@ namespace casual
                {
                   auto list( manager::State& state)
                   {
-                     return [&state]( common::service::invoke::Parameter&& parameter)
+                     return [&state]( casual::manager::service::invoke::Parameter&& parameter)
                      {
-                        auto protocol = serviceframework::service::protocol::deduce( std::move( parameter));
+                        auto protocol = casual::manager::service::protocol::deduce( std::move( parameter));
 
                         auto queue = protocol.extract< std::string>( "queue");
 
-                        return serviceframework::service::user( 
+                        return casual::manager::service::protocol::dispatch( 
                            std::move( protocol), 
                            &local::messages::list, 
                            state, 
@@ -304,15 +304,15 @@ namespace casual
 
                   auto remove( manager::State& state)
                   {
-                     return [&state]( common::service::invoke::Parameter&& parameter)
+                     return [&state]( casual::manager::service::invoke::Parameter&& parameter)
                      {
-                        auto protocol = serviceframework::service::protocol::deduce( std::move( parameter));
+                        auto protocol = casual::manager::service::protocol::deduce( std::move( parameter));
 
                         auto queue = protocol.extract< std::string>( "queue");
                         auto ids = protocol.extract< std::vector< common::Uuid>>( "ids");
                         auto force = protocol.extract< bool>( "force");
 
-                        return serviceframework::service::user( 
+                        return casual::manager::service::protocol::dispatch( 
                            std::move( protocol), 
                            &local::messages::remove, 
                            state, 
@@ -325,39 +325,39 @@ namespace casual
 
                auto restore( manager::State& state)
                {
-                  return [&state]( common::service::invoke::Parameter&& parameter)
+                  return [&state]( casual::manager::service::invoke::Parameter&& parameter)
                   {
-                     auto protocol = serviceframework::service::protocol::deduce( std::move( parameter));
+                     auto protocol = casual::manager::service::protocol::deduce( std::move( parameter));
 
                      auto queue = protocol.extract< std::string>( "queue");
 
-                     return serviceframework::service::user( std::move( protocol), &local::restore, state, queue);
+                     return casual::manager::service::protocol::dispatch( std::move( protocol), &local::restore, state, queue);
                   };
                }
 
                auto clear( manager::State& state)
                {
-                  return [&state]( common::service::invoke::Parameter&& parameter)
+                  return [&state]( casual::manager::service::invoke::Parameter&& parameter)
                   {
-                     auto protocol = serviceframework::service::protocol::deduce( std::move( parameter));
+                     auto protocol = casual::manager::service::protocol::deduce( std::move( parameter));
 
                      auto queues = protocol.extract< std::vector< std::string>>( "queues");
 
-                     return serviceframework::service::user( std::move( protocol), &local::clear, state, std::move( queues));
+                     return casual::manager::service::protocol::dispatch( std::move( protocol), &local::clear, state, std::move( queues));
                   };
                }
 
                auto recover( manager::State& state)
                {
-                  return [&state]( common::service::invoke::Parameter&& parameter)
+                  return [&state]( casual::manager::service::invoke::Parameter&& parameter)
                   {
-                     auto protocol = serviceframework::service::protocol::deduce( std::move( parameter));
+                     auto protocol = casual::manager::service::protocol::deduce( std::move( parameter));
 
                      auto gtrids = protocol.extract< std::vector< common::transaction::global::ID>>( "gtrids");
                      using Directive = ipc::message::group::message::recovery::Directive;
                      auto directive = protocol.extract< Directive>("directive");
 
-                     return serviceframework::service::user( std::move( protocol), &local::recover, state, std::move( gtrids), directive);
+                     return casual::manager::service::protocol::dispatch( std::move( protocol), &local::recover, state, std::move( gtrids), directive);
                   };
                }
 
@@ -365,13 +365,13 @@ namespace casual
                {
                   auto reset( manager::State& state)
                   {
-                     return [&state]( common::service::invoke::Parameter&& parameter)
+                     return [&state]( casual::manager::service::invoke::Parameter&& parameter)
                      {
-                        auto protocol = serviceframework::service::protocol::deduce( std::move( parameter));
+                        auto protocol = casual::manager::service::protocol::deduce( std::move( parameter));
 
                         auto queues = protocol.extract< std::vector< std::string>>( "queues");
 
-                        return serviceframework::service::user( std::move( protocol), &local::metric::reset, state, std::move( queues));
+                        return casual::manager::service::protocol::dispatch( std::move( protocol), &local::metric::reset, state, std::move( queues));
                      };
                   }
                } // metric
@@ -382,13 +382,13 @@ namespace casual
                   {
                      auto aliases( manager::State& state)
                      {
-                        return [&state]( common::service::invoke::Parameter&& parameter)
+                        return [&state]( casual::manager::service::invoke::Parameter&& parameter)
                         {
-                           auto protocol = serviceframework::service::protocol::deduce( std::move( parameter));
+                           auto protocol = casual::manager::service::protocol::deduce( std::move( parameter));
 
                            auto aliases = protocol.extract< std::vector< manager::admin::model::scale::Alias>>( "aliases");
 
-                           return serviceframework::service::user( std::move( protocol), &local::forward::scale::aliases, state, std::move( aliases));
+                           return casual::manager::service::protocol::dispatch( std::move( protocol), &local::forward::scale::aliases, state, std::move( aliases));
                         };
                      }
                   } // metric
@@ -400,59 +400,50 @@ namespace casual
          } // <unnamed>
       } // local
 
-      common::server::Arguments services( manager::State& state)
+      std::vector< casual::manager::Service> services( manager::State& state)
       {
-         return { {
-               { service::name::state,
-                  local::service::state( state),
-                  common::service::transaction::Type::none,
-                  common::service::visibility::Type::undiscoverable,
-                  common::service::category::admin
-               },
-               { service::name::messages::list,
-                  local::service::messages::list( state),
-                  common::service::transaction::Type::none,
-                  common::service::visibility::Type::undiscoverable,
-                  common::service::category::admin
-               },
-               { service::name::messages::remove,
-                  local::service::messages::remove( state),
-                  common::service::transaction::Type::none,
-                  common::service::visibility::Type::undiscoverable,
-                  common::service::category::admin
-               },
-               { service::name::restore,
-                  local::service::restore( state),
-                  common::service::transaction::Type::none,
-                  common::service::visibility::Type::undiscoverable,
-                  common::service::category::admin
-               },
-               { service::name::clear,
-                  local::service::clear( state),
-                  common::service::transaction::Type::none,
-                  common::service::visibility::Type::undiscoverable,
-                  common::service::category::admin
-               },
-               { service::name::recover,
-                  local::service::recover( state),
-                  common::service::transaction::Type::none,
-                  common::service::visibility::Type::undiscoverable,
-                  common::service::category::admin
-               },
-               { service::name::metric::reset,
-                  local::service::metric::reset( state),
-                  common::service::transaction::Type::none,
-                  common::service::visibility::Type::undiscoverable,
-                  common::service::category::admin
-               },
-               { service::name::forward::scale::aliases,
-                  local::service::forward::scale::aliases( state),
-                  common::service::transaction::Type::none,
-                  common::service::visibility::Type::undiscoverable,
-                  common::service::category::admin
-               },
-
-         }};
+         return { 
+            { .name = std::string{ service::name::state},
+               .function =local::service::state( state),
+               .visibility = common::service::visibility::Type::undiscoverable,
+               .category = std::string{ common::service::category::admin}
+            },
+            { .name = std::string{ service::name::messages::list},
+               .function =local::service::messages::list( state),
+               .visibility = common::service::visibility::Type::undiscoverable,
+               .category = std::string{ common::service::category::admin}
+            },
+            { .name = std::string{ service::name::messages::remove},
+               .function =local::service::messages::remove( state),
+               .visibility = common::service::visibility::Type::undiscoverable,
+               .category = std::string{ common::service::category::admin}
+            },
+            { .name = std::string{ service::name::restore},
+               .function =local::service::restore( state),
+               .visibility = common::service::visibility::Type::undiscoverable,
+               .category = std::string{ common::service::category::admin}
+            },
+            { .name = std::string{ service::name::clear},
+               .function =local::service::clear( state),
+               .visibility = common::service::visibility::Type::undiscoverable,
+               .category = std::string{ common::service::category::admin}
+            },
+            { .name = std::string{ service::name::recover},
+               .function =local::service::recover( state),
+               .visibility = common::service::visibility::Type::undiscoverable,
+               .category = std::string{ common::service::category::admin}
+            },
+            { .name = std::string{ service::name::metric::reset},
+               .function =local::service::metric::reset( state),
+               .visibility = common::service::visibility::Type::undiscoverable,
+               .category = std::string{ common::service::category::admin}
+            },
+            { .name = std::string{ service::name::forward::scale::aliases},
+               .function =local::service::forward::scale::aliases( state),
+               .visibility = common::service::visibility::Type::undiscoverable,
+               .category = std::string{ common::service::category::admin}
+            }
+         };
       }
 
    } // queue::manager::admin

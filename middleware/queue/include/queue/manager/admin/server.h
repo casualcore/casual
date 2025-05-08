@@ -8,26 +8,23 @@
 #pragma once
 
 
+#include "casual/manager/service.h"
 
-#include "queue/manager/admin/model.h"
-
-#include "common/server/argument.h"
+#include <vector>
 
 namespace casual
 {
-   namespace queue
+   namespace queue::manager
    {
-      namespace manager
+      struct State;
+
+      namespace admin
       {
-         struct State;
+         std::vector< casual::manager::Service> services( manager::State& state);
 
-         namespace admin
-         {
-            common::server::Arguments services( manager::State& state);
+      } // admin
 
-         } // manager
-      } // manager
-   } // queue
+   } // queue::manager
 
 
 } // casual
