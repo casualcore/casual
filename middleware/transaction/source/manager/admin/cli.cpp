@@ -17,6 +17,7 @@
 #include "common/communication/instance.h"
 #include "common/communication/ipc.h"
 #include "common/message/dispatch/handle.h"
+#include "common/message/transaction.h"
 #include "common/range/adapter.h"
 #include "common/algorithm/sorted.h"
 

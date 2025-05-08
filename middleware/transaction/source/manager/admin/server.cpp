@@ -9,8 +9,7 @@
 #include "transaction/manager/state.h"
 #include "transaction/manager/action.h"
 
-#include "serviceframework/service/protocol/call.h"
-#include "serviceframework/service/protocol.h"
+#include "casual/manager/service/protocol.h"
 
 namespace casual
 {
@@ -27,10 +26,10 @@ namespace casual
 
                   auto state( manager::State& state)
                   {
-                     return [ &state]( common::service::invoke::Parameter&& parameter)
+                     return [ &state]( casual::manager::service::invoke::Parameter&& parameter)
                      {
-                        return serviceframework::service::user( 
-                           serviceframework::service::protocol::deduce( std::move( parameter)),
+                        return casual::manager::service::protocol::dispatch( 
+                           std::move( parameter),
                            &transform::state, state);
                      };
                   }
@@ -39,12 +38,12 @@ namespace casual
                   {
                      auto instances( manager::State& state)
                      {
-                        return [ &state]( common::service::invoke::Parameter&& parameter)
+                        return [ &state]( casual::manager::service::invoke::Parameter&& parameter)
                         {
-                           auto protocol = serviceframework::service::protocol::deduce( std::move( parameter));
+                           auto protocol = casual::manager::service::protocol::deduce( std::move( parameter));
                            auto instances = protocol.extract< std::vector< admin::model::scale::resource::proxy::Instances>>( "instances");
 
-                           return serviceframework::service::user(
+                           return casual::manager::service::protocol::dispatch(
                               std::move( protocol),
                               &action::resource::proxy::instances,
                               state,
@@ -56,29 +55,30 @@ namespace casual
             } // local
 
 
-            common::server::Arguments services( manager::State& state)
+            std::vector< casual::manager::Service> services( manager::State& state)
             {
-               return { {
-                     { service::name::state,
-                        local::state( state),
-                        common::service::transaction::Type::none,
-                        common::service::visibility::Type::undiscoverable,
-                        common::service::category::admin
+               return { 
+                     { 
+                        .name = std::string{ service::name::state},
+                        .function = local::state( state),
+                        .visibility = common::service::visibility::Type::undiscoverable,
+                        .category = std::string{ common::service::category::admin}
                      },
-                     { service::name::scale::resource::proxies,
-                        local::scale::resource::proxy::instances( state),
-                        common::service::transaction::Type::none,
-                        common::service::visibility::Type::undiscoverable,
-                        common::service::category::admin
-                     },
-                     // deprecated
-                     { ".casual/transaction/scale/instances",
-                        local::scale::resource::proxy::instances( state),
-                        common::service::transaction::Type::none,
-                        common::service::visibility::Type::undiscoverable,
-                        common::service::category::deprecated
+                     {
+                        .name = std::string{ service::name::scale::resource::proxies},
+                        .function = local::scale::resource::proxy::instances( state),
+                        .visibility = common::service::visibility::Type::undiscoverable,
+                        .category = std::string{ common::service::category::admin}
                      }
-               }};
+                     ,
+                     // deprecated
+                     { 
+                        .name = ".casual/transaction/scale/instances",
+                        .function = local::scale::resource::proxy::instances( state),
+                        .visibility = common::service::visibility::Type::undiscoverable,
+                        .category = std::string{ common::service::category::deprecated}
+                     }
+               };
             }
 
          } // admin

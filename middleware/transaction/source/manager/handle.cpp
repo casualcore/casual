@@ -1429,6 +1429,23 @@ namespace casual
 
             } // shutdown
 
+            namespace process
+            {
+               auto lookup( State& state)
+               {
+                  return [ &state]( const common::message::domain::process::lookup::Reply& message)
+                  {
+                     Trace trace{ "transaction::manager::handle::local::process::lookup"};
+                     common::log::debug( "message: ", message);
+
+                     // advertise the services
+                     state.services.advertise( message);
+                  };
+               }
+            } // process
+
+         
+
          } // <unnamed>
       } // local
 
@@ -1485,8 +1502,10 @@ namespace casual
             local::active::request( state),
             local::potential::stale( state),
             local::shutdown::request( state),
-            common::server::handle::admin::Call{
-               manager::admin::services( state)}
+            // sends lookup for SM
+            state.services.initialize( manager::admin::services( state)),
+            // receives lookup for SM
+            local::process::lookup( state)
          );
       }
 

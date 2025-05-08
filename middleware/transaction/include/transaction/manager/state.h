@@ -19,6 +19,9 @@
 #include "common/state/machine.h"
 #include "common/transaction/global.h"
 
+#include "casual/manager/service/context.h"
+#include "casual/manager/service/policy.h"
+
 #include "common/communication/select.h"
 #include "common/communication/ipc/send.h"
 #include "common/communication/ipc/pending.h"
@@ -457,11 +460,12 @@ namespace casual
 
          std::vector< state::Transaction> stale;
 
-
+         //! holds the services that this manager exposes
+         casual::manager::service::Context< casual::manager::service::policy::Default> services;
 
          state::System system;
          state::Alias alias;
-
+         
 
          //! @return true if all resource proxies is booted
          bool booted() const;

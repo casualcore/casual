@@ -22,6 +22,7 @@
 
 #include "common/message/dispatch.h"
 #include "common/message/transaction.h"
+#include "common/transaction/context.h"
 #include "common/environment.h"
 #include "common/transcode.h"
 #include "common/functional.h"

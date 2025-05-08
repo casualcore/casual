@@ -6,7 +6,9 @@
 
 #pragma once
 
-#include "common/server/argument.h"
+#include "casual/manager/service.h"
+
+#include <vector>
 
 namespace casual
 {
@@ -26,7 +28,7 @@ namespace casual
 
          } // service::name
 
-         common::server::Arguments services( manager::State& state);
+         std::vector< casual::manager::Service> services( manager::State& state);
       } // admin
 
    } // transaction::manager

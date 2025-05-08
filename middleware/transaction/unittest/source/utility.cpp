@@ -9,6 +9,7 @@
 
 #include "serviceframework/service/protocol/call.h"
 
+#include "common/message/transaction.h"
 #include "common/communication/instance.h"
 
 namespace casual
